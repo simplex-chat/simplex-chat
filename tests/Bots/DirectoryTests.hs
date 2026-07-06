@@ -99,6 +99,7 @@ directoryServiceTests = do
     it "should delete channel registration and leave" testDeleteChannelRegistration
     it "should handle re-registration when already listed" testReregistrationAlreadyListed
     it "should update subscriber count periodically" testLinkCheckUpdatesCount
+    it "should not re-approve when only stored publicGroupId is stale" testLinkCheckStalePublicGroupId
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -2306,6 +2307,75 @@ testLinkCheckUpdatesCount ps = do
             bob <##. "Link to join channel: "
             bob <## "You need SimpleX Chat app v6.5 to join."
             bob <## "3 subscribers"
+
+-- Regression: a stale stored publicGroupId (which updateGroupProfile never re-syncs)
+-- differs from the link's on every link check. Before the fix this re-approved the
+-- channel every linkCheckInterval; after it, a publicGroupId-only difference is
+-- ignored and the channel stays listed. (See plans/2026-07-06-fix-directory-name-reapproval.md)
+testLinkCheckStalePublicGroupId :: HasCallStack => TestParams -> IO ()
+testLinkCheckStalePublicGroupId ps = do
+  dsLink <-
+    withNewTestChatCfg ps testCfg serviceDbPrefix directoryProfile $ \ds ->
+      withNewTestChatCfg ps testCfg "super_user" aliceProfile $ \superUser -> do
+        connectUsers ds superUser
+        ds ##> "/ad"
+        getContactLink ds True
+  let opts = (mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing) {linkCheckInterval = 1}
+  runDirectory testCfg opts $
+    withTestChatCfg ps testCfg "super_user" $ \superUser -> do
+      superUser <## "subscribed 1 connections on server localhost"
+      withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+        withRelay ps $ \relay -> do
+          bob `connectVia` dsLink
+          _ <- prepareChannel1Relay "news" bob relay
+          -- register and approve
+          bob ##> "/share chat #news @'SimpleX Directory'"
+          bob <# "@'SimpleX Directory' link to join channel #news (signed):"
+          _ <- getTermLine bob -- short link
+          _ <- getTermLine bob -- ownerSig JSON
+          bob <# "'SimpleX Directory'> Joining the channel news…"
+          concurrentlyN_
+            [ do
+                relay <## "'SimpleX Directory': accepting request to join group #news..."
+                relay <## "#news: 'SimpleX Directory' joined the group",
+              bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
+            ]
+          bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
+          bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+          bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
+          superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
+          superUser <## "news"
+          superUser <##. "Link to join channel: "
+          superUser <## "You need SimpleX Chat app v6.5 to join."
+          superUser <## "1 subscribers"
+          superUser <## ""
+          superUser <## "To approve send:"
+          superUser <# "'SimpleX Directory'> /approve 1:news 1"
+          let approve = "/approve 1:news 1"
+          superUser #> ("@'SimpleX Directory' " <> approve)
+          superUser <# ("'SimpleX Directory'> > " <> approve)
+          superUser <## "      Channel approved!"
+          bob <# "'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!"
+          bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+          -- Corrupt the directory's STORED public_group_id so it differs from the link's
+          -- (simulates the stale identity that updateGroupProfile never re-syncs). Value
+          -- stays non-NULL, so publicGroup remains Just and the link check still runs.
+          let sql = "/x /sql chat UPDATE group_profiles SET public_group_id = randomblob(32) WHERE public_group_id IS NOT NULL"
+          superUser #> ("@'SimpleX Directory' " <> sql)
+          superUser <# ("'SimpleX Directory'> > " <> sql)
+          superUser <## ""
+          -- allow >= 1 link check (interval = 1s) to run
+          threadDelay 1500000
+          -- channel is still listed and active (no re-approval); had it re-approved,
+          -- bob's search would first receive the "profile has changed" message and this
+          -- sequence would fail.
+          bob #> "@'SimpleX Directory' news"
+          bob <# "'SimpleX Directory'> > news"
+          bob <## "      Found 1 group(s)."
+          bob <# "'SimpleX Directory'> news"
+          bob <##. "Link to join channel: "
+          bob <## "You need SimpleX Chat app v6.5 to join."
+          bob <## "2 subscribers"
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do

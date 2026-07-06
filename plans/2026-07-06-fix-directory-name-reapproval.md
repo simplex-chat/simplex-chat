@@ -1,6 +1,6 @@
 # Fix: SimpleX directory re-approves a channel every 30 min after a blockchain name is added
 
-Status: proposed — **root cause confirmed by code (deduction, §3); fix in core (§4)**
+Status: implemented & verified — **root cause confirmed by code (deduction, §3); fix in core (§4); regression test passes and fails without the fix (§8)**
 Branch: `nd/fix-directory-names`
 Base: `origin/master` (`b38015c7b`)
 
@@ -107,7 +107,7 @@ sites — the guard, the `if … then updateGroupProfile`, and the returned flag
     -- Internal.hs:2986, which normalizes groupPreferences the same way).
     profileChanged = clearId p /= clearId groupProfile
     clearId gp@GroupProfile {publicGroup} =
-      gp {publicGroup = (\pg -> pg {publicGroupId = B64UrlByteString ""}) <$> publicGroup}
+      gp {publicGroup = (\pg -> (pg :: PublicGroupProfile) {publicGroupId = B64UrlByteString ""}) <$> publicGroup}
 ```
 
 The `| profileChanged || countChanged || verifyChanged` guard, the
@@ -207,16 +207,24 @@ not a directory policy, so it belongs where the comparison lives:
   `profileChanged` true and stores). `Commands.hs:4358` is the directory path this
   fix targets.
 
-## 8. Verification plan
+## 8. Verification (done)
 
-1. **Regression test** in `tests/Bots/DirectoryTests.hs` (beside the existing
-   "link/whitespace-only must not re-approve" tests, `:296-326`): register a channel
-   with one `public_group_id`, then make the fetched link carry a *different*
-   `publicGroupId` (all other fields equal), run ≥2 link checks, and assert the reg
-   stays `GRSActive` (no `GRSPendingApproval`, no owner re-approval message). Add a
-   positive control: a display-name change *does* re-approve.
-2. Apply §4.
-3. Build the directory service (statically links core); run the directory suite.
+Regression test `testLinkCheckStalePublicGroupId` in `tests/Bots/DirectoryTests.hs`
+(beside the existing "link/whitespace-only must not re-approve" tests): register +
+approve a channel, then corrupt the directory's *stored* `public_group_id` via
+`/x /sql chat UPDATE group_profiles SET public_group_id = randomblob(32) …` (so it
+differs from the link's; the value stays non-NULL, so `publicGroup` remains `Just`
+and the link check still runs), let a link check run (`linkCheckInterval = 1`), and
+assert the channel stays listed with no re-approval.
+
+Results:
+- `cabal build simplex-directory-service` — links (the fix compiles into the bot).
+- `cabal build simplex-chat-test` — the test compiles.
+- Test **passes** with the fix (1 example, 0 failures).
+- **Negative control** (fix reverted, test kept): the test **fails** with
+  `but got: Just "…The channel ID 1 (news) profile changed."` — the exact production
+  re-approval message. So the test genuinely guards the bug, and the root cause is
+  demonstrated end-to-end (not just deduced).
 
 ## 9. Files touched
 

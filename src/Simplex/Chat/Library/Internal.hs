@@ -1479,7 +1479,13 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupDomainVerif
         pure (g'', profileChanged)
   | otherwise = pure (gInfo, False)
   where
-    profileChanged = p /= groupProfile
+    -- publicGroupId is immutable identity, not content, and is not a column
+    -- updateGroupProfile syncs (it is set at group creation / by updateRelayGroupKeys).
+    -- A stale stored value would otherwise make this (/=) re-trigger directory
+    -- approval on every link check. Normalize it out (mirrors sameGroupProfileInfo).
+    profileChanged = clearId p /= clearId groupProfile
+    clearId gp@GroupProfile {publicGroup} =
+      gp {publicGroup = (\pg -> (pg :: PublicGroupProfile) {publicGroupId = B64UrlByteString ""}) <$> publicGroup}
     countChanged = case publicGroupData of
       Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
       _ -> False
