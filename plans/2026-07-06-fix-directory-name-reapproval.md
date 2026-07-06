@@ -74,6 +74,19 @@ is permanent → `groupUpdated` true every cycle → re-approval on repeat.
 is merely the *occasion* (the owner republishing the link) that surfaces the
 pre-existing `publicGroupId` staleness.
 
+The claim's round-trip fidelity — the one field that *changes* when a name is
+added, hence the last assumption behind the elimination — was verified: `ToField
+SimplexDomain = decodeLatin1 . strEncode` and `FromField = strDecode . encodeUtf8`
+(`simplexmq SimplexName.hs:127-129`); domains are ASCII, so the stored value is
+`strDecode (strEncode d)`, which equals `d` for a canonical (lower-cased) domain,
+and the link's domain is already canonical (it arrives via `StrJSON`/`strDecode`).
+Because the name sets `group_domain`, `toPublicGroupAccess` returns `Just` (not the
+degenerate empty-access→`Nothing` at `Shared.hs:726`), so the claim reconstructs
+equal. So every field except `publicGroupId` provably converges — the elimination
+is airtight, not "assuming fidelity". (The empty-access→`Nothing` degeneracy at
+`Shared.hs:726` is a separate latent asymmetry, unreachable here since a claim makes
+the access non-empty; out of scope.)
+
 ## 4. The fix (core, minimal): compare *content*, ignoring immutable identity
 
 `publicGroupId` is immutable cryptographic identity (`sha256(genesis root key)`,
