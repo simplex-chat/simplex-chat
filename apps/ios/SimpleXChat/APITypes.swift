@@ -763,6 +763,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatStoreChanged
     case invalidConnReq
     case simplexDomainNotReady(simplexDomain: SimplexDomain, simplexDomainError: SimplexDomainError)
+    case notResolvedLocally
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited

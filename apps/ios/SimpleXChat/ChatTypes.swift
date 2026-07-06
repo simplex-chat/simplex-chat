@@ -5290,6 +5290,15 @@ public struct SimplexNameInfo: Codable, Equatable, Hashable {
     public var nameType: SimplexNameType
     public var nameDomain: SimplexDomain
 
+    // mirrors backend shortNameInfoStr: "#name" for a simplex public group, else prefix + full domain
+    public var shortStr: String {
+        if nameType == .publicGroup && nameDomain.nameTLD == .simplex && nameDomain.subDomain.isEmpty {
+            return "#" + nameDomain.domain
+        } else {
+            return (nameType == .publicGroup ? "#" : "@") + nameDomain.fullDomainName
+        }
+    }
+
     public init(nameType: SimplexNameType, nameDomain: SimplexDomain) {
         self.nameType = nameType
         self.nameDomain = nameDomain
