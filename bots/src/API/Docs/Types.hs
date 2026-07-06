@@ -328,6 +328,7 @@ chatTypesDocsData =
     (sti @NoteFolder, STRecord, "", [], "", ""),
     (sti @OwnerVerification, STUnion, "OV", [], "", ""),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
+    (sti @PlanResolveMode, STEnum, "PRM", [], "", ""),
     (sti @PrefEnabled, STRecord, "", [], "", ""),
     (sti @Preferences, STRecord, "", [], "", ""),
     (sti @PreparedContact, STRecord, "", [], "", ""),
@@ -559,6 +560,7 @@ deriving instance Generic NewUser
 deriving instance Generic NoteFolder
 deriving instance Generic OwnerVerification
 deriving instance Generic PendingContactConnection
+deriving instance Generic PlanResolveMode
 deriving instance Generic PrefEnabled
 deriving instance Generic Preferences
 deriving instance Generic PreparedContact

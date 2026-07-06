@@ -1370,7 +1370,7 @@ Determine SimpleX link type and if the bot is already connected via this link or
 **Parameters**:
 - userId: int64
 - connectTarget: string?
-- resolveKnown: bool
+- resolveMode: [PlanResolveMode](./TYPES.md#planresolvemode)
 - linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
 **Syntax**:
@@ -1393,6 +1393,8 @@ ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
+- otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
 ChatCmdError: Command error (only used in WebSockets API).
