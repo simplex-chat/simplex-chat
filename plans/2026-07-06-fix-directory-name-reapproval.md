@@ -171,6 +171,29 @@ not a directory policy, so it belongs where the comparison lives:
   pre-update snapshot (enqueue-vs-process window) and leaves `groupUpdated`
   misleading for any future consumer. Core is preferred per §5.
 
+## 7b. Regressions checked (none found)
+
+- **Compiles.** `Internal.hs` has `{-# LANGUAGE OverloadedStrings #-}`, so
+  `B64UrlByteString ""` type-checks. (`B64UrlByteString mempty` — inner
+  `ByteString` `mempty` — is an equivalent pragma-independent form.)
+- **Existing "link/whitespace-only must not re-approve" test is untouched**
+  (`DirectoryTests.hs:296-326`). That test changes a URL inside the *welcome
+  message* text and exercises the owner-update path (`deGroupUpdated`) — not
+  `publicGroup.groupLink`, not `publicGroupId`, and not the link-check path. The
+  fix normalizes only `publicGroupId`, so every non-`publicGroupId` field
+  (including `groupLink`, description, image) compares exactly as before.
+- **No missed re-approval.** Only `publicGroupId` is excluded; any moderatable
+  field still differs under the comparison and still re-approves.
+- **Non-directory clients unaffected.** They don't read the returned flag (the
+  mobile/desktop `GroupLinkPlan.Known` variant omits it, §2.4); the only other
+  effect is skipping an `updateGroupProfile` call when *only* `publicGroupId`
+  differs — a no-op, since that column is never written there anyway.
+- **Other `updateGroupFromLinkData` callers safe.** `Commands.hs:4331` (CTName
+  path) ignores the returned `Bool` and uses `g'`; its domain check reads the
+  claim *domain*, which still converges (a real claim change keeps
+  `profileChanged` true and stores). `Commands.hs:4358` is the directory path this
+  fix targets.
+
 ## 8. Verification plan
 
 1. **Regression test** in `tests/Bots/DirectoryTests.hs` (beside the existing
