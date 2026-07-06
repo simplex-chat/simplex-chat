@@ -953,9 +953,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Промяна на режима на заключване";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Промяна на ролята на члена?";
-
 /* authentication reason */
 "Change passcode" = "Промени kодa за достъп";
 
@@ -1935,7 +1932,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "грешка";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Грешка при свързване със сървъра";
 
 /* No comment provided by engineer. */
@@ -2095,6 +2092,7 @@ chat item action */
 "Error: " = "Грешка: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Грешка: %@";

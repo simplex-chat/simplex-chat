@@ -1012,9 +1012,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Kilit modunu değiştir";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Üye rolünü değiştir?";
-
 /* authentication reason */
 "Change passcode" = "Şifreyi değiştir";
 
@@ -2198,7 +2195,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "hata";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Hata";
 
 /* No comment provided by engineer. */
@@ -2439,6 +2436,7 @@ chat item action */
 "Error: " = "Hata: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Hata: %@";

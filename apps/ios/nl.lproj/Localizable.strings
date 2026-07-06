@@ -947,9 +947,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Wijzig de vergrendelings modus";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Rol van lid wijzigen?";
-
 /* authentication reason */
 "Change passcode" = "Toegangscode wijzigen";
 
@@ -2106,7 +2103,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "fout";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Fout";
 
 /* No comment provided by engineer. */
@@ -2335,6 +2332,7 @@ chat item action */
 "Error: " = "Fout: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Fout: %@";

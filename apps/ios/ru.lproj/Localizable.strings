@@ -464,6 +464,9 @@ swipe action */
 "Active connections" = "Активные соединения";
 
 /* No comment provided by engineer. */
+"Add" = "Добавить";
+
+/* No comment provided by engineer. */
 "Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." = "Добавьте адрес в свой профиль, чтобы Ваши SimpleX контакты могли поделиться им. Профиль будет отправлен Вашим SimpleX контактам.";
 
 /* No comment provided by engineer. */
@@ -1093,9 +1096,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Изменить режим блокировки";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Поменять роль члена группы?";
-
 /* authentication reason */
 "Change passcode" = "Изменить код доступа";
 
@@ -1561,6 +1561,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connections" = "Соединения";
+
+/* No comment provided by engineer. */
+"Contact" = "Контакт";
 
 /* profile update event chat item */
 "contact %@ changed to %@" = "контакт %1$@ изменён на %2$@";
@@ -2436,7 +2439,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "ошибка";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Ошибка";
 
 /* No comment provided by engineer. */
@@ -2695,6 +2698,7 @@ chat item action */
 "error: %@" = "ошибка: %@";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Ошибка: %@";
@@ -4363,9 +4367,6 @@ alert button */
 
 /* feature role */
 "owners" = "владельцы";
-
-/* No comment provided by engineer. */
-"Owners & contributors" = "Владельцы";
 
 /* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "Владение: Вы можете запустить свои собственные релеи.";

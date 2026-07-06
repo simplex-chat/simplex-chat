@@ -989,9 +989,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Zmień tryb blokady";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Zmienić rolę członka?";
-
 /* authentication reason */
 "Change passcode" = "Zmień pin";
 
@@ -2184,7 +2181,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "błąd";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Błąd";
 
 /* No comment provided by engineer. */
@@ -2428,6 +2425,7 @@ chat item action */
 "Error: " = "Błąd: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Błąd: %@";

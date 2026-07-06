@@ -823,9 +823,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Změnit zamykání";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Změnit roli člena?";
-
 /* authentication reason */
 "Change passcode" = "Změnit heslo";
 
@@ -1530,7 +1527,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "chyba";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Chyba";
 
 /* No comment provided by engineer. */
@@ -1669,6 +1666,7 @@ alert button */
 "Error: " = "Chyba: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Chyba: %@";

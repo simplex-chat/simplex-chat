@@ -493,9 +493,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "เปลี่ยนโหมดล็อค";
 
-/* No comment provided by engineer. */
-"Change member role?" = "เปลี่ยนบทบาทของสมาชิก?";
-
 /* authentication reason */
 "Change passcode" = "เปลี่ยนรหัสผ่าน";
 
@@ -1158,7 +1155,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "ผิดพลาด";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "ผิดพลาด";
 
 /* No comment provided by engineer. */
@@ -1288,6 +1285,7 @@ alert button */
 "Error: " = "ผิดพลาด: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "ข้อผิดพลาด: % @";
@@ -1784,12 +1782,6 @@ server test error */
 
 /* rcv group event chat item */
 "member connected" = "เชื่อมต่อสำเร็จ";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกกลุ่มทั้งหมดจะได้รับแจ้ง";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกจะได้รับคำเชิญใหม่";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!";

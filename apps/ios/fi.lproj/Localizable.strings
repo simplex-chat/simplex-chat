@@ -517,9 +517,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Vaihda lukitustilaa";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Vaihda jäsenroolia?";
-
 /* authentication reason */
 "Change passcode" = "Vaihda pääsykoodi";
 
@@ -1203,7 +1200,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "virhe";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Virhe";
 
 /* No comment provided by engineer. */
@@ -1336,6 +1333,7 @@ alert button */
 "Error: " = "Virhe: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Virhe: %@";
