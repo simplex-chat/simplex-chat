@@ -204,7 +204,9 @@ CREATE TABLE groups(
   roster_sending_owner_gm_id INTEGER,
   roster_broker_ts TEXT,
   roster_blob BLOB,
-  group_domain_verified INTEGER, -- received
+  group_domain_verified INTEGER,
+  stored_roster_version INTEGER,
+  applied_complete_roster_version INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -249,6 +251,7 @@ CREATE TABLE group_members(
   relay_link BLOB,
   member_pub_key BLOB,
   removed_at TEXT,
+  roster_served_version INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

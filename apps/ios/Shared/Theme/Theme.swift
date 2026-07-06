@@ -192,7 +192,7 @@ extension ThemeModeOverride {
                 background: colors.background != tc.background ? colors.background : nil,
                 surface: colors.surface != tc.surface ? colors.surface : nil,
                 title: colors.title != tc.title ? colors.title : nil,
-                primaryVariant2: colors.primaryVariant2 != tc.primaryVariant2 ? colors.primary : nil,
+                primaryVariant2: colors.primaryVariant2 != tc.primaryVariant2 ? colors.primaryVariant2 : nil,
                 sentMessage: colors.sentMessage != tc.sentMessage ? colors.sentMessage : nil,
                 sentQuote: colors.sentQuote != tc.sentQuote ? colors.sentQuote : nil,
                 receivedMessage: colors.receivedMessage != tc.receivedMessage ? colors.receivedMessage : nil,

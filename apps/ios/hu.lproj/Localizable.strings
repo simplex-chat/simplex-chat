@@ -3618,13 +3618,13 @@ servers warning */
 "Member reports" = "Tagok jelentései";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csevegés összes tagja értesítést fog kapni.";
+"Role will be changed to \"%@\". All chat members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csevegés összes tagja értesítést fog kapni.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csoport az összes tagja értesítést fog kapni.";
+"Role will be changed to \"%@\". All group members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csoport az összes tagja értesítést fog kapni.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "A tag szerepköre a következőre fog módosulni: „%@”. A tag új meghívást fog kapni.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "A tag szerepköre a következőre fog módosulni: „%@”. A tag új meghívást fog kapni.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "A tag el lesz távolítva a csevegésből – ez a művelet nem vonható vissza!";
@@ -4365,7 +4365,7 @@ alert button */
 "owners" = "tulajdonosok";
 
 /* No comment provided by engineer. */
-"Owners" = "Tulajdonosok";
+"Owners & contributors" = "Tulajdonosok";
 
 /* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "Tulajdonjog: saját átjátszókat üzemeltethet.";

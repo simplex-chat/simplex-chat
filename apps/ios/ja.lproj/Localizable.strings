@@ -2152,10 +2152,10 @@ server test error */
 "member connected" = "接続中";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "メンバーの役割が \"%@\" に変更されます。 グループメンバー全員に通知されます。";
+"Role will be changed to \"%@\". All group members will be notified." = "メンバーの役割が \"%@\" に変更されます。 グループメンバー全員に通知されます。";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "メンバーの役割が \"%@\" に変更されます。 メンバーは新たな招待を受け取ります。";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "メンバーの役割が \"%@\" に変更されます。 メンバーは新たな招待を受け取ります。";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "メンバーをグループから除名する (※元に戻せません※)！";

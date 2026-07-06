@@ -1043,6 +1043,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
   | ChatErrorType.SimplexDomainNotReady
+  | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1121,6 +1122,7 @@ export namespace ChatErrorType {
     | "chatStoreChanged"
     | "invalidConnReq"
     | "simplexDomainNotReady"
+    | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1279,6 +1281,10 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
+  }
+
+  export interface NotResolvedLocally extends Interface {
+    type: "notResolvedLocally"
   }
 
   export interface UnsupportedConnReq extends Interface {
@@ -2049,7 +2055,6 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
-    verifiedDomain?: SimplexDomain
   }
 
   export interface OwnLink extends Interface {
@@ -2681,7 +2686,6 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
-    verifiedDomain?: SimplexDomain
   }
 
   export interface OwnLink extends Interface {
@@ -3342,6 +3346,12 @@ export interface PendingContactConnection {
   localAlias: string
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
+}
+
+export enum PlanResolveMode {
+  AllGroups = "allGroups",
+  Unknown = "unknown",
+  Never = "never",
 }
 
 export interface PrefEnabled {

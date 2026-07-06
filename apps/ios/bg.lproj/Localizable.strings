@@ -2716,10 +2716,10 @@ server test error */
 "member connected" = "свързан";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
+"Role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";

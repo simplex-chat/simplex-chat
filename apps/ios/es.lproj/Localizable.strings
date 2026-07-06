@@ -3618,13 +3618,13 @@ servers warning */
 "Member reports" = "Informes de miembros";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "El rol del miembro cambiará a \"%@\". Se notificará en el chat.";
+"Role will be changed to \"%@\". All chat members will be notified." = "El rol del miembro cambiará a \"%@\". Se notificará en el chat.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "El rol del miembro cambiará a \"%@\" y se notificará al grupo.";
+"Role will be changed to \"%@\". All group members will be notified." = "El rol del miembro cambiará a \"%@\" y se notificará al grupo.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "El rol del miembro cambiará a \"%@\" y recibirá una invitación nueva.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "El rol del miembro cambiará a \"%@\" y recibirá una invitación nueva.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "El miembro será eliminado del chat. ¡No puede deshacerse!";
@@ -4365,7 +4365,7 @@ alert button */
 "owners" = "propietarios";
 
 /* No comment provided by engineer. */
-"Owners" = "Propietarios";
+"Owners & contributors" = "Propietarios";
 
 /* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "En propiedad: puedes poner en marcha tus propios servidores.";

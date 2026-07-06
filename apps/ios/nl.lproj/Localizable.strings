@@ -3161,13 +3161,13 @@ servers warning */
 "Member reports" = "Ledenrapporten";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "De rol van het lid wordt gewijzigd naar \"%@\". Alle chatleden worden op de hoogte gebracht.";
+"Role will be changed to \"%@\". All chat members will be notified." = "De rol van het lid wordt gewijzigd naar \"%@\". Alle chatleden worden op de hoogte gebracht.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "De rol van lid wordt gewijzigd in \"%@\". Alle groepsleden worden op de hoogte gebracht.";
+"Role will be changed to \"%@\". All group members will be notified." = "De rol van lid wordt gewijzigd in \"%@\". Alle groepsleden worden op de hoogte gebracht.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "De rol van lid wordt gewijzigd in \"%@\". Het lid ontvangt een nieuwe uitnodiging.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "De rol van lid wordt gewijzigd in \"%@\". Het lid ontvangt een nieuwe uitnodiging.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Lid wordt verwijderd uit de chat - dit kan niet ongedaan worden gemaakt!";

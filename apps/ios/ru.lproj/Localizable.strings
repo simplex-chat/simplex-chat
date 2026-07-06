@@ -3618,13 +3618,13 @@ servers warning */
 "Member reports" = "Сообщения о нарушениях";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "Роль участника будет изменена на \"%@\". Все участники разговора получат уведомление.";
+"Role will be changed to \"%@\". All chat members will be notified." = "Роль участника будет изменена на \"%@\". Все участники разговора получат уведомление.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Роль члена будет изменена на \"%@\". Все члены группы получат уведомление.";
+"Role will be changed to \"%@\". All group members will be notified." = "Роль члена будет изменена на \"%@\". Все члены группы получат уведомление.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена будет изменена на \"%@\". Будет отправлено новое приглашение.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена будет изменена на \"%@\". Будет отправлено новое приглашение.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Член будет удалён из разговора - это действие нельзя отменить!";
@@ -4365,7 +4365,7 @@ alert button */
 "owners" = "владельцы";
 
 /* No comment provided by engineer. */
-"Owners" = "Владельцы";
+"Owners & contributors" = "Владельцы";
 
 /* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "Владение: Вы можете запустить свои собственные релеи.";

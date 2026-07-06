@@ -1116,6 +1116,8 @@ private func showPrepareContactAlert(
     contactShortLinkData: ContactShortLinkData,
     ownerVerification: OwnerVerification? = nil,
     verifiedDomain: SimplexDomain? = nil,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1138,6 +1140,7 @@ private func showPrepareContactAlert(
         information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
+        secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
@@ -1155,6 +1158,9 @@ private func showPrepareContactAlert(
                     }
                 }
             }
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
 }
@@ -1165,6 +1171,8 @@ private func showPrepareGroupAlert(
     groupShortLinkData: GroupShortLinkData,
     ownerVerification: OwnerVerification? = nil,
     verifiedDomain: SimplexDomain? = nil,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1189,6 +1197,7 @@ private func showPrepareGroupAlert(
         confirmTitle: isChannel
             ? NSLocalizedString("Open new channel", comment: "new chat action")
             : NSLocalizedString("Open new group", comment: "new chat action"),
+        secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
@@ -1210,6 +1219,9 @@ private func showPrepareGroupAlert(
                     }
                 }
             }
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
 }
@@ -1217,7 +1229,9 @@ private func showPrepareGroupAlert(
 private func showOpenKnownContactAlert(
     _ contact: Contact,
     theme: AppTheme,
-    dismiss: Bool
+    dismiss: Bool,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil
 ) {
     showOpenChatAlert(
         profileName: contact.profile.displayName,
@@ -1235,8 +1249,12 @@ private func showOpenKnownContactAlert(
             contact.nextConnectPrepared
             ? NSLocalizedString("Open new chat", comment: "new chat action")
             : NSLocalizedString("Open chat", comment: "new chat action"),
+        secondTitle: connectOtherButton,
         onConfirm: {
             openKnownContact(contact, dismiss: dismiss, cleanup: nil)
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss) }
         }
     )
 }
@@ -1244,7 +1262,9 @@ private func showOpenKnownContactAlert(
 private func showOpenKnownGroupAlert(
     _ groupInfo: GroupInfo,
     theme: AppTheme,
-    dismiss: Bool
+    dismiss: Bool,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil
 ) {
     let subscriberCount = groupInfo.groupSummary.publicMemberCount.map { "\($0) subscribers" }
     showOpenChatAlert(
@@ -1274,8 +1294,12 @@ private func showOpenKnownGroupAlert(
                 ? NSLocalizedString("Open new chat", comment: "new chat action")
                 : NSLocalizedString("Open chat", comment: "new chat action")
               ),
+        secondTitle: connectOtherButton,
         onConfirm: {
             openKnownGroup(groupInfo, dismiss: dismiss, cleanup: nil)
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss) }
         }
     )
 }
@@ -1319,7 +1343,20 @@ func planAndConnect(
                 ConnectProgressManager.shared.stopConnectProgress()
             }
             if !inProgress.boxedValue { return }
-            if let (connectionLink, connectionPlan) = result {
+            if let result {
+                let connectionLink = result.connLink
+                let connectionPlan = result.connectionPlan
+                let planSimplexName = result.planSimplexName
+                // the name can also resolve to the other kind; its type picks the verb, its short form the label and target
+                let connectOtherLink = result.otherSimplexName?.shortStr
+                let connectOtherButton: String? = result.otherSimplexName.map { info in
+                    String.localizedStringWithFormat(
+                        info.nameType == .publicGroup
+                            ? NSLocalizedString("Join channel %@", comment: "new chat action")
+                            : NSLocalizedString("Connect to %@", comment: "new chat action"),
+                        info.shortStr
+                    )
+                }
                 switch connectionPlan {
                 case let .invitationLink(ilp):
                     switch ilp {
@@ -1386,7 +1423,7 @@ func planAndConnect(
                     }
                 case let .contactAddress(cap):
                     switch cap {
-                    case let .ok(contactSLinkData_, ownerVerification, verifiedDomain):
+                    case let .ok(contactSLinkData_, ownerVerification):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
                             await MainActor.run {
@@ -1394,7 +1431,9 @@ func planAndConnect(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
                                     ownerVerification: ownerVerification,
-                                    verifiedDomain: verifiedDomain,
+                                    verifiedDomain: planSimplexName?.nameDomain,
+                                    connectOtherButton: connectOtherButton,
+                                    connectOtherLink: connectOtherLink,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1443,7 +1482,7 @@ func planAndConnect(
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink)
                             }
                         }
                     case let .known(contact):
@@ -1455,7 +1494,7 @@ func planAndConnect(
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink)
                             }
                         }
                     case let .contactViaAddress(contact):
@@ -1470,7 +1509,7 @@ func planAndConnect(
                     }
                 case let .groupLink(glp):
                     switch glp {
-                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, verifiedDomain):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
@@ -1479,7 +1518,9 @@ func planAndConnect(
                                     groupShortLinkInfo: groupShortLinkInfo_,
                                     groupShortLinkData: groupSLinkData,
                                     ownerVerification: ownerVerification,
-                                    verifiedDomain: verifiedDomain,
+                                    verifiedDomain: planSimplexName?.nameDomain,
+                                    connectOtherButton: connectOtherButton,
+                                    connectOtherLink: connectOtherLink,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1538,7 +1579,7 @@ func planAndConnect(
                             if let f = filterKnownGroup {
                                 f(groupInfo)
                             } else {
-                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
+                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink)
                             }
                         }
                     case let .noRelays(groupSLinkData_):

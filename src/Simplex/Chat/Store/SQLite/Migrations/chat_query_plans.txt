@@ -5370,7 +5370,7 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE groups SET
-        roster_version = ?, roster_blob = ?,
+        roster_version = ?, stored_roster_version = ?, applied_complete_roster_version = ?, roster_blob = ?,
         roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
         roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?,
         updated_at = ?
@@ -6665,6 +6665,36 @@ SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
 SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?)
 
+Query: DELETE FROM group_members WHERE member_id = ?
+Plan:
+SCAN group_members
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
+SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
+
 Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
@@ -7076,6 +7106,10 @@ Query: SELECT app_settings FROM app_settings
 Plan:
 SCAN app_settings
 
+Query: SELECT applied_complete_roster_version FROM groups WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -7285,6 +7319,10 @@ Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
 
+Query: SELECT member_id FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
 Query: SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1
 Plan:
 SCAN group_members
@@ -7310,6 +7348,10 @@ Plan:
 SCAN group_members
 
 Query: SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?
 Plan:
 SCAN group_members
 
@@ -7361,9 +7403,13 @@ Query: SELECT roster_blob FROM groups WHERE roster_blob IS NOT NULL
 Plan:
 SCAN groups
 
-Query: SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body, roster_blob FROM groups WHERE group_id = ?
+Query: SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body, roster_blob, stored_roster_version FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT roster_served_version FROM group_members WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT roster_transfer_id FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?
 Plan:
@@ -7388,6 +7434,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT stored_roster_version FROM groups WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT summary_current_members_count FROM groups WHERE group_id = ?
 Plan:
@@ -7633,6 +7683,10 @@ Query: UPDATE group_members SET member_role = ?, member_pub_key = NULL WHERE loc
 Plan:
 SCAN group_members
 
+Query: UPDATE group_members SET roster_served_version = ?, updated_at = ? WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE group_members SET support_chat_items_member_attention = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -7652,6 +7706,14 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?
 Plan:
 SEARCH group_relays USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET applied_complete_roster_version = ? WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET applied_complete_roster_version = ?, updated_at = ? WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET business_member_id = ?, customer_member_id = ? WHERE group_id = ?
 Plan:

@@ -929,13 +929,15 @@ acceptContactRequestAsync
     profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
     cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId cReqPQSup
     currentTs <- liftIO getCurrentTime
-    withStore $ \db -> do
+    ct' <- withStore $ \db -> do
       forM_ xContactId $ \xcId -> liftIO $ setContactAcceptedXContactId db ct xcId
       Connection {connId} <- liftIO $ createAcceptedContactConn db user (Just uclId) contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
       liftIO $ setCommandConnId db user cmdId connId
       getContact db cxt user contactId
+    agentAcceptContactAsync cmdId acId True cReqInvId (XInfo profileToSend) cReqPQSup chatV subMode
+    pure ct'
 
 acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> Maybe GroupMember -> CM GroupMember
 acceptGroupJoinRequestAsync
@@ -983,10 +985,12 @@ acceptGroupJoinRequestAsync
               }
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
+    m <- withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db cxt user groupMemberId
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    pure m
 
 acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupRejectionReason -> CM GroupMember
 acceptGroupJoinSendRejectAsync
@@ -1013,10 +1017,12 @@ acceptGroupJoinSendRejectAsync
               }
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user False cReqInvId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+    (cmdId, acId) <- prepareAgentAccept user False cReqInvId PQSupportOff
+    m <- withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db cxt user groupMemberId
+    agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff chatV subMode
+    pure m
 
 acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
@@ -1045,10 +1051,11 @@ acceptBusinessJoinRequestAsync
               }
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
     withStore' $ \db -> do
       forM_ xContactId $ \xcId -> setBusinessChatAcceptedXContactId db gInfo xcId
-      createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+      createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
     let cd = CDGroupSnd gInfo Nothing
     -- TODO [short links] move to profileContactRequest?
     createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
@@ -1071,12 +1078,14 @@ acceptRelayJoinRequestAsync
     subMode <- chatReadVar subscriptionMode
     cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
+    r <- withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       gInfo' <- liftIO $ updateRelayOwnStatusFromTo db gInfo RSInvited RSAccepted
       ownerMember' <- getGroupMemberById db cxt user groupMemberId
       pure (gInfo', ownerMember')
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    pure r
 
 rejectRelayInvitationAsync
   :: User
@@ -1096,9 +1105,10 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv invId reqChatVRange init
   subMode <- chatReadVar subscriptionMode
   chatVR <- chatVersionRange
   let chatV = chatVR `peerConnChatVersion` reqChatVRange
-  connIds <- agentAcceptContactAsync user False invId msg subMode PQSupportOff chatV
+  (cmdId, acId) <- prepareAgentAccept user False invId PQSupportOff
   withStore' $ \db ->
-    createJoiningMemberConnection db user uclId connIds chatV reqChatVRange groupMemberId subMode
+    createJoiningMemberConnection db user uclId (cmdId, acId) chatV reqChatVRange groupMemberId subMode
+  agentAcceptContactAsync cmdId acId False invId msg PQSupportOff chatV subMode
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
@@ -1187,8 +1197,8 @@ serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
 serveRoster user gInfo member =
   when (member `supportsVersion` groupRosterVersion) $ do
     cxt <- chatStoreCxt
-    withStore' (\db -> getGroupRoster db gInfo) >>= \case
-      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
+    withStore' (\db -> getStoredGroupRoster db gInfo) >>= \case
+      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_, storedVer_) ->
         case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
           Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
           Right chatMsg@ChatMessage {msgId} ->
@@ -1198,6 +1208,10 @@ serveRoster user gInfo member =
                 sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
                 forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
                   sendInlineBlobChunks user gInfo [member] sid blob
+                -- record the blob's own stored version as served, not roster_version (the gate): a delta can
+                -- advance the gate past the stored blob on a failed blob send, and recording the gate would
+                -- over-claim what this member was actually served, suppressing legitimate catch-up
+                forM_ storedVer_ $ \v -> withStore' $ \db -> setMemberRosterServedVersion db member v
               Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
       Nothing -> pure ()
 
@@ -1450,8 +1464,8 @@ updatePublicGroupData user gInfo
   | otherwise = pure gInfo
 
 updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> CM (GroupInfo, Bool)
-updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData}
-  | profileChanged || countChanged = do
+updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupDomainVerified, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData}
+  | profileChanged || countChanged || verifyChanged = do
       cxt <- chatStoreCxt
       withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
@@ -1459,13 +1473,19 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        pure (g', profileChanged)
+        -- the group's own link is authoritative for its domain claim, so a claim in the link profile is
+        -- verified; updateGroupProfile above clears verification on a claim change, so set it afterwards
+        g'' <- if verifyChanged then liftIO $ setGroupDomainVerified db user g' True else pure g'
+        pure (g'', profileChanged)
   | otherwise = pure (gInfo, False)
   where
     profileChanged = p /= groupProfile
     countChanged = case publicGroupData of
       Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
       _ -> False
+    groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+    newClaim = groupClaim groupProfile
+    verifyChanged = isJust newClaim && (groupDomainVerified /= Just True || groupClaim p /= newClaim)
 
 updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
 updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
@@ -2285,24 +2305,39 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
+-- The roster change being broadcast, projected onto the current roster members in broadcastRoster. This lets the
+-- roster blob be built (and sent) before the change is applied to the owner's own member records, so the owner
+-- never demotes/removes a member locally before the change has been propagated to relays.
+data RosterDelta
+  = RDRoleChanged GroupMemberRole [GroupMember] -- these members now hold this role
+  | RDRemoved [GroupMember] -- these members are removed from the group
+
+applyRosterDelta :: RosterDelta -> [GroupMember] -> [GroupMember]
+applyRosterDelta delta current = case delta of
+  RDRoleChanged role changed -> map (\m -> (m :: GroupMember) {memberRole = role}) changed <> without changed
+  RDRemoved removed -> without removed
+  where
+    without ms = let ids = S.fromList (map groupMemberId' ms) in filter ((`S.notMember` ids) . groupMemberId') current
+
 -- TODO [relays] improvement: publish roster_version in link data so the owner can recover the latest version
 -- TODO   after restoring from a stale backup (relays accept only strictly-greater versions)
--- Persist the next roster version before sending the events that carry it (so a recipient never advances
--- past a version the owner hasn't recorded). The matching blob is broadcast separately, by broadcastRoster,
--- after the change is applied to the owner's members - so the served roster excludes demoted/removed members.
-reserveRosterVersion :: GroupInfo -> CM VersionRoster
-reserveRosterVersion gInfo = do
+-- Reserve and persist the next roster version (committed before the events that carry it, so a recipient never
+-- advances past a version the owner hasn't recorded), then broadcast the matching blob with the change projected
+-- onto the served roster (so it excludes demoted/removed members). Returns the reserved version for the delta
+-- that follows. The blob send is best-effort - a failed send heals on the next change or on resume.
+broadcastRoster :: User -> GroupInfo -> RosterDelta -> CM VersionRoster
+broadcastRoster user gInfo delta = do
   let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
   withStore' $ \db -> setGroupRosterVersion db gInfo rosterVer
+  sendRosterBlob rosterVer `catchAllErrors` eToView
   pure rosterVer
-
-broadcastRoster :: User -> GroupInfo -> VersionRoster -> CM ()
-broadcastRoster user gInfo rosterVer = do
-  cxt <- chatStoreCxt
-  (relays, rosterMems) <- withStore' $ \db ->
-    (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
-  forM_ (L.nonEmpty relays) $ \relays' ->
-    sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster rosterMems)
+  where
+    sendRosterBlob rosterVer = do
+      cxt <- chatStoreCxt
+      (relays, rosterMems) <- withStore' $ \db ->
+        (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
+      forM_ (L.nonEmpty relays) $ \relays' ->
+        sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster $ applyRosterDelta delta rosterMems)
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
@@ -2733,17 +2768,23 @@ msgContentHasLink mc ft_ = case msgContentTag mc of
   MCLink_ -> True
   _ -> maybe False hasLinks ft_
 
-createAgentConnectionAsync :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> CM (CommandId, ConnId)
-createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
+prepareAgentCreation :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> CM (CommandId, ConnId)
+prepareAgentCreation user cmdFunction enableNtfs cMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
-  connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode IKPQOff subMode
+  connId <- withAgent $ \a -> prepareConnectionToCreate a (aUserId user) enableNtfs cMode PQSupportOff
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM (CommandId, ConnId)
-joinAgentConnectionAsync user conn_ enableNtfs cReqUri cInfo subMode = do
+prepareAgentJoin :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> CM (CommandId, ConnId)
+prepareAgentJoin user conn_ enableNtfs cReqUri = do
   cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) enableNtfs cReqUri cInfo PQSupportOff subMode
+  connId <- case conn_ of
+    Just conn -> pure $ aConnId conn
+    Nothing -> withAgent $ \a -> prepareConnectionToJoin a (aUserId user) enableNtfs cReqUri PQSupportOff
   pure (cmdId, connId)
+
+joinAgentConnectionAsync :: ConnectionModeI c => CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
+joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
+  withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
 allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersion} confId msg = do
@@ -2752,12 +2793,16 @@ allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersi
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-agentAcceptContactAsync :: MsgEncodingI e => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> PQSupport -> VersionChat -> CM (CommandId, ConnId)
-agentAcceptContactAsync user enableNtfs invId msg subMode pqSup chatV = do
+prepareAgentAccept :: User -> Bool -> InvitationId -> PQSupport -> CM (CommandId, ConnId)
+prepareAgentAccept user enableNtfs invId pqSup = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  dm <- encodeConnInfoPQ pqSup chatV msg
-  connId <- withAgent $ \a -> acceptContactAsync a (aUserId user) (aCorrId cmdId) enableNtfs invId dm pqSup subMode
+  connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) enableNtfs invId pqSup
   pure (cmdId, connId)
+
+agentAcceptContactAsync :: MsgEncodingI e => CommandId -> ConnId -> Bool -> InvitationId -> ChatMsgEvent e -> PQSupport -> VersionChat -> SubscriptionMode -> CM ()
+agentAcceptContactAsync cmdId connId enableNtfs invId msg pqSup chatV subMode = do
+  dm <- encodeConnInfoPQ pqSup chatV msg
+  withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) connId enableNtfs invId dm pqSup subMode
 
 deleteAgentConnectionAsync :: ConnId -> CM ()
 deleteAgentConnectionAsync acId = deleteAgentConnectionAsync' acId False

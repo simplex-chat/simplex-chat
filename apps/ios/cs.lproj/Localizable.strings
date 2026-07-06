@@ -2173,10 +2173,10 @@ server test error */
 "member connected" = "připojeno";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Role člena se změní na \"%@\". Všichni členové skupiny budou upozorněni.";
+"Role will be changed to \"%@\". All group members will be notified." = "Role člena se změní na \"%@\". Všichni členové skupiny budou upozorněni.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Role člena se změní na \"%@\". Člen obdrží novou pozvánku.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Role člena se změní na \"%@\". Člen obdrží novou pozvánku.";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Člen bude odstraněn ze skupiny - toto nelze vzít zpět!";

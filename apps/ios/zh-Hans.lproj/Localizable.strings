@@ -3291,13 +3291,13 @@ servers warning */
 "Member reports" = "成员举报";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "将变更成员角色为“%@”。所有成员都会收到通知。";
+"Role will be changed to \"%@\". All chat members will be notified." = "将变更成员角色为“%@”。所有成员都会收到通知。";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "成员角色将更改为 \"%@\"。所有群成员将收到通知。";
+"Role will be changed to \"%@\". All group members will be notified." = "成员角色将更改为 \"%@\"。所有群成员将收到通知。";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "成员角色将更改为 \"%@\"。该成员将收到一份新的邀请。";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "成员角色将更改为 \"%@\"。该成员将收到一份新的邀请。";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "将从聊天中删除成员 - 此操作无法撤销！";

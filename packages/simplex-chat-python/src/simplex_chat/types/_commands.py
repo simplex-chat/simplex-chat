@@ -439,7 +439,7 @@ APIAddContact_Response = CR.Invitation | CR.ChatCmdError
 class APIConnectPlan(TypedDict):
     userId: int  # int64
     connectTarget: NotRequired[str]
-    resolveKnown: bool
+    resolveMode: "T.PlanResolveMode"
     linkOwnerSig: NotRequired["T.LinkOwnerSig"]
 
 

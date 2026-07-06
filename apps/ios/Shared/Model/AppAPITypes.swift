@@ -131,7 +131,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiAddContact(userId: Int64, incognito: Bool)
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
-    case apiConnectPlan(userId: Int64, connLink: String, linkOwnerSig: LinkOwnerSig?)
+    case apiConnectPlan(userId: Int64, connLink: String, resolveMode: PlanResolveMode, linkOwnerSig: LinkOwnerSig?)
     case apiPrepareContact(userId: Int64, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData, verifiedDomain: SimplexDomain?)
     case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain?)
     case apiChangePreparedContactUser(contactId: Int64, newUserId: Int64)
@@ -347,9 +347,10 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
-            case let .apiConnectPlan(userId, connLink, linkOwnerSig):
+            case let .apiConnectPlan(userId, connLink, resolveMode, linkOwnerSig):
+                let resolveStr = resolveMode == .unknown ? "" : " resolve=\(resolveMode.rawValue)"
                 let sigStr = if let linkOwnerSig { " sig=\(encodeJSON(linkOwnerSig))" } else { "" }
-                return "/_connect plan \(userId) \(connLink)\(sigStr)"
+                return "/_connect plan \(userId) \(connLink)\(resolveStr)\(sigStr)"
             case let .apiPrepareContact(userId, connLink, contactShortLinkData, verifiedDomain): return "/_prepare contact \(userId) \(connLink.cmdString)\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(contactShortLinkData))"
             case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData, verifiedDomain): return "/_prepare group \(userId) \(connLink.cmdString) direct=\(onOff(directLink))\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(groupShortLinkData))"
             case let .apiChangePreparedContactUser(contactId, newUserId): return "/_set contact user @\(contactId) \(newUserId)"
@@ -814,7 +815,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connLink: CreatedConnLink, connectionPlan: ConnectionPlan)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
     case newPreparedChat(user: UserRef, chat: ChatData)
     case contactUserChanged(user: UserRef, fromContact: Contact, newUser: UserRef, toContact: Contact)
     case groupUserChanged(user: UserRef, fromGroup: GroupInfo, newUser: UserRef, toGroup: GroupInfo)
@@ -938,7 +939,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .invitation(u, connLinkInvitation, connection): return withUser(u, "connLinkInvitation: \(connLinkInvitation)\nconnection: \(connection)")
         case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
         case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\nnewUserId: \(String(describing: newUser.userId))")
-        case let .connectionPlan(u, connLink, connectionPlan): return withUser(u, "connLink: \(String(describing: connLink))\nconnectionPlan: \(String(describing: connectionPlan))")
+        case let .connectionPlan(u, connLink, _, _, connectionPlan): return withUser(u, "connLink: \(String(describing: connLink))\nconnectionPlan: \(String(describing: connectionPlan))")
         case let .newPreparedChat(u, chat): return withUser(u, String(describing: chat))
         case let .contactUserChanged(u, fromContact, newUser, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\nnewUserId: \(String(describing: newUser.userId))\ntoContact: \(String(describing: toContact))")
         case let .groupUserChanged(u, fromGroup, newUser, toGroup): return withUser(u, "fromGroup: \(String(describing: fromGroup))\nnewUserId: \(String(describing: newUser.userId))\ntoGroup: \(String(describing: toGroup))")
@@ -1386,6 +1387,20 @@ enum OwnerVerification: Decodable, Hashable {
     case failed(reason: String)
 }
 
+struct ConnectionPlanResult {
+    var connLink: CreatedConnLink
+    var planSimplexName: SimplexNameInfo?
+    var otherSimplexName: SimplexNameInfo?
+    var connectionPlan: ConnectionPlan
+}
+
+// APIConnectPlan resolution scope; .never is local-store-only (no network), used for per-keystroke name search
+enum PlanResolveMode: String {
+    case allGroups
+    case unknown
+    case never
+}
+
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan)
@@ -1401,7 +1416,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, verifiedDomain: SimplexDomain?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1416,7 +1431,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, verifiedDomain: SimplexDomain?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)

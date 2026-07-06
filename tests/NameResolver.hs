@@ -11,6 +11,7 @@ module NameResolver
     registerName,
     contactNameRecord,
     channelNameRecord,
+    contactAndChannelNameRecord,
     resolverNamesConfig,
   )
 where
@@ -54,6 +55,11 @@ contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}
 
 channelNameRecord :: Text -> Text -> NameRecord
 channelNameRecord name link = (emptyRecord name) {nrSimplexChannel = [link]}
+
+-- | A record whose domain resolves to both a direct contact link and a channel link.
+contactAndChannelNameRecord :: Text -> Text -> Text -> NameRecord
+contactAndChannelNameRecord name contactLink channelLink =
+  (emptyRecord name) {nrSimplexContact = [contactLink], nrSimplexChannel = [channelLink]}
 
 emptyRecord :: Text -> NameRecord
 emptyRecord name =

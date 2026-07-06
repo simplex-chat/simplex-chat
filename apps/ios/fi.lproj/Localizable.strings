@@ -1840,10 +1840,10 @@ server test error */
 "member connected" = "yhdistetty";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
+"Role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
