@@ -1,4 +1,5 @@
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -27,7 +28,7 @@ import chat.simplex.common.views.onboarding.SelectableCard
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 
-private val SectionCardShape = RoundedCornerShape(16.dp)
+val SectionCardShape = RoundedCornerShape(16.dp)
 val CARD_PADDING = 18.dp
 val ICON_TEXT_SPACING = 8.dp
 
@@ -113,15 +114,18 @@ fun SectionView(
   iconTint: Color = MaterialTheme.colors.secondary,
   leadingIcon: Boolean = false,
   padding: PaddingValues = PaddingValues(),
+  onIconClick: (() -> Unit)? = null,
   content: (@Composable ColumnScope.() -> Unit)
 ) {
   val card = LocalCardScreen.current
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
+    val interactionSource = remember { MutableInteractionSource() }
+    val iconClickable = if (onIconClick != null) Modifier.clickable(interactionSource = interactionSource, indication = ripple(bounded = false, radius = iconSize * 0.75f), onClick = onIconClick) else Modifier
     Row(Modifier.padding(start = if (card) DEFAULT_PADDING + DEFAULT_PADDING_HALF else DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-      if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
+      if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize).then(iconClickable), tint = iconTint)
       Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = if (card) 14.sp else 12.sp, fontWeight = if (card) FontWeight.Medium else FontWeight.Normal)
-      if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
+      if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize).then(iconClickable), tint = iconTint)
     }
     CardColumn(padding) { content() }
   }

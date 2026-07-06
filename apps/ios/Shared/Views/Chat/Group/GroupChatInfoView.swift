@@ -112,6 +112,7 @@ struct GroupChatInfoView: View {
                             // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
                             if groupInfo.isOwner && groupLink != nil {
                                 channelLinkButton()
+                                channelSimplexNameButton()
                             } else if let link = groupInfo.groupProfile.publicGroup?.groupLink {
                                 SimpleXLinkQRCode(uri: link)
                                 Button {
@@ -330,6 +331,27 @@ struct GroupChatInfoView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
+               let domain = access.groupDomainClaim?.shortName,
+               groupInfo.groupDomainVerified != nil || access.groupDomainClaim?.proof != nil {
+                SimplexNameView(
+                    simplexName: "#\(domain)",
+                    verified: groupInfo.groupDomainVerified,
+                    verify: {
+                        do {
+                            let (gInfo, reason) = try await apiVerifyGroupDomain(groupInfo.groupId)
+                            await MainActor.run {
+                                chatModel.updateGroup(gInfo)
+                                groupInfo = gInfo
+                            }
+                            return (gInfo.groupDomainVerified, reason)
+                        } catch {
+                            logger.error("apiVerifyGroupDomain: \(responseError(error))")
+                            return nil
+                        }
+                    }
+                )
             }
             if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
                let url = URL(string: webPage) {
@@ -671,6 +693,34 @@ struct GroupChatInfoView: View {
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             Label(title, systemImage: "globe")
+        }
+    }
+
+    private func channelSimplexNameButton() -> some View {
+        NavigationLink {
+            let domain = if let d = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName { "#\(d)" } else { "" }
+            SetSimplexDomainView(
+                title: "SimpleX name",
+                footer: "Let people join via name registered with this channel link.",
+                prompt: "#channelname.testing",
+                simplexName: domain,
+                save: { domain in
+                    do {
+                        var access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?? PublicGroupAccess()
+                        access.groupDomainClaim = domain.map { SimplexDomainClaim(domain: $0) }
+                        let gInfo = try await apiSetPublicGroupAccess(groupInfo.groupId, access: access)
+                        await MainActor.run {
+                            chatModel.updateGroup(gInfo)
+                            groupInfo = gInfo
+                        }
+                        return true
+                    } catch {
+                        return false
+                    }
+                }
+            )
+        } label: {
+            Label("SimpleX name", systemImage: "number")
         }
     }
 

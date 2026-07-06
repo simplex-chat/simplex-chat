@@ -78,6 +78,9 @@ class AgentErrorType_FILE(TypedDict):
     type: Literal["FILE"]
     fileErr: "FileErrorType"
 
+class AgentErrorType_NO_NAME_SERVERS(TypedDict):
+    type: Literal["NO_NAME_SERVERS"]
+
 class AgentErrorType_PROXY(TypedDict):
     type: Literal["PROXY"]
     proxyServer: str
@@ -123,6 +126,7 @@ AgentErrorType = (
     | AgentErrorType_NTF
     | AgentErrorType_XFTP
     | AgentErrorType_FILE
+    | AgentErrorType_NO_NAME_SERVERS
     | AgentErrorType_PROXY
     | AgentErrorType_RCP
     | AgentErrorType_BROKER
@@ -133,7 +137,7 @@ AgentErrorType = (
     | AgentErrorType_INACTIVE
 )
 
-AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FILE", "PROXY", "RCP", "BROKER", "AGENT", "NOTICE", "INTERNAL", "CRITICAL", "INACTIVE"]
+AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FILE", "NO_NAME_SERVERS", "PROXY", "RCP", "BROKER", "AGENT", "NOTICE", "INTERNAL", "CRITICAL", "INACTIVE"]
 
 class AutoAccept(TypedDict):
     acceptIncognito: bool
@@ -784,6 +788,14 @@ class ChatErrorType_chatStoreChanged(TypedDict):
 class ChatErrorType_invalidConnReq(TypedDict):
     type: Literal["invalidConnReq"]
 
+class ChatErrorType_simplexDomainNotReady(TypedDict):
+    type: Literal["simplexDomainNotReady"]
+    simplexDomain: "SimplexDomain"
+    simplexDomainError: "SimplexDomainError"
+
+class ChatErrorType_notResolvedLocally(TypedDict):
+    type: Literal["notResolvedLocally"]
+
 class ChatErrorType_unsupportedConnReq(TypedDict):
     type: Literal["unsupportedConnReq"]
 
@@ -1014,6 +1026,8 @@ ChatErrorType = (
     | ChatErrorType_chatNotStopped
     | ChatErrorType_chatStoreChanged
     | ChatErrorType_invalidConnReq
+    | ChatErrorType_simplexDomainNotReady
+    | ChatErrorType_notResolvedLocally
     | ChatErrorType_unsupportedConnReq
     | ChatErrorType_connReqMessageProhibited
     | ChatErrorType_contactNotReady
@@ -1070,7 +1084,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -1553,6 +1567,10 @@ class ErrorType_EXPIRED(TypedDict):
 class ErrorType_INTERNAL(TypedDict):
     type: Literal["INTERNAL"]
 
+class ErrorType_NAME(TypedDict):
+    type: Literal["NAME"]
+    nameErr: "NameErrorType"
+
 class ErrorType_DUPLICATE_(TypedDict):
     type: Literal["DUPLICATE_"]
 
@@ -1571,10 +1589,11 @@ ErrorType = (
     | ErrorType_LARGE_MSG
     | ErrorType_EXPIRED
     | ErrorType_INTERNAL
+    | ErrorType_NAME
     | ErrorType_DUPLICATE_
 )
 
-ErrorType_Tag = Literal["BLOCK", "SESSION", "CMD", "PROXY", "AUTH", "BLOCKED", "SERVICE", "CRYPTO", "QUOTA", "STORE", "NO_MSG", "LARGE_MSG", "EXPIRED", "INTERNAL", "DUPLICATE_"]
+ErrorType_Tag = Literal["BLOCK", "SESSION", "CMD", "PROXY", "AUTH", "BLOCKED", "SERVICE", "CRYPTO", "QUOTA", "STORE", "NO_MSG", "LARGE_MSG", "EXPIRED", "INTERNAL", "NAME", "DUPLICATE_"]
 
 FeatureAllowed = Literal["always", "yes", "no"]
 
@@ -1828,6 +1847,7 @@ class GroupInfo(TypedDict):
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]
+    groupDomainVerified: NotRequired[bool]
 
 class GroupKeys(TypedDict):
     publicGroupId: str
@@ -2089,6 +2109,8 @@ class LocalProfile(TypedDict):
     peerType: NotRequired["ChatPeerType"]
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
+    contactDomain: NotRequired["SimplexDomainClaim"]
+    contactDomainVerified: NotRequired[bool]
 
 MemberCriteria = Literal["all"]
 
@@ -2221,6 +2243,20 @@ MsgReceiptStatus = Literal["ok", "badMsgHash"]
 
 MsgSigStatus = Literal["verified", "signedNoKey"]
 
+class NameErrorType_NO_RESOLVER(TypedDict):
+    type: Literal["NO_RESOLVER"]
+
+class NameErrorType_NOT_FOUND(TypedDict):
+    type: Literal["NOT_FOUND"]
+
+class NameErrorType_RESOLVER(TypedDict):
+    type: Literal["RESOLVER"]
+    resolverErr: str
+
+NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorType_RESOLVER
+
+NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
+
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
     connectError: str
@@ -2304,6 +2340,8 @@ class PendingContactConnection(TypedDict):
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
+PlanResolveMode = Literal["allGroups", "unknown", "never"]
+
 class PrefEnabled(TypedDict):
     forUser: bool
     forContact: bool
@@ -2340,6 +2378,7 @@ class Profile(TypedDict):
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
     badge: NotRequired["BadgeProof"]
+    contactDomain: NotRequired["SimplexDomainClaim"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
@@ -2381,7 +2420,7 @@ ProxyError_Tag = Literal["PROTOCOL", "BROKER", "BASIC_AUTH", "NO_SESSION"]
 
 class PublicGroupAccess(TypedDict):
     groupWebPage: NotRequired[str]
-    groupDomain: NotRequired[str]
+    groupDomainClaim: NotRequired["SimplexDomainClaim"]
     domainWebPage: bool
     allowEmbedding: bool
 
@@ -2724,16 +2763,35 @@ class SecurityCode(TypedDict):
 class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
 
-SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
-
-class SimplexNameDomain(TypedDict):
+class SimplexDomain(TypedDict):
     nameTLD: "SimplexTLD"
     domain: str
     subDomain: list[str]
 
+class SimplexDomainClaim(TypedDict):
+    domain: str
+    proof: NotRequired["SimplexDomainProof"]
+
+class SimplexDomainError_noValidLink(TypedDict):
+    type: Literal["noValidLink"]
+
+class SimplexDomainError_unknownDomain(TypedDict):
+    type: Literal["unknownDomain"]
+
+SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
+
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
+
+class SimplexDomainProof(TypedDict):
+    linkOwnerId: NotRequired[str]
+    presHeader: str
+    signature: str
+
+SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"
-    nameDomain: "SimplexNameDomain"
+    nameDomain: "SimplexDomain"
 
 SimplexNameType = Literal["publicGroup", "contact"]
 

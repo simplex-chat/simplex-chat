@@ -178,6 +178,27 @@ fun ModalData.GroupChatInfoView(
       manageWebPage = {
           ModalManager.end.showCustomModal { close -> ChannelWebPageView(rhId, groupInfo, chatModel, close) }
       },
+      setSimplexName = {
+          ModalManager.end.showCustomModal { close ->
+            val domain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
+            SetSimplexDomainView(
+              title = generalGetString(MR.strings.set_simplex_name),
+              footer = generalGetString(MR.strings.set_channel_simplex_name_footer),
+              placeholder = "#channelname.testing",
+              simplexName = if (domain == null) "" else "#$domain",
+              save = { domain ->
+                val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?: PublicGroupAccess()
+                val newAccess = access.copy(groupDomainClaim = domain?.let { SimplexDomainClaim(it) })
+                val gInfo = chatModel.controller.apiSetPublicGroupAccess(rhId, groupInfo.groupId, newAccess)
+                if (gInfo != null) {
+                  withContext(Dispatchers.Main) { chatModel.chatsContext.updateGroup(rhId, gInfo) }
+                  true
+                } else false
+              },
+              close = close
+            )
+          }
+      },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
     )
@@ -510,6 +531,7 @@ fun ModalData.GroupChatInfoLayout(
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
   manageWebPage: () -> Unit,
+  setSimplexName: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit,
   deletingItems: State<Boolean>
@@ -616,6 +638,12 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
+            SettingsActionItem(
+              painterResource(MR.images.ic_tag),
+              stringResource(MR.strings.simplex_name),
+              setSimplexName,
+              iconColor = MaterialTheme.colors.secondary
+            )
           } else if (channelLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
@@ -945,6 +973,21 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
+    val domain = access?.groupDomainClaim?.shortName
+    if (domain != null && (groupInfo.groupDomainVerified != null || access.groupDomainClaim?.proof != null)) {
+      SimplexNameView(
+        simplexName = "#${domain}",
+        verified = groupInfo.groupDomainVerified,
+        verify = {
+          val rhId = chatModel.remoteHostId()
+          chatModel.controller.apiVerifyGroupDomain(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
+            chatModel.chatsContext.updateGroup(rhId, gInfo)
+            gInfo.groupDomainVerified to reason
+          }
+        }
+      )
+    }
     val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
     if (webPage != null) {
       val uriHandler = LocalUriHandler.current
@@ -1436,6 +1479,7 @@ fun PreviewGroupChatInfoLayout() {
       manageGroupLink = {},
       manageWebPage = {},
       onSearchClicked = {},
+      setSimplexName = {},
       deletingItems = remember { mutableStateOf(true) }
     )
   }

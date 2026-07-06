@@ -532,9 +532,7 @@ struct ChatListNavLink: View {
         .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection) { a in
-                    AlertManager.shared.showAlertMsg(title: a.title, message: a.message)
-                })
+                AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection))
             } label: {
                 deleteLabel
             }
@@ -698,7 +696,7 @@ func rejectContactRequestAlert(_ contactRequestId: Int64) -> Alert {
     )
 }
 
-func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
+func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, success: @escaping () -> Void = {}) -> Alert {
     Alert(
         title: Text("Delete pending connection?"),
         message: Text(contactConnection.displayName + "\n\n")
@@ -715,7 +713,7 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
                     }
                 } catch let error {
                     await MainActor.run {
-                        showError(getErrorAlert(error, "Error deleting connection"))
+                        showErrorAlert(error, NSLocalizedString("Error deleting connection", comment: ""))
                     }
                 }
             }
@@ -725,11 +723,7 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
 }
 
 func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool, showAlert: (Alert) -> Void) async -> Bool {
-    let (contact, alert) = await apiConnectContactViaAddress(incognito: incognito, contactId: contactId)
-    if let alert = alert {
-        showAlert(alert)
-        return false
-    } else if let contact = contact {
+    if let contact = await apiConnectContactViaAddress(incognito: incognito, contactId: contactId) {
         await MainActor.run {
             ChatModel.shared.updateContact(contact)
         }
@@ -757,8 +751,9 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
             await onComplete()
         } catch let error {
             await onComplete()
-            let a = getErrorAlert(error, "Error joining group")
-            AlertManager.shared.showAlertMsg(title: a.title, message: a.message)
+            await MainActor.run {
+                showErrorAlert(error, NSLocalizedString("Error joining group", comment: ""))
+            }
         }
 
         func deleteGroup() async {
@@ -773,12 +768,13 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
     }
 }
 
-func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
+func showErrorAlert(_ error: Error, _ title: String) {
+    let err = { String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: ""), responseError(error)) }
     if let r = error as? ChatError,
        let alert = getNetworkErrorAlert(r) {
-        return alert
+        showAlert(alert.title, message: alert.message ?? err())
     } else {
-        return ErrorAlert(title: title, message: "Error: \(responseError(error))")
+        showAlert(title, message: err())
     }
 }
 

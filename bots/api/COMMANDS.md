@@ -1363,28 +1363,28 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIConnectPlan
 
-Determine SimpleX link type and if the bot is already connected via this link.
+Determine SimpleX link type and if the bot is already connected via this link or name.
 
 *Network usage*: interactive.
 
 **Parameters**:
 - userId: int64
-- connectionLink: string?
-- resolveKnown: bool
+- connectTarget: string?
+- resolveMode: [PlanResolveMode](./TYPES.md#planresolvemode)
 - linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
 **Syntax**:
 
 ```
-/_connect plan <userId> <connectionLink>
+/_connect plan <userId> <connectTarget>
 ```
 
 ```javascript
-'/_connect plan ' + userId + ' ' + connectionLink // JavaScript
+'/_connect plan ' + userId + ' ' + connectTarget // JavaScript
 ```
 
 ```python
-'/_connect plan ' + str(userId) + ' ' + connectionLink # Python
+'/_connect plan ' + str(userId) + ' ' + connectTarget # Python
 ```
 
 **Responses**:
@@ -1393,6 +1393,8 @@ ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
+- otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
 ChatCmdError: Command error (only used in WebSockets API).
@@ -1455,26 +1457,26 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### Connect
 
-Connect via SimpleX link as string in the active user profile.
+Connect via SimpleX link or name as string in the active user profile.
 
 *Network usage*: interactive.
 
 **Parameters**:
 - incognito: bool
-- connLink_: string?
+- connTarget_: string?
 
 **Syntax**:
 
 ```
-/connect[ <connLink_>]
+/connect[ <connTarget_>]
 ```
 
 ```javascript
-'/connect' + (connLink_ ? ' ' + connLink_ : '') // JavaScript
+'/connect' + (connTarget_ ? ' ' + connTarget_ : '') // JavaScript
 ```
 
 ```python
-'/connect' + ((' ' + connLink_) if connLink_ is not None else '') # Python
+'/connect' + ((' ' + connTarget_) if connTarget_ is not None else '') # Python
 ```
 
 **Responses**:

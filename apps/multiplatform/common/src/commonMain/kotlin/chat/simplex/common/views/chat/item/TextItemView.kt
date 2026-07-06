@@ -338,13 +338,10 @@ fun MarkdownText (
               withAnnotation("SIMPLEX_URL") { a -> uriHandler.openVerifiedSimplexUri(a.item) }
               withAnnotation("SIMPLEX_NAME") { a ->
                 val idx = a.item.toIntOrNull()
-                val nameInfo = (idx?.let { formattedText.getOrNull(it) }?.format as? Format.SimplexName)?.nameInfo
-                val (title, msg) = if (nameInfo?.nameType == SimplexNameType.contact) {
-                  generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
-                } else {
-                  generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
-                }
-                AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
+                val nameText = idx?.let { formattedText.getOrNull(it) }?.text
+                // The name string is routed through the same connect path as a
+                // link; planAndConnect resolves it on the core (name target).
+                if (nameText != null) uriHandler.openVerifiedSimplexUri(nameText)
               }
             }
             if (hasSecrets) {
