@@ -130,9 +130,24 @@ not a directory policy, so it belongs where the comparison lives:
 - **Fixes the confirmed cause and converges** the re-approval decision: an
   identity-only difference no longer reads as a change, so `groupUpdated` is false
   and re-approval stops.
+- **Correctly scoped, not a workaround.** `publicGroupId` is *not* a field
+  `updateGroupProfile` manages — it is owned by the group INSERTs and
+  `updateRelayGroupKeys` (`Groups.hs:2293`); genuine identity/key changes flow
+  through that path, never through profile sync. So `updateGroupFromLinkData`
+  reacting to it was the defect: it compared a field it neither syncs nor should.
+  Normalizing it out aligns the comparison with exactly the columns
+  `updateGroupProfile` actually writes (and `publicGroupId` is the *only* `Eq`-field
+  it omits — so this is precisely "compare the managed fields").
 - **No data mutation.** It does *not* write `public_group_id`, so it cannot violate
-  any "immutable identity" assumption elsewhere; the stale stored value simply stops
-  driving moderation.
+  any "immutable identity" assumption elsewhere.
+- **The residual stored staleness is inert.** The directory reads its stored
+  `publicGroupId` in *only* this comparison: `generateListing`
+  (`Directory/Listing.hs:146`) names files by `listingFileName`/`promotedFileName`,
+  not `publicGroupId`; the directory does not use `Simplex.Chat.Web` /
+  `webPreviewWorker` (the per-`publicGroupId` web-file naming is a channel-owner
+  feature); and the `publicGroupId`↔entity-id validations (`Commands.hs:2190-2193`,
+  `:4315`) use the *fetched link* value, not the stored one. So leaving the stored
+  value stale changes nothing else the directory does.
 - **No store churn.** Because the redefined `profileChanged` also gates the store, an
   identity-only delta no longer triggers a pointless `updateGroupProfile` every 30 min.
 - **Moderation intact.** Any moderatable change (display name, full name, short
@@ -145,9 +160,11 @@ not a directory policy, so it belongs where the comparison lives:
 ## 7. Alternatives considered — and why not
 
 - **Persist the column** (`public_group_id = COALESCE(?, public_group_id)`, adopt the
-  link's value). Also converges, but it **mutates an "immutable" identity** on every
-  profile sync and risks assumptions elsewhere; identity repair is a bigger, riskier
-  change than simply not moderating on identity.
+  link's value). Also converges, and it *additionally* repairs the stored staleness —
+  but that staleness is inert for the directory (§6), so this fixes a separate,
+  non-reported concern. It **mutates an "immutable" identity** on every profile sync
+  (a field `updateGroupProfile` deliberately does not manage) and risks assumptions
+  in its many other callers — a bigger, riskier change for no benefit to this bug.
 - **Directory-only** (compare `gInfo` vs `g'` at `Service.hs:824` instead of
   `groupUpdated`). Works — both are stored-side, so the stale `publicGroupId` is
   equal on both and never fires — but it relies on `gInfo` being a faithful
