@@ -307,7 +307,7 @@
     "how-secure-break-in-recovery": "Sécurité après une compromission",
     "how-secure-two-factor-key-exchange": "Échange de clés à deux facteurs",
     "how-secure-post-quantum-hybrid-crypto": "Cryptographie hybride post-quantique",
-    "messengers-comparison-section-list-point-1": "Briar limite la taille des messages à 1 024 octets (arrondie à l'unité supérieure), tandis que Signal la limite à 160 octets",
+    "messengers-comparison-section-list-point-1": "Briar complète les messages à une taille arrondie à 1 024 octets, tandis que Signal les complète à 160 octets",
     "messengers-comparison-section-list-point-2": "La répudiation ne concerne pas la connexion client-serveur.",
     "messengers-comparison-section-list-point-3": "Il semblerait que l'utilisation de signatures cryptographiques compromette la possibilité de nier l'auteur (déni), mais cela doit être clarifié.",
     "messengers-comparison-section-list-point-4": "La mise en œuvre multi-appareils compromet la sécurité post-compromission de Double Ratchet",

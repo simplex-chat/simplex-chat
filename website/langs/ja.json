@@ -303,7 +303,7 @@
     "docs-dropdown-15": "認証と再ビルド",
     "index-f-droid-title": "F-Droid経由のSimpleXアプリ",
     "how-secure-forward-secrecy": "前方秘匿性",
-    "how-secure-two-factor-key-exchange": "2ファクタ認証",
+    "how-secure-two-factor-key-exchange": "2ファクタ鍵交換",
     "how-secure-post-quantum-hybrid-crypto": "ポスト量子ハイブリッド暗号",
-    "messengers-comparison-section-list-point-2": "否認防止の対象には、クライアントとサーバー間の接続は含まれません。"
+    "messengers-comparison-section-list-point-2": "否認可能性の対象には、クライアントとサーバー間の接続は含まれません。"
 }
