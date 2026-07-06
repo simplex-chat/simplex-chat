@@ -2914,4 +2914,7 @@
     <string name="button_remove_relay_question">Удалить релей?</string>
     <string name="appearance_minimize_to_tray">Свернуть в трей</string>
     <string name="copy_code">Скопировать код</string>
+    <string name="relay_bar_no_relays">Релеи отсутствуют</string>
+    <string name="no_relays_selected">Релеи не выбраны</string>
+    <string name="tray_tooltip_unread">SimplexX - %d непрочитанных сообщений</string>
 </resources>
