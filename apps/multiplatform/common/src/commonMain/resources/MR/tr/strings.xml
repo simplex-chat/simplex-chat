@@ -2701,7 +2701,7 @@
     <string name="members_can_chat_with_admins">Üyeler yöneticilerle sohbet edebilir.</string>
     <string name="alert_title_msg_error">Mesaj hatası</string>
     <string name="e2ee_info_no_e2ee"><![CDATA[Bu kanaldaki mesajlar <b>uçtan uca şifrelenmez</b>. Sohbet aktarıcıları bu mesajları görebilir.]]></string>
-    <string name="migrate">Göç</string>
+    <string name="migrate">Taşı</string>
     <string name="close_behavior_dialog_minimize">Sistem tepsisine küçült</string>
     <string name="close_behavior_dialog_title">Sistem tepsisine küçültülsün mü?</string>
     <string name="more_privacy">Daha fazla gizlilik</string>
@@ -2740,8 +2740,8 @@
     <string name="v6_5_safe_web_links_descr">- bağlantı önizlemelerini göndermeyi tercih edin.\n- etkinleştirilmişse SOCKS proxy kullanın.\n- köprü kimlik avını önleyin.\n- bağlantı izlemeyi kaldırın.</string>
     <string name="onboarding_or_show_qr_code">Ya da kare kodu şahsen veya görüntülü arama yoluyla gösterin.</string>
     <string name="onboarding_or_use_qr_code">Ya da bu kare kodu kullanın - yazdırın veya çevrimiçi gösterin.</string>
-    <string name="member_info_section_title_owner">İmparator</string>
-    <string name="channel_members_section_owners">İmparatorlar ve katkıda bulunanlar</string>
+    <string name="member_info_section_title_owner">Sahip</string>
+    <string name="channel_members_section_owners">Sahipler ve katkıda bulunanlar</string>
     <string name="v6_5_ownership">Sahiplik: kendi aktarıcılarınızı çalıştırabilirsiniz.</string>
     <string name="please_upgrade_the_app">Lütfen uygulamayı güncelleyin.</string>
     <string name="preset_relay_address">Önceden ayarlanmış aktarıcı adresi</string>
