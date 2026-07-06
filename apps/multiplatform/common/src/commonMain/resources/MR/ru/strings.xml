@@ -2912,4 +2912,6 @@
     <string name="group_member_role_observer_channel">подписчик</string>
     <string name="button_remove_relay">Удалить релей</string>
     <string name="button_remove_relay_question">Удалить релей?</string>
+    <string name="appearance_minimize_to_tray">Свернуть в трей</string>
+    <string name="copy_code">Скопировать код</string>
 </resources>
