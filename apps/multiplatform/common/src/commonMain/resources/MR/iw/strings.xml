@@ -182,7 +182,7 @@
     <string name="group_member_status_complete">חיבור הושלם</string>
     <string name="group_member_status_connecting">מתחבר</string>
     <string name="change_verb">שנה</string>
-    <string name="change_member_role_question">לשנות תפקיד בקבוצה\?</string>
+    <string name="change_member_role_question">לשנות תפקיד בקבוצה?</string>
     <string name="change_role">שנה תפקיד</string>
     <string name="info_row_connection">חיבור</string>
     <string name="chat_preferences">העדפות צ׳אט</string>

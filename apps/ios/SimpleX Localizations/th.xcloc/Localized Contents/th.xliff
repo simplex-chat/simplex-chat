@@ -1998,6 +1998,10 @@ server test step</note>
         <source>Connect faster! 🚀</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect to %@" xml:space="preserve">
+        <source>Connect to %@</source>
+        <note>new chat action</note>
+      </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
         <source>Connect to desktop</source>
         <note>No comment provided by engineer.</note>
@@ -4710,6 +4714,10 @@ More improvements are coming soon!</source>
       <trans-unit id="Join channel" xml:space="preserve">
         <source>Join channel</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Join channel %@" xml:space="preserve">
+        <source>Join channel %@</source>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>

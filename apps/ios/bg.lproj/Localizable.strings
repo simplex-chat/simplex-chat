@@ -953,9 +953,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Промяна на режима на заключване";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Промяна на ролята на члена?";
-
 /* authentication reason */
 "Change passcode" = "Промени kодa за достъп";
 
@@ -1935,7 +1932,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "грешка";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Грешка при свързване със сървъра";
 
 /* No comment provided by engineer. */
@@ -2095,6 +2092,7 @@ chat item action */
 "Error: " = "Грешка: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Грешка: %@";
@@ -2716,10 +2714,10 @@ server test error */
 "member connected" = "свързан";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
+"Role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";
