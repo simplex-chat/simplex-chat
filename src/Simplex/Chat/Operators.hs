@@ -511,7 +511,9 @@ data UserServersError
   | USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ShortLinkContact}
   deriving (Show)
 
-data UserServersWarning = USWNoChatRelays {user :: Maybe User}
+data UserServersWarning
+  = USWNoChatRelays {user :: Maybe User}
+  | USWNoNamesServers {user :: Maybe User}
   deriving (Show)
 
 validateUserServers :: UserServersClass u' => [u'] -> [(User, [UserOperatorServers])] -> ([UserServersError], [UserServersWarning])
@@ -552,15 +554,19 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         addAddress (xs, dups) x
           | any (sameShortLinkContact x) xs = (xs, x : dups)
           | otherwise = (x : xs, dups)
-    currUserWarns = noChatRelaysWarns Nothing curr
-    otherUserWarns (user, uss) = noChatRelaysWarns (Just user) uss
+    currUserWarns = noChatRelaysWarns Nothing curr <> noNamesServersWarns Nothing curr
+    otherUserWarns (user, uss) = noChatRelaysWarns (Just user) uss <> noNamesServersWarns (Just user) uss
     noChatRelaysWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
-    noChatRelaysWarns user uss
-      | noChatRelays opEnabled = [USWNoChatRelays user]
-      | otherwise = []
+    noChatRelaysWarns user uss = [USWNoChatRelays user | noChatRelays opEnabled]
       where
         noChatRelays cond = not $ any relayEnabled $ userChatRelays $ filter cond uss
         relayEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
+    noNamesServersWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
+    noNamesServersWarns user uss = [USWNoNamesServers user | noNamesServers]
+      where
+        noNamesServers = not $ any srvEnabled $ userServers SPSMP $ filter namesEnabled uss
+        srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
+        namesEnabled = maybe True (\op@ServerOperator {enabled} -> enabled && names (operatorRoles SPSMP op)) . operator'
     userChatRelays :: UserServersClass u => [u] -> [AUserChatRelay]
     userChatRelays = map aUserChatRelay' . concatMap chatRelays'
     opEnabled :: UserServersClass u => u -> Bool

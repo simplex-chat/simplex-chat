@@ -52,6 +52,7 @@ module Directory.Store
     basicJoinFilter,
     moderateJoinFilter,
     strongJoinFilter,
+    newGroupJoinFilter,
     groupDBError,
     logGCreate,
     logGDelete,
@@ -160,6 +161,16 @@ strongJoinFilter :: DirectoryMemberAcceptance
 strongJoinFilter =
   DirectoryMemberAcceptance
     { rejectNames = Just PCAll,
+      passCaptcha = Just PCAll,
+      makeObserver = Nothing
+    }
+
+-- Default applied to newly registered groups: a captcha challenge is required
+-- from every joining member unless the owner changes it with /filter.
+newGroupJoinFilter :: DirectoryMemberAcceptance
+newGroupJoinFilter =
+  DirectoryMemberAcceptance
+    { rejectNames = Nothing,
       passCaptcha = Just PCAll,
       makeObserver = Nothing
     }

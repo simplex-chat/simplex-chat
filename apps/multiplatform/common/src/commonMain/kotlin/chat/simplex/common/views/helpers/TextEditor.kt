@@ -31,6 +31,7 @@ fun TextEditor(
   modifier: Modifier,
   placeholder: String? = null,
   contentPadding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
+  shape: Shape = RoundedCornerShape(14.dp),
   isValid: (String) -> Boolean = { true },
   focusRequester: FocusRequester? = null,
   enabled: Boolean = true
@@ -53,7 +54,7 @@ fun TextEditor(
       .fillMaxWidth()
       .padding(contentPadding)
       .heightIn(min = 52.dp)
-      .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(14.dp)),
+      .border(border = BorderStroke(1.dp, strokeColor), shape = shape),
     contentAlignment = Alignment.Center,
   ) {
     val textFieldModifier = modifier

@@ -46,10 +46,12 @@ module Simplex.Chat.Store.Direct
     deleteContactWithoutGroups,
     getDeletedContacts,
     getContactByName,
+    getContactToConnect,
     getContact,
     getContactViaShortLinkToConnect,
     getContactIdByName,
     updateContactProfile,
+    setContactDomainVerified,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -98,6 +100,7 @@ where
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Data.Bifunctor (first)
 import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -108,16 +111,18 @@ import Data.Type.Equality
 import Simplex.Chat.Badges (badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport, pattern PQSupportOff)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
+import Simplex.Messaging.Util ((<$$>))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -321,6 +326,7 @@ getContactByConnReqHash db cxt user@User {userId} cReqHash1 cReqHash2 = do
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
             ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+            cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
             c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -397,13 +403,13 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
-createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId = do
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe Bool -> ExceptT StoreError IO Contact
+createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId verified_ = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db cxt user p ctUserPreferences prepared "" currentTs
-  getContact db cxt user contactId
+  ct <- getContact db cxt user =<< createContact_ db cxt user p ctUserPreferences prepared "" currentTs
+  liftIO $ maybe (pure ct) (setContactDomainVerified db user ct) verified_
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
@@ -559,21 +565,40 @@ updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Profile 
 updateContactProfile db cxt user@User {userId} c p' = do
   currentTs <- liftIO getCurrentTime
   badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) lp p'
-  let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified
+  let nameVerified = if claimChanged then Nothing else prevVerification
+      profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
   updateContactProfile' currentTs badgeVerified profile
   where
-    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
-    Profile {displayName = newName, preferences} = p'
+    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, contactDomain = prevClaim, contactDomainVerified = prevVerification}, userPreferences} = c
+    Profile {displayName = newName, contactDomain, preferences} = p'
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
+    claimChanged = (domain <$> prevClaim) /= (domain <$> contactDomain)
+    p'' = (p' :: Profile) {contactDomain = (\d -> d {proof = if claimChanged then Nothing else proof =<< prevClaim}) <$> contactDomain}
+    clearVerificationIfClaimChanged =
+      when claimChanged $
+        DB.execute db "UPDATE contact_profiles SET contact_domain_verified = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
     updateContactProfile' currentTs badgeVerified profile
       | displayName == newName = do
-          liftIO $ updateContactProfile_' db userId profileId p' badgeVerified currentTs
+          liftIO $ updateContactProfile_' db userId profileId p'' badgeVerified currentTs
+          liftIO clearVerificationIfClaimChanged
           pure c {profile, mergedPreferences}
       | otherwise =
           ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-            updateContactProfile_' db userId profileId p' badgeVerified currentTs
+            updateContactProfile_' db userId profileId p'' badgeVerified currentTs
             updateContactLDN_ db user contactId localDisplayName ldn currentTs
+            clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
+
+setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> IO Contact
+setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} verified = do
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles SET contact_domain_verified = ?
+      WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
+    |]
+    (BI verified, userId, contactId)
+  pure (ct {profile = p {contactDomainVerified = Just verified}} :: Contact)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do
@@ -706,16 +731,17 @@ updateContactProfile_ db userId profileId profile badgeVerified = do
   updateContactProfile_' db userId profileId profile badgeVerified currentTs
 
 updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
-updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} badgeVerified updatedAt =
+updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain, preferences, peerType, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
       SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?,
-          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
+          contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. contactDomainToRow contactDomain :. (userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
 updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
@@ -724,16 +750,17 @@ updateMemberContactProfileReset_ db userId profileId profile badgeVerified = do
   updateMemberContactProfileReset_' db userId profileId profile badgeVerified currentTs
 
 updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
-updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt =
+updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactDomain, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
       SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?,
-          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
+          contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. contactDomainToRow contactDomain :. (userId, profileId))
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
 updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
@@ -742,16 +769,17 @@ updateMemberContactProfile_ db userId profileId profile badgeVerified = do
   updateMemberContactProfile_' db userId profileId profile badgeVerified currentTs
 
 updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
-updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt =
+updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactDomain, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
       SET display_name = ?, full_name = ?, short_descr = ?, image = ?, updated_at = ?,
-          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
+          contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. contactDomainToRow contactDomain :. (userId, profileId))
 
 updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do
@@ -769,6 +797,22 @@ getContactByName :: DB.Connection -> StoreCxt -> User -> ContactName -> ExceptT 
 getContactByName db cxt user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
   getContact db cxt user cId
+
+getContactToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (CreatedLinkContact, Contact))
+getContactToConnect db cxt user@User {userId} = \case
+  CTLink sl -> first (`CCLink` Just sl) <$$> getContactViaShortLinkToConnect db cxt user sl
+  CTName ni ->
+    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, nameDomain ni)) >>= \case
+      Just (ctId :: Int64, Just (ACR cMode cReq), Just (sLnk :: ShortLinkContact)) | Just Refl <- testEquality cMode SCMContact ->
+        Just . (CCLink cReq (Just sLnk),) <$> getContact db cxt user ctId
+      _ -> pure Nothing
+  where
+    byNameQuery =
+      [sql|
+        SELECT ct.contact_id, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verified = 1 AND ct.deleted = 0
+      |]
 
 getUserContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
 getUserContacts db cxt user@User {userId} = do
@@ -809,7 +853,8 @@ contactRequestQuery =
       cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version,
-      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx
+      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
+      p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
     FROM contact_requests cr
     JOIN contact_profiles p USING (contact_profile_id)
   |]
@@ -930,6 +975,7 @@ getContact_ db cxt user@User {userId} contactId deleted = do
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
           ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+          cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
