@@ -12088,16 +12088,16 @@ testChannelMemberMessageSign ps =
 
             -- member sends a signed message
             cath ##> "/_send #1 sign=on text signed hello"
-            cath <# "#team signed hello"
-            bob <# "#team cath> signed hello"
+            cath <# "#team signed hello (signed)"
+            bob <# "#team cath> signed hello (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> signed hello [>>]",
+              [ alice <# "#team cath> signed hello (signed) [>>]",
                 do dan <### [EndsWith "updated to cath"]
                    dan <## "#team: bob introduced cath (Catherine) in the channel"
-                   dan <# "#team cath> signed hello [>>]",
+                   dan <# "#team cath> signed hello (signed) [>>]",
                 do eve <### [EndsWith "updated to cath"]
                    eve <## "#team: bob introduced cath (Catherine) in the channel"
-                   eve <# "#team cath> signed hello [>>]"
+                   eve <# "#team cath> signed hello (signed) [>>]"
               ]
             -- sender and recipient hold it signed
             cath #$> ("/_get chat #1 count=100 search=signed hello", chat, [(1, "signed hello (signed)")])
@@ -12106,12 +12106,12 @@ testChannelMemberMessageSign ps =
             -- editing a signed item reuses the signature
             cathMsgId <- lastItemId cath
             cath ##> ("/_update item #1 " <> cathMsgId <> " text signed hello edited")
-            cath <# "#team [edited] signed hello edited"
-            bob <# "#team cath> [edited] signed hello edited"
+            cath <# "#team [edited] signed hello edited (signed)"
+            bob <# "#team cath> [edited] signed hello edited (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> [edited] signed hello edited",
-                dan <# "#team cath> [edited] signed hello edited",
-                eve <# "#team cath> [edited] signed hello edited"
+              [ alice <# "#team cath> [edited] signed hello edited (signed)",
+                dan <# "#team cath> [edited] signed hello edited (signed)",
+                eve <# "#team cath> [edited] signed hello edited (signed)"
               ]
             cath #$> ("/_get chat #1 count=100 search=signed hello edited", chat, [(1, "signed hello edited (signed)")])
             dan #$> ("/_get chat #1 count=100 search=signed hello edited", chat, [(0, "signed hello edited (signed)")])
@@ -12139,16 +12139,16 @@ testChannelMemberUpdateEnforcement ps =
 
             -- cath posts a signed message; dan holds it verified
             cath ##> "/_send #1 sign=on text secret"
-            cath <# "#team secret"
-            bob <# "#team cath> secret"
+            cath <# "#team secret (signed)"
+            bob <# "#team cath> secret (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> secret [>>]",
+              [ alice <# "#team cath> secret (signed) [>>]",
                 do dan <### [EndsWith "updated to cath"]
                    dan <## "#team: bob introduced cath (Catherine) in the channel"
-                   dan <# "#team cath> secret [>>]",
+                   dan <# "#team cath> secret (signed) [>>]",
                 do eve <### [EndsWith "updated to cath"]
                    eve <## "#team: bob introduced cath (Catherine) in the channel"
-                   eve <# "#team cath> secret [>>]"
+                   eve <# "#team cath> secret (signed) [>>]"
               ]
             dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
 
@@ -12174,12 +12174,12 @@ testChannelMemberUpdateEnforcement ps =
             -- a legitimate signed edit by cath is accepted
             cathMsgId <- lastItemId cath
             cath ##> ("/_update item #1 " <> cathMsgId <> " text secret edited")
-            cath <# "#team [edited] secret edited"
-            bob <# "#team cath> [edited] secret edited"
+            cath <# "#team [edited] secret edited (signed)"
+            bob <# "#team cath> [edited] secret edited (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> [edited] secret edited",
-                dan <# "#team cath> [edited] secret edited",
-                eve <# "#team cath> [edited] secret edited"
+              [ alice <# "#team cath> [edited] secret edited (signed)",
+                dan <# "#team cath> [edited] secret edited (signed)",
+                eve <# "#team cath> [edited] secret edited (signed)"
               ]
             dan #$> ("/_get chat #1 count=100 search=secret edited", chat, [(0, "secret edited (signed)")])
             dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
@@ -12221,9 +12221,9 @@ testChannelAsGroupSign ps =
 
             -- owner posts as the channel, signed: verifiable AND displayed as the channel
             alice ##> "/_send #1(as_group=on) sign=on text signed channel post"
-            alice <# "#team signed channel post"
-            bob <# "#team> signed channel post"
-            [cath, dan, eve] *<# "#team> signed channel post [>>]"
+            alice <# "#team signed channel post (signed)"
+            bob <# "#team> signed channel post (signed)"
+            [cath, dan, eve] *<# "#team> signed channel post (signed) [>>]"
             alice #$> ("/_get chat #1 count=100 search=signed channel post", chat, [(1, "signed channel post (signed)")])
             cath #$> ("/_get chat #1 count=100 search=signed channel post", chat, [(0, "signed channel post (signed)")])
 
@@ -12305,27 +12305,27 @@ testChannelMemberSelfDeleteSign ps =
 
             -- member sends a signed message; dan holds it verified
             cath ##> "/_send #1 sign=on text signed hello"
-            cath <# "#team signed hello"
-            bob <# "#team cath> signed hello"
+            cath <# "#team signed hello (signed)"
+            bob <# "#team cath> signed hello (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> signed hello [>>]",
+              [ alice <# "#team cath> signed hello (signed) [>>]",
                 do dan <### [EndsWith "updated to cath"]
                    dan <## "#team: bob introduced cath (Catherine) in the channel"
-                   dan <# "#team cath> signed hello [>>]",
+                   dan <# "#team cath> signed hello (signed) [>>]",
                 do eve <### [EndsWith "updated to cath"]
                    eve <## "#team: bob introduced cath (Catherine) in the channel"
-                   eve <# "#team cath> signed hello [>>]"
+                   eve <# "#team cath> signed hello (signed) [>>]"
               ]
             dan #$> ("/_get chat #1 count=100 search=signed hello", chat, [(0, "signed hello (signed)")])
 
             -- self-delete of the signed item: signed delete, dan (holding it signed) accepts
             cathMsgId <- lastItemId cath
             cath #$> ("/_delete item #1 " <> cathMsgId <> " broadcast", id, "message marked deleted")
-            bob <# "#team cath> [marked deleted] signed hello"
+            bob <# "#team cath> [marked deleted] signed hello (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> [marked deleted] signed hello",
-                dan <# "#team cath> [marked deleted] signed hello",
-                eve <# "#team cath> [marked deleted] signed hello"
+              [ alice <# "#team cath> [marked deleted] signed hello (signed)",
+                dan <# "#team cath> [marked deleted] signed hello (signed)",
+                eve <# "#team cath> [marked deleted] signed hello (signed)"
               ]
 
             -- self-delete of an unsigned item: unsigned delete, accepted (no enforcement)
@@ -12357,16 +12357,16 @@ testChannelMemberDeleteEnforcement ps =
 
             -- cath posts a signed message; dan holds it verified
             cath ##> "/_send #1 sign=on text secret"
-            cath <# "#team secret"
-            bob <# "#team cath> secret"
+            cath <# "#team secret (signed)"
+            bob <# "#team cath> secret (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> secret [>>]",
+              [ alice <# "#team cath> secret (signed) [>>]",
                 do dan <### [EndsWith "updated to cath"]
                    dan <## "#team: bob introduced cath (Catherine) in the channel"
-                   dan <# "#team cath> secret [>>]",
+                   dan <# "#team cath> secret (signed) [>>]",
                 do eve <### [EndsWith "updated to cath"]
                    eve <## "#team: bob introduced cath (Catherine) in the channel"
-                   eve <# "#team cath> secret [>>]"
+                   eve <# "#team cath> secret (signed) [>>]"
               ]
             dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
 
@@ -12389,11 +12389,11 @@ testChannelMemberDeleteEnforcement ps =
             -- a legitimate signed self-delete by cath is accepted
             cathMsgId <- lastItemId cath
             cath #$> ("/_delete item #1 " <> cathMsgId <> " broadcast", id, "message marked deleted")
-            bob <# "#team cath> [marked deleted] secret"
+            bob <# "#team cath> [marked deleted] secret (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> [marked deleted] secret",
-                dan <# "#team cath> [marked deleted] secret",
-                eve <# "#team cath> [marked deleted] secret"
+              [ alice <# "#team cath> [marked deleted] secret (signed)",
+                dan <# "#team cath> [marked deleted] secret (signed)",
+                eve <# "#team cath> [marked deleted] secret (signed)"
               ]
   where
     memberIdByName :: TestCC -> T.Text -> IO MemberId
@@ -12434,16 +12434,16 @@ testChannelModerationDeleteSign ps =
 
             -- cath posts a signed message; dan holds it verified
             cath ##> "/_send #1 sign=on text moderated post"
-            cath <# "#team moderated post"
-            bob <# "#team cath> moderated post"
+            cath <# "#team moderated post (signed)"
+            bob <# "#team cath> moderated post (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> moderated post [>>]",
+              [ alice <# "#team cath> moderated post (signed) [>>]",
                 do dan <### [EndsWith "updated to cath"]
                    dan <## "#team: bob introduced cath (Catherine) in the channel"
-                   dan <# "#team cath> moderated post [>>]",
+                   dan <# "#team cath> moderated post (signed) [>>]",
                 do eve <### [EndsWith "updated to cath"]
                    eve <## "#team: bob introduced cath (Catherine) in the channel"
-                   eve <# "#team cath> moderated post [>>]"
+                   eve <# "#team cath> moderated post (signed) [>>]"
               ]
             dan #$> ("/_get chat #1 count=100 search=moderated post", chat, [(0, "moderated post (signed)")])
 
@@ -12453,10 +12453,10 @@ testChannelModerationDeleteSign ps =
             alice ##> ("/_delete member item #1 " <> catItemIdOnAlice)
             alice <## "message marked deleted by you"
             concurrentlyN_
-              [ bob <# "#team cath> [marked deleted by alice] moderated post",
-                cath <# "#team cath> [marked deleted by alice] moderated post",
-                dan <# "#team cath> [marked deleted by alice] moderated post",
-                eve <# "#team cath> [marked deleted by alice] moderated post"
+              [ bob <# "#team cath> [marked deleted by alice] moderated post (signed)",
+                cath <# "#team cath> [marked deleted by alice] moderated post (signed)",
+                dan <# "#team cath> [marked deleted by alice] moderated post (signed)",
+                eve <# "#team cath> [marked deleted by alice] moderated post (signed)"
               ]
   where
     itemIdByText :: TestCC -> T.Text -> IO String

@@ -2270,7 +2270,7 @@ viewReceivedUpdatedMessage :: StyledString -> [StyledString] -> MsgContent -> Cu
 viewReceivedUpdatedMessage = viewReceivedMessage_ True
 
 viewReceivedMessage_ :: Bool -> StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewReceivedMessage_ updated from context mc ts tz meta = receivedWithTime_ ts tz from context meta (ttyMsgContent mc) updated
+viewReceivedMessage_ updated from context mc ts tz meta@CIMeta {msgSigned} = receivedWithTime_ ts tz from context meta (appendLast (sigStatusStr msgSigned) $ ttyMsgContent mc) updated
 
 viewReceivedReaction :: StyledString -> [StyledString] -> StyledString -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
 viewReceivedReaction from styledMsg reactionText ts tz reactionTs =
@@ -2308,7 +2308,7 @@ recent now tz time = do
     || (localNow < currentDay12 && localTime >= previousDay18 && localTimeDay < localNowDay)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewSentMessage to context mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts tz (prependFirst to $ context <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
+viewSentMessage to context mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive, msgSigned} = sentWithTime_ ts tz (prependFirst to $ context <> prependFirst (indent <> live) (appendLast (sigStatusStr msgSigned) $ ttyMsgContent mc)) meta
   where
     indent = if null context then "" else "      "
     live
@@ -2364,6 +2364,10 @@ ttyMsgContent = \case
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
 prependFirst s (s' : ss) = (s <> s') : ss
+
+appendLast :: StyledString -> [StyledString] -> [StyledString]
+appendLast _ [] = []
+appendLast s ss = init ss <> [last ss <> s]
 
 msgPlain :: Text -> [StyledString]
 msgPlain = map (styleMarkdownList . parseMarkdownList) . T.lines
