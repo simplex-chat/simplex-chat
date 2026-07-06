@@ -2280,17 +2280,17 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
-              | isSender m' -> requireVerifiedMutation (CDGroupRcv gInfo scopeInfo m') itemSigned $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
+              | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemSigned $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
-              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireVerifiedMutation (CDChannelRcv gInfo scopeInfo) itemSigned $ updateCI True ci scopeInfo oldMC itemLive Nothing
+              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireVerifiedEdit (CDChannelRcv gInfo scopeInfo) itemSigned $ updateCI True ci scopeInfo oldMC itemLive Nothing
               | otherwise -> messageError "x.msg.update: member attempted to update channel message" $> Nothing
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
-            -- only a verified mutation may alter a verified item; reject otherwise (fail-closed)
-            requireVerifiedMutation :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgSigStatus -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-            requireVerifiedMutation cd itemSigned action
+            -- only a verified edit may alter a verified item; reject otherwise (fail-closed)
+            requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgSigStatus -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+            requireVerifiedEdit cd itemSigned action
               | itemSigned == Just MSSVerified && msgSigned /= Just MSSVerified = do
                   createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
                   pure Nothing

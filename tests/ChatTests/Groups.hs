@@ -10090,17 +10090,6 @@ testChannelRelayCannotForgePrivilegedMember ps =
       case rows of
         [Only mid] -> pure (MemberId mid)
         _ -> fail "expected exactly one owner member on the relay"
-    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
-    relayConnIdToMember cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
-          (Only name) ::
-          IO [Only ByteString]
-      case rows of
-        (Only connId : _) -> pure connId
-        _ -> fail $ "no relay connection to member " <> T.unpack name
     forgedMemberRows :: TestCC -> T.Text -> IO [(T.Text, Maybe ByteString)]
     forgedMemberRows cc name =
       withCCTransaction cc $ \db ->
@@ -12076,6 +12065,34 @@ testChannelMemberMessageDelete ps =
                 eve <# "#team cath> [marked deleted] hello"
               ]
 
+memberIdByName :: TestCC -> T.Text -> IO MemberId
+memberIdByName cc name = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+  case rows of
+    (Only mid : _) -> pure (MemberId mid)
+    _ -> fail $ "no member " <> T.unpack name
+
+relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
+relayConnIdToMember cc name = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query
+      db
+      "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+      (Only name) ::
+      IO [Only ByteString]
+  case rows of
+    (Only connId : _) -> pure connId
+    _ -> fail $ "no relay connection to member " <> T.unpack name
+
+itemSharedMsgId :: TestCC -> IO SharedMsgId
+itemSharedMsgId cc = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only ByteString]
+  case rows of
+    (Only smid : _) -> pure (SharedMsgId smid)
+    _ -> fail "no shared_msg_id"
+
 testChannelMemberMessageSign :: HasCallStack => TestParams -> IO ()
 testChannelMemberMessageSign ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -12183,32 +12200,6 @@ testChannelMemberUpdateEnforcement ps =
               ]
             dan #$> ("/_get chat #1 count=100 search=secret edited", chat, [(0, "secret edited (signed)")])
             dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
-  where
-    memberIdByName :: TestCC -> T.Text -> IO MemberId
-    memberIdByName cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
-      case rows of
-        (Only mid : _) -> pure (MemberId mid)
-        _ -> fail $ "no member " <> T.unpack name
-    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
-    relayConnIdToMember cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
-          (Only name) ::
-          IO [Only ByteString]
-      case rows of
-        (Only connId : _) -> pure connId
-        _ -> fail $ "no relay connection to member " <> T.unpack name
-    itemSharedMsgId :: TestCC -> IO SharedMsgId
-    itemSharedMsgId cc = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query_ db "SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only ByteString]
-      case rows of
-        (Only smid : _) -> pure (SharedMsgId smid)
-        _ -> fail "no shared_msg_id"
 
 testChannelAsGroupSign :: HasCallStack => TestParams -> IO ()
 testChannelAsGroupSign ps =
@@ -12273,25 +12264,6 @@ testChannelAsGroupSpoof ps =
             -- not rendered as the channel: dan still holds only the legitimate member message
             threadDelay 1000000
             dan #$> ("/_get chat #1 count=100 search=hi from cath", chat, [(0, "hi from cath")])
-  where
-    memberIdByName :: TestCC -> T.Text -> IO MemberId
-    memberIdByName cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
-      case rows of
-        (Only mid : _) -> pure (MemberId mid)
-        _ -> fail $ "no member " <> T.unpack name
-    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
-    relayConnIdToMember cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
-          (Only name) ::
-          IO [Only ByteString]
-      case rows of
-        (Only connId : _) -> pure connId
-        _ -> fail $ "no relay connection to member " <> T.unpack name
 
 testChannelMemberSelfDeleteSign :: HasCallStack => TestParams -> IO ()
 testChannelMemberSelfDeleteSign ps =
@@ -12395,32 +12367,6 @@ testChannelMemberDeleteEnforcement ps =
                 dan <# "#team cath> [marked deleted] secret (signed)",
                 eve <# "#team cath> [marked deleted] secret (signed)"
               ]
-  where
-    memberIdByName :: TestCC -> T.Text -> IO MemberId
-    memberIdByName cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
-      case rows of
-        (Only mid : _) -> pure (MemberId mid)
-        _ -> fail $ "no member " <> T.unpack name
-    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
-    relayConnIdToMember cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
-          (Only name) ::
-          IO [Only ByteString]
-      case rows of
-        (Only connId : _) -> pure connId
-        _ -> fail $ "no relay connection to member " <> T.unpack name
-    itemSharedMsgId :: TestCC -> IO SharedMsgId
-    itemSharedMsgId cc = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query_ db "SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only ByteString]
-      case rows of
-        (Only smid : _) -> pure (SharedMsgId smid)
-        _ -> fail "no shared_msg_id"
 
 testChannelModerationDeleteSign :: HasCallStack => TestParams -> IO ()
 testChannelModerationDeleteSign ps =
