@@ -78,32 +78,39 @@ pre-existing `publicGroupId` staleness.
 
 `publicGroupId` is immutable cryptographic identity (`sha256(genesis root key)`,
 `Types.hs:858`), not moderatable content. `updateGroupFromLinkData` should not treat
-an identity difference as a profile change. Compare with `publicGroupId` normalized
-out, and use that for **both** the store guard **and** the returned flag (so there is
-neither re-approval nor per-cycle store churn):
+an identity difference as a profile change.
+
+`profileChanged` is a local `where`-binding already used in all three relevant
+sites — the guard, the `if … then updateGroupProfile`, and the returned flag — so
+**redefining only its definition** fixes all three at once with **no body edits**
+(so there is neither re-approval nor per-cycle store churn). The entire change:
 
 ```haskell
--- src/Simplex/Chat/Library/Internal.hs, updateGroupFromLinkData:
-  | contentChanged || countChanged || verifyChanged = do
-      cxt <- chatStoreCxt
-      withStore $ \db -> do
-        g   <- if contentChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
-        g'  <- …count…
-        g'' <- if verifyChanged then …setGroupDomainVerified… else pure g'
-        pure (g'', contentChanged)
-  | otherwise = pure (gInfo, False)
-  where
+-- src/Simplex/Chat/Library/Internal.hs, updateGroupFromLinkData `where` block:
+    -- was: profileChanged = p /= groupProfile
     -- publicGroupId is immutable identity, not content; updateGroupProfile never
-    -- re-syncs it, so a stale stored value would make a plain (/=) re-trigger
-    -- approval forever. Compare content with it normalized out.
-    contentChanged = clearId p /= clearId groupProfile
+    -- re-syncs it, so a stale stored value makes a plain (/=) re-trigger approval
+    -- forever. Compare content with it normalized out (mirrors sameGroupProfileInfo,
+    -- Internal.hs:2986, which normalizes groupPreferences the same way).
+    profileChanged = clearId p /= clearId groupProfile
     clearId gp@GroupProfile {publicGroup} =
-      gp {publicGroup = (\pg -> pg {publicGroupId = mempty}) <$> publicGroup}
-    …
+      gp {publicGroup = (\pg -> pg {publicGroupId = B64UrlByteString ""}) <$> publicGroup}
 ```
 
-(`profileChanged = p /= groupProfile` is removed; `countChanged`/`verifyChanged`
-unchanged.)
+The `| profileChanged || countChanged || verifyChanged` guard, the
+`if profileChanged then updateGroupProfile …`, and the `pure (g'', profileChanged)`
+return are all **unchanged** — they keep referencing `profileChanged`, whose meaning
+is now "content changed, ignoring identity". `countChanged`/`verifyChanged`
+unchanged. Net diff: one redefined `where` line + one helper line, zero body edits.
+
+Notes:
+- `B64UrlByteString` has no `Monoid` instance (`Types.hs:161-163`), so use
+  `B64UrlByteString ""`, **not** `mempty`. The value is only used inside the local
+  `/=` and discarded — nothing is written.
+- **Do not** reuse/extend `sameGroupProfileInfo` for this: it also drops
+  `groupPreferences`, which would change a shared helper (its other caller is
+  `Commands.hs:3939`) and silently stop the directory re-approving on preference
+  changes — scope creep beyond this bug. Normalize `publicGroupId` only.
 
 ## 5. Why core, not the directory
 
@@ -126,8 +133,8 @@ not a directory policy, so it belongs where the comparison lives:
 - **No data mutation.** It does *not* write `public_group_id`, so it cannot violate
   any "immutable identity" assumption elsewhere; the stale stored value simply stops
   driving moderation.
-- **No store churn.** Because `contentChanged` also gates the store, an identity-only
-  delta no longer triggers a pointless `updateGroupProfile` every 30 min.
+- **No store churn.** Because the redefined `profileChanged` also gates the store, an
+  identity-only delta no longer triggers a pointless `updateGroupProfile` every 30 min.
 - **Moderation intact.** Any moderatable change (display name, full name, short
   descr, description, image, prefs, admission, or the domain claim) still differs
   under `clearId` and still re-approves. Only immutable identity is excluded —
@@ -160,8 +167,9 @@ not a directory policy, so it belongs where the comparison lives:
 
 ## 9. Files touched
 
-- `src/Simplex/Chat/Library/Internal.hs` — `updateGroupFromLinkData`: replace
-  `profileChanged` (store guard + returned flag) with a `publicGroupId`-insensitive
-  `contentChanged`. No store, schema, wire, or API change.
+- `src/Simplex/Chat/Library/Internal.hs` — `updateGroupFromLinkData`: redefine the
+  local `profileChanged` `where`-binding to normalize `publicGroupId` out before
+  comparing (one redefined line + one `clearId` helper line; no body edits). No
+  store, schema, wire, or API change.
 - `tests/Bots/DirectoryTests.hs` — add the identity-difference no-reapproval
   regression test (+ display-name positive control).
