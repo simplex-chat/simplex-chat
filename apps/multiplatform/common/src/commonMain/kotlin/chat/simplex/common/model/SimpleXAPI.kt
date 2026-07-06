@@ -1517,10 +1517,12 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): Pair<CreatedConnLink, ConnectionPlan>? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): ConnectionPlanResult? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
-    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, linkOwnerSig), inProgress = inProgress)
-    if (r is API.Result && r.res is CR.CRConnectionPlan) return r.res.connLink to r.res.connectionPlan
+    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, resolveMode, linkOwnerSig), inProgress = inProgress)
+    if (r is API.Result && r.res is CR.CRConnectionPlan) return ConnectionPlanResult(r.res.connLink, r.res.planSimplexName, r.res.otherSimplexName, r.res.connectionPlan)
+    // a PRMNever (typing) search that matches nothing locally is not an error to surface
+    if (r is API.Error && r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.NotResolvedLocally) return null
     if (inProgress.value && r != null) apiConnectResponseAlert(r)
     return null
   }
@@ -3861,7 +3863,7 @@ sealed class CC {
   class APIAddContact(val userId: Long, val incognito: Boolean): CC()
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
-  class APIConnectPlan(val userId: Long, val connLink: String, val linkOwnerSig: LinkOwnerSig? = null): CC()
+  class APIConnectPlan(val userId: Long, val connLink: String, val resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, val linkOwnerSig: LinkOwnerSig? = null): CC()
   class APIPrepareContact(val userId: Long, val connLink: CreatedConnLink, val contactShortLinkData: ContactShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
   class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val directLink: Boolean, val groupShortLinkData: GroupShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
   class APIChangePreparedContactUser(val contactId: Long, val newUserId: Long): CC()
@@ -4070,8 +4072,9 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is ApiChangeConnectionUser -> "/_set conn user :$connId $userId"
     is APIConnectPlan -> {
+      val resolveStr = if (resolveMode != PlanResolveMode.PRMUnknown) " resolve=${resolveMode.cmdString}" else ""
       val sigStr = if (linkOwnerSig != null) " sig=${json.encodeToString(linkOwnerSig)}" else ""
-      "/_connect plan $userId $connLink$sigStr"
+      "/_connect plan $userId $connLink$resolveStr$sigStr"
     }
     is APIPrepareContact -> "/_prepare contact $userId ${connLink.cmdString}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(contactShortLinkData)}"
     is APIPrepareGroup -> "/_prepare group $userId ${connLink.cmdString} direct=${onOff(directLink)}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(groupShortLinkData)}"
@@ -6513,7 +6516,7 @@ sealed class CR {
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connLinkInvitation: CreatedConnLink, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
-  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
   @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()
@@ -7103,6 +7106,23 @@ sealed class SimplexDomainError {
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
 }
 
+data class ConnectionPlanResult(
+  val connLink: CreatedConnLink,
+  val planSimplexName: SimplexNameInfo?,
+  val otherSimplexName: SimplexNameInfo?,
+  val connectionPlan: ConnectionPlan,
+)
+
+// APIConnectPlan resolution scope; PRMNever is local-store-only (no network), used for per-keystroke name search
+enum class PlanResolveMode {
+  PRMAllGroups, PRMUnknown, PRMNever;
+  val cmdString: String get() = when (this) {
+    PRMAllGroups -> "allGroups"
+    PRMUnknown -> "unknown"
+    PRMNever -> "never"
+  }
+}
+
 @Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
@@ -7121,7 +7141,7 @@ sealed class InvitationLinkPlan {
 
 @Serializable
 sealed class ContactAddressPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val verifiedDomain: SimplexDomain? = null): ContactAddressPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): ContactAddressPlan()
   @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
@@ -7131,7 +7151,7 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val verifiedDomain: SimplexDomain? = null): GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
@@ -7441,6 +7461,7 @@ sealed class ChatErrorType {
       is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
       is SimplexDomainNotReady -> "simplexDomainNotReady"
+      is NotResolvedLocally -> "notResolvedLocally"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
@@ -7524,6 +7545,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("simplexDomainNotReady") class SimplexDomainNotReady(val simplexDomain: SimplexDomain, val simplexDomainError: SimplexDomainError): ChatErrorType()
+  @Serializable @SerialName("notResolvedLocally") object NotResolvedLocally: ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()

@@ -1026,13 +1026,17 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-func apiConnectPlan(connLink: String, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> (CreatedConnLink, ConnectionPlan)? {
+func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ConnectionPlanResult? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return nil
     }
-    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink, linkOwnerSig: linkOwnerSig), inProgress: inProgress)
-    if case let .result(.connectionPlan(_, connLink, connPlan)) = r { return (connLink, connPlan) }
+    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink, resolveMode: resolveMode, linkOwnerSig: linkOwnerSig), inProgress: inProgress)
+    if case let .result(.connectionPlan(_, connLink, planSimplexName, otherSimplexName, connPlan)) = r {
+        return ConnectionPlanResult(connLink: connLink, planSimplexName: planSimplexName, otherSimplexName: otherSimplexName, connectionPlan: connPlan)
+    }
+    // a .never (typing) search that matches nothing locally is not an error to surface
+    if case .error(.error(.notResolvedLocally)) = r { return nil }
     if let r { await apiConnectResponseAlert(r) }
     return nil
 }

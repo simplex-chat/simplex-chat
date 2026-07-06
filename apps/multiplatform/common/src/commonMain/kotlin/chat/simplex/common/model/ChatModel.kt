@@ -4894,7 +4894,13 @@ enum class SimplexLinkType(val linkType: String) {
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
   val nameDomain: SimplexDomain
-)
+) {
+  // mirrors backend shortNameInfoStr: "#name" for a simplex public group, else prefix + full domain
+  val shortStr: String get() = when {
+    nameType == SimplexNameType.publicGroup && nameDomain.nameTLD == SimplexTLD.simplex && nameDomain.subDomain.isEmpty() -> "#" + nameDomain.domain
+    else -> (if (nameType == SimplexNameType.publicGroup) "#" else "@") + nameDomain.fullDomainName
+  }
+}
 
 @Serializable
 data class SimplexDomain(

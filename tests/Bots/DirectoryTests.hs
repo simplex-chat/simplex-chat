@@ -449,9 +449,9 @@ testJoinGroup ps =
           cath <## ""
           cath <## "Send captcha text to join the group privacy."
           captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory_1'> " . dropTime <$> getTermLine cath
-          cath #> ("#privacy (support) " <> captcha)
           cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
           cath <## "use @'SimpleX Directory' <message> to send messages"
+          cath #> ("#privacy (support) " <> captcha)
           cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
           cath <## "      Correct, you joined the group privacy"
           cath <## "#privacy: you joined the group"
@@ -1277,6 +1277,8 @@ testKnocking ps =
         cath <## "#privacy: you joined the group, connecting to group moderators for admission to group"
         cath <## "#privacy: 'SimpleX Directory' accepted you to the group, pending review"
         bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting and pending review...), use /_accept member #1 3 <role> to accept member"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: new member cath is connected and pending review, use /_accept member #1 3 <role> to accept member"
 
 testCaptchaByDefault :: HasCallStack => TestParams -> IO ()
 testCaptchaByDefault ps =
