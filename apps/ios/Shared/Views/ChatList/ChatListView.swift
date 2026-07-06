@@ -760,7 +760,7 @@ struct ChatListSearchBar: View {
     // clears the field.
     private func connectByNameRow(_ name: String) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: name.hasPrefix("@") ? "at" : "tag")
+            Image(systemName: name.hasPrefix("@") ? "at" : "number")
                 .foregroundColor(theme.colors.primary)
             Text(String.localizedStringWithFormat(NSLocalizedString("Connect to %@", comment: "new chat action"), name))
                 .foregroundColor(theme.colors.primary)
