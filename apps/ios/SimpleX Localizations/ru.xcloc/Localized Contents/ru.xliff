@@ -3159,9 +3159,9 @@ alert button</note>
         <target>Компьютеры</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
         <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
-        <target>Адрес сервера назначения %@ несовместим с настройками пересылающего сервера %@.</target>
+        <target state="needs-translation">Адрес сервера назначения %@ несовместим с настройками пересылающего сервера %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -3169,9 +3169,9 @@ alert button</note>
         <target>Ошибка сервера получателя: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
         <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
-        <target>Версия сервера назначения %@ несовместима с пересылающим сервером %@.</target>
+        <target state="needs-translation">Версия сервера назначения %@ несовместима с пересылающим сервером %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
