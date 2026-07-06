@@ -2278,18 +2278,18 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
-              | isSender m' -> requireSignedMutation (CDGroupRcv gInfo scopeInfo m') itemSigned $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
+              | isSender m' -> requireVerifiedMutation (CDGroupRcv gInfo scopeInfo m') itemSigned $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
-              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireSignedMutation (CDChannelRcv gInfo scopeInfo) itemSigned $ updateCI True ci scopeInfo oldMC itemLive Nothing
+              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireVerifiedMutation (CDChannelRcv gInfo scopeInfo) itemSigned $ updateCI True ci scopeInfo oldMC itemLive Nothing
               | otherwise -> messageError "x.msg.update: member attempted to update channel message" $> Nothing
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
-            -- reject an unsigned XMsgUpdate of a held-signed item (edit-downgrade spoof) fail-closed, mirroring withVerifiedMsg
-            requireSignedMutation :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgSigStatus -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-            requireSignedMutation cd itemSigned action
-              | isJust itemSigned && isNothing msgSigned = do
+            -- only a verified mutation may alter a verified item; reject otherwise (fail-closed)
+            requireVerifiedMutation :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgSigStatus -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+            requireVerifiedMutation cd itemSigned action
+              | itemSigned == Just MSSVerified && msgSigned /= Just MSSVerified = do
                   createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
                   pure Nothing
               | otherwise = action
@@ -2316,7 +2316,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
       findItem >>= \case
-        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> requireSignedDelete cci $ case (chatDir, m_) of
+        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> requireVerifiedDelete cci $ case (chatDir, m_) of
           (CIGroupRcv mem, Just m@GroupMember {memberId}) ->
             let msgMemberId = fromMaybe memberId sndMemberId_
                 isAuthor = sameMemberId memberId mem
@@ -2392,10 +2392,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | senderRole < GRModerator || senderRole < memberRole =
               messageError "x.msg.del: message of another member with insufficient member permissions" $> Nothing
           | otherwise = a
-        -- reject an unsigned XMsgDel of a held-signed item (delete-censorship spoof) fail-closed, mirroring requireSignedMutation
-        requireSignedDelete :: CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-        requireSignedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgSigned = itemSigned}}) action
-          | isJust itemSigned && isNothing msgSigned = do
+        -- only a verified delete may remove a verified item; reject otherwise (fail-closed)
+        requireVerifiedDelete :: CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+        requireVerifiedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgSigned = itemSigned}}) action
+          | itemSigned == Just MSSVerified && msgSigned /= Just MSSVerified = do
               scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
               let cd :: ChatDirection 'CTGroup 'MDRcv
                   cd = case chatDir of
