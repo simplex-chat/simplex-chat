@@ -1,168 +1,167 @@
 # Fix: SimpleX directory re-approves a channel every 30 min after a blockchain name is added
 
-Status: proposed — **root cause deduced from code (see §3); fix in core**
+Status: proposed — **root cause confirmed by code (deduction, §3); fix in core (§4)**
 Branch: `nd/fix-directory-names`
 Base: `origin/master` (`b38015c7b`)
 
-> This supersedes two earlier drafts of this plan that blamed the domain claim/proof.
-> Deep investigation showed that was a **red herring** — the claim/proof round-trips
-> and converges. The real non-convergent field is **`publicGroupId`**. See §3.
+> Supersedes earlier drafts that blamed the domain claim/proof, and a draft that
+> proposed `COALESCE(public_group_id, ?)`. Both were wrong. Deep investigation
+> (three traces + elimination) pins the cause to **`publicGroupId`** and the fix to
+> a content-comparison in `updateGroupFromLinkData`. See §3–§4.
 
 ## 1. Problem
 
 After an owner adds a SimpleX name (blockchain domain claim) to a public channel,
 the SimpleX Directory service asks the owner to re-approve the channel **every
-30 minutes, indefinitely**, with no changes on the owner's side. The channel keeps
-flipping to "hidden until approved."
+30 minutes, indefinitely**, with no changes on the owner's side.
 
 ## 2. Confirmed trigger (facts, file:line)
 
 1. **30-min cadence = the directory's link-check timer.** `linkCheckInterval`
-   defaults to **1800 s** (`apps/simplex-directory-service/src/Directory/Options.hs:181`);
-   `linkCheckThread_` sleeps that interval and enqueues a `DEGroupLinkCheck` for
-   every non-removed registered group (`.../Directory/Service.hs:199-211`).
-2. **`deGroupLinkCheck` re-approves iff `groupUpdated` is true** —
-   `when groupUpdated $ reapprove …` (`Service.hs:824`), flipping `GRSActive →
-   GRSPendingApproval` and re-sending for admin approval (`:843-854`).
-3. **`groupUpdated` is a whole-profile byte inequality** — the `Bool` returned by
+   defaults to 1800 s (`apps/simplex-directory-service/src/Directory/Options.hs:181`);
+   `linkCheckThread_` enqueues `DEGroupLinkCheck` per registered group every interval
+   (`.../Directory/Service.hs:199-211`).
+2. **`deGroupLinkCheck` re-approves iff `groupUpdated`** — `when groupUpdated $
+   reapprove …` (`Service.hs:824`), which flips the reg to `GRSPendingApproval` and
+   re-sends for approval (`:843-854`). It only runs when the stored `publicGroup` is
+   `Just` (`forM_ pg_ …`, `:817`).
+3. **`groupUpdated` = full structural inequality.** It is the `Bool` from
    `updateGroupFromLinkData`: `profileChanged = p /= groupProfile`
    (`src/Simplex/Chat/Library/Internal.hs:1466-1482`), `p` = directory's *stored*
-   `GroupProfile`, `groupProfile` = profile from the *fetched* link short-link data.
-4. **The flag is behaviorally directory-only** — the mobile/desktop/iOS
+   `GroupProfile`, `groupProfile` = the *fetched link* profile.
+4. **The flag is behaviorally directory-only.** The mobile/desktop/iOS
    `GroupLinkPlan.Known` variant does not carry it (`SimpleXAPI.kt:7158`; iOS
-   `AppAPITypes.swift`); only the directory consumes it (`Service.hs:824`, `:825`,
+   `AppAPITypes.swift`); consumers are all in the directory (`Service.hs:824`, `:825`,
    `:988`→`deReregistration:1043/1046`).
 
-## 3. Root cause (deduced by elimination — code-confirmed)
+## 3. Root cause — `publicGroupId`, confirmed by elimination (no diagnostic needed)
 
-Three independent traces close the case without needing a runtime diagnostic:
+Three facts close the case deductively:
 
-- **The fetched link profile is byte-identical across fetches.** It is served
-  verbatim from the owner's published, owner-authorized `LSET` blob via `LGET`
-  (`simplexmq` agent `getConnShortLink` → `decryptLinkData`); there is no
-  timestamp, per-fetch nonce, relay reconstruction, or server-computed member
-  count. Member count lives in `GroupShortLinkData.publicGroupData` (a sibling of
-  `groupProfile`) and drives `countChanged`, not `groupUpdated`. So the link side
-  cannot make `groupUpdated` flip on its own.
-- **Every `Eq`-relevant `GroupProfile` field except one is persisted by
-  `updateGroupProfile` and therefore converges** after the first store
-  (`Internal.hs:1471`). The single exception is **`publicGroupId`**
-  (`Types.hs:858`, part of `PublicGroupProfile`, `deriving Eq`): the UPDATE in
-  `updateGroupProfile` (`src/Simplex/Chat/Store/Groups.hs:2721-2732`) writes
-  `group_type, group_link, group_web_page, group_domain, domain_web_page,
-  allow_embedding, group_domain_proof, …` but **omits `public_group_id`**. It is
-  read back from the stored column (`Shared.hs:699`, `Groups.hs:2779`), and
-  `toPublicGroupProfile` returns `publicGroup = Nothing` unless `group_type` **and**
-  `group_link` **and** `public_group_id` are all present (`Shared.hs:713-716`).
-- **The domain claim/proof is not the cause.** `group_domain`/`group_domain_proof`
-  *are* persisted and round-trip symmetrically (`Shared.hs:721`/`:727`), so they
-  converge. In the group flow the proof is `Nothing` anyway (`SimplexDomainProof`
-  is never constructed in `src/`; group claims use `mkDomainClaim`, `proof = Nothing`,
-  `Names.hs:56`, `Commands.hs:5693`), and group verification is a separate scalar
-  column `group_domain_verified` (`Groups.hs:2740-2746`).
+- **`p` reflects every persisted column.** The directory's CTLink plan resolves via
+  `getGroupToConnect` → `getGroupViaShortLinkToConnect` (`Groups.hs:1084`) →
+  **`getGroupInfo`** (`:2841`) — the standard projection reading all `group_profiles`
+  columns.
+- **`updateGroupProfile` persists every `Eq`-relevant `GroupProfile` field except
+  one.** Its UPDATE (`Groups.hs:2721-2732`) writes `display_name, full_name,
+  short_descr, description, image, group_type, group_link, group_web_page,
+  group_domain, domain_web_page, allow_embedding, group_domain_proof, preferences,
+  member_admission` — but **omits `public_group_id`**. That column is written only at
+  group creation (INSERTs, `:405`/`:912`) and by `updateRelayGroupKeys` (`:2293`).
+- **The fetched link profile is byte-identical across fetches** — served verbatim
+  from the owner's `LSET` blob via `LGET` (no timestamp/nonce/reconstruction).
 
-**Deduction:** a *perpetual* re-approval requires a field that never reconciles.
-The link side is deterministic, and every field except `publicGroupId` converges
-after one store — so the only field that can hold `p /= groupProfile` forever is
-`publicGroupId`. It does so because the directory's stored `public_group_id` is
-**NULL / stale** and `updateGroupProfile` — the only function that syncs a group's
-profile from link data or `XGrpInfo` — cannot write that column.
+**Deduction.** When `profileChanged` is true, `updateGroupFromLinkData` stores the
+link profile (`Internal.hs:1471`); on the next check `getGroupInfo` re-reads a `p`
+equal to the link profile on **every field except `public_group_id`**, which the
+store cannot change. The link side is deterministic. Therefore a *perpetual*
+inequality is possible **iff** the stored `public_group_id` differs from the link's
+— it is the only field that cannot converge. This is deductively certain.
 
-**Why the directory's `public_group_id` is NULL, and why it correlates with the
-name.** `public_group_id` is written in only three places, all *creation-time*:
-the two group INSERTs (`Groups.hs:405`, `:912`, from the profile's `publicGroup`)
-and `updateRelayGroupKeys` (`:2293`). If the directory joined the channel while it
-had no `publicGroupId` in its link profile (an older channel, or one that became a
-public/named channel later), its `public_group_id` was inserted NULL and can never
-be populated afterward. When the owner adds the SimpleX name, the owner republishes
-the link with a fully-populated `publicGroup` (`publicGroupId` + `publicGroupAccess`),
-so the fetched profile's `publicGroup` becomes `Just{…}` while the directory's
-stored copy stays `Nothing` — a permanent inequality, re-approved every 30 min.
+**Why it is non-NULL-but-stale (not NULL).** The re-approval only runs when the
+stored `publicGroup` is `Just`, which requires `public_group_id` non-NULL. So the
+directory's value is present but **stale**: set once at join time (or via
+`updateRelayGroupKeys`) and never re-synced, because `updateGroupProfile` — the
+function that syncs the profile from link data / `XGrpInfo` on every update — never
+writes that column. When adding the name causes the owner to (re)publish a
+`publicGroupId` that differs from the directory's stale stored value, the mismatch
+is permanent → `groupUpdated` true every cycle → re-approval on repeat.
 
-**Confirmation step (cheap, not blocking):** on the affected directory,
-`SELECT public_group_id FROM group_profiles` joined to the channel's group should
-show NULL, while the link's `publicGroupId` is present.
+**Ruled out (earlier drafts):** the domain claim/proof **is** persisted
+(`group_domain`/`group_domain_proof`, symmetric `publicGroupAccessRow`/
+`toPublicGroupAccess`) and therefore converges; in the group flow the proof is
+`Nothing` anyway (`mkDomainClaim`, `Names.hs:56`). The claim is a red herring — it
+is merely the *occasion* (the owner republishing the link) that surfaces the
+pre-existing `publicGroupId` staleness.
 
-## 4. The fix (core, minimal): let `updateGroupProfile` populate `public_group_id`
+## 4. The fix (core, minimal): compare *content*, ignoring immutable identity
 
-`updateGroupProfile` is missing a profile column that its sibling INSERT paths
-already persist. Add `public_group_id` to its UPDATE, **guarded by `COALESCE` so it
-only populates a currently-NULL value and never changes or erases an existing
-identity** (respecting `publicGroupId`'s immutability):
-
-```sql
--- src/Simplex/Chat/Store/Groups.hs, updateGroupProfile_ UPDATE:
-SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
-    group_type = ?, group_link = ?, public_group_id = COALESCE(public_group_id, ?),
-    group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?,
-    group_domain_proof = ?, preferences = ?, member_admission = ?, updated_at = ?
-```
-
-with the new `?` sourced exactly like the INSERT paths (`Groups.hs:384-385`):
+`publicGroupId` is immutable cryptographic identity (`sha256(genesis root key)`,
+`Types.hs:858`), not moderatable content. `updateGroupFromLinkData` should not treat
+an identity difference as a profile change. Compare with `publicGroupId` normalized
+out, and use that for **both** the store guard **and** the returned flag (so there is
+neither re-approval nor per-cycle store churn):
 
 ```haskell
-publicGroupId_ = case publicGroup of
-  Just PublicGroupProfile {publicGroupId} -> Just publicGroupId
-  Nothing -> Nothing
+-- src/Simplex/Chat/Library/Internal.hs, updateGroupFromLinkData:
+  | contentChanged || countChanged || verifyChanged = do
+      cxt <- chatStoreCxt
+      withStore $ \db -> do
+        g   <- if contentChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
+        g'  <- …count…
+        g'' <- if verifyChanged then …setGroupDomainVerified… else pure g'
+        pure (g'', contentChanged)
+  | otherwise = pure (gInfo, False)
+  where
+    -- publicGroupId is immutable identity, not content; updateGroupProfile never
+    -- re-syncs it, so a stale stored value would make a plain (/=) re-trigger
+    -- approval forever. Compare content with it normalized out.
+    contentChanged = clearId p /= clearId groupProfile
+    clearId gp@GroupProfile {publicGroup} =
+      gp {publicGroup = (\pg -> pg {publicGroupId = mempty}) <$> publicGroup}
+    …
 ```
 
-Effect: on the next link check, the directory's NULL `public_group_id` is populated
-from the authoritative link profile → its stored `publicGroup` reconstructs as
-`Just{…}` equal to the link's → `profileChanged` becomes false → re-approval stops.
+(`profileChanged = p /= groupProfile` is removed; `countChanged`/`verifyChanged`
+unchanged.)
 
-## 5. Why this is the most correct fix
+## 5. Why core, not the directory
 
-- **Fixes the actual root cause, and converges.** After one sync the profiles are
-  equal, so `groupUpdated` correctly reports "no change." Symptom and cause both go.
-- **It is a plain completeness fix.** The two INSERT paths and `updateRelayGroupKeys`
-  already persist `public_group_id`; `updateGroupProfile` omitting it is the bug.
-- **Safe under `COALESCE(public_group_id, ?)`** — it *only* fills a NULL. It never
-  changes a set identity, so it cannot corrupt a correct `publicGroupId`, and it
-  cannot be erased by a claim-less `XGrpInfo` (new value `Nothing` → keep old).
-  This preserves the "immutable identity" invariant while repairing missing data.
-- **General, not a directory workaround.** Any client whose `public_group_id` is
-  missing gets it repaired on the next profile sync; the fix is in shared core, as
-  intended, and needs no judgment about which fields are "moderatable."
-- **Blast radius is safe.** `updateGroupProfile` is widely called, but the only
-  behavioral change is *populating a NULL column when a profile carrying a
-  `publicGroupId` is stored* — a pure improvement for every caller.
+The defect is that a shared primitive — "did the group profile change?" — answers
+"yes" when only immutable identity differs. That is the primitive's correctness,
+not a directory policy, so it belongs where the comparison lives:
 
-## 6. Alternative considered — and why not
+- **Robust.** Compares the exact two profiles at the update site — no reliance on a
+  directory-side pre/post snapshot with an enqueue-vs-process timing window.
+- **Correct for any consumer.** The flag is directory-only today, but fixing it here
+  keeps it right for any future consumer at no extra cost.
+- **Isolation is illusory anyway.** The directory statically links core, so it is
+  rebuilt either way, and the behavioral change is directory-scoped either way.
 
-**Scope the re-approval comparison** (return `groupUpdated` from
-`updateGroupFromLinkData` computed over only the moderatable display fields,
-excluding `publicGroup`). This mirrors the contact path's `clearProofs` /
-`sameProfileContent` redaction (`Types.hs:747-750`, `:803`) and the existing
-`DirectoryTests` expectation that link-only changes must not re-approve
-(`tests/Bots/DirectoryTests.hs:296-326`). It would stop the re-approval — **but it
-only hides the symptom**: the stored `public_group_id` stays NULL, the profiles
-stay unequal, so `updateGroupFromLinkData` keeps calling `updateGroupProfile` every
-30 min to store a profile that never fully matches (idempotent churn), and any
-other consumer of the difference stays broken. §4 is preferred because it removes
-the inequality itself. (This scoping could still be added later as defense in depth
-for genuinely non-moderatable fields, but it is not needed for this bug.)
+## 6. Why this is correct, safe, and minimal
 
-## 7. Verification plan
+- **Fixes the confirmed cause and converges** the re-approval decision: an
+  identity-only difference no longer reads as a change, so `groupUpdated` is false
+  and re-approval stops.
+- **No data mutation.** It does *not* write `public_group_id`, so it cannot violate
+  any "immutable identity" assumption elsewhere; the stale stored value simply stops
+  driving moderation.
+- **No store churn.** Because `contentChanged` also gates the store, an identity-only
+  delta no longer triggers a pointless `updateGroupProfile` every 30 min.
+- **Moderation intact.** Any moderatable change (display name, full name, short
+  descr, description, image, prefs, admission, or the domain claim) still differs
+  under `clearId` and still re-approves. Only immutable identity is excluded —
+  consistent with the contact path's content-comparison (`Types.hs:747-750`
+  `clearProofs`) and the existing `DirectoryTests` expectation that link/identity
+  changes must not re-approve (`tests/Bots/DirectoryTests.hs:296-326`).
 
-1. Confirm on the affected directory that the channel's `public_group_id` is NULL
-   while the link carries a `publicGroupId` (validates §3; one SELECT).
+## 7. Alternatives considered — and why not
+
+- **Persist the column** (`public_group_id = COALESCE(?, public_group_id)`, adopt the
+  link's value). Also converges, but it **mutates an "immutable" identity** on every
+  profile sync and risks assumptions elsewhere; identity repair is a bigger, riskier
+  change than simply not moderating on identity.
+- **Directory-only** (compare `gInfo` vs `g'` at `Service.hs:824` instead of
+  `groupUpdated`). Works — both are stored-side, so the stale `publicGroupId` is
+  equal on both and never fires — but it relies on `gInfo` being a faithful
+  pre-update snapshot (enqueue-vs-process window) and leaves `groupUpdated`
+  misleading for any future consumer. Core is preferred per §5.
+
+## 8. Verification plan
+
+1. **Regression test** in `tests/Bots/DirectoryTests.hs` (beside the existing
+   "link/whitespace-only must not re-approve" tests, `:296-326`): register a channel
+   with one `public_group_id`, then make the fetched link carry a *different*
+   `publicGroupId` (all other fields equal), run ≥2 link checks, and assert the reg
+   stays `GRSActive` (no `GRSPendingApproval`, no owner re-approval message). Add a
+   positive control: a display-name change *does* re-approve.
 2. Apply §4.
-3. **Regression test** in `tests/Bots/DirectoryTests.hs` (sits alongside the
-   existing "link-only / whitespace-only must not re-approve" tests at `:296-326`):
-   register a channel whose stored `public_group_id` is NULL → add a SimpleX name /
-   populate the link `publicGroupId` → run ≥2 link checks → assert the registration
-   stays `GRSActive` (no `GRSPendingApproval`, no owner re-approval message). Also
-   assert the group's `public_group_id` is populated after the first check.
-4. Build the directory service (which statically links core); run the directory
-   test suite.
+3. Build the directory service (statically links core); run the directory suite.
 
-## 8. Files touched
+## 9. Files touched
 
-- `src/Simplex/Chat/Store/Groups.hs` — `updateGroupProfile`: add
-  `public_group_id = COALESCE(public_group_id, ?)` to the UPDATE and thread the
-  `publicGroupId_` parameter (as the INSERT paths do). No other logic change.
-- `tests/Bots/DirectoryTests.hs` — add the name-added / NULL-`public_group_id`
-  no-reapproval regression test.
-
-No schema, wire-format, or API changes. `updateGroupProfile`'s signature is
-unchanged; it simply stops dropping a column it is already given.
+- `src/Simplex/Chat/Library/Internal.hs` — `updateGroupFromLinkData`: replace
+  `profileChanged` (store guard + returned flag) with a `publicGroupId`-insensitive
+  `contentChanged`. No store, schema, wire, or API change.
+- `tests/Bots/DirectoryTests.hs` — add the identity-difference no-reapproval
+  regression test (+ display-name positive control).
