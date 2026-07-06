@@ -12,6 +12,9 @@ import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.ui.theme.oklch
 import chat.simplex.common.views.helpers.*
 
 object NoIndication : IndicationNodeFactory {
@@ -58,7 +61,13 @@ actual fun ChatListNavLinkLayout(
       }
     }
   }
-  if (selectedChat.value || nextChatSelected.value) {
+  val activeThemeBase = CurrentColors.collectAsState().value.base
+  // SIMPLEX uses a flat slightly-lighter-than-bg divider; other themes get the Material default.
+  if (activeThemeBase == DefaultTheme.SIMPLEX) {
+    val simplexDividerColor = oklch(0.2104f, 0.0407f, 276.40f) // sRGB #131729
+    if (selectedChat.value || nextChatSelected.value) Divider(color = simplexDividerColor)
+    else Divider(Modifier.padding(horizontal = 8.dp), color = simplexDividerColor)
+  } else if (selectedChat.value || nextChatSelected.value) {
     Divider()
   } else {
     Divider(Modifier.padding(horizontal = 8.dp))
