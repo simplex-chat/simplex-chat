@@ -762,6 +762,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add" xml:space="preserve">
         <source>Add</source>
+        <target>Добавить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." xml:space="preserve">
@@ -2252,6 +2253,10 @@ server test step</note>
         <target>Соединяйтесь быстрее! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect to %@" xml:space="preserve">
+        <source>Connect to %@</source>
+        <note>new chat action</note>
+      </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
         <source>Connect to desktop</source>
         <target>Подключиться к компьютеру</target>
@@ -2434,6 +2439,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Contact" xml:space="preserve">
         <source>Contact</source>
+        <target>Контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact address" xml:space="preserve">
@@ -5260,6 +5266,10 @@ More improvements are coming soon!</source>
         <target>Вступить в канал</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Join channel %@" xml:space="preserve">
+        <source>Join channel %@</source>
+        <note>new chat action</note>
+      </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>Вступить в группу</target>
@@ -7719,10 +7729,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All chat members will be notified.</source>
+        <target>Роль участника будет изменена на "%@". Все участники разговора получат уведомление.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All group members will be notified.</source>
+        <target>Роль члена будет изменена на "%@". Все члены группы получат уведомление.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
@@ -7731,6 +7743,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
         <source>Role will be changed to "%@". The member will receive a new invitation.</source>
+        <target>Роль члена будет изменена на "%@". Будет отправлено новое приглашение.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">

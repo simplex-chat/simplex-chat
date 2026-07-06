@@ -517,9 +517,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Vaihda lukitustilaa";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Vaihda jäsenroolia?";
-
 /* authentication reason */
 "Change passcode" = "Vaihda pääsykoodi";
 
@@ -1203,7 +1200,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "virhe";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Virhe";
 
 /* No comment provided by engineer. */
@@ -1336,6 +1333,7 @@ alert button */
 "Error: " = "Virhe: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Virhe: %@";
@@ -1840,10 +1838,10 @@ server test error */
 "member connected" = "yhdistetty";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
+"Role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
