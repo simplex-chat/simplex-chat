@@ -24,13 +24,15 @@ import kotlin.math.*
 
 enum class PresetWallpaper(
   val res: ImageResource,
+  val resDesktop: ImageResource,
   val filename: String,
   val scale: Float,
+  val scaleDesktop: Float,
   val background: Map<DefaultTheme, Color>,
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  CATS(MR.images.wallpaper_cats, "cats", 0.63f,
+  CATS(MR.images.wallpaper_cats, MR.images.wallpaper_cats_desktop, "cats", 0.5f, 0.8f,
     wallpaperBackgrounds(light = "#ffF8F6EA"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffefdca6".colorFromReadableHex(),
@@ -65,7 +67,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
+  FLOWERS(MR.images.wallpaper_flowers, MR.images.wallpaper_flowers_desktop, "flowers", 0.5f, 0.8f,
     wallpaperBackgrounds(light = "#ffE2FFE4"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(),
@@ -100,7 +102,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
+  HEARTS(MR.images.wallpaper_hearts, MR.images.wallpaper_hearts_desktop, "hearts", 0.5f, 0.8f,
     wallpaperBackgrounds(light = "#ffFDECEC"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#fffde0e0".colorFromReadableHex(),
@@ -135,7 +137,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
+  KIDS(MR.images.wallpaper_kids, MR.images.wallpaper_kids_desktop, "kids", 0.5f, 0.8f,
     wallpaperBackgrounds(light = "#ffdbfdfb"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffadeffc".colorFromReadableHex(),
@@ -170,7 +172,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
+  SCHOOL(MR.images.wallpaper_school, MR.images.wallpaper_school_desktop, "school", 0.5f, 0.8f,
     wallpaperBackgrounds(light = "#ffE7F5FF"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(),
@@ -205,7 +207,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f,
+  TRAVEL(MR.images.wallpaper_travel, MR.images.wallpaper_travel_desktop, "travel", 0.5f, 0.8f,
     wallpaperBackgrounds(light = "#fff9eeff"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffeedbfe".colorFromReadableHex(),
@@ -282,7 +284,7 @@ sealed class WallpaperType {
       cachedImages[filename]
     } else {
       val res = if (this is Preset) {
-        (PresetWallpaper.from(filename) ?: PresetWallpaper.CATS).res.toComposeImageBitmap()!!
+        (PresetWallpaper.from(filename) ?: PresetWallpaper.CATS).let { if (appPlatform.isAndroid) it.res else it.resDesktop }.toComposeImageBitmap()!!
       } else {
         try {
           // In case of unintentional image deletion don't crash the app
@@ -308,7 +310,8 @@ sealed class WallpaperType {
     val filename: String,
     override val scale: Float?,
   ): WallpaperType() {
-    val predefinedImageScale = PresetWallpaper.from(filename)?.scale ?: 1f
+    // Desktop shows the pattern smaller than mobile; the large source is downscaled, which stays crisp (upscaling is what pixelates).
+    val predefinedImageScale = PresetWallpaper.from(filename)?.let { if (appPlatform.isAndroid) it.scale else it.scaleDesktop } ?: 1f
   }
 
   data class Image(
