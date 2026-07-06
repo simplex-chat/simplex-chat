@@ -2861,4 +2861,27 @@
     <string name="allow_anyone_to_embed">允许任何人嵌入</string>
     <string name="embed_any_webpage_can_show">任何网页均可显示预览。</string>
     <string name="app_update_required">需要更新应用</string>
+    <string name="simplex_name_owner_no_address">SimpleX 名称 %1$s 已注册但没有 SimpleX 地址。通过注册页添加此类地址到名称。</string>
+    <string name="simplex_name_owner_no_channel_link">SimpleX 名称已注册但没有频道链接。通过注册页添加频道链接到名称。</string>
+    <string name="simplex_name_unconfirmed_desc">SimpleX 名称已注册但未添加到资料中。如果你是所有者，请将其添加到你的地址或频道资料。</string>
+    <string name="simplex_name_no_servers_desc">你的服务器没有一台被设定为解析 SimpleX 名称。配置服务器或使用连接链接。</string>
+    <string name="simplex_name_server_no_resolver_desc">%1$s 服务器不支持名称解析。配置服务器或使用连接链接。</string>
+    <string name="error_saving_simplex_name">保存名称出错</string>
+    <string name="set_user_simplex_name_footer">让别人通过用你的 SimpleX 地址注册的名称和你建立联系。</string>
+    <string name="set_channel_simplex_name_footer">让别人通过用这个频道链接注册的名称加入。</string>
+    <string name="simplex_name_not_found">未找到名称</string>
+    <string name="no_names_servers_enabled">没有解析名称的服务器。</string>
+    <string name="simplex_name_no_valid_link">无有效链接</string>
+    <string name="simplex_name_resolver_error_desc">解析错误：%1$s</string>
+    <string name="set_simplex_name">设置 SimpleX 名称</string>
+    <string name="simplex_name">SimpleX 名称</string>
+    <string name="simplex_name_error">SimpleX 名称错误</string>
+    <string name="simplex_name_not_verified">SimpleX 名称未验证</string>
+    <string name="simplex_name_no_valid_link_desc">SimpleX 名称已注册但没有有效链接。</string>
+    <string name="simplex_name_not_found_desc">SimpleX 名称未注册。请检查该名称。</string>
+    <string name="operator_use_for_names">用于解析名称</string>
+    <string name="simplex_name_unconfirmed">未确认的名称</string>
+    <string name="verify_simplex_name_action">验证名称</string>
+    <string name="verify_simplex_names">验证 SimpleX 名称</string>
+    <string name="your_simplex_name">你的 SimpleX 名称</string>
 </resources>
