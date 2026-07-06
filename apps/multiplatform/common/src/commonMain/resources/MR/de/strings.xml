@@ -344,7 +344,7 @@
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Einstellungen</string>
     <string name="your_simplex_contact_address">Ihre SimpleX-Adresse</string>
-    <string name="database_passphrase_and_export">Datenbank-Passwort &amp; -Export</string>
+    <string name="database_passphrase_and_export">Datenbank-Passwort und -Export</string>
     <string name="about_simplex_chat">Über SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
     <string name="markdown_help">Markdown-Hilfe</string>
@@ -389,7 +389,7 @@
     <string name="error_saving_ICE_servers">Fehler beim Speichern der ICE-Server</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC-ICE-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.</string>
     <string name="save_servers_button">Speichern</string>
-    <string name="network_and_servers">Netzwerk &amp; Server</string>
+    <string name="network_and_servers">Netzwerk und Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
     <string name="network_settings_title">Erweiterte Einstellungen</string>
     <string name="network_enable_socks">SOCKS-Proxy verwenden?</string>
@@ -493,7 +493,7 @@
     <string name="icon_descr_video_call">Videoanruf</string>
     <string name="icon_descr_audio_call">Audioanruf</string>
     <!-- Call settings -->
-    <string name="settings_audio_video_calls">Audio- &amp; Videoanrufe</string>
+    <string name="settings_audio_video_calls">Audio- und Videoanrufe</string>
     <string name="your_calls">Ihre Anrufe</string>
     <string name="always_use_relay">Immer über einen Router verbinden</string>
     <string name="call_on_lock_screen">Anrufe auf Sperrbildschirm:</string>
@@ -542,7 +542,7 @@
 \n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.
 \n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
-    <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
+    <string name="privacy_and_security">Datenschutz und Sicherheit</string>
     <string name="your_privacy">Privatsphäre</string>
     <string name="protect_app_screen">App-Bildschirm schützen</string>
     <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
@@ -977,7 +977,7 @@
     <string name="network_option_ping_count">PING-Zähler</string>
     <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
     <string name="smp_servers_per_user">Nachrichten-Server für neue Verbindungen über Ihr aktuelles Chat-Profil</string>
-    <string name="files_and_media_section">Dateien &amp; Medien</string>
+    <string name="files_and_media_section">Dateien und Medien</string>
     <string name="network_session_mode_transport_isolation">Transport-Isolation</string>
     <string name="users_delete_question">Chat-Profil löschen\?</string>
     <string name="error_deleting_user">Fehler beim Löschen des Benutzerprofils</string>
@@ -1216,7 +1216,7 @@
     <string name="color_secondary_variant">Zweite Akzentfarbe</string>
     <string name="color_background">Hintergrund-Farbe</string>
     <string name="import_theme">Design importieren</string>
-    <string name="color_surface">Menüs &amp; Benachrichtigungen</string>
+    <string name="color_surface">Menüs und Benachrichtigungen</string>
     <string name="color_received_message">Empfangene Nachricht</string>
     <string name="color_secondary">Zweite Farbe</string>
     <string name="color_sent_message">Gesendete Nachricht</string>
@@ -1440,7 +1440,7 @@
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Router sind per SOCKS-Proxy verbunden. Anrufe nutzen eine direkte Verbindung.]]></string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
     <string name="rcv_group_event_open_chat">Öffnen</string>
-    <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>
+    <string name="v5_3_encrypt_local_files">Gespeicherte Dateien und Medien verschlüsseln</string>
     <string name="error_creating_member_contact">Fehler beim Anlegen eines Mitglied-Kontaktes</string>
     <string name="v5_3_new_desktop_app">Neue Desktop-App!</string>
     <string name="v5_3_new_interface_languages">6 neue Sprachen für die Bedienoberfläche</string>
@@ -1902,7 +1902,7 @@
     <string name="v5_8_chat_themes_descr">Gestalten Sie Ihre Chats unterschiedlich!</string>
     <string name="v5_8_chat_themes">Neue Chat-Designs</string>
     <string name="v5_8_private_routing">Privates Nachrichten-Routing 🚀</string>
-    <string name="v5_8_private_routing_descr">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Routern, die Ihre Kontakte ausgewählt haben.\nAktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</string>
+    <string name="v5_8_private_routing_descr">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Routern, die Ihre Kontakte ausgewählt haben.\nAktivieren Sie es in den *Netzwerk und Server* Einstellungen.</string>
     <string name="v5_8_safe_files">Dateien sicher herunterladen</string>
     <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
     <string name="message_queue_info_none">Keine Information</string>
@@ -2694,7 +2694,7 @@
     <string name="connect_plan_open_channel">Kanal öffnen</string>
     <string name="connect_plan_open_new_channel">Neuen Kanal öffnen</string>
     <string name="member_info_section_title_owner">Eigentümer</string>
-    <string name="channel_members_section_owners">Eigentümer &amp; Mitwirkende</string>
+    <string name="channel_members_section_owners">Eigentümer und Mitwirkende</string>
     <string name="preset_relay_address">Voreingestellte Relais-Adresse</string>
     <string name="preset_relay_name">Voreingestellter Relais-Name</string>
     <string name="group_member_role_relay">Relais</string>
@@ -2814,10 +2814,10 @@
     <string name="onboarding_post_address">Diese Adresse in Ihrem Social‑Media‑Profil, auf Ihrer Webseite oder in Ihrer E‑Mail‑Signatur verwenden.</string>
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>
     <string name="your_public_address">Ihre öffentliche Adresse</string>
-    <string name="why_built_heading">Sie wurden ohne eine Benutzerkennung geboren.</string>
+    <string name="why_built_heading">Sie wurden ohne ein Benutzerkonto geboren.</string>
     <string name="why_built_p1">Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.</string>
     <string name="why_built_p2">Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.</string>
-    <string name="why_built_p3">Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzernamen, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.</string>
+    <string name="why_built_p3">Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzerkonten, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.</string>
     <string name="why_built_p4">Nicht ein besseres Schloss an der Tür eines Anderen. Kein freundlicher Vermieter, der Ihre Privatsphäre respektiert, aber dennoch jeden Besucher registriert. Sie sind kein Gast. Sie sind zu Hause. Kein Vermieter, kein Fremder kann es betreten - Sie sind souverän.</string>
     <string name="why_built_p5">Ihre Kommunikation gehört Ihnen, so wie es immer war, bevor es das Internet gab. Das Netzwerk ist kein Ort, den Sie besuchen. Es ist ein Ort, den Sie erschaffen und besitzen und Niemand kann es Ihnen nehmen, egal ob Sie es privat oder öffentlich machen.</string>
     <string name="why_built_p6">Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.</string>
@@ -2856,7 +2856,7 @@
     <string name="migrate">Migrieren</string>
     <string name="onboarding_network_commitments">Netzwerk‑Verpflichtungen</string>
     <string name="onboarding_network_routers_cannot_know">Netzwerk‑Router können nicht erkennen,\nwer mit wem kommuniziert</string>
-    <string name="onboarding_no_account">Kein Account. Keine Telefonnummer. Keine E‑Mail. Keine ID.\nDie sicherste Verschlüsselung.</string>
+    <string name="onboarding_no_account">Kein Benutzerkonto. Keine Telefonnummer. Keine E‑Mail. Keine ID.\nDie sicherste Verschlüsselung.</string>
     <string name="onboarding_on_your_phone">Auf Ihrem Gerät, nicht auf Servern.</string>
     <string name="open_external_link_title">Externen Link öffnen?</string>
     <string name="onboarding_private_and_secure">Private und sichere Kommunikation.</string>
@@ -2907,7 +2907,7 @@
     <string name="member_info_relay_status_rejected_by_operator">Vom Relais-Betreiber abgelehnt</string>
     <string name="channel_owner_count_singular">%1$d Eigentümer</string>
     <string name="channel_owner_count_plural">%1$d Eigentümer</string>
-    <string name="channel_owners_contributors_count">%1$d Eigentümer &amp; Mitwirkende</string>
+    <string name="channel_owners_contributors_count">%1$d Eigentümer und Mitwirkende</string>
     <string name="badge_supported_simplex">%1$s hat SimpleX Chat unterstützt. Das Abzeichen ist am %2$s abgelaufen.</string>
     <string name="settings_section_title_about">Über</string>
     <string name="relay_status_acknowledged_roster">Bestätigter Relaisbestand</string>
@@ -2928,7 +2928,7 @@
     <string name="webpage_info">Erstellen Sie eine Webseite, die Besuchern Ihren Kanal als Vorschau zeigt, bevor sie ihn abonnieren. Hosten Sie die Seite selbst oder nutzen Sie beliebiges statisches Hosting.</string>
     <string name="enter_webpage_url">URL der Webseite eingeben</string>
     <string name="group_webpage">Webseite der Gruppe</string>
-    <string name="help_and_support">Hilfe &amp; Unterstützung</string>
+    <string name="help_and_support">Hilfe und Unterstützung</string>
     <string name="web_page_url_placeholder">https://</string>
     <string name="webpage_url_footer">Dies wird Abonnenten angezeigt und zum Laden der Vorschau genutzt.</string>
     <string name="more_privacy">Mehr Privatsphäre</string>
@@ -2948,4 +2948,27 @@
     <string name="relays_no_web_support">Die verwendeten Chat‑Relais unterstützen keine Webseiten.</string>
     <string name="webpage_code">Webseiten-Code</string>
     <string name="badge_support_from_v7">Sie können SimpleX ab der App-Version v7 unterstützen.</string>
+    <string name="error_saving_simplex_name">Fehler beim Speichern des Namens</string>
+    <string name="set_user_simplex_name_footer">Lassen Sie sich über den mit Ihrer SimpleX‑Adresse registrierten Namen verbinden.</string>
+    <string name="set_channel_simplex_name_footer">Ermöglichen Sie Beitritte über den mit diesem Kanal‑Link registrierten Namen.</string>
+    <string name="simplex_name_not_found">Name wurde nicht gefunden</string>
+    <string name="simplex_name_no_servers_desc">Keiner Ihrer Server ist zum Auflösen von SimpleX‑Namen konfiguriert. Konfigurieren Sie Server oder verwenden Sie einen Verbindungslink.</string>
+    <string name="no_names_servers_enabled">Keine Server für die Namensauflösung konfiguriert.</string>
+    <string name="simplex_name_no_valid_link">Kein gültiger Link</string>
+    <string name="simplex_name_resolver_error_desc">Namensauflösungs-Fehler: %1$s</string>
+    <string name="simplex_name_server_no_resolver_desc">Der Server %1$s unterstützt keine Namensauflösung. Konfigurieren Sie Server oder verwenden Sie einen Verbindungslink.</string>
+    <string name="set_simplex_name">SimpleX-Name einrichten</string>
+    <string name="simplex_name">SimpleX-Name</string>
+    <string name="simplex_name_error">Fehler beim SimpleX-Name</string>
+    <string name="simplex_name_not_verified">SimpleX-Name nicht verifiziert</string>
+    <string name="simplex_name_no_valid_link_desc">Der SimpleX-Name %1$s wurde registriert, aber er hat keinen gültigen Link.</string>
+    <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s ist registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.“</string>
+    <string name="simplex_name_owner_no_channel_link">Der SimpleX‑Name %1$s ist ohne Kanal‑Link registriert. Fügen Sie den Kanal‑Link über die Registrierungsseite hinzu.</string>
+    <string name="simplex_name_owner_no_address">Der SimpleX‑Name %1$s ist ohne SimpleX-Adresse registriert. Fügen Sie die SimpleX-Adresse über die Registrierungsseite hinzu.</string>
+    <string name="simplex_name_not_found_desc">Dieser SimpleX-Name ist nicht registriert. Bitte überprüfen Sie den Namen.</string>
+    <string name="operator_use_for_names">Zur Namensauflösung</string>
+    <string name="simplex_name_unconfirmed">Unbestätigter Name</string>
+    <string name="verify_simplex_name_action">Name überprüfen</string>
+    <string name="verify_simplex_names">SimpleX-Namen überprüfen</string>
+    <string name="your_simplex_name">Ihr SimpleX-Name</string>
 </resources>
