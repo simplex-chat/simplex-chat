@@ -368,7 +368,7 @@ struct SendMessageView: View {
         } else {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Sign message"),
-                message: Text("A signature is transferable, non-repudiable proof that you authored this message."),
+                message: Text("Signing proves you authored this message and can't be denied later."),
                 primaryButton: .default(Text("Send")) {
                     signMessageAlertShown = true
                     sendSignedMessage()
