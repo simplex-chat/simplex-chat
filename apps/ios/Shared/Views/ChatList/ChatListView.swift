@@ -716,7 +716,9 @@ struct ChatListSearchBar: View {
                             for name in targets {
                                 let plan = await apiConnectPlan(connLink: name, resolveMode: .never, inProgress: BoxedValue(false))
                                 if Task.isCancelled { return }
-                                if let id = knownChatId(plan) { ids.append(id) }
+                                let resolvedId = knownChatId(plan)
+                                logger.debug("connect-by-name search: target=\(name, privacy: .public) plan=\(plan.map { String(describing: $0.connectionPlan) } ?? "nil", privacy: .public) id=\(resolvedId ?? "nil", privacy: .public)")
+                                if let resolvedId { ids.append(resolvedId) }
                             }
                             searchChatFilteredBySimplexLink = Set(ids)
                             // drop the row only when every searched type is already known locally
