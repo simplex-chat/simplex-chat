@@ -1421,9 +1421,9 @@ func planAndConnect(
                             }
                         }
                     }
-                case let .contactAddress(cap, _):
+                case let .contactAddress(cap):
                     switch cap {
-                    case let .ok(contactSLinkData_, ownerVerification, _):
+                    case let .ok(contactSLinkData_, ownerVerification):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
                             await MainActor.run {
@@ -1507,9 +1507,9 @@ func planAndConnect(
                             )
                         }
                     }
-                case let .groupLink(glp, _):
+                case let .groupLink(glp):
                     switch glp {
-                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, _):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {

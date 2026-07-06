@@ -815,7 +815,7 @@ func knownChatId(_ result: ConnectionPlanResult?) -> String? {
     guard let plan = result?.connectionPlan else { return nil }
     let m = ChatModel.shared
     switch plan {
-    case let .contactAddress(contactAddressPlan, _):
+    case let .contactAddress(contactAddressPlan):
         if case let .known(contact) = contactAddressPlan {
             if m.getContactChat(contact.contactId) == nil {
                 m.addChat(Chat(chatInfo: .direct(contact: contact), chatItems: []))
@@ -823,7 +823,7 @@ func knownChatId(_ result: ConnectionPlanResult?) -> String? {
             return contact.id
         }
         return nil
-    case let .groupLink(groupLinkPlan, _):
+    case let .groupLink(groupLinkPlan):
         switch groupLinkPlan {
         case .known(let groupInfo), .ownLink(let groupInfo):
             if m.getGroupChat(groupInfo.groupId) == nil {

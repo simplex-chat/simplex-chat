@@ -1403,8 +1403,8 @@ enum PlanResolveMode: String {
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan, groupDomain: SimplexDomain?)
-    case groupLink(groupLinkPlan: GroupLinkPlan, contactDomain: SimplexDomain?)
+    case contactAddress(contactAddressPlan: ContactAddressPlan)
+    case groupLink(groupLinkPlan: GroupLinkPlan)
     case error(chatError: ChatError)
 }
 
@@ -1416,7 +1416,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, verifiedDomain: SimplexDomain?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1431,7 +1431,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, verifiedDomain: SimplexDomain?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)
