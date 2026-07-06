@@ -2774,7 +2774,7 @@
     <string name="button_remove_relay_question">Aktarıcı kaldırılsın mı?</string>
     <string name="button_remove_subscriber">Üyeyi kaldır</string>
     <string name="button_remove_subscriber_question">Üye kaldırılsın mı?</string>
-    <string name="rcv_direct_event_group_inv_link_received">1$s grubundan bağlantı talep edildi</string>
+    <string name="rcv_direct_event_group_inv_link_received">%1$s grubundan bağlantı talep edildi</string>
     <string name="simplex_name_resolver_error_desc">Çözümleyici hatası: %1$s</string>
     <string name="appearance_minimize_to_tray_desc">Mesajları almak için arka planda çalışır</string>
     <string name="v6_5_safe_web_links">Güvenli web bağlantıları</string>

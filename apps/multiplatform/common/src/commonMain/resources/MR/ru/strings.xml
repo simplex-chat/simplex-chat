@@ -2879,10 +2879,10 @@
     <string name="add_relays_title">Добавить релеи</string>
     <string name="button_cancel_and_delete_channel">Отменить и удалить канал</string>
     <string name="close_behavior_dialog_close">Закрыть приложение</string>
-    <string name="channel_owner_count_singular">владелец</string>
-    <string name="channel_owner_count_plural">владельцев</string>
-    <string name="channel_owners_contributors_count">владельцев и участников проекта</string>
-    <string name="badge_supported_simplex">поддерживал SimpleX Chat. Срок действия бейджа истек в</string>
+    <string name="channel_owner_count_singular">%1$d владелец</string>
+    <string name="channel_owner_count_plural">%1$d владельцев</string>
+    <string name="channel_owners_contributors_count">%1$d владельцев и участников канала</string>
+    <string name="badge_supported_simplex">%1$s поддерживал SimpleX Chat. Срок действия бейджа истек %2$s</string>
     <string name="settings_section_title_about">О приложении</string>
     <string name="advanced_settings">Продвинутые настройки</string>
     <string name="another_instance_title">Приложение уже запущено</string>

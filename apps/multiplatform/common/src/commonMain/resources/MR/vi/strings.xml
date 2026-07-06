@@ -2491,7 +2491,7 @@
     <string name="relay_bar_active_with_failures">%1$d/%2$d thiết bị hoạt động, %3$d thất bại</string>
     <string name="relay_bar_active_with_removed">%1$d/%2$d thiết bị hoạt động, %3$d bị xóa</string>
     <string name="relay_bar_connected">%1$d/%2$d thiết bị đã kết nối</string>
-    <string name="relay_bar_connected_with_errors">%1$d/%2$d %1$d/%2$d thiết bị đã kết nối, %3$d lỗi</string>
+    <string name="relay_bar_connected_with_errors">%1$d/%2$d thiết bị đã kết nối, %3$d lỗi</string>
     <string name="relay_bar_connected_with_failures">%1$d/%2$d thiết bị đã kết nối, %3$d thất bại</string>
     <string name="relay_bar_connected_with_removed">%1$d/%2$d thiết bị đã kết nối, %3$d bị xóa</string>
     <string name="channel_owner_count_singular">%1$d chủ sở hữu</string>
