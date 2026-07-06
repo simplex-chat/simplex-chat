@@ -3094,7 +3094,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Developer" xml:space="preserve">
         <source>Developer</source>
-        <target>Ontwikkel gereedschap</target>
+        <target>Ontwikkelaar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Developer options" xml:space="preserve">

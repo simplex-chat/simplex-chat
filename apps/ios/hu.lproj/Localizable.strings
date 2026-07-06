@@ -1100,10 +1100,10 @@ new chat action */
 "Cancel" = "Mégse";
 
 /* No comment provided by engineer. */
-"Cancel and delete channel" = "Vissazvonás és a csatorna törlése";
+"Cancel and delete channel" = "Visszavonás és a csatorna törlése";
 
 /* alert title */
-"Cancel creating channel?" = "Vissazvonja a csatorna létrehozását?";
+"Cancel creating channel?" = "Visszavonja a csatorna létrehozását?";
 
 /* No comment provided by engineer. */
 "Cancel migration" = "Átköltöztetés visszavonása";
@@ -4917,7 +4917,7 @@ swipe action */
 "Relay will be removed from channel - this cannot be undone!" = "Az átjátszó el lesz távolítva a csatornából – ez a művelet nem vonható vissza!";
 
 /* alert message */
-"Relays added: %@." = "Átjátszók hozzáadva: %@..";
+"Relays added: %@." = "Átjátszók hozzáadva: %@.";
 
 /* No comment provided by engineer. */
 "Reliability: many relays per channel." = "Megbízhatóság: több átjátszó is használható csatornánként.";

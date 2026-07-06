@@ -474,10 +474,10 @@ swipe action */
 "Add profile" = "Ajouter un profil";
 
 /* No comment provided by engineer. */
-"Add relay" = "Ajouter une relais";
+"Add relay" = "Ajouter un relais";
 
 /* No comment provided by engineer. */
-"Add relays" = "Ajouter un relais";
+"Add relays" = "Ajouter des relais";
 
 /* No comment provided by engineer. */
 "Add relays to restore message delivery." = "Ajouter un relais pour restaurer la livraison des messages.";
@@ -2459,7 +2459,7 @@ chat item action */
 "Error accepting contact request" = "Erreur de validation de la demande de contact";
 
 /* alert title */
-"Error accepting member" = "Erreur lors de l'acception du membre";
+"Error accepting member" = "Erreur lors de l'acceptation du membre";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Erreur lors de l'ajout de membre·s";
@@ -2468,7 +2468,7 @@ chat item action */
 "Error adding relay" = "Erreur lors de l'ajout du relais";
 
 /* alert title */
-"Error adding relays" = "Erreur lors de l'ajout du relais";
+"Error adding relays" = "Erreur lors de l'ajout des relais";
 
 /* alert title */
 "Error adding server" = "Erreur lors de l'ajout du serveur";
@@ -2881,7 +2881,7 @@ server test error */
 "Fix not supported by group member" = "Correction non prise en charge par un membre du groupe";
 
 /* No comment provided by engineer. */
-"For anyone to reach you" = "Pour que n'importe puisse vous contacter";
+"For anyone to reach you" = "Pour que n'importe qui puisse vous contacter";
 
 /* servers error
 servers warning */
@@ -3452,7 +3452,7 @@ servers warning */
 "Keep unused invitation?" = "Conserver l'invitation inutilisée ?";
 
 /* No comment provided by engineer. */
-"Keep your chats clean" = "Garez vos discussions propres";
+"Keep your chats clean" = "Gardez vos discussions propres";
 
 /* No comment provided by engineer. */
 "Keep your connections" = "Conserver vos connexions";
@@ -3755,7 +3755,7 @@ servers warning */
 "Messages from %@ will be shown!" = "Les messages de %@ seront affichés !";
 
 /* No comment provided by engineer. */
-"Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." = "Les messages dans ce canal ne sont pas **chiffrés de bout-en-bout**. Les relais de discussion peuvent voir ces messages.";
+"Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." = "Les messages dans ce canal **ne sont pas chiffrés de bout-en-bout**. Les relais de discussion peuvent voir ces messages.";
 
 /* E2EE info chat item */
 "Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." = "Les messages dans ce canal ne sont pas chiffrés de bout-en-bout. Les relais de discussion peuvent voir ces messages.";
@@ -4358,7 +4358,7 @@ alert button */
 "Or use this QR - print or show online." = "Ou utilisez ce code QR : imprimez-le ou affichez-le en ligne.";
 
 /* No comment provided by engineer. */
-"Organize chats into lists" = "Organisez des discussion en listes";
+"Organize chats into lists" = "Organisez des discussions en listes";
 
 /* No comment provided by engineer. */
 "other" = "autre";
@@ -4610,7 +4610,7 @@ alert button */
 "Prohibit messages reactions." = "Interdire les réactions aux messages.";
 
 /* No comment provided by engineer. */
-"Prohibit reporting messages to moderators." = "Interdire les messages de notification aux modérateur·ices.";
+"Prohibit reporting messages to moderators." = "Interdire de signaler des messages aux modérateur·ices.";
 
 /* No comment provided by engineer. */
 "Prohibit sending direct messages to members." = "Interdire l'envoi de messages directs aux membres.";
@@ -5728,7 +5728,7 @@ report reason */
 "Stop chat" = "Arrêter la discussion";
 
 /* No comment provided by engineer. */
-"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Arrêtez la discussion pour exporter, importer ou supprimer la base de données de la discussion Vous ne pourrez pas recevoir et envoyer de messages pendant que la discussion est arrêté.";
+"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Arrêtez la discussion pour exporter, importer ou supprimer la base de données de la discussion. Vous ne pourrez pas recevoir et envoyer de messages pendant que la discussion est arrêtée.";
 
 /* No comment provided by engineer. */
 "Stop chat?" = "Arrêter la discussion ?";

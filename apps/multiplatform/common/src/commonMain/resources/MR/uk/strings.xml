@@ -2529,11 +2529,11 @@
     <string name="sanitize_links_toggle">Видалити відстеження посилань</string>
     <string name="rcv_direct_event_group_inv_link_received">запит на підключення до групи %1$s</string>
     <string name="relay_bar_active">%1$d/%2$d ретранслятор активний</string>
-    <string name="relay_bar_active_with_errors">%1$d/%2$d ретранслятор активний, %3$d помлики</string>
+    <string name="relay_bar_active_with_errors">%1$d/%2$d ретранслятор активний, %3$d помилки</string>
     <string name="relay_bar_active_with_failures">%1$d/%2$d ретранслятор активний, %3$d невдача</string>
     <string name="relay_bar_active_with_removed">%1$d/%2$d ретранслятор активний, %3$d видалено</string>
     <string name="relay_bar_connected">%1$d/%2$d ретранслятор підключений</string>
-    <string name="relay_bar_connected_with_errors">%1$d/%2$d ретранслятор підключений, %3$d помлики</string>
+    <string name="relay_bar_connected_with_errors">%1$d/%2$d ретранслятор підключений, %3$d помилки</string>
     <string name="relay_bar_connected_with_failures">%1$d/%2$d ретранслятор підключений, %3$d невдача</string>
     <string name="relay_bar_connected_with_removed">%1$d/%2$d ретранслятор підключений, %3$d видалено</string>
     <string name="channel_owner_count_singular">%1$d власник</string>
@@ -2544,7 +2544,7 @@
     <string name="relay_bar_relays_removed">%1$d перемикачі видалені</string>
     <string name="channel_subscriber_count_singular">%1$d підписник</string>
     <string name="channel_subscriber_count_plural">%1$d підписники</string>
-    <string name="badge_supported_simplex">%1$s підтримуваний SimpleX Chat. Завершення дії значка %2$s.</string>
+    <string name="badge_supported_simplex">%1$s підтримував SimpleX Chat. Завершення дії значка %2$s.</string>
     <string name="settings_section_title_about">Про</string>
     <string name="relay_status_accepted">підтверджено</string>
     <string name="relay_status_acknowledged_roster">затверджений список</string>
@@ -2603,8 +2603,8 @@
     <string name="button_channel_relays">Ретранслятори чату</string>
     <string name="chat_relays">Ретранслятори чату</string>
     <string name="channel_relays_title">Ретранслятори чату</string>
-    <string name="chat_relays_forward_messages_in_channels">Чат пересилає повідомлення в каналах, які ви створюєте.</string>
-    <string name="chat_relays_forward_messages">Чат пересилає повідомлення підписникам каналу.</string>
+    <string name="chat_relays_forward_messages_in_channels">Ретранслятори чату пересилають повідомлення в каналах, які ви створюєте.</string>
+    <string name="chat_relays_forward_messages">Ретранслятори чату пересилають повідомлення підписникам каналу.</string>
     <string name="chat_with_admins_is_prohibited">Спілкування з адміністраторами заборонено.</string>
     <string name="chat_with_admins_relay_note">Чати з адміністраторами у публічних каналах не мають шифрування «від кінця до кінця» (E2E) — використовуйте їх лише з надійними серверами-ретрансляторами.</string>
     <string name="support_chats_disabled">Чат із учасниками вимкнено</string>
@@ -2612,7 +2612,7 @@
     <string name="check_relay_address">Перевірте адресу реле та спробуйте ще раз.</string>
     <string name="check_relay_name">Перевірте назву реле та спробуйте ще раз.</string>
     <string name="close_behavior_dialog_close">Закрити додаток</string>
-    <string name="appearance_minimize_to_tray">Закрити в корзину</string>
+    <string name="appearance_minimize_to_tray">Закрити в трей</string>
     <string name="configure_relays">Налаштувати ретранслятори</string>
     <string name="relay_test_step_connect">Підключитися</string>
     <string name="relay_conn_status_connected">підключено</string>

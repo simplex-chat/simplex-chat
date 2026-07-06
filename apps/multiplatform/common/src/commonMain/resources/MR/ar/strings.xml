@@ -2216,7 +2216,7 @@
     <string name="maximum_message_size_reached_non_text">يُرجى تقليل حجم الرسالة أو إزالة الوسائط ثم إرسالها مرة أخرى.</string>
     <string name="maximum_message_size_reached_forwarding">يمكنك نسخ الرسالة وتقليل حجمها لإرسالها.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">عندما يتم تفعيل أكثر من مُشغل واحد، لن يكون لدى أي منهم بيانات تعريفية لمعرفة مَن يتواصل مع مَن.</string>
-    <string name="member_role_will_be_changed_with_notification_chat">سيتم تغيير الدور إلى %s. وسيتم إشعار الجميع في الدردشة.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">سيتم تغيير الدور إلى "%s". وسيتم إشعار الجميع في الدردشة.</string>
     <string name="chat_main_profile_sent">سيتم إرسال ملف تعريفك للدردشة إلى أعضاء الدردشة</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">ستتوقف عن تلقي الرسائل من هذه الدردشة. سيتم حفظ سجل الدردشة.</string>
     <string name="onboarding_network_about_operators">عن المُشغلين</string>
@@ -2833,7 +2833,7 @@
     <string name="embed_only_your_page">لا يمكن عرض المعاينة إلا على صفحتك المذكورة أعلاه.</string>
     <string name="please_upgrade_the_app">يُرجى ترقية التطبيق.</string>
     <string name="channel_owners_contributors_count">%1$d مالكين ومساهمين</string>
-    <string name="badge_supported_simplex">%1$s يدعم تطبيق SimpleX Chat. انتهت صلاحية الشارة في %2$s.</string>
+    <string name="badge_supported_simplex">%1$s دعم تطبيق SimpleX Chat. انتهت صلاحية الشارة في %2$s.</string>
     <string name="relay_status_acknowledged_roster">قائمة المعترف بهم</string>
     <string name="webpage_code_footer">أضف هذا الرمز إلى صفحة الويب الخاصة بك. سيُظهر هذا الرمز معاينة لقناتك أو مجموعتك.</string>
     <string name="app_update_required">يلزم تحديث التطبيق</string>
@@ -2844,7 +2844,7 @@
     <string name="group_member_role_observer_channel">مشترك</string>
     <string name="settings_section_title_support_project">ادعم المشروع</string>
     <string name="badge_unknown_key_desc">الشارة موقّعة بمفتاح لا يتعرف عليه هذا الإصدار من التطبيق. حدِّث التطبيق للتحقق من هذه الشارة.</string>
-    <string name="member_role_will_be_changed_with_notification_channel">سيتم تغيير الدور إلى %s. وسيتم إشعار جميع المشاركين في القناة بذلك.</string>
+    <string name="member_role_will_be_changed_with_notification_channel">سيتم تغيير الدور إلى "%s". وسيتم إشعار جميع المشاركين في القناة بذلك.</string>
     <string name="badge_unverified_desc">تعذّر التحقق من صحة هذه الشارة، وقد لا تكون أصلية.</string>
     <string name="group_link_requires_newer_version">تتطلب هذه المجموعة إصدارًا أحدث من التطبيق. يُرجى تحديث التطبيق للانضمام إليها.</string>
     <string name="unsupported_channel_name">اسم قناة غير مدعوم</string>

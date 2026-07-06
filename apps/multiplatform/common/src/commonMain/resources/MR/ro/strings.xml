@@ -2510,14 +2510,14 @@
     <string name="relay_bar_relays_removed">%1$d relee sterse</string>
     <string name="channel_subscriber_count_singular">%1$d abonat</string>
     <string name="channel_subscriber_count_plural">%1$d abonați</string>
-    <string name="badge_supported_simplex">%1$s suportă SimpleX Chat. Eticheta expiră %2$s.</string>
+    <string name="badge_supported_simplex">%1$s a susținut SimpleX Chat. Insigna a expirat pe %2$s.</string>
     <string name="settings_section_title_about">Despre</string>
     <string name="relay_status_accepted">acceptată</string>
     <string name="app_update_required">Aplicația necesita actualizare</string>
     <string name="badge_unknown_key_title">Eticheta nu poate fi verificată</string>
     <string name="why_built_p7">Deoarece am distrus puterea să știm cine ești. Așa că puterea ta nu poate fi luată niciodată.</string>
-    <string name="onboarding_be_free">Fii liber\nin internetul tău</string>
-    <string name="why_built_tagline">FIi liber in internetul tau.</string>
+    <string name="onboarding_be_free">Fii liber\nîn rețeaua ta</string>
+    <string name="why_built_tagline">Fii liber în rețeaua ta.</string>
     <string name="block_subscriber_for_all_question">Blochezi abonatul pentru toți?</string>
     <string name="chat_banner_bot">Robot</string>
     <string name="one_hand_ui_bottom_bar">Bară de jos</string>
@@ -2526,7 +2526,7 @@
     <string name="info_row_channel">Canal</string>
     <string name="channel_full_name_field">Numele complet al canalului:</string>
     <string name="channel_no_active_relays_try_later">Canalul nu are relee active. Te rugăm încearcă mai târziu.</string>
-    <string name="snd_channel_event_channel_profile_updated">Profilul canalului a fost actualizat</string>
+    <string name="snd_channel_event_channel_profile_updated">profilul canalului a fost actualizat</string>
     <string name="channel_temporarily_unavailable">Canalul este momentan inactiv</string>
     <string name="channel_will_start_with_relays">Canalul va porni cu %1$d din %2$d relee. Continui?</string>
 </resources>

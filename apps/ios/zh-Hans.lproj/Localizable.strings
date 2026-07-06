@@ -4465,7 +4465,7 @@ alert button */
 "owners" = "所有者";
 
 /* No comment provided by engineer. */
-"Owners & contributors" = "所有者";
+"Owners & contributors" = "所有者和贡献者";
 
 /* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "所有权：你可以运营自己的中继。";
@@ -4968,7 +4968,7 @@ swipe action */
 "removed %@" = "已删除 %@";
 
 /* No comment provided by engineer. */
-"removed by operator" = "已被删除";
+"removed by operator" = "已被运营商移除";
 
 /* profile update event chat item */
 "removed contact address" = "删除了联系地址";

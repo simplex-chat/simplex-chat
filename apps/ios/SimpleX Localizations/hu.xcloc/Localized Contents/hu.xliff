@@ -1684,12 +1684,12 @@ new chat action</note>
       </trans-unit>
       <trans-unit id="Cancel and delete channel" xml:space="preserve">
         <source>Cancel and delete channel</source>
-        <target>Vissazvonás és a csatorna törlése</target>
+        <target>Visszavonás és a csatorna törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel creating channel?" xml:space="preserve">
         <source>Cancel creating channel?</source>
-        <target>Vissazvonja a csatorna létrehozását?</target>
+        <target>Visszavonja a csatorna létrehozását?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Cancel migration" xml:space="preserve">
@@ -7475,7 +7475,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Relays added: %@." xml:space="preserve">
         <source>Relays added: %@.</source>
-        <target>Átjátszók hozzáadva: %@..</target>
+        <target>Átjátszók hozzáadva: %@.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Reliability: many relays per channel." xml:space="preserve">

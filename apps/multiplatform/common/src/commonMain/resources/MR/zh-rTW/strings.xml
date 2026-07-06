@@ -2548,8 +2548,8 @@
     <string name="unblock_for_all">為所有人解除封鎖</string>
     <string name="unblock_members_desc">這些成員的訊息將會顯示！</string>
     <string name="member_info_member_failed">失敗</string>
-    <string name="member_role_will_be_changed_with_notification_chat">角色將變更為 %s。聊天中的所有人都會收到通知。</string>
-    <string name="member_role_will_be_changed_with_notification_channel">角色將變更為 %s。頻道中的所有人都會收到通知。</string>
+    <string name="member_role_will_be_changed_with_notification_chat">角色將變更為 "%s"。聊天中的所有人都會收到通知。</string>
+    <string name="member_role_will_be_changed_with_notification_channel">角色將變更為 "%s"。頻道中的所有人都會收到通知。</string>
     <string name="info_row_connection_failed">連線失敗</string>
     <string name="message_queue_info_server_info">伺服器佇列資訊：%1$s\n\n最後收到的訊息：%2$s</string>
     <string name="you_need_to_allow_calls">你需要允許你的聯絡人通話，才能致電給對方。</string>

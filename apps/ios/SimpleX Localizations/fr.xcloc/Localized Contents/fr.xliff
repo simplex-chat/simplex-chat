@@ -790,12 +790,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add relay" xml:space="preserve">
         <source>Add relay</source>
-        <target>Ajouter une relais</target>
+        <target>Ajouter un relais</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add relays" xml:space="preserve">
         <source>Add relays</source>
-        <target>Ajouter un relais</target>
+        <target>Ajouter des relais</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add relays to restore message delivery." xml:space="preserve">
@@ -3754,7 +3754,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error accepting member" xml:space="preserve">
         <source>Error accepting member</source>
-        <target>Erreur lors de l'acception du membre</target>
+        <target>Erreur lors de l'acceptation du membre</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -3769,7 +3769,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error adding relays" xml:space="preserve">
         <source>Error adding relays</source>
-        <target>Erreur lors de l'ajout du relais</target>
+        <target>Erreur lors de l'ajout des relais</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error adding server" xml:space="preserve">
@@ -4469,7 +4469,7 @@ server test error</note>
       </trans-unit>
       <trans-unit id="For anyone to reach you" xml:space="preserve">
         <source>For anyone to reach you</source>
-        <target>Pour que n'importe puisse vous contacter</target>
+        <target>Pour que n'importe qui puisse vous contacter</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve">
@@ -5330,7 +5330,7 @@ Voici votre lien pour le groupe %@ !</target>
       </trans-unit>
       <trans-unit id="Keep your chats clean" xml:space="preserve">
         <source>Keep your chats clean</source>
-        <target>Garez vos discussions propres</target>
+        <target>Gardez vos discussions propres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -5783,7 +5783,7 @@ Voici votre lien pour le groupe %@ !</target>
       </trans-unit>
       <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve">
         <source>Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages.</source>
-        <target>Les messages dans ce canal ne sont pas **chiffrés de bout-en-bout**. Les relais de discussion peuvent voir ces messages.</target>
+        <target>Les messages dans ce canal **ne sont pas chiffrés de bout-en-bout**. Les relais de discussion peuvent voir ces messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve">
@@ -6724,7 +6724,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Organize chats into lists" xml:space="preserve">
         <source>Organize chats into lists</source>
-        <target>Organisez des discussion en listes</target>
+        <target>Organisez des discussions en listes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Other" xml:space="preserve">
@@ -7114,7 +7114,7 @@ Erreur : %@</target>
       </trans-unit>
       <trans-unit id="Prohibit reporting messages to moderators." xml:space="preserve">
         <source>Prohibit reporting messages to moderators.</source>
-        <target>Interdire les messages de notification aux modérateur·ices.</target>
+        <target>Interdire de signaler des messages aux modérateur·ices.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
@@ -8893,7 +8893,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
-        <target>Arrêtez la discussion pour exporter, importer ou supprimer la base de données de la discussion Vous ne pourrez pas recevoir et envoyer de messages pendant que la discussion est arrêté.</target>
+        <target>Arrêtez la discussion pour exporter, importer ou supprimer la base de données de la discussion. Vous ne pourrez pas recevoir et envoyer de messages pendant que la discussion est arrêtée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat?" xml:space="preserve">

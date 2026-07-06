@@ -2701,7 +2701,7 @@
     <string name="open_server_settings_button">サーバ設定を開く</string>
     <string name="max_group_mentions_per_message_reached">1つのメッセージにつき最大 %1$s 人のメンバーをメンションできます！</string>
     <string name="channel_members_title_subscribers">購読者</string>
-    <string name="channel_members_section_owners">オーナー</string>
+    <string name="channel_members_section_owners">オーナーと貢献者</string>
     <string name="channel_subscriber_count_singular">%1$d 人の購読者</string>
     <string name="channel_subscriber_count_plural">%1$d 人の購読者</string>
     <string name="channel_member_you">あなた</string>

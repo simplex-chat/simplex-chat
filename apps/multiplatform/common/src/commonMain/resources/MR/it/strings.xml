@@ -2239,7 +2239,7 @@
     <string name="only_chat_owners_can_change_prefs">Solo i proprietari della chat possono modificarne le preferenze.</string>
     <string name="onboarding_notifications_mode_battery">Notifiche e batteria</string>
     <string name="maximum_message_size_reached_forwarding">Puoi copiare e ridurre la dimensione del messaggio per inviarlo.</string>
-    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in %s. Verrà notificato a tutti nella chat.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in "%s". Verrà notificato a tutti nella chat.</string>
     <string name="chat_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri della chat</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Non riceverai più messaggi da questa chat. La cronologia della chat verrà conservata.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Quando più di un operatore è attivato, nessuno di essi ha metadati per capire chi comunica con chi.</string>
@@ -2870,7 +2870,7 @@
     <string name="group_member_role_observer_channel">iscritto</string>
     <string name="settings_section_title_support_project">Sostieni il progetto</string>
     <string name="badge_unknown_key_desc">La targhetta è firmata con una chiave che questa versione dell\'app non riconosce. Aggiorna l\'app per verificare questa targhetta.</string>
-    <string name="member_role_will_be_changed_with_notification_channel">Il ruolo verrà cambiato in %s. Verrà avvisato chiunque nel canale.</string>
+    <string name="member_role_will_be_changed_with_notification_channel">Il ruolo verrà cambiato in "%s". Verrà avvisato chiunque nel canale.</string>
     <string name="badge_unverified_desc">Non è stato possibile verificare questa targhetta e potrebbe non essere autentica.</string>
     <string name="group_link_requires_newer_version">Questo gruppo richiede una versione dell\'app più recente. Aggiorna l\'app per entrare.</string>
     <string name="unsupported_channel_name">Nome del canale non supportato</string>

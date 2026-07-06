@@ -2220,7 +2220,7 @@
     <string name="delete_chat_for_self_cannot_undo_warning">El chat será eliminado para tí. ¡No puede deshacerse!</string>
     <string name="only_chat_owners_can_change_prefs">Sólo los propietarios del chat pueden cambiar las preferencias.</string>
     <string name="member_will_be_removed_from_chat_cannot_be_undone">El miembro será eliminado del chat. ¡No puede deshacerse!</string>
-    <string name="member_role_will_be_changed_with_notification_chat">El rol cambiará a %s y se notificará en el chat.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">El rol cambiará a "%s" y se notificará en el chat.</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Dejarás de recibir mensajes del chat. El historial del chat se conservará.</string>
     <string name="how_it_helps_privacy">Cómo ayuda a la privacidad</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Cuando está habilitado más de un operador, ninguno dispone de los metadatos para conocer quién se comunica con quién.</string>
@@ -2688,7 +2688,7 @@
     <string name="group_reports_subscriber_reports">Informes de suscriptores</string>
     <string name="allow_direct_messages_channel">Se permiten mensajes directos entre suscriptores.</string>
     <string name="prohibit_direct_messages_channel">No se permiten mensajes directos entre suscriptores.</string>
-    <string name="enable_sending_recent_history_channel">Se envían los 100 últimos mensajes a los miembros nuevos.</string>
+    <string name="enable_sending_recent_history_channel">Se envían los 100 últimos mensajes a los suscriptores nuevos.</string>
     <string name="disable_sending_recent_history_channel">No se envía el historial a los suscriptores nuevos.</string>
     <string name="group_members_can_send_disappearing_channel">Los suscriptores pueden enviar mensajes temporales.</string>
     <string name="group_members_can_send_dms_channel">Los suscriptores pueden enviar mensajes directos.</string>
@@ -2711,7 +2711,7 @@
     <string name="relay_bar_owner_no_delivery">Añadir servidores pare retomar el envío.</string>
     <string name="a_link_for_one_person">Enlace para un solo contacto</string>
     <string name="allow_chat_with_admins">Permite que los miembros chateen con los administradores.</string>
-    <string name="allow_chat_with_admins_channel">Permite que los miembros chateen con los administradores.</string>
+    <string name="allow_chat_with_admins_channel">Permite que los suscriptores chateen con los administradores.</string>
     <string name="relay_bar_all_relays_failed">Todos los servidores han fallado</string>
     <string name="relay_bar_all_relays_removed">Todos los servidores eliminados</string>
     <string name="onboarding_be_free">Sé libre\nen tu red</string>
@@ -2820,7 +2820,7 @@
     <string name="relays_added_format">Servidores añadidos %1$s.</string>
     <string name="relay_will_be_removed_from_channel">El servidor será eliminado del canal. ¡No puede deshacerse!</string>
     <string name="relay_conn_status_removed">eliminado</string>
-    <string name="button_remove_relay">Eliminar servidor</string>
+    <string name="button_remove_relay">Quitar servidor</string>
     <string name="button_remove_relay_question">¿Eliminar el servidor?</string>
     <string name="select_relays">Seleccionar servidores</string>
     <string name="tray_show">Ver SimpleX</string>
@@ -2830,7 +2830,7 @@
     <string name="settings_section_title_contact">Contacto</string>
     <string name="group_member_role_member_channel">colaborador</string>
     <string name="copy_code">Copiar código</string>
-    <string name="webpage_info">Crea una página web para mostrar la vista previa de tu canal a las visitas antes de suscribirse . Alójala tú mismo o usa cualquier servicio de alojamiento estático.</string>
+    <string name="webpage_info">Crea una página web para mostrar la vista previa de tu canal a las visitas antes de suscribirse. Alójala tú mismo o usa cualquier servicio de alojamiento estático.</string>
     <string name="enter_webpage_url">Introduce la URL de la web</string>
     <string name="group_webpage">Web del grupo</string>
     <string name="help_and_support">Ayuda y asistencia</string>
@@ -2847,7 +2847,7 @@
     <string name="group_member_role_observer_channel">suscriptor</string>
     <string name="settings_section_title_support_project">Apoyar el proyecto</string>
     <string name="badge_unknown_key_desc">La insignia está firmada con una clave que esta versión de la aplicación no reconoce. Actualiza la aplicación para verificar la insignia.</string>
-    <string name="member_role_will_be_changed_with_notification_channel">El rol cambiará a %s y se notificará en el canal.</string>
+    <string name="member_role_will_be_changed_with_notification_channel">El rol cambiará a "%s" y se notificará en el canal.</string>
     <string name="badge_unverified_desc">No se ha podido verificar la insignia, podría no ser auténtica.</string>
     <string name="channel_owner_count_singular">%1$d propietario</string>
     <string name="channel_owner_count_plural">%1$d propietarios</string>

@@ -2305,7 +2305,7 @@
     <string name="maximum_message_size_reached_non_text">Bitte verkleinern Sie die Nachrichten-Größe oder entfernen Sie Medien und versenden Sie diese erneut.</string>
     <string name="only_chat_owners_can_change_prefs">Präferenzen können nur von Chat-Eigentümern geändert werden.</string>
     <string name="maximum_message_size_reached_text">Bitte verkleinern Sie die Nachrichten-Größe und versenden Sie diese erneut.</string>
-    <string name="member_role_will_be_changed_with_notification_chat">Die Rolle wird auf %s geändert. Im Chat wird Jeder darüber informiert.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Die Rolle wird auf "%s" geändert. Im Chat wird Jeder darüber informiert.</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</string>
     <string name="maximum_message_size_reached_forwarding">Sie können die Nachricht kopieren und verkleinern, um sie zu versenden.</string>
     <string name="button_delete_chat">Chat löschen</string>
@@ -2934,12 +2934,12 @@
     <string name="more_privacy">Mehr Privatsphäre</string>
     <string name="embed_only_your_page">Nur Ihre oben genannte Seite kann die Vorschau anzeigen.</string>
     <string name="please_upgrade_the_app">Bitte die App aktualisieren.</string>
-    <string name="badge_invested">%s hat sich am Chat‑Crowdfunding beteiligt.</string>
-    <string name="badge_supports_simplex">%s hat SimpleX Chat unterstützt.</string>
+    <string name="badge_invested">%s hat sich am SimpleX Chat-Crowdfunding beteiligt.</string>
+    <string name="badge_supports_simplex">%s unterstützt SimpleX Chat.</string>
     <string name="group_member_role_observer_channel">Abonnent</string>
     <string name="settings_section_title_support_project">Unterstützen Sie das Projekt</string>
     <string name="badge_unknown_key_desc">Das Abzeichen ist mit einem Schlüssel signiert, den diese App‑Version nicht erkennt. Aktualisieren Sie die App, um dieses Abzeichen zu verifizieren.</string>
-    <string name="member_role_will_be_changed_with_notification_channel">Die Rolle wird auf %s geändert. Alle Kanalmitglieder werden benachrichtigt.</string>
+    <string name="member_role_will_be_changed_with_notification_channel">Die Rolle wird auf "%s" geändert. Alle Kanalmitglieder werden benachrichtigt.</string>
     <string name="badge_unverified_desc">Dieses Abzeichen konnte nicht verifiziert werden und ist möglicherweise nicht echt.</string>
     <string name="group_link_requires_newer_version">Diese Gruppe erfordert eine neuere App‑Version. Bitte aktualisieren Sie die App, um beizutreten.</string>
     <string name="unsupported_channel_name">Kanalname wird nicht unterstützt</string>
@@ -2962,7 +2962,7 @@
     <string name="simplex_name_error">Fehler beim SimpleX-Name</string>
     <string name="simplex_name_not_verified">SimpleX-Name nicht verifiziert</string>
     <string name="simplex_name_no_valid_link_desc">Der SimpleX-Name %1$s wurde registriert, aber er hat keinen gültigen Link.</string>
-    <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s ist registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.“</string>
+    <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s ist registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.</string>
     <string name="simplex_name_owner_no_channel_link">Der SimpleX‑Name %1$s ist ohne Kanal‑Link registriert. Fügen Sie den Kanal‑Link über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_owner_no_address">Der SimpleX‑Name %1$s ist ohne SimpleX-Adresse registriert. Fügen Sie die SimpleX-Adresse über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_not_found_desc">Dieser SimpleX-Name ist nicht registriert. Bitte überprüfen Sie den Namen.</string>

@@ -122,7 +122,7 @@
 "%@ downloaded" = "%@ встановлено";
 
 /* badge alert */
-"%@ invested in SimpleX Chat crowdfunding." = "%@ інвестований в SimpleX Chat краудфандінг.";
+"%@ invested in SimpleX Chat crowdfunding." = "%@ інвестував в SimpleX Chat краудфандінг.";
 
 /* notification title */
 "%@ is connected!" = "%@ підключено!";
@@ -140,7 +140,7 @@
 "%@ servers" = "%@ сервери";
 
 /* badge alert */
-"%@ supports SimpleX Chat." = "%@ підтримується SimpleX Chat.";
+"%@ supports SimpleX Chat." = "%@ підтримує SimpleX Chat.";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ завантажено";
@@ -161,7 +161,7 @@
 "%@:" = "%@:";
 
 /* badge alert */
-"%1$@ supported SimpleX Chat. The badge expired on %2$@." = "%1$@ підтримуваний SimpleX Chat. Термін дії значка вичерпався %2$@.";
+"%1$@ supported SimpleX Chat. The badge expired on %2$@." = "%1$@ підтримував SimpleX Chat. Термін дії значка вичерпався %2$@.";
 
 /* time interval */
 "%d days" = "%d днів";
@@ -500,7 +500,7 @@ swipe action */
 "Add team members" = "Додайте учасників команди";
 
 /* No comment provided by engineer. */
-"Add this code to your webpage. It will display the preview of your channel / group." = "Додай цей код на твою сторінку. Це буде відображено для передпергляду твого каналу / групи.";
+"Add this code to your webpage. It will display the preview of your channel / group." = "Додай цей код на твою сторінку. Це буде відображено для передперегляду твого каналу / групи.";
 
 /* No comment provided by engineer. */
 "Add to another device" = "Додати до іншого пристрою";
@@ -716,7 +716,7 @@ swipe action */
 "Allow your contacts to send disappearing messages." = "Дозвольте своїм контактам надсилати зникаючі повідомлення.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to send files and media." = "Дозволяє абонентам спілкуватися з адміністраторами.";
+"Allow your contacts to send files and media." = "Дозволяє вашим контактам надсилати файли та медіа.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Дозвольте своїм контактам надсилати голосові повідомлення.";

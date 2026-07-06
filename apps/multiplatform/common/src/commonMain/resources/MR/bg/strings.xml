@@ -485,7 +485,7 @@
     <string name="receipts_section_description_1">Те могат да бъдат променени в настройките за всеки контакт и група.</string>
     <string name="settings_developer_tools">Инструменти за разработчици</string>
     <string name="receipts_contacts_disable_for_all">Деактивиране за всички</string>
-    <string name="settings_section_title_delivery_receipts">Изпращайте потвърждениe за доставка на</string>
+    <string name="settings_section_title_delivery_receipts">Изпращайте потвърждение за доставка на</string>
     <string name="delete_messages_after">Изтрий съобщенията след</string>
     <string name="chat_item_ttl_seconds">%s секунда(и)</string>
     <string name="delete_messages">Изтрий съобщенията</string>

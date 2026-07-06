@@ -92,7 +92,7 @@
       </trans-unit>
       <trans-unit id="%@ invested in SimpleX Chat crowdfunding." xml:space="preserve">
         <source>%@ invested in SimpleX Chat crowdfunding.</source>
-        <target>%@ ha participado en la financiación colelctiva de SimpleX Chat.</target>
+        <target>%@ ha participado en la financiación colectiva de SimpleX Chat.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -800,7 +800,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add relays" xml:space="preserve">
         <source>Add relays</source>
-        <target>Añadir servidor</target>
+        <target>Añadir servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add relays to restore message delivery." xml:space="preserve">
@@ -1095,7 +1095,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve">
         <source>Allow subscribers to chat with admins.</source>
-        <target>Permite que los miembros chateen con los administradores.</target>
+        <target>Permite que los suscriptores chateen con los administradores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -2591,7 +2591,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." xml:space="preserve">
         <source>Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting.</source>
-        <target>Crea una página web para mostrar la vista previa de tu canal a las visitas antes de suscribirse . Alójala tú mismo o usa cualquier servicio de alojamiento estático.</target>
+        <target>Crea una página web para mostrar la vista previa de tu canal a las visitas antes de suscribirse. Alójala tú mismo o usa cualquier servicio de alojamiento estático.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -3086,7 +3086,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Delete relay" xml:space="preserve">
         <source>Delete relay</source>
-        <target>Eliminar retransmisión</target>
+        <target>Eliminar servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete report" xml:space="preserve">
@@ -7470,7 +7470,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Relay will be removed from channel - this cannot be undone!" xml:space="preserve">
         <source>Relay will be removed from channel - this cannot be undone!</source>
-        <target>El sevidor será eliminado del canal. ¡No puede deshacerse!</target>
+        <target>El servidor será eliminado del canal. ¡No puede deshacerse!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Relays added: %@." xml:space="preserve">
@@ -7525,7 +7525,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remove relay" xml:space="preserve">
         <source>Remove relay</source>
-        <target>Desmontar la retransmisión</target>
+        <target>Quitar servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove relay?" xml:space="preserve">
@@ -8214,7 +8214,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send up to 100 last messages to new subscribers." xml:space="preserve">
         <source>Send up to 100 last messages to new subscribers.</source>
-        <target>Se envían los 100 últimos mensajes a los miembros nuevos.</target>
+        <target>Se envían los 100 últimos mensajes a los suscriptores nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve">

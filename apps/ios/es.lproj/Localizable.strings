@@ -122,7 +122,7 @@
 "%@ downloaded" = "%@ descargado";
 
 /* badge alert */
-"%@ invested in SimpleX Chat crowdfunding." = "%@ ha participado en la financiación colelctiva de SimpleX Chat.";
+"%@ invested in SimpleX Chat crowdfunding." = "%@ ha participado en la financiación colectiva de SimpleX Chat.";
 
 /* notification title */
 "%@ is connected!" = "%@ ¡está conectado!";
@@ -497,7 +497,7 @@ swipe action */
 "Add relay" = "Añadir servidor";
 
 /* No comment provided by engineer. */
-"Add relays" = "Añadir servidor";
+"Add relays" = "Añadir servidores";
 
 /* No comment provided by engineer. */
 "Add relays to restore message delivery." = "Añade servidores para restaurar la entrega de mensajes.";
@@ -692,7 +692,7 @@ swipe action */
 "Allow sharing" = "Permitir compartir";
 
 /* No comment provided by engineer. */
-"Allow subscribers to chat with admins." = "Permite que los miembros chateen con los administradores.";
+"Allow subscribers to chat with admins." = "Permite que los suscriptores chateen con los administradores.";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Se permite la eliminación irreversible de mensajes. (24 horas)";
@@ -1716,7 +1716,7 @@ server test step */
 "Create a group using a random profile." = "Crear grupo usando perfil aleatorio.";
 
 /* No comment provided by engineer. */
-"Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." = "Crea una página web para mostrar la vista previa de tu canal a las visitas antes de suscribirse . Alójala tú mismo o usa cualquier servicio de alojamiento estático.";
+"Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." = "Crea una página web para mostrar la vista previa de tu canal a las visitas antes de suscribirse. Alójala tú mismo o usa cualquier servicio de alojamiento estático.";
 
 /* server test step */
 "Create file" = "Crear archivo";
@@ -2037,7 +2037,7 @@ alert button */
 "Delete queue" = "Eliminar cola";
 
 /* No comment provided by engineer. */
-"Delete relay" = "Eliminar retransmisión";
+"Delete relay" = "Eliminar servidor";
 
 /* No comment provided by engineer. */
 "Delete report" = "Eliminar informe";
@@ -4914,7 +4914,7 @@ swipe action */
 "Relay test failed!" = "¡El test del servidor ha fallado!";
 
 /* alert message */
-"Relay will be removed from channel - this cannot be undone!" = "El sevidor será eliminado del canal. ¡No puede deshacerse!";
+"Relay will be removed from channel - this cannot be undone!" = "El servidor será eliminado del canal. ¡No puede deshacerse!";
 
 /* alert message */
 "Relays added: %@." = "Servidores añadidos: %@.";
@@ -4947,7 +4947,7 @@ swipe action */
 "Remove passphrase from keychain?" = "¿Eliminar contraseña de Keychain?";
 
 /* No comment provided by engineer. */
-"Remove relay" = "Desmontar la retransmisión";
+"Remove relay" = "Quitar servidor";
 
 /* alert title */
 "Remove relay?" = "¿Eliminar el servidor?";
@@ -5416,7 +5416,7 @@ chat item action */
 "Send up to 100 last messages to new members." = "Se envían los 100 últimos mensajes a los miembros nuevos.";
 
 /* No comment provided by engineer. */
-"Send up to 100 last messages to new subscribers." = "Se envían los 100 últimos mensajes a los miembros nuevos.";
+"Send up to 100 last messages to new subscribers." = "Se envían los 100 últimos mensajes a los suscriptores nuevos.";
 
 /* No comment provided by engineer. */
 "Send your private feedback to groups." = "Envía tu comentario privado a los grupos.";

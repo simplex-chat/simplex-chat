@@ -6762,7 +6762,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Owners &amp; contributors" xml:space="preserve">
         <source>Owners &amp; contributors</source>
-        <target>所有者</target>
+        <target>所有者和贡献者</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ownership: you can run your own relays." xml:space="preserve">
@@ -11852,7 +11852,7 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="removed by operator" xml:space="preserve">
         <source>removed by operator</source>
-        <target>已被删除</target>
+        <target>已被运营商移除</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed contact address" xml:space="preserve">

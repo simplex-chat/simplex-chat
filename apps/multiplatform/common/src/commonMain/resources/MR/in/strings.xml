@@ -2658,10 +2658,10 @@
     <string name="get_started">Mulai</string>
     <string name="chat_link_group">Tautan grup</string>
     <string name="group_webpage">Halaman web grup</string>
-    <string name="help_and_support">Help &amp; support</string>
+    <string name="help_and_support">Bantuan &amp; dukungan</string>
     <string name="recent_history_is_not_sent_to_new_members_channel">Riwayat tidak dikirim ke pelanggan baru.</string>
     <string name="web_page_url_placeholder">https://</string>
-    <string name="close_behavior_dialog_text">Jika Anda memilih Tutup, pesan tidak akan diterima. Anda dapat mengubahnya nanti di pengaturan Tampilan.</string>
+    <string name="close_behavior_dialog_text">Jika Anda memilih Tutup, pesan tidak akan diterima.\nAnda dapat mengubahnya nanti di pengaturan Tampilan.</string>
     <string name="down_migration_warning_chat_relays">Jika Anda bergabung atau membuat saluran, saluran tersebut akan berhenti bekerja secara permanen.</string>
     <string name="content_filter_images">Gambar</string>
     <string name="relay_status_inactive">tidak aktif</string>
@@ -2687,11 +2687,11 @@
     <string name="more_privacy">Privasi lebih lanjut</string>
     <string name="onboarding_network_commitments">Komitmen jaringan</string>
     <string name="network_error">Galat jaringan</string>
-    <string name="onboarding_network_routers_cannot_know">Perute jaringan tidak dapat mengetahui siapa yang berbicara dengan siapa</string>
+    <string name="onboarding_network_routers_cannot_know">Perute jaringan tidak dapat mengetahui\nsiapa yang berbicara dengan siapa</string>
     <string name="relay_status_new">baru</string>
     <string name="new_1_time_link">Tautan 1-kali baru</string>
     <string name="new_chat_relay">Relai obrolan baru</string>
-    <string name="onboarding_no_account">Tanpa akun. Tanpa telepon. Tanpa email. Tanpa ID.</string>
+    <string name="onboarding_no_account">Tanpa akun. Tanpa telepon. Tanpa email. Tanpa ID.\nEnkripsi paling aman.</string>
     <string name="relay_bar_no_active_relays">Tidak ada relay aktif</string>
     <string name="no_available_relays">Tidak ada relai yang tersedia</string>
     <string name="why_built_p1">Tidak ada yang melacak percakapan Anda. Tidak ada yang menggambar peta ke mana pun Anda pergi. Privasi tidak pernah menjadi fitur — itu adalah cara hidup.</string>
@@ -2719,10 +2719,10 @@
     <string name="share_via_chat">Bagikan via obrolan</string>
     <string name="tap_to_open">Ketuk untuk buka</string>
     <string name="chat_link_one_time">Tautan 1-kali</string>
-    <string name="chat_link_signed">(ditandai)</string>
+    <string name="chat_link_signed">(ditandatangani)</string>
     <string name="owner_verification_failed">⚠️ Verifikasi tanda tangan gagal: %s.</string>
     <string name="you_are_subscriber">anda adalah pelanggan</string>
     <string name="onboarding_send_1_time_link">Kirim tautannya via aplikasi pesan apa pun - aman. Minta untuk tempel ke SimpleX.</string>
-    <string name="onboarding_or_show_qr_code">Atau perlihat kode QR atau melalui panggilan video.</string>
+    <string name="onboarding_or_show_qr_code">Atau perlihatkan kode QR secara langsung atau melalui panggilan video.</string>
     <string name="onboarding_post_address">Gunakan alamat ini di profil media sosial, situs web, atau tanda tangan email Anda.</string>
 </resources>

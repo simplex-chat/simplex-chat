@@ -2774,7 +2774,7 @@
     <string name="channel_owner_count_plural">%1$d vlastníci</string>
     <string name="channel_owners_contributors_count">%1$d vlastníků &amp; přispěvatelů</string>
     <string name="badge_supported_simplex">%1$s podpořilo SimpleX Chat. Odznak prošel %2$s.</string>
-    <string name="settings_section_title_about">O</string>
+    <string name="settings_section_title_about">O aplikaci</string>
     <string name="relay_status_rejected">odmítnuto</string>
     <string name="member_info_relay_status_rejected_by_operator">odmítnuto operátorem relé</string>
 </resources>

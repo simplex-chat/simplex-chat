@@ -37,7 +37,7 @@
       </trans-unit>
       <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve">
         <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
-        <target>%1$@ підтримуваний SimpleX Chat. Термін дії значка вичерпався %2$@.</target>
+        <target>%1$@ підтримував SimpleX Chat. Термін дії значка вичерпався %2$@.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve">
@@ -92,7 +92,7 @@
       </trans-unit>
       <trans-unit id="%@ invested in SimpleX Chat crowdfunding." xml:space="preserve">
         <source>%@ invested in SimpleX Chat crowdfunding.</source>
-        <target>%@ інвестований в SimpleX Chat краудфандінг.</target>
+        <target>%@ інвестував в SimpleX Chat краудфандінг.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -122,7 +122,7 @@
       </trans-unit>
       <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve">
         <source>%@ supports SimpleX Chat.</source>
-        <target>%@ підтримується SimpleX Chat.</target>
+        <target>%@ підтримує SimpleX Chat.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
@@ -825,7 +825,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add this code to your webpage. It will display the preview of your channel / group." xml:space="preserve">
         <source>Add this code to your webpage. It will display the preview of your channel / group.</source>
-        <target>Додай цей код на твою сторінку. Це буде відображено для передпергляду твого каналу / групи.</target>
+        <target>Додай цей код на твою сторінку. Це буде відображено для передперегляду твого каналу / групи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -1155,7 +1155,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
         <source>Allow your contacts to send files and media.</source>
-        <target>Дозволяє абонентам спілкуватися з адміністраторами.</target>
+        <target>Дозволяє вашим контактам надсилати файли та медіа.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">

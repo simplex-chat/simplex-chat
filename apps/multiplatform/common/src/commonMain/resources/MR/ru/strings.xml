@@ -2286,7 +2286,7 @@
     <string name="info_row_chat">Разговор</string>
     <string name="member_will_be_removed_from_chat_cannot_be_undone">Член будет удалён из разговора - это действие нельзя отменить!</string>
     <string name="network_preset_servers_title">Серверы по умолчанию</string>
-    <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на %s. Все участники разговора получат уведомление.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на "%s". Все участники разговора получат уведомление.</string>
     <string name="chat_main_profile_sent">Ваш профиль будет отправлен участникам разговора</string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Те же условия будут действовать для оператора <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Те же условия будут действовать для операторов: <b>%s</b>.]]></string>
@@ -2882,7 +2882,7 @@
     <string name="channel_owner_count_singular">%1$d владелец</string>
     <string name="channel_owner_count_plural">%1$d владельцев</string>
     <string name="channel_owners_contributors_count">%1$d владельцев и участников канала</string>
-    <string name="badge_supported_simplex">%1$s поддерживал SimpleX Chat. Срок действия бейджа истек %2$s</string>
+    <string name="badge_supported_simplex">%1$s поддерживал SimpleX Chat. Срок действия бейджа истек %2$s.</string>
     <string name="settings_section_title_about">О приложении</string>
     <string name="advanced_settings">Продвинутые настройки</string>
     <string name="another_instance_title">Приложение уже запущено</string>
@@ -2916,5 +2916,5 @@
     <string name="copy_code">Скопировать код</string>
     <string name="relay_bar_no_relays">Релеи отсутствуют</string>
     <string name="no_relays_selected">Релеи не выбраны</string>
-    <string name="tray_tooltip_unread">SimplexX - %d непрочитанных сообщений</string>
+    <string name="tray_tooltip_unread">SimpleX - %d непрочитанных сообщений</string>
 </resources>
