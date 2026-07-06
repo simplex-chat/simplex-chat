@@ -1321,9 +1321,9 @@ swipe action</note>
         <target>Anhängen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve" approved="no">
         <source>Audio &amp; video calls</source>
-        <target>Audio- &amp; Videoanrufe</target>
+        <target state="translated">Audio- und Videoanrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio and video calls" xml:space="preserve">
@@ -2794,9 +2794,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Datenbank-Passwort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
-        <target>Datenbank-Passwort &amp; -Export</target>
+        <target state="translated">Datenbank-Passwort und -Export</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -3511,9 +3511,9 @@ chat item action</note>
         <target>TCP-Keep-alive aktivieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable at least one chat relay in Network &amp; Servers." xml:space="preserve">
+      <trans-unit id="Enable at least one chat relay in Network &amp; Servers." xml:space="preserve" approved="no">
         <source>Enable at least one chat relay in Network &amp; Servers.</source>
-        <target>Aktivieren Sie mindestens ein Chat‑Relais unter 'Netzwerk &amp; Server'.</target>
+        <target state="translated">Aktivieren Sie mindestens ein Chat‑Relais unter "Netzwerk und Server".</target>
         <note>channel creation warning</note>
       </trans-unit>
       <trans-unit id="Enable automatic message deletion?" xml:space="preserve">
@@ -3601,9 +3601,9 @@ chat item action</note>
         <target>Lokale Dateien verschlüsseln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
+      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve" approved="no">
         <source>Encrypt stored files &amp; media</source>
-        <target>Gespeicherte Dateien &amp; Medien verschlüsseln</target>
+        <target state="translated">Gespeicherte Dateien und Medien verschlüsseln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -4353,9 +4353,9 @@ server test error</note>
         <target>Dateien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files &amp; media" xml:space="preserve">
+      <trans-unit id="Files &amp; media" xml:space="preserve" approved="no">
         <source>Files &amp; media</source>
-        <target>Dateien &amp; Medien</target>
+        <target state="translated">Dateien und Medien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files and media" xml:space="preserve">
@@ -5956,9 +5956,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Name</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Network &amp; servers" xml:space="preserve">
+      <trans-unit id="Network &amp; servers" xml:space="preserve" approved="no">
         <source>Network &amp; servers</source>
-        <target>Netzwerk &amp; Server</target>
+        <target state="translated">Netzwerk und Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network commitments" xml:space="preserve">
@@ -6126,7 +6126,7 @@ wer mit wem kommuniziert</target>
       <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve" approved="no">
         <source>No account. No phone. No email. No ID.
 The most secure encryption.</source>
-        <target state="translated">Kein Konto. Keine Telefonnummer. Keine E‑Mail. Keine ID.
+        <target state="translated">Kein Benutzerkonto. Keine Telefonnummer. Keine E‑Mail. Keine ID.
 Die sicherste Verschlüsselung.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -7153,11 +7153,11 @@ Fehler: %@</target>
         <target>App-Bildschirm schützen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target>Schützen Sie Ihre IP-Adresse vor den Nachrichten-Routern, die Ihre Kontakte ausgewählt haben.
-Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
+        <target state="translated">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Routern, die Ihre Kontakte ausgewählt haben.
+Aktivieren Sie es in den *Netzwerk und Server* Einstellungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
@@ -9364,9 +9364,9 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target>Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." xml:space="preserve">
+      <trans-unit id="There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." xml:space="preserve" approved="no">
         <source>There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected.</source>
-        <target>Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzernamen, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.</target>
+        <target state="translated">Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzerkonten, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="These conditions will also apply for: **%@**." xml:space="preserve">
@@ -10662,9 +10662,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie sollten Benachrichtigungen erhalten.</target>
         <note>token info</note>
       </trans-unit>
-      <trans-unit id="You were born without an account" xml:space="preserve">
+      <trans-unit id="You were born without an account" xml:space="preserve" approved="no">
         <source>You were born without an account</source>
-        <target>Sie wurden ohne eine Benutzerkennung geboren.</target>
+        <target state="translated">Sie wurden ohne ein Benutzerkonto geboren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be able to send messages **only after your request is accepted**." xml:space="preserve">
@@ -11718,12 +11718,12 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve" approved="no">
         <source>received answer…</source>
-        <target state="translated">Antwort erhalten …</target>
+        <target state="translated">Antwort erhalten…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="received confirmation…" xml:space="preserve" approved="no">
         <source>received confirmation…</source>
-        <target state="translated">Bestätigung erhalten …</target>
+        <target state="translated">Bestätigung erhalten…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected" xml:space="preserve">
