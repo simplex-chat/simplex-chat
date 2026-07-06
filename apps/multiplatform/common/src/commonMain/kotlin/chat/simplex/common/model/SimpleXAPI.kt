@@ -186,6 +186,7 @@ class AppPreferences {
   val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
   val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
   val liveMessageAlertShown = mkBoolPreference(SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN, false)
+  val signMessageAlertShown = mkBoolPreference(SHARED_PREFS_SIGN_MESSAGE_ALERT_SHOWN, false)
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
@@ -271,6 +272,7 @@ class AppPreferences {
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
     hintPref(liveMessageAlertShown, false),
+    hintPref(signMessageAlertShown, false),
     hintPref(showHiddenProfilesNotice, true),
     hintPref(showMuteProfileAlert, true),
     hintPref(showReportsInSupportChatAlert, true),
@@ -454,6 +456,7 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_CNT = "NetworkTCPKeepCnt"
     private const val SHARED_PREFS_INCOGNITO = "Incognito"
     private const val SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN = "LiveMessageAlertShown"
+    private const val SHARED_PREFS_SIGN_MESSAGE_ALERT_SHOWN = "SignMessageAlertShown"
     private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"

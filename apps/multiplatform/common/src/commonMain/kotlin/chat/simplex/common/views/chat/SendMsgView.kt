@@ -50,10 +50,11 @@ fun SendMsgView(
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
   showSign: Boolean = false,
-  sendAsGroup: Boolean = false,
+  signMessageAlertShown: SharedPreference<Boolean> = SharedPreference(get = { false }, set = {}),
   customDisappearingMessageTimePref: SharedPreference<Int>? = null,
   placeholder: String,
   sendMessage: (Int?) -> Unit,
+  sendSignedMessage: () -> Unit = {},
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
@@ -212,17 +213,20 @@ fun SendMsgView(
               if (showSign && !cs.editing) {
                 menuItems.add {
                   ItemAction(
-                    generalGetString(if (cs.sign) MR.strings.signing_message else MR.strings.sign_message),
+                    generalGetString(MR.strings.sign_message),
                     painterResource(MR.images.ic_verified),
                     onClick = {
-                      val nowOn = !composeState.value.sign
-                      composeState.value = composeState.value.copy(sign = nowOn)
-                      if (nowOn) {
+                      if (signMessageAlertShown.state.value) {
+                        sendSignedMessage()
+                      } else {
                         AlertManager.shared.showAlertDialog(
                           title = generalGetString(MR.strings.sign_message),
-                          text = generalGetString(if (sendAsGroup) MR.strings.sign_message_as_channel_desc else MR.strings.sign_message_desc),
-                          dismissText = generalGetString(MR.strings.dont_sign_message),
-                          onDismiss = { composeState.value = composeState.value.copy(sign = false) }
+                          text = generalGetString(MR.strings.sign_message_desc),
+                          confirmText = generalGetString(MR.strings.send_verb),
+                          onConfirm = {
+                            signMessageAlertShown.set(true)
+                            sendSignedMessage()
+                          }
                         )
                       }
                       showDropdown.value = false

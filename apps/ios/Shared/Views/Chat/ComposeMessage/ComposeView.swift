@@ -54,8 +54,6 @@ struct ComposeState {
     var progressByTimeout = false
     var useLinkPreviews = true
     var mentions: MentionedMembers = [:]
-    // per-send opt-in to sign the message (relay channels only); resets on send/chat change, not persisted
-    var sign = false
 
     init(
         message: String = "",
@@ -64,8 +62,7 @@ struct ComposeState {
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
         voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
-        mentions: MentionedMembers = [:],
-        sign: Bool = false
+        mentions: MentionedMembers = [:]
     ) {
         self.message = message
         self.parsedMessage = parsedMessage
@@ -74,7 +71,6 @@ struct ComposeState {
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
         self.mentions = mentions
-        self.sign = sign
     }
 
     init(editingItem: ChatItem) {
@@ -111,8 +107,7 @@ struct ComposeState {
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
         voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
-        mentions: MentionedMembers? = nil,
-        sign: Bool? = nil
+        mentions: MentionedMembers? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
@@ -121,8 +116,7 @@ struct ComposeState {
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
             voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
-            mentions: mentions ?? self.mentions,
-            sign: sign ?? self.sign
+            mentions: mentions ?? self.mentions
         )
     }
 
@@ -1045,6 +1039,10 @@ struct ComposeView: View {
                     sendMessage(ttl: ttl)
                     resetLinkPreview()
                 },
+                sendSignedMessage: {
+                    sendMessage(ttl: nil, sign: true)
+                    resetLinkPreview()
+                },
                 sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
                 updateLiveMessage: updateLiveMessage,
                 cancelLiveMessage: {
@@ -1065,7 +1063,6 @@ struct ComposeView: View {
                 allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                 timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                 showSign: chat.chatInfo.groupInfo?.useRelays == true,
-                sendAsGroup: chat.chatInfo.sendAsGroup,
                 onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                 keyboardVisible: $keyboardVisible,
                 keyboardHiddenDate: $keyboardHiddenDate,
@@ -1464,16 +1461,16 @@ struct ComposeView: View {
     }
 
     // Spec: spec/client/compose.md#sendMessage
-    private func sendMessage(ttl: Int?) {
+    private func sendMessage(ttl: Int?, sign: Bool = false) {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            _ = await sendMessageAsync(nil, live: false, ttl: ttl)
+            _ = await sendMessageAsync(nil, live: false, ttl: ttl, sign: sign)
         }
     }
 
     // Spec: spec/client/compose.md#sendMessageAsync
-    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
+    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?, sign: Bool = false) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
@@ -1486,7 +1483,7 @@ struct ComposeView: View {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions)
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions, sign: sign)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -1502,13 +1499,13 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .chatLinkPreview(chatLink, ownerSig):
                 let linkStr = chatLink.connLinkStr
                 let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
-                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .mediaPreviews(media):
                 // TODO: CHECK THIS
                 let last = media.count - 1
@@ -1530,15 +1527,15 @@ struct ComposeView: View {
                 if msgs.isEmpty {
                     msgs = [ComposedMessage(quotedItemId: quoted, msgContent: .text(msgText))]
                 }
-                sent = await send(msgs, live: live, ttl: ttl).last
+                sent = await send(msgs, live: live, ttl: ttl, sign: sign).last
 
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions, sign: sign)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions, sign: sign)
                 }
             }
         }
@@ -1672,15 +1669,16 @@ struct ComposeView: View {
             )
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64]) async -> ChatItem? {
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64], sign: Bool = false) async -> ChatItem? {
             await send(
                 [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],
                 live: live,
-                ttl: ttl
+                ttl: ttl,
+                sign: sign
             ).first
         }
 
-        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
+        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?, sign: Bool = false) async -> [ChatItem] {
             if let chatItems = chat.chatInfo.chatType == .local
                 ? await apiCreateChatItems(noteFolderId: chat.chatInfo.apiId, composedMessages: msgs)
                 : await apiSendMessages(
@@ -1690,7 +1688,7 @@ struct ComposeView: View {
                     sendAsGroup: chat.chatInfo.sendAsGroup,
                     live: live,
                     ttl: ttl,
-                    sign: composeState.sign,
+                    sign: sign,
                     composedMessages: msgs
                 ) {
                 await MainActor.run {
