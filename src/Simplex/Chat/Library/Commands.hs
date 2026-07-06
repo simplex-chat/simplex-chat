@@ -4262,10 +4262,10 @@ processChatCommand cxt nm = \case
                     case plan of
                       CPContactAddress (CAPKnown ct') -> do
                         ct'' <- refreshContact ct'
-                        pure (con l' cReq, plan {contactAddressPlan = CAPKnown ct''})
+                        pure (con l' cReq, CPContactAddress (CAPKnown ct''))
                       CPContactAddress (CAPContactViaAddress ct') -> do
                         ct'' <- refreshContact ct'
-                        pure (con l' cReq, plan {contactAddressPlan = CAPContactViaAddress ct''})
+                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct''))
                       _ -> pure (con l' cReq, plan)
             where
               knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
