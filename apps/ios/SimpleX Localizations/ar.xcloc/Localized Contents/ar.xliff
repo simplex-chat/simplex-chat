@@ -5560,12 +5560,12 @@ This is your own one-time link!</source>
         <target state="translated">يتم تسليمها حتى عندما تسقطها شركة Apple.</target>
       </trans-unit>
       <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
-        <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
-        <target state="translated">عنوان خادم الوجهة %@ غير متوافق مع إعدادات خادم التوجيه %@.</target>
+        <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
+        <target state="needs-translation">عنوان خادم الوجهة %@ غير متوافق مع إعدادات خادم التوجيه %@.</target>
       </trans-unit>
       <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
-        <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
-        <target state="translated">إصدار خادم الوجهة لـ %@ غير متوافق مع خادم التوجيه %@.</target>
+        <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
+        <target state="needs-translation">إصدار خادم الوجهة لـ %@ غير متوافق مع خادم التوجيه %@.</target>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve" approved="no">
         <source>Don't create address</source>
