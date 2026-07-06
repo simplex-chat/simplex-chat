@@ -423,7 +423,8 @@ export class ChatApi {
       CC.APISendMessages.cmdString({
         sendRef,
         composedMessages: messages,
-        liveMessage
+        liveMessage,
+        signMessages: false
       })
     )
     if (r.type === "newChatItems") return r.chatItems

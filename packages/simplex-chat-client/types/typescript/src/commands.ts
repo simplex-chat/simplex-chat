@@ -97,7 +97,7 @@ export namespace APISendMessages {
   export type Response = CR.NewChatItems | CR.ChatCmdError
 
   export function cmdString(self: APISendMessages): string {
-    return '/_send ' + T.ChatRef.cmdString(self.sendRef) + (self.liveMessage ? ' live=on' : '') + (self.ttl ? ' ttl=' + self.ttl : '') + ' json ' + JSON.stringify(self.composedMessages)
+    return '/_send ' + T.ChatRef.cmdString(self.sendRef) + (self.liveMessage ? ' live=on' : '') + (self.ttl ? ' ttl=' + self.ttl : '') + (self.signMessages ? ' sign=on' : '') + ' json ' + JSON.stringify(self.composedMessages)
   }
 }
 

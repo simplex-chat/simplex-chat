@@ -85,7 +85,7 @@ class APISendMessages(TypedDict):
 
 
 def APISendMessages_cmd_string(self: APISendMessages) -> str:
-    return '/_send ' + T.ChatRef_cmd_string(self['sendRef']) + (' live=on' if self['liveMessage'] else '') + ((' ttl=' + str(self.get('ttl'))) if self.get('ttl') is not None else '') + ' json ' + json.dumps(self['composedMessages'])
+    return '/_send ' + T.ChatRef_cmd_string(self['sendRef']) + (' live=on' if self['liveMessage'] else '') + ((' ttl=' + str(self.get('ttl'))) if self.get('ttl') is not None else '') + (' sign=on' if self['signMessages'] else '') + ' json ' + json.dumps(self['composedMessages'])
 
 APISendMessages_Response = CR.NewChatItems | CR.ChatCmdError
 

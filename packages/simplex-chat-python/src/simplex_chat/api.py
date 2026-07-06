@@ -193,6 +193,7 @@ class ChatApi:
                     "sendRef": send_ref,
                     "composedMessages": messages,
                     "liveMessage": live_message,
+                    "signMessages": False,
                 }
             )
         )

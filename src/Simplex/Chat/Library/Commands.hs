@@ -839,10 +839,10 @@ processChatCommand cxt nm = \case
               SMDRcv -> False
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
-      -- per-item self/history delete signer: sign iff the target item was held signed (preserves self-delete deniability)
+      -- history delete always signs (attributable owner action); self-delete signs iff the target was held signed (deniability)
       delEventSigned :: GroupInfo -> Maybe GroupChatScopeInfo -> Bool -> CChatItem 'CTGroup -> Maybe (Maybe MsgSigning, ChatMsgEvent 'Json)
       delEventSigned gInfo chatScopeInfo onlyHistory (CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId, msgSigned}}) =
-        (\msgId -> let evt = XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) onlyHistory in (groupMsgSigning (isJust msgSigned) gInfo evt, evt)) <$> itemSharedMsgId
+        (\msgId -> let evt = XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) onlyHistory in (groupMsgSigning (onlyHistory || isJust msgSigned) gInfo evt, evt)) <$> itemSharedMsgId
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     -- TODO [knocking] check scope is Nothing for all items? (prohibit moderation in support chats?)

@@ -2351,6 +2351,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               | senderRole < GRModerator -> do
                   messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
                   pure Nothing
+              -- a forged unsigned moderation would pre-censor a not-yet-received post via CIModeration; require verified (relay moderation always signs)
+              | useRelays' gInfo && msgSigned /= Just MSSVerified ->
+                  messageError ("x.msg.del: unverified moderation of message not yet received, " <> tshow e) $> Nothing
               | otherwise -> case scope_ of
                   Just (MSMember scopeMemberId) ->
                     withStore $ \db -> do
