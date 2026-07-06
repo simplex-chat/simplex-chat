@@ -5,7 +5,9 @@ set -eu
 APP_NAME="simplex-chat"
 BIN_DIR="$HOME/.local/bin"
 BIN_PATH="$BIN_DIR/$APP_NAME"
-PLATFORM="$(uname)"
+OS_NAME="$(uname -s)"
+ARCH_NAME="$(uname -m)"
+PLATFORM=""
 
 if [ -n "${1:-}" ]; then
   RELEASE="tag/$1"
@@ -17,10 +19,34 @@ else
   echo "downloading the latest version of SimpleX Chat ..."
 fi
 
-if [ $PLATFORM == "Darwin" ]; then
-  PLATFORM="macos-x86-64"
-elif [ $PLATFORM == "Linux" ]; then
-  PLATFORM="ubuntu-22_04-x86_64"
+if [ "$OS_NAME" == "Darwin" ]; then
+  case "$ARCH_NAME" in
+    arm64) PLATFORM="macos-aarch64" ;;
+    x86_64) PLATFORM="macos-x86-64" ;;
+    *)
+      echo "Unsupported macOS architecture: $ARCH_NAME"
+      exit 1
+      ;;
+  esac
+elif [ "$OS_NAME" == "Linux" ]; then
+  case "$ARCH_NAME" in
+    aarch64|arm64) LINUX_ARCH="aarch64" ;;
+    x86_64|amd64) LINUX_ARCH="x86_64" ;;
+    *)
+      echo "Unsupported Linux architecture: $ARCH_NAME"
+      exit 1
+      ;;
+  esac
+  UBUNTU_VER="22_04"
+  if [ -r /etc/os-release ]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    case "${VERSION_ID:-}" in
+      24.04|24.10|24.1|24.0|24) UBUNTU_VER="24_04" ;;
+      22.04|22.10|22.1|22.0|22) UBUNTU_VER="22_04" ;;
+    esac
+  fi
+  PLATFORM="ubuntu-${UBUNTU_VER}-${LINUX_ARCH}"
 else
   echo "Scripted installation on your platform is not supported."
   echo "See compiled binaries in the ${1:-latest} release: https://github.com/$APP_NAME/$APP_NAME/releases/$RELEASE"
