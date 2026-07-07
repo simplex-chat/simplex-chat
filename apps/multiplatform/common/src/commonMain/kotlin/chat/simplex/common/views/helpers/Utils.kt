@@ -233,9 +233,18 @@ fun saveAnimImage(uri: URI): CryptoFile? {
     if (ext.length < 3 || ext.length > 4) ext = "gif"
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
+    val rawBytes = uri.inputStream()?.use { it.readBytes() } ?: return null
+    val cleanBytes = try {
+      // Fail closed: unsupported animated formats (HEIC/AVIF on Android) must not bypass stripping
+      stripAnimImageMetadataByExtension(ext, rawBytes)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to strip animated image metadata: ${e.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error))
+      return null
+    }
     if (encrypted) {
       try {
-        val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
+        val args = writeCryptoFile(destFile.absolutePath, cleanBytes)
         CryptoFile(destFileName, args)
       } catch (e: Exception) {
         Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
@@ -243,7 +252,7 @@ fun saveAnimImage(uri: URI): CryptoFile? {
         null
       }
     } else {
-      Files.copy(uri.inputStream(), destFile.toPath())
+      destFile.writeBytes(cleanBytes)
       CryptoFile.plain(destFileName)
     }
   } catch (e: Exception) {
@@ -253,6 +262,130 @@ fun saveAnimImage(uri: URI): CryptoFile? {
 }
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
+
+/**
+ * Strip metadata from a GIF/WebP at [uri] into a fresh temp file under [tmpDir].
+ * Returns the temp file (caller is responsible for deleting it) or null on failure.
+ * Used by the remote-host send path, where stripping must happen on this device
+ * before the file is uploaded to the controlled host.
+ */
+fun stripAnimImageToTmpFile(uri: URI): File? {
+  val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+  // Register for JVM-shutdown + next-start cleanup so a process kill between strip and the
+  // caller's `finally` doesn't leak the file forever.
+  tmpFile.deleteOnExit()
+  ChatModel.filesToDelete.add(tmpFile)
+  return try {
+    val fileName = getFileName(uri) ?: return null
+    val rawBytes = uri.inputStream()?.use { it.readBytes() } ?: return null
+    val cleanBytes = stripAnimImageMetadataByExtension(fileName.substringAfterLast('.', ""), rawBytes)
+    tmpFile.parentFile.mkdirs()
+    tmpFile.writeBytes(cleanBytes)
+    tmpFile
+  } catch (e: Exception) {
+    Log.e(TAG, "Failed to strip animated image metadata: ${e.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error))
+    tmpFile.delete()
+    null
+  }
+}
+
+/**
+ * Strip metadata from a video at [uri] into a fresh temp file under [tmpDir].
+ * Returns the temp file (caller is responsible for deleting it) or null on failure.
+ * Used by the remote-host send path; the file is uploaded to the controlled host after.
+ */
+fun stripVideoToTmpFile(uri: URI): File? {
+  val tmpInput = File(tmpDir, UUID.randomUUID().toString())
+  val tmpStripped = File(tmpDir, UUID.randomUUID().toString())
+  // Register both for JVM-shutdown + next-start cleanup so a process kill between strip and the
+  // caller's `finally` doesn't leak gigabytes of temp video forever.
+  tmpInput.deleteOnExit()
+  tmpStripped.deleteOnExit()
+  ChatModel.filesToDelete.add(tmpInput)
+  ChatModel.filesToDelete.add(tmpStripped)
+  var ok = false
+  return try {
+    val fileName = getFileName(uri) ?: return null
+    tmpInput.parentFile.mkdirs()
+    uri.inputStream()?.use { Files.copy(it, tmpInput.toPath()) } ?: return null
+    stripVideoMetadataByExtension(fileName, tmpInput.absolutePath, tmpStripped.absolutePath)
+    ok = true
+    tmpStripped
+  } catch (e: Exception) {
+    Log.e(TAG, "Failed to strip video metadata: ${e.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error))
+    null
+  } finally {
+    tmpInput.delete()
+    // Caller owns tmpStripped only on success; clean up partial output otherwise.
+    if (!ok) tmpStripped.delete()
+  }
+}
+
+/**
+ * Save a video chosen via the gallery video picker. Strips metadata (creation_time atoms,
+ * udta/meta/uuid/free, timed-metadata mdat samples) before writing to the app file area —
+ * the explicit "Send video" path implies the user intends to share the visual content, not
+ * the embedded GPS/device IDs. Files attached via the generic file picker go through
+ * [saveFileFromUri] verbatim instead.
+ */
+fun saveVideoFromUri(uri: URI): CryptoFile? {
+  return try {
+    val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
+    val inputStream = uri.inputStream()
+    val fileToSave = getFileName(uri)
+    if (inputStream == null || fileToSave == null) {
+      Log.e(TAG, "Util.kt saveVideoFromUri null inputStream or fileName")
+      showWrongUriAlert()
+      return null
+    }
+    val ext = if (fileToSave.contains(".")) fileToSave.substringAfterLast(".") else null
+    val destFileName = generateNewFileName("video", ext, File(getAppFilePath("")))
+    val destFile = File(getAppFilePath(destFileName))
+    // For unencrypted: input → tmpInput → destFile (2 writes instead of 3).
+    // For encrypted: input → tmpInput → tmpStripped → encryptCryptoFile → destFile.
+    inputStream.use {
+      createTmpFileAndDelete { tmpInput ->
+        Files.copy(it, tmpInput.toPath())
+        if (encrypted) {
+          createTmpFileAndDelete { tmpStripped ->
+            try {
+              stripVideoMetadataByExtension(fileToSave, tmpInput.absolutePath, tmpStripped.absolutePath)
+            } catch (e: Exception) {
+              Log.e(TAG, "Failed to strip video metadata: ${e.stackTraceToString()}")
+              AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error))
+              return@createTmpFileAndDelete null
+            }
+            try {
+              val args = encryptCryptoFile(tmpStripped.absolutePath, destFile.absolutePath)
+              CryptoFile(destFileName, args)
+            } catch (e: Exception) {
+              Log.e(TAG, "Unable to encrypt stripped file: " + e.stackTraceToString())
+              AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+              destFile.delete()
+              null
+            }
+          }
+        } else {
+          try {
+            stripVideoMetadataByExtension(fileToSave, tmpInput.absolutePath, destFile.absolutePath)
+            CryptoFile.plain(destFileName)
+          } catch (e: Exception) {
+            Log.e(TAG, "Failed to strip video metadata: ${e.stackTraceToString()}")
+            AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error))
+            destFile.delete()
+            null
+          }
+        }
+      }
+    }
+  } catch (e: Exception) {
+    Log.e(TAG, "Util.kt saveVideoFromUri error: ${e.stackTraceToString()}")
+    showWrongUriAlert()
+    null
+  }
+}
 
 fun saveFileFromUri(
   uri: URI,
