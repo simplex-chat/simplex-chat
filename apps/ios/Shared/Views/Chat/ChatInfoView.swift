@@ -1411,15 +1411,18 @@ struct SimplexNameView: View {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 nameText
                 Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
             }
             .contentShape(Rectangle())
-            .onTapGesture { UIPasteboard.general.string = simplexName }
+            .onTapGesture {
+                UIPasteboard.general.string = simplexName
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            }
         } else if verified == false {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 nameText
                 Image(systemName: "xmark").font(iconFont).foregroundColor(.red)
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
             }
             .contentShape(Rectangle())
             .onTapGesture { runVerify(manual: true) }

@@ -80,6 +80,7 @@ fun SimplexNameView(
       verified == true ->
         SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_check_filled, MaterialTheme.colors.primary) {
           clipboard.setText(AnnotatedString(simplexName))
+          showToast(generalGetString(MR.strings.copied))
         }
       verified == false ->
         SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, Color.Red) { runVerify(manual = true) }
