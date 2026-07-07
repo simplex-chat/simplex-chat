@@ -211,6 +211,7 @@
       </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
         <source>%d relays failed</source>
+        <target>%d リレーが失敗</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
@@ -254,40 +255,49 @@ channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active" xml:space="preserve">
         <source>%1$d/%2$d relays active</source>
+        <target>%2$d 個中 %1$d 個のリレーがアクティブ</target>
         <note>channel creation progress
 channel relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d errors" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d errors</source>
+        <target>%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個がエラー</target>
         <note>channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d failed</source>
+        <target>%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個が失敗</target>
         <note>channel creation progress with errors
 channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d removed</source>
+        <target>%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個が削除済み</target>
         <note>channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected" xml:space="preserve">
         <source>%1$d/%2$d relays connected</source>
+        <target>%2$d 個中 %1$d 個のリレーが接続済み</target>
         <note>channel subscriber relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d errors</source>
+        <target>%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個がエラー</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d failed" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d failed</source>
+        <target>%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個が失敗</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d removed" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d removed</source>
+        <target>%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個が削除済み</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
+        <target>%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
@@ -919,7 +929,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone!</source>
-        <target>すべてのメッセージが削除されます。この操作は元に戻せません！</target>
+        <target>全てのメッセージが削除されます - これは元に戻せません！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
@@ -2089,6 +2099,10 @@ server test step</note>
       <trans-unit id="Connect faster! 🚀" xml:space="preserve">
         <source>Connect faster! 🚀</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect to %@" xml:space="preserve">
+        <source>Connect to %@</source>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
         <source>Connect to desktop</source>
@@ -4835,6 +4849,10 @@ More improvements are coming soon!</source>
         <source>Join channel</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Join channel %@" xml:space="preserve">
+        <source>Join channel %@</source>
+        <note>new chat action</note>
+      </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>グループに参加</target>
@@ -7020,6 +7038,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All group members will be notified.</source>
+        <target>メンバーの役割が "%@" に変更されます。 グループメンバー全員に通知されます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
@@ -7028,6 +7047,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
         <source>Role will be changed to "%@". The member will receive a new invitation.</source>
+        <target>メンバーの役割が "%@" に変更されます。 メンバーは新たな招待を受け取ります。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -7550,7 +7570,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>キューを作成するにはサーバーの認証が必要です。パスワードを確認してください</target>
+        <target>キューを作成するにはサーバーの認証が必要です。パスワードを確認してください。</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">

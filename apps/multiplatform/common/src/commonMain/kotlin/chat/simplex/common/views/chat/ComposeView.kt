@@ -133,15 +133,12 @@ data class ComposeState(
   )
 
   val memberMentions: Map<String, Long>
-    get() = this.mentions.mapNotNull {
-      val memberRef = it.value.memberRef
-
-      if (memberRef != null) {
-        it.key to memberRef.groupMemberId
-      } else {
-        null
-      }
-    }.toMap()
+    get() = parsedMessage
+      .mapNotNull { (it.format as? Format.Mention)?.memberName }
+      .distinct()
+      .mapNotNull { name -> mentions[name]?.memberRef?.groupMemberId?.let { name to it } }
+      .take(MAX_NUMBER_OF_MENTIONS)
+      .toMap()
 
   val editing: Boolean
     get() =

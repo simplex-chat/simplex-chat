@@ -989,9 +989,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Zmień tryb blokady";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Zmienić rolę członka?";
-
 /* authentication reason */
 "Change passcode" = "Zmień pin";
 
@@ -2184,7 +2181,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "błąd";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Błąd";
 
 /* No comment provided by engineer. */
@@ -2428,6 +2425,7 @@ chat item action */
 "Error: " = "Błąd: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Błąd: %@";
@@ -3312,13 +3310,13 @@ servers warning */
 "Member reports" = "Raporty członków";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "Rola członka zostanie zmieniona na \"%@\". Wszyscy członkowie czatu zostaną o tym poinformowani.";
+"Role will be changed to \"%@\". All chat members will be notified." = "Rola członka zostanie zmieniona na \"%@\". Wszyscy członkowie czatu zostaną o tym poinformowani.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Rola członka grupy zostanie zmieniona na \"%@\". Wszyscy członkowie grupy zostaną powiadomieni.";
+"Role will be changed to \"%@\". All group members will be notified." = "Rola członka grupy zostanie zmieniona na \"%@\". Wszyscy członkowie grupy zostaną powiadomieni.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Rola członka zostanie zmieniona na \"%@\". Członek otrzyma nowe zaproszenie.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Rola członka zostanie zmieniona na \"%@\". Członek otrzyma nowe zaproszenie.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Członek zostanie usunięty z czatu – nie można tego cofnąć!";
