@@ -148,7 +148,7 @@ func ciMetaText(
         space = textSpace
     }
     if meta.msgSigned == .verified {
-        r = r + colored(Text(Image("signature.plain")).font(.caption.weight(.ultraLight)), resolved)
+        r = r + colored(Text(Image("signature.plain")), resolved)
         space = textSpace
     }
     if showTimesamp {
