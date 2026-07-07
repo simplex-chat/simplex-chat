@@ -1408,7 +1408,7 @@ struct SimplexNameView: View {
                 ProgressView()
             }
         } else if verified == true {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
                 nameText
                 Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
@@ -1419,7 +1419,7 @@ struct SimplexNameView: View {
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
             }
         } else if verified == false {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
                 nameText
                 Image(systemName: "xmark").font(iconFont).foregroundColor(.red)
                     .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
