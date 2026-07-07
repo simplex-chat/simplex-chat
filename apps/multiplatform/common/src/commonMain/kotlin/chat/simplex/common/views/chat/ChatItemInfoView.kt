@@ -274,7 +274,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       }
       if (ci.meta.msgSigned == MsgSigStatus.Verified) {
         val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
-        InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_verified))
+        InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_signature))
       }
       if (devTools) {
         InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
