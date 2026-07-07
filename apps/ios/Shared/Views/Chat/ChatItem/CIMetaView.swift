@@ -148,7 +148,6 @@ func ciMetaText(
         space = textSpace
     }
     if meta.msgSigned == .verified {
-        appendSpace()
         r = r + colored(Text(Image("signature.plain")), resolved)
         space = textSpace
     }

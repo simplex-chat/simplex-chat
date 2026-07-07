@@ -165,7 +165,11 @@ struct ChatItemInfoView: View {
             if meta.msgSigned == .verified {
                 let signedText: LocalizedStringKey = ci.chatDir.sent ? "Signed" : "Signed & verified"
                 HStack {
-                    Label(signedText, image: "signature.plain")
+                    Label {
+                        Text(signedText)
+                    } icon: {
+                        Image("signature.plain").foregroundColor(.secondary)
+                    }
                     Spacer()
                 }
             }
