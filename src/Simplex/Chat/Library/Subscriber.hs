@@ -2288,12 +2288,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
-            -- only a verified edit may alter a verified item; reject otherwise (fail-closed)
+            -- a verified item requires a verified edit (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
             requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgSigStatus -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
             requireVerifiedEdit cd itemSigned action
-              | itemSigned == Just MSSVerified && msgSigned /= Just MSSVerified = do
-                  createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
-                  pure Nothing
+              | itemSigned == Just MSSVerified =
+                  case msgSigned of
+                    Just MSSVerified -> action
+                    Just MSSSignedNoKey -> logWarn "x.msg.update: unverified update of a signed item (no key to verify), dropped" $> Nothing
+                    Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
         updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId = do
@@ -2397,18 +2399,22 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | senderRole < GRModerator || senderRole < memberRole =
               messageError "x.msg.del: message of another member with insufficient member permissions" $> Nothing
           | otherwise = a
-        -- only a verified delete may remove a verified item; reject otherwise (fail-closed)
+        -- a verified item requires a verified delete (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
         requireVerifiedDelete :: CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
         requireVerifiedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgSigned = itemSigned}}) action
-          | itemSigned == Just MSSVerified && msgSigned /= Just MSSVerified = do
-              scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
-              let cd :: ChatDirection 'CTGroup 'MDRcv
-                  cd = case chatDir of
-                    CIGroupRcv mem -> CDGroupRcv gInfo scopeInfo mem
-                    CIChannelRcv -> CDChannelRcv gInfo scopeInfo
-                    CIGroupSnd -> CDGroupRcv gInfo scopeInfo membership
-              createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
-              pure Nothing
+          | itemSigned == Just MSSVerified =
+              case msgSigned of
+                Just MSSVerified -> action
+                Just MSSSignedNoKey -> logWarn "x.msg.del: unverified delete of a signed item (no key to verify), dropped" $> Nothing
+                Nothing -> do
+                  scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
+                  let cd :: ChatDirection 'CTGroup 'MDRcv
+                      cd = case chatDir of
+                        CIGroupRcv mem -> CDGroupRcv gInfo scopeInfo mem
+                        CIChannelRcv -> CDChannelRcv gInfo scopeInfo
+                        CIGroupSnd -> CDGroupRcv gInfo scopeInfo membership
+                  createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
+                  pure Nothing
           | otherwise = action
         delete :: CChatItem 'CTGroup -> Bool -> Maybe GroupMember -> CM (Maybe DeliveryTaskContext)
         delete cci asGroup byGroupMember = do
