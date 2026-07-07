@@ -253,7 +253,7 @@ struct SendMessageView: View {
                     Label {
                         Text("Sign message")
                     } icon: {
-                        Text(Image("signature.plain")).fontWeight(.light)
+                        Text(Image("signature.plain")).fontWeight(.ultraLight)
                     }
                 }
             }
