@@ -2882,4 +2882,6 @@
     <string name="verify_simplex_name_action">验证名称</string>
     <string name="verify_simplex_names">验证 SimpleX 名称</string>
     <string name="your_simplex_name">你的 SimpleX 名称</string>
+    <string name="connect_plan_connect_to_name">连接到 %s</string>
+    <string name="connect_plan_join_name">加入 %s 频道</string>
 </resources>
