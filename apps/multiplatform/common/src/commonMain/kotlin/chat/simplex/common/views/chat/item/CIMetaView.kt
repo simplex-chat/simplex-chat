@@ -109,7 +109,7 @@ private fun CIMetaText(
   }
   if (meta.msgSigned == MsgSigStatus.Verified) {
     Spacer(Modifier.width(4.dp))
-    StatusIconText(painterResource(MR.images.ic_verified), color)
+    StatusIconText(painterResource(MR.images.ic_signature), color)
   }
 
   if (showTimestamp) {
