@@ -811,7 +811,7 @@
     <string name="theme_system">Sistema</string>
     <string name="network_option_tcp_connection_timeout">Scadenza connessione TCP</string>
     <string name="group_is_decentralized">Completamente decentralizzato: visibile solo ai membri.</string>
-    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in "%s". Tutti i membri del gruppo riceveranno una notifica.</string>
+    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in %s. Verrà avvisato chiunque nel gruppo.</string>
     <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in "%s". Il membro riceverà un nuovo invito.</string>
     <string name="update_network_settings_confirmation">Aggiorna</string>
     <string name="update_network_settings_question">Aggiornare le impostazioni di rete\?</string>
@@ -2239,7 +2239,7 @@
     <string name="only_chat_owners_can_change_prefs">Solo i proprietari della chat possono modificarne le preferenze.</string>
     <string name="onboarding_notifications_mode_battery">Notifiche e batteria</string>
     <string name="maximum_message_size_reached_forwarding">Puoi copiare e ridurre la dimensione del messaggio per inviarlo.</string>
-    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in "%s". Verrà notificato a tutti nella chat.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in %s. Verrà avvisato chiunque nella chat.</string>
     <string name="chat_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri della chat</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Non riceverai più messaggi da questa chat. La cronologia della chat verrà conservata.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Quando più di un operatore è attivato, nessuno di essi ha metadati per capire chi comunica con chi.</string>
@@ -2890,7 +2890,7 @@
     <string name="simplex_name">Nome SimpleX</string>
     <string name="simplex_name_error">Errore del nome SimpleX</string>
     <string name="simplex_name_not_verified">Nome SimpleX non verificato</string>
-    <string name="simplex_name_no_valid_link_desc">Il nome SimpleX %1$s è registrato, ma non ha alcun collegamento valido.</string>
+    <string name="simplex_name_no_valid_link_desc">Il nome SimpleX %1$s è registrato, ma non ha alcun link valido.</string>
     <string name="simplex_name_unconfirmed_desc">Il nome SimpleX %1$s è registrato, ma non aggiunto al profilo. Aggiungilo al profilo del tuo indirizzo o canale, se sei il proprietario.</string>
     <string name="simplex_name_owner_no_channel_link">Il nome SimpleX %1$s è registrato senza link del canale. Aggiungi il link del canale al nome tramite la pagina di registrazione.</string>
     <string name="simplex_name_owner_no_address">Il nome SimpleX %1$s è registrato senza indirizzo SimpleX. Aggiungi il tuo indirizzo SimpleX al nome tramite la pagina di registrazione.</string>
@@ -2900,4 +2900,6 @@
     <string name="verify_simplex_name_action">Verifica nome</string>
     <string name="verify_simplex_names">Verifica nomi SimpleX</string>
     <string name="your_simplex_name">Il tuo nome SimpleX</string>
+    <string name="connect_plan_connect_to_name">Connetti a %s</string>
+    <string name="connect_plan_join_name">Entra nel canale %s</string>
 </resources>
