@@ -23,7 +23,6 @@ import kotlin.math.*
 
 enum class PresetWallpaper(
   val res: ImageResource,
-  val resDesktop: ImageResource,
   val filename: String,
   val scale: Float,
   val scaleDesktop: Float,
@@ -31,7 +30,7 @@ enum class PresetWallpaper(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColorsP3>,
 ) {
-  CATS(res = MR.images.wallpaper_cats, resDesktop = MR.images.wallpaper_cats_desktop, filename = "cats", scale = 0.5f, scaleDesktop = 0.8f,
+  CATS(res = MR.images.wallpaper_cats, filename = "cats", scale = 0.5f, scaleDesktop = 0.8f,
     wallpaperBackgrounds(
       light = oklch(0.9838867f, 0.021334622f, 95.39152f),
       dark = oklch(0.1800f, 0.0250f, 77f),
@@ -69,7 +68,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  FLOWERS(res = MR.images.wallpaper_flowers, resDesktop = MR.images.wallpaper_flowers_desktop, filename = "flowers", scale = 0.5f, scaleDesktop = 0.8f,
+  FLOWERS(res = MR.images.wallpaper_flowers, filename = "flowers", scale = 0.5f, scaleDesktop = 0.8f,
     wallpaperBackgrounds(
       light = oklch(0.9838867f, 0.02136218f, 130.21953f),
       dark = oklch(0.1800f, 0.0250f, 130f),
@@ -107,7 +106,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  HEARTS(res = MR.images.wallpaper_hearts, resDesktop = MR.images.wallpaper_hearts_desktop, filename = "hearts", scale = 0.5f, scaleDesktop = 0.8f,
+  HEARTS(res = MR.images.wallpaper_hearts, filename = "hearts", scale = 0.5f, scaleDesktop = 0.8f,
     wallpaperBackgrounds(
       light = oklch(0.9780521f, 0.010869741f, 10.569774f),
       dark = oklch(0.1800f, 0.0250f, 5f),
@@ -145,7 +144,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  KIDS(res = MR.images.wallpaper_kids, resDesktop = MR.images.wallpaper_kids_desktop, filename = "kids", scale = 0.5f, scaleDesktop = 0.8f,
+  KIDS(res = MR.images.wallpaper_kids, filename = "kids", scale = 0.5f, scaleDesktop = 0.8f,
     wallpaperBackgrounds(
       light = oklch(0.98472977f, 0.01831758f, 200.66322f),
       dark = oklch(0.18017578f, 0.025585549f, 199.76416f),
@@ -183,7 +182,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  SCHOOL(res = MR.images.wallpaper_school, resDesktop = MR.images.wallpaper_school_desktop, filename = "school", scale = 0.5f, scaleDesktop = 0.8f,
+  SCHOOL(res = MR.images.wallpaper_school, filename = "school", scale = 0.5f, scaleDesktop = 0.8f,
     wallpaperBackgrounds(
       light = oklch(0.9837532f, 0.010169387f, 225.85442f),
       dark = oklch(0.17883301f, 0.024886385f, 251.75946f),
@@ -221,7 +220,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  TRAVEL(res = MR.images.wallpaper_travel, resDesktop = MR.images.wallpaper_travel_desktop, filename = "travel", scale = 0.5f, scaleDesktop = 0.8f,
+  TRAVEL(res = MR.images.wallpaper_travel, filename = "travel", scale = 0.5f, scaleDesktop = 0.8f,
     wallpaperBackgrounds(
       light = oklch(0.9835678f, 0.01424849f, 325.37686f),
       dark = oklch(0.17980957f, 0.025278661f, 316.56534f),
@@ -283,6 +282,11 @@ fun wallpaperBackgrounds(
     DefaultTheme.BLACK to oklch(0f, 0f, 0f) // #ff000000 — pure black for hyper-contrast theme
   )
 
+// Which wallpaper image to load, by platform: the phone-sized image on Android, a smaller desktop-tuned
+// image on desktop. The desktop images live in the desktop source set (desktopMain/resources) so they
+// don't ship in the Android APK. (scaleDesktop stays an enum field — a Float costs nothing in the APK.)
+expect fun PresetWallpaper.platformRes(): ImageResource
+
 @Serializable
 enum class WallpaperScaleType(val contentScale: ContentScale, val text: StringResource) {
   @SerialName("fill") FILL(ContentScale.Crop, MR.strings.wallpaper_scale_fill),
@@ -304,7 +308,7 @@ sealed class WallpaperType {
       cachedImages[filename]
     } else {
       val res = if (this is Preset) {
-        (PresetWallpaper.from(filename) ?: PresetWallpaper.CATS).let { if (appPlatform.isAndroid) it.res else it.resDesktop }.toComposeImageBitmap()!!
+        (PresetWallpaper.from(filename) ?: PresetWallpaper.CATS).platformRes().toComposeImageBitmap()!!
       } else {
         try {
           // In case of unintentional image deletion don't crash the app
