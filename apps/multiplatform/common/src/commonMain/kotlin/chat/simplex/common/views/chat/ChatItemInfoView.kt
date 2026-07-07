@@ -276,7 +276,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
         InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_signature))
       }
-      if (devTools) {
+    }
+    if (devTools) {
+      SectionDividerSpaced()
+      SectionView {
         InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
         InfoRow(stringResource(MR.strings.info_row_updated_at), localTimestamp(ci.meta.updatedAt))
         ExpandableInfoRow(stringResource(MR.strings.info_row_message_status), jsonShort.encodeToString(ci.meta.itemStatus))
@@ -562,6 +565,9 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   val deleteAt = ci.meta.itemTimed?.deleteAt
   if (deleteAt != null) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_disappears_at), localTimestamp(deleteAt)))
+  }
+  if (ci.meta.msgSigned == MsgSigStatus.Verified) {
+    shareText.add(generalGetString(if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified))
   }
   if (devTools) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_database_id), meta.itemId))

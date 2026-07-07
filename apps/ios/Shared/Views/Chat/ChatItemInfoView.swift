@@ -170,6 +170,7 @@ struct ChatItemInfoView: View {
                 }
             }
             if developerTools {
+                Divider().padding(.vertical)
                 infoRow("Database ID", "\(meta.itemId)")
                 infoRow("Record updated at", localTimestamp(meta.updatedAt))
                 let msv = infoRow("Message status", ci.meta.itemStatus.id)
@@ -513,6 +514,11 @@ struct ChatItemInfoView: View {
         }
         if let deleteAt = meta.itemTimed?.deleteAt {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
+        }
+        if meta.msgSigned == .verified {
+            shareText += [ci.chatDir.sent
+                ? NSLocalizedString("Signed", comment: "copied message info")
+                : NSLocalizedString("Signed & verified", comment: "copied message info")]
         }
         if developerTools {
             shareText += [
