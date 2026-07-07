@@ -880,7 +880,7 @@
     <string name="you_can_share_your_address">Adresinizi bir bağlantı veya QR kodu olarak paylaşabilirsiniz - herkes size bağlanabilir.</string>
     <string name="snd_conn_event_switch_queue_phase_completed">bağlantı değiştirdiniz</string>
     <string name="you_can_enable_delivery_receipts_later">Daha sonra Ayarlardan etkinleştirebilirsin</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">"Bunları daha sonra uygulamanın Gizlilik  ayarlarından etkinleştirebilirsiniz."</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Bağlantının tamamlanması için kişinizin çevrimiçi olması gerekir.
 \nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).</string>
     <string name="contact_sent_large_file">Kişiniz desteklenen maksimum boyuttan (%1$s) daha büyük bir dosya gönderdi.</string>
@@ -2267,7 +2267,7 @@
     <string name="member_support">Üyelerle sohbetler</string>
     <string name="onboarding_notifications_mode_off_desc_short">Arkaplan servisi yok</string>
     <string name="onboarding_conditions_accept">Kabul Et</string>
-    <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat\'i kullanarak şunları kabul etmiş olursunuz:\n- genel gruplarda sadece yasal içerik göndermeyi.\n- diğer kullanıcılara saygı göstermeyi - spam yapmamayı.</string>
+    <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat\'i kullanarak şunları kabul etmiş olursunuz:\n- Herkese açık gruplara sadece yasal içerik göndermeyi.\n- Diğer kullanıcılara saygı göstermeyi - spam yapmamayı.</string>
     <string name="leave_chat_question">Sohbetten çıkılsın mı?</string>
     <string name="group_member_role_moderator">yönetici</string>
     <string name="network_smp_web_port_all">Bütün sunucular</string>
@@ -2505,17 +2505,17 @@
     <string name="chat_banner_bot">Bot</string>
     <string name="cant_send_commands_alert_text">Komutlar gönderebilmek için bağlanmanış olmanız gereklidir.</string>
     <string name="member_is_deleted_cant_accept_request">Üye silinmiş - isteği kabul edemeyecek</string>
-    <string name="upgrade_group_link">Grup linkini güncelle</string>
+    <string name="upgrade_group_link">Grup bağlantısını güncelle</string>
     <string name="server_no_sub">Abonelik yok</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">Bu bağlantıdan mesaj almak için kullanılan sunucuya bağlı değilsiniz (abonelik yok).</string>
     <string name="simplex_link_relay">SimpleX aktarıcı adresi</string>
-    <string name="relay_bar_active">%1$d/%2$d röle aktif</string>
-    <string name="relay_bar_active_with_errors">%1$d/%2$d röle aktif, %3$d hata</string>
-    <string name="relay_bar_active_with_failures">%1$d/%2$d röle aktif, %3$d başarısız</string>
-    <string name="relay_bar_active_with_removed">%1$d/%2$d röle aktif, %3$d kaldırıldı</string>
-    <string name="relay_bar_connected">%1$d/%2$d röle bağlandı</string>
-    <string name="relay_bar_connected_with_errors">%1$d/%2$d röle bağlı, %3$d hata</string>
-    <string name="relay_bar_connected_with_failures">%1$d/%2$d röle bağlı, %3$d başarısız</string>
+    <string name="relay_bar_active">%1$d/%2$d aktarıcı aktif</string>
+    <string name="relay_bar_active_with_errors">%1$d/%2$d aktarıcı aktif, %3$d hata</string>
+    <string name="relay_bar_active_with_failures">%1$d/%2$d aktarıcı aktif, %3$d başarısız</string>
+    <string name="relay_bar_active_with_removed">%1$d/%2$d aktarıcı aktif, %3$d kaldırıldı</string>
+    <string name="relay_bar_connected">%1$d/%2$d aktarıcıya bağlanıldı</string>
+    <string name="relay_bar_connected_with_errors">%1$d/%2$d aktarıcı bağlı, %3$d hata</string>
+    <string name="relay_bar_connected_with_failures">%1$d/%2$d aktarıcı bağlı, %3$d başarısız</string>
     <string name="relay_bar_connected_with_removed">%1$d/%2$d röle bağlandı, %3$d kaldırıldı</string>
     <string name="channel_owner_count_singular">%1$d sahip</string>
     <string name="channel_owner_count_plural">%1$d sahipler</string>
@@ -2892,4 +2892,15 @@
     <string name="content_filter_voice_messages">Sesli mesaj</string>
     <string name="voice_recording_not_supported">Kullanmakta olduğunuz platform ses kaydı almayı desteklemiyor.</string>
     <string name="relay_bar_subscriber_waiting">Kanal sahibinin aktarıcıları (relay\'leri) eklemesi bekleniyor.</string>
+    <string name="connect_plan_connect_to_name">%s\'ye bağlanın</string>
+    <string name="connect_plan_join_name">Kanal %s\'ye katıl</string>
+    <string name="use_relay">Aktarıcı kullan</string>
+    <string name="onboarding_post_address">Bu adresi sosyal medya profilinizde, web sitenizde veya e-posta imzanızda kullanın.</string>
+    <string name="relay_test_step_verify">Doğrulama</string>
+    <string name="verify_simplex_name_action">Adı doğrulayın</string>
+    <string name="verify_simplex_names">SimpleX adlarını doğrula</string>
+    <string name="via_relay_hostname">%1$s aracılığıyla</string>
+    <string name="content_filter_videos">Videolar</string>
+    <string name="cancel_channel_alert_msg">Yeni kanalınız %1$s, %3$d aktarıcının %2$d\'sine bağlandı.\nİptal ederseniz, kanal silinir - yeniden oluşturabilirsiniz.</string>
+    <string name="your_profile_shared_with_channel_relays">Profiliniz %1$s kanal aktarıcıları ve aboneleri ile paylaşılacaktır.\nAktarıcılar kanal mesajlarına erişebilir.</string>
 </resources>
