@@ -47,6 +47,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
+    setPreparedGroupDomain,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -2744,6 +2745,19 @@ setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified = do
     "UPDATE groups SET group_domain_verified = ? WHERE user_id = ? AND group_id = ?"
     (BI verified, userId, groupId)
   pure g {groupDomainVerified = Just verified}
+
+-- A business group has no publicGroup claim, so the domain it was connected by (from its address) is written
+-- directly to group_domain and marked verified, so it is found by the local name search (getGroupToConnect).
+setPreparedGroupDomain :: DB.Connection -> User -> GroupInfo -> SimplexDomain -> IO GroupInfo
+setPreparedGroupDomain db user@User {userId} g@GroupInfo {groupId} domain = do
+  DB.execute
+    db
+    [sql|
+      UPDATE group_profiles SET group_domain = ?
+      WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?)
+    |]
+    (domain, userId, groupId)
+  setGroupDomainVerified db user g True
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do
