@@ -265,6 +265,7 @@
 		E5DDBE702DC4217900A0EFF0 /* NSEAPITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDBE6F2DC4217900A0EFF0 /* NSEAPITypes.swift */; };
 		E5E418012F83D2CA00252B9E /* OnboardingCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E418002F83D2CA00252B9E /* OnboardingCards.swift */; };
 		E5E418022F83D2CA00252B9E /* ChannelWebAccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E418032F83D2CA00252B9E /* ChannelWebAccessView.swift */; };
+		E5F000022FE0000000000001 /* RemoteCtrlBGKeepAlive.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F000012FE0000000000001 /* RemoteCtrlBGKeepAlive.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -372,6 +373,7 @@
 		5C2E261127A30FEA00F70299 /* TerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalView.swift; sourceTree = "<group>"; };
 		5C35CFC727B2782E00FB6C6D /* BGManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGManager.swift; sourceTree = "<group>"; };
 		5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NtfManager.swift; sourceTree = "<group>"; };
+		E5F000012FE0000000000001 /* RemoteCtrlBGKeepAlive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCtrlBGKeepAlive.swift; sourceTree = "<group>"; };
 		5C36027227F47AD5009F19D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		5C371E4E2BA9AAA200100AD3 /* hu */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hu; path = hu.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5C371E4F2BA9AB6400100AD3 /* hu */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hu; path = "hu.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
@@ -848,6 +850,7 @@
 				5C2E260627A2941F00F70299 /* SimpleXAPI.swift */,
 				5C35CFC727B2782E00FB6C6D /* BGManager.swift */,
 				5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */,
+				E5F000012FE0000000000001 /* RemoteCtrlBGKeepAlive.swift */,
 				5CB346E42868AA7F001FD2EF /* SuspendChat.swift */,
 				5CF937212B25034A00E1D781 /* NSESubscriber.swift */,
 				5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */,
@@ -1571,6 +1574,7 @@
 				D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */,
 				B70CE9E62D4BE5930080F36D /* GroupMentions.swift in Sources */,
 				CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */,
+				E5F000022FE0000000000001 /* RemoteCtrlBGKeepAlive.swift in Sources */,
 				64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
 				5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */,

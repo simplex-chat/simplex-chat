@@ -1608,6 +1608,7 @@ data RemoteCtrlSession
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
         remoteOutputQ :: TBQueue (Either ChatError ChatEvent),
+        remoteOutputQFull :: TMVar (),
         ctrlAppInfo :: CtrlAppInfo
       }
 
@@ -1708,8 +1709,11 @@ toView_ ev = do
     Nothing -> pure ev
   atomically $
     readTVar session >>= \case
-      Just (_, RCSessionConnected {remoteOutputQ})
-        | either (const True) allowRemoteEvent event -> writeTBQueue remoteOutputQ event
+      Just (_, RCSessionConnected {remoteOutputQ, remoteOutputQFull})
+        | either (const True) allowRemoteEvent event -> do
+            remoteQFull <- isFullTBQueue remoteOutputQ
+            if remoteQFull then tryPutTMVar remoteOutputQFull () >> pure () else writeTBQueue remoteOutputQ event
+            writeTBQueue localQ (Nothing, event)
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, event)
 

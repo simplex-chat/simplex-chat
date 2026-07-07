@@ -629,12 +629,16 @@ verifyRemoteCtrlSession execCC sessCode' = do
     (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
     rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
     remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
+    remoteOutputQFull <- newEmptyTMVarIO
     encryption@RemoteCrypto {compression} <- mkCtrlRemoteCrypto sessionKeys (tlsUniq tls) =<< getRemoteCtrlAppInfo sseq
     cc <- ask
-    http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> handleRemoteCommand execCC encryption remoteOutputQ req `runReaderT` cc
+    http2Server <- liftIO . async $
+      race_
+        (attachHTTP2Server tls $ \req -> handleRemoteCommand execCC encryption remoteOutputQ req `runReaderT` cc)
+        (atomically $ takeTMVar remoteOutputQFull)
     void . forkIO $ monitor sseq http2Server
     updateRemoteCtrlSession sseq $ \case
-      RCSessionPendingConfirmation {ctrlAppInfo} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ, ctrlAppInfo}
+      RCSessionPendingConfirmation {ctrlAppInfo} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ, remoteOutputQFull, ctrlAppInfo}
       _ -> Left $ ChatErrorRemoteCtrl RCEBadState
     let remoteCtrl = remoteCtrlInfo rc $ Just RCSConnected {sessionCode = tlsSessionCode tls}
     pure CRRemoteCtrlConnected {remoteCtrl, compression}

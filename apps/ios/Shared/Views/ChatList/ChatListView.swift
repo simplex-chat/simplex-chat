@@ -347,10 +347,28 @@ struct ChatListView: View {
     
     @ViewBuilder var trailingToolbarItem: some View {
         switch chatModel.chatRunning {
-        case .some(true): NewChatMenuButton(showNewChatSheet: $showNewChatSheet)
+        case .some(true):
+            HStack(spacing: 10) {
+                if chatModel.activeRemoteCtrl {
+                    remoteCtrlIndicator()
+                }
+                NewChatMenuButton(showNewChatSheet: $showNewChatSheet)
+            }
         case .some(false): chatStoppedIcon()
         case .none: EmptyView()
         }
+    }
+
+    private func remoteCtrlIndicator() -> some View {
+        Button {
+            activeUserPickerSheet = .useFromDesktop
+        } label: {
+            Image(systemName: "wifi")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.accentColor)
+                .frame(width: 28, height: 28)
+        }
+        .accessibilityLabel("Desktop connected")
     }
     
     private var shouldShowOnboarding: Bool {

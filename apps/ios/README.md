@@ -109,6 +109,6 @@ cd path/to/assets && ./resize.sh
 ## Background Capabilities
 
 Configured in Info.plist:
-- Background modes: audio, fetch, remote-notification, voip
+- Background modes: audio, fetch, processing, remote-notification, voip
 - URL scheme: `simplex://` for deep linking
-- BGTaskScheduler: `chat.simplex.app.receive`
+- BGTaskScheduler: `chat.simplex.app.receive`, `chat.simplex.app.remote-control.keepalive.*`

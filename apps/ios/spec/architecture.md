@@ -223,12 +223,16 @@ See [Database & Storage specification](database.md) for full details.
 ### [Scene Phase Handling (SimpleXApp.swift)](../Shared/SimpleXApp.swift#L38-L123)
 
 - **`.active`**: Calls `startChatAndActivate()`, processes pending notification responses, refreshes chat list and call invitations
-- **`.background`**: Records authentication timestamp, calls `suspendChat()` (unless CallKit call active), schedules `BGManager` background refresh, updates badge count
+- **`.background`**: Records authentication timestamp. If a remote desktop session is active, starts `RemoteCtrlBGKeepAlive` and skips normal chat suspension/background-refresh scheduling; otherwise calls `suspendChat()` (unless CallKit call active), schedules `BGManager` background refresh, and updates badge count
 - **`.inactive`**: No explicit handling (transitional state)
 
 ### CallKit Exception
 
 When a CallKit call is active during backgrounding, chat suspension is deferred (`CallController.shared.shouldSuspendChat = true`) until the call ends, to maintain the WebRTC session.
+
+### Remote Desktop Exception
+
+When a desktop remote-control session is connected, the mobile app remains the local UI owner and shows a small Wi-Fi-style indicator on the chat list toolbar. Dismissing the connect sheet after verification does not disconnect the session, allowed chat events are delivered to the local queue and to the desktop queue when the desktop queue has capacity, and `RemoteCtrlBGKeepAlive` runs only while the app is backgrounded. If the desktop queue is full, or if iOS rejects or expires the keepalive, the remote-control session is stopped rather than leaving either side stale.
 
 ---
 
@@ -261,8 +265,10 @@ Optional desktop pairing allows controlling the mobile app from a desktop client
 - **Pairing**: Encrypted QR code scanned by desktop client establishes a session
 - **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1613), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1620), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1624), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1630), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1636), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1642), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1646)
 - **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L395)`: RemoteCtrlSession?` tracks the active session
+- **Connected behavior**: Once verified, the connect sheet dismisses, the chat list toolbar shows a small desktop indicator that opens the desktop connection page, and explicit Disconnect remains the user-controlled stop path
+- **Background keepalive**: `RemoteCtrlBGKeepAlive` starts when the app backgrounds with a connected desktop session, uses a bounded iOS continued-processing task when available, falls back to a short `UIApplication` background task when continued processing is unavailable, and stops the desktop session when the user disconnects or the keepalive expires
 - **Transport**: Encrypted reverse HTTP transport between mobile and desktop
-- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545), see `Remote.hs` in `../../src/Simplex/Chat/`
+- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545), [`Shared/Model/RemoteCtrlBGKeepAlive.swift`](../Shared/Model/RemoteCtrlBGKeepAlive.swift), see `Remote.hs` and `Controller.hs` in `../../src/Simplex/Chat/`
 
 ---
 

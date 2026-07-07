@@ -50,12 +50,18 @@ let seSubscriber = seMessageSubscriber {
 
 func suspendChat() {
     suspendLockQueue.sync {
+        if ChatModel.shared.activeRemoteCtrl {
+            return
+        }
         _suspendChat(timeout: appSuspendTimeout)
     }
 }
 
 func suspendBgRefresh() {
     suspendLockQueue.sync {
+        if ChatModel.shared.activeRemoteCtrl {
+            return
+        }
         if case .bgRefresh = AppChatState.shared.value  {
             _suspendChat(timeout: bgSuspendTimeout)
         }

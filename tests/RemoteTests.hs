@@ -11,6 +11,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Logger.Simple
 import Control.Monad
+import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -55,6 +56,7 @@ runRemoteTests = do
     it "refuses invalid client cert" remoteHandshakeRejectTest
     it "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
+  it "disconnects desktop when remote event queue is full" remoteQueueOverflowTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
     it "should send files from CLI without /store" remoteCLIFileTest
@@ -200,12 +202,14 @@ remoteMessageTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteMessageTest = testRemote3 $ \compress mobile desktop bob -> do  
   startRemote compress mobile desktop
   contactBob desktop bob
+  mobile <## "bob (Bob): contact is connected"
 
   logNote "sending messages"
   desktop #> "@bob hello there 🙂"
   bob <# "alice> hello there 🙂"
   bob #> "@alice hi"
   desktop <# "bob> hi"
+  mobile <# "bob> hi"
 
   logNote "post-remote checks"
   stopMobile mobile desktop
@@ -221,6 +225,24 @@ remoteMessageTest = testRemote3 $ \compress mobile desktop bob -> do
 
   threadDelay 1000000
   logNote "done"
+
+remoteQueueOverflowTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteQueueOverflowTest = testRemote $ \compress mobile desktop -> do
+  startRemote compress mobile desktop
+
+  Just (sseq, rcSession@(Controller.RCSessionConnected {})) <-
+    readTVarIO (Controller.remoteCtrlSession $ chatController mobile)
+  remoteQ <- newTBQueueIO 1
+  atomically $ do
+    writeTBQueue remoteQ (Left $ Controller.ChatError $ Controller.CECommandError "queued")
+    writeTVar
+      (Controller.remoteCtrlSession $ chatController mobile)
+      (Just (sseq, rcSession {Controller.remoteOutputQ = remoteQ}))
+
+  runReaderT (Controller.toView' $ Controller.CEvtCustomChatEvent Nothing "overflow") (chatController mobile)
+  mobile <## "overflow"
+  mobile <## "remote controller stopped"
+  eventually 3 $ desktop <## "remote host 1 stopped"
 
 remoteStoreFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteStoreFileTest =
