@@ -1408,11 +1408,21 @@ struct SimplexNameView: View {
                 ProgressView()
             }
         } else if verified == true {
-            (nameText + Text(" ") + Text(Image(systemName: "checkmark")).font(iconFont).foregroundColor(theme.colors.primary))
-                .onTapGesture { UIPasteboard.general.string = simplexName }
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                nameText
+                Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { UIPasteboard.general.string = simplexName }
         } else if verified == false {
-            (nameText + Text(" ") + Text(Image(systemName: "xmark")).font(iconFont).foregroundColor(.red))
-                .onTapGesture { runVerify(manual: true) }
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                nameText
+                Image(systemName: "xmark").font(iconFont).foregroundColor(.red)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { runVerify(manual: true) }
         } else {
             HStack(spacing: 6) {
                 nameText

@@ -2,8 +2,6 @@ package chat.simplex.common.views.chat
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,7 +10,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import dev.icerock.moko.resources.ImageResource
 import chat.simplex.common.model.SimplexNameInfo
 import chat.simplex.common.platform.*
@@ -98,23 +95,20 @@ fun SimplexNameView(
   }
 }
 
-// The check/cross is inlined into the name text so it aligns with the baseline and matches the font size.
-// Only the name is styled; the icon carries its own tint, so the name itself is never recolored.
+// The check/cross drawable is centered in its box with ~27% padding top and bottom, so its glyph bottom sits at
+// ~73% of the box height. Align that line with the text baseline so the glyph rests on the baseline; the box is
+// sized so the visible glyph is about the name's cap height. Only the icon is tinted, never the name.
 @Composable
 private fun SimplexNameWithIcon(name: String, style: TextStyle, icon: ImageResource, tint: Color, onClick: () -> Unit) {
-  val iconId = "icon"
-  Text(
-    buildAnnotatedString {
-      append(name)
-      append(" ")
-      appendInlineContent(iconId, "*")
-    },
-    style = style,
-    inlineContent = mapOf(iconId to InlineTextContent(
-      Placeholder(1.5.em, 1.5.em, PlaceholderVerticalAlign.AboveBaseline)
-    ) {
-      Icon(painterResource(icon), null, Modifier.fillMaxSize(), tint = tint)
-    }),
+  Row(
+    horizontalArrangement = Arrangement.spacedBy(2.dp),
     modifier = Modifier.clickable { onClick() }
-  )
+  ) {
+    Text(name, Modifier.alignByBaseline(), style = style)
+    Icon(
+      painterResource(icon), null,
+      Modifier.size(22.dp).alignBy { it.measuredHeight * 73 / 100 },
+      tint = tint
+    )
+  }
 }
