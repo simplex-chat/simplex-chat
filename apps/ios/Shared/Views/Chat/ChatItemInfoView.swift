@@ -168,7 +168,7 @@ struct ChatItemInfoView: View {
                     Label {
                         Text(signedText)
                     } icon: {
-                        Image("signature.plain").foregroundColor(.secondary)
+                        Text(Image("signature.plain")).fontWeight(.light).foregroundColor(.secondary)
                     }
                     Spacer()
                 }
