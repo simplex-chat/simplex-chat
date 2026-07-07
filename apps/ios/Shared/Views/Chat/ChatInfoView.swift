@@ -1395,6 +1395,9 @@ struct SimplexNameView: View {
             .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
     }
 
+    // Size the inline check/cross to the name's cap height so it reads like a capital letter, not an oversized glyph.
+    private var iconFont: Font { .system(size: UIFont.preferredFont(forTextStyle: .subheadline).capHeight) }
+
     // The check/cross is concatenated into the name text so it aligns with the baseline and matches the font
     // size; only the "Verify name" button (not an image) uses an HStack. Tap copies a verified name, or re-runs
     // verification on a failed one.
@@ -1405,10 +1408,10 @@ struct SimplexNameView: View {
                 ProgressView()
             }
         } else if verified == true {
-            (nameText + Text(" ") + Text(Image(systemName: "checkmark")).font(.subheadline).foregroundColor(theme.colors.primary))
+            (nameText + Text(" ") + Text(Image(systemName: "checkmark")).font(iconFont).foregroundColor(theme.colors.primary))
                 .onTapGesture { UIPasteboard.general.string = simplexName }
         } else if verified == false {
-            (nameText + Text(" ") + Text(Image(systemName: "xmark")).font(.subheadline).foregroundColor(.red))
+            (nameText + Text(" ") + Text(Image(systemName: "xmark")).font(iconFont).foregroundColor(.red))
                 .onTapGesture { runVerify(manual: true) }
         } else {
             HStack(spacing: 6) {

@@ -111,7 +111,7 @@ private fun SimplexNameWithIcon(name: String, style: TextStyle, icon: ImageResou
     },
     style = style,
     inlineContent = mapOf(iconId to InlineTextContent(
-      Placeholder(1.2.em, 1.2.em, PlaceholderVerticalAlign.TextCenter)
+      Placeholder(1.5.em, 1.5.em, PlaceholderVerticalAlign.AboveBaseline)
     ) {
       Icon(painterResource(icon), null, Modifier.fillMaxSize(), tint = tint)
     }),
