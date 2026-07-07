@@ -10,18 +10,18 @@ A "signed" XFTP file message signs nothing about the file itself. The signature 
 
 ### Fix
 
-Sign a **plaintext** content digest in `FileInvitation.fileDigest` (already a field, inside the signed `XMsgNew`), and verify the decrypted file against it on receive.
+Sign a **plaintext** content digest in `FileInvitation.fileDigest` (already a field, inside the signed `XMsgNew`), and verify the decrypted file against it on receive — **only for signed file messages** (when `sign` is passed to the send API).
 
-- Sender: populate `fileDigest` with the sha512 of the unencrypted file content for XFTP sends, so it is covered by the message signature.
-- Receiver: after the agent completes the download and decrypt, compare the plaintext digest to `fileDigest`; on mismatch, drop the file and surface a violation event — **regardless of whether the message is signed** (a mismatch is corruption/tampering either way). When the message is signed the digest is unforgeable, so this is a real content guarantee; when unsigned it is corruption detection only.
-- Populate `fileDigest` for all XFTP sends (so unsigned messages also get the drop-on-mismatch check); the signature is what upgrades it from corruption-detection to a real guarantee.
+- Scope: signed file messages only. For an unsigned message a relay can rewrite both the file and the digest, so verifying it buys nothing; restricting to signed also avoids the extra hashing pass on ordinary sends.
+- Sender: when a signed message carries an XFTP file, chat computes the sha512 of the unencrypted source and sets `fileDigest` before building `XMsgNew`, so it is covered by the signature.
+- Receiver: for a signed file message, after download+decrypt, chat hashes the decrypted file and compares to the signed `fileDigest`; on mismatch, drop the file and surface a violation event.
 - Compatibility: `fileDigest` is an optional field older clients already ignore — forward-compatible; verification runs only on clients that support it.
 
-### Why plaintext, not the existing description digest (verified in simplexmq)
+### Why plaintext, and produced chat-side (verified in simplexmq)
 
-The XFTP description's `digest` is `sha512Hash` of the **encrypted** file (`Agent.hs:449`, `Client/Main.hs:290`), produced with a per-send random `key`+`nonce`; the recipient verifies the reassembled **ciphertext** against it (`Agent.hs:295`). It is therefore upload-specific — any re-encryption/re-upload changes it, so it can never be signed once and preserved across forwards or re-uploads. A **plaintext** digest is encryption-independent (stable across re-forward and re-upload) and verifies the content the recipient actually consumes.
+The XFTP description's `digest` is `sha512Hash` of the **encrypted** file (`Agent.hs:449`, `Client/Main.hs:290`), produced with a per-send random `key`+`nonce`; the recipient verifies the reassembled **ciphertext** against it (`Agent.hs:295`). It is therefore upload-specific — any re-encryption/re-upload changes it, so it can never be signed once and preserved. A **plaintext** digest is encryption-independent and verifies the content the recipient actually consumes.
 
-Cost is small: the send-side encrypt pass already streams the whole plaintext (`encryptFile`, `Crypto.hs:36`), so it can emit a running sha512 of the source in the same read; the decrypt pass can do likewise. This is a **coordinated simplexmq + simplex-chat change** (use-local-simplexmq): simplexmq computes and surfaces the plaintext digest on send (to sign) and receive (to verify); simplex-chat places it in the signed `FileInvitation.fileDigest` and checks it after decrypt.
+simplexmq computes **no** plaintext hash, and its only free (fused) read is the **async** encrypt pass (`encryptFileForUpload`, `Agent.hs:433`) — too late for the synchronous `FileInvitation` (built in `xftpSndFileTransfer_`, `Internal.hs:389`, before the async upload). So chat computes the plaintext sha512 itself, in the send path off the UI thread, before building the invitation, and hashes the decrypted file on receive to verify — **chat-only, no simplexmq change** (option A). It is one extra full read (decrypt-at-rest + sha512) per side, ~1-3 s for a file near the ~1 GB cap, one-time and only for signed files. Rejected alternative: fusing the digest into the async encrypt/decrypt and deferring the send until it is ready — single-read, but it couples the send to the file pipeline and risks an unresponsive send, which we will not do.
 
 ### Threat model
 
@@ -48,16 +48,16 @@ Catch-up members hold non-edited and edited signed posts as verified with curren
 
 ## Implementation steps
 
-Part A:
-1. simplexmq: compute and surface the plaintext (source-content) sha512 from the existing encrypt and decrypt passes (`encryptFile` / `decryptChunks`), through the agent's send result and receive completion.
-2. simplex-chat: populate `FileInvitation.fileDigest` from that digest on XFTP send (so it is signed); on receive completion, compare the plaintext digest to `fileDigest` and, on mismatch, drop the file and surface a violation event — always, not only when signed.
-3. Tests: signed file message verifies; substituted/tampered content fails and the file is dropped; an unsigned mismatch is dropped too.
+Part A (chat-only, no simplexmq change):
+1. On send, for a signed message with an XFTP file, hash the source off the UI thread and set `FileInvitation.fileDigest` before building `XMsgNew`.
+2. On receive of a signed file message, hash the decrypted file and compare to the signed `fileDigest`; on mismatch, drop the file and surface a violation event.
+3. Test (one, in the channel test harness): a signed file message verifies end-to-end; and — reusing the forged-message injection from the existing signature tests — a forged file (content not matching the signed digest) fails the check and is dropped.
 
 Part B:
 4. Migration: add `item_msg_body`, `item_signatures` to `chat_items` (SQLite + Postgres modules; register in `Migrations.hs`; add to `.cabal`; schema files regenerate via tests).
 5. Thread raw signed bytes onto `RcvMessage`; store/overwrite in `createNewChatItem_` and `updateGroupChatItem_` (relay + content-item + signed).
 6. `sendHistory`: signed content item with stored bytes → forward `VMSigned`; else re-encode.
-7. Tests: catch-up subscriber holds non-edited and edited signed posts as verified/current; a forged unsigned edit/delete of a catch-up item is rejected; a signed file post verifies on catch-up.
+7. Test (one): a catch-up subscriber receives history exercising all transitions — a signed post that was edited (arrives signed, current content), another signed post that was deleted (excluded from history), and a signed post with a file (arrives signed, digest verified) — and a forged unsigned edit/delete of a catch-up-held signed item is rejected.
 
 ## Docs to update on implementation
 
