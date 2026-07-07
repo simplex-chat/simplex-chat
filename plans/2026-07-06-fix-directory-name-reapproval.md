@@ -207,7 +207,16 @@ not a directory policy, so it belongs where the comparison lives:
   `profileChanged` true and stores). `Commands.hs:4358` is the directory path this
   fix targets.
 
-## 8. Verification (done)
+### Related, out of scope (follow-up note)
+
+The directory's *other* change detector, `deGroupUpdated`'s `sameProfile`
+(`Service.hs:548-551`), still compares whole profiles including `publicGroupId`.
+It is **not** currently triggerable by staleness — `CEvtGroupUpdated` carries
+`fromGroup`/`toGroup` both freshly DB-loaded with the same stored id — so it is
+not part of this bug. But there are now two notions of "profile changed" in the
+tree; if a future path ever feeds a stale-id group into `deGroupUpdated`, the same
+class of bug could reappear there. Flagged for a follow-up; deliberately not
+expanded into by this one-line fix.
 
 Regression test `testLinkCheckStalePublicGroupId` in `tests/Bots/DirectoryTests.hs`
 (beside the existing "link/whitespace-only must not re-approve" tests): register +
