@@ -1386,7 +1386,7 @@ struct SimplexNameView: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(simplexName)
-                .font(verified == true ? .subheadline : .system(.subheadline, design: .monospaced))
+                .font(.subheadline)
                 .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
             indicator()
         }
