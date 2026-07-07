@@ -10,17 +10,18 @@ A "signed" XFTP file message signs nothing about the file itself. The signature 
 
 ### Fix
 
-Put the file's content digest into the signed part (`FileInvitation.fileDigest`, already a field, inside `XMsgNew`), and verify the downloaded file against it on receive.
+Sign a **plaintext** content digest in `FileInvitation.fileDigest` (already a field, inside the signed `XMsgNew`), and verify the decrypted file against it on receive.
 
-- Sender: populate `fileDigest` for XFTP sends so it is covered by the message signature.
-- Receiver: after the file download completes, compute the received file's digest and compare to the signed `fileDigest`; on mismatch, mark the file invalid / reject and surface an event. Enforce the check when the message is signed; for unsigned messages the digest is informational.
-- Compatibility: `fileDigest` is an optional field older clients already ignore — forward-compatible. Verification runs only on clients that support it.
+- Sender: populate `fileDigest` with the sha512 of the unencrypted file content for XFTP sends, so it is covered by the message signature.
+- Receiver: after the agent completes the download and decrypt, compare the plaintext digest to `fileDigest`; on mismatch, drop the file and surface a violation event — **regardless of whether the message is signed** (a mismatch is corruption/tampering either way). When the message is signed the digest is unforgeable, so this is a real content guarantee; when unsigned it is corruption detection only.
+- Populate `fileDigest` for all XFTP sends (so unsigned messages also get the drop-on-mismatch check); the signature is what upgrades it from corruption-detection to a real guarantee.
+- Compatibility: `fileDigest` is an optional field older clients already ignore — forward-compatible; verification runs only on clients that support it.
 
-### Open questions to settle in implementation
+### Why plaintext, not the existing description digest (verified in simplexmq)
 
-- **Digest form.** Over the decrypted (plaintext) content the recipient can reconstruct, vs the encrypted-file digest already present in the XFTP description. Plaintext is encryption-independent and simplest to verify; confirm against simplexmq's XFTP digest so we reuse rather than recompute.
-- **Availability at send.** The invitation is created before the async upload; confirm whether the agent surfaces the digest early enough, or whether it must be computed synchronously before `XMsgNew` is sent.
-- **Scope.** Populate `fileDigest` for all XFTP sends (integrity even when unsigned) but gate the reject-on-mismatch behavior on the message being signed.
+The XFTP description's `digest` is `sha512Hash` of the **encrypted** file (`Agent.hs:449`, `Client/Main.hs:290`), produced with a per-send random `key`+`nonce`; the recipient verifies the reassembled **ciphertext** against it (`Agent.hs:295`). It is therefore upload-specific — any re-encryption/re-upload changes it, so it can never be signed once and preserved across forwards or re-uploads. A **plaintext** digest is encryption-independent (stable across re-forward and re-upload) and verifies the content the recipient actually consumes.
+
+Cost is small: the send-side encrypt pass already streams the whole plaintext (`encryptFile`, `Crypto.hs:36`), so it can emit a running sha512 of the source in the same read; the decrypt pass can do likewise. This is a **coordinated simplexmq + simplex-chat change** (use-local-simplexmq): simplexmq computes and surfaces the plaintext digest on send (to sign) and receive (to verify); simplex-chat places it in the signed `FileInvitation.fileDigest` and checks it after decrypt.
 
 ### Threat model
 
@@ -48,9 +49,9 @@ Catch-up members hold non-edited and edited signed posts as verified with curren
 ## Implementation steps
 
 Part A:
-1. Populate `FileInvitation.fileDigest` for XFTP sends.
-2. Verify the downloaded file's digest against the signed value on receive-completion; reject/mark-invalid on mismatch (enforced for signed messages); surface an event.
-3. Tests: signed file message verifies; tampered description/content fails verification.
+1. simplexmq: compute and surface the plaintext (source-content) sha512 from the existing encrypt and decrypt passes (`encryptFile` / `decryptChunks`), through the agent's send result and receive completion.
+2. simplex-chat: populate `FileInvitation.fileDigest` from that digest on XFTP send (so it is signed); on receive completion, compare the plaintext digest to `fileDigest` and, on mismatch, drop the file and surface a violation event — always, not only when signed.
+3. Tests: signed file message verifies; substituted/tampered content fails and the file is dropped; an unsigned mismatch is dropped too.
 
 Part B:
 4. Migration: add `item_msg_body`, `item_signatures` to `chat_items` (SQLite + Postgres modules; register in `Migrations.hs`; add to `.cabal`; schema files regenerate via tests).
