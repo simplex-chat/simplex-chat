@@ -272,6 +272,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (deleteAt != null) {
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
+      if (ci.meta.msgSigned == MsgSigStatus.Verified) {
+        val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
+        InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_verified))
+      }
       if (devTools) {
         InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
         InfoRow(stringResource(MR.strings.info_row_updated_at), localTimestamp(ci.meta.updatedAt))

@@ -3796,7 +3796,16 @@ Query:
         SELECT g.group_id, g.conn_full_link_to_connect, g.conn_short_link_to_connect FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified = 1
-      
+       AND g.business_chat IS NOT NULL
+Plan:
+SEARCH g USING INDEX sqlite_autoindex_groups_2 (user_id=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT g.group_id, g.conn_full_link_to_connect, g.conn_short_link_to_connect FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verified = 1
+       AND g.business_chat IS NULL
 Plan:
 SEARCH g USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
@@ -7119,6 +7128,10 @@ Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
 
+Query: SELECT chat_item_id FROM chat_items WHERE item_text LIKE '%' || ? || '%' ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SCAN chat_items
+
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
@@ -7430,6 +7443,10 @@ SEARCH rcv_roster_transfers USING INDEX idx_rcv_roster_transfers_group_id_from_m
 Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SCAN chat_items
 
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:

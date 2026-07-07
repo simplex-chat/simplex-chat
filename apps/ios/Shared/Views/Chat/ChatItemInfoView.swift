@@ -162,6 +162,13 @@ struct ChatItemInfoView: View {
             if let deleteAt = meta.itemTimed?.deleteAt {
                 infoRow("Disappears at", localTimestamp(deleteAt))
             }
+            if meta.msgSigned == .verified {
+                let signedText: LocalizedStringKey = ci.chatDir.sent ? "Signed" : "Signed & verified"
+                HStack {
+                    Label(signedText, image: "signature.plain")
+                    Spacer()
+                }
+            }
             if developerTools {
                 infoRow("Database ID", "\(meta.itemId)")
                 infoRow("Record updated at", localTimestamp(meta.updatedAt))

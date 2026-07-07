@@ -149,7 +149,7 @@ func ciMetaText(
     }
     if meta.msgSigned == .verified {
         appendSpace()
-        r = r + statusIconText("checkmark.seal", resolved)
+        r = r + colored(Text(Image("signature.plain")), resolved)
         space = textSpace
     }
     if showTimesamp {

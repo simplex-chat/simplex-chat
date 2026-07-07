@@ -756,6 +756,8 @@
   <string name="send_disappearing_message_send">Send</string>
   <string name="sign_message">Sign message</string>
   <string name="sign_message_desc">Signing proves you authored this message and can\'t be denied later.</string>
+  <string name="info_row_signed">Signed</string>
+  <string name="info_row_signed_verified">Signed &amp; verified</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
