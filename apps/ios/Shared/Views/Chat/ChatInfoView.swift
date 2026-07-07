@@ -1384,28 +1384,38 @@ struct SimplexNameView: View {
     @State private var showSpinner = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text(simplexName)
-                .font(.subheadline)
-                .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
-            indicator()
-        }
-        .padding(.bottom, 2)
-        .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
+        content
+            .padding(.bottom, 2)
+            .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
     }
 
-    @ViewBuilder private func indicator() -> some View {
+    private var nameText: Text {
+        Text(simplexName)
+            .font(.subheadline)
+            .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
+    }
+
+    // The check/cross is concatenated into the name text so it aligns with the baseline and matches the font
+    // size; only the "Verify name" button (not an image) uses an HStack. Tap copies a verified name, or re-runs
+    // verification on a failed one.
+    @ViewBuilder private var content: some View {
         if showSpinner {
-            ProgressView()
+            HStack(spacing: 6) {
+                nameText
+                ProgressView()
+            }
         } else if verified == true {
-            Image(systemName: "checkmark")
+            (nameText + Text(" ") + Text(Image(systemName: "checkmark")).font(.subheadline).foregroundColor(theme.colors.primary))
+                .onTapGesture { UIPasteboard.general.string = simplexName }
         } else if verified == false {
-            Image(systemName: "xmark")
-                .foregroundColor(.red)
+            (nameText + Text(" ") + Text(Image(systemName: "xmark")).font(.subheadline).foregroundColor(.red))
                 .onTapGesture { runVerify(manual: true) }
         } else {
-            Button { runVerify(manual: true) } label: {
-                Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+            HStack(spacing: 6) {
+                nameText
+                Button { runVerify(manual: true) } label: {
+                    Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+                }
             }
         }
     }

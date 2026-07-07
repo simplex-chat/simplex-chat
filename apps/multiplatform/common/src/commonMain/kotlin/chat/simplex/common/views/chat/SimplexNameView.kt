@@ -2,13 +2,18 @@ package chat.simplex.common.views.chat
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import dev.icerock.moko.resources.ImageResource
 import chat.simplex.common.model.SimplexNameInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
@@ -61,34 +66,55 @@ fun SimplexNameView(
     if (chatModel.controller.appPrefs.privacyVerifySimplexNames.get() && verified == null) runVerify(manual = false)
   }
 
+  val clipboard = LocalClipboardManager.current
+  val nameStyle = MaterialTheme.typography.body2.copy(
+    color = if (verified == true) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+  )
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(6.dp),
     modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
   ) {
-    Text(
-      simplexName,
-      style = MaterialTheme.typography.body2.copy(
-        color = if (verified == true) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-        fontFamily = if (verified == true) FontFamily.Default else FontFamily.Monospace
-      )
-    )
     when {
-      showSpinner.value ->
+      showSpinner.value -> {
+        Text(simplexName, style = nameStyle)
         CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colors.secondary)
+      }
       verified == true ->
-        Icon(painterResource(MR.images.ic_check_filled), null, Modifier.size(18.dp), tint = MaterialTheme.colors.onBackground)
+        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_check_filled, MaterialTheme.colors.primary) {
+          clipboard.setText(AnnotatedString(simplexName))
+        }
       verified == false ->
-        Icon(
-          painterResource(MR.images.ic_close), null, tint = Color.Red,
-          modifier = Modifier.size(18.dp).clickable { runVerify(manual = true) }
-        )
-      else ->
+        SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, Color.Red) { runVerify(manual = true) }
+      else -> {
+        Text(simplexName, style = nameStyle)
         Text(
           stringResource(MR.strings.verify_simplex_name_action),
           color = MaterialTheme.colors.primary,
           modifier = Modifier.clickable { runVerify(manual = true) }
         )
+      }
     }
   }
+}
+
+// The check/cross is inlined into the name text so it aligns with the baseline and matches the font size.
+// Only the name is styled; the icon carries its own tint, so the name itself is never recolored.
+@Composable
+private fun SimplexNameWithIcon(name: String, style: TextStyle, icon: ImageResource, tint: Color, onClick: () -> Unit) {
+  val iconId = "icon"
+  Text(
+    buildAnnotatedString {
+      append(name)
+      append(" ")
+      appendInlineContent(iconId, "*")
+    },
+    style = style,
+    inlineContent = mapOf(iconId to InlineTextContent(
+      Placeholder(1.2.em, 1.2.em, PlaceholderVerticalAlign.TextCenter)
+    ) {
+      Icon(painterResource(icon), null, Modifier.fillMaxSize(), tint = tint)
+    }),
+    modifier = Modifier.clickable { onClick() }
+  )
 }
