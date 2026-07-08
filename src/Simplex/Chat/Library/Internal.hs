@@ -397,6 +397,11 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
       ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
   pure (fInv, ciFile, ft)
 
+cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
+cryptoFileDigest file = do
+  r <- liftIO $ runExceptT $ CF.readFile file
+  either (throwChatError . CEInternalError . show) (pure . FD.FileDigest . LC.sha512Hash) r
+
 xftpSndFileRedirect :: User -> FileTransferId -> ValidFileDescription 'FRecipient -> CM FileTransferMeta
 xftpSndFileRedirect user ftId vfd = do
   let fileName = "redirect.yaml"

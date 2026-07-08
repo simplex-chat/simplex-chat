@@ -4654,7 +4654,11 @@ processChatCommand cxt nm = \case
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients
-                  pure (Just fInv, Just ciFile)
+                  fInv' <-
+                    if sign && useRelays' gInfo
+                      then (\d -> (fInv :: FileInvitation) {fileDigest = Just d}) <$> cryptoFileDigest file
+                      else pure fInv
+                  pure (Just fInv', Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup)))
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->

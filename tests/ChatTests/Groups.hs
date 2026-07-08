@@ -339,6 +339,7 @@ chatGroupTests = do
       it "should sign self-delete of a signed item" testChannelMemberSelfDeleteSign
       it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
       it "should always sign moderation delete" testChannelModerationDeleteSign
+      it "should verify signed file digest" testChannelSignedFile
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -12143,6 +12144,69 @@ testChannelMemberMessageSign ps =
               ]
             cath #$> ("/_get chat #1 count=100 search=plain hello", chat, [(1, "plain hello")])
             dan #$> ("/_get chat #1 count=100 search=plain hello", chat, [(0, "plain hello")])
+
+testChannelSignedFile :: HasCallStack => TestParams -> IO ()
+testChannelSignedFile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+            xftpCLI ["rand", "./tests/tmp/testfile", "1mb"] `shouldReturn` ["File created: ./tests/tmp/testfile"]
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath's first (signed) message introduces her to dan/eve
+            cath ##> "/_send #1 sign=on text hi"
+            cath <# "#team hi (signed)"
+            bob <# "#team cath> hi (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> hi (signed) [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> hi (signed) [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> hi (signed) [>>]"
+              ]
+
+            -- cath sends a signed file
+            cath ##> "/_send #1 sign=on json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"signed file\",\"type\":\"file\"}}]"
+            cath <# "#team signed file (signed)"
+            cath <# "/f #team ./tests/tmp/testfile"
+            cath <## "use /fc 1 to cancel sending"
+            cath <## "completed uploading file 1 (testfile) for #team"
+
+            bob <# "#team cath> signed file (signed)"
+            bob <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+            concurrentlyN_
+              [ do alice <# "#team cath> signed file (signed) [>>]"
+                   alice <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
+                   alice <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                do dan <# "#team cath> signed file (signed) [>>]"
+                   dan <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
+                   dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                do eve <# "#team cath> signed file (signed) [>>]"
+                   eve <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
+                   eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+              ]
+
+            -- dan downloads: the signed digest is verified and the file completes
+            dan ##> "/fr 1 ./tests/tmp"
+            dan
+              <### [ "saving file 1 from cath to ./tests/tmp/testfile_1",
+                     "started receiving file 1 (testfile) from cath"
+                   ]
+            dan <## "completed receiving file 1 (testfile) from cath"
+            src <- B.readFile "./tests/tmp/testfile"
+            destDan <- B.readFile "./tests/tmp/testfile_1"
+            destDan `shouldBe` src
+            -- the signed digest was carried to dan and stored, so verification ran (not skipped) and passed
+            digestCount <- withCCTransaction dan $ \db ->
+              DB.query_ db "SELECT count(1) FROM files WHERE file_digest IS NOT NULL" :: IO [[Int]]
+            digestCount `shouldBe` [[1]]
 
 testChannelMemberUpdateEnforcement :: HasCallStack => TestParams -> IO ()
 testChannelMemberUpdateEnforcement ps =
