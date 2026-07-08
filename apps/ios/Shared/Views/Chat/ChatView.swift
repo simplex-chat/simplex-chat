@@ -47,7 +47,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
-    @State @ObservedObject var chat: Chat
+    @State var chat: Chat
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
@@ -93,6 +93,18 @@ struct ChatView: View {
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+
+    private var selectedChatItemsCount: Int {
+        selectedChatItems?.count ?? 0
+    }
+
+    private var deleteSelectedMessagesTitle: LocalizedStringKey {
+        selectedChatItemsCount == 1 ? "Delete message?" : "Delete \(selectedChatItemsCount) messages?"
+    }
+
+    private var archiveSelectedReportsTitle: LocalizedStringKey {
+        selectedChatItemsCount == 1 ? "Archive report?" : "Archive \(selectedChatItemsCount) reports?"
+    }
 
     // Spec: spec/client/chat-view.md#body
     var body: some View {
@@ -228,7 +240,7 @@ struct ChatView: View {
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .environmentObject(theme)
-        .confirmationDialog(selectedChatItems?.count == 1 ? "Delete message?" : "Delete \((selectedChatItems?.count ?? 0)) messages?", isPresented: $showDeleteSelectedMessages, titleVisibility: .visible) {
+        .confirmationDialog(deleteSelectedMessagesTitle, isPresented: $showDeleteSelectedMessages, titleVisibility: .visible) {
             Button("Delete for me", role: .destructive) {
                 if let selected = selectedChatItems {
                     deleteMessages(chat, selected.sorted(), .cidmInternal, moderate: false, deletedSelectedMessages)                }
@@ -242,7 +254,7 @@ struct ChatView: View {
                 }
             }
         }
-        .confirmationDialog(selectedChatItems?.count == 1 ? "Archive report?" : "Archive \((selectedChatItems?.count ?? 0)) reports?", isPresented: $showArchiveSelectedReports, titleVisibility: .visible) {
+        .confirmationDialog(archiveSelectedReportsTitle, isPresented: $showArchiveSelectedReports, titleVisibility: .visible) {
             Button("For me", role: .destructive) {
                 if let selected = selectedChatItems {
                     archiveReports(chat, selected.sorted(), false, deletedSelectedMessages)
@@ -418,25 +430,7 @@ struct ChatView: View {
                 }
             }
         }
-        .onDisappear {
-            ConnectProgressManager.shared.cancelConnectProgress()
-            VideoPlayerView.players.removeAll()
-            stopAudioPlayer()
-            if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    if chatModel.chatId == nil {
-                        chatModel.chatAgentConnId = nil
-                        chatModel.chatSubStatus = nil
-                        im.reversedChatItems = []
-                        im.chatState.clear()
-                        chatModel.groupMembers = []
-                        chatModel.groupMembersIndexes.removeAll()
-                        chatModel.membersLoaded = false
-                        ChannelRelaysModel.shared.reset()
-                    }
-                }
-            }
-        }
+        .onDisappear(perform: handleChatViewDisappear)
         .onChange(of: colorScheme) { _ in
             theme = buildTheme()
         }
@@ -792,6 +786,43 @@ struct ChatView: View {
         floatingButtonModel.updateOnListChange(scrollView.listState)
     }
 
+    private func handleChatViewDisappear() {
+        ConnectProgressManager.shared.cancelConnectProgress()
+        VideoPlayerView.players.removeAll()
+        stopAudioPlayer()
+        cleanupChatOnDisappear(chat.id)
+    }
+
+    private func cleanupChatOnDisappear(_ chatId: ChatId) {
+        guard chatModel.chatId == chatId && !presentationMode.wrappedValue.isPresented else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            guard chatModel.chatId == nil else { return }
+            chatModel.chatAgentConnId = nil
+            chatModel.chatSubStatus = nil
+            im.reversedChatItems = []
+            im.chatState.clear()
+            chatModel.groupMembers = []
+            chatModel.groupMembersIndexes.removeAll()
+            chatModel.membersLoaded = false
+            ChannelRelaysModel.shared.reset()
+        }
+    }
+
+    private func updateMergedItems(_ revealed: Set<Int64>) {
+        let items = MergedItems.create(im, revealed)
+        mergedItems.boxedValue = items
+        scrollView.updateItems(items.items)
+    }
+
+    private func chatItemMaxWidth(_ cInfo: ChatInfo, width: CGFloat, voiceNoFrame: Bool, channelReceived: Bool, channelReceivedNoAvatar: Bool) -> CGFloat {
+        if cInfo.chatType == .group {
+            if channelReceivedNoAvatar { return width - 26 }
+            if voiceNoFrame || channelReceived { return (width - 28) - 42 }
+            return (width - 28) * 0.84 - 42
+        }
+        return voiceNoFrame ? width - 32 : (width - 32) * 0.84
+    }
+
     private func updateAvailableContent() {
         Task {
             let content: [ContentFilter]
@@ -923,15 +954,13 @@ struct ChatView: View {
                         // left padding (see .leading padding below), so they get the full row width here
                         // too — otherwise the reserved avatar inset would leave a gap on the right
                         let channelReceivedNoAvatar = channelReceived && !shouldShowAvatar(mergedItem.newest().item, mergedItem.oldest().nextItem)
-                        let maxWidth = cInfo.chatType == .group
-                        ? channelReceivedNoAvatar
-                        ? g.size.width - 26
-                        : voiceNoFrame || channelReceived
-                        ? (g.size.width - 28) - 42
-                        : (g.size.width - 28) * 0.84 - 42
-                        : voiceNoFrame
-                        ? (g.size.width - 32)
-                        : (g.size.width - 32) * 0.84
+                        let maxWidth = chatItemMaxWidth(
+                            cInfo,
+                            width: g.size.width,
+                            voiceNoFrame: voiceNoFrame,
+                            channelReceived: channelReceived,
+                            channelReceivedNoAvatar: channelReceivedNoAvatar
+                        )
                         ChatItemWithMenu(
                             im: im,
                             chat: $chat,
@@ -982,8 +1011,7 @@ struct ChatView: View {
                 }
             }
             .onChange(of: revealedItems) { revealed in
-                mergedItems.boxedValue = MergedItems.create(im, revealed)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                updateMergedItems(revealed)
             }
             .onChange(of: chat.id) { _ in
                 allowLoadMoreItems = false
@@ -1004,7 +1032,7 @@ struct ChatView: View {
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-        @Binding @ObservedObject var chat: Chat
+        @Binding var chat: Chat
         @State private var showSecrets: Set<Int> = []
 
         var body: some View {
@@ -1695,7 +1723,7 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
-        @Binding @ObservedObject var chat: Chat
+        @Binding var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let index: Int
         let isLastItem: Bool
