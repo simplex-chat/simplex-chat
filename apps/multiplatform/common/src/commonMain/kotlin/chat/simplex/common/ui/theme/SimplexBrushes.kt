@@ -29,15 +29,16 @@ private const val SIMPLEX_TILT_DEG = 20f
 class ChatViewportInfo(
   val sizePx: State<IntSize>,
   val originInWindow: State<Offset>,
+  val previewMode: Boolean = false,
 )
 
 val LocalChatViewportInfo = compositionLocalOf<ChatViewportInfo?> { null }
 
 @Composable
-fun rememberChatViewportInfo(): Pair<ChatViewportInfo, Modifier> {
+fun rememberChatViewportInfo(previewMode: Boolean = false): Pair<ChatViewportInfo, Modifier> {
   val sizePx = remember { mutableStateOf(IntSize.Zero) }
   val originInWindow = remember { mutableStateOf(Offset.Zero) }
-  val info = remember { ChatViewportInfo(sizePx, originInWindow) }
+  val info = remember { ChatViewportInfo(sizePx, originInWindow, previewMode) }
   val mod = Modifier
     .onSizeChanged { sizePx.value = it }
     .onGloballyPositioned { originInWindow.value = it.positionInWindow() }
@@ -97,7 +98,12 @@ fun Modifier.simplexBubbleBackground(slot: SimplexBubbleSlot): Modifier = compos
     .drawBehind {
       val sz = viewport.sizePx.value
       if (sz.width == 0 || sz.height == 0) return@drawBehind
-      val (axisStartLocal, axisEndLocal) = axisEndpoints(sz.width.toFloat(), sz.height.toFloat())
+      val (bl, tr) = axisEndpoints(sz.width.toFloat(), sz.height.toFloat())
+      // The preview swatch stretches the axis (same as simplexGradient()'s previewMode in
+      // ChatWallpaper.kt) so bubbles show the same representative slice as the wallpaper background.
+      val span = tr - bl
+      val axisStartLocal = if (viewport.previewMode) bl - span else bl
+      val axisEndLocal = if (viewport.previewMode) tr + span * 2f else tr
       val viewportOrigin = viewport.originInWindow.value
       val offset = viewportOrigin - bubblePos.value
       val brush = Brush.linearGradient(

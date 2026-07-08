@@ -279,6 +279,7 @@ object AppearanceScope {
     val themeBackgroundColor = MaterialTheme.colors.background
     val backgroundColor =  backgroundColor ?: wallpaperType?.defaultBackgroundColor(theme, MaterialTheme.colors.background)
     val tintColor = tintColor ?: wallpaperType?.defaultTintColor(theme)
+    val (previewViewport, previewViewportModifier) = rememberChatViewportInfo(previewMode = true)
     Column(Modifier
       .drawWithCache {
         if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null) {
@@ -289,19 +290,22 @@ object AppearanceScope {
           }
         }
       }
+      .then(previewViewportModifier)
       .padding(DEFAULT_PADDING_HALF)
     ) {
       if (withMessages) {
         val chatItemTail = remember { appPreferences.chatItemTail.state }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
-          val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
-          PreviewChatItemView(alice)
-          PreviewChatItemView(
-            ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
-              quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+        CompositionLocalProvider(LocalChatViewportInfo provides previewViewport) {
+          Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
+            val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
+            PreviewChatItemView(alice)
+            PreviewChatItemView(
+              ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
+                quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+              )
             )
-          )
+          }
         }
       } else {
         Box(Modifier.fillMaxSize())
