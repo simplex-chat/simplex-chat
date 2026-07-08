@@ -247,7 +247,7 @@
     <string name="change_verb">Cambiar</string>
     <string name="notifications_mode_periodic_desc">Se realizan comprobaciones de mensajes nuevos periódicas de hasta un minuto de duración cada 10 minutos</string>
     <string name="clear_contacts_selection_button">Limpiar</string>
-    <string name="change_member_role_question">¿Cambiar de función?</string>
+    <string name="change_member_role_question">¿Cambiar el rol?</string>
     <string name="v4_4_verify_connection_security_desc">Compara los códigos de seguridad con tus contactos</string>
     <string name="choose_file">Archivo</string>
     <string name="clear_verb">Vaciar</string>
@@ -342,7 +342,7 @@
     <string name="error_changing_address">Error al cambiar dirección</string>
     <string name="error_saving_file">Error al guardar archivo</string>
     <string name="icon_descr_server_status_error">Error</string>
-    <string name="from_gallery_button">De la galería</string>
+    <string name="from_gallery_button">Galería</string>
     <string name="gallery_image_button">Imagen</string>
     <string name="gallery_video_button">Vídeo</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido un enlace de invitación a SimpleX Chat puedes abrirlo en tu navegador:</string>
@@ -2873,4 +2873,29 @@
     <string name="relays_no_web_support">Los servidores usados no admiten páginas web.</string>
     <string name="badge_support_from_v7">Puedes apoyar SimpleX desde la versión 7.</string>
     <string name="badge_unverified_title">Insignia sin verificar</string>
+    <string name="connect_plan_connect_to_name">Conectar con %s</string>
+    <string name="error_saving_simplex_name">Error al guardar el nombre</string>
+    <string name="connect_plan_join_name">Unirte al canal %s</string>
+    <string name="set_user_simplex_name_footer">Permitir el contacto mediante tu nombre registrado contra tu dirección SimpleX.</string>
+    <string name="set_channel_simplex_name_footer">Permitir unirse al canal mediante el nombre registrado con este enlace.</string>
+    <string name="simplex_name_not_found">Nombre no encontrado</string>
+    <string name="simplex_name_no_servers_desc">No tienes servidores configurados para resolver nombres SimpleX. Hazlo, o usa un enlace para conectarte.</string>
+    <string name="no_names_servers_enabled">Sin servidores para resolver nombres.</string>
+    <string name="simplex_name_no_valid_link">Ningún enlace válido</string>
+    <string name="simplex_name_resolver_error_desc">Error de resolución: %1$s</string>
+    <string name="simplex_name_server_no_resolver_desc">El servidor %1$s no admite la resolución de nombres. Configura un servidor, o usa un enlace para conectarte.</string>
+    <string name="set_simplex_name">Escribe el nombre SimpleX</string>
+    <string name="simplex_name">Nombre SimpleX</string>
+    <string name="simplex_name_error">Error del nombre SimpleX</string>
+    <string name="simplex_name_not_verified">Nombre SimpleX no verificado</string>
+    <string name="simplex_name_no_valid_link_desc">El nombre SimpleX %1$s está registrado, pero no tiene un enlace válido.</string>
+    <string name="simplex_name_unconfirmed_desc">El nombre SimpleX %1$s está registrado, pero no se ha añadido a un perfil. Por favor, si eres el propietario, añádelo a tu dirección o al perfil del canal.</string>
+    <string name="simplex_name_owner_no_channel_link">El nombre SimpleX %1$s está registrado sin un enlace de canal. Añádelo en la página de registro.</string>
+    <string name="simplex_name_owner_no_address">El nombre SimpleX %1$s está registrado sin una dirección SimpleX. Añádela en la página de registro.</string>
+    <string name="simplex_name_not_found_desc">El nombre SimpleX no está registrado. Por favor, comprueba el nombre.</string>
+    <string name="operator_use_for_names">Para resolver nombres</string>
+    <string name="simplex_name_unconfirmed">Nombre sin confirmar</string>
+    <string name="verify_simplex_name_action">Verificar nombre</string>
+    <string name="verify_simplex_names">Verificar nombres SimpleX</string>
+    <string name="your_simplex_name">Mi nombre SimpleX</string>
 </resources>
