@@ -32,7 +32,7 @@ fun CIChatLinkHeader(
         size = 54.dp,
         image = chatLink.image,
         icon = chatLink.iconRes,
-        color = if (isInDarkTheme()) FileDark else FileLight
+        color = if (CurrentColors.value.base == DefaultTheme.SIMPLEX) simplexSecondaryTint() else if (isInDarkTheme()) FileDark else FileLight
       )
       Spacer(Modifier.width(8.dp))
       Column(
@@ -57,7 +57,7 @@ fun CIChatLinkHeader(
       chatLink.shortDescription?.let { descr ->
         Text(
           descr,
-          color = MaterialTheme.colors.secondary,
+          color = simplexSecondaryTint(),
           fontSize = 13.sp,
           lineHeight = 18.sp,
           maxLines = 2,
@@ -66,7 +66,7 @@ fun CIChatLinkHeader(
       }
       Text(
         chatLink.infoLine(signed = ownerSig != null),
-        color = MaterialTheme.colors.secondary,
+        color = simplexSecondaryTint(),
         fontSize = 13.sp,
         lineHeight = 18.sp,
       )

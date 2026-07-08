@@ -84,12 +84,13 @@ fun FramedItemView(
     ) {
       val sender = qi.sender(membership())
       if (sender != null) {
+        val authorColor = simplexAuthorTint()
         Column(
           horizontalAlignment = Alignment.Start
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
+            style = TextStyle(fontSize = 13.5.sp, color = if (CurrentColors.value.base == DefaultTheme.SIMPLEX) authorColor else if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
             maxLines = 1
           )
           ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
@@ -102,11 +103,9 @@ fun FramedItemView(
 
   @Composable
   fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
-    val sentColor = MaterialTheme.appColors.sentQuote
-    val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
       Modifier
-        .background(if (sent) sentColor else receivedColor)
+        .chatBubbleBackground(sent = sent, isQuote = true)
         .fillMaxWidth()
         .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -117,12 +116,13 @@ fun FramedItemView(
           icon,
           caption,
           Modifier.size(18.dp),
-          tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
+          tint = iconColor ?: if (CurrentColors.value.base == DefaultTheme.SIMPLEX) simplexSecondaryTint() else if (isInDarkTheme()) FileDark else FileLight
         )
       }
+      val captionColor = simplexSecondaryTint()
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
+          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = captionColor)) {
             append(caption)
           }
         },
@@ -135,11 +135,9 @@ fun FramedItemView(
 
   @Composable
   fun ciQuoteView(qi: CIQuote) {
-    val sentColor = MaterialTheme.appColors.sentQuote
-    val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
       Modifier
-        .background(if (sent) sentColor else receivedColor)
+        .chatBubbleBackground(sent = sent, isQuote = true)
         .fillMaxWidth()
     ) {
       when (qi.content) {
@@ -177,7 +175,7 @@ fun FramedItemView(
             Modifier
               .padding(top = 6.dp, end = 4.dp)
               .size(22.dp),
-            tint = if (isInDarkTheme()) FileDark else FileLight
+            tint = if (CurrentColors.value.base == DefaultTheme.SIMPLEX) simplexSecondaryTint() else if (isInDarkTheme()) FileDark else FileLight
           )
         }
         is MsgContent.MCChat -> {
@@ -191,7 +189,7 @@ fun FramedItemView(
             painterResource(qi.content.chatLink.smallIconRes),
             null,
             Modifier.padding(top = 6.dp, end = 4.dp).size(22.dp),
-            tint = if (isInDarkTheme()) FileDark else FileLight
+            tint = if (CurrentColors.value.base == DefaultTheme.SIMPLEX) simplexSecondaryTint() else if (isInDarkTheme()) FileDark else FileLight
           )
         }
         else -> ciQuotedMsgView(qi)
@@ -210,18 +208,10 @@ fun FramedItemView(
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
       !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
 
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
     .clipChatItem(ci, tailVisible, revealed = true)
-    .background(
-      when {
-        transparentBackground -> Color.Transparent
-        sent -> sentColor
-        else -> receivedColor
-      }
-    )) {
-    var metaColor = MaterialTheme.colors.secondary
+    .chatBubbleBackground(sent = sent, isQuote = false, transparent = transparentBackground)) {
+    var metaColor: Color? = null
     Box(contentAlignment = Alignment.BottomEnd) {
       val chatItemTail = remember { appPreferences.chatItemTail.state }
       val style = shapeStyle(ci, chatItemTail.value, tailVisible, true)

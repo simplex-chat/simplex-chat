@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.simplexSecondaryTint
 import chat.simplex.res.MR
 
 @Composable
@@ -26,7 +27,7 @@ fun CIFeaturePreferenceView(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Icon(feature.icon, feature.text, Modifier.size(18.dp), tint = MaterialTheme.colors.secondary)
+    Icon(feature.icon, feature.text, Modifier.size(18.dp), tint = simplexSecondaryTint())
     if (contact != null && allowed != FeatureAllowed.NO && contact.allowsFeature(feature) && !contact.userAllowsFeature(feature)) {
       val acceptStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
       val setParam = feature == ChatFeature.TimedMessages && contact.mergedPreferences.timedMessages.userPreference.pref.ttl == null
@@ -42,12 +43,13 @@ fun CIFeaturePreferenceView(
       fun accept(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Accept", start = offset, end = offset).isNotEmpty()
       ClickableText(
         annotatedText,
+        style = TextStyle(color = simplexSecondaryTint()),
         onClick = { if (accept(it)) { acceptFeature(contact, feature, param) } },
         shouldConsumeEvent = ::accept
       )
     } else {
       Text(chatItem.content.text + "  " + chatItem.timestampText,
-        fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary)
+        fontSize = 12.sp, fontWeight = FontWeight.Light, color = simplexSecondaryTint())
     }
   }
 }

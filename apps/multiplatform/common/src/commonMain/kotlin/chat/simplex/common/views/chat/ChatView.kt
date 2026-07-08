@@ -979,7 +979,9 @@ fun ChatLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       val composeViewHeight = remember { mutableStateOf(0.dp) }
-      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.secondaryContextFilter == null)) {
+      val (chatViewport, chatViewportModifier) = rememberChatViewportInfo()
+      Box(Modifier.fillMaxSize().then(chatViewportModifier).chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.secondaryContextFilter == null)) {
+        CompositionLocalProvider(LocalChatViewportInfo provides chatViewport) {
         val remoteHostId = remember { remoteHostId }.value
         val chat = remember { chat }.value
         val chatInfo = chat?.chatInfo
@@ -1163,6 +1165,7 @@ fun ChatLayout(
               }
             }
           }
+        }
         }
       }
     }
@@ -2023,6 +2026,7 @@ fun BoxScope.ChatItemsList(
                           null to 1
                         }
                       // the name and the badge are one element, so SpaceBetween separates them from the role, not from each other
+                      val memberNameColor = simplexSecondaryTint()
                       NameWithBadge(
                         memberNames(member, prevMember, memCount),
                         if (prevMember == null && memCount == 1) member.nameBadge else null,
@@ -2030,7 +2034,7 @@ fun BoxScope.ChatItemsList(
                           .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
-                        color = MaterialTheme.colors.secondary,
+                        color = memberNameColor,
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 1
                       )
@@ -2038,13 +2042,14 @@ fun BoxScope.ChatItemsList(
                         val chatItemTail = remember { appPreferences.chatItemTail.state }
                         val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
                         val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+                        val roleColor = simplexSecondaryTint()
 
                         Text(
                           member.memberRole.text(isChannel = chatInfo.isChannel),
                           Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                           fontSize = 13.5.sp,
                           fontWeight = FontWeight.Medium,
-                          color = MaterialTheme.colors.secondary,
+                          color = roleColor,
                           maxLines = 1
                         )
                       }
@@ -2060,7 +2065,7 @@ fun BoxScope.ChatItemsList(
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-                          MemberImage(member)
+                          MemberImage(member, color = if (CurrentColors.value.base == DefaultTheme.SIMPLEX && member.image == null) simplexSecondaryTint() else MaterialTheme.colors.secondaryVariant)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false, dismissState.offset.value)
@@ -2105,6 +2110,7 @@ fun BoxScope.ChatItemsList(
                 ) {
                   @Composable
                   fun ChannelNameAndRole() {
+                    val channelColor = simplexSecondaryTint()
                     Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
                       Text(
                         chatInfo.groupInfo.chatViewName,
@@ -2112,7 +2118,7 @@ fun BoxScope.ChatItemsList(
                           .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
-                        color = MaterialTheme.colors.secondary,
+                        color = channelColor,
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 1
                       )
@@ -2124,7 +2130,7 @@ fun BoxScope.ChatItemsList(
                         Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colors.secondary,
+                        color = channelColor,
                         maxLines = 1
                       )
                     }
@@ -2278,7 +2284,7 @@ fun BoxScope.ChatItemsList(
     Box(
       Modifier
         .clipChatItem()
-        .background(MaterialTheme.appColors.receivedMessage)
+        .chatBubbleBackground(sent = false, isQuote = false)
     ) {
       val bannerModifier = if (appPlatform.isDesktop) Modifier.width(400.dp) else Modifier.fillMaxWidth()
       Column(
@@ -2289,9 +2295,9 @@ fun BoxScope.ChatItemsList(
           // ChatInfoImage has its own padding somewhere,
           // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
           .padding(top = DEFAULT_PADDING_HALF)
-          .background(MaterialTheme.appColors.receivedMessage)
+          .let { if (CurrentColors.value.base == DefaultTheme.SIMPLEX) it else it.background(MaterialTheme.appColors.receivedMessage) }
       ) {
-        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = if (CurrentColors.value.base == DefaultTheme.SIMPLEX && chatInfo.image == null) simplexSecondaryTint() else MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
         val bannerBadge = chatInfo.nameBadge
         val uriHandler = LocalUriHandler.current
         Text(
@@ -2345,11 +2351,12 @@ fun BoxScope.ChatItemsList(
 
         val contextStr = chatContext()
         if (contextStr != null) {
+          val subtitleColor = simplexSecondaryTint()
           Text(
             contextStr,
             style = MaterialTheme.typography.body2,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.secondary,
+            color = subtitleColor,
             modifier = Modifier.padding(top = DEFAULT_PADDING)
           )
         }
@@ -2809,8 +2816,8 @@ private suspend fun preloadItemsAfter(
 val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
-fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
+fun MemberImage(member: GroupMember, color: Color = MaterialTheme.colors.secondaryVariant) {
+  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, color = color, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable
@@ -3036,13 +3043,14 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 
 @Composable
 private fun DateSeparator(date: Instant) {
+  val secColor = simplexSecondaryTint()
   Text(
     text = getTimestampDateText(date),
     Modifier.padding(vertical = DEFAULT_PADDING_HALF + 4.dp, horizontal = DEFAULT_PADDING_HALF).fillMaxWidth(),
     fontSize = 14.sp,
     fontWeight = FontWeight.Medium,
     textAlign = TextAlign.Center,
-    color = MaterialTheme.colors.secondary
+    color = secColor
   )
 }
 

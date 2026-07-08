@@ -53,11 +53,13 @@ fun CIFileView(
     Box(
       contentAlignment = Alignment.Center
     ) {
+      val isDefaultTint = color == (if (isInDarkTheme()) FileDark else FileLight)
+      val isSimplex = CurrentColors.value.base == DefaultTheme.SIMPLEX
       Icon(
         painterResource(MR.images.ic_draft_filled),
         stringResource(MR.strings.icon_descr_file),
         Modifier.fillMaxSize(),
-        tint = color
+        tint = if (isSimplex && isDefaultTint) { if (smallView) MaterialTheme.colors.secondary else simplexSecondaryTint() } else color
       )
       if (innerIcon != null) {
         Icon(
@@ -220,12 +222,13 @@ fun CIFileView(
             file.fileName,
             maxLines = 1
           )
+          val fileSizeColor = simplexSecondaryTint()
           Text(
             buildAnnotatedString {
               append(formatBytes(file.fileSize))
               append(metaReserve)
             },
-            color = secondaryColor,
+            color = fileSizeColor,
             fontSize = 14.sp,
             maxLines = 1
           )

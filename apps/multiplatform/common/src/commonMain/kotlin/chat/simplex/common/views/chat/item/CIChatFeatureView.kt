@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.ui.theme.simplexSecondaryTint
 
 @Composable
 fun CIChatFeatureView(
@@ -102,11 +105,11 @@ private fun featureInfo(ci: ChatItem, chatInfo: ChatInfo): FeatureInfo? =
 
 @Composable
 private fun FeatureIconView(f: FeatureInfo) {
-  val icon = @Composable { Icon(f.icon.icon, null, Modifier.size(20.dp), tint = f.color) }
+  val icon = @Composable { Icon(f.icon.icon, null, Modifier.size(20.dp), tint = if (CurrentColors.value.base == DefaultTheme.SIMPLEX && f.color == CurrentColors.value.colors.secondary) simplexSecondaryTint() else f.color) }
   if (f.param != null) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       icon()
-      Text(chatEventText(f.param, ""), maxLines = 1)
+      Text(chatEventText(f.param, ""), color = simplexSecondaryTint(), maxLines = 1)
     }
   } else {
     icon()
@@ -125,10 +128,11 @@ private fun FullFeatureView(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = iconColor)
+    Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = if (CurrentColors.value.base == DefaultTheme.SIMPLEX && iconColor == CurrentColors.value.colors.secondary) simplexSecondaryTint() else iconColor)
     Text(
       chatEventText(chatItem),
       Modifier,
+      color = simplexSecondaryTint(),
       // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
       fontSize = 12.sp
     )

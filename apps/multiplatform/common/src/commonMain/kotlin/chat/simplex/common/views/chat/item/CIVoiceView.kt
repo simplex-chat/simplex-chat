@@ -227,12 +227,13 @@ private fun VoiceLayout(
 @Composable
 private fun DurationText(text: State<String>, padding: PaddingValues, smallView: Boolean = false) {
   val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
+  val durationColor = simplexSecondaryTint()
   Text(
     text.value,
     Modifier
       .padding(padding)
       .widthIn(min = minWidth),
-    color = MaterialTheme.colors.secondary,
+    color = durationColor,
     fontSize = if (smallView) 15.sp else 16.sp,
     maxLines = 1
   )
@@ -340,6 +341,7 @@ private fun FileStatusIcon(
 ) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
+  val statusIconColor = simplexSecondaryTint()
   Surface(
     color = if (sent) sentColor else receivedColor,
     shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
@@ -359,7 +361,7 @@ private fun FileStatusIcon(
         painterResource(icon),
         contentDescription = null,
         Modifier.size(36.sp.toDp() * sizeMultiplier),
-        tint = MaterialTheme.colors.secondary
+        tint = statusIconColor
       )
     }
   }

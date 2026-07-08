@@ -41,9 +41,12 @@ fun CICallItemView(
       CICallStatus.Accepted -> ConnectingCallIcon()
       CICallStatus.Negotiated -> ConnectingCallIcon()
       CICallStatus.Progress -> Icon(painterResource(MR.images.ic_phone_in_talk_filled), stringResource(MR.strings.icon_descr_call_progress), tint = SimplexGreen)
-      CICallStatus.Ended -> Row {
-        Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_ended), tint = MaterialTheme.colors.secondary, modifier = Modifier.padding(end = 4.dp))
-        Text(durationText(duration), color = MaterialTheme.colors.secondary)
+      CICallStatus.Ended -> {
+        val callColor = simplexSecondaryTint()
+        Row {
+          Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_ended), tint = callColor, modifier = Modifier.padding(end = 4.dp))
+          Text(durationText(duration), color = callColor)
+        }
       }
       CICallStatus.Error -> {}
     }
