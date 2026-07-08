@@ -5025,6 +5025,28 @@ fun parseSanitizeUri(s: String, safe: Boolean): ParsedUri? {
     .getOrNull()
 }
 
+// The kind of SimpleX QR code / link a scanned string turned out to be, as
+// determined by the core (chat_check_link). Null result = not a SimpleX code.
+// Wire tags must match Haskell ScannedLinkType (sumTypeJSON $ dropPrefix "SLT").
+@Serializable
+sealed class ScannedLinkType {
+  @Serializable @SerialName("connection") data class Connection(val linkType: SimplexLinkType): ScannedLinkType()
+  @Serializable @SerialName("server") object Server: ScannedLinkType()
+  @Serializable @SerialName("fileDescription") object FileDescription: ScannedLinkType()
+  @Serializable @SerialName("desktopCtrl") object DesktopCtrl: ScannedLinkType()
+  @Serializable @SerialName("verificationCode") object VerificationCode: ScannedLinkType()
+}
+
+@Serializable
+data class CheckedLink(val linkType: ScannedLinkType? = null)
+
+fun checkLink(link: String): ScannedLinkType? {
+  val parsed = chatCheckLink(link)
+  return runCatching { json.decodeFromString(CheckedLink.serializer(), parsed) }
+    .onFailure { Log.d(TAG, "checkLink decode error: $it") }
+    .getOrNull()?.linkType
+}
+
 @Serializable
 data class ParsedUri(val uriInfo: UriInfo?, val parseError: String)
 

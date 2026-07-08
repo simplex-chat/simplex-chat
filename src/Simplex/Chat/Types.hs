@@ -1904,6 +1904,20 @@ verificationCode = T.pack . unwords . chunks 5 . show . os2ip
     chunks _ [] = []
     chunks n xs = let (h, t) = splitAt n xs in h : chunks n t
 
+-- Recognises the textual shape of a verification code — the inverse of
+-- verificationCode's `unwords . chunks 5 . show`: space-separated groups of
+-- exactly 5 ASCII digits (the last group 1-5 digits), 32+ digits in total.
+-- Used by chatCheckLink to classify a scanned contact security code, which has
+-- no scheme to parse. Requiring the grouping keeps a bare long number out.
+isVerificationCode :: ByteString -> Bool
+isVerificationCode s = case B.split ' ' s of
+  [] -> False
+  gs -> all full5 (init gs) && lastOk (last gs) && sum (map B.length gs) >= 32
+  where
+    isAsciiDigit c = c >= '0' && c <= '9'
+    full5 g = B.length g == 5 && B.all isAsciiDigit g
+    lastOk g = let n = B.length g in n >= 1 && n <= 5 && B.all isAsciiDigit g
+
 sameVerificationCode :: Text -> Text -> Bool
 sameVerificationCode c1 c2 = noSpaces c1 == noSpaces c2
   where

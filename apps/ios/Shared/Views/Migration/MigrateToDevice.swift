@@ -204,11 +204,15 @@ struct MigrateToDevice: View {
                     ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
                         switch resp {
                         case let .success(r):
-                            let link = r.string
-                            if strHasSimplexFileLink(link.trimmingCharacters(in: .whitespaces)) {
-                                migrationState = .linkDownloading(link: link.trimmingCharacters(in: .whitespaces))
-                            } else {
+                            let trimmed = r.string.trimmingCharacters(in: .whitespacesAndNewlines)
+                            switch checkLink(trimmed) {
+                            case .some(.fileDescription):
+                                migrationState = .linkDownloading(link: trimmed)
+                            case nil:
                                 alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
+                            case let type?:
+                                // shared with the paste button, so the title is neutral ("Wrong link")
+                                alert = .error(title: "Wrong link", error: wrongQRCodeMessage(type))
                             }
                         case let .failure(e):
                             logger.error("processQRCode QR code error: \(e.localizedDescription)")
@@ -232,10 +236,14 @@ struct MigrateToDevice: View {
     private func pasteLinkView() -> some View {
         Button {
             if let str = UIPasteboard.general.string {
-                if strHasSimplexFileLink(str.trimmingCharacters(in: .whitespaces)) {
-                    migrationState = .linkDownloading(link: str.trimmingCharacters(in: .whitespaces))
-                } else {
+                let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
+                switch checkLink(trimmed) {
+                case .some(.fileDescription):
+                    migrationState = .linkDownloading(link: trimmed)
+                case nil:
                     alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
+                case let type?:
+                    alert = .error(title: "Wrong link", error: wrongQRCodeMessage(type))
                 }
             }
         } label: {
@@ -638,10 +646,6 @@ struct MigrateToDevice: View {
         m.migrationState = nil
         MigrationToDeviceState.save(nil)
         dismiss()
-    }
-
-    private func strHasSimplexFileLink(_ text: String) -> Bool {
-        text.starts(with: "simplex:/file") || text.starts(with: "https://simplex.chat/file")
     }
 
     private static func urlForTemporaryDatabase() -> URL {

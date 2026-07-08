@@ -347,29 +347,39 @@ markdownP = mconcat <$> A.many' fragmentP
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
     simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
-    simplexUriFormat showText = \case
-      ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
-        CRInvitationUri crData _ -> SimplexLink showText XLInvitation cLink $ uriHosts crData
+    simplexUriFormat showText aLink@(ACL m cl) = case cl of
+      CLFull cReq -> case cReq of
+        CRContactUri crData -> mk $ uriHosts crData
+        CRInvitationUri crData _ -> mk $ uriHosts crData
         where
-          cLink = ACL m $ CLFull $ simplexConnReqUri cReq
+          mk = SimplexLink showText (simplexLinkType aLink) (ACL m $ CLFull $ simplexConnReqUri cReq)
           uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
-          linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
-            Just (CRDataGroup _) -> XLGroup
-            Nothing -> XLContact
-      ACL m (CLShort sLnk) -> case sLnk of
-        CSLContact _ ct srv _ -> SimplexLink showText (linkType' ct) cLink $ uriHosts srv
-        CSLInvitation _ srv _ _ -> SimplexLink showText XLInvitation cLink $ uriHosts srv
+      CLShort sLnk -> case sLnk of
+        CSLContact _ _ srv _ -> mk $ uriHosts srv
+        CSLInvitation _ srv _ _ -> mk $ uriHosts srv
         where
-          cLink = ACL m $ CLShort $ simplexShortLink sLnk
+          mk = SimplexLink showText (simplexLinkType aLink) (ACL m $ CLShort $ simplexShortLink sLnk)
           uriHosts srv = L.map strEncodeText $ host srv
-          linkType' = \case
-            CCTGroup -> XLGroup
-            CCTChannel -> XLChannel
-            CCTContact -> XLContact
-            CCTRelay -> XLRelay
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
+
+-- The single definition of connection-link kind classification, used by the chat
+-- markdown formatter (simplexUriFormat) and by the mobile link classifier
+-- (chatCheckLink). Group links are contact URIs carrying CRDataGroup client data.
+simplexLinkType :: AConnectionLink -> SimplexLinkType
+simplexLinkType (ACL _ cl) = case cl of
+  CLFull cReq -> case cReq of
+    CRContactUri ConnReqUriData {crClientData} -> case crClientData >>= decodeJSON of
+      Just (CRDataGroup _) -> XLGroup
+      Nothing -> XLContact
+    CRInvitationUri {} -> XLInvitation
+  CLShort sLnk -> case sLnk of
+    CSLContact _ ct _ _ -> case ct of
+      CCTGroup -> XLGroup
+      CCTChannel -> XLChannel
+      CCTContact -> XLContact
+      CCTRelay -> XLRelay
+    CSLInvitation {} -> XLInvitation
 
 parseUri :: ByteString -> Either Text U.URI
 parseUri s = case U.parseURI U.laxURIParserOptions s of

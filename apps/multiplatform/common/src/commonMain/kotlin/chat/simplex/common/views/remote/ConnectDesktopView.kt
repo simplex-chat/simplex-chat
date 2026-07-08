@@ -33,6 +33,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.showWrongQRCodeAlert
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
@@ -352,8 +353,16 @@ private fun DevicesView(deviceName: String, remoteCtrls: SnapshotStateList<Remot
 private fun ScanDesktopAddressView(sessionAddress: MutableState<String>) {
   SectionView(stringResource(MR.strings.scan_qr_code_from_desktop)) {
     QRCodeScanner { text ->
-      sessionAddress.value = text
-      connectDesktopAddress(sessionAddress, text)
+      val trimmed = text.trim()
+      val type = checkLink(trimmed)
+      if (type != null && type != ScannedLinkType.DesktopCtrl) {
+        showWrongQRCodeAlert(type)
+        false
+      } else {
+        // a desktop address, or unrecognised text: let the core parse and report
+        sessionAddress.value = trimmed
+        connectDesktopAddress(sessionAddress, trimmed)
+      }
     }
   }
 }

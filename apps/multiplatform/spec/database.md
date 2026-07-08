@@ -143,7 +143,7 @@ external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Ar
 
 ### Migration Flow in `initChatController`
 
-The full initialization sequence is in [Core.kt#L62](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L62):
+The full initialization sequence is in [Core.kt#L63](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L63):
 
 1. Obtain the DB encryption key from `DatabaseUtils.useDatabaseKey()`.
 2. Determine the confirmation mode (default: `YesUp`; developer mode with confirm upgrades: `Error`).
