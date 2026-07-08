@@ -837,7 +837,7 @@ fun ComposeView(
                 if (remoteHost == null) saveAnimImage(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, hiddenFileNamePrefix = "video")
+                if (remoteHost == null) saveFileFromUri(it.uri, cs.maxFileSize, hiddenFileNamePrefix = "video")
                 else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
@@ -886,7 +886,7 @@ fun ComposeView(
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
-            saveFileFromUri(preview.uri)
+            saveFileFromUri(preview.uri, cs.maxFileSize)
           } else {
             CryptoFile.desktopPlain(preview.uri)
           }

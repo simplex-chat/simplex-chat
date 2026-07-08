@@ -256,6 +256,7 @@ expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
 
 fun saveFileFromUri(
   uri: URI,
+  maxBytes: Long,
   withAlertOnException: Boolean = true,
   hiddenFileNamePrefix: String? = null
 ): CryptoFile? {
@@ -277,7 +278,7 @@ fun saveFileFromUri(
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
-          copyInputStreamToFile(inputStream, tmpFile, MAX_FILE_SIZE_XFTP)
+          copyInputStreamToFile(inputStream, tmpFile, maxBytes)
           try {
             val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
             CryptoFile(destFileName, args)
@@ -288,7 +289,7 @@ fun saveFileFromUri(
           }
         }
       } else {
-        copyInputStreamToFile(inputStream, destFile, MAX_FILE_SIZE_XFTP)
+        copyInputStreamToFile(inputStream, destFile, maxBytes)
         CryptoFile.plain(destFileName)
       }
     } else {
