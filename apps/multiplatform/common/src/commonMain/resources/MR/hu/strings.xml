@@ -2842,10 +2842,10 @@
     <string name="badge_unknown_key_title">Nem lehetett ellenőrizni a kitűzőt</string>
     <string name="badge_unknown_key_desc">A kitűző egy olyan kulccsal van aláírva, amelyet az alkalmazás ezen verziója nem ismer fel. Frissítse az alkalmazást a kitűző ellenőrzéséhez.</string>
     <string name="no_names_servers_enabled">Nincsenek kiszolgálók a nevek feloldásához.</string>
-    <string name="simplex_name_error">SimpleX-névhiba</string>
-    <string name="simplex_name_no_servers_desc">Egyik kiszolgáló sincs beállítva a SimpleX-nevek feloldásához. Állítsa be a kiszolgálókat, vagy használjon egy kapcsolattartási hivatkozást.</string>
+    <string name="simplex_name_error">Hibás SimpleX-név</string>
+    <string name="simplex_name_no_servers_desc">Egyik saját kiszolgálója sincs beállítva a SimpleX-nevek feloldásához. Állítsa be a kiszolgálókat, vagy használjon egy kapcsolattartási hivatkozást.</string>
     <string name="simplex_name_server_no_resolver_desc">A(z) %1$s kiszolgáló nem támogatja a névfeloldást. Állítsa be a kiszolgálókat, vagy használjon egy kapcsolattartási hivatkozást.</string>
-    <string name="simplex_name_not_found">A név nem található</string>
+    <string name="simplex_name_not_found">Nem található a név</string>
     <string name="simplex_name_not_found_desc">Ez a SimpleX-név nincs regisztrálva. Ellenőrizze a nevet.</string>
     <string name="simplex_name_resolver_error_desc">Feloldási hiba: %1$s</string>
     <string name="simplex_name_no_valid_link">Nincs érvényes hivatkozás</string>
@@ -2854,7 +2854,7 @@
     <string name="simplex_name_unconfirmed_desc">A(z) %1$s SimpleX-név regisztrálva van, de nincs hozzáadva a profilhoz. Adja hozzá a címéhez vagy a csatornaprofiljához, amennyiben Ön a tulajdonosa.</string>
     <string name="verify_simplex_name_action">Név ellenőrzése</string>
     <string name="verify_simplex_names">SimpleX-nevek ellenőrzése</string>
-    <string name="simplex_name_not_verified">A SimpleX-név nincs ellenőrizve</string>
+    <string name="simplex_name_not_verified">Nincs ellenőrizve a SimpleX-név</string>
     <string name="simplex_name">SimpleX-név</string>
     <string name="your_simplex_name">Saját SimpleX-név</string>
     <string name="set_simplex_name">SimpleX-név beállítása</string>
@@ -2864,4 +2864,6 @@
     <string name="set_user_simplex_name_footer">Tegye lehetővé mások számára a kapcsolódást a saját SimpleX-címével regisztrált néven keresztül.</string>
     <string name="set_channel_simplex_name_footer">Tegye lehetővé mások számára a csatlakozást az ezzel a csatornahivatkozással regisztrált néven keresztül.</string>
     <string name="operator_use_for_names">Nevek feloldásához</string>
+    <string name="connect_plan_connect_to_name">Kapcsolódás hozzá: %s</string>
+    <string name="connect_plan_join_name">Csatlakozás a(z) %s nevű csatornához</string>
 </resources>
