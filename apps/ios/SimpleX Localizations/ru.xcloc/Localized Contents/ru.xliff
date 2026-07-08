@@ -201,8 +201,9 @@
         <source>%d owner</source>
         <note>channel owners count</note>
       </trans-unit>
-      <trans-unit id="%d owners" xml:space="preserve">
+      <trans-unit id="%d owners" xml:space="preserve" approved="no">
         <source>%d owners</source>
+        <target state="translated">%d владельцев</target>
         <note>channel owners count</note>
       </trans-unit>
       <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
