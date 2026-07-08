@@ -687,9 +687,14 @@ private struct ConnectView: View {
             let link = r.string
             if strIsSimplexLink(r.string) {
                 connect(link)
+            } else if let msg = wrongQRCodeMessage(link) {
+                alert = .newChatSomeAlert(alert: SomeAlert(
+                    alert: wrongQRCodeAlert(msg),
+                    id: "processQRCode: wrong QR code type"
+                ))
             } else {
                 alert = .newChatSomeAlert(alert: SomeAlert(
-                    alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
+                    alert: wrongQRCodeAlert(notSimplexQRCodeMessage()),
                     id: "processQRCode: code is not a SimpleX link"
                 ))
             }

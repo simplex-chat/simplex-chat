@@ -7,6 +7,7 @@ import chat.simplex.common.model.UserServer
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.showWrongQRCodeAlert
 import chat.simplex.res.MR
 
 @Composable
@@ -21,10 +22,7 @@ fun ScanProtocolServerLayout(rhId: Long?, onNext: (UserServer) -> Unit) {
       if (res != null) {
         onNext(UserServer(remoteHostId = rhId, null, text, false, null, false, false))
       } else {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.smp_servers_invalid_address),
-          text = generalGetString(MR.strings.smp_servers_check_address)
-        )
+        showWrongQRCodeAlert(text)
       }
       res != null
     }

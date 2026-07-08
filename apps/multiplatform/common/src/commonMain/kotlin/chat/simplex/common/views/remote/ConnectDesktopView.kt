@@ -32,7 +32,9 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.DESKTOP_ADDRESS_SCHEME
 import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.showWrongQRCodeAlert
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
@@ -352,8 +354,13 @@ private fun DevicesView(deviceName: String, remoteCtrls: SnapshotStateList<Remot
 private fun ScanDesktopAddressView(sessionAddress: MutableState<String>) {
   SectionView(stringResource(MR.strings.scan_qr_code_from_desktop)) {
     QRCodeScanner { text ->
-      sessionAddress.value = text
-      connectDesktopAddress(sessionAddress, text)
+      if (text.trim().startsWith(DESKTOP_ADDRESS_SCHEME)) {
+        sessionAddress.value = text
+        connectDesktopAddress(sessionAddress, text)
+      } else {
+        showWrongQRCodeAlert(text)
+        false
+      }
     }
   }
 }

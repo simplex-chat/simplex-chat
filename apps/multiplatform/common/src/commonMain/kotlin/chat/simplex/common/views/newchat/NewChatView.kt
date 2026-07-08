@@ -654,14 +654,12 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
 
     SectionView(stringResource(MR.strings.or_scan_qr_code), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
-        val linkVerified = verifyOnly(text)
-        if (!linkVerified) {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.invalid_qr_code),
-            text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
-          )
+        if (verifyOnly(text)) {
+          verifyAndConnect(rhId, text, close)
+        } else {
+          showWrongQRCodeAlert(text)
+          false
         }
-        verifyAndConnect(rhId, text, close)
       }
     }
   }

@@ -16,6 +16,7 @@ struct ScanProtocolServer: View {
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
+    @State private var scanAlert: SomeAlert?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -30,14 +31,22 @@ struct ScanProtocolServer: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .alert(item: $scanAlert) { $0.alert }
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            var server: UserServer = .empty
-            server.server = r.string
-            addServer(server, $userServers, $serverErrors, $serverWarnings, dismiss)
+            if parseServerAddress(r.string) != nil {
+                var server: UserServer = .empty
+                server.server = r.string
+                addServer(server, $userServers, $serverErrors, $serverWarnings, dismiss)
+            } else {
+                scanAlert = SomeAlert(
+                    alert: wrongQRCodeAlert(wrongQRCodeMessage(r.string) ?? notSimplexQRCodeMessage()),
+                    id: "wrongQRCode"
+                )
+            }
         case let .failure(e):
             logger.error("ScanProtocolServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()

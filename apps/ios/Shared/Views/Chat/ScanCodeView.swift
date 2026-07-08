@@ -13,7 +13,7 @@ struct ScanCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var connectionVerified: Bool
     var verify: (String?) async -> (Bool, String)?
-    @State private var showCodeError = false
+    @State private var scanAlert: SomeAlert?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -25,9 +25,7 @@ struct ScanCodeView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .alert(isPresented: $showCodeError) {
-            Alert(title: Text("Incorrect security code!"))
-        }
+        .alert(item: $scanAlert) { $0.alert }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
@@ -40,8 +38,10 @@ struct ScanCodeView: View {
                         connectionVerified = ok
                         if ok {
                             dismiss()
+                        } else if let msg = wrongQRCodeMessage(r.string, detectSecurityCode: false) {
+                            scanAlert = SomeAlert(alert: wrongQRCodeAlert(msg), id: "wrongQRCode")
                         } else {
-                            showCodeError = true
+                            scanAlert = SomeAlert(alert: Alert(title: Text("Incorrect security code!")), id: "incorrectCode")
                         }
                     }
                 }

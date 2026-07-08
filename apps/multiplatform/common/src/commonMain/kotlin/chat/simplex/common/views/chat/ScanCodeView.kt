@@ -9,6 +9,7 @@ import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.showWrongQRCodeAlert
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -21,9 +22,9 @@ fun ScanCodeView(verifyCode: suspend (String?) -> Boolean, close: () -> Unit) {
       if (success) {
         close()
       } else {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.incorrect_code)
-        )
+        showWrongQRCodeAlert(text, detectSecurityCode = false) {
+          AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.incorrect_code))
+        }
       }
       success
     }

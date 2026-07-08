@@ -26,6 +26,7 @@ import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.showWrongQRCodeAlert
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.OnionRelatedLayout
@@ -544,10 +545,12 @@ private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String):
     }
     true
   } else {
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(MR.strings.invalid_file_link),
-      text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
-    )
+    showWrongQRCodeAlert(link) {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.invalid_file_link),
+        text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
+      )
+    }
     false
   }
 }
@@ -727,7 +730,7 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   chatModel.migrationState.value = null
 }
 
-private fun strHasSimplexFileLink(text: String): Boolean =
+internal fun strHasSimplexFileLink(text: String): Boolean =
   text.startsWith("simplex:/file") || text.startsWith("https://simplex.chat/file")
 
 private fun fileForTemporaryDatabase(): File =

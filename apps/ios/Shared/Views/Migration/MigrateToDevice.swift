@@ -207,6 +207,8 @@ struct MigrateToDevice: View {
                             let link = r.string
                             if strHasSimplexFileLink(link.trimmingCharacters(in: .whitespaces)) {
                                 migrationState = .linkDownloading(link: link.trimmingCharacters(in: .whitespaces))
+                            } else if let msg = wrongQRCodeMessage(link) {
+                                alert = .error(title: "Wrong QR code", error: msg)
                             } else {
                                 alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
                             }
@@ -234,6 +236,8 @@ struct MigrateToDevice: View {
             if let str = UIPasteboard.general.string {
                 if strHasSimplexFileLink(str.trimmingCharacters(in: .whitespaces)) {
                     migrationState = .linkDownloading(link: str.trimmingCharacters(in: .whitespaces))
+                } else if let msg = wrongQRCodeMessage(str) {
+                    alert = .error(title: "Wrong QR code", error: msg)
                 } else {
                     alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
                 }
@@ -638,10 +642,6 @@ struct MigrateToDevice: View {
         m.migrationState = nil
         MigrationToDeviceState.save(nil)
         dismiss()
-    }
-
-    private func strHasSimplexFileLink(_ text: String) -> Bool {
-        text.starts(with: "simplex:/file") || text.starts(with: "https://simplex.chat/file")
     }
 
     private static func urlForTemporaryDatabase() -> URL {
