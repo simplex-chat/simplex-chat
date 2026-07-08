@@ -56,7 +56,8 @@ fun CIMetaView(
         showStatus = showStatus,
         showEdited = showEdited,
         showViaProxy = showViaProxy,
-        showTimestamp = showTimestamp
+        showTimestamp = showTimestamp,
+        signedFileVerified = chatItem.file?.loaded != false
       )
     }
   }
@@ -74,6 +75,7 @@ private fun CIMetaText(
   showEdited: Boolean = true,
   showTimestamp: Boolean,
   showViaProxy: Boolean,
+  signedFileVerified: Boolean,
 ) {
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
@@ -107,7 +109,7 @@ private fun CIMetaText(
     Spacer(Modifier.width(4.dp))
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
   }
-  if (meta.msgSigned == MsgSigStatus.Verified) {
+  if (meta.msgSigned == MsgSigStatus.Verified && signedFileVerified) {
     StatusIconText(painterResource(MR.images.ic_signature), color)
   }
 
@@ -126,7 +128,8 @@ fun reserveSpaceForMeta(
   showStatus: Boolean = true,
   showEdited: Boolean = true,
   showViaProxy: Boolean = false,
-  showTimestamp: Boolean
+  showTimestamp: Boolean,
+  signedFileVerified: Boolean = true
 ): String {
   val iconSpace = " \u00A0\u00A0\u00A0"
   val whiteSpace = "\u00A0"
@@ -170,7 +173,7 @@ fun reserveSpaceForMeta(
     res += iconSpace
     space = whiteSpace
   }
-  if (meta.msgSigned == MsgSigStatus.Verified) {
+  if (meta.msgSigned == MsgSigStatus.Verified && signedFileVerified) {
     res += iconSpace
     space = whiteSpace
   }

@@ -41,7 +41,8 @@ struct CIMetaView: View {
                     showStatus: showStatus,
                     showEdited: showEdited,
                     showViaProxy: showSentViaProxy,
-                    showTimesamp: showTimestamp
+                    showTimesamp: showTimestamp,
+                    signedFileVerified: chatItem.file?.loaded ?? true
                 ).invertedForegroundStyle(enabled: invertedMaterial)
                 if invertedMaterial {
                     ciMetaText(
@@ -53,7 +54,8 @@ struct CIMetaView: View {
                         showStatus: showStatus,
                         showEdited: showEdited,
                         showViaProxy: showSentViaProxy,
-                        showTimesamp: showTimestamp
+                        showTimesamp: showTimestamp,
+                        signedFileVerified: chatItem.file?.loaded ?? true
                     )
                 }
             }
@@ -102,7 +104,8 @@ func ciMetaText(
     showStatus: Bool = true,
     showEdited: Bool = true,
     showViaProxy: Bool,
-    showTimesamp: Bool
+    showTimesamp: Bool,
+    signedFileVerified: Bool = true
 ) -> Text {
     var r = Text("")
     var space: Text? = nil
@@ -147,7 +150,7 @@ func ciMetaText(
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
         space = textSpace
     }
-    if meta.msgSigned == .verified {
+    if meta.msgSigned == .verified && signedFileVerified {
         r = r + colored(Text(Image("signature.plain")), resolved)
         space = textSpace
     }
