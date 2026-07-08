@@ -2608,7 +2608,6 @@
     <string name="connect_via_link_or_qr_code">Připojení přes odkaz nebo QR kód</string>
     <string name="create_channel_title">Vytvořit veřejný kanál</string>
     <string name="create_channel_button">Vytvořit veřejný kanál</string>
-    <string name="create_channel_beta_button">Vytvořit veřejný kanál (BETA)</string>
     <string name="connect_with_someone">Vytvořte odkaz</string>
     <string name="create_your_public_address">Vytvořte si veřejnou adresu</string>
     <string name="creating_channel">Vytvářím kanál</string>
