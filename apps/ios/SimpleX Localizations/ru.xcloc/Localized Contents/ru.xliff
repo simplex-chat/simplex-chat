@@ -206,8 +206,9 @@
         <target state="translated">%d владельцев</target>
         <note>channel owners count</note>
       </trans-unit>
-      <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve" approved="no">
         <source>%d owners &amp; contributors</source>
+        <target state="translated">%d владельцев и авторов</target>
         <note>channel members count</note>
       </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
@@ -791,8 +792,9 @@ swipe action</note>
         <target>Добавить профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add relay" xml:space="preserve">
+      <trans-unit id="Add relay" xml:space="preserve" approved="no">
         <source>Add relay</source>
+        <target state="translated">Добавить релей</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add relays" xml:space="preserve">
