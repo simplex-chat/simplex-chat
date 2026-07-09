@@ -349,27 +349,24 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             Just targetPath -> do
               fsTargetPath <- lift $ toFSFilePath targetPath
               renameFile xftpPath fsTargetPath
-              ci_ <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
-              let signedDigest = case (ci_, ft) of
-                    (Just (AChatItem _ _ _ ChatItem {meta = CIMeta {msgSigned = Just MSSVerified}}), RcvFileTransfer {fileInvitation = FileInvitation {fileDigest = Just d}, cryptoArgs = cfArgs}) -> Just (d, cfArgs)
-                    _ -> Nothing
-              badDigest <- case signedDigest of
-                Just (expected, cfArgs) -> (/= expected) <$> cryptoFileDigest (CryptoFile fsTargetPath cfArgs)
-                Nothing -> pure False
+              badDigest <- case ft of
+                RcvFileTransfer {fileInvitation = FileInvitation {fileDigest = Just d}, cryptoArgs} ->
+                  (/= d) <$> cryptoFileDigest (CryptoFile fsTargetPath cryptoArgs)
+                _ -> pure False
               if badDigest
                 then do
-                  aci_ <- resetRcvCIFileStatus user fileId (CIFSRcvError $ FileErrOther "file signature")
+                  aci_ <- resetRcvCIFileStatus user fileId (CIFSRcvError $ FileErrOther "file digest")
                   forM_ aci_ cleanupACIFile
                   agentXFTPDeleteRcvFile aFileId fileId
                   forM_ aci_ $ \aci -> toView $ CEvtChatItemUpdated user aci
                 else do
-                  ci_' <- withStore $ \db -> do
+                  ci_ <- withStore $ \db -> do
                     liftIO $ do
                       updateRcvFileStatus db fileId FSComplete
                       updateCIFileStatus db user fileId CIFSRcvComplete
                     lookupChatItemByFileId db cxt user fileId
                   agentXFTPDeleteRcvFile aFileId fileId
-                  toView $ maybe (CEvtRcvStandaloneFileComplete user fsTargetPath ft) (CEvtRcvFileComplete user) ci_'
+                  toView $ maybe (CEvtRcvStandaloneFileComplete user fsTargetPath ft) (CEvtRcvFileComplete user) ci_
         RFWARN e -> do
           ci <- withStore $ \db -> do
             liftIO $ updateCIFileStatus db user fileId (CIFSRcvWarning $ agentFileError e)
