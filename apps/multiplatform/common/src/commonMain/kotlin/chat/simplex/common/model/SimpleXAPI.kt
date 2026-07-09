@@ -5860,7 +5860,8 @@ enum class GroupFeature: Feature {
   @SerialName("simplexLinks") SimplexLinks,
   @SerialName("reports") Reports,
   @SerialName("history") History,
-  @SerialName("support") Support;
+  @SerialName("support") Support,
+  @SerialName("signMessages") SignMessages;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -5879,6 +5880,7 @@ enum class GroupFeature: Feature {
       Reports -> false
       History -> false
       Support -> false
+      SignMessages -> false
     }
 
   override val text: String get() = text(isChannel = false)
@@ -5894,6 +5896,7 @@ enum class GroupFeature: Feature {
       Reports -> generalGetString(if (isChannel) MR.strings.group_reports_subscriber_reports else MR.strings.group_reports_member_reports)
       History -> generalGetString(MR.strings.recent_history)
       Support -> generalGetString(MR.strings.chat_with_admins)
+      SignMessages -> generalGetString(MR.strings.sign_messages)
     }
 
   val icon: Painter
@@ -5908,6 +5911,7 @@ enum class GroupFeature: Feature {
       Reports -> painterResource(MR.images.ic_flag)
       History -> painterResource(MR.images.ic_schedule)
       Support -> painterResource(MR.images.ic_help)
+      SignMessages -> painterResource(MR.images.ic_signature)
     }
 
   @Composable
@@ -5922,6 +5926,7 @@ enum class GroupFeature: Feature {
     Reports -> painterResource(MR.images.ic_flag_filled)
     History -> painterResource(MR.images.ic_schedule_filled)
     Support -> painterResource(MR.images.ic_help_filled)
+    SignMessages -> painterResource(MR.images.ic_signature)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean, isChannel: Boolean = false): String =
@@ -5967,6 +5972,10 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.allow_chat_with_admins_channel else MR.strings.allow_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_chat_with_admins)
         }
+        SignMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.require_message_signatures)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.do_not_require_message_signatures)
+        }
       }
     } else {
       when(this) {
@@ -6009,6 +6018,10 @@ enum class GroupFeature: Feature {
         Support -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.members_can_chat_with_admins_channel else MR.strings.members_can_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.chat_with_admins_is_prohibited)
+        }
+        SignMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.message_signatures_are_required)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_signatures_are_not_required)
         }
       }
     }
@@ -6136,6 +6149,7 @@ data class FullGroupPreferences(
   val reports: GroupPreference,
   val history: GroupPreference,
   val support: GroupPreference,
+  val signMessages: GroupPreference,
   val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -6150,6 +6164,7 @@ data class FullGroupPreferences(
       reports = reports,
       history = history,
       support = support,
+      signMessages = signMessages,
       commands = commands,
     )
 
@@ -6165,6 +6180,7 @@ data class FullGroupPreferences(
       reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
       support = GroupPreference(GroupFeatureEnabled.ON),
+      signMessages = GroupPreference(GroupFeatureEnabled.OFF),
       commands = listOf()
     )
   }
@@ -6182,6 +6198,7 @@ data class GroupPreferences(
   val reports: GroupPreference? = null,
   val history: GroupPreference? = null,
   val support: GroupPreference? = null,
+  val signMessages: GroupPreference? = null,
   val commands: List<ChatBotCommand>? = null
 ) {
   companion object {

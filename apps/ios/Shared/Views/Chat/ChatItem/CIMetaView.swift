@@ -150,8 +150,11 @@ func ciMetaText(
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
         space = textSpace
     }
-    if meta.msgSigned == .verified && signedFileVerified {
+    if meta.msgVerified.verified && signedFileVerified {
         r = r + colored(Text(Image("signature.plain")), resolved)
+        space = textSpace
+    } else if meta.msgVerified == .sigMissing {
+        r = r + colored(Text(Image(systemName: "exclamationmark.triangle")), colorMode.resolve(.red))
         space = textSpace
     }
     if showTimesamp {

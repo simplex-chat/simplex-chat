@@ -341,6 +341,7 @@ chatGroupTests = do
         it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
         it "should always sign moderation delete" testChannelModerationDeleteSign
         it "should verify signed file digest" testChannelSignedFile
+        it "should warn on missing signature when signing is required" testChannelSignMessagesRequired
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -12290,6 +12291,84 @@ testChannelAsGroupSign ps =
             [cath, dan, eve] *<# "#team> plain channel post [>>]"
             alice #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(1, "plain channel post")])
             cath #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(0, "plain channel post")])
+
+testChannelSignMessagesRequired :: HasCallStack => TestParams -> IO ()
+testChannelSignMessagesRequired ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- owner requires signatures
+            alice ##> "/set signatures #team on"
+            alice <## "updated group preferences:"
+            alice <## "Sign messages: on"
+            concurrentlyN_
+              [ do
+                  bob <## "alice updated group #team: (signed)"
+                  bob <## "updated group preferences:"
+                  bob <## "Sign messages: on",
+                do
+                  cath <## "alice updated group #team: (signed)"
+                  cath <## "updated group preferences:"
+                  cath <## "Sign messages: on",
+                do
+                  dan <## "alice updated group #team: (signed)"
+                  dan <## "updated group preferences:"
+                  dan <## "Sign messages: on",
+                do
+                  eve <## "alice updated group #team: (signed)"
+                  eve <## "updated group preferences:"
+                  eve <## "Sign messages: on"
+              ]
+
+            -- owner posts as the channel, signed: verified for everyone, held signed in db
+            alice ##> "/_send #1(as_group=on) sign=on text signed by owner"
+            alice <# "#team signed by owner (signed)"
+            bob <# "#team> signed by owner (signed)"
+            [cath, dan, eve] *<# "#team> signed by owner (signed) [>>]"
+            alice #$> ("/_get chat #1 count=100 search=signed by owner", chat, [(1, "signed by owner (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed by owner", chat, [(0, "signed by owner (signed)")])
+
+            -- owner posts as the channel, unsigned: recipients warn (held in db), sender does not
+            alice ##> "/_send #1(as_group=on) text plain from owner"
+            alice <# "#team plain from owner"
+            bob <# "#team> plain from owner (signature missing)"
+            [cath, dan, eve] *<# "#team> plain from owner (signature missing) [>>]"
+            alice #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(1, "plain from owner")])
+            dan #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(0, "plain from owner (signature missing)")])
+
+            -- promoted subscriber posts signed: verified for recipients (members are required to sign too)
+            cath ##> "/_send #1 sign=on text signed by member"
+            cath <# "#team signed by member (signed)"
+            bob <# "#team cath> signed by member (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> signed by member (signed) [>>]",
+                do
+                  dan <### [EndsWith "updated to cath"]
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
+                  dan <# "#team cath> signed by member (signed) [>>]",
+                do
+                  eve <### [EndsWith "updated to cath"]
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
+                  eve <# "#team cath> signed by member (signed) [>>]"
+              ]
+            cath #$> ("/_get chat #1 count=100 search=signed by member", chat, [(1, "signed by member (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed by member", chat, [(0, "signed by member (signed)")])
+
+            -- promoted subscriber posts unsigned: recipients warn (held in db), sender does not
+            cath #> "#team plain from member"
+            bob <# "#team cath> plain from member (signature missing)"
+            concurrentlyN_
+              [ alice <# "#team cath> plain from member (signature missing) [>>]",
+                dan <# "#team cath> plain from member (signature missing) [>>]",
+                eve <# "#team cath> plain from member (signature missing) [>>]"
+              ]
+            cath #$> ("/_get chat #1 count=100 search=plain from member", chat, [(1, "plain from member")])
+            dan #$> ("/_get chat #1 count=100 search=plain from member", chat, [(0, "plain from member (signature missing)")])
 
 testChannelAsGroupSpoof :: HasCallStack => TestParams -> IO ()
 testChannelAsGroupSpoof ps =

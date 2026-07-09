@@ -758,6 +758,13 @@
   <string name="sign_message_desc">Signing proves you authored this message and can\'t be denied later.</string>
   <string name="info_row_signed">Signed</string>
   <string name="info_row_signed_verified">Signed &amp; verified</string>
+  <string name="sign_messages">Sign messages</string>
+  <string name="require_message_signatures">Require signing messages.</string>
+  <string name="do_not_require_message_signatures">Do not require signing messages.</string>
+  <string name="message_signatures_are_required">Message signing is required.</string>
+  <string name="message_signatures_are_not_required">Message signing is not required.</string>
+  <string name="signature_missing_alert_title">Signature missing</string>
+  <string name="signature_missing_alert_desc">The channel required this message to be signed, but the signature is missing.</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>

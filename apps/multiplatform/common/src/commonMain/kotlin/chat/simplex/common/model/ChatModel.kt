@@ -2261,6 +2261,7 @@ data class GroupInfo (
       GroupFeature.Reports -> p.reports.on
       GroupFeature.History -> p.history.on
       GroupFeature.Support -> p.support.on
+      GroupFeature.SignMessages -> p.signMessages.on
     }
   }
 
@@ -2426,6 +2427,20 @@ data class GroupShortLinkData (
 enum class MsgSigStatus {
   @SerialName("verified") Verified,
   @SerialName("signedNoKey") SignedNoKey;
+}
+
+@Serializable
+sealed class MsgVerified {
+  @Serializable @SerialName("signed") data class Signed(val sigStatus: MsgSigStatus): MsgVerified()
+  @Serializable @SerialName("sigMissing") object SigMissing: MsgVerified()
+  @Serializable @SerialName("unsigned") object Unsigned: MsgVerified()
+
+  val verified: Boolean get() = this is Signed && sigStatus == MsgSigStatus.Verified
+
+  val sigMissingInfo: Pair<String, String>? get() = when (this) {
+    is SigMissing -> generalGetString(MR.strings.signature_missing_alert_title) to generalGetString(MR.strings.signature_missing_alert_desc)
+    else -> null
+  }
 }
 
 @Serializable
@@ -3561,7 +3576,7 @@ data class CIMeta (
   val deletable: Boolean,
   val editable: Boolean,
   val showGroupAsSender: Boolean,
-  val msgSigned: MsgSigStatus? = null
+  val msgVerified: MsgVerified = MsgVerified.Unsigned
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 

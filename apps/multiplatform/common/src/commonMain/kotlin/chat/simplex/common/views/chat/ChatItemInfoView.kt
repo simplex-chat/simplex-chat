@@ -272,7 +272,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (deleteAt != null) {
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
-      if (ci.meta.msgSigned == MsgSigStatus.Verified) {
+      if (ci.meta.msgVerified.verified) {
         val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
         InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_signature))
       }
@@ -566,7 +566,7 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   if (deleteAt != null) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_disappears_at), localTimestamp(deleteAt)))
   }
-  if (ci.meta.msgSigned == MsgSigStatus.Verified) {
+  if (ci.meta.msgVerified.verified) {
     shareText.add(generalGetString(if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified))
   }
   if (devTools) {

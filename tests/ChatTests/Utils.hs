@@ -322,6 +322,7 @@ groupFeatures_ dir isChannel =
     <> [((dir, "Member reports: on"), Nothing, Nothing) | not isChannel]
     <> [((dir, "Recent history: on"), Nothing, Nothing)]
     <> [((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)]
+    <> [((dir, "Sign messages: off"), Nothing, Nothing) | isChannel]
 
 businessGroupFeatures :: [(Int, String)]
 businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0

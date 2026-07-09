@@ -2290,19 +2290,19 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
-              | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemSigned $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
+              | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemVerified $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
-              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireVerifiedEdit (CDChannelRcv gInfo scopeInfo) itemSigned $ updateCI True ci scopeInfo oldMC itemLive Nothing
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
+              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireVerifiedEdit (CDChannelRcv gInfo scopeInfo) itemVerified $ updateCI True ci scopeInfo oldMC itemLive Nothing
               | otherwise -> messageError "x.msg.update: member attempted to update channel message" $> Nothing
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
             -- a verified item requires a verified edit (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
-            requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgSigStatus -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-            requireVerifiedEdit cd itemSigned action
-              | itemSigned == Just MSSVerified =
+            requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> MsgVerified -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+            requireVerifiedEdit cd itemVerified action
+              | itemVerified == MVSigned MSSVerified =
                   case msgSigned of
                     Just MSSVerified -> action
                     Just MSSSignedNoKey -> logWarn "x.msg.update: unverified update of a signed item (no key to verify), dropped" $> Nothing
@@ -2412,8 +2412,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | otherwise = a
         -- a verified item requires a verified delete (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
         requireVerifiedDelete :: CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-        requireVerifiedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgSigned = itemSigned}}) action
-          | itemSigned == Just MSSVerified =
+        requireVerifiedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgVerified = itemVerified}}) action
+          | itemVerified == MVSigned MSSVerified =
               case msgSigned of
                 Just MSSVerified -> action
                 Just MSSSignedNoKey -> logWarn "x.msg.del: unverified delete of a signed item (no key to verify), dropped" $> Nothing
