@@ -332,14 +332,15 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
-      it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
-      it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
-      it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign
-      it "should reject a non-owner posting as the channel" testChannelAsGroupSpoof
-      it "should sign self-delete of a signed item" testChannelMemberSelfDeleteSign
-      it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
-      it "should always sign moderation delete" testChannelModerationDeleteSign
-      it "should verify signed file digest" testChannelSignedFile
+      describe "channel message signing" $ do
+        it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
+        it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
+        it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign
+        it "should reject a non-owner posting as the channel" testChannelAsGroupSpoof
+        it "should sign self-delete of a signed item" testChannelMemberSelfDeleteSign
+        it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
+        it "should always sign moderation delete" testChannelModerationDeleteSign
+        it "should verify signed file digest" testChannelSignedFile
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
