@@ -2579,7 +2579,6 @@
     <string name="relay_conn_status_connecting">正在连接</string>
     <string name="create_channel_title">创建公开频道</string>
     <string name="create_channel_button">创建公开频道</string>
-    <string name="create_channel_beta_button">创建公开频道（测试版）</string>
     <string name="creating_channel">正在创建频道</string>
     <string name="relay_test_step_decode_link">解码链接</string>
     <string name="button_delete_channel">删除频道</string>

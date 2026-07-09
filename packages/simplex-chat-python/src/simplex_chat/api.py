@@ -467,7 +467,7 @@ class ChatApi:
     ) -> tuple[T.ConnectionPlan, T.CreatedConnLink]:
         r = await self.send_chat_cmd(
             CC.APIConnectPlan_cmd_string(
-                {"userId": user_id, "connectionLink": connection_link, "resolveKnown": False}
+                {"userId": user_id, "connectTarget": connection_link, "resolveMode": "unknown"}
             )
         )
         if r["type"] == "connectionPlan":
@@ -488,7 +488,7 @@ class ChatApi:
 
     async def api_connect_active_user(self, conn_link: str) -> ConnReqType:
         r = await self.send_chat_cmd(
-            CC.Connect_cmd_string({"incognito": False, "connLink_": conn_link})
+            CC.Connect_cmd_string({"incognito": False, "connTarget_": conn_link})
         )
         return self._handle_connect_result(r)
 
@@ -642,7 +642,7 @@ class ChatApi:
             raise
 
     async def api_create_active_user(self, profile: T.Profile | None = None) -> T.User:
-        new_user: T.NewUser = {"pastTimestamp": False, "userChatRelay": False}
+        new_user: T.NewUser = {"pastTimestamp": False, "userChatRelay": False, "clientService": False}
         if profile is not None:
             new_user["profile"] = profile
         r = await self.send_chat_cmd(CC.CreateActiveUser_cmd_string({"newUser": new_user}))

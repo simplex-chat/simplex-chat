@@ -2593,7 +2593,6 @@
     <string name="relay_conn_status_connecting">in connessione</string>
     <string name="create_channel_title">Crea canale pubblico</string>
     <string name="create_channel_button">Crea canale pubblico</string>
-    <string name="create_channel_beta_button">Crea canale pubblico (BETA)</string>
     <string name="creating_channel">Creazione canale</string>
     <string name="relay_test_step_decode_link">Decodifica il link</string>
     <string name="button_delete_channel">Elimina canale</string>

@@ -2600,7 +2600,6 @@
     <string name="info_row_connection_failed">Conexión fallida</string>
     <string name="create_channel_title">Crear canal público</string>
     <string name="create_channel_button">Crear canal público</string>
-    <string name="create_channel_beta_button">Crear canal público (BETA)</string>
     <string name="creating_channel">Creando canal</string>
     <string name="rcv_channel_events_count">%d eventos del canal</string>
     <string name="button_delete_channel">Eliminar canal</string>

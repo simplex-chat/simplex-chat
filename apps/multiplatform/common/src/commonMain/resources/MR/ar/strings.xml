@@ -2577,7 +2577,6 @@
     <string name="relay_conn_status_connecting">يتصل</string>
     <string name="create_channel_title">أنشئ قناة عامة</string>
     <string name="create_channel_button">أنشئ قناة عامة</string>
-    <string name="create_channel_beta_button">أنشئ قناة عامة (تجريبي)</string>
     <string name="creating_channel">ينشئ قناة</string>
     <string name="rcv_channel_events_count">%d أحداث القناة</string>
     <string name="relay_test_step_decode_link">فك ترميز الرابط</string>

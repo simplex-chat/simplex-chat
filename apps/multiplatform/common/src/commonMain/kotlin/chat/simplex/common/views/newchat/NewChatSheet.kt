@@ -201,7 +201,7 @@ private fun ModalData.NewChatSheetLayout(
     ),
     Triple(
       painterResource(MR.images.ic_bigtop_updates),
-      stringResource(MR.strings.create_channel_beta_button),
+      stringResource(MR.strings.create_channel_button),
       createChannel,
     )
   )

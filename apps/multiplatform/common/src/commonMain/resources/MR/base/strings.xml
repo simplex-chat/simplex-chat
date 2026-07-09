@@ -3104,7 +3104,6 @@
   <!-- AddChannelView.kt -->
   <string name="create_channel_title">Create public channel</string>
   <string name="create_channel_button">Create public channel</string>
-  <string name="create_channel_beta_button">Create public channel (BETA)</string>
   <string name="channel_display_name_field">Channel name</string>
   <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>

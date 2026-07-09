@@ -2996,9 +2996,12 @@ createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
             cup = getContactUserPreference f cups
             cup' = getContactUserPreference f cups'
 
+groupFeatures :: GroupInfo -> [AGroupFeature]
+groupFeatures g = if useRelays' g then channelGroupFeatures else allGroupFeatures
+
 createGroupFeatureChangedItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> GroupInfo -> CM ()
-createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
-  forM_ allGroupFeatures $ \(AGF f) -> do
+createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} g'@GroupInfo {fullGroupPreferences = gps'} =
+  forM_ (groupFeatures g') $ \(AGF f) -> do
     let state = groupFeatureState $ getGroupPreference f gps
         pref' = getGroupPreference f gps'
         state'@(_, param', role') = groupFeatureState pref'
@@ -3012,8 +3015,8 @@ createGroupFeatureItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -
 createGroupFeatureItems user cd ciContent g = createGroupFeatureItems_ user cd False ciContent g >>= toView . CEvtNewChatItems user
 
 createGroupFeatureItems_ :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> ShowGroupAsSender -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM [AChatItem]
-createGroupFeatureItems_ user cd showGroupAsSender ciContent GroupInfo {fullGroupPreferences} =
-  forM allGroupFeatures $ \(AGF f) -> do
+createGroupFeatureItems_ user cd showGroupAsSender ciContent g@GroupInfo {fullGroupPreferences} =
+  forM (groupFeatures g) $ \(AGF f) -> do
     let p = getGroupPreference f fullGroupPreferences
         (_, param, role) = groupFeatureState p
     createChatItem user cd showGroupAsSender (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing Nothing Nothing
