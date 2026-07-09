@@ -4235,9 +4235,9 @@ server test error</note>
         <target>Kilépés mentés nélkül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Expand" xml:space="preserve">
+      <trans-unit id="Expand" xml:space="preserve" approved="no">
         <source>Expand</source>
-        <target>Kibontás</target>
+        <target state="translated">Felfedés</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Expired" xml:space="preserve">
@@ -4805,9 +4805,9 @@ Hiba: %2$@</target>
         <target>Rejtett profiljelszó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide" xml:space="preserve">
+      <trans-unit id="Hide" xml:space="preserve" approved="no">
         <source>Hide</source>
-        <target>Összecsukás</target>
+        <target state="translated">Elrejtés</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
