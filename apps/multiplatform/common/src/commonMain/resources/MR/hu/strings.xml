@@ -455,7 +455,7 @@
     <string name="ttl_d">%dnap</string>
     <string name="receipts_contacts_enable_for_all">Engedélyezés az összes tag számára</string>
     <string name="delivery_receipts_are_disabled">A kézbesítési jelentések le vannak tiltva!</string>
-    <string name="expand_verb">Kibontás</string>
+    <string name="expand_verb">Felfedés</string>
     <string name="error_sending_message">Hiba történt az üzenet elküldésekor</string>
     <string name="la_enter_app_passcode">Adja meg a jelkódot</string>
     <string name="for_everybody">Mindenkinél</string>
@@ -631,7 +631,7 @@
     <string name="onboarding_notifications_mode_service">Azonnali</string>
     <string name="v5_4_incognito_groups">Inkognitócsoportok</string>
     <string name="how_to">Útmutató</string>
-    <string name="hide_verb">Összecsukás</string>
+    <string name="hide_verb">Elrejtés</string>
     <string name="gallery_image_button">Kép</string>
     <string name="v4_3_improved_privacy_and_security">Továbbfejlesztett adatvédelem és biztonság</string>
     <string name="ignore">Mellőzés</string>
@@ -677,7 +677,7 @@
     <string name="disconnect_remote_hosts">Hordozható eszközök leválasztása</string>
     <string name="v4_5_multiple_chat_profiles_descr">Különböző nevek, profilképek és átvitelelkülönítés.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Elutasítás esetén a kérés küldője NEM kap értesítést.</string>
-    <string name="icon_descr_expand_role">Szerepkörválasztó kibontása</string>
+    <string name="icon_descr_expand_role">Szerepkörválasztó felfedése</string>
     <string name="image_will_be_received_when_contact_is_online">A kép akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
     <string name="group_member_status_invited">meghíva</string>
     <string name="invalid_connection_link">Érvénytelen kapcsolattartási hivatkozás</string>
