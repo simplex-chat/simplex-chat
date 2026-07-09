@@ -398,8 +398,9 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
   pure (fInv, ciFile, ft)
 
 cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
-cryptoFileDigest file = do
-  r <- liftIO $ runExceptT $ CF.readFile file
+cryptoFileDigest (CryptoFile filePath cfArgs) = do
+  fsPath <- lift $ toFSFilePath filePath
+  r <- liftIO $ runExceptT $ CF.readFile (CryptoFile fsPath cfArgs)
   either (throwChatError . CEInternalError . show) (pure . FD.FileDigest . LC.sha512Hash) r
 
 xftpSndFileRedirect :: User -> FileTransferId -> ValidFileDescription 'FRecipient -> CM FileTransferMeta
