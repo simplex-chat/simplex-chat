@@ -520,6 +520,23 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
               UPDATE group_profiles
+              SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
+                  group_type = ?, group_link = ?,
+                  group_web_page = ?, group_domain = CASE WHEN ? THEN ? ELSE group_domain END, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
+                  preferences = ?, member_admission = ?, updated_at = ?
+              WHERE group_profile_id IN (
+                SELECT group_profile_id
+                FROM groups
+                WHERE user_id = ? AND group_id = ?
+              )
+            
+Plan:
+SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+              UPDATE group_profiles
               SET user_id = ?, updated_at = ?
               WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)
             
@@ -1819,23 +1836,6 @@ Query:
         
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          UPDATE group_profiles
-          SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
-              group_type = ?, group_link = ?,
-              group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
-              preferences = ?, member_admission = ?, updated_at = ?
-          WHERE group_profile_id IN (
-            SELECT group_profile_id
-            FROM groups
-            WHERE user_id = ? AND group_id = ?
-          )
-        
-Plan:
-SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
-LIST SUBQUERY 1
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE groups
@@ -5305,6 +5305,15 @@ Query:
         FROM groups
         WHERE user_id = ? AND group_id = ?
       )
+    
+Plan:
+SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE group_profiles SET group_domain = ?
+      WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?)
     
 Plan:
 SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
