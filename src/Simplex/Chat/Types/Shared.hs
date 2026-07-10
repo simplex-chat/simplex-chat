@@ -13,7 +13,7 @@ import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 data GroupMemberRole
@@ -148,3 +148,31 @@ instance ToField MsgSigStatus where toField = toField . textEncode
 instance FromField MsgSigStatus where fromField = fromTextField_ textDecode
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MSS") ''MsgSigStatus)
+
+data MsgVerified = MVSigned {sigStatus :: MsgSigStatus} | MVSigMissing | MVUnsigned
+  deriving (Eq, Show)
+
+instance TextEncoding MsgVerified where
+  textEncode = \case
+    MVSigned s -> textEncode s
+    MVSigMissing -> "sig_missing"
+    MVUnsigned -> "unsigned"
+  textDecode = \case
+    "sig_missing" -> Just MVSigMissing
+    "unsigned" -> Just MVUnsigned
+    s -> MVSigned <$> textDecode s
+
+instance ToField MsgVerified where toField = toField . textEncode
+
+instance FromField MsgVerified where fromField = fromTextField_ textDecode
+
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "MV") ''MsgVerified)
+
+instance FromJSON MsgVerified where
+  parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "MV") ''MsgVerified)
+  omittedField = Just MVUnsigned
+
+toMsgVerified :: Bool -> Maybe MsgSigStatus -> MsgVerified
+toMsgVerified signRequired = \case
+  Just s -> MVSigned s
+  Nothing -> if signRequired then MVSigMissing else MVUnsigned

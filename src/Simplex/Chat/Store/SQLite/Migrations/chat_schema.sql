@@ -296,7 +296,8 @@ CREATE TABLE files(
   redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE,
   shared_msg_id BLOB,
   file_type TEXT NOT NULL DEFAULT 'normal',
-  roster_transfer_id INTEGER
+  roster_transfer_id INTEGER,
+  file_digest BLOB
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,

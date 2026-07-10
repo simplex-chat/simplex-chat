@@ -375,9 +375,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
               Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
-    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText, msgSigned}}) membership_ =
+    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText, msgVerified}}) membership_ =
       let deleted_ = maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci membership_)
-       in itemText <> sigStatusStr msgSigned <> deleted_
+       in itemText <> msgVerifiedStr msgVerified <> deleted_
     unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
     unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isUserMention ci
     unmutedReaction :: User -> ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
@@ -394,6 +394,12 @@ sigStatusStr = \case
   Just MSSVerified -> " (signed)"
   Just MSSSignedNoKey -> " (signed, no key to verify)"
   Nothing -> ""
+
+msgVerifiedStr :: IsString a => MsgVerified -> a
+msgVerifiedStr = \case
+  MVSigned s -> sigStatusStr (Just s)
+  MVSigMissing -> " (signature missing)"
+  MVUnsigned -> ""
 
 signedStr :: IsString a => Bool -> a
 signedStr signed = if signed then " (signed)" else ""
@@ -677,7 +683,7 @@ viewChatItems ttyUser unmuted u chatItems ts tz testView
   | otherwise = ttyUser u [sShow (length chatItems) <> " new messages created"]
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention, msgSigned}, content, quotedItem, file} doShow ts tz =
+viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention, msgVerified}, content, quotedItem, file} doShow ts tz =
   withGroupMsgForwarded . withItemDeleted <$> viewCI
   where
     viewCI = case chat of
@@ -763,8 +769,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir context (MCText $ T.pack fileName) ts tz meta
       _ -> view dir context mc ts tz meta
-    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> sigStatusStr msgSigned] meta
-    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> sigStatusStr msgSigned] False
+    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> msgVerifiedStr msgVerified] meta
+    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> msgVerifiedStr msgVerified] False
     showSndItemProhibited to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> " " <> prohibited] meta
     showRcvItemProhibited from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> " " <> prohibited] False
     showItem ss = if doShow then ss else []
@@ -2033,7 +2039,7 @@ viewGroupUpdated
         | null prefs = []
         | otherwise = bold' "updated group preferences:" : prefs
         where
-          prefs = mapMaybe viewPref allGroupFeatures
+          prefs = mapMaybe viewPref (if useRelays' g' then channelGroupFeatures else regularGroupFeatures)
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
             | otherwise = Just . plain $ groupPreferenceText (pref gps')
@@ -2061,7 +2067,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, descripti
     <> maybe [] (\sd -> ["description: " <> plain sd]) shortDescr
     <> maybe [] (const ["has profile image"]) image
     <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
-    <> (bold' "group preferences:" : map viewPref allGroupFeatures)
+    <> (bold' "group preferences:" : map viewPref (if useRelays' g then channelGroupFeatures else regularGroupFeatures))
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
       where
@@ -2270,7 +2276,7 @@ viewReceivedUpdatedMessage :: StyledString -> [StyledString] -> MsgContent -> Cu
 viewReceivedUpdatedMessage = viewReceivedMessage_ True
 
 viewReceivedMessage_ :: Bool -> StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewReceivedMessage_ updated from context mc ts tz meta = receivedWithTime_ ts tz from context meta (ttyMsgContent mc) updated
+viewReceivedMessage_ updated from context mc ts tz meta@CIMeta {msgVerified} = receivedWithTime_ ts tz from context meta (appendLast (msgVerifiedStr msgVerified) $ ttyMsgContent mc) updated
 
 viewReceivedReaction :: StyledString -> [StyledString] -> StyledString -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
 viewReceivedReaction from styledMsg reactionText ts tz reactionTs =
@@ -2308,7 +2314,7 @@ recent now tz time = do
     || (localNow < currentDay12 && localTime >= previousDay18 && localTimeDay < localNowDay)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewSentMessage to context mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts tz (prependFirst to $ context <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
+viewSentMessage to context mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive, msgVerified} = sentWithTime_ ts tz (prependFirst to $ context <> prependFirst (indent <> live) (appendLast (msgVerifiedStr msgVerified) $ ttyMsgContent mc)) meta
   where
     indent = if null context then "" else "      "
     live
@@ -2364,6 +2370,10 @@ ttyMsgContent = \case
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
 prependFirst s (s' : ss) = (s <> s') : ss
+
+appendLast :: StyledString -> [StyledString] -> [StyledString]
+appendLast _ [] = []
+appendLast s ss = init ss <> [last ss <> s]
 
 msgPlain :: Text -> [StyledString]
 msgPlain = map (styleMarkdownList . parseMarkdownList) . T.lines

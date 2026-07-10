@@ -147,6 +147,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
           Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
           Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
+          Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -311,6 +312,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260602_group_roster
           Simplex.Chat.Store.SQLite.Migrations.M20260603_simplex_name
           Simplex.Chat.Store.SQLite.Migrations.M20260629_roster_catchup
+          Simplex.Chat.Store.SQLite.Migrations.M20260707_file_digest
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
