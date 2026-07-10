@@ -51,7 +51,6 @@ let seSubscriber = seMessageSubscriber {
 
 func suspendChat() {
     suspendLockQueue.sync {
-        guard !ChatModel.shared.activeRemoteCtrl else { return }
         _suspendChat(timeout: appSuspendTimeout)
     }
 }
