@@ -1046,7 +1046,7 @@ acceptBusinessJoinRequestAsync
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
                 -- but it will be different when inviting somebody else.
-                business = Just $ BusinessChatInfo {chatType = BCBusiness, businessId = userMemberId, customerId = memberId},
+                business = Just $ BusinessChatInfo {chatType = BCBusiness, businessId = userMemberId, customerId = memberId, businessDomain = Nothing},
                 groupSize = Just 1
               }
     subMode <- chatReadVar subscriptionMode

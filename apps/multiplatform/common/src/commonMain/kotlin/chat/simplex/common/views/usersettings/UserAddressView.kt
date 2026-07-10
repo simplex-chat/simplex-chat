@@ -369,7 +369,7 @@ private fun UserAddressLayout(
               stringResource(MR.strings.your_simplex_name),
               click = {
                 ModalManager.start.showCustomModal { close ->
-                  val domain = user?.profile?.contactDomain?.shortName
+                  val domain = user?.profile?.contactDomain?.domain
                   SetSimplexDomainView(
                     title = generalGetString(MR.strings.set_simplex_name),
                     footer = generalGetString(MR.strings.set_user_simplex_name_footer),

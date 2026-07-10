@@ -1050,7 +1050,10 @@ data MemberInfo = MemberInfo
 data BusinessChatInfo = BusinessChatInfo
   { chatType :: BusinessChatType,
     businessId :: MemberId,
-    customerId :: MemberId
+    customerId :: MemberId,
+    -- the business's verified domain claim, read on the fly from group_domain / group_domain_proof. Local only
+    -- (host leaves it unset). The proof is not received on the wire yet, so it reads as Nothing for now.
+    businessDomain :: Maybe SimplexDomainClaim
   }
   deriving (Eq, Show)
 

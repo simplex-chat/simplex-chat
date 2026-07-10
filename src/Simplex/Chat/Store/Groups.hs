@@ -695,7 +695,7 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
         insertedRowId db
     setGroupBusinessChatInfo :: GroupId -> GroupMember -> GroupMember -> IO ()
     setGroupBusinessChatInfo groupId membership hostMember = do
-      let businessChatInfo = Just BusinessChatInfo {chatType = BCBusiness, businessId = memberId' hostMember, customerId = memberId' membership}
+      let businessChatInfo = Just BusinessChatInfo {chatType = BCBusiness, businessId = memberId' hostMember, customerId = memberId' membership, businessDomain = Nothing}
       updateBusinessChatInfo db groupId businessChatInfo
 
 updateBusinessChatInfo :: DB.Connection -> GroupId -> Maybe BusinessChatInfo -> IO ()

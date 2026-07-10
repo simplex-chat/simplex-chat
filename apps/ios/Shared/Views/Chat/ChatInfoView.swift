@@ -396,7 +396,7 @@ struct ChatInfoView: View {
             if let domain = contact.profile.contactDomain,
                contact.profile.contactDomainVerified != nil || domain.proof != nil {
                 SimplexNameView(
-                    simplexName: "@\(domain.shortName)",
+                    simplexName: "@\(domain.domain)",
                     verified: contact.profile.contactDomainVerified,
                     verify: {
                         do {
