@@ -141,6 +141,7 @@ chatGroupTests = do
     it "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
     it "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
+    it "screening approval does not admit member past review" testScreeningApprovalKeepsReview
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -4134,6 +4135,66 @@ testGLinkReviewIntroduce =
 
       eve #> "#team 5"
       [alice, bob, cath, dan] *<# "#team eve> 5"
+
+testScreeningApprovalKeepsReview :: HasCallStack => TestParams -> IO ()
+testScreeningApprovalKeepsReview =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team: (signed)"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team: (signed)"
+            cath <## "changed member admission rules",
+          do
+            dan <## "alice updated group #team: (signed)"
+            dan <## "changed member admission rules"
+        ]
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      eve ##> ("/c " <> gLink)
+      eve <## "connection request sent!"
+      alice <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: eve connected and pending review",
+          eve
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member cath (Catherine) is connected",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          do
+            cath <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            cath <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+          do
+            dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+      alice ##> "/_accept member #1 5 member screening=on"
+      alice <## "#team: eve accepted and pending review (will introduce moderators)"
+      eve ##> "#team hi"
+      eve <## "bad chat command: not current member"
+      (bob </)
+      alice ##> "/_accept member #1 5 member"
+      concurrentlyN_
+        [ alice <## "#team: eve accepted",
+          cath <## "#team: alice accepted eve to the group",
+          dan <## "#team: alice accepted eve to the group",
+          eve
+            <### [ "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added eve (Eve) to the group (connecting...)"
+            bob <## "#team: new member eve is connected"
+        ]
+      eve #> "#team hello"
+      [alice, bob, cath, dan] *<# "#team eve> hello"
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =

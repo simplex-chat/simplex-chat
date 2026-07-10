@@ -471,7 +471,7 @@ data ChatCommand
   | APIAddMember {groupId :: GroupId, contactId :: ContactId, memberRole :: GroupMemberRole}
   | APIAddMemberViaGroup {groupId :: GroupId, viaGroupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
-  | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
+  | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole, screeningApproval :: Bool}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
   | APIMembersRole {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, memberRole :: GroupMemberRole}
   | APIBlockMembersForAll {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, blocked :: Bool}

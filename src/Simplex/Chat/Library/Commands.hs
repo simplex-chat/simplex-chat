@@ -2919,7 +2919,7 @@ processChatCommand cxt nm = \case
             e -> eToView e
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Left ct -> throwChatError $ CEContactNotActive ct
-  APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
+  APIAcceptMember groupId gmId role screeningApproval -> withUser $ \user@User {userId} -> do
     (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMemberById db cxt user gmId
     -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
     assertUserGroupRole gInfo $ roleRequiredToChange GRMember role
@@ -2950,6 +2950,8 @@ processChatCommand cxt nm = \case
                 createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent gEvent) Nothing
                 pure $ CRMemberAccepted user gInfo' m'
           Nothing -> throwChatError CEGroupMemberNotActive
+      -- admitting past review is a moderator decision, not a screening one (e.g. directory bot captcha)
+      GSMemPendingReview | screeningApproval -> pure $ CRMemberAccepted user gInfo m
       GSMemPendingReview -> do
         let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
         modMs <- withFastStore' $ \db -> getGroupModerators db cxt user gInfo
@@ -3300,7 +3302,7 @@ processChatCommand cxt nm = \case
   JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand cxt nm $ APIJoinGroup groupId enableNtfs
-  AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
+  AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole False
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
   RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
@@ -6416,7 +6418,7 @@ chatCommandP =
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_add #" *> (APIAddMemberViaGroup <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
-      "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole <*> (" screening=" *> onOffP <|> pure False)),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
       "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),
