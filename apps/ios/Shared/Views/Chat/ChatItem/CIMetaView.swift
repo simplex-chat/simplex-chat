@@ -23,7 +23,7 @@ struct CIMetaView: View {
     var invertedMaterial = false
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
-    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
 
     var body: some View {
@@ -112,7 +112,7 @@ func ciMetaText(
     showViaProxy: Bool,
     showTimesamp: Bool,
     signedFileVerified: Bool? = nil,
-    showSignature: Bool = false,
+    showSignature: Bool = true,
     showFileEncryption: Bool = true
 ) -> Text {
     var r = Text("")

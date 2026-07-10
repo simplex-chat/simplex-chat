@@ -48,7 +48,7 @@ struct MsgContentView: View {
     @State private var phase: CGFloat = 0
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
-    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
 
     var body: some View {
         let v = msgContentView()

@@ -16,7 +16,7 @@ struct CIFileView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.showTimestamp) var showTimestamp: Bool
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
-    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
     @ObservedObject var chat: Chat
     let file: CIFile?
