@@ -2721,7 +2721,7 @@ processChatCommand cxt nm = \case
           updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` eToView
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
-  APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
+  APIAcceptMember groupId gmId role screeningApproval -> withUser $ \user@User {userId} -> withGroupLock "acceptMember" groupId $ do
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMemberById db cxt user gmId
     assertUserGroupRole gInfo $ max GRModerator role
     case memberStatus m of
@@ -2751,6 +2751,9 @@ processChatCommand cxt nm = \case
                 createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent gEvent) Nothing
                 pure $ CRMemberAccepted user gInfo' m'
           Nothing -> throwChatError CEGroupMemberNotActive
+      -- a screening approval (e.g. directory bot) must not admit a member past admission review:
+      -- that is an explicit moderator action. Return the member unchanged (still pending review).
+      GSMemPendingReview | screeningApproval -> pure $ CRMemberAccepted user gInfo m
       GSMemPendingReview -> do
         let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
         modMs <- withFastStore' $ \db -> getGroupModerators db cxt user gInfo
@@ -3095,7 +3098,7 @@ processChatCommand cxt nm = \case
   JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand cxt nm $ APIJoinGroup groupId enableNtfs
-  AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
+  AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole False
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
   RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
@@ -3129,7 +3132,7 @@ processChatCommand cxt nm = \case
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
     ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db cxt user cName
     processChatCommand cxt nm $ APIListGroups userId (contactId' <$> ct_) search_
-  APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
+  APIUpdateGroupProfile groupId p' -> withUser $ \user -> withGroupLock "updateGroupProfile" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     runUpdateGroupProfile user gInfo p'
   UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
@@ -3140,7 +3143,7 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
-  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> do
+  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> withGroupLock "updateGroupProfile" gId $ do
     gInfo@GroupInfo {groupProfile = p@GroupProfile {publicGroup}} <- withStore $ \db -> getGroupInfo db cxt user gId
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
@@ -3993,9 +3996,14 @@ processChatCommand cxt nm = \case
         else markGroupCIsDeleted user gInfo chatScopeInfo items m deletedTs
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
     updateGroupProfileByName gName update = withUser $ \user -> do
-      gInfo@GroupInfo {groupProfile = p} <- withStore $ \db ->
-        getGroupIdByName db user gName >>= getGroupInfo db cxt user
-      runUpdateGroupProfile user gInfo $ update p
+      -- lock + read-modify-write in one critical section, otherwise a concurrent
+      -- profile update (another field edit, or inbound XGrpInfo) can clobber
+      -- fields like member_admission via lost update.
+      gId <- withStore $ \db -> getGroupIdByName db user gName
+      withGroupLock "updateGroupProfile" gId $ do
+        gInfo@GroupInfo {groupProfile = p} <- withStore $ \db -> getGroupInfo db cxt user gId
+        asks (groupProfileUpdateTestHook . chatHooks . config) >>= mapM_ liftIO
+        runUpdateGroupProfile user gInfo $ update p
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> CM (Maybe Call)) -> CM ChatResponse
     withCurrentCall ctId action = do
       (user, ct) <- withStore $ \db -> do
@@ -5357,7 +5365,7 @@ chatCommandP =
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
-      "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole <*> (" screening=" *> onOffP <|> pure False)),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
       "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),

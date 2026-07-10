@@ -724,7 +724,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       gli_ <- join . eitherToMaybe <$> withDB' "getGroupLinkInfo" cc (\db -> getGroupLinkInfo db userId groupId)
       let role = if useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
           gmId = groupMemberId' m
-      sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
+      -- screeningApproval = True: the bot's captcha approval may advance a member into admission
+      -- review but must never admit them past it - that is an explicit moderator/admin action
+      sendChatCmd cc (APIAcceptMember groupId gmId role True) >>= \case
         Right CRMemberAccepted {member} -> do
           atomically $ TM.delete gmId $ pendingCaptchas env
           if memberStatus member == GSMemPendingReview
