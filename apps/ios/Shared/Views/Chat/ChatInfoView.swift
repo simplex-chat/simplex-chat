@@ -1398,9 +1398,6 @@ struct SimplexNameView: View {
     // Size the inline check/cross to the name's cap height so it reads like a capital letter, not an oversized glyph.
     private var iconFont: Font { .system(size: UIFont.preferredFont(forTextStyle: .subheadline).capHeight) }
 
-    // The check/cross is concatenated into the name text so it aligns with the baseline and matches the font
-    // size; only the "Verify name" button (not an image) uses an HStack. Tap copies a verified name, or re-runs
-    // verification on a failed one.
     @ViewBuilder private var content: some View {
         if showSpinner {
             HStack(spacing: 6) {
