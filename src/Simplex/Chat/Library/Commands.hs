@@ -3440,10 +3440,10 @@ processChatCommand cxt nm = \case
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupFeature (AGFNR f) gName enabled ->
-    updateGroupProfileByName gName $ \p ->
+    updateGroupProfileByName_ (Just $ toGroupFeature f) gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
   SetGroupFeatureRole (AGFR f) gName enabled role ->
-    updateGroupProfileByName gName $ \p ->
+    updateGroupProfileByName_ (Just $ toGroupFeature f) gName $ \p ->
       p {groupPreferences = Just . setGroupPreferenceRole f enabled role $ groupPreferences p}
   SetGroupMemberAdmissionReview gName reviewAdmissionApplication ->
     updateGroupProfileByName gName $ \p@GroupProfile {memberAdmission} ->
@@ -4001,9 +4001,16 @@ processChatCommand cxt nm = \case
         then deleteGroupCIs user gInfo chatScopeInfo items m deletedTs
         else markGroupCIsDeleted user gInfo chatScopeInfo items m deletedTs
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
-    updateGroupProfileByName gName update = withUser $ \user -> do
+    updateGroupProfileByName = updateGroupProfileByName_ Nothing
+    updateGroupProfileByName_ :: Maybe GroupFeature -> GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
+    updateGroupProfileByName_ feature_ gName update = withUser $ \user -> do
       gInfo@GroupInfo {groupProfile = p} <- withStore $ \db ->
         getGroupIdByName db user gName >>= getGroupInfo db cxt user
+      forM_ feature_ $ \feature -> do
+        let channel = useRelays' gInfo
+            applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
+        unless applicable $
+          throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
       runUpdateGroupProfile user gInfo $ update p
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> CM (Maybe Call)) -> CM ChatResponse
     withCurrentCall ctId action = do
