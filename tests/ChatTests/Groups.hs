@@ -12157,6 +12157,17 @@ testChannelSignedFile ps =
             xftpCLI ["rand", "./tests/tmp/testfile", "1mb"] `shouldReturn` ["File created: ./tests/tmp/testfile"]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
+            -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
+            -- it), so ids run higher here. cath's send and the subscribers' (dan, eve) receive both
+            -- follow only their join roster (id 2). The relay (bob) also received the roster re-served
+            -- on cath's promotion, so its file is id 3. The owner (alice) has no roster file, so id 1.
+#if defined(dbPostgres)
+            let fileId = 2 :: Int
+                relayFileId = 3 :: Int
+#else
+            let fileId = 1 :: Int
+                relayFileId = 1 :: Int
+#endif
 
             -- cath's first (signed) message introduces her to dan/eve
             cath ##> "/_send #1 sign=on text hi"
@@ -12176,12 +12187,12 @@ testChannelSignedFile ps =
             cath ##> "/_send #1 sign=on json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"signed file\",\"type\":\"file\"}}]"
             cath <# "#team signed file (signed)"
             cath <# "/f #team ./tests/tmp/testfile"
-            cath <## "use /fc 1 to cancel sending"
-            cath <## "completed uploading file 1 (testfile) for #team"
+            cath <## ("use /fc " <> show fileId <> " to cancel sending")
+            cath <## ("completed uploading file " <> show fileId <> " (testfile) for #team")
 
             bob <# "#team cath> signed file (signed)"
             bob <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show relayFileId <> " [<dir>/ | <path>] to receive it")
 
             concurrentlyN_
               [ do alice <# "#team cath> signed file (signed) [>>]"
@@ -12189,19 +12200,19 @@ testChannelSignedFile ps =
                    alice <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
                 do dan <# "#team cath> signed file (signed) [>>]"
                    dan <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
-                   dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   dan <## ("use /fr " <> show fileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do eve <# "#team cath> signed file (signed) [>>]"
                    eve <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
-                   eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                   eve <## ("use /fr " <> show fileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- dan downloads: the signed digest is verified and the file completes
-            dan ##> "/fr 1 ./tests/tmp"
+            dan ##> ("/fr " <> show fileId <> " ./tests/tmp")
             dan
-              <### [ "saving file 1 from cath to ./tests/tmp/testfile_1",
-                     "started receiving file 1 (testfile) from cath"
+              <### [ ConsoleString ("saving file " <> show fileId <> " from cath to ./tests/tmp/testfile_1"),
+                     ConsoleString ("started receiving file " <> show fileId <> " (testfile) from cath")
                    ]
-            dan <## "completed receiving file 1 (testfile) from cath"
+            dan <## ("completed receiving file " <> show fileId <> " (testfile) from cath")
             src <- B.readFile "./tests/tmp/testfile"
             destDan <- B.readFile "./tests/tmp/testfile_1"
             destDan `shouldBe` src
