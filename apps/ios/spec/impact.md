@@ -80,6 +80,7 @@
 | Shared/Model/AppAPITypes.swift | PC1 through PC31 | High | Command/response types — all API communication |
 | Shared/Model/NtfManager.swift | PC18 | High | Notification delivery |
 | Shared/Model/BGManager.swift | PC18 | Medium | Background fetch scheduling |
+| Shared/Model/SuspendChat.swift | PC18, PC27 | High | App suspension and remote desktop background execution |
 | Shared/Theme/ThemeManager.swift | PC24 | Medium | Theme resolution engine |
 | SimpleXChat/ChatTypes.swift | PC1 through PC31 | High | Core data types — all features use them |
 | SimpleXChat/APITypes.swift | PC1 through PC31 | High | API result types and error handling |

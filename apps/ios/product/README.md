@@ -172,7 +172,7 @@ Remote control of the mobile app from a desktop client.
 | Feature | Description | Key Source (Swift) |
 |---------|-------------|--------------------|
 | Remote control pairing | Pair with desktop app via QR code | `Shared/Views/RemoteAccess/ConnectDesktopView.swift` |
-| Session management | Manage active desktop control sessions | `Shared/Views/RemoteAccess/ConnectDesktopView.swift` |
+| Session management | Manage active desktop control sessions, including while the app is in background | `Shared/Views/RemoteAccess/ConnectDesktopView.swift` |
 
 ---
 

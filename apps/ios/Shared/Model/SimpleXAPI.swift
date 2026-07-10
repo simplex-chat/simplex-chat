@@ -2912,6 +2912,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
             await MainActor.run {
+                RemoteCtrlBGKeepAlive.shared.stopKeepingSession()
                 m.remoteCtrlSession = nil
                 dismissAllSheets() {
                     switch rcStopReason {
