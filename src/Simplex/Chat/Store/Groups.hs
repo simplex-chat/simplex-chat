@@ -2737,7 +2737,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
               )
             |]
             ( (newName, fullName, shortDescr, description, image, groupType_, groupLink_)
-                :. (groupWebPage_, BI (isJust publicGroup), groupDomain_, domainWebPage_, allowEmbedding_, groupDomainProof_)
+                :. (groupWebPage_, isJust publicGroup, groupDomain_, domainWebPage_, allowEmbedding_, groupDomainProof_)
                 :. (groupPreferences, memberAdmission, currentTs, userId, groupId)
             )
     updateGroup_ ldn currentTs = do
