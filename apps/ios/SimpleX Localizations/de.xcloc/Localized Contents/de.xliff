@@ -5932,9 +5932,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Weitere Verbesserungen sind bald verfügbar!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="More privacy" xml:space="preserve">
+      <trans-unit id="More privacy" xml:space="preserve" approved="no">
         <source>More privacy</source>
-        <target>Mehr Privatsphäre</target>
+        <target state="translated">Weitere Privatsphäre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="More reliable network connection." xml:space="preserve">
@@ -9675,7 +9675,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="To resolve names" xml:space="preserve" approved="no">
         <source>To resolve names</source>
-        <target state="translated">Zur Namensauflösung</target>
+        <target state="translated">Für die Namensauflösung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
