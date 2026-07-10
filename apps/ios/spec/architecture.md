@@ -267,7 +267,7 @@ Optional desktop pairing allows controlling the mobile app from a desktop client
 - **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L395)`: RemoteCtrlSession?` tracks the active session
 - **Background keepalive**: `RemoteCtrlBGKeepAlive` uses continued processing on iOS 26 and the system-granted `UIApplication` background task on earlier versions or when continued processing is rejected
 - **Transport**: Encrypted reverse HTTP transport between mobile and desktop
-- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L549), [`RemoteCtrlBGKeepAlive`](../Shared/Model/SuspendChat.swift#L191-L294), see `Remote.hs` in `../../src/Simplex/Chat/`
+- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L549), [`RemoteCtrlBGKeepAlive`](../Shared/Model/SuspendChat.swift#L190-L293), see `Remote.hs` in `../../src/Simplex/Chat/`
 
 ---
 
