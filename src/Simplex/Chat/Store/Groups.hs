@@ -47,7 +47,6 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
-    setPreparedGroupDomain,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -648,8 +647,8 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Maybe Bool -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
-createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ verified_ = do
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Maybe SimplexDomain -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
+createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ verifiedDomain = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
   (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ currentTs
@@ -668,7 +667,11 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
   forM_ hostMember_ $ \hostMember ->
     when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
   g <- getGroupInfo db cxt user groupId
-  g' <- liftIO $ maybe (pure g) (setGroupDomainVerified db user g) verified_
+  -- a business has no domain in its profile, so set it out-of-band; a channel already has it (createGroup_), just verify
+  g' <- liftIO $ case verifiedDomain of
+    Just d | business -> setPreparedGroupDomain db user g d
+    Just _ -> setGroupDomainVerified db user g True
+    Nothing -> pure g
   pure (g', hostMember_)
   where
     insertHost_ currentTs groupId groupLDN = do
@@ -2715,22 +2718,28 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
     (groupType_, groupLink_) = case publicGroup of
       Just PublicGroupProfile {groupType, groupLink} -> (Just groupType, Just groupLink)
       Nothing -> (Nothing, Nothing)
+    -- group_domain is owned by publicGroup; when the incoming profile has no publicGroup (a business, whose domain
+    -- is set out-of-band) the CASE leaves the stored group_domain unchanged instead of clearing it.
     updateGroupProfile_ currentTs =
-      DB.execute
-        db
-        [sql|
-          UPDATE group_profiles
-          SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
-              group_type = ?, group_link = ?,
-              group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
-              preferences = ?, member_admission = ?, updated_at = ?
-          WHERE group_profile_id IN (
-            SELECT group_profile_id
-            FROM groups
-            WHERE user_id = ? AND group_id = ?
-          )
-        |]
-        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. publicGroupAccessRow publicGroup :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
+      let (groupWebPage_, groupDomain_, domainWebPage_, allowEmbedding_, groupDomainProof_) = publicGroupAccessRow publicGroup
+       in DB.execute
+            db
+            [sql|
+              UPDATE group_profiles
+              SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
+                  group_type = ?, group_link = ?,
+                  group_web_page = ?, group_domain = CASE WHEN ? THEN ? ELSE group_domain END, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
+                  preferences = ?, member_admission = ?, updated_at = ?
+              WHERE group_profile_id IN (
+                SELECT group_profile_id
+                FROM groups
+                WHERE user_id = ? AND group_id = ?
+              )
+            |]
+            ( (newName, fullName, shortDescr, description, image, groupType_, groupLink_)
+                :. (groupWebPage_, BI (isJust publicGroup), groupDomain_, domainWebPage_, allowEmbedding_, groupDomainProof_)
+                :. (groupPreferences, memberAdmission, currentTs, userId, groupId)
+            )
     updateGroup_ ldn currentTs = do
       DB.execute
         db
