@@ -2857,6 +2857,7 @@ public struct BusinessChatInfo: Decodable, Hashable {
     public var chatType: BusinessChatType
     public var businessId: String
     public var customerId: String
+    public var businessDomain: SimplexDomainClaim?
 }
 
 public enum BusinessChatType: String, Codable, Hashable {

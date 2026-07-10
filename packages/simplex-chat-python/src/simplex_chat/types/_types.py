@@ -204,6 +204,7 @@ class BusinessChatInfo(TypedDict):
     chatType: "BusinessChatType"
     businessId: str
     customerId: str
+    businessDomain: NotRequired["SimplexDomainClaim"]
 
 BusinessChatType = Literal["business", "customer"]
 

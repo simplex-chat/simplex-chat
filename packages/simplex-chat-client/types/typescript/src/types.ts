@@ -289,6 +289,7 @@ export interface BusinessChatInfo {
   chatType: BusinessChatType
   businessId: string
   customerId: string
+  businessDomain?: SimplexDomainClaim
 }
 
 export enum BusinessChatType {

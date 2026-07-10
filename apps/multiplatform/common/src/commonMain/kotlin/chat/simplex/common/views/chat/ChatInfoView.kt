@@ -760,7 +760,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     val domain = contact.profile.contactDomain
     if (domain != null && (contact.profile.contactDomainVerified != null || domain.proof != null)) {
       SimplexNameView(
-        simplexName = "@${domain.shortName}",
+        simplexName = "@${domain.domain}",
         verified = contact.profile.contactDomainVerified,
         verify = {
           val rhId = chatModel.remoteHostId()

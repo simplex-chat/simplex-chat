@@ -211,7 +211,7 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
         (channelLink, _) <- prepareChannel1Relay "biz" alice cath
         alice ##> "/ad"
-        (contactLink, _) <- getContactLinks alice True
+        (contactLink, fullLink) <- getContactLinks alice True
         registerName reg bizName (contactAndChannelNameRecord "biz" (T.pack contactLink) (T.pack channelLink))
         alice ##> "/auto_accept on business"
         alice <## "auto_accept on, business"
@@ -219,7 +219,25 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
         alice <## "new contact address set"
         bob ##> "/_connect plan 1 biz.simplex"
         bob <## "business address: ok to connect"
-        _ <- getTermLine bob -- contact short link data (JSON, printed in test view)
+        contactSLinkData <- getTermLine bob -- contact short link data (JSON, printed in test view)
         bob <## "You can also join channel #biz"
+        -- preparing the business by name saves its domain on the group, so it is then found by local name search
+        bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> contactLink <> " domain=biz.simplex " <> contactSLinkData)
+        bob <## "#alice: group is prepared"
+        -- host changes its profile so the handshake's group-profile write fires; it must not wipe the saved domain
+        alice ##> "/p alice Alice Biz"
+        alice <## "user bio changed to Alice Biz (your 0 contacts are notified)"
+        bob ##> "/_connect plan 1 @biz.simplex resolve=never"
+        bob <## "business address: known prepared business #alice"
+        bob ##> "/_connect group #1"
+        bob <## "#alice: connection started"
+        alice <## "#bob (Bob): accepting business address request..."
+        bob <## "#alice: joining the group..."
+        alice <## "#bob: bob_1 joined the group"
+        bob <## "#alice: you joined the group"
+        -- after fully connecting, the business must still be found by local name search
+        bob ##> "/_connect plan 1 @biz.simplex resolve=never"
+        bob <## "business address: known business #alice"
+        bob <## "use #alice <message> to send messages"
   where
     bizName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "biz" [])

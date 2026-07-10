@@ -396,7 +396,7 @@ struct ChatInfoView: View {
             if let domain = contact.profile.contactDomain,
                contact.profile.contactDomainVerified != nil || domain.proof != nil {
                 SimplexNameView(
-                    simplexName: "@\(domain.shortName)",
+                    simplexName: "@\(domain.domain)",
                     verified: contact.profile.contactDomainVerified,
                     verify: {
                         do {
@@ -1384,28 +1384,51 @@ struct SimplexNameView: View {
     @State private var showSpinner = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text(simplexName)
-                .font(verified == true ? .subheadline : .system(.subheadline, design: .monospaced))
-                .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
-            indicator()
-        }
-        .padding(.bottom, 2)
-        .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
+        content
+            .padding(.bottom, 2)
+            .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
     }
 
-    @ViewBuilder private func indicator() -> some View {
+    private var nameText: Text {
+        Text(simplexName)
+            .font(.subheadline)
+            .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
+    }
+
+    // Size the inline check/cross to the name's cap height so it reads like a capital letter, not an oversized glyph.
+    private var iconFont: Font { .system(size: UIFont.preferredFont(forTextStyle: .subheadline).capHeight) }
+
+    @ViewBuilder private var content: some View {
         if showSpinner {
-            ProgressView()
+            HStack(spacing: 6) {
+                nameText
+                ProgressView()
+            }
         } else if verified == true {
-            Image(systemName: "checkmark")
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                nameText
+                Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIPasteboard.general.string = simplexName
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            }
         } else if verified == false {
-            Image(systemName: "xmark")
-                .foregroundColor(.red)
-                .onTapGesture { runVerify(manual: true) }
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                nameText
+                Image(systemName: "xmark").font(iconFont).foregroundColor(.red)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { runVerify(manual: true) }
         } else {
-            Button { runVerify(manual: true) } label: {
-                Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+            HStack(spacing: 6) {
+                nameText
+                Button { runVerify(manual: true) } label: {
+                    Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+                }
             }
         }
     }

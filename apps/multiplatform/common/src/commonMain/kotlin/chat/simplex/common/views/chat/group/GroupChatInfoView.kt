@@ -988,6 +988,17 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
         }
       )
     }
+    val businessClaim = groupInfo.businessChat?.businessDomain
+    if (businessClaim != null && (groupInfo.groupDomainVerified != null || businessClaim.proof != null)) {
+      // A business presents as a contact, so the name retains its .simplex suffix. The tick comes from
+      // groupDomainVerified (set at connect); its domain proof is not received on the wire yet, so
+      // re-verification is not wired.
+      SimplexNameView(
+        simplexName = "@${businessClaim.domain}",
+        verified = groupInfo.groupDomainVerified,
+        verify = { null }
+      )
+    }
     val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
     if (webPage != null) {
       val uriHandler = LocalUriHandler.current

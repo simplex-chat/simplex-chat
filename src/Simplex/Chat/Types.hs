@@ -1050,7 +1050,9 @@ data MemberInfo = MemberInfo
 data BusinessChatInfo = BusinessChatInfo
   { chatType :: BusinessChatType,
     businessId :: MemberId,
-    customerId :: MemberId
+    customerId :: MemberId,
+    -- TODO [names] sent in protocol in GroupInvitation
+    businessDomain :: Maybe SimplexDomainClaim
   }
   deriving (Eq, Show)
 

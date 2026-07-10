@@ -2488,6 +2488,7 @@ data class BusinessChatInfo (
   val chatType: BusinessChatType,
   val businessId: String,
   val customerId: String,
+  val businessDomain: SimplexDomainClaim? = null,
 )
 
 @Serializable

@@ -2072,7 +2072,7 @@ processChatCommand cxt nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing Nothing
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing verifiedDomain
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -2100,7 +2100,7 @@ processChatCommand cxt nm = \case
   APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId (True <$ verifiedDomain)
+    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId verifiedDomain
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -4813,14 +4813,14 @@ processChatCommand cxt nm = \case
         gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
         a $ SRGroup gId scope (sendAsGroup' gInfo scope)
       _ -> throwCmdError "not supported"
-    preparedGroupFromLink :: User -> CreatedLinkContact -> DirectLink -> GroupShortLinkData -> Maybe SharedMsgId -> Maybe Bool -> CM (GroupInfo, Maybe GroupMember)
-    preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId nameVerified = do
+    preparedGroupFromLink :: User -> CreatedLinkContact -> DirectLink -> GroupShortLinkData -> Maybe SharedMsgId -> Maybe SimplexDomain -> CM (GroupInfo, Maybe GroupMember)
+    preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId verifiedDomain = do
       let GroupShortLinkData {groupProfile = gp, publicGroupData = publicGroupData_} = groupSLinkData
           publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
           useRelays = not direct
       subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
       gVar <- asks random
-      withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ nameVerified
+      withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ verifiedDomain
 
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do
