@@ -139,6 +139,7 @@ This file is generated automatically.
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
+- [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
@@ -468,6 +469,7 @@ TIMEOUT:
 - chatType: [BusinessChatType](#businesschattype)
 - businessId: string
 - customerId: string
+- businessDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 
 
 ---
@@ -872,7 +874,7 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
-- msgSigned: [MsgSigStatus](#msgsigstatus)?
+- msgVerified: [MsgVerified](#msgverified)
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -2218,6 +2220,7 @@ Phone:
 - support: [SupportGroupPreference](#supportgrouppreference)
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
+- signMessages: [GroupPreference](#grouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2310,6 +2313,7 @@ MemberSupport:
 - "support"
 - "sessions"
 - "comments"
+- "signMessages"
 
 
 ---
@@ -2551,6 +2555,7 @@ UpdateRequired:
 - support: [SupportGroupPreference](#supportgrouppreference)?
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
+- signMessages: [GroupPreference](#grouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
@@ -2949,6 +2954,23 @@ Unknown:
 **Enum type**:
 - "verified"
 - "signedNoKey"
+
+
+---
+
+## MsgVerified
+
+**Discriminated union type**:
+
+Signed:
+- type: "signed"
+- sigStatus: [MsgSigStatus](#msgsigstatus)
+
+SigMissing:
+- type: "sigMissing"
+
+Unsigned:
+- type: "unsigned"
 
 
 ---

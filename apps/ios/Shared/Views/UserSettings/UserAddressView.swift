@@ -193,7 +193,7 @@ struct UserAddressView: View {
 
         Section {
             NavigationLink {
-                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.shortName { "@\(d)" } else { "" }
+                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.domain { "@\(d)" } else { "" }
                 SetSimplexDomainView(
                     title: "Your SimpleX name",
                     footer: "Let people connect to you via name registered with your SimpleX address.",

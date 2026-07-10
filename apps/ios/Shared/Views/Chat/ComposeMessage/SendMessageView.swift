@@ -19,6 +19,7 @@ struct SendMessageView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.isEnabled) var isEnabled
     var sendMessage: (Int?) -> Void
+    var sendSignedMessage: () -> Void = {}
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var cancelLiveMessage: (() -> Void)? = nil
@@ -32,6 +33,7 @@ struct SendMessageView: View {
     var finishVoiceMessageRecording: (() -> Void)? = nil
     var allowVoiceMessagesToContact: (() -> Void)? = nil
     var timedMessageAllowed: Bool = false
+    var showSign: Bool = false
     var onMediaAdded: ([UploadContent]) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
@@ -46,6 +48,7 @@ struct SendMessageView: View {
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
     @UserDefault(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
+    @UserDefault(DEFAULT_SIGN_MESSAGE_ALERT_SHOWN) private var signMessageAlertShown = false
 
     var body: some View {
         let composeShape = RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
@@ -243,6 +246,13 @@ struct SendMessageView: View {
                     Label("Disappearing message", systemImage: "stopwatch")
                 }
             }
+            if showSign {
+                Button {
+                    startSignedMessage()
+                } label: {
+                    Label("Sign message", systemImage: "checkmark.seal")
+                }
+            }
         }
     }
 
@@ -350,6 +360,22 @@ struct SendMessageView: View {
         }
         .frame(width: 29, height: 29)
         .padding([.bottom, .horizontal], 4)
+    }
+
+    private func startSignedMessage() {
+        if signMessageAlertShown {
+            sendSignedMessage()
+        } else {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("Sign message"),
+                message: Text("Signing proves you authored this message and can't be denied later."),
+                primaryButton: .default(Text("Send")) {
+                    signMessageAlertShown = true
+                    sendSignedMessage()
+                },
+                secondaryButton: .cancel()
+            ))
+        }
     }
 
     private func startLiveMessage(send:  @escaping () async -> Void, update: @escaping () async -> Void) {

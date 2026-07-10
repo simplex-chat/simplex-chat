@@ -50,6 +50,7 @@ struct GroupPreferencesView: View {
                     featureSection(.history, $preferences.history.enable)
                     featureSection(.support, $preferences.support.enable, disabled: true)
                 } else {
+                    featureSection(.signMessages, $preferences.signMessages.enable)
                     featureSection(.timedMessages, $preferences.timedMessages.enable)
                     featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.reactions, $preferences.reactions.enable)

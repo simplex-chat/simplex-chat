@@ -2261,6 +2261,7 @@ data class GroupInfo (
       GroupFeature.Reports -> p.reports.on
       GroupFeature.History -> p.history.on
       GroupFeature.Support -> p.support.on
+      GroupFeature.SignMessages -> p.signMessages.on
     }
   }
 
@@ -2423,6 +2424,26 @@ data class GroupShortLinkData (
 )
 
 @Serializable
+enum class MsgSigStatus {
+  @SerialName("verified") Verified,
+  @SerialName("signedNoKey") SignedNoKey;
+}
+
+@Serializable
+sealed class MsgVerified {
+  @Serializable @SerialName("signed") data class Signed(val sigStatus: MsgSigStatus): MsgVerified()
+  @Serializable @SerialName("sigMissing") object SigMissing: MsgVerified()
+  @Serializable @SerialName("unsigned") object Unsigned: MsgVerified()
+
+  val verified: Boolean get() = this is Signed && sigStatus == MsgSigStatus.Verified
+
+  val sigMissingInfo: Pair<String, String>? get() = when (this) {
+    is SigMissing -> generalGetString(MR.strings.signature_missing_alert_title) to generalGetString(MR.strings.signature_missing_alert_desc)
+    else -> null
+  }
+}
+
+@Serializable
 enum class RelayStatus {
   @SerialName("new") New,
   @SerialName("invited") Invited,
@@ -2488,6 +2509,7 @@ data class BusinessChatInfo (
   val chatType: BusinessChatType,
   val businessId: String,
   val customerId: String,
+  val businessDomain: SimplexDomainClaim? = null,
 )
 
 @Serializable
@@ -3554,7 +3576,8 @@ data class CIMeta (
   val userMention: Boolean,
   val deletable: Boolean,
   val editable: Boolean,
-  val showGroupAsSender: Boolean
+  val showGroupAsSender: Boolean,
+  val msgVerified: MsgVerified = MsgVerified.Unsigned
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 

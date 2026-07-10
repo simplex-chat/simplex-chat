@@ -86,7 +86,7 @@ chatCommandsDocsData =
     ),
     ( "Message commands",
       "Commands to send, update, delete, moderate messages and set message reactions",
-      [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems", "CRChatCmdError"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"),
+      [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems", "CRChatCmdError"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> OnOffParam "sign" "signMessages" (Just False) <> " json " <> Json "composedMessages"),
         ( "APIUpdateChatItem",
           [],
           "Update message.",

@@ -699,7 +699,7 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ (toPublicGroupAccess accessRow)
       groupKeys = toGroupKeys publicGroupId_ groupKeysRow
       groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission}
-      businessChat = toBusinessChatInfo businessRow
+      businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
    in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupKeys, groupDomainVerified = unBI <$> groupDomainVerified}
@@ -783,9 +783,9 @@ rowToLocalProfile :: UTCTime -> ProfileRow -> LocalProfile
 rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, preferences) :. badgeRow :. domainRow) =
   LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences}
 
-toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
-toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}
-toBusinessChatInfo _ = Nothing
+toBusinessChatInfo :: Maybe SimplexDomainClaim -> BusinessChatInfoRow -> Maybe BusinessChatInfo
+toBusinessChatInfo businessDomain (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId, businessDomain}
+toBusinessChatInfo _ _ = Nothing
 
 groupInfoQuery :: Query
 groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
