@@ -312,17 +312,16 @@ groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNo
 
 groupFeatures_ :: Int -> Bool -> [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures_ dir isChannel =
-  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
-    ((dir, "Direct messages: on"), Nothing, Nothing),
-    ((dir, "Full deletion: off"), Nothing, Nothing),
-    ((dir, "Message reactions: on"), Nothing, Nothing),
-    ((dir, "Voice messages: on"), Nothing, Nothing),
-    ((dir, "Files and media: on"), Nothing, Nothing),
-    ((dir, "SimpleX links: on"), Nothing, Nothing),
-    ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing),
-    ((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)
-  ]
+  [((dir, "Disappearing messages: off"), Nothing, Nothing)]
+    <> [((dir, "Direct messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Full deletion: off"), Nothing, Nothing)]
+    <> [((dir, "Message reactions: on"), Nothing, Nothing)]
+    <> [((dir, "Voice messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Files and media: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "SimpleX links: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Member reports: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Recent history: on"), Nothing, Nothing)]
+    <> [((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)]
 
 businessGroupFeatures :: [(Int, String)]
 businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0

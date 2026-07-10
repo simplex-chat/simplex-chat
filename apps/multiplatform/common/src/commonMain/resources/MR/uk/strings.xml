@@ -2628,7 +2628,6 @@
     <string name="webpage_info">Створіть веб-сторінку, на якій відвідувачам буде показано попередній перегляд вашого каналу ще до того, як вони підпишуться. Розмістіть її на власному хостингу або скористайтеся будь-яким сервісом статичного хостингу.</string>
     <string name="create_channel_title">Створити публічний канал</string>
     <string name="create_channel_button">Створити публічний канал</string>
-    <string name="create_channel_beta_button">Створити публічний канал (BETA)</string>
     <string name="connect_with_someone">Створити своє посилання</string>
     <string name="create_your_public_address">Створити свою публічну адресу</string>
     <string name="creating_channel">Канал створюється</string>

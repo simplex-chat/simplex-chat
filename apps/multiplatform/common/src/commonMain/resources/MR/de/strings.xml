@@ -2663,7 +2663,6 @@
     <string name="relay_conn_status_connecting">Verbinde</string>
     <string name="create_channel_title">Öffentlichen Kanal erstellen</string>
     <string name="create_channel_button">Öffentlichen Kanal erstellen</string>
-    <string name="create_channel_beta_button">Öffentlichen Kanal erstellen (BETA)</string>
     <string name="creating_channel">Kanal wird erstellt</string>
     <string name="relay_test_step_decode_link">Link dekodieren</string>
     <string name="button_delete_channel">Kanal löschen</string>

@@ -236,11 +236,8 @@ groupFeatureMemberAllowed' feature role prefs =
   let pref = getGroupPreference feature prefs
    in getField @"enable" pref == FEOn && maybe True (role >=) (getField @"role" pref)
 
--- TODO: some preferences are channel-only (e.g., comments) and should not generate
--- UI items or be configurable in regular groups. Currently they are simply excluded
--- from this list. When more channel-only or group-only preferences are added,
--- consider adding a scope property to GroupFeatureI (e.g., GFScopeAll | GFScopeChannel | GFScopeGroup)
--- and filtering at the call sites in createGroupFeatureItems_ / createGroupFeatureChangedItems.
+-- Sessions and comments are channel-only features not shown in any client yet,
+-- so they are omitted from generated feature items entirely.
 allGroupFeatures :: [AGroupFeature]
 allGroupFeatures =
   [ AGF SGFTimedMessages,
@@ -254,6 +251,26 @@ allGroupFeatures =
     AGF SGFHistory,
     AGF SGFSupport
   ]
+
+-- Channels (public groups) show a subset of group features. Direct messages, voice,
+-- files, SimpleX links and member reports are group-only and excluded in channels.
+channelGroupFeatures :: [AGroupFeature]
+channelGroupFeatures = filter (\(AGF f) -> groupFeatureInChannel (toGroupFeature f)) allGroupFeatures
+
+groupFeatureInChannel :: GroupFeature -> Bool
+groupFeatureInChannel = \case
+  GFTimedMessages -> True
+  GFDirectMessages -> False
+  GFFullDelete -> True
+  GFReactions -> True
+  GFVoice -> False
+  GFFiles -> False
+  GFSimplexLinks -> False
+  GFReports -> False
+  GFHistory -> True
+  GFSupport -> True
+  GFSessions -> False
+  GFComments -> False
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
 groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments} = case f of

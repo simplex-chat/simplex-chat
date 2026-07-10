@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from simplex_chat._native import _cache_root, _resolve_libs_dir, _download
+from simplex_chat._version import LIBS_VERSION
 
 
 def test_cache_root_linux(tmp_path, monkeypatch):
@@ -41,7 +42,7 @@ def test_resolve_downloads_when_missing(tmp_path, monkeypatch):
 
     monkeypatch.setattr("simplex_chat._native._download", fake_download)
     libs_dir = _resolve_libs_dir("sqlite")
-    assert libs_dir == tmp_path / "simplex-chat" / "v6.5.2" / "sqlite"
+    assert libs_dir == tmp_path / "simplex-chat" / f"v{LIBS_VERSION}" / "sqlite"
     assert called["backend"] == "sqlite"
     assert (libs_dir / "libsimplex.so").exists()
 
@@ -49,7 +50,7 @@ def test_resolve_downloads_when_missing(tmp_path, monkeypatch):
 def test_resolve_uses_cache_on_second_call(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     monkeypatch.setattr("sys.platform", "linux")
-    cached = tmp_path / "simplex-chat" / "v6.5.2" / "sqlite"
+    cached = tmp_path / "simplex-chat" / f"v{LIBS_VERSION}" / "sqlite"
     cached.mkdir(parents=True)
     (cached / "libsimplex.so").touch()
     # Should NOT call _download — use the cached file.

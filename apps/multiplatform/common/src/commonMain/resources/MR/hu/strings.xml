@@ -2535,7 +2535,6 @@
     <string name="relay_conn_status_connecting">kapcsolódás</string>
     <string name="create_channel_title">Nyilvános csatorna létrehozása</string>
     <string name="create_channel_button">Nyilvános csatorna létrehozása</string>
-    <string name="create_channel_beta_button">Nyilvános csatorna létrehozása (BÉTA)</string>
     <string name="creating_channel">Csatorna létrehozása</string>
     <string name="relay_conn_status_deleted">törölve</string>
     <string name="relay_conn_status_failed">sikertelen</string>

@@ -2615,7 +2615,6 @@
     <string name="webpage_info">Abone olmadan önce ziyaretçilere kanalınızın önizlemesini göstermek için bir web sayfası oluşturun. Kendiniz barındırın veya herhangi bir statik barındırma kullanın.</string>
     <string name="create_channel_title">Herkese açık kanal oluşturun</string>
     <string name="create_channel_button">Herkese açık kanal oluşturun</string>
-    <string name="create_channel_beta_button">Herkese açık kanal oluşturma (BETA)</string>
     <string name="v6_4_1_short_address_create">Adresinizi oluşturun</string>
     <string name="connect_with_someone">Bağlantınızı oluşturun</string>
     <string name="create_your_public_address">Herkese açık adresinizi oluşturun</string>
