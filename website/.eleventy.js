@@ -440,10 +440,9 @@ module.exports = function (ty) {
         if (fs.existsSync(linkFile)) {
           // this condition works if the link is a valid project file
           const githubUrl = "https://github.com/simplex-chat/simplex-chat/blob/stable"
-          const keyword = "/simplex-chat"
-          index = linkFile.indexOf(keyword)
-          linkFile = linkFile.substring(index + keyword.length)
-          parsed.path = `${githubUrl}${linkFile}`
+          const repoRoot = hostFile.slice(0, hostFile.indexOf('/website/src'))
+          const repoPath = linkFile.slice(repoRoot.length)
+          return `${githubUrl}${repoPath}`
         } else {
           // if the link is not a valid website file or project file
           throw new Error(`Broken link: ${parsed.path} in ${hostFile}`)
