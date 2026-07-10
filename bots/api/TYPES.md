@@ -468,6 +468,7 @@ TIMEOUT:
 - chatType: [BusinessChatType](#businesschattype)
 - businessId: string
 - customerId: string
+- businessDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 
 
 ---
