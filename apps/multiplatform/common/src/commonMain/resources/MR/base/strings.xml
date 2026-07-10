@@ -763,6 +763,8 @@
   <string name="do_not_require_message_signatures">Do not require signing messages.</string>
   <string name="message_signatures_are_required">Message signing is required.</string>
   <string name="message_signatures_are_not_required">Message signing is not required.</string>
+  <string name="show_signature">Show signature</string>
+  <string name="show_encryption">Show encryption</string>
   <string name="signature_missing_alert_title">Signature missing</string>
   <string name="signature_missing_alert_desc">The channel required this message to be signed, but the signature is missing.</string>
   <string name="live_message">Live message!</string>

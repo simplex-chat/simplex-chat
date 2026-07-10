@@ -211,7 +211,7 @@ fun CIFileView(
       val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
       val metaReserve = buildAnnotatedString {
         withStyle(reserveTimestampStyle) {
-          append(reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor = secondaryColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp, signedFileVerified = file?.loaded != false))
+          append(reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor = secondaryColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp, signedFileVerified = file?.loaded))
         }
       }
       if (file != null) {

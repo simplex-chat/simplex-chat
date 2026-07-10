@@ -250,7 +250,7 @@ struct SendMessageView: View {
                 Button {
                     startSignedMessage()
                 } label: {
-                    Label("Sign message", image: "signature.plain")
+                    Label("Sign message", systemImage: "checkmark.seal")
                 }
             }
         }

@@ -23,6 +23,8 @@ struct CIMetaView: View {
     var invertedMaterial = false
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
 
     var body: some View {
         if chatItem.isDeletedContent {
@@ -42,7 +44,9 @@ struct CIMetaView: View {
                     showEdited: showEdited,
                     showViaProxy: showSentViaProxy,
                     showTimesamp: showTimestamp,
-                    signedFileVerified: chatItem.file?.loaded ?? true
+                    signedFileVerified: chatItem.file?.loaded,
+                    showSignature: showSignature,
+                    showFileEncryption: showFileEncryption
                 ).invertedForegroundStyle(enabled: invertedMaterial)
                 if invertedMaterial {
                     ciMetaText(
@@ -55,7 +59,9 @@ struct CIMetaView: View {
                         showEdited: showEdited,
                         showViaProxy: showSentViaProxy,
                         showTimesamp: showTimestamp,
-                        signedFileVerified: chatItem.file?.loaded ?? true
+                        signedFileVerified: chatItem.file?.loaded,
+                        showSignature: showSignature,
+                        showFileEncryption: showFileEncryption
                     )
                 }
             }
@@ -105,7 +111,9 @@ func ciMetaText(
     showEdited: Bool = true,
     showViaProxy: Bool,
     showTimesamp: Bool,
-    signedFileVerified: Bool = true
+    signedFileVerified: Bool? = nil,
+    showSignature: Bool = false,
+    showFileEncryption: Bool = true
 ) -> Text {
     var r = Text("")
     var space: Text? = nil
@@ -145,18 +153,18 @@ func ciMetaText(
         }
         space = textSpace
     }
-    if let enc = encrypted {
+    if let enc = encrypted, showFileEncryption {
         appendSpace()
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
         space = textSpace
     }
-    if meta.msgVerified.verified && signedFileVerified {
+    if showSignature, meta.msgVerified.verified && signedFileVerified != false {
         appendSpace()
-        r = r + colored(Text(Image("signature.plain")), resolved)
+        r = r + colored(Text(Image(systemName: "checkmark.seal")), resolved)
         space = textSpace
     } else if meta.msgVerified == .sigMissing {
         appendSpace()
-        r = r + colored(Text(Image(systemName: "exclamationmark.triangle")), colorMode.resolve(.red))
+        r = r + colored(Text(Image(systemName: "xmark.seal")), colorMode.resolve(.red))
         space = textSpace
     }
     if showTimesamp {

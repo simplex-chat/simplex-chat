@@ -33,6 +33,8 @@ let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved t
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
 let DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES = "privacyVerifySimplexNames"
+let DEFAULT_PRIVACY_SHOW_SIGNATURE = "privacyShowSignature"
+let DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION = "privacyShowEncryption"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
 let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
 let DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET = "privacyDeliveryReceiptsSet"
@@ -530,11 +532,9 @@ struct SettingsView: View {
     }
 }
 
-func settingsRow<Content : View>(_ icon: String, color: Color/* = .secondary*/, customImage: Bool = false, content: @escaping () -> Content) -> some View {
+func settingsRow<Content : View>(_ icon: String, color: Color/* = .secondary*/, content: @escaping () -> Content) -> some View {
     ZStack(alignment: .leading) {
-        // custom symbol sets (e.g. "signature.plain") are asset images, SF Symbols are system images
-        (customImage ? Image(icon) : Image(systemName: icon))
-            .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
             .symbolRenderingMode(.monochrome)
             .foregroundColor(color)
         content().padding(.leading, indent)

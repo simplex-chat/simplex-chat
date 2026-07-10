@@ -168,7 +168,16 @@ struct ChatItemInfoView: View {
                     Label {
                         Text(signedText)
                     } icon: {
-                        Text(Image("signature.plain")).foregroundColor(.secondary)
+                        Text(Image(systemName: "checkmark.seal")).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+            } else if meta.msgVerified == .sigMissing {
+                HStack {
+                    Label {
+                        Text("Signature missing")
+                    } icon: {
+                        Text(Image(systemName: "xmark.seal")).foregroundColor(.red)
                     }
                     Spacer()
                 }
@@ -523,6 +532,8 @@ struct ChatItemInfoView: View {
             shareText += [ci.chatDir.sent
                 ? NSLocalizedString("Signed", comment: "copied message info")
                 : NSLocalizedString("Signed & verified", comment: "copied message info")]
+        } else if meta.msgVerified == .sigMissing {
+            shareText += [NSLocalizedString("Signature missing", comment: "copied message info")]
         }
         if developerTools {
             shareText += [

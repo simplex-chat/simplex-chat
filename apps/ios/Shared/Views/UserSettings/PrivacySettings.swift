@@ -18,6 +18,8 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) private var verifySimplexNames = false
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -197,6 +199,9 @@ struct PrivacySettings: View {
                 settingsRow("number", color: theme.colors.secondary) {
                     Toggle("Verify SimpleX names", isOn: $verifySimplexNames)
                 }
+                settingsRow("checkmark.seal", color: theme.colors.secondary) {
+                    Toggle("Show signature", isOn: $showSignature)
+                }
             } header: {
                 Text("Chats")
                     .foregroundColor(theme.colors.secondary)
@@ -211,6 +216,9 @@ struct PrivacySettings: View {
                 }
                 settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
                     Toggle("Protect IP address", isOn: $askToApproveRelays)
+                }
+                settingsRow("lock", color: theme.colors.secondary) {
+                    Toggle("Show encryption", isOn: $showFileEncryption)
                 }
             } header: {
                 Text("Files")

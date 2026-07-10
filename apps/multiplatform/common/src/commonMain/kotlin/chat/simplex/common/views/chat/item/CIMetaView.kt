@@ -13,6 +13,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
@@ -57,7 +58,7 @@ fun CIMetaView(
         showEdited = showEdited,
         showViaProxy = showViaProxy,
         showTimestamp = showTimestamp,
-        signedFileVerified = chatItem.file?.loaded != false
+        signedFileVerified = chatItem.file?.loaded
       )
     }
   }
@@ -75,8 +76,10 @@ private fun CIMetaText(
   showEdited: Boolean = true,
   showTimestamp: Boolean,
   showViaProxy: Boolean,
-  signedFileVerified: Boolean,
+  signedFileVerified: Boolean?,
 ) {
+  val showSignature = appPreferences.privacyShowSignature.state.value
+  val showEncryption = appPreferences.privacyShowEncryption.state.value
   if (showEdited && meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
   }
@@ -105,16 +108,16 @@ private fun CIMetaText(
       StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
     }
   }
-  if (encrypted != null) {
+  if (encrypted != null && showEncryption) {
     Spacer(Modifier.width(4.dp))
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
   }
-  if (meta.msgVerified.verified && signedFileVerified) {
+  if (showSignature && meta.msgVerified.verified && signedFileVerified != false) {
     Spacer(Modifier.width(4.dp))
-    StatusIconText(painterResource(MR.images.ic_signature), color)
+    StatusIconText(painterResource(MR.images.ic_verified), color)
   } else if (meta.msgVerified is MsgVerified.SigMissing) {
     Spacer(Modifier.width(4.dp))
-    StatusIconText(painterResource(MR.images.ic_warning), Color.Red)
+    StatusIconText(painterResource(MR.images.ic_verified_missing), Color.Red)
   }
 
   if (showTimestamp) {
@@ -133,8 +136,10 @@ fun reserveSpaceForMeta(
   showEdited: Boolean = true,
   showViaProxy: Boolean = false,
   showTimestamp: Boolean,
-  signedFileVerified: Boolean = true
+  signedFileVerified: Boolean? = null
 ): String {
+  val showSignature = appPreferences.privacyShowSignature.state.value
+  val showEncryption = appPreferences.privacyShowEncryption.state.value
   val iconSpace = " \u00A0\u00A0\u00A0"
   val whiteSpace = "\u00A0"
   var res = if (showTimestamp) "" else iconSpace
@@ -172,12 +177,12 @@ fun reserveSpaceForMeta(
     space = whiteSpace
   }
 
-  if (encrypted != null) {
+  if (encrypted != null && showEncryption) {
     appendSpace()
     res += iconSpace
     space = whiteSpace
   }
-  if ((meta.msgVerified.verified && signedFileVerified) || meta.msgVerified is MsgVerified.SigMissing) {
+  if ((showSignature && meta.msgVerified.verified && signedFileVerified != false) || meta.msgVerified is MsgVerified.SigMissing) {
     appendSpace()
     res += iconSpace
     space = whiteSpace

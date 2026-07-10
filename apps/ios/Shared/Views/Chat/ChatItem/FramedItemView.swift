@@ -349,7 +349,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
-        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited, msgVerified: chatItem.meta.msgVerified, senderProfile: ciSenderProfile(chatItem, chat.chatInfo))
+        CIFileView(chat: chat, file: chatItem.file, meta: chatItem.meta, senderProfile: ciSenderProfile(chatItem, chat.chatInfo))
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem)

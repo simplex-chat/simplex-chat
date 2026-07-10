@@ -214,7 +214,7 @@ fun SendMsgView(
                 menuItems.add {
                   ItemAction(
                     generalGetString(MR.strings.sign_message),
-                    painterResource(MR.images.ic_signature),
+                    painterResource(MR.images.ic_verified),
                     onClick = {
                       if (signMessageAlertShown.state.value) {
                         sendSignedMessage()

@@ -129,6 +129,8 @@ class AppPreferences {
   val privacyChatListOpenLinks = mkEnumPreference(SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS, PrivacyChatListOpenLinksMode.ASK) { PrivacyChatListOpenLinksMode.values().firstOrNull { it.name == this } }
   val simplexLinkMode: SharedPreference<SimplexLinkMode> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default)
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
+  val privacyShowSignature = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_SIGNATURE, false)
+  val privacyShowEncryption = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
@@ -406,6 +408,8 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS = "ChatListOpenLinks" // TODO remove
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
+    private const val SHARED_PREFS_PRIVACY_SHOW_SIGNATURE = "PrivacyShowSignature"
+    private const val SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION = "PrivacyShowEncryption"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
@@ -5911,7 +5915,7 @@ enum class GroupFeature: Feature {
       Reports -> painterResource(MR.images.ic_flag)
       History -> painterResource(MR.images.ic_schedule)
       Support -> painterResource(MR.images.ic_help)
-      SignMessages -> painterResource(MR.images.ic_signature)
+      SignMessages -> painterResource(MR.images.ic_verified)
     }
 
   @Composable
@@ -5926,7 +5930,7 @@ enum class GroupFeature: Feature {
     Reports -> painterResource(MR.images.ic_flag_filled)
     History -> painterResource(MR.images.ic_schedule_filled)
     Support -> painterResource(MR.images.ic_help_filled)
-    SignMessages -> painterResource(MR.images.ic_signature)
+    SignMessages -> painterResource(MR.images.ic_verified_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean, isChannel: Boolean = false): String =
