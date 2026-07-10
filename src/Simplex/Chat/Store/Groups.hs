@@ -2721,7 +2721,11 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
     -- group_domain is owned by publicGroup; when the incoming profile has no publicGroup (a business, whose domain
     -- is set out-of-band) the CASE leaves the stored group_domain unchanged instead of clearing it.
     updateGroupProfile_ currentTs =
-      let (groupWebPage_, groupDomain_, domainWebPage_, allowEmbedding_, groupDomainProof_) = publicGroupAccessRow publicGroup
+      -- the wire carries the domain but not its signed proof (the group's link is authoritative for the claim), so
+      -- keep the stored proof on an unchanged domain instead of overwriting it with the empty incoming one, the same
+      -- way updateContactProfile preserves contactDomain's proof
+      let (groupWebPage_, groupDomain_, domainWebPage_, allowEmbedding_, _) = publicGroupAccessRow publicGroup
+          groupDomainProof_ = if claimChanged then Nothing else oldPublicGroup >>= publicGroupAccess >>= groupDomainClaim >>= proof
        in DB.execute
             db
             [sql|

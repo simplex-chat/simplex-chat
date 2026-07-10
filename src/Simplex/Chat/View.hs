@@ -1827,10 +1827,12 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
-viewGroupInfo gInfo@GroupInfo {groupId, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
+viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
   [ "group ID: " <> sShow groupId,
     memberCountLine
   ]
+    -- a business presents as a contact, so its verified domain is shown as an @-name
+    <> simplexDomainLine NTContact (businessDomain =<< businessChat) groupDomainVerified
     <> viewUITheme uiThemes
     <> viewCustomData customData
   where

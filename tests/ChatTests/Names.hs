@@ -239,5 +239,10 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
         bob ##> "/_connect plan 1 @biz.simplex resolve=never"
         bob <## "business address: known business #alice"
         bob <## "use #alice <message> to send messages"
+        -- the business's verified domain survives the handshake and is shown in group info
+        bob ##> "/i #alice"
+        bob <## "group ID: 1"
+        bob <## "current members: 2"
+        bob <## "SimpleX name: @biz.simplex (verified)"
   where
     bizName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "biz" [])
