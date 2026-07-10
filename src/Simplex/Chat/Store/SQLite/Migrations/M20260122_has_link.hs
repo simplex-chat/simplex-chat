@@ -11,7 +11,7 @@ m20260122_has_link =
 UPDATE chat_items SET msg_content_tag = 'text' WHERE msg_content_tag = 'liveText';
 
 UPDATE chat_items SET msg_content_tag = CAST(msg_content_tag as TEXT) WHERE typeof(msg_content_tag) = 'blob';
-  
+
 ALTER TABLE chat_items ADD COLUMN has_link INTEGER NOT NULL DEFAULT 0;
 
 UPDATE chat_items SET has_link = 1

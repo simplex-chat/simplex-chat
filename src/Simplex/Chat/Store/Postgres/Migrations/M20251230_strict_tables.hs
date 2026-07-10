@@ -22,5 +22,5 @@ DROP FUNCTION simplex_is_valid_text(BYTEA);
 down_m20251230_strict_tables :: Text
 down_m20251230_strict_tables =
   [r|
-ALTER TABLE calls ALTER COLUMN call_state TYPE BYTEA USING call_state::BYTEA;  
+ALTER TABLE calls ALTER COLUMN call_state TYPE BYTEA USING call_state::BYTEA;
 |]
