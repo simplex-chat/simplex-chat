@@ -92,11 +92,11 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       exitFailure
 
 runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, headless, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
-      when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer
+      when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer headless
       forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
       waitEither_ a1 a2
@@ -140,13 +140,15 @@ selectActiveUser CoreChatOpts {chatRelay} st users
                      in Just <$> withTransaction st (`setActiveUser` user)
 
 createActiveUser :: ChatController -> CoreChatOpts -> Maybe CreateBotOpts -> Maybe Text -> Maybe ImageData -> IO User
-createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ img_ = case createBot_ of
+createActiveUser cc CoreChatOpts {chatRelay, headless} createBot_ userDisplayName_ img_ = case createBot_ of
   Just CreateBotOpts {botDisplayName, allowFiles, clientService} -> do
     let preferences = if allowFiles then Nothing else Just emptyChatPrefs {files = Just FilesPreference {allow = FANo}}
     createUser exitFailure clientService $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
   Nothing -> case userDisplayName_ of
     Just displayName -> createUser exitFailure False $ (mkProfile displayName :: Profile) {image = img_}
-    Nothing -> putStrLn prompt >> loop
+    Nothing
+      | headless -> putStrLn "No user profile found and no --user-display-name provided (required with --headless)" >> exitFailure
+      | otherwise -> putStrLn prompt >> loop
       where
         prompt
           | chatRelay =
@@ -167,8 +169,8 @@ createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ img_ = 
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
-askCreateRelayAddress :: ChatController -> User -> Maybe SMPServerWithAuth -> IO ()
-askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} server_ =
+askCreateRelayAddress :: ChatController -> User -> Maybe SMPServerWithAuth -> Bool -> IO ()
+askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} server_ headless =
   withTransaction chatStore (\db -> runExceptT $ getUserAddress db user) >>= \case
     Right _ -> pure ()
     Left SEUserContactLinkNotFound -> promptCreate
@@ -176,7 +178,7 @@ askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} server_ =
   where
     promptCreate :: IO ()
     promptCreate = do
-      ok <- onOffPrompt "Create relay address" True
+      ok <- if headless then pure True else onOffPrompt "Create relay address" True
       when ok $
         execChatCommand' (APICreateMyAddress userId server_) 0 `runReaderT` cc >>= \case
           Right (CRUserContactLinkCreated _ address) -> do

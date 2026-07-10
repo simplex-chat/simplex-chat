@@ -70,6 +70,7 @@ data CoreChatOpts = CoreChatOpts
     chatRelay :: Bool,
     webPreviewConfig :: Maybe WebPreviewConfig,
     chatRelayServer :: Maybe SMPServerWithAuth,
+    headless :: Bool,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -292,6 +293,11 @@ coreChatOptsP appDir defaultDbName = do
             <> metavar "SERVER"
             <> help "SMP server to use for chat relay address link (requires --relay)"
         )
+  headless <-
+    switch
+      ( long "headless"
+          <> help "Run chat relay without interactive prompts, e.g. as a service (requires --relay; on first run also --user-display-name to create the profile)"
+      )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -339,6 +345,9 @@ coreChatOptsP appDir defaultDbName = do
         chatRelayServer = case chatRelayServer of
           Just _ | not chatRelay -> error "--relay-address-server option requires --relay option"
           _ -> chatRelayServer,
+        headless = case headless of
+          True | not chatRelay -> error "--headless option requires --relay option"
+          _ -> headless,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,

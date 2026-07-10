@@ -263,6 +263,7 @@ mobileChatOpts dbOptions =
             chatRelay = False,
             webPreviewConfig = Nothing,
             chatRelayServer = Nothing,
+            headless = False,
             highlyAvailable = False,
             yesToUpMigrations = False,
             migrationBackupPath = Just "",
