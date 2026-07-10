@@ -2929,7 +2929,7 @@
     <string name="help_and_support">Hilfe und Unterstützung</string>
     <string name="web_page_url_placeholder">https://</string>
     <string name="webpage_url_footer">Dies wird Abonnenten angezeigt und zum Laden der Vorschau genutzt.</string>
-    <string name="more_privacy">Mehr Privatsphäre</string>
+    <string name="more_privacy">Weitere Privatsphäre</string>
     <string name="embed_only_your_page">Nur Ihre oben genannte Seite kann die Vorschau anzeigen.</string>
     <string name="please_upgrade_the_app">Bitte die App aktualisieren.</string>
     <string name="badge_invested">%s hat sich am SimpleX Chat-Crowdfunding beteiligt.</string>
@@ -2964,7 +2964,7 @@
     <string name="simplex_name_owner_no_channel_link">Der SimpleX‑Name %1$s wurde ohne Kanal‑Link registriert. Fügen Sie den Kanal‑Link über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_owner_no_address">Der SimpleX‑Name %1$s wurde ohne SimpleX-Adresse registriert. Fügen Sie die SimpleX-Adresse über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_not_found_desc">Dieser SimpleX-Name wurde nicht registriert. Bitte überprüfen Sie den Namen.</string>
-    <string name="operator_use_for_names">Zur Namensauflösung</string>
+    <string name="operator_use_for_names">Für die Namensauflösung</string>
     <string name="simplex_name_unconfirmed">Unbestätigter Name</string>
     <string name="verify_simplex_name_action">Name überprüfen</string>
     <string name="verify_simplex_names">SimpleX-Namen überprüfen</string>
