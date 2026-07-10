@@ -110,8 +110,10 @@ private fun CIMetaText(
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
   }
   if (meta.msgVerified.verified && signedFileVerified) {
+    Spacer(Modifier.width(4.dp))
     StatusIconText(painterResource(MR.images.ic_signature), color)
   } else if (meta.msgVerified is MsgVerified.SigMissing) {
+    Spacer(Modifier.width(4.dp))
     StatusIconText(painterResource(MR.images.ic_warning), Color.Red)
   }
 
@@ -176,6 +178,7 @@ fun reserveSpaceForMeta(
     space = whiteSpace
   }
   if ((meta.msgVerified.verified && signedFileVerified) || meta.msgVerified is MsgVerified.SigMissing) {
+    appendSpace()
     res += iconSpace
     space = whiteSpace
   }

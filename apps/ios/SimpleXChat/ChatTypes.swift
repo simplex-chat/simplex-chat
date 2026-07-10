@@ -1005,7 +1005,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: return "flag"
         case .history: return "clock"
         case .support: return "questionmark.circle"
-        case .signMessages: return "signature"
+        case .signMessages: return "signature.plain"
         }
     }
 
@@ -1021,7 +1021,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: return "flag.fill"
         case .history: return "clock.fill"
         case .support: return "questionmark.circle.fill"
-        case .signMessages: return "signature"
+        case .signMessages: return "signature.plain"
         }
     }
 
@@ -1029,6 +1029,13 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         switch self {
         case .timedMessages: return 0.9
         default: return 1
+        }
+    }
+
+    public var customImage: Bool {
+        switch self {
+        case .signMessages: return true
+        default: return false
         }
     }
 

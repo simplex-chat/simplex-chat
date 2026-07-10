@@ -151,9 +151,11 @@ func ciMetaText(
         space = textSpace
     }
     if meta.msgVerified.verified && signedFileVerified {
+        appendSpace()
         r = r + colored(Text(Image("signature.plain")), resolved)
         space = textSpace
     } else if meta.msgVerified == .sigMissing {
+        appendSpace()
         r = r + colored(Text(Image(systemName: "exclamationmark.triangle")), colorMode.resolve(.red))
         space = textSpace
     }

@@ -16,6 +16,7 @@ struct CIFileView: View {
     @EnvironmentObject var theme: AppTheme
     let file: CIFile?
     let edited: Bool
+    let msgVerified: MsgVerified
     let senderProfile: LocalProfile?
     var smallViewSize: CGFloat?
 
@@ -24,9 +25,9 @@ struct CIFileView: View {
             fileIndicator()
             .simultaneousGesture(TapGesture().onEnded(fileAction))
         } else {
-            let metaReserve = edited
-            ? "                           "
-            : "                       "
+            // the signature/"signature missing" icon in the overlaid meta needs reserved space too (matches CIMetaView)
+            let signedReserve = (msgVerified.verified && (file?.loaded ?? true)) || msgVerified == .sigMissing ? "    " : ""
+            let metaReserve = (edited ? "                           " : "                       ") + signedReserve
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
                     .padding(.top, 5)

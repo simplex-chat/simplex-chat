@@ -530,9 +530,11 @@ struct SettingsView: View {
     }
 }
 
-func settingsRow<Content : View>(_ icon: String, color: Color/* = .secondary*/, content: @escaping () -> Content) -> some View {
+func settingsRow<Content : View>(_ icon: String, color: Color/* = .secondary*/, customImage: Bool = false, content: @escaping () -> Content) -> some View {
     ZStack(alignment: .leading) {
-        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+        // custom symbol sets (e.g. "signature.plain") are asset images, SF Symbols are system images
+        (customImage ? Image(icon) : Image(systemName: icon))
+            .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
             .symbolRenderingMode(.monochrome)
             .foregroundColor(color)
         content().padding(.leading, indent)

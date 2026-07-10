@@ -841,7 +841,7 @@ export interface CIMeta {
   editable: boolean
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
-  msgSigned?: MsgSigStatus
+  msgVerified: MsgVerified
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
 }
@@ -2529,6 +2529,7 @@ export interface FullGroupPreferences {
   support: SupportGroupPreference
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
+  signMessages: GroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -2603,6 +2604,7 @@ export enum GroupFeature {
   Support = "support",
   Sessions = "sessions",
   Comments = "comments",
+  SignMessages = "signMessages",
 }
 
 export enum GroupFeatureEnabled {
@@ -2812,6 +2814,7 @@ export interface GroupPreferences {
   support?: SupportGroupPreference
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
+  signMessages?: GroupPreference
   commands?: ChatBotCommand[]
 }
 
@@ -3205,6 +3208,29 @@ export enum MsgReceiptStatus {
 export enum MsgSigStatus {
   Verified = "verified",
   SignedNoKey = "signedNoKey",
+}
+
+export type MsgVerified = MsgVerified.Signed | MsgVerified.SigMissing | MsgVerified.Unsigned
+
+export namespace MsgVerified {
+  export type Tag = "signed" | "sigMissing" | "unsigned"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Signed extends Interface {
+    type: "signed"
+    sigStatus: MsgSigStatus
+  }
+
+  export interface SigMissing extends Interface {
+    type: "sigMissing"
+  }
+
+  export interface Unsigned extends Interface {
+    type: "unsigned"
+  }
 }
 
 export type NameErrorType = NameErrorType.NO_RESOLVER | NameErrorType.NOT_FOUND | NameErrorType.RESOLVER
