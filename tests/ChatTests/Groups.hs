@@ -29,7 +29,8 @@ import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
+import Simplex.Chat.Controller (ChatCommand (SetGroupMemberAdmissionReview, ShowGroupProfile, UpdateGroupDescription), ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), ChatResponse (CRGroupProfile), defaultChatHooks)
+import Simplex.Chat.Core (sendChatCmd)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
@@ -129,6 +130,8 @@ chatGroupTests = do
     it "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
     it "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
+    it "screening approval does not admit member past review" testScreeningApprovalKeepsReview
+    it "concurrent profile updates keep member admission review (no lost update)" testConcurrentProfileUpdateKeepsReview
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -3704,6 +3707,99 @@ testGLinkReviewIntroduce =
 
       eve #> "#team 5"
       [alice, bob, cath, dan] *<# "#team eve> 5"
+
+-- Exercises the concurrency race the fix closes (Race A, lost update): two group
+-- profile read-modify-writes run concurrently on one client — repeatedly enabling
+-- member admission review, and repeatedly editing the description. Without the
+-- group lock these interleave and a stale description write clobbers
+-- member_admission, silently disabling review. With the lock they serialize and
+-- review always survives. Deterministic on the fixed code; catches a missing lock.
+testScreeningApprovalKeepsReview :: HasCallStack => TestParams -> IO ()
+testScreeningApprovalKeepsReview =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed member admission rules",
+          do
+            dan <## "alice updated group #team:"
+            dan <## "changed member admission rules"
+        ]
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      eve ##> ("/c " <> gLink)
+      eve <## "connection request sent!"
+      alice <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: eve connected and pending review",
+          eve
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member cath (Catherine) is connected",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          do
+            cath <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            cath <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+          do
+            dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+      -- a screening approval (as the directory bot sends) must NOT admit past review:
+      -- eve stays pending review, is not introduced to regular members, and cannot send
+      alice ##> "/_accept member #1 5 member screening=on"
+      alice <## "#team: eve accepted and pending review (will introduce moderators)"
+      eve ##> "#team hi"
+      eve <## "bad chat command: not current member"
+      (bob </)
+      -- an explicit moderator approval (screening off) admits eve past review
+      alice ##> "/_accept member #1 5 member"
+      concurrentlyN_
+        [ alice <## "#team: eve accepted",
+          cath <## "#team: alice accepted eve to the group",
+          dan <## "#team: alice accepted eve to the group",
+          eve
+            <### [ "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added eve (Eve) to the group (connecting...)"
+            bob <## "#team: new member eve is connected"
+        ]
+      eve #> "#team hello"
+      [alice, bob, cath, dan] *<# "#team eve> hello"
+
+testConcurrentProfileUpdateKeepsReview :: HasCallStack => TestParams -> IO ()
+testConcurrentProfileUpdateKeepsReview =
+  testChatCfgOpts cfg testOpts aliceProfile $ \alice -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    let cc = chatController alice
+    -- Two group profile read-modify-writes race: enabling member admission review,
+    -- and editing the description. The test seam (groupProfileUpdateTestHook, a
+    -- 200ms delay between the profile read and write) makes the interleaving
+    -- deterministic: the review-set reads first; the description-update starts
+    -- 100ms later, reads the still-pre-review profile, and writes last. Without the
+    -- group lock that stale write clobbers member_admission (lost update); with the
+    -- lock the two serialize (the description-update blocks on the lock, re-reads
+    -- review=all, and preserves it), so review survives.
+    concurrently_
+      (void $ sendChatCmd cc $ SetGroupMemberAdmissionReview "team" (Just MCAll))
+      (threadDelay 100000 >> void (sendChatCmd cc $ UpdateGroupDescription "team" (Just "welcome")))
+    Right (CRGroupProfile _ GroupInfo {groupProfile = GroupProfile {memberAdmission}}) <-
+      sendChatCmd cc $ ShowGroupProfile "team"
+    (memberAdmission >>= review) `shouldBe` Just MCAll
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {groupProfileUpdateTestHook = Just (threadDelay 200000)}}
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =
