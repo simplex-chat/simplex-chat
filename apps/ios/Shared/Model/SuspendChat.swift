@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+@preconcurrency import BackgroundTasks
 import SimpleXChat
 import SwiftUI
 
@@ -50,6 +51,7 @@ let seSubscriber = seMessageSubscriber {
 
 func suspendChat() {
     suspendLockQueue.sync {
+        guard !ChatModel.shared.activeRemoteCtrl else { return }
         _suspendChat(timeout: appSuspendTimeout)
     }
 }
@@ -183,6 +185,111 @@ func startChatAndActivate(_ completion: @escaping () -> Void) {
         activateChat()
         completion()
         logger.debug("DEBUGGING: startChatAndActivate: after activateChat")
+    }
+}
+
+private let remoteCtrlKeepAliveTaskId = "chat.simplex.app.remote-control.keepalive.session"
+
+@MainActor
+final class RemoteCtrlBGKeepAlive {
+    static let shared = RemoteCtrlBGKeepAlive()
+
+    private var registered = false
+    private var continuedTask: BGTask?
+    private var legacyTask: UIBackgroundTaskIdentifier = .invalid
+    private(set) var usingContinuedProcessing = false
+
+    private init() {}
+
+    @available(iOS 26.0, *)
+    func startContinuedProcessing() {
+        guard ChatModel.shared.activeRemoteCtrl, registerContinuedProcessing() else { return }
+
+        let request = BGContinuedProcessingTaskRequest(
+            identifier: remoteCtrlKeepAliveTaskId,
+            title: NSLocalizedString("Connected to desktop", comment: "continued background activity title"),
+            subtitle: "SimpleX Chat"
+        )
+        request.strategy = .fail
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            usingContinuedProcessing = true
+        } catch {
+            logger.error("RemoteCtrlBGKeepAlive.submit error: \(error.localizedDescription)")
+        }
+    }
+
+    func startLegacyTask() {
+        guard !usingContinuedProcessing, ChatModel.shared.activeRemoteCtrl, legacyTask == .invalid else { return }
+        legacyTask = UIApplication.shared.beginBackgroundTask {
+            Task { @MainActor in
+                await RemoteCtrlBGKeepAlive.shared.expire()
+            }
+        }
+    }
+
+    func stopLegacyTask() {
+        guard legacyTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(legacyTask)
+        legacyTask = .invalid
+    }
+
+    func stopKeepingSession() {
+        finish(success: true)
+    }
+
+    private func expire() async {
+        try? await stopRemoteCtrl()
+        if case .connected = ChatModel.shared.remoteCtrlSession?.sessionState {
+            switchToLocalSession()
+        } else {
+            ChatModel.shared.remoteCtrlSession = nil
+        }
+        finish(success: false)
+        if UIApplication.shared.applicationState == .background {
+            suspendChat()
+            BGManager.shared.schedule()
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private func registerContinuedProcessing() -> Bool {
+        if registered { return true }
+        registered = BGTaskScheduler.shared.register(forTaskWithIdentifier: remoteCtrlKeepAliveTaskId, using: nil) { task in
+            guard let task = task as? BGContinuedProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            Task { @MainActor in
+                RemoteCtrlBGKeepAlive.shared.handleContinuedProcessing(task)
+            }
+        }
+        return registered
+    }
+
+    @available(iOS 26.0, *)
+    private func handleContinuedProcessing(_ task: BGContinuedProcessingTask) {
+        guard ChatModel.shared.activeRemoteCtrl else {
+            task.setTaskCompleted(success: false)
+            return
+        }
+        continuedTask = task
+        task.progress.totalUnitCount = -1
+        task.expirationHandler = {
+            Task { @MainActor in
+                await RemoteCtrlBGKeepAlive.shared.expire()
+            }
+        }
+    }
+
+    private func finish(success: Bool) {
+        if #available(iOS 26.0, *) {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: remoteCtrlKeepAliveTaskId)
+            continuedTask?.setTaskCompleted(success: success)
+            continuedTask = nil
+            usingContinuedProcessing = false
+        }
+        stopLegacyTask()
     }
 }
 

@@ -45,7 +45,7 @@ This document provides a structured mapping between product-level concepts, thei
 | 24 | Theme System | [views/settings.md](views/settings.md) | [spec/services/theme.md](../spec/services/theme.md) | `Theme/ThemeManager.swift`, `SimpleXChat/Theme/ThemeTypes.swift` | `Types/UITheme.hs` |
 | 25 | Network Configuration | [views/settings.md](views/settings.md) | [spec/architecture.md](../spec/architecture.md) | `NetworkAndServers/NetworkAndServers.swift`, `ProtocolServersView.swift` | `Controller.hs` (`APISetNetworkConfig`) |
 | 26 | Device Migration | [flows/onboarding.md](flows/onboarding.md) | [spec/database.md](../spec/database.md) | `Migration/MigrateFromDevice.swift`, `MigrateToDevice.swift` | `Archive.hs` |
-| 27 | Remote Desktop | [views/settings.md](views/settings.md) | [spec/architecture.md](../spec/architecture.md) | `RemoteAccess/ConnectDesktopView.swift` | `Remote.hs`, `Remote/Types.hs` |
+| 27 | Remote Desktop | [views/settings.md](views/settings.md) | [spec/architecture.md](../spec/architecture.md) | `RemoteAccess/ConnectDesktopView.swift`, `Model/SuspendChat.swift` | `Remote.hs`, `Remote/Types.hs` |
 | 28 | Chat Tags | [views/chat-list.md](views/chat-list.md) | [spec/state.md](../spec/state.md) | `ChatList/TagListView.swift`, `ChatListView.swift` | `Types.hs` (`ChatTag`), `Controller.hs` |
 | 29 | User Address | [views/settings.md](views/settings.md) | [spec/api.md](../spec/api.md) | `UserSettings/UserAddressView.swift`, `Onboarding/AddressCreationCard.swift` | `Controller.hs` (`APICreateMyAddress`) |
 | 30 | Member Support Chat | [views/group-info.md](views/group-info.md) | [spec/api.md](../spec/api.md) | `Group/MemberSupportView.swift`, `MemberAdmissionView.swift` | `Messages.hs` (`GroupChatScope`), `Controller.hs` |
