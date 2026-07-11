@@ -125,19 +125,17 @@ fun SetSimplexDomainView(
     }
   }
 
-  ModalView(close = { onClose(close) }) {
+  ModalView(close = { onClose(close) }, cardScreen = true) {
     ColumnWithScrollBar {
       AppBarTitle(title)
       SectionView {
         if (editing.value) {
-          Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-            ProfileNameField(
-              name,
-              placeholder,
-              isValid = { isValidName(it) },
-              onInvalidTap = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.invalid_name)) }
-            )
-          }
+          TextEditor(
+            name,
+            Modifier,
+            placeholder = placeholder,
+            isValid = { isValidName(it) }
+          )
         } else {
           SectionItemViewSpaceBetween(click = {
             clipboard.setText(AnnotatedString(name.value))
