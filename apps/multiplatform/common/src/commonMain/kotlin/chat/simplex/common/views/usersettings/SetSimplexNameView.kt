@@ -131,7 +131,7 @@ fun SetSimplexDomainView(
       AppBarTitle(title)
       SectionView {
         if (editing.value) {
-          Box(contentAlignment = Alignment.CenterEnd) {
+          Box(Modifier.fillMaxWidth().heightIn(min = DEFAULT_MIN_SECTION_ITEM_HEIGHT), contentAlignment = Alignment.CenterEnd) {
             PlainTextEditor(name, placeholder = placeholder)
             if (!isValid) {
               Icon(painterResource(MR.images.ic_error), null, Modifier.padding(end = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.error)
