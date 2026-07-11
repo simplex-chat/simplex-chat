@@ -10,7 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
@@ -128,16 +129,15 @@ fun SetSimplexDomainView(
   ModalView(close = { onClose(close) }, cardScreen = true) {
     ColumnWithScrollBar {
       AppBarTitle(title)
-      if (editing.value) {
-        SectionView(
-          "",
-          icon = painterResource(MR.images.ic_error),
-          iconTint = if (isValid) Color.Transparent else MaterialTheme.colors.error,
-        ) {
-          PlainTextEditor(name, placeholder = placeholder)
-        }
-      } else {
-        SectionView {
+      SectionView {
+        if (editing.value) {
+          Box(contentAlignment = Alignment.CenterEnd) {
+            PlainTextEditor(name, placeholder = placeholder)
+            if (!isValid) {
+              Icon(painterResource(MR.images.ic_error), null, Modifier.padding(end = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.error)
+            }
+          }
+        } else {
           SectionItemViewSpaceBetween(click = {
             clipboard.setText(AnnotatedString(name.value))
             showToast(generalGetString(MR.strings.copied))
