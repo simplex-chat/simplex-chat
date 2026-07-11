@@ -1307,13 +1307,6 @@ fun ComposeView(
       }
   }
 
-  LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
-    if (!chat.chatInfo.sendMsgEnabled) {
-      clearCurrentDraft()
-      clearState()
-    }
-  }
-
   KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
     val cs = composeState.value
     if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
@@ -1343,6 +1336,14 @@ fun ComposeView(
     }
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
+  }
+  // Must be composed after KeyChangeEffect above (effects run in composition order),
+  // so that on chat switch the previous chat's draft is saved before it is cleared here.
+  LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
+    if (!chat.chatInfo.sendMsgEnabled) {
+      clearCurrentDraft()
+      clearState()
+    }
   }
   // keep the attach size limit in sync with the chat: the user's active badge raises it, but not in incognito chats where no badge is presented
   LaunchedEffect(chat.chatInfo) {
