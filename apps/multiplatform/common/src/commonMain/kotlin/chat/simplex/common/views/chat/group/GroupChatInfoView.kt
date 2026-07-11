@@ -638,9 +638,10 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
+            val channelDomain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
             SettingsActionItem(
               painterResource(MR.images.ic_tag),
-              stringResource(MR.strings.simplex_name),
+              if (channelDomain != null) "#$channelDomain" else stringResource(MR.strings.simplex_name),
               setSimplexName,
               iconColor = MaterialTheme.colors.secondary
             )

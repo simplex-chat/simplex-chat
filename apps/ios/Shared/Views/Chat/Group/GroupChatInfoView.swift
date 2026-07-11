@@ -731,7 +731,11 @@ struct GroupChatInfoView: View {
                 }
             )
         } label: {
-            Label("SimpleX name", systemImage: "number")
+            if let d = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName {
+                Label("#\(d)", systemImage: "number")
+            } else {
+                Label("SimpleX name", systemImage: "number")
+            }
         }
     }
 

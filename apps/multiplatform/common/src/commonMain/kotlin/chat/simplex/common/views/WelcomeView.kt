@@ -410,7 +410,7 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
 }
 
 @Composable
-fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null) {
+fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null, onInvalidTap: (() -> Unit)? = null) {
   var valid by rememberSaveable { mutableStateOf(true) }
   var focused by rememberSaveable { mutableStateOf(false) }
   val strokeColor by remember {
@@ -451,7 +451,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
           leadingIcon = null,
           trailingIcon = if (!valid && placeholder != "") {
             {
-              IconButton({ showInvalidNameAlert(mkValidName(name.value), name) }, Modifier.size(20.dp)) {
+              IconButton((onInvalidTap ?: { showInvalidNameAlert(mkValidName(name.value), name) }), Modifier.size(20.dp)) {
                 Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
               }
             }
