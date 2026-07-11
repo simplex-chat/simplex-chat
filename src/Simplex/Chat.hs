@@ -168,7 +168,7 @@ newChatController
     let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP}
     servers <- withTransaction chatStore $ \db -> agentServers db config randomPresetServers randomAgentServers
     ccVar <- newEmptyTMVarIO
-    let processEvent t = do
+    let processEvent _ t = do
           cc <- atomically $ readTMVar ccVar
           runReaderT (processAgentEvent t) cc
     runExceptT (getSMPAgentClient aCfg {tbqSize} servers agentStore processEvent)
