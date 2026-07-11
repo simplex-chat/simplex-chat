@@ -666,24 +666,13 @@ fun ModalData.GroupChatInfoLayout(
         if (groupInfo.isOwner && groupLink != null) {
           SectionDividerSpaced()
           val channelDomain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
-          if (channelDomain != null) {
-            SectionView(stringResource(MR.strings.channel_simplex_name)) {
-              SettingsActionItem(
-                painterResource(MR.images.ic_tag),
-                channelDomain,
-                setSimplexName,
-                iconColor = MaterialTheme.colors.secondary
-              )
-            }
-          } else {
-            SectionView {
-              SettingsActionItem(
-                painterResource(MR.images.ic_tag),
-                stringResource(MR.strings.get_simplex_name_beta),
-                setSimplexName,
-                iconColor = MaterialTheme.colors.secondary
-              )
-            }
+          SectionView(title = if (channelDomain != null) generalGetString(MR.strings.channel_simplex_name) else null) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_tag),
+              channelDomain ?: generalGetString(MR.strings.get_simplex_name_beta),
+              setSimplexName,
+              iconColor = MaterialTheme.colors.secondary
+            )
           }
         }
       } else {

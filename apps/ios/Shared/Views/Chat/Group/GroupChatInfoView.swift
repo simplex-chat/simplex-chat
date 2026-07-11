@@ -160,13 +160,11 @@ struct GroupChatInfoView: View {
                     }
 
                     if groupInfo.useRelays && groupInfo.isOwner && groupLink != nil {
-                        if groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName != nil {
-                            Section(header: Text("Channel SimpleX name").foregroundColor(theme.colors.secondary)) {
-                                channelSimplexNameButton()
-                            }
-                        } else {
-                            Section {
-                                channelSimplexNameButton()
+                        Section {
+                            channelSimplexNameButton()
+                        } header: {
+                            if groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName != nil {
+                                Text("Channel SimpleX name").foregroundColor(theme.colors.secondary)
                             }
                         }
                     }

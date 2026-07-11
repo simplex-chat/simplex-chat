@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -41,6 +40,7 @@ fun SetSimplexDomainView(
   placeholder: String,
   simplexName: String,
   registerBackgroundClose: Boolean = false,
+  broadcastWarning: String? = null,
   save: suspend (String?) -> Boolean,
   close: () -> Unit
 ) {
@@ -58,8 +58,8 @@ fun SetSimplexDomainView(
     val t = s.trim()
     return when {
       t.isEmpty() -> null
-      t.startsWith("@") || t.startsWith("#") -> addSimplexTLD(t.substring(1))
-      else -> addSimplexTLD(t)
+      t.startsWith("@") || t.startsWith("#") -> addSimplexTLD(t.substring(1).lowercase())
+      else -> addSimplexTLD(t.lowercase())
     }
   }
 
@@ -86,7 +86,7 @@ fun SetSimplexDomainView(
       }
       saving.value = false
       if (ok) withContext(Dispatchers.Main) {
-        chatModel.centerPanelBackgroundClickHandler = null
+        if (registerBackgroundClose) chatModel.centerPanelBackgroundClickHandler = null
         close()
       }
     }
@@ -100,17 +100,18 @@ fun SetSimplexDomainView(
     return if (changed && valid) {
       AlertManager.shared.showAlertDialog(
         title = generalGetString(MR.strings.save_simplex_name_question),
+        text = broadcastWarning,
         confirmText = generalGetString(MR.strings.save_verb),
         onConfirm = { doSave(close) },
         dismissText = generalGetString(MR.strings.exit_without_saving),
         onDismiss = {
-          chatModel.centerPanelBackgroundClickHandler = null
+          if (registerBackgroundClose) chatModel.centerPanelBackgroundClickHandler = null
           close()
         }
       )
       true
     } else {
-      chatModel.centerPanelBackgroundClickHandler = null
+      if (registerBackgroundClose) chatModel.centerPanelBackgroundClickHandler = null
       close()
       false
     }
@@ -123,7 +124,7 @@ fun SetSimplexDomainView(
       }
     }
     onDispose {
-      chatModel.centerPanelBackgroundClickHandler = null
+      if (registerBackgroundClose) chatModel.centerPanelBackgroundClickHandler = null
     }
   }
 
@@ -138,11 +139,11 @@ fun SetSimplexDomainView(
             focusRequester.requestFocus()
           }
           SectionItemViewSpaceBetween(click = { focusRequester.requestFocus() }) {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            Box(Modifier.weight(1f)) {
               PlainTextEditor(name, placeholder = placeholder, contentPadding = PaddingValues(), focusRequester = focusRequester)
-              if (!isValid) {
-                Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
-              }
+            }
+            if (!isValid) {
+              Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
             }
           }
         } else {
@@ -164,7 +165,7 @@ fun SetSimplexDomainView(
               Text(stringResource(MR.strings.register_test_name), color = MaterialTheme.colors.primary)
             }
           }
-          SectionItemView({ doSave(close) }, disabled = unchanged || saving.value || !isValid) {
+          SectionItemView({ if (broadcastWarning != null && !unchanged) AlertManager.shared.showAlertDialog(title = broadcastWarning, confirmText = generalGetString(MR.strings.save_verb), onConfirm = { doSave(close) }) else doSave(close) }, disabled = unchanged || saving.value || !isValid) {
             Text(
               stringResource(MR.strings.save_verb),
               color = if (unchanged || saving.value || !isValid) MaterialTheme.colors.secondary else MaterialTheme.colors.primary

@@ -191,20 +191,35 @@ struct UserAddressView: View {
             }
         }
 
-        if let d = chatModel.currentUser?.profile.contactDomain?.domain {
-            Section {
-                setSimplexNameButton {
+        Section {
+            NavigationLink {
+                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.domain { "@\(d)" } else { "" }
+                SetSimplexDomainView(
+                    title: "Your SimpleX name",
+                    footer: "Let people connect to you via name registered with your SimpleX address.",
+                    prompt: "@yourname.testing",
+                    simplexName: simplexName,
+                    broadcastWarning: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert title"),
+                    save: { simplexDomain in
+                        do {
+                            let u = try await apiSetUserDomain(simplexDomain)
+                            await MainActor.run { chatModel.updateUser(u) }
+                            return true
+                        } catch {
+                            return false
+                        }
+                    }
+                )
+            } label: {
+                if let d = chatModel.currentUser?.profile.contactDomain?.domain {
                     Label("\(d)", systemImage: "at")
-                }
-            } header: {
-                Text("Your SimpleX name")
-                    .foregroundColor(theme.colors.secondary)
-            }
-        } else {
-            Section {
-                setSimplexNameButton {
+                } else {
                     Label("Get SimpleX name (BETA)", systemImage: "at")
                 }
+            }
+        } header: {
+            if chatModel.currentUser?.profile.contactDomain?.domain != nil {
+                Text("Your SimpleX name").foregroundColor(theme.colors.secondary)
             }
         }
 
@@ -224,47 +239,6 @@ struct UserAddressView: View {
         } footer: {
             Text("Your contacts will remain connected.")
                 .foregroundColor(theme.colors.secondary)
-        }
-    }
-
-    private func setSimplexNameButton<L: View>(@ViewBuilder label: () -> L) -> some View {
-        NavigationLink {
-            let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.domain { "@\(d)" } else { "" }
-            SetSimplexDomainView(
-                title: "Your SimpleX name",
-                footer: "Let people connect to you via name registered with your SimpleX address.",
-                prompt: "@yourname.testing",
-                simplexName: simplexName,
-                save: { simplexDomain in
-                    if simplexDomain != chatModel.currentUser?.profile.contactDomain?.domain {
-                        let confirmed = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
-                            DispatchQueue.main.async {
-                                showAlert(
-                                    NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert title"),
-                                    actions: {[
-                                        UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in
-                                            cont.resume(returning: true)
-                                        },
-                                        UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel) { _ in
-                                            cont.resume(returning: false)
-                                        }
-                                    ]}
-                                )
-                            }
-                        }
-                        if !confirmed { return false }
-                    }
-                    do {
-                        let u = try await apiSetUserDomain(simplexDomain)
-                        await MainActor.run { chatModel.updateUser(u) }
-                        return true
-                    } catch {
-                        return false
-                    }
-                }
-            )
-        } label: {
-            label()
         }
     }
 
@@ -751,6 +725,7 @@ struct SetSimplexDomainView: View {
     let footer: LocalizedStringKey
     let prompt: String
     @State var simplexName: String
+    let broadcastWarning: String?
     let save: (String?) async -> Bool
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
@@ -760,11 +735,12 @@ struct SetSimplexDomainView: View {
     @State private var editing = false
     @FocusState private var nameFocused: Bool
 
-    init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, save: @escaping (String?) async -> Bool) {
+    init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, broadcastWarning: String? = nil, save: @escaping (String?) async -> Bool) {
         self.title = title
         self.footer = footer
         self.prompt = prompt
         self._simplexName = State(initialValue: simplexName)
+        self.broadcastWarning = broadcastWarning
         self.save = save
         self._original = State(initialValue: simplexName)
         self._editing = State(initialValue: simplexName.isEmpty)
@@ -822,16 +798,13 @@ struct SetSimplexDomainView: View {
                         }
                     }
                     Button {
-                        saving = true
-                        Task {
-                            let ok = await save(normalized(simplexName))
-                            await MainActor.run {
-                                saving = false
-                                if ok {
-                                    didSave = true
-                                    dismiss()
-                                }
-                            }
+                        if let w = broadcastWarning, changed {
+                            showAlert(w, actions: {[
+                                UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in saveAndDismiss() },
+                                UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel)
+                            ]})
+                        } else {
+                            saveAndDismiss()
                         }
                     } label: {
                         Text("Save")
@@ -859,6 +832,7 @@ struct SetSimplexDomainView: View {
                 let saveName = save
                 showAlert(
                     NSLocalizedString("Save SimpleX name?", comment: "alert title"),
+                    message: broadcastWarning,
                     actions: {[
                         UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in
                             Task { _ = await saveName(domain) }
@@ -866,6 +840,20 @@ struct SetSimplexDomainView: View {
                         UIAlertAction(title: NSLocalizedString("Don't save", comment: "alert action"), style: .cancel)
                     ]}
                 )
+            }
+        }
+    }
+
+    private func saveAndDismiss() {
+        saving = true
+        Task {
+            let ok = await save(normalized(simplexName))
+            await MainActor.run {
+                saving = false
+                if ok {
+                    didSave = true
+                    dismiss()
+                }
             }
         }
     }
@@ -893,19 +881,7 @@ struct SetSimplexDomainView: View {
 
     private func isValidNameLabel(_ label: Substring) -> Bool {
         if label.isEmpty || label.utf8.count > 63 { return false }
-        var prev: Unicode.Scalar? = nil
-        var isFirst = true
-        for u in label.unicodeScalars {
-            let v = u.value
-            if v == 45 {
-                if isFirst || prev?.value == 45 { return false }
-            } else if !((v >= 97 && v <= 122) || (v >= 65 && v <= 90) || (v >= 48 && v <= 57)) {
-                return false
-            }
-            prev = u
-            isFirst = false
-        }
-        return prev?.value != 45
+        return label.range(of: "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$", options: .regularExpression) != nil
     }
 }
 

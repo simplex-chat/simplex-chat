@@ -35,9 +35,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
 
 @Composable
 fun UserAddressView(
@@ -378,29 +376,16 @@ private fun UserAddressLayout(
                     placeholder = "@yourname.testing",
                     simplexName = if (domain == null) "" else "@$domain",
                     registerBackgroundClose = true,
+                    broadcastWarning = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),
                     save = { simplexDomain ->
-                      val changed = simplexDomain != domain
-                      val proceed = if (changed) {
-                        suspendCancellableCoroutine<Boolean> { cont ->
-                          AlertManager.shared.showAlertDialog(
-                            title = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),
-                            confirmText = generalGetString(MR.strings.save_verb),
-                            onConfirm = { if (cont.isActive) cont.resume(true) },
-                            onDismiss = { if (cont.isActive) cont.resume(false) },
-                            onDismissRequest = { if (cont.isActive) cont.resume(false) },
-                          )
-                        }
-                      } else true
-                      if (proceed) {
-                        try {
-                          val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
-                          withContext(Dispatchers.Main) { chatModel.updateUser(u) }
-                          true
-                        } catch (e: Exception) {
-                          Log.e(TAG, "apiSetUserDomain: ${e.message}")
-                          false
-                        }
-                      } else false
+                      try {
+                        val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
+                        withContext(Dispatchers.Main) { chatModel.updateUser(u) }
+                        true
+                      } catch (e: Exception) {
+                        Log.e(TAG, "apiSetUserDomain: ${e.message}")
+                        false
+                      }
                     },
                     close = close
                   )
