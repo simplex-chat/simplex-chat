@@ -4516,9 +4516,9 @@ servers warning</note>
         <target>Csak magamnak</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For private routing" xml:space="preserve">
+      <trans-unit id="For private routing" xml:space="preserve" approved="no">
         <source>For private routing</source>
-        <target>A privát útválasztáshoz</target>
+        <target state="translated">Privát útválasztáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For social media" xml:space="preserve">
@@ -9653,9 +9653,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Adatainak védelme érdekében a SimpleX külön azonosítókat használ minden egyes kapcsolatához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To receive" xml:space="preserve">
+      <trans-unit id="To receive" xml:space="preserve" approved="no">
         <source>To receive</source>
-        <target>A fogadáshoz</target>
+        <target state="translated">Üzenetek fogadásához</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
@@ -9683,9 +9683,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Rejtett profilja felfedéséhez adja meg a teljes jelszót a keresőmezőben, a **Csevegési profilok** menüben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To send" xml:space="preserve">
+      <trans-unit id="To send" xml:space="preserve" approved="no">
         <source>To send</source>
-        <target>A küldéshez</target>
+        <target state="translated">Üzenetek küldéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To send commands you must be connected." xml:space="preserve">
