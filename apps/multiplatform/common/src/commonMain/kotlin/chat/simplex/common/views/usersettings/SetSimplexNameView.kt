@@ -6,13 +6,13 @@ import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
-import itemHPadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
@@ -132,10 +132,13 @@ fun SetSimplexDomainView(
       AppBarTitle(title)
       SectionView {
         if (editing.value) {
-          Box(Modifier.fillMaxWidth().heightIn(min = DEFAULT_MIN_SECTION_ITEM_HEIGHT), contentAlignment = Alignment.CenterEnd) {
-            PlainTextEditor(name, placeholder = placeholder, contentPadding = PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_PADDING_HALF))
-            if (!isValid) {
-              Icon(painterResource(MR.images.ic_error), null, Modifier.padding(end = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.error)
+          val focusRequester = remember { FocusRequester() }
+          SectionItemViewSpaceBetween(click = { focusRequester.requestFocus() }) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+              PlainTextEditor(name, placeholder = placeholder, contentPadding = PaddingValues(), focusRequester = focusRequester)
+              if (!isValid) {
+                Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
+              }
             }
           }
         } else {
