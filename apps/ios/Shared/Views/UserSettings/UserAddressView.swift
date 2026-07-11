@@ -758,6 +758,7 @@ struct SetSimplexDomainView: View {
     @State private var original = ""
     @State private var didSave = false
     @State private var editing = false
+    @FocusState private var nameFocused: Bool
 
     init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, save: @escaping (String?) async -> Bool) {
         self.title = title
@@ -784,6 +785,7 @@ struct SetSimplexDomainView: View {
                 if editing {
                     ZStack(alignment: .trailing) {
                         TextField(prompt, text: $simplexName)
+                            .focused($nameFocused)
                             .autocorrectionDisabled(true)
                             .textInputAutocapitalization(.never)
                             .padding(.trailing, isValid ? 0 : 20)
@@ -839,12 +841,18 @@ struct SetSimplexDomainView: View {
                     Button("Remove name") {
                         simplexName = ""
                         editing = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { nameFocused = true }
                     }
                 }
             }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            if editing {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { nameFocused = true }
+            }
+        }
         .onDisappear {
             if !didSave, changed, isValid {
                 let domain = normalized(simplexName)

@@ -133,6 +133,10 @@ fun SetSimplexDomainView(
       SectionView {
         if (editing.value) {
           val focusRequester = remember { FocusRequester() }
+          LaunchedEffect(Unit) {
+            delay(300)
+            focusRequester.requestFocus()
+          }
           SectionItemViewSpaceBetween(click = { focusRequester.requestFocus() }) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
               PlainTextEditor(name, placeholder = placeholder, contentPadding = PaddingValues(), focusRequester = focusRequester)
