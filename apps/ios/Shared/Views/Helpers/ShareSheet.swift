@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 func getTopViewController() -> UIViewController? {
     let keyWindowScene = UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
@@ -51,6 +52,10 @@ func showAlert(
         }
         topController.present(alert, animated: true)
     }
+}
+
+func showAlert(_ a: (title: String, message: String?)) {
+    showAlert(a.title, message: a.message)
 }
 
 func showAlert(
@@ -134,33 +139,42 @@ class OpenChatAlertViewController: UIViewController {
     private let profileName: String
     private let profileFullName: String
     private let profileImage: UIView
+    private let profileBadge: LocalBadge?
     private let subtitle: String?
     private let information: String?
     private let cancelTitle: String
     private let confirmTitle: String?
+    private let secondTitle: String?
     private let onCancel: () -> Void
     private let onConfirm: (() -> Void)?
+    private let onSecond: (() -> Void)?
 
     init(
         profileName: String,
         profileFullName: String,
         profileImage: UIView,
+        profileBadge: LocalBadge? = nil,
         subtitle: String? = nil,
         information: String? = nil,
         cancelTitle: String = "Cancel",
         confirmTitle: String? = "Open",
+        secondTitle: String? = nil,
         onCancel: @escaping () -> Void = {},
-        onConfirm: (() -> Void)? = nil
+        onConfirm: (() -> Void)? = nil,
+        onSecond: (() -> Void)? = nil
     ) {
         self.profileName = profileName
         self.profileFullName = profileFullName
         self.profileImage = profileImage
+        self.profileBadge = profileBadge
         self.subtitle = subtitle
         self.information = information
         self.cancelTitle = cancelTitle
         self.confirmTitle = confirmTitle
+        self.secondTitle = secondTitle
         self.onCancel = onCancel
         self.onConfirm = onConfirm
+        self.onSecond = onSecond
         super.init(nibName: nil, bundle: nil)
 
         modalPresentationStyle = .overFullScreen
@@ -190,12 +204,18 @@ class OpenChatAlertViewController: UIViewController {
 
         // Name label
         let nameLabel = UILabel()
-        nameLabel.text = profileName
         nameLabel.font = UIFont.preferredFont(forTextStyle: .headline)
         nameLabel.textColor = .label
         nameLabel.numberOfLines = 2
         nameLabel.textAlignment = .center
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        if let badge = nameBadgeAttachment(profileBadge, font: nameLabel.font) {
+            let s = NSMutableAttributedString(string: profileName)
+            s.append(badge)
+            nameLabel.attributedText = s
+        } else {
+            nameLabel.text = profileName
+        }
 
         var profileViews = [profileImage, nameLabel]
 
@@ -263,7 +283,38 @@ class OpenChatAlertViewController: UIViewController {
         let buttonStack: UIStackView
         var buttonDividerConstraints: [NSLayoutConstraint] = []
 
-        if let confirmTitle {
+        if let confirmTitle, let secondTitle {
+            // Three buttons (a sibling action is present) — always vertical
+            let confirmButton = UIButton(type: .system)
+            confirmButton.setTitle(confirmTitle, for: .normal)
+            confirmButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
+            confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
+
+            let secondButton = UIButton(type: .system)
+            secondButton.setTitle(secondTitle, for: .normal)
+            secondButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
+            secondButton.addTarget(self, action: #selector(secondTapped), for: .touchUpInside)
+
+            buttonStack = UIStackView(arrangedSubviews: [confirmButton, secondButton, cancelButton])
+            buttonStack.axis = .vertical
+            buttonStack.distribution = .fillEqually
+            buttonStack.spacing = 0
+            buttonStack.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight * 3).isActive = true
+
+            for button in [secondButton, cancelButton] {
+                let divider = UIView()
+                divider.backgroundColor = UIColor.separator
+                divider.translatesAutoresizingMaskIntoConstraints = false
+                buttonStack.addSubview(divider)
+                buttonDividerConstraints += [
+                    divider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                    divider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                    divider.bottomAnchor.constraint(equalTo: button.topAnchor),
+                    divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+                ]
+            }
+        } else if let confirmTitle {
             let confirmButton = UIButton(type: .system)
             confirmButton.setTitle(confirmTitle, for: .normal)
             confirmButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
@@ -358,6 +409,12 @@ class OpenChatAlertViewController: UIViewController {
             self.onConfirm?()
         }
     }
+
+    @objc private func secondTapped() {
+        dismiss(animated: true) {
+            self.onSecond?()
+        }
+    }
 }
 
 
@@ -365,13 +422,16 @@ func showOpenChatAlert<Content: View>(
     profileName: String,
     profileFullName: String,
     profileImage: Content,
+    profileBadge: LocalBadge? = nil,
     theme: AppTheme,
     subtitle: String? = nil,
     information: String? = nil,
     cancelTitle: String = "Cancel",
     confirmTitle: String? = "Open",
+    secondTitle: String? = nil,
     onCancel: @escaping () -> Void = {},
-    onConfirm: (() -> Void)? = nil
+    onConfirm: (() -> Void)? = nil,
+    onSecond: (() -> Void)? = nil
 ) {
     let themedView = profileImage.environmentObject(theme)
     let hostingController = UIHostingController(rootView: themedView)
@@ -383,12 +443,15 @@ func showOpenChatAlert<Content: View>(
             profileName: profileName,
             profileFullName: profileFullName,
             profileImage: hostedView,
+            profileBadge: profileBadge,
             subtitle: subtitle,
             information: information,
             cancelTitle: cancelTitle,
             confirmTitle: confirmTitle,
+            secondTitle: secondTitle,
             onCancel: onCancel,
-            onConfirm: onConfirm
+            onConfirm: onConfirm,
+            onSecond: onSecond
         )
         topVC.present(alertVC, animated: true)
     }

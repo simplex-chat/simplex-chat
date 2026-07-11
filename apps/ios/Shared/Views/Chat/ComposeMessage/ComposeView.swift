@@ -131,7 +131,12 @@ struct ComposeState {
     }
 
     var memberMentions: [String: Int64] {
-        self.mentions.compactMapValues { $0.memberRef?.groupMemberId }
+        var result: [String: Int64] = [:]
+        for ft in parsedMessage {
+            if result.count >= MAX_NUMBER_OF_MENTIONS { break }
+            if case let .mention(name) = ft.format, let id = mentions[name]?.memberRef?.groupMemberId { result[name] = id }
+        }
+        return result
     }
 
     var editing: Bool {
@@ -392,38 +397,31 @@ struct ComposeView: View {
             }
 
             let ownerState = ownerRelayState
+            let subscriberState = subscriberRelayState
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
                     if let s = ownerState, s.relays.isEmpty || s.activeCount < s.relays.count {
                         ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount, removedCount: s.removedCount)
                     }
-                } else {
-                    let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
-                    let relayMembers = chatModel.groupMembers
-                        .filter { $0.wrapped.memberRole == .relay && ![.memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
-                        .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
+                } else if let s = subscriberState {
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
-                    let removedCount = relayMembers.filter { relayMemberRemoved($0.wrapped.memberStatus) }.count
-                    let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
-                    let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
-                    let resolvedCount = connectedCount + removedCount + failedCount
-                    let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                    if total == 0 || removedCount + failedCount > 0 || resolvedCount < total {
+                    let resolvedCount = s.connectedCount + s.removedCount + s.failedCount
+                    if s.total == 0 || s.removedCount + s.failedCount > 0 || resolvedCount < s.total {
                         subscriberChannelRelayBar(
-                            hostnames: hostnames,
-                            relayMembers: relayMembers,
-                            connectedCount: connectedCount,
-                            removedCount: removedCount,
-                            failedCount: failedCount,
-                            total: total,
+                            hostnames: s.hostnames,
+                            relayMembers: s.relayMembers,
+                            connectedCount: s.connectedCount,
+                            removedCount: s.removedCount,
+                            failedCount: s.failedCount,
+                            total: s.total,
                             showProgress: showProgress
                         )
                     }
                 }
             }
 
-            let userCantSendReason = chat.chatInfo.userCantSendReason(allRelaysBroken: ownerState?.noActiveRelays ?? false)
+            let userCantSendReason = chat.chatInfo.userCantSendReason(allRelaysBroken: (ownerState?.noActiveRelays ?? subscriberState?.noActiveRelays) ?? false)
             let composeEnabled = (
                 userCantSendReason == nil ||
                 (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) ||
@@ -748,8 +746,25 @@ struct ComposeView: View {
         return (relays, activeCount, failedCount, removedCount, noActiveRelays)
     }
 
+    private var subscriberRelayState: (hostnames: [String], relayMembers: [GMember], connectedCount: Int, removedCount: Int, failedCount: Int, total: Int, noActiveRelays: Bool)? {
+        guard let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
+              gInfo.membership.memberRole != .owner,
+              ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
+        else { return nil }
+        let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
+        let relayMembers = chatModel.groupMembers
+            .filter { $0.wrapped.memberRole == .relay && ![.memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
+            .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
+        let removedCount = relayMembers.filter { relayMemberRemoved($0.wrapped.memberStatus) }.count
+        let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
+        let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
+        let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+        let noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
+        return (hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
+    }
+
     private var disabledText: LocalizedStringKey? {
-        chat.chatInfo.userCantSendReason(allRelaysBroken: ownerRelayState?.noActiveRelays ?? false)?.composeLabel
+        chat.chatInfo.userCantSendReason(allRelaysBroken: (ownerRelayState?.noActiveRelays ?? subscriberRelayState?.noActiveRelays) ?? false)?.composeLabel
     }
 
     @ViewBuilder private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int, removedCount: Int) -> some View {
@@ -1029,6 +1044,10 @@ struct ComposeView: View {
                     sendMessage(ttl: ttl)
                     resetLinkPreview()
                 },
+                sendSignedMessage: {
+                    sendMessage(ttl: nil, sign: true)
+                    resetLinkPreview()
+                },
                 sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
                 updateLiveMessage: updateLiveMessage,
                 cancelLiveMessage: {
@@ -1048,6 +1067,7 @@ struct ComposeView: View {
                 finishVoiceMessageRecording: finishVoiceMessageRecording,
                 allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                 timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
+                showSign: chat.chatInfo.groupInfo?.useRelays == true,
                 onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                 keyboardVisible: $keyboardVisible,
                 keyboardHiddenDate: $keyboardHiddenDate,
@@ -1247,7 +1267,9 @@ struct ComposeView: View {
     }
 
     private var maxFileSize: Int64 {
-        getMaxFileSize(.xftp)
+        // the user's active badge raises the limit, but not in incognito chats where no badge is presented
+        let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+        return getMaxFileSize(.xftp, incognito ? nil : chatModel.currentUser?.profile)
     }
 
     // Spec: spec/client/compose.md#sendLiveMessage
@@ -1444,16 +1466,16 @@ struct ComposeView: View {
     }
 
     // Spec: spec/client/compose.md#sendMessage
-    private func sendMessage(ttl: Int?) {
+    private func sendMessage(ttl: Int?, sign: Bool = false) {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            _ = await sendMessageAsync(nil, live: false, ttl: ttl)
+            _ = await sendMessageAsync(nil, live: false, ttl: ttl, sign: sign)
         }
     }
 
     // Spec: spec/client/compose.md#sendMessageAsync
-    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
+    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?, sign: Bool = false) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
@@ -1466,7 +1488,7 @@ struct ComposeView: View {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions)
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions, sign: sign)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -1482,13 +1504,13 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .chatLinkPreview(chatLink, ownerSig):
                 let linkStr = chatLink.connLinkStr
                 let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
-                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .mediaPreviews(media):
                 // TODO: CHECK THIS
                 let last = media.count - 1
@@ -1510,15 +1532,15 @@ struct ComposeView: View {
                 if msgs.isEmpty {
                     msgs = [ComposedMessage(quotedItemId: quoted, msgContent: .text(msgText))]
                 }
-                sent = await send(msgs, live: live, ttl: ttl).last
+                sent = await send(msgs, live: live, ttl: ttl, sign: sign).last
 
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions, sign: sign)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions, sign: sign)
                 }
             }
         }
@@ -1652,15 +1674,16 @@ struct ComposeView: View {
             )
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64]) async -> ChatItem? {
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64], sign: Bool = false) async -> ChatItem? {
             await send(
                 [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],
                 live: live,
-                ttl: ttl
+                ttl: ttl,
+                sign: sign
             ).first
         }
 
-        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
+        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?, sign: Bool = false) async -> [ChatItem] {
             if let chatItems = chat.chatInfo.chatType == .local
                 ? await apiCreateChatItems(noteFolderId: chat.chatInfo.apiId, composedMessages: msgs)
                 : await apiSendMessages(
@@ -1670,6 +1693,7 @@ struct ComposeView: View {
                     sendAsGroup: chat.chatInfo.sendAsGroup,
                     live: live,
                     ttl: ttl,
+                    sign: sign,
                     composedMessages: msgs
                 ) {
                 await MainActor.run {

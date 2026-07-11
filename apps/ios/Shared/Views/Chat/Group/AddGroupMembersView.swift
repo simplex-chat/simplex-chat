@@ -174,8 +174,9 @@ struct AddGroupMembersViewCommon: View {
                 }
                 addedMembersCb(selectedContacts)
             } catch {
-                let a = getErrorAlert(error, "Error adding member(s)")
-                alert = .error(title: a.title, error: a.message)
+                await MainActor.run {
+                    showErrorAlert(error, NSLocalizedString("Error adding member(s)", comment: ""))
+                }
             }
         }
     }
@@ -183,7 +184,7 @@ struct AddGroupMembersViewCommon: View {
     private func rolePicker() -> some View {
         Picker("New member role", selection: $selectedRole) {
             ForEach(GroupMemberRole.supportedRoles.filter({ $0 <= groupInfo.membership.memberRole })) { role in
-                Text(role.text)
+                Text(role.text(isChannel: groupInfo.isChannel))
             }
         }
         .frame(height: 36)
@@ -220,9 +221,12 @@ struct AddGroupMembersViewCommon: View {
             HStack{
                 ProfileImage(imageStr: contact.image, size: 30)
                     .padding(.trailing, 2)
-                Text(ChatInfo.direct(contact: contact).chatViewName)
-                    .foregroundColor(prohibitedToInviteIncognito ? theme.colors.secondary : theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(ChatInfo.direct(contact: contact).chatViewName)
+                        .foregroundColor(prohibitedToInviteIncognito ? theme.colors.secondary : theme.colors.onBackground),
+                    contact.active ? contact.profile.localBadge : nil
+                )
+                .lineLimit(1)
                 Spacer()
                 Image(systemName: icon)
                     .foregroundColor(iconColor)

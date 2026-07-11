@@ -80,11 +80,12 @@ class APISendMessages(TypedDict):
     sendRef: "T.ChatRef"
     liveMessage: bool
     ttl: NotRequired[int]  # int
+    signMessages: bool
     composedMessages: list["T.ComposedMessage"]  # non-empty
 
 
 def APISendMessages_cmd_string(self: APISendMessages) -> str:
-    return '/_send ' + T.ChatRef_cmd_string(self['sendRef']) + (' live=on' if self['liveMessage'] else '') + ((' ttl=' + str(self.get('ttl'))) if self.get('ttl') is not None else '') + ' json ' + json.dumps(self['composedMessages'])
+    return '/_send ' + T.ChatRef_cmd_string(self['sendRef']) + (' live=on' if self['liveMessage'] else '') + ((' ttl=' + str(self.get('ttl'))) if self.get('ttl') is not None else '') + (' sign=on' if self['signMessages'] else '') + ' json ' + json.dumps(self['composedMessages'])
 
 APISendMessages_Response = CR.NewChatItems | CR.ChatCmdError
 
@@ -434,17 +435,17 @@ def APIAddContact_cmd_string(self: APIAddContact) -> str:
 APIAddContact_Response = CR.Invitation | CR.ChatCmdError
 
 
-# Determine SimpleX link type and if the bot is already connected via this link.
+# Determine SimpleX link type and if the bot is already connected via this link or name.
 # Network usage: interactive.
 class APIConnectPlan(TypedDict):
     userId: int  # int64
-    connectionLink: NotRequired[str]
-    resolveKnown: bool
+    connectTarget: NotRequired[str]
+    resolveMode: "T.PlanResolveMode"
     linkOwnerSig: NotRequired["T.LinkOwnerSig"]
 
 
 def APIConnectPlan_cmd_string(self: APIConnectPlan) -> str:
-    return '/_connect plan ' + str(self['userId']) + ' ' + self.get('connectionLink')
+    return '/_connect plan ' + str(self['userId']) + ' ' + self.get('connectTarget')
 
 APIConnectPlan_Response = CR.ConnectionPlan | CR.ChatCmdError
 
@@ -463,15 +464,15 @@ def APIConnect_cmd_string(self: APIConnect) -> str:
 APIConnect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
 
-# Connect via SimpleX link as string in the active user profile.
+# Connect via SimpleX link or name as string in the active user profile.
 # Network usage: interactive.
 class Connect(TypedDict):
     incognito: bool
-    connLink_: NotRequired[str]
+    connTarget_: NotRequired[str]
 
 
 def Connect_cmd_string(self: Connect) -> str:
-    return '/connect' + ((' ' + self.get('connLink_')) if self.get('connLink_') is not None else '')
+    return '/connect' + ((' ' + self.get('connTarget_')) if self.get('connTarget_') is not None else '')
 
 Connect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 

@@ -13,9 +13,14 @@ import java.io.File
 import java.util.*
 import kotlin.math.max
 
-internal val vlcFactory: MediaPlayerFactory by lazy { MediaPlayerFactory() }
+// Serialize the two factory constructions: each MediaPlayerFactory() runs VLC native discovery via
+// a JDK ServiceLoader, which is not thread-safe. Building both factories concurrently (e.g. vlcFactory
+// on the render thread while vlcPreviewFactory is built on the preview thread) corrupts the ServiceLoader
+// enumeration and throws NoSuchElementException from CompoundEnumeration.nextElement.
+private val vlcFactoryLock = Any()
+internal val vlcFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory() } }
 // No hardware acceleration - more secure for previews
-internal val vlcPreviewFactory: MediaPlayerFactory by lazy { MediaPlayerFactory("--avcodec-hw=none") }
+internal val vlcPreviewFactory: MediaPlayerFactory by lazy { synchronized(vlcFactoryLock) { MediaPlayerFactory("--avcodec-hw=none") } }
 
 actual class RecorderNative: RecorderInterface {
   private var player: MediaPlayer? = null

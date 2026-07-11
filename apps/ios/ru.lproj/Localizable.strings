@@ -464,6 +464,9 @@ swipe action */
 "Active connections" = "Активные соединения";
 
 /* No comment provided by engineer. */
+"Add" = "Добавить";
+
+/* No comment provided by engineer. */
 "Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." = "Добавьте адрес в свой профиль, чтобы Ваши SimpleX контакты могли поделиться им. Профиль будет отправлен Вашим SimpleX контактам.";
 
 /* No comment provided by engineer. */
@@ -1023,9 +1026,6 @@ marked deleted chat item preview text */
 "calling…" = "входящий звонок…";
 
 /* No comment provided by engineer. */
-"Calls" = "Звонки";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Звонки запрещены!";
 
 /* No comment provided by engineer. */
@@ -1095,9 +1095,6 @@ new chat action */
 
 /* authentication reason */
 "Change lock mode" = "Изменить режим блокировки";
-
-/* No comment provided by engineer. */
-"Change member role?" = "Поменять роль члена группы?";
 
 /* authentication reason */
 "Change passcode" = "Изменить код доступа";
@@ -1564,6 +1561,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connections" = "Соединения";
+
+/* No comment provided by engineer. */
+"Contact" = "Контакт";
 
 /* profile update event chat item */
 "contact %@ changed to %@" = "контакт %1$@ изменён на %2$@";
@@ -2058,13 +2058,10 @@ alert button */
 "Details" = "Подробности";
 
 /* No comment provided by engineer. */
-"Develop" = "Для разработчиков";
+"Developer" = "Инструменты разработчика";
 
 /* No comment provided by engineer. */
 "Developer options" = "Опции разработчика";
-
-/* No comment provided by engineer. */
-"Developer tools" = "Инструменты разработчика";
 
 /* No comment provided by engineer. */
 "Device" = "Устройство";
@@ -2442,7 +2439,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "ошибка";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Ошибка";
 
 /* No comment provided by engineer. */
@@ -2701,6 +2698,7 @@ chat item action */
 "error: %@" = "ошибка: %@";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Ошибка: %@";
@@ -3464,7 +3462,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Большой файл!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Узнать больше";
 
 /* swipe action */
@@ -3624,13 +3622,13 @@ servers warning */
 "Member reports" = "Сообщения о нарушениях";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "Роль участника будет изменена на \"%@\". Все участники разговора получат уведомление.";
+"Role will be changed to \"%@\". All chat members will be notified." = "Роль участника будет изменена на \"%@\". Все участники разговора получат уведомление.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Роль члена будет изменена на \"%@\". Все члены группы получат уведомление.";
+"Role will be changed to \"%@\". All group members will be notified." = "Роль члена будет изменена на \"%@\". Все члены группы получат уведомление.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена будет изменена на \"%@\". Будет отправлено новое приглашение.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена будет изменена на \"%@\". Будет отправлено новое приглашение.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Член будет удалён из разговора - это действие нельзя отменить!";
@@ -4371,9 +4369,6 @@ alert button */
 "owners" = "владельцы";
 
 /* No comment provided by engineer. */
-"Owners" = "Владельцы";
-
-/* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "Владение: Вы можете запустить свои собственные релеи.";
 
 /* No comment provided by engineer. */
@@ -4531,9 +4526,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Ранее подключенные серверы";
-
-/* No comment provided by engineer. */
-"Privacy & security" = "Конфиденциальность";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Конфиденциальность для ваших покупателей.";
@@ -5819,9 +5811,6 @@ report reason */
 "Subscriptions ignored" = "Подписок игнорировано";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Поддержать SimpleX Chat";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Переключайте звук и видео во время звонка.";
 
 /* No comment provided by engineer. */
@@ -6455,9 +6444,6 @@ server test failure */
 /* No comment provided by engineer. */
 "v%@" = "v%@";
 
-/* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
 /* relay test step */
 "Verify" = "Проверить";
 
@@ -6759,9 +6745,6 @@ server test failure */
 "You can enable later via Settings" = "Вы можете включить их позже в Настройках";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Вы можете включить их позже в настройках Конфиденциальности.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Вы можете попробовать ещё раз.";
 
 /* No comment provided by engineer. */
@@ -6940,9 +6923,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your channel" = "Ваш канал";
-
-/* No comment provided by engineer. */
-"Your chat database" = "База данных";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "База данных НЕ зашифрована. Установите пароль, чтобы защитить Ваши данные.";

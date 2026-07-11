@@ -10,6 +10,10 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AutoAccept](#autoaccept)
+- [BadgeInfo](#badgeinfo)
+- [BadgeProof](#badgeproof)
+- [BadgeStatus](#badgestatus)
+- [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
 - [BlockingReason](#blockingreason)
 - [BrokerErrorType](#brokererrortype)
@@ -83,6 +87,7 @@ This file is generated automatically.
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
+- [FileType](#filetype)
 - [Format](#format)
 - [FormattedText](#formattedtext)
 - [FullGroupPreferences](#fullgrouppreferences)
@@ -122,6 +127,7 @@ This file is generated automatically.
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
+- [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
 - [MemberCriteria](#membercriteria)
 - [MsgChatLink](#msgchatlink)
@@ -133,12 +139,15 @@ This file is generated automatically.
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
+- [MsgVerified](#msgverified)
+- [NameErrorType](#nameerrortype)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
 - [OwnerVerification](#ownerverification)
 - [PaginationByTime](#paginationbytime)
 - [PendingContactConnection](#pendingcontactconnection)
+- [PlanResolveMode](#planresolvemode)
 - [PrefEnabled](#prefenabled)
 - [Preferences](#preferences)
 - [PreparedContact](#preparedcontact)
@@ -166,8 +175,11 @@ This file is generated automatically.
 - [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
+- [SimplexDomain](#simplexdomain)
+- [SimplexDomainClaim](#simplexdomainclaim)
+- [SimplexDomainError](#simplexdomainerror)
+- [SimplexDomainProof](#simplexdomainproof)
 - [SimplexLinkType](#simplexlinktype)
-- [SimplexNameDomain](#simplexnamedomain)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -307,6 +319,9 @@ FILE:
 - type: "FILE"
 - fileErr: [FileErrorType](#fileerrortype)
 
+NO_NAME_SERVERS:
+- type: "NO_NAME_SERVERS"
+
 PROXY:
 - type: "PROXY"
 - proxyServer: string
@@ -351,6 +366,49 @@ INACTIVE:
 
 **Record type**:
 - acceptIncognito: bool
+
+
+---
+
+## BadgeInfo
+
+**Record type**:
+- badgeType: [BadgeType](#badgetype)
+- badgeExpiry: UTCTime?
+- badgeExtra: string
+
+
+---
+
+## BadgeProof
+
+**Record type**:
+- badgeKeyIdx: int
+- presHeader: string
+- proof: string
+- badgeInfo: [BadgeInfo](#badgeinfo)
+
+
+---
+
+## BadgeStatus
+
+**Enum type**:
+- "active"
+- "expired"
+- "expiredOld"
+- "failed"
+- "unknownKey"
+
+
+---
+
+## BadgeType
+
+**Enum type**:
+- "supporter"
+- "legend"
+- "investor"
 
 
 ---
@@ -411,6 +469,7 @@ TIMEOUT:
 - chatType: [BusinessChatType](#businesschattype)
 - businessId: string
 - customerId: string
+- businessDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 
 
 ---
@@ -815,7 +874,7 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
-- msgSigned: [MsgSigStatus](#msgsigstatus)?
+- msgVerified: [MsgVerified](#msgverified)
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -1054,6 +1113,14 @@ ChatStoreChanged:
 
 InvalidConnReq:
 - type: "invalidConnReq"
+
+SimplexDomainNotReady:
+- type: "simplexDomainNotReady"
+- simplexDomain: [SimplexDomain](#simplexdomain)
+- simplexDomainError: [SimplexDomainError](#simplexdomainerror)
+
+NotResolvedLocally:
+- type: "notResolvedLocally"
 
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
@@ -1763,6 +1830,7 @@ ContactViaAddress:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
 - business: bool
+- localBadge: [LocalBadge](#localbadge)?
 
 
 ---
@@ -1926,6 +1994,10 @@ EXPIRED:
 INTERNAL:
 - type: "INTERNAL"
 
+NAME:
+- type: "NAME"
+- nameErr: [NameErrorType](#nameerrortype)
+
 DUPLICATE_:
 - type: "DUPLICATE_"
 
@@ -2053,6 +2125,15 @@ NO_FILE:
 
 ---
 
+## FileType
+
+**Enum type**:
+- "normal"
+- "roster"
+
+
+---
+
 ## Format
 
 **Discriminated union type**:
@@ -2139,6 +2220,7 @@ Phone:
 - support: [SupportGroupPreference](#supportgrouppreference)
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
+- signMessages: [GroupPreference](#grouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2231,6 +2313,7 @@ MemberSupport:
 - "support"
 - "sessions"
 - "comments"
+- "signMessages"
 
 
 ---
@@ -2267,9 +2350,11 @@ MemberSupport:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
+- rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
+- groupDomainVerified: bool?
 
 
 ---
@@ -2470,6 +2555,7 @@ UpdateRequired:
 - support: [SupportGroupPreference](#supportgrouppreference)?
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
+- signMessages: [GroupPreference](#grouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
@@ -2671,6 +2757,15 @@ Unknown:
 
 ---
 
+## LocalBadge
+
+**Record type**:
+- badge: [BadgeInfo](#badgeinfo)
+- status: [BadgeStatus](#badgestatus)
+
+
+---
+
 ## LocalProfile
 
 **Record type**:
@@ -2682,7 +2777,10 @@ Unknown:
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
+- localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
+- contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
+- contactDomainVerified: bool?
 
 
 ---
@@ -2860,6 +2958,40 @@ Unknown:
 
 ---
 
+## MsgVerified
+
+**Discriminated union type**:
+
+Signed:
+- type: "signed"
+- sigStatus: [MsgSigStatus](#msgsigstatus)
+
+SigMissing:
+- type: "sigMissing"
+
+Unsigned:
+- type: "unsigned"
+
+
+---
+
+## NameErrorType
+
+**Discriminated union type**:
+
+NO_RESOLVER:
+- type: "NO_RESOLVER"
+
+NOT_FOUND:
+- type: "NOT_FOUND"
+
+RESOLVER:
+- type: "RESOLVER"
+- resolverErr: string
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -2970,6 +3102,16 @@ count=<count>
 
 ---
 
+## PlanResolveMode
+
+**Enum type**:
+- "allGroups"
+- "unknown"
+- "never"
+
+
+---
+
 ## PrefEnabled
 
 **Record type**:
@@ -3027,6 +3169,8 @@ count=<count>
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
+- badge: [BadgeProof](#badgeproof)?
+- contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 
 
 ---
@@ -3075,7 +3219,7 @@ NO_SESSION:
 
 **Record type**:
 - groupWebPage: string?
-- groupDomain: string?
+- groupDomainClaim: [SimplexDomainClaim](#simplexdomainclaim)?
 - domainWebPage: bool
 - allowEmbedding: bool
 
@@ -3257,6 +3401,7 @@ Cancelled:
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
+- fileType: [FileType](#filetype)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?
 - senderDisplayName: string
 - chunkSize: int64
@@ -3381,6 +3526,7 @@ ParseError:
 - "new"
 - "invited"
 - "accepted"
+- "acknowledgedRoster"
 - "active"
 - "inactive"
 - "rejected"
@@ -3459,6 +3605,48 @@ A_QUEUE:
 
 ---
 
+## SimplexDomain
+
+**Record type**:
+- nameTLD: [SimplexTLD](#simplextld)
+- domain: string
+- subDomain: [string]
+
+
+---
+
+## SimplexDomainClaim
+
+**Record type**:
+- domain: string
+- proof: [SimplexDomainProof](#simplexdomainproof)?
+
+
+---
+
+## SimplexDomainError
+
+**Discriminated union type**:
+
+NoValidLink:
+- type: "noValidLink"
+
+UnknownDomain:
+- type: "unknownDomain"
+
+
+---
+
+## SimplexDomainProof
+
+**Record type**:
+- linkOwnerId: string?
+- presHeader: string
+- signature: string
+
+
+---
+
 ## SimplexLinkType
 
 **Enum type**:
@@ -3471,21 +3659,11 @@ A_QUEUE:
 
 ---
 
-## SimplexNameDomain
-
-**Record type**:
-- nameTLD: [SimplexTLD](#simplextld)
-- domain: string
-- subDomain: [string]
-
-
----
-
 ## SimplexNameInfo
 
 **Record type**:
 - nameType: [SimplexNameType](#simplexnametype)
-- nameDomain: [SimplexNameDomain](#simplexnamedomain)
+- nameDomain: [SimplexDomain](#simplexdomain)
 
 
 ---
@@ -4212,7 +4390,7 @@ Handshake:
 - cReqChatVRange: [VersionRange](#versionrange)
 - localDisplayName: string
 - profileId: int64
-- profile: [Profile](#profile)
+- profile: [LocalProfile](#localprofile)
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - xContactId: string?

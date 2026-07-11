@@ -3,10 +3,14 @@ package chat.simplex.common.views.helpers
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -14,15 +18,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.model.BadgeStatus
+import chat.simplex.common.model.BadgeType
 import chat.simplex.common.model.ChatInfo
+import chat.simplex.common.model.LocalBadge
+import chat.simplex.common.model.localDate
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
@@ -101,6 +118,137 @@ fun ProfileImage(
       }
     }
   }
+}
+
+// badge height in em: calibrated visually so the badge top matches capital letters and digits
+// (Inter's declared cap height is 2048/2816 = 0.727em, but the rendered text is taller than the metrics predict)
+private const val fontCapHeightRatio = 0.95f
+
+// fraction of the badge height pushed below the text baseline (like the undershoot of round letters)
+private const val badgeBaselineOffsetRatio = 0.05f
+
+// the badge glyph's width / height (the SVGs are cropped to the glyph: 300 x 399)
+private const val badgeAspectRatio = 300f / 399f
+
+// A contact/member name with the badge right after it: the badge is baseline-aligned with the name
+// and sized to its font (fontSize if given, otherwise style.fontSize), and a truncated name keeps it visible.
+@Composable
+fun NameWithBadge(
+  name: String,
+  badge: LocalBadge?,
+  modifier: Modifier = Modifier,
+  color: Color = Color.Unspecified,
+  fontSize: TextUnit = TextUnit.Unspecified,
+  fontStyle: FontStyle? = null,
+  fontWeight: FontWeight? = null,
+  overflow: TextOverflow = TextOverflow.Clip,
+  maxLines: Int = Int.MAX_VALUE,
+  style: TextStyle = LocalTextStyle.current
+) {
+  Row(modifier) {
+    Text(
+      name,
+      Modifier.alignByBaseline().weight(1f, fill = false),
+      color = color,
+      fontSize = fontSize,
+      fontStyle = fontStyle,
+      fontWeight = fontWeight,
+      overflow = overflow,
+      maxLines = maxLines,
+      style = style
+    )
+    NameBadge(badge, if (fontSize.isSpecified) fontSize else style.fontSize)
+  }
+}
+
+// Badge next to the contact name in a Row: top aligned with capital letters, bottom just below the text baseline.
+// Use NameWithBadge unless the row needs special arrangement; then the name Text must use Modifier.alignByBaseline().
+@Composable
+fun RowScope.NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.current.fontSize) {
+  // a badge that expired over a month ago (ExpiredOld) is not shown
+  if (badge == null || badge.status == BadgeStatus.ExpiredOld) return
+  val height = with(LocalDensity.current) { (if (fontSize.isSpecified) fontSize else 14.sp).toDp() } * fontCapHeightRatio
+  BadgeGlyph(
+    badge,
+    // the alignment line sits badgeBaselineOffsetRatio above the badge's bottom edge,
+    // so the Row places the badge that much below the text baseline;
+    // 6.dp matches the visible gap between the name and the verification shield:
+    // the shield has 3.dp end padding plus ~17% internal glyph margin, the badge artwork has none
+    Modifier.alignBy { (it.measuredHeight * (1 - badgeBaselineOffsetRatio)).roundToInt() }.padding(start = 6.dp).height(height).aspectRatio(badgeAspectRatio)
+  )
+}
+
+// badge inside a Text via appendInlineContent(id): bottom on the baseline, cap-height tall.
+// precede with append(" ") for the space between the name and the badge.
+fun nameBadgeInline(badge: LocalBadge, fontSize: TextUnit, onBadgeClick: (() -> Unit)? = null): InlineTextContent {
+  val height = fontSize * fontCapHeightRatio
+  return InlineTextContent(
+    Placeholder(height * badgeAspectRatio, height, PlaceholderVerticalAlign.AboveBaseline)
+  ) {
+    // the placeholder bottom sits on the baseline and can't extend below it,
+    // so the badge is drawn shifted down by badgeBaselineOffsetRatio instead
+    BadgeGlyph(badge, Modifier.fillMaxSize().graphicsLayer { translationY = size.height * badgeBaselineOffsetRatio }, onBadgeClick)
+  }
+}
+
+@Composable
+private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() -> Unit)? = null) {
+  val mod = modifier.let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
+  if (badge.status == BadgeStatus.Failed || badge.status == BadgeStatus.UnknownKey) {
+    Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
+  } else {
+    Image(
+      painterResource(badgeImage(badge.badge.badgeType)),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      alpha = if (badge.status == BadgeStatus.Expired) 0.4f else 1f,
+      modifier = mod
+    )
+  }
+}
+
+fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) {
+  // a verified badge's type is signed and can't be faked, so the real (possibly unknown) type name is the title
+  val title = badge.badge.badgeType.text.replaceFirstChar { it.uppercase() }
+  when {
+    badge.status == BadgeStatus.Failed ->
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.badge_unverified_title),
+        text = generalGetString(MR.strings.badge_unverified_desc)
+      )
+    badge.status == BadgeStatus.UnknownKey ->
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.badge_unknown_key_title),
+        text = generalGetString(MR.strings.badge_unknown_key_desc)
+      )
+    badge.badge.badgeType is BadgeType.Investor ->
+      AlertManager.shared.showAlertDialog(
+        title = title,
+        text = String.format(generalGetString(MR.strings.badge_invested), name),
+        confirmText = generalGetString(MR.strings.ok),
+        dismissText = generalGetString(MR.strings.learn_more),
+        onDismiss = { uriHandler.openUriCatching("https://simplex.chat/crowdfunding") }
+      )
+    else -> {
+      // Supporter, Legend and unknown types use the supporter wording
+      val expiry = badge.badge.badgeExpiry
+      val supports =
+        if (badge.status == BadgeStatus.Expired && expiry != null)
+          String.format(generalGetString(MR.strings.badge_supported_simplex), name, localDate(expiry))
+        else
+          String.format(generalGetString(MR.strings.badge_supports_simplex), name)
+      AlertManager.shared.showAlertMsg(
+        title = title,
+        text = supports + "\n\n" + generalGetString(MR.strings.badge_support_from_v7)
+      )
+    }
+  }
+}
+
+private fun badgeImage(t: BadgeType): ImageResource = when (t) {
+  is BadgeType.Legend -> MR.images.badge_legend
+  is BadgeType.Investor -> MR.images.badge_investor
+  else -> MR.images.badge_supporter // Supporter + Unknown
 }
 
 @Composable

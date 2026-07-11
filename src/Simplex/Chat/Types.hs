@@ -4,6 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -19,6 +20,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -34,25 +36,31 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Attoparsec.Combinator (lookAhead)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Names (SimplexDomainClaim (..))
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -369,7 +377,7 @@ data UserContactRequest = UserContactRequest
     cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
-    profile :: Profile,
+    profile :: LocalProfile,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId,
@@ -487,9 +495,11 @@ data GroupInfo = GroupInfo
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
+    rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupKeys :: Maybe GroupKeys
+    groupKeys :: Maybe GroupKeys,
+    groupDomainVerified :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -687,7 +697,9 @@ data Profile = Profile
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
-    peerType :: Maybe ChatPeerType
+    peerType :: Maybe ChatPeerType,
+    badge :: Maybe BadgeProof,
+    contactDomain :: Maybe SimplexDomainClaim
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -720,14 +732,24 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
-  LocalProfile {displayName = n1, fullName = fn1, image = i1}
-  LocalProfile {displayName = n2, fullName = fn2, image = i2} =
-    n1 == n2 && fn1 == fn2 && i1 == i2
+  LocalProfile {displayName = n1, fullName = fn1, image = i1, shortDescr = d1}
+  LocalProfile {displayName = n2, fullName = fn2, image = i2, shortDescr = d2} =
+    n1 == n2 && fn1 == fn2 && i1 == i2 && d1 == d2
+
+-- equal for profile-update detection: badge proofs are re-generated for every presentation,
+-- so compare badges by disclosed info (not proof bytes) - a re-presentation of the same badge is a no-op
+sameProfileContent :: Profile -> Profile -> Bool
+sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
+  clearProofs p == clearProofs p' && (proofInfo <$> b) == (proofInfo <$> b')
+  where
+    clearProofs pr@Profile {contactDomain} = pr {badge = Nothing, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
+    proofInfo :: BadgeProof -> BadgeInfo
+    proofInfo (BadgeProof _ _ _ info) = info
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
@@ -760,20 +782,47 @@ data LocalProfile = LocalProfile
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
-    localAlias :: LocalAlias
+    localBadge :: Maybe LocalBadge,
+    localAlias :: LocalAlias,
+    contactDomain :: Maybe SimplexDomainClaim,
+    contactDomainVerified :: Maybe Bool
   }
   deriving (Eq, Show)
 
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} localAlias =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localAlias}
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
+  where
+    localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
+  -- the name proof is re-signed on each send
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
+  where
+    wireBadge :: LocalBadge -> Maybe BadgeProof
+    wireBadge = \case
+      PeerBadge b _ -> Just b -- stored peer proof sent as is
+      OwnBadge _ _ -> Nothing -- the own credential is not sent, proof is generated on send
+      ShownBadge _ _ -> Nothing -- a display-only badge is not sent
+
+profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
+profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
+  case (localBadge, newBadge) of
+    (_, Nothing) -> pure (Just False)
+    -- an unchanged badge that verified before stays verified; failed or unknown-key badges
+    -- are re-verified, so an unknown key heals once an app update adds it
+    (Just lb, Just (BadgeProof _ _ _ newInfo))
+      | localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (Just True)
+    (_, Just newB) -> verifyBadge keys newB
+
+-- a failed or unknown-key badge is re-verified on the next profile update even when its disclosed content
+-- is unchanged, so it heals once an app update adds the issuer key
+badgeNeedsReverify :: LocalProfile -> Bool
+badgeNeedsReverify LocalProfile {localBadge} = maybe False ((`elem` [BSFailed, BSUnknownKey]) . localBadgeStatus) localBadge
 
 data GroupType
   = GTChannel
@@ -797,7 +846,7 @@ instance ToField GroupType where toField = toField . textEncode
 
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
-    groupDomain :: Maybe Text,
+    groupDomainClaim :: Maybe SimplexDomainClaim,
     domainWebPage :: Bool,
     allowEmbedding :: Bool
   }
@@ -843,8 +892,13 @@ instance FromJSON ImageData where
   parseJSON = fmap ImageData . J.parseJSON
 
 instance ToJSON ImageData where
-  toJSON (ImageData t) = J.toJSON t
-  toEncoding (ImageData t) = J.toEncoding t
+  toJSON (ImageData t) = J.toJSON $ safeImageData t
+  toEncoding (ImageData t) = J.toEncoding $ safeImageData t
+
+safeImageData :: Text -> Text
+safeImageData t
+  | "data:" `T.isPrefixOf` t = t
+  | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t
 
@@ -972,6 +1026,11 @@ newtype MemberKey = MemberKey C.PublicKeyEd25519
   deriving (Eq, Show)
   deriving newtype (StrEncoding)
 
+-- Binary encoding for the roster blob; delegates to the Ed25519 key.
+instance Encoding MemberKey where
+  smpEncode (MemberKey k) = smpEncode k
+  smpP = MemberKey <$> smpP
+
 instance FromJSON MemberKey where
   parseJSON = strParseJSON "MemberKey"
 
@@ -991,7 +1050,9 @@ data MemberInfo = MemberInfo
 data BusinessChatInfo = BusinessChatInfo
   { chatType :: BusinessChatType,
     businessId :: MemberId,
-    customerId :: MemberId
+    customerId :: MemberId,
+    -- TODO [names] sent in protocol in GroupInvitation
+    businessDomain :: Maybe SimplexDomainClaim
   }
   deriving (Eq, Show)
 
@@ -1493,11 +1554,38 @@ instance ToJSON InlineFileMode where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+-- Discriminates ordinary chat files from the roster blob file, so the receive
+-- completion / cancel paths branch on the type rather than on chat_item_id (note
+-- folders and redirects also lack a chat item).
+data FileType = FTNormal | FTRoster
+  deriving (Eq, Show)
+
+instance TextEncoding FileType where
+  textEncode = \case
+    FTNormal -> "normal"
+    FTRoster -> "roster"
+  textDecode = \case
+    "normal" -> Just FTNormal
+    "roster" -> Just FTRoster
+    _ -> Nothing
+
+instance FromField FileType where fromField = fromTextField_ textDecode
+
+instance ToField FileType where toField = toField . textEncode
+
+instance FromJSON FileType where
+  parseJSON = textParseJSON "FileType"
+
+instance ToJSON FileType where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
+    fileType :: FileType,
     rcvFileInline :: Maybe InlineFileMode,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
@@ -1699,6 +1787,49 @@ data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkE
 type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
+
+data ConnectTarget (m :: ConnectionMode) where
+  CTFullContact :: ConnectionRequestUri 'CMContact -> ConnectTarget 'CMContact
+  CTShortContact :: ContactNameOrLink -> ConnectTarget 'CMContact
+  CTDomain :: SimplexDomain -> ConnectTarget 'CMContact
+  CTInv :: ConnectionLink 'CMInvitation -> ConnectTarget 'CMInvitation
+
+data ContactNameOrLink = CTName SimplexNameInfo | CTLink (ConnShortLink 'CMContact)
+  deriving (Eq, Show)
+
+deriving instance Eq (ConnectTarget m)
+
+deriving instance Show (ConnectTarget m)
+
+data AConnectTarget = forall m. ConnectionModeI m => ACTarget (SConnectionMode m) (ConnectTarget m)
+  deriving (ToJSON, FromJSON) via (StrJSON "AConnectTarget" AConnectTarget)
+
+instance Eq AConnectTarget where
+  ACTarget m t == ACTarget m' t' = case testEquality m m' of
+    Just Refl -> t == t'
+    _ -> False
+
+deriving instance Show AConnectTarget
+
+instance StrEncoding AConnectTarget where
+  strEncode (ACTarget _ t) = case t of
+    CTFullContact cr -> strEncode cr
+    CTShortContact (CTName n) -> strEncode n
+    CTShortContact (CTLink sl) -> strEncode sl
+    CTDomain d -> strEncode d
+    CTInv l -> strEncode l
+  strP =
+    (ACTarget SCMContact . CTShortContact . CTName <$> (lookAhead nameStart *> strP))
+      <|> (aConnectTarget <$> strP)
+      <|> (ACTarget SCMContact . CTDomain <$> strP)
+    where
+      nameStart = "@" <|> "#" <|> "simplex:/name"
+
+aConnectTarget :: AConnectionLink -> AConnectTarget
+aConnectTarget (ACL SCMInvitation cl) = ACTarget SCMInvitation (CTInv cl)
+aConnectTarget (ACL SCMContact cl) = ACTarget SCMContact $ case cl of
+  CLFull cr -> CTFullContact cr
+  CLShort sl -> CTShortContact (CTLink sl)
 
 type CreatedLinkInvitation = CreatedConnLink 'CMInvitation
 
@@ -2035,8 +2166,18 @@ type VersionChat = Version ChatVersion
 
 type VersionRangeChat = VersionRange ChatVersion
 
+-- | Store-wide context passed to store functions in place of the bare `vr`
+-- parameter. Built from config by mkStoreCxt; more fields are added here over time.
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey}
+
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
+
+-- A monotonic per-change counter, not a negotiated protocol version: Int64 rather than the Word16 of
+-- Version, so a long-lived high-churn channel cannot wrap and be permanently rejected by relays (v >= cur).
+newtype VersionRoster = VersionRoster Int64
+  deriving (Eq, Ord, Show)
+  deriving newtype (FromJSON, ToJSON, FromField, ToField)
 
 -- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
 newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)

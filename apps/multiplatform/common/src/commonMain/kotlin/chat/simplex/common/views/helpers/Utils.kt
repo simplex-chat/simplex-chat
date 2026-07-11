@@ -126,6 +126,10 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
+// raised XFTP receive limits for files from a sender with a supporter badge (also investor) or a legend badge
+const val MAX_FILE_SIZE_XFTP_SUPPORTER: Long = 2_147_483_648 // 2GB
+const val MAX_FILE_SIZE_XFTP_LEGEND: Long = 5_368_709_120 // 5GB
+
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
@@ -252,6 +256,7 @@ expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
 
 fun saveFileFromUri(
   uri: URI,
+  maxBytes: Long,
   withAlertOnException: Boolean = true,
   hiddenFileNamePrefix: String? = null
 ): CryptoFile? {
@@ -273,7 +278,7 @@ fun saveFileFromUri(
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
-          Files.copy(inputStream, tmpFile.toPath())
+          copyInputStreamToFile(inputStream, tmpFile, maxBytes)
           try {
             val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
             CryptoFile(destFileName, args)
@@ -284,7 +289,7 @@ fun saveFileFromUri(
           }
         }
       } else {
-        Files.copy(inputStream, destFile.toPath())
+        copyInputStreamToFile(inputStream, destFile, maxBytes)
         CryptoFile.plain(destFileName)
       }
     } else {
@@ -293,11 +298,41 @@ fun saveFileFromUri(
 
       null
     }
+  } catch (e: FileTooLargeException) {
+    Log.e(TAG, "Util.kt saveFileFromUri file too large: ${e.message}")
+    if (withAlertOnException) {
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.large_file),
+        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxBytes))
+      )
+    }
+    null
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
     if (withAlertOnException) showWrongUriAlert()
 
     null
+  }
+}
+
+class FileTooLargeException(maxBytes: Long) : IOException("file exceeds $maxBytes bytes")
+
+fun copyInputStreamToFile(inputStream: InputStream, destFile: File, maxBytes: Long) {
+  try {
+    destFile.outputStream().use { output ->
+      val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+      var copied = 0L
+      while (true) {
+        val read = inputStream.read(buffer)
+        if (read < 0) break
+        if (copied > maxBytes - read) throw FileTooLargeException(maxBytes)
+        output.write(buffer, 0, read)
+        copied += read
+      }
+    }
+  } catch (e: Throwable) {
+    destFile.delete()
+    throw e
   }
 }
 
@@ -383,7 +418,7 @@ fun uniqueCombine(fileName: String, dir: File): String {
   val ext = orig.extension
   fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
-    val f = "$name$suffix.$ext"
+    val f = if (ext.isEmpty()) "$name$suffix" else "$name$suffix.$ext"
     return if (File(dir, f).exists()) tryCombine(n + 1) else f
   }
   return tryCombine(0)
@@ -442,12 +477,23 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-fun getMaxFileSize(fileProtocol: FileProtocol): Long {
-  return when (fileProtocol) {
-    FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
-    FileProtocol.SMP -> MAX_FILE_SIZE_SMP
-    FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
+fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
+  FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+  FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
+  // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
+  FileProtocol.XFTP -> {
+    val badge = senderProfile?.localBadge
+    if (badge == null || badge.status != BadgeStatus.Active) MAX_FILE_SIZE_XFTP
+    else if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND
+    else MAX_FILE_SIZE_XFTP_SUPPORTER
   }
+}
+
+// the profile of whoever sent a received chat item - the group member, or the direct chat's contact
+fun ciSenderProfile(ci: ChatItem, chatInfo: ChatInfo): LocalProfile? = when (val dir = ci.chatDir) {
+  is CIDirection.GroupRcv -> dir.groupMember.memberProfile
+  is CIDirection.DirectRcv -> (chatInfo as? ChatInfo.Direct)?.contact?.profile
+  else -> null
 }
 
 expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration

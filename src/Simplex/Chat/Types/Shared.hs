@@ -11,8 +11,9 @@ import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 data GroupMemberRole
@@ -57,6 +58,12 @@ instance ToJSON GroupMemberRole where
   toJSON = textToJSON
   toEncoding = textToEncoding
 
+-- Binary encoding for the roster blob; delegates to the canonical TextEncoding
+-- (same member/moderator/admin form JSON and the DB use). GRUnknown round-trips.
+instance Encoding GroupMemberRole where
+  smpEncode = smpEncode . textEncode
+  smpP = maybe (fail "bad GroupMemberRole") pure . textDecode =<< smpP
+
 data GroupAcceptance = GAAccepted | GAPendingApproval | GAPendingReview  deriving (Eq, Show)
 
 instance StrEncoding GroupAcceptance where
@@ -82,6 +89,7 @@ data RelayStatus
   = RSNew -- only for owner
   | RSInvited
   | RSAccepted
+  | RSAcknowledgedRoster
   | RSActive
   | RSInactive
   | RSRejected
@@ -92,6 +100,7 @@ relayStatusText = \case
   RSNew -> "new"
   RSInvited -> "invited"
   RSAccepted -> "accepted"
+  RSAcknowledgedRoster -> "acknowledged_roster"
   RSActive -> "active"
   RSInactive -> "inactive"
   RSRejected -> "rejected"
@@ -101,6 +110,7 @@ instance TextEncoding RelayStatus where
     RSNew -> "new"
     RSInvited -> "invited"
     RSAccepted -> "accepted"
+    RSAcknowledgedRoster -> "acknowledged_roster"
     RSActive -> "active"
     RSInactive -> "inactive"
     RSRejected -> "rejected"
@@ -108,6 +118,7 @@ instance TextEncoding RelayStatus where
     "new" -> Just RSNew
     "invited" -> Just RSInvited
     "accepted" -> Just RSAccepted
+    "acknowledged_roster" -> Just RSAcknowledgedRoster
     "active" -> Just RSActive
     "inactive" -> Just RSInactive
     "rejected" -> Just RSRejected
@@ -137,3 +148,31 @@ instance ToField MsgSigStatus where toField = toField . textEncode
 instance FromField MsgSigStatus where fromField = fromTextField_ textDecode
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MSS") ''MsgSigStatus)
+
+data MsgVerified = MVSigned {sigStatus :: MsgSigStatus} | MVSigMissing | MVUnsigned
+  deriving (Eq, Show)
+
+instance TextEncoding MsgVerified where
+  textEncode = \case
+    MVSigned s -> textEncode s
+    MVSigMissing -> "sig_missing"
+    MVUnsigned -> "unsigned"
+  textDecode = \case
+    "sig_missing" -> Just MVSigMissing
+    "unsigned" -> Just MVUnsigned
+    s -> MVSigned <$> textDecode s
+
+instance ToField MsgVerified where toField = toField . textEncode
+
+instance FromField MsgVerified where fromField = fromTextField_ textDecode
+
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "MV") ''MsgVerified)
+
+instance FromJSON MsgVerified where
+  parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "MV") ''MsgVerified)
+  omittedField = Just MVUnsigned
+
+toMsgVerified :: Bool -> Maybe MsgSigStatus -> MsgVerified
+toMsgVerified signRequired = \case
+  Just s -> MVSigned s
+  Nothing -> if signRequired then MVSigMissing else MVUnsigned

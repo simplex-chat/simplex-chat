@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -16,30 +17,37 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.STM (atomically)
 import Control.Monad (forM_, void, when)
+import Control.Monad.Except (runExceptT)
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe, isJust, listToMaybe, maybeToList)
-import Data.Time (UTCTime)
+import Data.Maybe (fromMaybe, isJust, maybeToList)
+import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
+import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
+import Simplex.Messaging.Agent (sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
+import Simplex.Messaging.Protocol (MsgFlags (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
@@ -83,6 +91,7 @@ chatGroupTests = do
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
+    it "check owner role change" testOwnerRoleChange
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate own message (should process as deletion)" testGroupModerateOwn
@@ -110,6 +119,7 @@ chatGroupTests = do
     it "invitee incognito" testGroupLinkInviteeIncognito
     it "incognito - join/invite" testGroupLinkIncognitoJoinInvite
     it "group link member role" testGroupLinkMemberRole
+    it "demotion does not remove group link" testGroupLinkDemotedAdmin
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
   describe "group links - member screening" $ do
@@ -253,6 +263,8 @@ chatGroupTests = do
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
+      it "should connect to channel via /c (CLI)" testConnectChannelCLI
+      it "should connect to channel via /c incognito (CLI)" testConnectChannelCLIIncognito
     describe "deliver member profiles via relay" $ do
       it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerReceivesProfile
       it "2 relays: deduplicate member announcement" testChannel2RelaysDeduplicateProfile
@@ -286,6 +298,21 @@ chatGroupTests = do
         it "operator allow clears rejection and relay accepts again" testRelayAllowAcceptsAgain
         it "rejection on channel A does not affect unrelated channel B" testRelayDoesNotRejectUnrelatedChannel
         it "concurrent fresh invitations both rejected" testRelayRejectRaceConcurrentInvitations
+      describe "promoted members roster" $ do
+        it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
+        it "subscriber recovers a missed roster member after a version gap" testChannelSubscriberRosterCatchUp
+        it "2 relays: subscriber recovers a missed roster member after a version gap" testChannel2RelaysSubscriberRosterCatchUp
+        it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
+        it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
+        it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
+        it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
+        it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
+        it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
+        it "corrupted roster blob is rejected on digest mismatch" testChannelRosterDigestMismatchRejected
+        it "promoted member enters the roster and can post" testChannelPromotedMemberCanPost
+        it "observer cannot post until promoted" testChannelObserverCannotPost
+        it "promoted member re-connecting via a new relay is accepted via the roster-pinned key" testChannelPromotedMemberRejoinViaRelay
+        it "2 relays: multi-chunk roster reassembles per source (no stream interleaving)" testChannelRosterMultiRelayMultipart
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -305,6 +332,16 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
+      describe "channel message signing" $ do
+        it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
+        it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
+        it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign
+        it "should reject a non-owner posting as the channel" testChannelAsGroupSpoof
+        it "should sign self-delete of a signed item" testChannelMemberSelfDeleteSign
+        it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
+        it "should always sign moderation delete" testChannelModerationDeleteSign
+        it "should verify signed file digest" testChannelSignedFile
+        it "should warn on missing signature when signing is required" testChannelSignMessagesRequired
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -1616,6 +1653,37 @@ testUpdateMemberRole =
         ]
       alice ##> "/mr team alice admin"
       alice <## "bad chat command: can't change role for self"
+
+testOwnerRoleChange :: HasCallStack => TestParams -> IO ()
+testOwnerRoleChange =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      void $ withCCTransaction cath $ \db ->
+        DB.execute_
+          db
+          [sql|
+            UPDATE group_members
+            SET member_role = 'owner'
+            WHERE member_category = 'user'
+              AND group_id IN (
+                SELECT group_id FROM groups WHERE local_display_name = 'team'
+              )
+          |]
+
+      cath ##> "/mr #team bob owner"
+      cath <## "#team: you changed the role of bob to owner"
+      concurrentlyN_
+        [ alice <## "error: x.grp.mem.role with insufficient member permissions",
+          bob <## "error: x.grp.mem.role with insufficient member permissions"
+        ]
+
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected"
+             ]
 
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
@@ -2976,6 +3044,25 @@ testGroupLinkMemberRole =
       cath <## "#team: you changed the role of bob to admin"
       bob <## "#team: cath changed your role from member to admin"
       alice <## "#team: cath changed the role of bob from member to admin"
+
+testGroupLinkDemotedAdmin :: HasCallStack => TestParams -> IO ()
+testGroupLinkDemotedAdmin =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob _cath -> do
+      createGroup2' "team" alice (bob, GRAdmin) True
+
+      bob ##> "/create link #team member"
+      _gLink <- getGroupLink bob "team" GRMember True
+
+      alice ##> "/mr #team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob to member",
+          bob <## "#team: alice changed your role from admin to member"
+        ]
+
+      -- demotion does not remove bob's group link (it is preserved, usable again on re-promotion)
+      bob ##> "/show link #team"
+      void $ getGroupLink bob "team" GRMember False
 
 testGroupLinkHostIncognito :: HasCallStack => TestParams -> IO ()
 testGroupLinkHostIncognito =
@@ -8580,6 +8667,61 @@ testSupportPreferenceChannel ps =
               bob <# "#team (support) alice> yes [>>]"
             ]
 
+testConnectChannelCLI :: HasCallStack => TestParams -> IO ()
+testConnectChannelCLI ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, _fullLink) <- prepareChannel2Relays "team" alice bob cath
+          relayNames <- mapM userName [bob, cath]
+          mName <- userName dan
+          mFullName <- showName dan
+          dan ##> ("/c " <> shortLink)
+          dan <## "#team: connection started"
+          concurrentlyN_ $
+            [ dan
+                <### concat
+                  [ [ ConsoleString ("#team: joining the group (connecting to relay " <> rName <> ")..."),
+                      ConsoleString ("#team: you joined the group (connected to relay " <> rName <> ")")
+                    ]
+                  | rName <- relayNames
+                  ]
+            ]
+              <> [ do
+                     relay <## (mFullName <> ": accepting request to join group #team...")
+                     relay <## ("#team: " <> mName <> " joined the group")
+                 | relay <- [bob, cath]
+                 ]
+              <> [alice <### [EndsWith ("introduced " <> mFullName <> " in the channel")]]
+
+testConnectChannelCLIIncognito :: HasCallStack => TestParams -> IO ()
+testConnectChannelCLIIncognito ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, _fullLink) <- prepareChannel2Relays "team" alice bob cath
+          relayNames <- mapM userName [bob, cath]
+          dan ##> ("/c i " <> shortLink)
+          danIncognito <- getTermLine dan
+          dan <## "#team: connection started incognito"
+          concurrentlyN_ $
+            [ dan
+                <### concat
+                  [ [ ConsoleString ("#team: joining the group (connecting to relay " <> rName <> ")..."),
+                      ConsoleString ("#team: you joined the group (connected to relay " <> rName <> ") incognito as " <> danIncognito)
+                    ]
+                  | rName <- relayNames
+                  ]
+            ]
+              <> [ do
+                     relay <## (danIncognito <> ": accepting request to join group #team...")
+                     relay <## ("#team: " <> danIncognito <> " joined the group")
+                 | relay <- [bob, cath]
+                 ]
+              <> [alice <### [EndsWith ("introduced " <> danIncognito <> " in the channel")]]
+
 testChannels1RelayDeliver :: HasCallStack => TestParams -> IO ()
 testChannels1RelayDeliver ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -8624,6 +8766,20 @@ createChannel1Relay gName owner relay cath dan eve = do
   forM_ [cath, dan, eve] $ \member ->
     memberJoinChannel gName [relay] [owner] shortLink fullLink member
 
+-- Promote a fresh channel subscriber (observer default) to member so it can post; the roster bump
+-- re-serves to the other (still-unknown) subscribers, who see the change rendered by member id hash.
+promoteChannelMember :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> [TestCC] -> IO ()
+promoteChannelMember gName owner relay member others = do
+  mName <- userName member
+  oName <- userName owner
+  owner ##> ("/mr #" <> gName <> " " <> mName <> " member")
+  owner <## ("#" <> gName <> ": you changed the role of " <> mName <> " to member (signed)")
+  concurrentlyN_ $
+    [ relay <## ("#" <> gName <> ": " <> oName <> " changed the role of " <> mName <> " from observer to member (signed)"),
+      member <## ("#" <> gName <> ": " <> oName <> " changed your role from observer to member (signed)")
+    ]
+      <> [o <### [EndsWith "from observer to member (signed)"] | o <- others]
+
 setupRelay :: TestCC -> TestCC -> IO String
 setupRelay owner relay = do
   rName <- userName relay
@@ -8658,7 +8814,7 @@ prepareChannel' relayId gName owner relay = do
     ]
 
   owner ##> ("/show link #" <> gName)
-  getGroupLinks owner gName GRMember False
+  getGroupLinks owner gName GRObserver False
 
 createChannel2Relays :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel2Relays gName owner relay1 relay2 dan eve frank = do
@@ -8689,7 +8845,7 @@ prepareChannel2Relays gName owner relay1 relay2 = do
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner
           <### [ EndsWith ": active",
-                 EndsWith ": accepted"
+                 Predicate (\l -> ": invited" `isSuffixOf` l || ": accepted" `isSuffixOf` l || ": acknowledged_roster" `isSuffixOf` l)
                ]
         owner <## "group link:"
         void $ getTermLine owner -- consume group link line
@@ -8706,7 +8862,7 @@ prepareChannel2Relays gName owner relay1 relay2 = do
     ]
 
   owner ##> ("/show link #" <> gName)
-  getGroupLinks owner gName GRMember False
+  getGroupLinks owner gName GRObserver False
 
 memberJoinChannel :: String -> [TestCC] -> [TestCC] -> String -> String -> TestCC -> IO ()
 memberJoinChannel gName = memberJoinChannel' gName 1 0 0 0
@@ -8835,6 +8991,9 @@ testChannelsSenderDeduplicateOwn ps = do
         withNewTestChat ps "eve" eveProfile $ \eve -> do
           withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob -> do
             createChannel1Relay "team" alice bob cath dan eve
+            -- promote cath and dan while the relay is online, so their buffered posts replay as members
+            promoteChannelMember "team" alice bob cath [dan, eve]
+            promoteChannelMember "team" alice bob dan [cath, eve]
 
           -- chat relay bob is offline
           alice #> "#team 1"
@@ -8860,14 +9019,16 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team dan> 6 [>>]"
                    ]
             cath
-              <### [ "#team: bob introduced dan (Daniel) in the channel",
+              <### [ EndsWith "updated to dan",
+                     "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
                      WithTime "#team dan> 6 [>>]"
                    ]
             dan
-              <### [ "#team: bob introduced cath (Catherine) in the channel",
+              <### [ EndsWith "updated to cath",
+                     "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
@@ -8875,7 +9036,9 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team cath> 5 [>>]"
                    ]
             eve
-              <### [ "#team: bob introduced cath (Catherine) in the channel",
+              <### [ EndsWith "updated to cath",
+                     EndsWith "updated to dan",
+                     "#team: bob introduced cath (Catherine) in the channel",
                      "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
@@ -8896,11 +9059,13 @@ testChannelLateJoinerReceivesProfile ps =
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
           memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          promoteChannelMember "team" alice bob cath [dan]
 
-          -- first forward: dan learns cath via prepended XGrpMemNew.
+          -- first forward: dan resolves cath (roster-known by id hash) on the prepended XGrpMemNew.
           cath #> "#team hi"
           bob <# "#team cath> hi"
           alice <# "#team cath> hi [>>]"
+          dan <### [EndsWith "updated to cath"]
           dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
@@ -8936,12 +9101,23 @@ testChannel2RelaysDeduplicateProfile ps =
             memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink dan
             memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink eve
 
+            -- promote dan (observer default) so it can post; eve learns dan via the roster (id hash)
+            alice ##> "/mr #team dan member"
+            alice <## "#team: you changed the role of dan to member (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of dan from observer to member (signed)",
+                cath <## "#team: alice changed the role of dan from observer to member (signed)",
+                dan <## "#team: alice changed your role from observer to member (signed)",
+                eve <### [EndsWith "from observer to member (signed)"]
+              ]
+
             -- first forward: both relays prepend XGrpMemNew(dan) for eve;
             -- second hits xGrpMemNew's "already created via another relay" branch.
             dan #> "#team hi"
             bob <# "#team dan> hi"
             cath <# "#team dan> hi"
             alice <# "#team dan> hi [>>]"
+            eve <### [EndsWith "updated to dan"]
             eve .<## " introduced dan (Daniel) in the channel"
             eve <# "#team dan> hi [>>]"
 
@@ -8983,6 +9159,7 @@ testChannelLargeProfileFits ps =
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
           memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          promoteChannelMember "team" alice bob cath [dan]
 
           -- ~14000 chars: profile fits in a singleton batch AND packs
           -- inline with the forwarded body (exercises the in-body path).
@@ -8993,6 +9170,7 @@ testChannelLargeProfileFits ps =
           cath #> "#team hi"
           bob <# "#team cath> hi"
           alice <# "#team cath> hi [>>]"
+          dan <### [EndsWith "updated to cath"]
           dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
@@ -9006,6 +9184,8 @@ testChannelMultipleLargeProfiles ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+            promoteChannelMember "team" alice bob dan [cath, eve]
 
             -- ~14500 chars each: one rides inline with the body,
             -- the other spills into a standalone overflow batch.
@@ -9027,15 +9207,19 @@ testChannelMultipleLargeProfiles ps =
                      WithTime "#team dan> from dan [>>]"
                    ]
             cath
-              <### [ "#team: bob introduced dan (Daniel) in the channel",
+              <### [ EndsWith "updated to dan",
+                     "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team dan> from dan [>>]"
                    ]
             dan
-              <### [ "#team: bob introduced cath (Catherine) in the channel",
+              <### [ EndsWith "updated to cath",
+                     "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team cath> from cath [>>]"
                    ]
             eve
-              <### [ "#team: bob introduced dan (Daniel) in the channel",
+              <### [ EndsWith "updated to cath",
+                     EndsWith "updated to dan",
+                     "#team: bob introduced dan (Daniel) in the channel",
                      "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team cath> from cath [>>]",
                      WithTime "#team dan> from dan [>>]"
@@ -9057,10 +9241,12 @@ testChannelProfileUpdateNoRePrepend ps =
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
           memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          promoteChannelMember "team" alice bob cath [dan]
 
           cath #> "#team hi"
           bob <# "#team cath> hi"
           alice <# "#team cath> hi [>>]"
+          dan <### [EndsWith "updated to cath"]
           dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
@@ -9086,22 +9272,28 @@ testChannelMultiSendersIndependent ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+            promoteChannelMember "team" alice bob dan [cath, eve]
 
-            -- cath posts: dan and eve learn cath via prepended XGrpMemNew
+            -- cath posts: dan and eve resolve cath on the prepended XGrpMemNew
             cath #> "#team from cath"
             bob <# "#team cath> from cath"
             alice <# "#team cath> from cath [>>]"
+            dan <### [EndsWith "updated to cath"]
             dan <## "#team: bob introduced cath (Catherine) in the channel"
             dan <# "#team cath> from cath [>>]"
+            eve <### [EndsWith "updated to cath"]
             eve <## "#team: bob introduced cath (Catherine) in the channel"
             eve <# "#team cath> from cath [>>]"
 
-            -- dan posts: cath and eve learn dan independently of cath's vector
+            -- dan posts: cath and eve resolve dan independently of cath's vector
             dan #> "#team from dan"
             bob <# "#team dan> from dan"
             alice <# "#team dan> from dan [>>]"
+            cath <### [EndsWith "updated to dan"]
             cath <## "#team: bob introduced dan (Daniel) in the channel"
             cath <# "#team dan> from dan [>>]"
+            eve <### [EndsWith "updated to dan"]
             eve <## "#team: bob introduced dan (Daniel) in the channel"
             eve <# "#team dan> from dan [>>]"
 
@@ -9122,6 +9314,17 @@ testChannels2RelaysDeliver ps =
             withNewTestChat ps "frank" frankProfile $ \frank -> do
               createChannel2Relays "team" alice bob cath dan eve frank
 
+              -- promote dan (observer default) so it can send; eve/frank learn dan via the roster
+              alice ##> "/mr #team dan member"
+              alice <## "#team: you changed the role of dan to member (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of dan from observer to member (signed)",
+                  cath <## "#team: alice changed the role of dan from observer to member (signed)",
+                  dan <## "#team: alice changed your role from observer to member (signed)",
+                  eve <### [EndsWith "from observer to member (signed)"],
+                  frank <### [EndsWith "from observer to member (signed)"]
+                ]
+
               alice #> "#team hi"
               [bob, cath] *<# "#team> hi"
               [dan, eve, frank] *<# "#team> hi [>>]"
@@ -9134,17 +9337,14 @@ testChannels2RelaysDeliver ps =
               cath <## "    + 👍"
               alice <# "#team dan> > hi"
               alice <## "    + 👍"
+              eve .<##. ("#team: unknown member ", " updated to dan")
               eve .<## " introduced dan (Daniel) in the channel"
               eve <# "#team dan> > hi"
               eve <## "    + 👍"
+              frank .<##. ("#team: unknown member ", " updated to dan")
               frank .<## " introduced dan (Daniel) in the channel"
               frank <# "#team dan> > hi"
               frank <## "    + 👍"
-
-              -- remove below if default role is changed to observer
-              dan #> "#team hey"
-              [bob, cath] *<# "#team dan> hey"
-              [alice, eve, frank] *<# "#team dan> hey [>>]"
 
 testChannels2RelaysIncognito :: HasCallStack => TestParams -> IO ()
 testChannels2RelaysIncognito ps =
@@ -9159,6 +9359,17 @@ testChannels2RelaysIncognito ps =
               forM_ [eve, frank] $ \member ->
                 memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink member
 
+              -- promote dan (observer default) so it can send; eve/frank learn dan via the roster
+              alice ##> ("/mr #team " <> danIncognito <> " member")
+              alice <## ("#team: you changed the role of " <> danIncognito <> " to member (signed)")
+              concurrentlyN_
+                [ bob <## ("#team: alice changed the role of " <> danIncognito <> " from observer to member (signed)"),
+                  cath <## ("#team: alice changed the role of " <> danIncognito <> " from observer to member (signed)"),
+                  dan <## "#team: alice changed your role from observer to member (signed)",
+                  eve <### [EndsWith "from observer to member (signed)"],
+                  frank <### [EndsWith "from observer to member (signed)"]
+                ]
+
               alice #> "#team hi"
               [bob, cath] *<# "#team> hi"
               dan ?<# "#team> hi [>>]"
@@ -9172,17 +9383,21 @@ testChannels2RelaysIncognito ps =
               cath <## "    + 👍"
               alice <# ("#team " <> danIncognito <> "> > hi")
               alice <## "    + 👍"
+              eve .<##. ("#team: unknown member ", (" updated to " <> danIncognito))
               eve .<## (" introduced " <> danIncognito <> " in the channel")
               eve <# ("#team " <> danIncognito <> "> > hi")
               eve <## "    + 👍"
+              frank .<##. ("#team: unknown member ", (" updated to " <> danIncognito))
               frank .<## (" introduced " <> danIncognito <> " in the channel")
               frank <# ("#team " <> danIncognito <> "> > hi")
               frank <## "    + 👍"
 
-              -- remove below if default role is changed to observer
-              dan ?#> "#team hey"
-              [bob, cath] *<# ("#team " <> danIncognito <> "> hey")
-              [alice, eve, frank] *<# ("#team " <> danIncognito <> "> hey [>>]")
+              alice `hasContactProfiles` ["alice", "bob", "cath", T.pack danIncognito, "eve", "frank"]
+              bob `hasContactProfiles` ["alice", "bob", T.pack danIncognito, "eve", "frank"]
+              cath `hasContactProfiles` ["alice", "cath", T.pack danIncognito, "eve", "frank"]
+              dan `hasContactProfiles` ["alice", "bob", "cath", "dan", T.pack danIncognito]
+              eve `hasContactProfiles` ["alice", "bob", "cath", T.pack danIncognito, "eve"]
+              frank `hasContactProfiles` ["alice", "bob", "cath", T.pack danIncognito, "frank"]
 
 testChannelUpdateProfileSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdateProfileSigned ps =
@@ -9241,7 +9456,7 @@ testChannelLinkAfterProfileUpdate ps =
           -- late subscriber joins via the same channel link after profile update
           threadDelay 100000
           alice ##> "/show link #my_team"
-          (shortLink', fullLink') <- getGroupLinks alice "my_team" GRMember False
+          (shortLink', fullLink') <- getGroupLinks alice "my_team" GRObserver False
           shortLink' `shouldBe` shortLink
           fullLink' `shouldBe` fullLink
           memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
@@ -9278,7 +9493,7 @@ testChannelLinkAfterWelcomeUpdate ps =
           -- re-fetch updated link, late subscriber joins
           threadDelay 100000
           alice ##> "/show link #team"
-          (shortLink', fullLink') <- getGroupLinks alice "team" GRMember False
+          (shortLink', fullLink') <- getGroupLinks alice "team" GRObserver False
           shortLink' `shouldBe` shortLink
           fullLink' `shouldBe` fullLink
           memberJoinChannel "team" [bob] [alice] shortLink' fullLink' dan
@@ -9315,7 +9530,7 @@ testChannelOwnerKeyAfterLinkUpdate ps =
 
           -- Late subscriber joins via the same channel link after profile update.
           alice ##> "/show link #my_team"
-          (shortLink', fullLink') <- getGroupLinks alice "my_team" GRMember False
+          (shortLink', fullLink') <- getGroupLinks alice "my_team" GRObserver False
           shortLink' `shouldBe` shortLink
           fullLink' `shouldBe` fullLink
           memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
@@ -9382,15 +9597,22 @@ testChannelChangeRoleSigned ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- promote cath to member (observer default) so it can post
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            threadDelay 1000000
+
             -- other members discover cath
             cath #> "#team hello from cath"
             bob <# "#team cath> hello from cath"
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
+                  dan <### [EndsWith "updated to cath"]
                   dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
+                  eve <### [EndsWith "updated to cath"]
                   eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
@@ -9405,27 +9627,25 @@ testChannelChangeRoleSigned ps =
                 dan <## "#team: alice changed the role of cath from member to admin (signed)",
                 eve <## "#team: alice changed the role of cath from member to admin (signed)"
               ]
+            -- chat item is not created for other members
             alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of cath to admin (signed)")])
-            bob #$> ("/_get chat #1 count=1", chat, [(0, "changed role of cath to admin (signed)")])
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
             cath #$> ("/_get chat #1 count=1", chat, [(0, "changed your role to admin (signed)")])
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "changed role of cath to admin (signed)")])
-            eve #$> ("/_get chat #1 count=1", chat, [(0, "changed role of cath to admin (signed)")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+            eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
 
-            -- change role of silent member (other members don't know about member)
+            -- change role of silent member
             threadDelay 1000000
             alice ##> "/mr #team dan admin"
             alice <## "#team: you changed the role of dan to admin (signed)"
-            bob <## "#team: alice changed the role of dan from member to admin (signed)"
             concurrentlyN_
-              [ dan <## "#team: alice changed your role from member to admin (signed)",
-                cath <## "error: x.grp.mem.role with unknown member ID",
-                eve <## "error: x.grp.mem.role with unknown member ID"
+              [ bob <## "#team: alice changed the role of dan from observer to admin (signed)",
+                dan <## "#team: alice changed your role from observer to admin (signed)",
+                cath .<##. ("#team: alice changed the role of ", " from observer to admin (signed)"),
+                eve .<##. ("#team: alice changed the role of ", " from observer to admin (signed)")
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of dan to admin (signed)")])
-            bob #$> ("/_get chat #1 count=1", chat, [(0, "changed role of dan to admin (signed)")])
-            cath #$> ("/_get chat #1 count=1", chat, [(0, "changed your role to admin (signed)")]) -- now new chat item
             dan #$> ("/_get chat #1 count=1", chat, [(0, "changed your role to admin (signed)")])
-            eve #$> ("/_get chat #1 count=1", chat, [(0, "changed role of cath to admin (signed)")]) -- now new chat item
 
 testChannelBlockMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelBlockMemberSigned ps =
@@ -9436,6 +9656,9 @@ testChannelBlockMemberSigned ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- promote cath to member (observer default) so it can post
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
             -- other members discover cath
             threadDelay 1000000
             cath #> "#team hello from cath"
@@ -9443,9 +9666,11 @@ testChannelBlockMemberSigned ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
+                  dan <### [EndsWith "updated to cath"]
                   dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
+                  eve <### [EndsWith "updated to cath"]
                   eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
@@ -9491,6 +9716,388 @@ testChannelBlockMemberSigned ps =
             r2 `shouldStartWith` "blocked"
             r2 `shouldEndWith` "(signed)"
 
+checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
+checkMemberRow cc name expectedRole = do
+  roles <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
+  map (\(Only r) -> r) roles `shouldBe` maybeToList expectedRole
+
+-- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
+-- find a member by id on a subscriber that only knows it by member-id hash (e.g. after roster recovery).
+getMemberIdByName :: TestCC -> T.Text -> IO ByteString
+getMemberIdByName cc name = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+  case rows of
+    [Only mid] -> pure mid
+    _ -> fail $ "expected one group_members row for " <> T.unpack name
+
+getMemberRoleKey :: TestCC -> ByteString -> IO (T.Text, Maybe ByteString)
+getMemberRoleKey cc mid = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only mid) :: IO [(T.Text, Maybe ByteString)]
+  case rows of
+    [r] -> pure r
+    _ -> fail "expected one group_members row by member id"
+
+testChannelModeratorActionViaRoster :: HasCallStack => TestParams -> IO ()
+testChannelModeratorActionViaRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+              forM_ [cath, dan, eve] $ \member ->
+                memberJoinChannel "team" [bob] [alice] shortLink fullLink member
+
+              -- promote dan (observer default) so it can post; cath and eve then discover dan
+              threadDelay 1000000
+              promoteChannelMember "team" alice bob dan [cath, eve]
+              dan #> "#team hello from dan"
+              bob <# "#team dan> hello from dan"
+              concurrentlyN_
+                [ alice <# "#team dan> hello from dan [>>]",
+                  do
+                    cath <### [EndsWith "updated to dan"]
+                    cath <## "#team: bob introduced dan (Daniel) in the channel"
+                    cath <# "#team dan> hello from dan [>>]",
+                  do
+                    eve <### [EndsWith "updated to dan"]
+                    eve <## "#team: bob introduced dan (Daniel) in the channel"
+                    eve <# "#team dan> hello from dan [>>]"
+                ]
+
+              -- cath promoted observer -> moderator; dan/eve learn cath via the roster re-serve
+              -- (no name yet -> rendered by member id hash)
+              threadDelay 1000000
+              alice ##> "/mr #team cath moderator"
+              alice <## "#team: you changed the role of cath to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+                  cath <## "#team: alice changed your role from observer to moderator (signed)",
+                  dan <### [EndsWith "to moderator (signed)"],
+                  eve <### [EndsWith "to moderator (signed)"]
+                ]
+
+              -- cath (moderator) blocks dan; profile prepend carries cath's full profile to dan/eve
+              threadDelay 1000000
+              cath ##> "/block for all #team dan"
+              cath <## "#team: you blocked dan (signed)"
+              bob <## "#team: cath blocked dan (signed)"
+              alice <## "#team: cath blocked dan (signed)"
+              eve <### [EndsWith "updated to cath"]
+              eve <## "#team: bob introduced cath (Catherine) in the channel"
+              eve <## "#team: cath blocked dan (signed)"
+              dan <### [EndsWith "updated to cath"]
+              dan <## "#team: bob introduced cath (Catherine) in the channel"
+
+              -- frank joins after the roster update; cached roster gives him cath as moderator.
+              -- both alice (owner) and cath (mod) receive XGrpMemNew(frank) via introduceInChannel.
+              -- the roster apply also emits the role-change chat item on frank's side (owner
+              -- profile may not be loaded yet, so the actor renders by memberId hash)
+              threadDelay 1000000
+              memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
+              -- the late joiner learns the roster from the served snapshot (verified below); under the
+              -- no-broadcast model the apply finds no role change to surface, so no item here
+              threadDelay 1000000 -- the served roster arrives async
+              checkMemberRole frank "cath" "moderator"
+  where
+    checkMemberRole :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
+    checkMemberRole cc name expectedRole = do
+      roles <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
+      map (\(Only r) -> r) roles `shouldBe` [expectedRole]
+
+testChannelSubscriberRosterCatchUp :: HasCallStack => TestParams -> IO ()
+testChannelSubscriberRosterCatchUp ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+              forM_ [cath, dan, eve, frank] $ \member ->
+                memberJoinChannel "team" [bob] [alice] shortLink fullLink member
+              -- promote dan (roster v0) then eve (v1) into the owner-signed roster; cath learns both with their keys
+              threadDelay 1000000
+              promoteChannelMember "team" alice bob dan [cath, eve, frank]
+              threadDelay 1000000
+              promoteChannelMember "team" alice bob eve [cath, dan, frank]
+              threadDelay 1000000
+              -- simulate cath having fallen behind and lost dan: capture dan's member id (from the owner, which
+              -- knows the name) and cath's owner-pinned key for dan, then delete dan's record and rewind cath's
+              -- applied frontier so the next delta arrives as a gap (v2 > applied 0 + 1)
+              danId <- getMemberIdByName alice "dan"
+              (_, danKey) <- getMemberRoleKey cath danId
+              withCCTransaction cath $ \db -> do
+                DB.execute db "DELETE FROM group_members WHERE member_id = ?" (Only danId)
+                DB.execute db "UPDATE groups SET applied_complete_roster_version = ? WHERE group_id = ?" (0 :: Int64, 1 :: Int64)
+              -- the next privileged change (frank -> v2) reaches cath at a jumped version, triggering catch-up:
+              -- cath requests the roster from the forwarding relay, which re-serves the current snapshot
+              promoteChannelMember "team" alice bob frank [cath, dan, eve]
+              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              -- cath recovered dan from the re-served roster: same member id, role, and owner-pinned key
+              (recRole, recKey) <- getMemberRoleKey cath danId
+              recRole `shouldBe` "member"
+              recKey `shouldBe` danKey
+
+-- Same recovery, but the subscriber (frank) is connected to two relays: the request goes to whichever relay
+-- forwarded the gapping delta, and only an observation that catch-up works in a 2-relay channel (not the race).
+testChannel2RelaysSubscriberRosterCatchUp :: HasCallStack => TestParams -> IO ()
+testChannel2RelaysSubscriberRosterCatchUp ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+              forM_ [dan, eve, frank] $ \member ->
+                memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink member
+              -- promote dan (v0) then eve (v1) into the owner-signed roster, forwarded by both relays; frank
+              -- (the subscriber) learns both with their keys
+              threadDelay 1000000
+              alice ##> "/mr #team dan member"
+              alice <## "#team: you changed the role of dan to member (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of dan from observer to member (signed)",
+                  cath <## "#team: alice changed the role of dan from observer to member (signed)",
+                  dan <## "#team: alice changed your role from observer to member (signed)",
+                  eve <### [EndsWith "from observer to member (signed)"],
+                  frank <### [EndsWith "from observer to member (signed)"]
+                ]
+              threadDelay 1000000
+              alice ##> "/mr #team eve member"
+              alice <## "#team: you changed the role of eve to member (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of eve from observer to member (signed)",
+                  cath <## "#team: alice changed the role of eve from observer to member (signed)",
+                  eve <## "#team: alice changed your role from observer to member (signed)",
+                  dan <### [EndsWith "from observer to member (signed)"],
+                  frank <### [EndsWith "from observer to member (signed)"]
+                ]
+              threadDelay 1000000
+              -- simulate frank having fallen behind and lost dan: delete dan's record and rewind frank's complete
+              -- frontier so the next delta (eve -> v2) arrives as a gap (2 > applied 0 + 1)
+              danId <- getMemberIdByName alice "dan"
+              (_, danKey) <- getMemberRoleKey frank danId
+              withCCTransaction frank $ \db -> do
+                DB.execute db "DELETE FROM group_members WHERE member_id = ?" (Only danId)
+                DB.execute db "UPDATE groups SET applied_complete_roster_version = ? WHERE group_id = ?" (0 :: Int64, 1 :: Int64)
+              -- eve -> moderator (v2) reaches frank at a jumped version; it requests the roster from the relay that
+              -- forwarded the delta, which re-serves the current snapshot (including dan), recovering dan
+              alice ##> "/mr #team eve moderator"
+              alice <## "#team: you changed the role of eve to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of eve from member to moderator (signed)",
+                  cath <## "#team: alice changed the role of eve from member to moderator (signed)",
+                  eve <## "#team: alice changed your role from member to moderator (signed)",
+                  dan <### [EndsWith "from member to moderator (signed)"],
+                  frank <### [EndsWith "from member to moderator (signed)"]
+                ]
+              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              (recRole, recKey) <- getMemberRoleKey frank danId
+              recRole `shouldBe` "member"
+              recKey `shouldBe` danKey
+
+testChannelRemovedModeratorRefreshesRoster :: HasCallStack => TestParams -> IO ()
+testChannelRemovedModeratorRefreshesRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+              forM_ [cath, dan, eve] $ \member ->
+                memberJoinChannel "team" [bob] [alice] shortLink fullLink member
+              -- cath promoted observer -> moderator; dan/eve learn cath via the roster (id hash)
+              threadDelay 1000000
+              alice ##> "/mr #team cath moderator"
+              alice <## "#team: you changed the role of cath to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+                  cath <## "#team: alice changed your role from observer to moderator (signed)",
+                  dan <### [EndsWith "to moderator (signed)"],
+                  eve <### [EndsWith "to moderator (signed)"]
+                ]
+              threadDelay 1000000
+              alice ##> "/rm #team cath"
+              alice <## "#team: you removed cath from the group (signed)"
+              -- the relay applies the removal via the roster (revert to observer) before the delete delta
+              bob <## "#team: alice changed the role of cath from moderator to observer (signed)"
+              bob <## "#team: alice removed cath from the group (signed)"
+              cath <## "#team: alice removed you from the group (signed)"
+              cath <## "use /d #team to delete the group"
+              dan <### [EndsWith "from the group (signed)"]
+              eve <### [EndsWith "from the group (signed)"]
+
+              -- frank joins after the removal; cached roster has dropped cath
+              threadDelay 1000000
+              memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+              threadDelay 100000
+              checkMemberRow frank "cath" Nothing
+
+testChannelRoleTransitionsUpdateRoster :: HasCallStack => TestParams -> IO ()
+testChannelRoleTransitionsUpdateRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+              memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+              -- observer -> moderator
+              threadDelay 100000
+              alice ##> "/mr #team cath moderator"
+              alice <## "#team: you changed the role of cath to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+                  cath <## "#team: alice changed your role from observer to moderator (signed)"
+                ]
+              -- dan joins; cached roster has cath as moderator (learned from the served snapshot,
+              -- no separate role-change item under the no-broadcast model)
+              threadDelay 100000
+              memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
+              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
+              checkMemberRow dan "cath" (Just "moderator")
+              -- moderator -> admin: dan now knows cath, role event lands cleanly
+              threadDelay 100000
+              alice ##> "/mr #team cath admin"
+              alice <## "#team: you changed the role of cath to admin (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from moderator to admin (signed)",
+                  cath <## "#team: alice changed your role from moderator to admin (signed)",
+                  dan <## "#team: alice changed the role of cath from moderator to admin (signed)"
+                ]
+              -- eve joins; cached roster has cath as admin (learned from the served snapshot)
+              threadDelay 100000
+              memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink eve
+              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
+              checkMemberRow eve "cath" (Just "admin")
+              -- admin -> observer (crossing out of roster, since member is now in-roster): roster drops cath
+              threadDelay 100000
+              alice ##> "/mr #team cath observer"
+              alice <## "#team: you changed the role of cath to observer (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from admin to observer (signed)",
+                  cath <## "#team: alice changed your role from admin to observer (signed)",
+                  dan <## "#team: alice changed the role of cath from admin to observer (signed)",
+                  eve <## "#team: alice changed the role of cath from admin to observer (signed)"
+                ]
+              -- frank joins; cath isn't in the roster, so frank has no record of her
+              threadDelay 100000
+              memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+              threadDelay 100000
+              checkMemberRow frank "cath" Nothing
+
+testChannelRelayCannotDowngradeRosterMember :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotDowngradeRosterMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChatOpts ps (testOpts {coreOptions = testCoreOpts {logLevel = CLLWarning}}) "frank" frankProfile $ \frank -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+          -- promote cath; roster TOFU-creates cath on frank as moderator with the real key
+          threadDelay 1000000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+              cath <## "#team: alice changed your role from observer to moderator (signed)",
+              frank <### [EndsWith "to moderator (signed)"]
+            ]
+          threadDelay 100000
+          realKey <- getMemberPubKey bob "cath"
+          -- malicious relay: corrupt bob's local record of cath so its XGrpMemNew dissemination
+          -- carries a downgraded role + no key
+          withCCTransaction bob $ \db ->
+            DB.execute
+              db
+              "UPDATE group_members SET member_role = ?, member_pub_key = NULL WHERE local_display_name = ?"
+              ("member" :: T.Text, "cath" :: T.Text)
+          -- cath posts; bob prepends XGrpMemNew(cath, member, NULL) to the delivery (frank not yet introduced)
+          threadDelay 100000
+          cath #> "#team hello from cath"
+          bob <# "#team cath> hello from cath"
+          concurrentlyN_
+            [ alice <# "#team cath> hello from cath [>>]",
+              do
+                frank <##. "warning: x.grp.mem.new: relay asserted key differs from roster-established key, keeping roster key, memberId="
+                frank <### [EndsWith "updated to cath"]
+                frank <## "#team: bob introduced cath (Catherine) in the channel"
+                frank <# "#team cath> hello from cath [>>]"
+            ]
+          threadDelay 100000
+          checkMemberRow frank "cath" (Just "moderator")
+          frankKey <- getMemberPubKey frank "cath"
+          frankKey `shouldBe` realKey
+  where
+    getMemberPubKey :: TestCC -> T.Text -> IO (Maybe ByteString)
+    getMemberPubKey cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_pub_key FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only (Maybe ByteString)]
+      case rows of
+        [Only k] -> pure k
+        _ -> fail $ "expected one row for " <> T.unpack name
+
+testChannelRelayCannotForgePrivilegedMember :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotForgePrivilegedMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        threadDelay 1000000
+        -- the forged attribution only resolves to a privileged author if the victim already holds the
+        -- owner at GROwner (established via the group link on join) - this documents and guards that premise
+        checkMemberRow cath "alice" (Just "owner")
+        ownerMemId <- ownerMemberId bob
+        connId <- relayConnIdToMember bob "cath"
+        -- the malicious relay forges the announcement, choosing the new member's role and signing key
+        g <- C.newRandom
+        kp <- atomically $ C.generateKeyPair g
+        ts <- getCurrentTime
+        let ChatController {smpAgent = bobAgent} = chatController bob
+            attackerPub = fst kp :: C.PublicKeyEd25519
+            forgedMemId = MemberId "forgedadmin1"
+            forgedProfile = (aliceProfile :: Profile) {displayName = "forgery", fullName = "Forgery"}
+            memInfo =
+              MemberInfo
+                { memberId = forgedMemId,
+                  memberRole = GRAdmin,
+                  v = Nothing,
+                  profile = forgedProfile,
+                  memberKey = Just (MemberKey attackerPub)
+                }
+            chatMsg = ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
+            fwd = GrpMsgForward (FwdMember ownerMemId "alice") ts
+            body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+        sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+        either (fail . show) (const $ pure ()) sent
+        -- secure: the victim rejects the forged privileged announcement instead of storing it
+        cath <##. "error: x.grp.mem.new: privileged member not established by roster"
+        forged <- forgedMemberRows cath "forgery"
+        forged `shouldBe` []
+  where
+    ownerMemberId :: TestCC -> IO MemberId
+    ownerMemberId cc = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1" (Only ("owner" :: T.Text)) :: IO [Only ByteString]
+      case rows of
+        [Only mid] -> pure (MemberId mid)
+        _ -> fail "expected exactly one owner member on the relay"
+    forgedMemberRows :: TestCC -> T.Text -> IO [(T.Text, Maybe ByteString)]
+    forgedMemberRows cc name =
+      withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?" (Only name)
+
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9500,15 +10107,20 @@ testChannelRemoveMemberSigned ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- promote eve to member (observer default) so it can post
+            promoteChannelMember "team" alice bob eve [cath, dan]
+
             -- other members discover eve
             eve #> "#team hello from eve"
             bob <# "#team eve> hello from eve"
             concurrentlyN_
               [ alice <# "#team eve> hello from eve [>>]",
                 do
+                  dan <### [EndsWith "updated to eve"]
                   dan <## "#team: bob introduced eve (Eve) in the channel"
                   dan <# "#team eve> hello from eve [>>]",
                 do
+                  cath <### [EndsWith "updated to eve"]
                   cath <## "#team: bob introduced eve (Eve) in the channel"
                   cath <# "#team eve> hello from eve [>>]"
               ]
@@ -9526,6 +10138,8 @@ testChannelRemoveMemberSigned ps =
             threadDelay 1000000
             alice ##> "/rm #team eve"
             alice <## "#team: you removed eve from the group (signed)"
+            -- the relay applies the removal via the roster (revert to observer) before the delete delta
+            bob <## "#team: alice changed the role of eve from member to observer (signed)"
             bob <## "#team: alice removed eve from the group (signed)"
             concurrentlyN_
               [ cath <## "#team: alice removed eve from the group (signed)",
@@ -9681,6 +10295,9 @@ testChannelSubscriberLeave ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- promote cath to member (observer default) so it can post
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
             -- other members discover cath
             threadDelay 1000000
             cath #> "#team hello from cath"
@@ -9688,9 +10305,11 @@ testChannelSubscriberLeave ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
+                  dan <### [EndsWith "updated to cath"]
                   dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
+                  eve <### [EndsWith "updated to cath"]
                   eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
@@ -9916,6 +10535,9 @@ testChannelSubscriberProfileUpdate ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- promote dan to member early (observer default) so its role-change item precedes the messages
+            promoteChannelMember "team" alice bob dan [cath, eve]
+
             -- enable support and create support chat for cath (but not dan)
             threadDelay 1000000
             alice ##> "/set support #team on"
@@ -9935,6 +10557,9 @@ testChannelSubscriberProfileUpdate ps =
             (dan </)
             (eve </)
 
+            -- promote cath to member (observer default) so it can post
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
             -- other members discover cath
             threadDelay 1000000
             cath #> "#team hello from cath"
@@ -9942,9 +10567,11 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
+                  dan <### [EndsWith "updated to cath"]
                   dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
+                  eve <### [EndsWith "updated to cath"]
                   eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
@@ -9974,9 +10601,8 @@ testChannelSubscriberProfileUpdate ps =
             cath #$> ("/_get chat #1 count=2", chat, [(1, "hello from cath"), (1, "hello from kate")])
             -- verify profiles are updated correctly
             forM_ [alice, bob] $ \cc -> cc `hasContactProfiles` ["alice", "bob", "kate", "dan", "eve"]
-            cath `hasContactProfiles` ["alice", "bob", "kate"]
             dan `hasContactProfiles` ["alice", "bob", "kate", "dan"]
-            eve `hasContactProfiles` ["alice", "bob", "kate", "eve"]
+            -- cath/eve also know dan by id hash now (roster-learned before dan posts); not asserted
 
             -- previously silent subscriber updates profile
             -- dan has no support chat -> no profile update item created
@@ -9988,9 +10614,11 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team dave> hello from dave [>>]",
                 do
+                  eve <### [EndsWith "updated to dave"]
                   eve <## "#team: bob introduced dave in the channel"
                   eve <# "#team dave> hello from dave [>>]",
                 do
+                  cath <### [EndsWith "updated to dave"]
                   cath <## "#team: bob introduced dave in the channel"
                   cath <# "#team dave> hello from dave [>>]"
               ]
@@ -10075,6 +10703,250 @@ testChannelAddRelay ps =
             alice #> "#team hello"
             [bob, cath] *<# "#team> hello"
             [dan, eve] *<# "#team> hello [>>]"
+
+testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
+testChannelAddRelayWithRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "dan" danProfile $ \dan ->
+        withNewTestChat ps "cath" cathProfile $ \cath ->
+          withNewTestChat ps "eve" eveProfile $ \_eve -> do
+            (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+            memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+            -- promote cath observer -> moderator: the roster is created (bob caches it)
+            threadDelay 100000
+            alice ##> "/mr #team cath moderator"
+            alice <## "#team: you changed the role of cath to moderator (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+                cath <## "#team: alice changed your role from observer to moderator (signed)"
+              ]
+            threadDelay 100000
+
+            -- add dan as a 2nd relay; with a roster present it must cache the roster and ack
+            -- (XGrpRosterAck) before alice publishes it as joinable
+            dan ##> "/ad"
+            (danSLink, _cLink) <- getContactLinks dan True
+            alice ##> ("/relays name=dan " <> danSLink)
+            alice <## "ok"
+            alice ##> "/_add relays #1 2"
+            alice <## "#team: group relays:"
+            alice <## "  - relay id 1: active"
+            alice <## "  - relay id 2: invited"
+            concurrentlyN_
+              [ do
+                  alice <## "#team: group link relays updated, current relays:"
+                  alice
+                    <### [ "  - relay id 1: active",
+                           "  - relay id 2: active"
+                         ]
+                  alice <## "group link:"
+                  void $ getTermLine alice,
+                dan <## "#team: you joined the group as relay"
+              ]
+
+            -- cath (an existing member) connects to the new relay and is attached to her roster
+            -- record, kept as moderator (the relay learned cath from the cached roster snapshot, so
+            -- it surfaces no role-change item for her)
+            concurrentlyN_
+              [ do
+                  cath <## "#team: joining the group (connecting to relay dan)..."
+                  cath <## "#team: you joined the group (connected to relay dan)",
+                dan
+                  <### [ EndsWith "accepting request to join group #team...",
+                         EndsWith "is connected"
+                       ]
+              ]
+
+            threadDelay 100000
+            -- the new relay holds the roster (cath is moderator) and learns her name when she connects
+            checkMemberRow dan "cath" (Just "moderator")
+
+testChannelRosterMultipartReassembly :: HasCallStack => TestParams -> IO ()
+testChannelRosterMultipartReassembly ps =
+  withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfgOpts ps cfg testOpts "cath" cathProfile $ \cath ->
+        withNewTestChatCfgOpts ps cfg testOpts "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          threadDelay 100000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+              cath <## "#team: alice changed your role from observer to moderator (signed)"
+            ]
+          threadDelay 100000
+          memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
+          -- dan reassembles the multi-chunk roster from the served snapshot (arrives async)
+          threadDelay 1000000
+          checkMemberRow dan "cath" (Just "moderator")
+  where
+    cfg = testCfg {fileChunkSize = 30}
+
+testChannelRosterDigestMismatchRejected :: HasCallStack => TestParams -> IO ()
+testChannelRosterDigestMismatchRejected ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "frank" frankProfile $ \frank -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          threadDelay 100000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
+              cath <## "#team: alice changed your role from observer to moderator (signed)"
+            ]
+          threadDelay 100000
+          -- corrupt the relay's stored blob (same length, different content) so its digest no
+          -- longer matches the signed header (DB-agnostic: read it, overwrite with zeroed bytes)
+          withCCTransaction bob $ \db -> do
+            rows <- DB.query_ db "SELECT roster_blob FROM groups WHERE roster_blob IS NOT NULL" :: IO [Only (Binary ByteString)]
+            forM_ rows $ \(Only (Binary blob)) ->
+              DB.execute db "UPDATE groups SET roster_blob = ? WHERE roster_blob IS NOT NULL" (Only (Binary (B.replicate (B.length blob) '\NUL')))
+          -- frank joins; bob re-serves the valid header with the corrupted blob, frank rejects it
+          threadDelay 100000
+          memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
+          threadDelay 1000000
+          -- the rejected roster never elevates cath: the intro caps her to the channel default, so she
+          -- stays observer (not moderator), and the version must not advance to the corrupted roster's version 1
+          checkMemberRow frank "cath" (Just "observer")
+          checkRosterNotApplied frank
+  where
+    -- the version is the second guarantee (the role is asserted above): frank holds exactly the team
+    -- group with no roster applied, so roster_version is NULL - it never advanced to the corrupted version 1
+    checkRosterNotApplied :: HasCallStack => TestCC -> IO ()
+    checkRosterNotApplied cc = do
+      vs <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT roster_version FROM groups" :: IO [Only (Maybe Int64)]
+      map (\(Only v) -> v) vs `shouldBe` [Nothing]
+
+testChannelPromotedMemberCanPost :: HasCallStack => TestParams -> IO ()
+testChannelPromotedMemberCanPost ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          -- promote cath to member: cath enters the owner-signed roster (dan learns cath by id hash)
+          promoteChannelMember "team" alice bob cath [dan]
+          -- the promoted member can now post; dan resolves cath on the first forward
+          cath #> "#team hi from cath"
+          bob <# "#team cath> hi from cath"
+          alice <# "#team cath> hi from cath [>>]"
+          dan <### [EndsWith "updated to cath"]
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> hi from cath [>>]"
+          checkMemberRow dan "cath" (Just "member")
+
+testChannelObserverCannotPost :: HasCallStack => TestParams -> IO ()
+testChannelObserverCannotPost ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          -- cath is an observer (default): its own post is rejected locally and never reaches the relay
+          cath ##> "#team observer attempt"
+          cath <## "#team: you don't have permission to send messages"
+          -- promote cath to member; the post is now accepted and delivered, dan resolves cath
+          promoteChannelMember "team" alice bob cath [dan]
+          cath #> "#team member post"
+          bob <# "#team cath> member post"
+          alice <# "#team cath> member post [>>]"
+          dan <### [EndsWith "updated to cath"]
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> member post [>>]"
+
+testChannelPromotedMemberRejoinViaRelay :: HasCallStack => TestParams -> IO ()
+testChannelPromotedMemberRejoinViaRelay ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "dan" danProfile $ \dan ->
+        withNewTestChat ps "cath" cathProfile $ \cath -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          -- promote cath to member: cath enters the owner-signed roster with her pinned key
+          threadDelay 100000
+          promoteChannelMember "team" alice bob cath []
+          threadDelay 100000
+          -- add dan as a 2nd relay; it caches the roster (incl. member cath) before joinable
+          dan ##> "/ad"
+          (danSLink, _cLink) <- getContactLinks dan True
+          alice ##> ("/relays name=dan " <> danSLink)
+          alice <## "ok"
+          alice ##> "/_add relays #1 2"
+          alice <## "#team: group relays:"
+          alice <## "  - relay id 1: active"
+          alice <## "  - relay id 2: invited"
+          concurrentlyN_
+            [ do
+                alice <## "#team: group link relays updated, current relays:"
+                alice
+                  <### [ "  - relay id 1: active",
+                         "  - relay id 2: active"
+                       ]
+                alice <## "group link:"
+                void $ getTermLine alice,
+              dan <## "#team: you joined the group as relay"
+            ]
+          -- cath (a promoted member) connects to the new relay; the widened join gate
+          -- (verifyKey over the roster-pinned key) accepts her and keeps her as member
+          concurrentlyN_
+            [ do
+                cath <## "#team: joining the group (connecting to relay dan)..."
+                cath <## "#team: you joined the group (connected to relay dan)",
+              dan
+                <### [ EndsWith "accepting request to join group #team...",
+                       EndsWith "is connected"
+                     ]
+            ]
+          threadDelay 100000
+          checkMemberRow dan "cath" (Just "member")
+
+testChannelRosterMultiRelayMultipart :: HasCallStack => TestParams -> IO ()
+testChannelRosterMultiRelayMultipart ps =
+  withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfgOpts ps cfg relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChatCfgOpts ps cfg testOpts "dan" danProfile $ \dan ->
+          withNewTestChatCfgOpts ps cfg testOpts "eve" eveProfile $ \eve ->
+            withNewTestChatCfgOpts ps cfg testOpts "frank" frankProfile $ \frank -> do
+              createChannel2Relays "team" alice bob cath dan eve frank
+
+              -- promote eve to moderator: the owner-signed roster broadcasts through BOTH relays to dan and
+              -- frank (each connected to both). At fileChunkSize=30 the blob spans multiple chunks, so each
+              -- member receives two interleaved multi-chunk streams (one per relay) for the same roster.
+              threadDelay 1000000
+              alice ##> "/mr #team eve moderator"
+              alice <## "#team: you changed the role of eve to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of eve from observer to moderator (signed)",
+                  cath <## "#team: alice changed the role of eve from observer to moderator (signed)",
+                  eve <## "#team: alice changed your role from observer to moderator (signed)",
+                  dan <### [EndsWith "to moderator (signed)"],
+                  frank <### [EndsWith "to moderator (signed)"]
+                ]
+              threadDelay 1000000 -- let both relays' interleaved multipart streams settle
+
+              -- per-source transfers keep the streams independent, so each member reassembles the blob and pins
+              -- eve as the single moderator WITH her owner-attested key (role + key both come from the blob)
+              checkOneModeratorWithKey dan
+              checkOneModeratorWithKey frank
+  where
+    cfg = testCfg {fileChunkSize = 30}
+    checkOneModeratorWithKey cc = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT member_pub_key FROM group_members WHERE member_role = 'moderator'" :: IO [Only (Maybe ByteString)]
+      map (\(Only k) -> isJust k) rows `shouldBe` [True]
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =
@@ -10656,42 +11528,48 @@ testChannelMessageFile ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+            -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
+            -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- all members receive the file concurrently
             src <- B.readFile "./tests/fixtures/test.jpg"
             concurrentlyN_
-              [ receiveFile bob "bob" src,
-                receiveFile cath "cath" src,
-                receiveFile dan "dan" src,
-                receiveFile eve "eve" src
+              [ receiveFile bob "bob" rcvFileId src,
+                receiveFile cath "cath" rcvFileId src,
+                receiveFile dan "dan" rcvFileId src,
+                receiveFile eve "eve" rcvFileId src
               ]
   where
-    receiveFile cc name src = do
+    receiveFile cc name fileId src = do
       let path = "./tests/tmp/test_" <> name <> ".jpg"
-      cc ##> ("/fr 1 " <> path)
+      cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
-        <### [ ConsoleString ("saving file 1 from #team to " <> path),
-               "started receiving file 1 (test.jpg) from #team"
+        <### [ ConsoleString ("saving file " <> show fileId <> " from #team to " <> path),
+               ConsoleString ("started receiving file " <> show fileId <> " (test.jpg) from #team")
              ]
-      cc <## "completed receiving file 1 (test.jpg) from #team"
+      cc <## ("completed receiving file " <> show fileId <> " (test.jpg) from #team")
       B.readFile path >>= (`shouldBe` src)
 
 testChannelMessageFileCancel :: HasCallStack => TestParams -> IO ()
@@ -10702,33 +11580,37 @@ testChannelMessageFileCancel ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- owner cancels file
             alice ##> "/fc 1"
             alice <## "cancelled sending file 1 (test.jpg) to bob"
-            bob <## "team cancelled sending file 1 (test.jpg)"
+            bob <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)")
             concurrentlyN_
-              [ cath <## "team cancelled sending file 1 (test.jpg)",
-                dan <## "team cancelled sending file 1 (test.jpg)",
-                eve <## "team cancelled sending file 1 (test.jpg)"
+              [ cath <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                dan <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                eve <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)")
               ]
 
 testChannelMessageQuote :: HasCallStack => TestParams -> IO ()
@@ -10745,6 +11627,9 @@ testChannelMessageQuote ps =
             bob <# "#team> hello from channel"
             [cath, dan, eve] *<# "#team> hello from channel [>>]"
 
+            -- promote cath to member (observer default) so it can post
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
             -- member quotes channel message
             cath `send` "> #team (hello from) replying to channel"
             cath <# "#team > hello from channel"
@@ -10756,10 +11641,12 @@ testChannelMessageQuote ps =
                   alice <# "#team cath> > hello from channel [>>]"
                   alice <## "      replying to channel [>>]",
                 do
+                  dan <### [EndsWith "updated to cath"]
                   dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> > hello from channel [>>]"
                   dan <## "      replying to channel [>>]",
                 do
+                  eve <### [EndsWith "updated to cath"]
                   eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> > hello from channel [>>]"
                   eve <## "      replying to channel [>>]"
@@ -10873,43 +11760,47 @@ testChannelOwnerFileTransferAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- all members receive the file
             src <- B.readFile "./tests/fixtures/test.jpg"
             concurrentlyN_
-              [ receiveFile bob "bob" src,
-                receiveFile cath "cath" src,
-                receiveFile dan "dan" src,
-                receiveFile eve "eve" src
+              [ receiveFile bob "bob" rcvFileId src,
+                receiveFile cath "cath" rcvFileId src,
+                receiveFile dan "dan" rcvFileId src,
+                receiveFile eve "eve" rcvFileId src
               ]
   where
-    receiveFile cc name src = do
+    receiveFile cc name fileId src = do
       let path = "./tests/tmp/test_" <> name <> ".jpg"
-      cc ##> ("/fr 1 " <> path)
+      cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
-        <### [ ConsoleString ("saving file 1 from alice to " <> path),
-               "started receiving file 1 (test.jpg) from alice"
+        <### [ ConsoleString ("saving file " <> show fileId <> " from alice to " <> path),
+               ConsoleString ("started receiving file " <> show fileId <> " (test.jpg) from alice")
              ]
-      cc <## "completed receiving file 1 (test.jpg) from alice"
+      cc <## ("completed receiving file " <> show fileId <> " (test.jpg) from alice")
       B.readFile path >>= (`shouldBe` src)
 
 testChannelOwnerFileCancelAsMember :: HasCallStack => TestParams -> IO ()
@@ -10920,34 +11811,38 @@ testChannelOwnerFileCancelAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- owner cancels file
             alice ##> "/fc 1"
             alice <## "cancelled sending file 1 (test.jpg) to bob"
-            bob <## "alice cancelled sending file 1 (test.jpg)"
+            bob <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)")
             concurrentlyN_
-              [ cath <## "alice cancelled sending file 1 (test.jpg)",
-                dan <## "alice cancelled sending file 1 (test.jpg)",
-                eve <## "alice cancelled sending file 1 (test.jpg)"
+              [ cath <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                dan <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                eve <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)")
               ]
 
 testChannelReactionAttribution :: HasCallStack => TestParams -> IO ()
@@ -11111,14 +12006,19 @@ testChannelMemberMessageUpdate ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- promote cath to member (observer default) so it can post
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
             -- member sends a message
             cath #> "#team hello"
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob introduced cath (Catherine) in the channel"
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob introduced cath (Catherine) in the channel"
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
                    eve <# "#team cath> hello [>>]"
               ]
 
@@ -11142,14 +12042,19 @@ testChannelMemberMessageDelete ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- promote cath to member (observer default) so it can post
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
             -- member sends a message
             cath #> "#team hello"
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob introduced cath (Catherine) in the channel"
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob introduced cath (Catherine) in the channel"
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
                    eve <# "#team cath> hello [>>]"
               ]
 
@@ -11162,6 +12067,506 @@ testChannelMemberMessageDelete ps =
                 dan <# "#team cath> [marked deleted] hello",
                 eve <# "#team cath> [marked deleted] hello"
               ]
+
+memberIdByName :: TestCC -> T.Text -> IO MemberId
+memberIdByName cc name = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+  case rows of
+    (Only mid : _) -> pure (MemberId mid)
+    _ -> fail $ "no member " <> T.unpack name
+
+relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
+relayConnIdToMember cc name = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query
+      db
+      "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+      (Only name) ::
+      IO [Only ByteString]
+  case rows of
+    (Only connId : _) -> pure connId
+    _ -> fail $ "no relay connection to member " <> T.unpack name
+
+itemSharedMsgId :: TestCC -> IO SharedMsgId
+itemSharedMsgId cc = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only ByteString]
+  case rows of
+    (Only smid : _) -> pure (SharedMsgId smid)
+    _ -> fail "no shared_msg_id"
+
+testChannelMemberMessageSign :: HasCallStack => TestParams -> IO ()
+testChannelMemberMessageSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- member sends a signed message
+            cath ##> "/_send #1 sign=on text signed hello"
+            cath <# "#team signed hello (signed)"
+            bob <# "#team cath> signed hello (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> signed hello (signed) [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> signed hello (signed) [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> signed hello (signed) [>>]"
+              ]
+            -- sender and recipient hold it signed
+            cath #$> ("/_get chat #1 count=100 search=signed hello", chat, [(1, "signed hello (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed hello", chat, [(0, "signed hello (signed)")])
+
+            -- editing a signed item reuses the signature
+            cathMsgId <- lastItemId cath
+            cath ##> ("/_update item #1 " <> cathMsgId <> " text signed hello edited")
+            cath <# "#team [edited] signed hello edited (signed)"
+            bob <# "#team cath> [edited] signed hello edited (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> [edited] signed hello edited (signed)",
+                dan <# "#team cath> [edited] signed hello edited (signed)",
+                eve <# "#team cath> [edited] signed hello edited (signed)"
+              ]
+            cath #$> ("/_get chat #1 count=100 search=signed hello edited", chat, [(1, "signed hello edited (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed hello edited", chat, [(0, "signed hello edited (signed)")])
+
+            -- default send is unsigned, and holds no signature
+            cath #> "#team plain hello"
+            bob <# "#team cath> plain hello"
+            concurrentlyN_
+              [ alice <# "#team cath> plain hello [>>]",
+                dan <# "#team cath> plain hello [>>]",
+                eve <# "#team cath> plain hello [>>]"
+              ]
+            cath #$> ("/_get chat #1 count=100 search=plain hello", chat, [(1, "plain hello")])
+            dan #$> ("/_get chat #1 count=100 search=plain hello", chat, [(0, "plain hello")])
+
+testChannelSignedFile :: HasCallStack => TestParams -> IO ()
+testChannelSignedFile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+            xftpCLI ["rand", "./tests/tmp/testfile", "1mb"] `shouldReturn` ["File created: ./tests/tmp/testfile"]
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+            -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
+            -- it), so ids run higher here. cath's send and the subscribers' (dan, eve) receive both
+            -- follow only their join roster (id 2). The relay (bob) also received the roster re-served
+            -- on cath's promotion, so its file is id 3. The owner (alice) has no roster file, so id 1.
+#if defined(dbPostgres)
+            let fileId = 2 :: Int
+                relayFileId = 3 :: Int
+#else
+            let fileId = 1 :: Int
+                relayFileId = 1 :: Int
+#endif
+
+            -- cath's first (signed) message introduces her to dan/eve
+            cath ##> "/_send #1 sign=on text hi"
+            cath <# "#team hi (signed)"
+            bob <# "#team cath> hi (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> hi (signed) [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> hi (signed) [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> hi (signed) [>>]"
+              ]
+
+            -- cath sends a signed file
+            cath ##> "/_send #1 sign=on json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"signed file\",\"type\":\"file\"}}]"
+            cath <# "#team signed file (signed)"
+            cath <# "/f #team ./tests/tmp/testfile"
+            cath <## ("use /fc " <> show fileId <> " to cancel sending")
+            cath <## ("completed uploading file " <> show fileId <> " (testfile) for #team")
+
+            bob <# "#team cath> signed file (signed)"
+            bob <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes)"
+            bob <## ("use /fr " <> show relayFileId <> " [<dir>/ | <path>] to receive it")
+
+            concurrentlyN_
+              [ do alice <# "#team cath> signed file (signed) [>>]"
+                   alice <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
+                   alice <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                do dan <# "#team cath> signed file (signed) [>>]"
+                   dan <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
+                   dan <## ("use /fr " <> show fileId <> " [<dir>/ | <path>] to receive it [>>]"),
+                do eve <# "#team cath> signed file (signed) [>>]"
+                   eve <# "#team cath> sends file testfile (1.0 MiB / 1048576 bytes) [>>]"
+                   eve <## ("use /fr " <> show fileId <> " [<dir>/ | <path>] to receive it [>>]")
+              ]
+
+            -- dan downloads: the signed digest is verified and the file completes
+            dan ##> ("/fr " <> show fileId <> " ./tests/tmp")
+            dan
+              <### [ ConsoleString ("saving file " <> show fileId <> " from cath to ./tests/tmp/testfile_1"),
+                     ConsoleString ("started receiving file " <> show fileId <> " (testfile) from cath")
+                   ]
+            dan <## ("completed receiving file " <> show fileId <> " (testfile) from cath")
+            src <- B.readFile "./tests/tmp/testfile"
+            destDan <- B.readFile "./tests/tmp/testfile_1"
+            destDan `shouldBe` src
+            -- the signed digest was carried to dan and stored, so verification ran (not skipped) and passed
+            digestCount <- withCCTransaction dan $ \db ->
+              DB.query_ db "SELECT count(1) FROM files WHERE file_digest IS NOT NULL" :: IO [[Int]]
+            digestCount `shouldBe` [[1]]
+
+testChannelMemberUpdateEnforcement :: HasCallStack => TestParams -> IO ()
+testChannelMemberUpdateEnforcement ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text secret"
+            cath <# "#team secret (signed)"
+            bob <# "#team cath> secret (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> secret (signed) [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> secret (signed) [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> secret (signed) [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
+
+            -- the malicious relay forges an unsigned XMsgUpdate of cath's signed item to dan
+            cathMemId <- memberIdByName bob "cath"
+            sharedId <- itemSharedMsgId cath
+            connId <- relayConnIdToMember bob "dan"
+            ts <- getCurrentTime
+            let ChatController {smpAgent = bobAgent} = chatController bob
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing)
+                fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
+                body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+            sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+            either (fail . show) (const $ pure ()) sent
+            -- dan rejects the unsigned mutation of the held-signed item (RGEMsgBadSignature, stored not shown live),
+            -- and the original signed content is not overwritten
+            threadDelay 2000000
+            -- (critical) the forged content did NOT overwrite the original signed item
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
+            -- the rejection is recorded as a bad-signature item
+            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
+
+            -- a legitimate signed edit by cath is accepted
+            cathMsgId <- lastItemId cath
+            cath ##> ("/_update item #1 " <> cathMsgId <> " text secret edited")
+            cath <# "#team [edited] secret edited (signed)"
+            bob <# "#team cath> [edited] secret edited (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> [edited] secret edited (signed)",
+                dan <# "#team cath> [edited] secret edited (signed)",
+                eve <# "#team cath> [edited] secret edited (signed)"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=secret edited", chat, [(0, "secret edited (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
+
+testChannelAsGroupSign :: HasCallStack => TestParams -> IO ()
+testChannelAsGroupSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner posts as the channel, signed: verifiable AND displayed as the channel
+            alice ##> "/_send #1(as_group=on) sign=on text signed channel post"
+            alice <# "#team signed channel post (signed)"
+            bob <# "#team> signed channel post (signed)"
+            [cath, dan, eve] *<# "#team> signed channel post (signed) [>>]"
+            alice #$> ("/_get chat #1 count=100 search=signed channel post", chat, [(1, "signed channel post (signed)")])
+            cath #$> ("/_get chat #1 count=100 search=signed channel post", chat, [(0, "signed channel post (signed)")])
+
+            -- owner posts as the channel, unsigned: anonymous (FwdChannel), no signature, still as the channel
+            alice ##> "/_send #1(as_group=on) text plain channel post"
+            alice <# "#team plain channel post"
+            bob <# "#team> plain channel post"
+            [cath, dan, eve] *<# "#team> plain channel post [>>]"
+            alice #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(1, "plain channel post")])
+            cath #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(0, "plain channel post")])
+
+testChannelSignMessagesRequired :: HasCallStack => TestParams -> IO ()
+testChannelSignMessagesRequired ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- owner requires signatures
+            alice ##> "/set signatures #team on"
+            alice <## "updated group preferences:"
+            alice <## "Sign messages: on"
+            concurrentlyN_
+              [ do
+                  bob <## "alice updated group #team: (signed)"
+                  bob <## "updated group preferences:"
+                  bob <## "Sign messages: on",
+                do
+                  cath <## "alice updated group #team: (signed)"
+                  cath <## "updated group preferences:"
+                  cath <## "Sign messages: on",
+                do
+                  dan <## "alice updated group #team: (signed)"
+                  dan <## "updated group preferences:"
+                  dan <## "Sign messages: on",
+                do
+                  eve <## "alice updated group #team: (signed)"
+                  eve <## "updated group preferences:"
+                  eve <## "Sign messages: on"
+              ]
+
+            -- owner posts as the channel, signed: verified for everyone, held signed in db
+            alice ##> "/_send #1(as_group=on) sign=on text signed by owner"
+            alice <# "#team signed by owner (signed)"
+            bob <# "#team> signed by owner (signed)"
+            [cath, dan, eve] *<# "#team> signed by owner (signed) [>>]"
+            alice #$> ("/_get chat #1 count=100 search=signed by owner", chat, [(1, "signed by owner (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed by owner", chat, [(0, "signed by owner (signed)")])
+
+            -- owner posts as the channel, unsigned: recipients warn (held in db), sender does not
+            alice ##> "/_send #1(as_group=on) text plain from owner"
+            alice <# "#team plain from owner"
+            bob <# "#team> plain from owner (signature missing)"
+            [cath, dan, eve] *<# "#team> plain from owner (signature missing) [>>]"
+            alice #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(1, "plain from owner")])
+            dan #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(0, "plain from owner (signature missing)")])
+
+            -- promoted subscriber posts signed: verified for recipients (members are required to sign too)
+            cath ##> "/_send #1 sign=on text signed by member"
+            cath <# "#team signed by member (signed)"
+            bob <# "#team cath> signed by member (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> signed by member (signed) [>>]",
+                do
+                  dan <### [EndsWith "updated to cath"]
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
+                  dan <# "#team cath> signed by member (signed) [>>]",
+                do
+                  eve <### [EndsWith "updated to cath"]
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
+                  eve <# "#team cath> signed by member (signed) [>>]"
+              ]
+            cath #$> ("/_get chat #1 count=100 search=signed by member", chat, [(1, "signed by member (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed by member", chat, [(0, "signed by member (signed)")])
+
+            -- promoted subscriber posts unsigned: recipients warn (held in db), sender does not
+            cath #> "#team plain from member"
+            bob <# "#team cath> plain from member (signature missing)"
+            concurrentlyN_
+              [ alice <# "#team cath> plain from member (signature missing) [>>]",
+                dan <# "#team cath> plain from member (signature missing) [>>]",
+                eve <# "#team cath> plain from member (signature missing) [>>]"
+              ]
+            cath #$> ("/_get chat #1 count=100 search=plain from member", chat, [(1, "plain from member")])
+            dan #$> ("/_get chat #1 count=100 search=plain from member", chat, [(0, "plain from member (signature missing)")])
+
+testChannelAsGroupSpoof :: HasCallStack => TestParams -> IO ()
+testChannelAsGroupSpoof ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts legitimately (introduces cath to dan as a member)
+            cath #> "#team hi from cath"
+            bob <# "#team cath> hi from cath"
+            concurrentlyN_
+              [ alice <# "#team cath> hi from cath [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> hi from cath [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> hi from cath [>>]"
+              ]
+
+            -- the relay forges an asGroup=True post attributed to non-owner cath; dan rejects (owner guard, §2)
+            cathMemId <- memberIdByName bob "cath"
+            connId <- relayConnIdToMember bob "dan"
+            ts <- getCurrentTime
+            let ChatController {smpAgent = bobAgent} = chatController bob
+                container = (mcSimple (MCText "fake channel announcement")) {asGroup = Just True}
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgNew container)
+                fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
+                body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+            sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+            either (fail . show) (const $ pure ()) sent
+            dan <##. "error: x.msg.new: member is not allowed to send as group"
+            -- not rendered as the channel: dan still holds only the legitimate member message
+            threadDelay 1000000
+            dan #$> ("/_get chat #1 count=100 search=hi from cath", chat, [(0, "hi from cath")])
+
+testChannelMemberSelfDeleteSign :: HasCallStack => TestParams -> IO ()
+testChannelMemberSelfDeleteSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- member sends a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text signed hello"
+            cath <# "#team signed hello (signed)"
+            bob <# "#team cath> signed hello (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> signed hello (signed) [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> signed hello (signed) [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> signed hello (signed) [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=signed hello", chat, [(0, "signed hello (signed)")])
+
+            -- self-delete of the signed item: signed delete, dan (holding it signed) accepts
+            cathMsgId <- lastItemId cath
+            cath #$> ("/_delete item #1 " <> cathMsgId <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] signed hello (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] signed hello (signed)",
+                dan <# "#team cath> [marked deleted] signed hello (signed)",
+                eve <# "#team cath> [marked deleted] signed hello (signed)"
+              ]
+
+            -- self-delete of an unsigned item: unsigned delete, accepted (no enforcement)
+            cath #> "#team plain hello"
+            bob <# "#team cath> plain hello"
+            concurrentlyN_
+              [ alice <# "#team cath> plain hello [>>]",
+                dan <# "#team cath> plain hello [>>]",
+                eve <# "#team cath> plain hello [>>]"
+              ]
+            cathMsgId2 <- lastItemId cath
+            cath #$> ("/_delete item #1 " <> cathMsgId2 <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] plain hello"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] plain hello",
+                dan <# "#team cath> [marked deleted] plain hello",
+                eve <# "#team cath> [marked deleted] plain hello"
+              ]
+
+testChannelMemberDeleteEnforcement :: HasCallStack => TestParams -> IO ()
+testChannelMemberDeleteEnforcement ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text secret"
+            cath <# "#team secret (signed)"
+            bob <# "#team cath> secret (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> secret (signed) [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> secret (signed) [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> secret (signed) [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
+
+            -- the relay forges an unsigned XMsgDel of cath's signed item to dan
+            cathMemId <- memberIdByName bob "cath"
+            sharedId <- itemSharedMsgId cath
+            connId <- relayConnIdToMember bob "dan"
+            ts <- getCurrentTime
+            let ChatController {smpAgent = bobAgent} = chatController bob
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgDel sharedId Nothing Nothing False)
+                fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
+                body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+            sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+            either (fail . show) (const $ pure ()) sent
+            -- dan rejects the unsigned delete of the held-signed item; item not deleted, rejection recorded
+            threadDelay 2000000
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
+
+            -- a legitimate signed self-delete by cath is accepted
+            cathMsgId <- lastItemId cath
+            cath #$> ("/_delete item #1 " <> cathMsgId <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] secret (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] secret (signed)",
+                dan <# "#team cath> [marked deleted] secret (signed)",
+                eve <# "#team cath> [marked deleted] secret (signed)"
+              ]
+
+testChannelModerationDeleteSign :: HasCallStack => TestParams -> IO ()
+testChannelModerationDeleteSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text moderated post"
+            cath <# "#team moderated post (signed)"
+            bob <# "#team cath> moderated post (signed)"
+            concurrentlyN_
+              [ alice <# "#team cath> moderated post (signed) [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> moderated post (signed) [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> moderated post (signed) [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=moderated post", chat, [(0, "moderated post (signed)")])
+
+            -- owner moderation-deletes cath's signed post; the always-signed delete is accepted by dan (holding it signed)
+            -- resolve alice's item id by text (not lastItemId) so a racing trailing event can't select the wrong item
+            catItemIdOnAlice <- itemIdByText alice "moderated post"
+            alice ##> ("/_delete member item #1 " <> catItemIdOnAlice)
+            alice <## "message marked deleted by you"
+            concurrentlyN_
+              [ bob <# "#team cath> [marked deleted by alice] moderated post (signed)",
+                cath <# "#team cath> [marked deleted by alice] moderated post (signed)",
+                dan <# "#team cath> [marked deleted by alice] moderated post (signed)",
+                eve <# "#team cath> [marked deleted by alice] moderated post (signed)"
+              ]
+  where
+    itemIdByText :: TestCC -> T.Text -> IO String
+    itemIdByText cc t = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT chat_item_id FROM chat_items WHERE item_text LIKE '%' || ? || '%' ORDER BY chat_item_id DESC LIMIT 1" (Only t) :: IO [Only Int64]
+      case rows of
+        (Only i : _) -> pure (show i)
+        _ -> fail $ "no item with text " <> T.unpack t
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =

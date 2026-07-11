@@ -489,9 +489,6 @@ swipe action */
 "calling…" = "soittaa…";
 
 /* No comment provided by engineer. */
-"Calls" = "Puhelut";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Kontaktia ei voi kutsua!";
 
 /* No comment provided by engineer. */
@@ -519,9 +516,6 @@ new chat action */
 
 /* authentication reason */
 "Change lock mode" = "Vaihda lukitustilaa";
-
-/* No comment provided by engineer. */
-"Change member role?" = "Vaihda jäsenroolia?";
 
 /* authentication reason */
 "Change passcode" = "Vaihda pääsykoodi";
@@ -979,10 +973,7 @@ alert button */
 "Description" = "Kuvaus";
 
 /* No comment provided by engineer. */
-"Develop" = "Kehitä";
-
-/* No comment provided by engineer. */
-"Developer tools" = "Kehittäjätyökalut";
+"Developer" = "Kehittäjätyökalut";
 
 /* No comment provided by engineer. */
 "Device" = "Laite";
@@ -1209,7 +1200,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "virhe";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Virhe";
 
 /* No comment provided by engineer. */
@@ -1342,6 +1333,7 @@ alert button */
 "Error: " = "Virhe: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Virhe: %@";
@@ -1764,7 +1756,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "Suuri tiedosto!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Lue lisää";
 
 /* swipe action */
@@ -1846,10 +1838,10 @@ server test error */
 "member connected" = "yhdistetty";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
+"Role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
@@ -2230,9 +2222,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Preview" = "Esikatselu";
-
-/* No comment provided by engineer. */
-"Privacy & security" = "Yksityisyys ja turvallisuus";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Yksityiset tiedostonimet";
@@ -2779,9 +2768,6 @@ chat item action */
 "Submit" = "Lähetä";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "SimpleX Chat tuki";
-
-/* No comment provided by engineer. */
 "System" = "Järjestelmä";
 
 /* No comment provided by engineer. */
@@ -3041,9 +3027,6 @@ server test failure */
 "Using SimpleX Chat servers." = "Käyttää SimpleX Chat -palvelimia.";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "Tarkista yhteyden suojaus";
 
 /* No comment provided by engineer. */
@@ -3179,9 +3162,6 @@ server test failure */
 "You can enable later via Settings" = "Voit ottaa käyttöön myöhemmin asetusten kautta";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Voit ottaa ne käyttöön myöhemmin sovelluksen Yksityisyys & Turvallisuus -asetuksista.";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Voit piilottaa tai mykistää käyttäjäprofiilin pyyhkäisemällä sitä oikealle.";
 
 /* notification body */
@@ -3291,9 +3271,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Puhelusi";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Keskustelut-tietokantasi";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Keskustelut-tietokantasi ei ole salattu - aseta tunnuslause sen salaamiseksi.";

@@ -48,6 +48,7 @@ struct MsgContentView: View {
     @State private var phase: CGFloat = 0
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
 
     var body: some View {
         let v = msgContentView()
@@ -131,7 +132,7 @@ struct MsgContentView: View {
 
     @inline(__always)
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
     }
 }
 
@@ -191,9 +192,14 @@ private func handleTextTaps(
                         }
                     }
                 }
-                if let index, let (uri, browser) = attributedStringLink(s, for: index) {
+                if let index, let (uri, browser, simplex) = attributedStringLink(s, for: index) {
                     if browser {
                         openBrowserAlert(uri: uri)
+                    } else if simplex, let url = URL(string: uri) {
+                        // SimpleX links target this same app (simplex: scheme / simplex.chat universal link),
+                        // so UIApplication.shared.open is dropped by iOS while the app is in the foreground.
+                        // Route to the in-app connect flow instead (same sink onOpenURL feeds).
+                        ChatModel.shared.appOpenUrl = url
                     } else if let url = URL(string: uri) {
                         UIApplication.shared.open(url)
                     } else {
@@ -203,16 +209,18 @@ private func handleTextTaps(
             })
     }
 
-    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (String, Bool)? {
+    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (String, Bool, Bool)? {
         var linkURL: String?
         var browser: Bool = false
+        var simplex: Bool = false
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
-                if let nameInfo = attrs[nameAttrKey] as? SimplexNameInfo {
-                    showUnsupportedNameAlert(nameInfo)
+                if attrs[nameAttrKey] is SimplexNameInfo {
+                    planAndConnect(s.attributedSubstring(from: range).string, theme: AppTheme.shared, dismiss: false)
                 } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
+                    simplex = attrs[simplexLinkAttrKey] != nil
                 } else if let showSecrets, let i = attrs[secretAttrKey] as? Int {
                     if showSecrets.wrappedValue.contains(i) {
                         showSecrets.wrappedValue.remove(i)
@@ -225,7 +233,7 @@ private func handleTextTaps(
                 stop.pointee = true
             }
         }
-        return if let linkURL { (linkURL, browser) } else { nil }
+        return if let linkURL { (linkURL, browser, simplex) } else { nil }
     }
 }
 
@@ -249,6 +257,8 @@ func hiddenSecretsView<V: View>(_ v: V) -> some View {
 private let linkAttrKey = NSAttributedString.Key("chat.simplex.app.link")
 
 private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
+
+private let simplexLinkAttrKey = NSAttributedString.Key("chat.simplex.app.simplexLink")
 
 private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
@@ -392,6 +402,7 @@ func messageText(
                 attrs = linkAttrs()
                 if !preview {
                     attrs[linkAttrKey] = simplexUri
+                    attrs[simplexLinkAttrKey] = true
                     handleTaps = true
                 }
                 if let s = text ?? (privacySimplexLinkModeDefault.get() == .description ? linkType.description : nil) {

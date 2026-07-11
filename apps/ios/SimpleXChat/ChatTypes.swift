@@ -119,7 +119,8 @@ public struct Profile: Codable, NamedChat, Hashable {
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
-        peerType: ChatPeerType? = nil
+        peerType: ChatPeerType? = nil,
+        contactDomain: SimplexDomainClaim? = nil
     ) {
         self.displayName = displayName
         self.fullName = fullName
@@ -127,6 +128,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
+        self.contactDomain = contactDomain
     }
 
     public var displayName: String
@@ -136,7 +138,10 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var contactLink: String?
     public var preferences: Preferences?
     public var peerType: ChatPeerType?
+    // the badge proof from the wire profile - opaque to the UI, round-tripped to the core (apiPrepareContact)
+    public var badge: BadgeProof?
     public var localAlias: String { get { "" } }
+    public var contactDomain: SimplexDomainClaim?
 
     var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
@@ -158,7 +163,10 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         contactLink: String? = nil,
         preferences: Preferences? = nil,
         peerType: ChatPeerType? = nil,
-        localAlias: String
+        localBadge: LocalBadge? = nil,
+        localAlias: String,
+        contactDomain: SimplexDomainClaim? = nil,
+        contactDomainVerified: Bool? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -168,7 +176,10 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.contactLink = contactLink
         self.preferences = preferences
         self.peerType = peerType
+        self.localBadge = localBadge
         self.localAlias = localAlias
+        self.contactDomain = contactDomain
+        self.contactDomainVerified = contactDomainVerified
     }
 
     public var profileId: Int64
@@ -179,7 +190,10 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var contactLink: String?
     public var preferences: Preferences?
     public var peerType: ChatPeerType?
+    public var localBadge: LocalBadge?
     public var localAlias: String
+    public var contactDomain: SimplexDomainClaim?
+    public var contactDomainVerified: Bool?
 
     var profileViewName: String {
         localAlias == ""
@@ -199,6 +213,70 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
 public enum ChatPeerType: String, Codable {
     case human
     case bot
+}
+
+// Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
+// Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
+public enum BadgeType: Hashable {
+    case supporter
+    case legend
+    case investor
+    case unknown(String)
+
+    // the disclosed (signed) type name, shown to the user for verified badges
+    public var text: String {
+        switch self {
+        case .supporter: "supporter"
+        case .legend: "legend"
+        case .investor: "investor"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension BadgeType: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "supporter": self = .supporter
+        case "legend": self = .legend
+        case "investor": self = .investor
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
+}
+
+public enum BadgeStatus: String, Codable {
+    case active
+    case expired
+    // expired over a month ago - the badge is not shown at all
+    case expiredOld
+    case failed
+    // signed with a key index this app version does not know - shown as a warning
+    case unknownKey
+}
+
+public struct BadgeInfo: Codable, Hashable {
+    public var badgeType: BadgeType
+    public var badgeExpiry: Date?
+    public var badgeExtra: String
+}
+
+public struct LocalBadge: Codable, Hashable {
+    public var badge: BadgeInfo
+    public var status: BadgeStatus
+}
+
+// the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
+public struct BadgeProof: Codable, Hashable {
+    public var badgeKeyIdx: Int
+    public var presHeader: String
+    public var proof: String
+    public var badgeInfo: BadgeInfo
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
@@ -868,6 +946,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
     case reports
     case history
     case support
+    case signMessages
 
     public var id: Self { self }
 
@@ -890,6 +969,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: false
         case .history: false
         case .support: false
+        case .signMessages: false
         }
     }
 
@@ -909,6 +989,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
             : NSLocalizedString("Member reports", comment: "chat feature")
         case .history: return NSLocalizedString("Visible history", comment: "chat feature")
         case .support: return NSLocalizedString("Chat with admins", comment: "chat feature")
+        case .signMessages: return NSLocalizedString("Sign messages", comment: "chat feature")
         }
     }
 
@@ -924,6 +1005,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: return "flag"
         case .history: return "clock"
         case .support: return "questionmark.circle"
+        case .signMessages: return "checkmark.seal"
         }
     }
 
@@ -939,6 +1021,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: return "flag.fill"
         case .history: return "clock.fill"
         case .support: return "questionmark.circle.fill"
+        case .signMessages: return "checkmark.seal.fill"
         }
     }
 
@@ -1011,6 +1094,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                     ? "Allow subscribers to chat with admins."
                     : "Allow members to chat with admins."
                 case .off: return "Prohibit chats with admins."
+                }
+            case .signMessages:
+                switch enabled {
+                case .on: return "Require signing messages."
+                case .off: return "Do not require signing messages."
                 }
             }
         } else {
@@ -1088,6 +1176,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                     ? "Subscribers can chat with admins."
                     : "Members can chat with admins."
                 case .off: return "Chats with admins are prohibited."
+                }
+            case .signMessages:
+                switch enabled {
+                case .on: return "Message signing is required."
+                case .off: return "Message signing is not required."
                 }
             }
         }
@@ -1244,6 +1337,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var reports: GroupPreference
     public var history: GroupPreference
     public var support: GroupPreference
+    public var signMessages: GroupPreference
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1257,6 +1351,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         reports: GroupPreference,
         history: GroupPreference,
         support: GroupPreference,
+        signMessages: GroupPreference,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1269,6 +1364,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.reports = reports
         self.history = history
         self.support = support
+        self.signMessages = signMessages
         self.commands = commands
     }
 
@@ -1283,6 +1379,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         reports: GroupPreference(enable: .on),
         history: GroupPreference(enable: .on),
         support: GroupPreference(enable: .on),
+        signMessages: GroupPreference(enable: .off),
         commands: []
     )
 }
@@ -1298,6 +1395,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var reports: GroupPreference?
     public var history: GroupPreference?
     public var support: GroupPreference?
+    public var signMessages: GroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1311,6 +1409,7 @@ public struct GroupPreferences: Codable, Hashable {
         reports: GroupPreference? = nil,
         history: GroupPreference? = nil,
         support: GroupPreference? = nil,
+        signMessages: GroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1323,6 +1422,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.reports = reports
         self.history = history
         self.support = support
+        self.signMessages = signMessages
         self.commands = commands
     }
 
@@ -1352,6 +1452,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
         history: fullPreferences.history,
+        signMessages: fullPreferences.signMessages,
         commands: fullPreferences.commands
     )
 }
@@ -1455,6 +1556,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             case let .contactRequest(contactRequest): return contactRequest.localDisplayName
             case let .contactConnection(contactConnection): return contactConnection.localDisplayName
             case .invalidJSON: return ChatInfo.invalidChatName
+            }
+        }
+    }
+
+    // the badge shown for a chat's name: an active contact's or a contact request's (groups have none)
+    public var nameBadge: LocalBadge? {
+        get {
+            switch self {
+            case let .direct(contact): return contact.active ? contact.profile.localBadge : nil
+            case let .contactRequest(contactRequest): return contactRequest.profile.localBadge
+            default: return nil
             }
         }
     }
@@ -1640,11 +1752,11 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if groupInfo.membership.memberActive {
                     switch(groupChatScope) {
                     case .none:
-                        if allRelaysBroken && groupInfo.useRelays { return ("can't broadcast", nil) }
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
                         if groupInfo.membership.memberRole == .observer {
                             return groupInfo.useRelays ? ("you are subscriber", nil) : ("you are observer", "Please contact group admin.")
                         }
+                        if allRelaysBroken && groupInfo.useRelays { return ("can't broadcast", nil) }
                         return nil
                     case let .some(.memberSupport(groupMember_: .some(supportMember))):
                         if supportMember.versionRange.maxVersion < GROUP_KNOCKING_VERSION && !supportMember.memberPending {
@@ -2265,7 +2377,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public var userContactLinkId_: Int64?
     public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
-    var profile: Profile
+    public var profile: LocalProfile
     var createdAt: Date
     public var updatedAt: Date
 
@@ -2283,7 +2395,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
         userContactLinkId_: 1,
         cReqChatVRange: VersionRange(1, 1),
         localDisplayName: "alice",
-        profile: Profile.sampleData,
+        profile: LocalProfile.sampleData,
         createdAt: .now,
         updatedAt: .now
     )
@@ -2427,7 +2539,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     public var useRelays: Bool
     public var relayOwnStatus: RelayStatus? = nil
-    var localDisplayName: GroupName
+    public var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
@@ -2454,6 +2566,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
+    public var groupDomainVerified: Bool?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -2534,10 +2647,35 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
+    public init(groupWebPage: String? = nil, groupDomainClaim: SimplexDomainClaim? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+        self.groupWebPage = groupWebPage
+        self.groupDomainClaim = groupDomainClaim
+        self.domainWebPage = domainWebPage
+        self.allowEmbedding = allowEmbedding
+    }
+
     public var groupWebPage: String?
-    public var groupDomain: String?
+    public var groupDomainClaim: SimplexDomainClaim?
     public var domainWebPage: Bool = false
     public var allowEmbedding: Bool = false
+}
+
+public struct SimplexDomainClaim: Codable, Hashable {
+    public init(domain: String, proof: SimplexDomainProof? = nil) {
+        self.domain = domain
+        self.proof = proof
+    }
+    public var domain: String
+    public var proof: SimplexDomainProof?
+
+    public var shortName: String {
+        domain.hasSuffix(".simplex") ? String(domain.dropLast(".simplex".count)) : domain
+    }
+}
+
+public enum SimplexDomainError: Decodable, Hashable {
+    case noValidLink
+    case unknownDomain
 }
 
 public struct RelayCapabilities: Codable, Hashable {
@@ -2627,6 +2765,8 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
+    public var localBadge: LocalBadge?
 }
 
 public struct GroupSummary: Decodable, Hashable {
@@ -2648,10 +2788,37 @@ public struct GroupShortLinkData: Codable, Hashable {
     public var publicGroupData: PublicGroupData?
 }
 
+public enum MsgSigStatus: String, Decodable, Equatable, Hashable {
+    case verified
+    case signedNoKey
+}
+
+public enum MsgVerified: Decodable, Equatable, Hashable {
+    case signed(sigStatus: MsgSigStatus)
+    case sigMissing
+    case unsigned
+
+    public var verified: Bool {
+        if case let .signed(sigStatus) = self { return sigStatus == .verified }
+        return false
+    }
+
+    public var sigMissingInfo: (String, String)? {
+        switch self {
+        case .sigMissing: return (
+                NSLocalizedString("Signature missing", comment: "alert title"),
+                NSLocalizedString("The channel required this message to be signed, but the signature is missing.", comment: "alert message")
+            )
+        default: return nil
+        }
+    }
+}
+
 public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case new
     case invited
     case accepted
+    case acknowledgedRoster
     case active
     case inactive
     case rejected
@@ -2727,6 +2894,7 @@ extension RelayStatus {
         case .new: "new"
         case .invited: "invited"
         case .accepted: "accepted"
+        case .acknowledgedRoster: "acknowledged roster"
         case .active: "active"
         case .inactive: "inactive"
         case .rejected: "rejected"
@@ -2738,6 +2906,7 @@ public struct BusinessChatInfo: Decodable, Hashable {
     public var chatType: BusinessChatType
     public var businessId: String
     public var customerId: String
+    public var businessDomain: SimplexDomainClaim?
 }
 
 public enum BusinessChatType: String, Codable, Hashable {
@@ -2783,6 +2952,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
+    public var nameBadge: LocalBadge? { memberProfile.localBadge }
     public var verified: Bool { activeConn?.connectionCode != nil }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
@@ -2889,8 +3059,16 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if memberRole == .relay || !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
+        if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
+        if groupInfo.useRelays {
+            // TODO [relays]: for now owners can only set observer/member in channels.
+            //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
+            // return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
+            return [.observer, .member]
+        } else {
+            return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
+        }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
@@ -2978,12 +3156,16 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .moderator, .admin, .owner]
 
-    public var text: String {
+    public func text(isChannel: Bool) -> String {
         switch self {
         case .relay: return NSLocalizedString("relay", comment: "member role")
-        case .observer: return NSLocalizedString("observer", comment: "member role")
+        case .observer: return isChannel
+            ? NSLocalizedString("subscriber", comment: "member role")
+            : NSLocalizedString("observer", comment: "member role")
         case .author: return NSLocalizedString("author", comment: "member role")
-        case .member: return NSLocalizedString("member", comment: "member role")
+        case .member: return isChannel
+            ? NSLocalizedString("contributor", comment: "member role")
+            : NSLocalizedString("member", comment: "member role")
         case .moderator: return NSLocalizedString("moderator", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
@@ -3608,7 +3790,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 userMention: false,
                 deletable: false,
                 editable: false,
-                showGroupAsSender: false
+                showGroupAsSender: false,
+                msgVerified: .unsigned
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
             quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
@@ -3632,7 +3815,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 userMention: false,
                 deletable: false,
                 editable: false,
-                showGroupAsSender: false
+                showGroupAsSender: false,
+                msgVerified: .unsigned
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
@@ -3656,7 +3840,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 userMention: false,
                 deletable: false,
                 editable: false,
-                showGroupAsSender: false
+                showGroupAsSender: false,
+                msgVerified: .unsigned
             ),
             content: .sndMsgContent(msgContent: .text("")),
             quotedItem: nil,
@@ -3735,6 +3920,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
     public var showGroupAsSender: Bool
+    public var msgVerified: MsgVerified
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
@@ -3760,7 +3946,8 @@ public struct CIMeta: Decodable, Hashable {
             userMention: false,
             deletable: deletable,
             editable: editable,
-            showGroupAsSender: false
+            showGroupAsSender: false,
+            msgVerified: .unsigned
         )
     }
 
@@ -3778,7 +3965,8 @@ public struct CIMeta: Decodable, Hashable {
             userMention: false,
             deletable: false,
             editable: false,
-            showGroupAsSender: false
+            showGroupAsSender: false,
+            msgVerified: .unsigned
         )
     }
 }
@@ -5154,26 +5342,67 @@ public enum SimplexLinkType: String, Decodable, Hashable {
     }
 }
 
-public struct SimplexNameInfo: Decodable, Equatable, Hashable {
+public struct SimplexNameInfo: Codable, Equatable, Hashable {
     public var nameType: SimplexNameType
-    public var nameDomain: SimplexNameDomain
+    public var nameDomain: SimplexDomain
+
+    // mirrors backend shortNameInfoStr: "#name" for a simplex public group, else prefix + full domain
+    public var shortStr: String {
+        if nameType == .publicGroup && nameDomain.nameTLD == .simplex && nameDomain.subDomain.isEmpty {
+            return "#" + nameDomain.domain
+        } else {
+            return (nameType == .publicGroup ? "#" : "@") + nameDomain.fullDomainName
+        }
+    }
+
+    public init(nameType: SimplexNameType, nameDomain: SimplexDomain) {
+        self.nameType = nameType
+        self.nameDomain = nameDomain
+    }
 }
 
-public struct SimplexNameDomain: Decodable, Equatable, Hashable {
+public struct SimplexDomain: Codable, Equatable, Hashable {
     public var nameTLD: SimplexTLD
     public var domain: String
     public var subDomain: [String]
+
+    // mirrors backend fullDomainName: reverse(subDomain) ++ [domain] ++ tld
+    public var fullDomainName: String {
+        let tld: [String]
+        switch nameTLD {
+        case .simplex: tld = ["simplex"]
+        case .testing: tld = ["testing"]
+        case .web: tld = []
+        }
+        return (subDomain.reversed() + [domain] + tld).joined(separator: ".")
+    }
+
+    public var cmdString: String {
+        "domain=\(fullDomainName)"
+    }
+
+    public init(nameTLD: SimplexTLD, domain: String, subDomain: [String]) {
+        self.nameTLD = nameTLD
+        self.domain = domain
+        self.subDomain = subDomain
+    }
 }
 
-public enum SimplexTLD: String, Decodable, Hashable {
+public enum SimplexTLD: String, Codable, Hashable {
     case simplex
     case testing
     case web
 }
 
-public enum SimplexNameType: String, Decodable, Hashable {
+public enum SimplexNameType: String, Codable, Hashable {
     case publicGroup
     case contact
+}
+
+public struct SimplexDomainProof: Codable, Hashable {
+    public var linkOwnerId: String?
+    public var presHeader: String
+    public var signature: String
 }
 
 public enum FormatColor: String, Decodable, Hashable {
@@ -5504,7 +5733,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .userAccepted: return NSLocalizedString("accepted you", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberRole(_, profile, role):
-            return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
+            return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text(isChannel: isChannel))
         case let .memberBlocked(_, profile, blocked):
             if blocked {
                 return String.localizedStringWithFormat(NSLocalizedString("blocked %@", comment: "rcv group event chat item"), profile.profileViewName)
@@ -5512,7 +5741,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
                 return String.localizedStringWithFormat(NSLocalizedString("unblocked %@", comment: "rcv group event chat item"), profile.profileViewName)
             }
         case let .userRole(role):
-            return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text)
+            return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text(isChannel: isChannel))
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
@@ -5558,9 +5787,9 @@ public enum SndGroupEvent: Decodable, Hashable {
     func text(isChannel: Bool) -> String {
         switch self {
         case let .memberRole(_, profile, role):
-            return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
+            return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text(isChannel: isChannel))
         case let .userRole(role):
-            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
+            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text(isChannel: isChannel))
         case let .memberBlocked(_, profile, blocked):
             if blocked {
                 return String.localizedStringWithFormat(NSLocalizedString("you blocked %@", comment: "snd group event chat item"), profile.profileViewName)

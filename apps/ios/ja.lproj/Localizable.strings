@@ -169,6 +169,10 @@
 /* time interval */
 "%d months" = "%d 月";
 
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays failed" = "%d リレーが失敗";
+
 /* time interval */
 "%d sec" = "%d 秒";
 
@@ -180,6 +184,35 @@
 
 /* time interval */
 "%d weeks" = "%d 週";
+
+/* channel creation progress
+channel relay bar progress */
+"%d/%d relays active" = "%2$d 個中 %1$d 個のリレーがアクティブ";
+
+/* channel relay bar */
+"%d/%d relays active, %d errors" = "%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個がエラー";
+
+/* channel creation progress with errors
+channel relay bar */
+"%d/%d relays active, %d failed" = "%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個が失敗";
+
+/* channel relay bar */
+"%d/%d relays active, %d removed" = "%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個が削除済み";
+
+/* channel subscriber relay bar progress */
+"%d/%d relays connected" = "%2$d 個中 %1$d 個のリレーが接続済み";
+
+/* channel subscriber relay bar */
+"%d/%d relays connected, %d errors" = "%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個がエラー";
+
+/* channel subscriber relay bar */
+"%d/%d relays connected, %d failed" = "%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個が失敗";
+
+/* channel subscriber relay bar */
+"%d/%d relays connected, %d removed" = "%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個が削除済み";
+
+/* No comment provided by engineer. */
+"%lld" = "%lld";
 
 /* No comment provided by engineer. */
 "%lld %@" = "%lld %@";
@@ -447,7 +480,7 @@ swipe action */
 "All group members will remain connected." = "グループ全員の接続が継続します。";
 
 /* No comment provided by engineer. */
-"All messages will be deleted - this cannot be undone!" = "すべてのメッセージが削除されます。この操作は元に戻せません！";
+"All messages will be deleted - this cannot be undone!" = "全てのメッセージが削除されます - これは元に戻せません！";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "全てのメッセージが削除されます(※注意：元に戻せません！※)。削除されるのは片方あなたのメッセージのみ。";
@@ -692,9 +725,6 @@ swipe action */
 /* call status */
 "calling…" = "発信中…";
 
-/* No comment provided by engineer. */
-"Calls" = "通話";
-
 /* alert title */
 "Can't change profile" = "プロフィールを変更できません";
 
@@ -732,9 +762,6 @@ new chat action */
 
 /* authentication reason */
 "Change lock mode" = "ロックモードを変更";
-
-/* No comment provided by engineer. */
-"Change member role?" = "メンバーの役割を変更しますか？";
 
 /* authentication reason */
 "Change passcode" = "パスコードを変更";
@@ -1264,13 +1291,10 @@ alert button */
 "Desktop devices" = "デスクトップ機器";
 
 /* No comment provided by engineer. */
-"Develop" = "開発";
+"Developer" = "開発ツール";
 
 /* No comment provided by engineer. */
 "Developer options" = "開発者向けの設定";
-
-/* No comment provided by engineer. */
-"Developer tools" = "開発ツール";
 
 /* No comment provided by engineer. */
 "Device" = "端末";
@@ -1350,14 +1374,32 @@ alert button */
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "ダウングレードしてチャットを開く";
 
+/* No comment provided by engineer. */
+"Download errors" = "ダウンロードエラー";
+
+/* No comment provided by engineer. */
+"Download failed" = "ダウンロード失敗";
+
 /* server test step */
 "Download file" = "ファイルをダウンロード";
+
+/* No comment provided by engineer. */
+"Downloaded" = "ダウンロード済";
+
+/* No comment provided by engineer. */
+"Downloaded files" = "ダウンロード済ファイル";
+
+/* No comment provided by engineer. */
+"Downloading archive" = "アーカイブをダウンロード中";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "表示の名前が重複してます！";
 
 /* integrity error chat item */
 "duplicate message" = "重複メッセージ";
+
+/* No comment provided by engineer. */
+"duplicates" = "重複";
 
 /* No comment provided by engineer. */
 "Duration" = "間隔";
@@ -1370,6 +1412,9 @@ alert button */
 
 /* No comment provided by engineer. */
 "Edit group profile" = "グループのプロフィールを編集";
+
+/* No comment provided by engineer. */
+"Empty message!" = "メッセージが空です!";
 
 /* alert button */
 "Enable" = "有効";
@@ -1500,7 +1545,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "エラー";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "エラー";
 
 /* No comment provided by engineer. */
@@ -1633,6 +1678,7 @@ alert button */
 "Error: " = "エラー : ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "エラー : %@";
@@ -2055,7 +2101,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "大きなファイル！";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "さらに詳しく";
 
 /* swipe action */
@@ -2137,10 +2183,10 @@ server test error */
 "member connected" = "接続中";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "メンバーの役割が \"%@\" に変更されます。 グループメンバー全員に通知されます。";
+"Role will be changed to \"%@\". All group members will be notified." = "メンバーの役割が \"%@\" に変更されます。 グループメンバー全員に通知されます。";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "メンバーの役割が \"%@\" に変更されます。 メンバーは新たな招待を受け取ります。";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "メンバーの役割が \"%@\" に変更されます。 メンバーは新たな招待を受け取ります。";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "メンバーをグループから除名する (※元に戻せません※)！";
@@ -2533,9 +2579,6 @@ alert button */
 "Preview" = "プレビュー";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "プライバシーとセキュリティ";
-
-/* No comment provided by engineer. */
 "Private filenames" = "プライベートなファイル名";
 
 /* name of notes to self */
@@ -2896,7 +2939,7 @@ chat item action */
 "Sent messages will be deleted after set time." = "一定時間が経ったら送信されたメッセージが削除されます。";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
+"Server requires authorization to create queues, check password." = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください。";
 
 /* server test error */
 "Server requires authorization to upload, check password." = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
@@ -3060,9 +3103,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Submit" = "送信";
-
-/* No comment provided by engineer. */
-"Support SimpleX Chat" = "Simplex Chatを支援";
 
 /* No comment provided by engineer. */
 "System" = "システム";
@@ -3321,9 +3361,6 @@ server test failure */
 "Using SimpleX Chat servers." = "SimpleX チャット サーバーを使用する。";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "接続のセキュリティを確認";
 
 /* No comment provided by engineer. */
@@ -3459,9 +3496,6 @@ server test failure */
 "You can enable later via Settings" = "あとで設定から有効にできます";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "あとでアプリのプライバシーとセキュリティの設定から有効にすることができます。";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。";
 
 /* No comment provided by engineer. */
@@ -3574,9 +3608,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "あなたの通話";
-
-/* No comment provided by engineer. */
-"Your chat database" = "あなたのチャットデータベース";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "チャット データベースは暗号化されていません - 暗号化するにはパスフレーズを設定してください。";

@@ -14,8 +14,14 @@ import SimpleXChat
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.showTimestamp) var showTimestamp: Bool
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
+    @ObservedObject var chat: Chat
     let file: CIFile?
-    let edited: Bool
+    let meta: CIMeta
+    let senderProfile: LocalProfile?
     var smallViewSize: CGFloat?
 
     var body: some View {
@@ -23,9 +29,9 @@ struct CIFileView: View {
             fileIndicator()
             .simultaneousGesture(TapGesture().onEnded(fileAction))
         } else {
-            let metaReserve = edited
-            ? "                           "
-            : "                       "
+            // reserve exact space for the overlaid meta (timestamp + all icons), rendered transparently - matches MsgContentView
+            let encrypted: Bool? = if let fileSource = file?.fileSource { fileSource.cryptoArgs != nil } else { nil }
+            let metaReserve = Text(verbatim: "   ") + ciMetaText(meta, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: encrypted, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, signedFileVerified: file?.loaded, showSignature: showSignature, showFileEncryption: showFileEncryption)
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
                     .padding(.top, 5)
@@ -37,14 +43,14 @@ struct CIFileView: View {
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(theme.colors.onBackground)
-                        Text(prettyFileSize + metaReserve)
+                        (Text(prettyFileSize) + metaReserve)
                             .font(.caption)
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
                             .foregroundColor(theme.colors.secondary)
                     }
                 } else {
-                    Text(metaReserve)
+                    metaReserve.font(.caption)
                 }
             }
             .padding(.top, 4)
@@ -85,7 +91,7 @@ struct CIFileView: View {
         if let file = file {
             switch (file.fileStatus) {
             case .rcvInvitation, .rcvAborted:
-                if fileSizeValid(file) {
+                if fileSizeValid(file, senderProfile) {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
@@ -93,7 +99,7 @@ struct CIFileView: View {
                         }
                     }
                 } else {
-                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol), countStyle: .binary)
+                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol, senderProfile), countStyle: .binary)
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
                         message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
@@ -165,7 +171,7 @@ struct CIFileView: View {
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .sndWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .rcvInvitation:
-                if fileSizeValid(file) {
+                if fileSizeValid(file, senderProfile) {
                     fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
@@ -227,9 +233,9 @@ struct CIFileView: View {
     }
 }
 
-func fileSizeValid(_ file: CIFile?) -> Bool {
+func fileSizeValid(_ file: CIFile?, _ senderProfile: LocalProfile?) -> Bool {
     if let file = file {
-        return file.fileSize <= getMaxFileSize(file.fileProtocol)
+        return file.fileSize <= getMaxFileSize(file.fileProtocol, senderProfile)
     }
     return false
 }

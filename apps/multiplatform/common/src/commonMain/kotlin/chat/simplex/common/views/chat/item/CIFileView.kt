@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -30,9 +32,13 @@ import java.net.URI
 @Composable
 fun CIFileView(
   file: CIFile?,
-  edited: Boolean,
+  meta: CIMeta,
+  chatTTL: Int?,
+  showViaProxy: Boolean,
+  showTimestamp: Boolean,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
+  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
@@ -71,12 +77,12 @@ fun CIFileView(
     if (file != null) {
       when {
         file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted -> {
-          if (fileSizeValid(file)) {
+          if (fileSizeValid(file, senderProfile)) {
             receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
-              String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
+              String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
             )
           }
         }
@@ -151,7 +157,7 @@ fun CIFileView(
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.RcvInvitation ->
-            if (fileSizeValid(file))
+            if (fileSizeValid(file, senderProfile))
               fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary, topPadding = 10.sp.toDp())
             else
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
@@ -201,10 +207,13 @@ fun CIFileView(
   ) {
     fileIndicator()
     if (!smallView) {
-      val metaReserve = if (edited)
-        "                       "
-      else
-        "                   "
+      val secondaryColor = MaterialTheme.colors.secondary
+      val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
+      val metaReserve = buildAnnotatedString {
+        withStyle(reserveTimestampStyle) {
+          append(reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor = secondaryColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp, signedFileVerified = file?.loaded))
+        }
+      }
       if (file != null) {
         Column {
           Text(
@@ -212,8 +221,11 @@ fun CIFileView(
             maxLines = 1
           )
           Text(
-            formatBytes(file.fileSize) + metaReserve,
-            color = MaterialTheme.colors.secondary,
+            buildAnnotatedString {
+              append(formatBytes(file.fileSize))
+              append(metaReserve)
+            },
+            color = secondaryColor,
             fontSize = 14.sp,
             maxLines = 1
           )
@@ -225,7 +237,9 @@ fun CIFileView(
   }
 }
 
-fun fileSizeValid(file: CIFile): Boolean = file.fileSize <= getMaxFileSize(file.fileProtocol)
+// whether a received file is within the size we accept from its sender
+fun fileSizeValid(file: CIFile, senderProfile: LocalProfile?): Boolean =
+  file.fileSize <= getMaxFileSize(file.fileProtocol, senderProfile)
 
 fun showFileErrorAlert(err: FileError, temporary: Boolean = false) {
   val title: String = generalGetString(if (temporary) MR.strings.temporary_file_error else MR.strings.file_error)

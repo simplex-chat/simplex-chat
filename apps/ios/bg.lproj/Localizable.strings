@@ -889,9 +889,6 @@ marked deleted chat item preview text */
 "calling…" = "повикване…";
 
 /* No comment provided by engineer. */
-"Calls" = "Обаждания";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Обажданията са забранени!";
 
 /* No comment provided by engineer. */
@@ -955,9 +952,6 @@ new chat action */
 
 /* authentication reason */
 "Change lock mode" = "Промяна на режима на заключване";
-
-/* No comment provided by engineer. */
-"Change member role?" = "Промяна на ролята на члена?";
 
 /* authentication reason */
 "Change passcode" = "Промени kодa за достъп";
@@ -1656,10 +1650,7 @@ alert button */
 "Desktop devices" = "Настолни устройства";
 
 /* No comment provided by engineer. */
-"Develop" = "Разработване";
-
-/* No comment provided by engineer. */
-"Developer tools" = "Инструменти за разработчици";
+"Developer" = "Инструменти за разработчици";
 
 /* No comment provided by engineer. */
 "Device" = "Устройство";
@@ -1941,7 +1932,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "грешка";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Грешка при свързване със сървъра";
 
 /* No comment provided by engineer. */
@@ -2101,6 +2092,7 @@ chat item action */
 "Error: " = "Грешка: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Грешка: %@";
@@ -2628,7 +2620,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "Голям файл!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Научете повече";
 
 /* swipe action */
@@ -2722,10 +2714,10 @@ server test error */
 "member connected" = "свързан";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
+"Role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";
@@ -3215,9 +3207,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Preview" = "Визуализация";
-
-/* No comment provided by engineer. */
-"Privacy & security" = "Поверителност и сигурност";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Поверителни имена на файлове";
@@ -3887,9 +3876,6 @@ chat item action */
 "Submit" = "Изпрати";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Подкрепете SimpleX Chat";
-
-/* No comment provided by engineer. */
 "System" = "Системен";
 
 /* No comment provided by engineer. */
@@ -4236,9 +4222,6 @@ server test failure */
 "v%@" = "v%@";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify code with desktop" = "Потвърди кода с настолното устройство";
 
 /* No comment provided by engineer. */
@@ -4452,9 +4435,6 @@ server test failure */
 "You can enable later via Settings" = "Можете да активирате по-късно през Настройки";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Можете да ги активирате по-късно през настройките за \"Поверителност и сигурност\" на приложението.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Можете да опитате още веднъж.";
 
 /* No comment provided by engineer. */
@@ -4582,9 +4562,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Вашите обаждания";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Вашата база данни";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Вашата база данни не е криптирана - задайте парола, за да я криптирате.";

@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionCardShape
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
@@ -33,6 +34,8 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.res.MR
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun UserAddressView(
@@ -357,6 +360,37 @@ private fun UserAddressLayout(
           }
           if (addressSettingsState.value.businessAddress) {
             SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
+          }
+
+          SectionDividerSpaced()
+          SectionView {
+            SettingsActionItem(
+              painterResource(MR.images.ic_at),
+              stringResource(MR.strings.your_simplex_name),
+              click = {
+                ModalManager.start.showCustomModal { close ->
+                  val domain = user?.profile?.contactDomain?.domain
+                  SetSimplexDomainView(
+                    title = generalGetString(MR.strings.set_simplex_name),
+                    footer = generalGetString(MR.strings.set_user_simplex_name_footer),
+                    placeholder = "@yourname.testing",
+                    simplexName = if (domain == null) "" else "@$domain",
+                    save = { simplexDomain ->
+                      try {
+                        val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
+                        withContext(Dispatchers.Main) { chatModel.updateUser(u) }
+                        true
+                      } catch (e: Exception) {
+                        Log.e(TAG, "apiSetUserDomain: ${e.message}")
+                        false
+                      }
+                    },
+                    close = close
+                  )
+                }
+              },
+              iconColor = MaterialTheme.colors.secondary
+            )
           }
 
           SectionDividerSpaced()
@@ -699,7 +733,13 @@ private fun AcceptIncognitoToggle(addressSettingsState: MutableState<AddressSett
 @Composable
 private fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsState>) {
   val autoReply = rememberSaveable { mutableStateOf(addressSettingsState.value.autoReply) }
-  TextEditor(autoReply, Modifier.height(100.dp), placeholder = stringResource(MR.strings.enter_welcome_message_optional))
+  TextEditor(
+    autoReply,
+    Modifier.height(100.dp),
+    placeholder = stringResource(MR.strings.enter_welcome_message_optional),
+    contentPadding = PaddingValues(),
+    shape = SectionCardShape
+  )
   LaunchedEffect(autoReply.value) {
     if (autoReply.value != addressSettingsState.value.autoReply) {
       addressSettingsState.value = AddressSettingsState(

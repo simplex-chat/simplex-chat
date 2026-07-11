@@ -14,6 +14,29 @@ import Combine
 
 private let memberImageSize: CGFloat = 34
 
+private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
+    let oldIsGroupRcv = switch older?.chatDir {
+    case .groupRcv: true
+    case .channelRcv: true
+    default: false
+    }
+    let sameMember = switch (older?.chatDir, current.chatDir) {
+    case (.groupRcv(let oldMember), .groupRcv(let member)):
+        oldMember.memberId == member.memberId
+    case (.channelRcv, .channelRcv):
+        true
+    default:
+        false
+    }
+    if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+        return true
+    } else if case .channelRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+        return true
+    } else {
+        return false
+    }
+}
+
 // Spec: spec/client/chat-view.md#ChatView
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -895,8 +918,15 @@ struct ChatView: View {
                         }
                     } else {
                         let voiceNoFrame = voiceWithoutFrame(ci)
+                        let channelReceived = !ci.chatDir.sent && cInfo.isChannel
+                        // consecutive (no-avatar) received messages in channels drop the avatar-sized
+                        // left padding (see .leading padding below), so they get the full row width here
+                        // too — otherwise the reserved avatar inset would leave a gap on the right
+                        let channelReceivedNoAvatar = channelReceived && !shouldShowAvatar(mergedItem.newest().item, mergedItem.oldest().nextItem)
                         let maxWidth = cInfo.chatType == .group
-                        ? voiceNoFrame
+                        ? channelReceivedNoAvatar
+                        ? g.size.width - 26
+                        : voiceNoFrame || channelReceived
                         ? (g.size.width - 28) - 42
                         : (g.size.width - 28) * 0.84 - 42
                         : voiceNoFrame
@@ -981,8 +1011,8 @@ struct ChatView: View {
             let v = VStack(spacing: 8) {
                 ChatInfoImage(chat: chat, size: alertProfileImageSize)
 
-                Text(chat.chatInfo.displayName)
-                    .font(.title3)
+                let badge = chat.chatInfo.nameBadge
+                NameWithBadge(Text(chat.chatInfo.displayName).font(.title3), badge, .title3) { if let badge { showBadgeInfoAlert(chat.chatInfo.displayName, badge) } }
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1732,29 +1762,6 @@ struct ChatView: View {
             )
         }
 
-        func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
-            let oldIsGroupRcv = switch older?.chatDir {
-            case .groupRcv: true
-            case .channelRcv: true
-            default: false
-            }
-            let sameMember = switch (older?.chatDir, current.chatDir) {
-            case (.groupRcv(let oldMember), .groupRcv(let member)):
-                oldMember.memberId == member.memberId
-            case (.channelRcv, .channelRcv):
-                true
-            default:
-                false
-            }
-            if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
-                return true
-            } else if case .channelRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
-                return true
-            } else {
-                return false
-            }
-        }
-
         var body: some View {
             let last = isLastItem ? im.reversedChatItems.last : nil
             let listItem = merged.newest()
@@ -1978,7 +1985,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? nil : 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
@@ -1998,12 +2005,12 @@ struct ChatView: View {
                                     let (name, role) = if ci.meta.showGroupAsSender {
                                         (groupInfo.chatViewName, NSLocalizedString("group", comment: "shown on group welcome message"))
                                     } else {
-                                        (member.chatViewName, member.memberRole.text)
+                                        (member.chatViewName, member.memberRole.text(isChannel: groupInfo.isChannel))
                                     }
                                     Group {
                                         if #available(iOS 16.0, *) {
                                             MemberLayout(spacing: 16, msgWidth: msgWidth) {
-                                                Text(name)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2012,7 +2019,7 @@ struct ChatView: View {
                                             }
                                         } else {
                                             HStack(spacing: 16) {
-                                                Text(name)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2026,7 +2033,7 @@ struct ChatView: View {
                                         alignment: chatItem.chatDir.sent ? .trailing : .leading
                                     )
                                 } else {
-                                    Text(memberNames(member, prevMember, memCount))
+                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1)
                                         .lineLimit(2)
                                 }
                             }
@@ -2075,7 +2082,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? nil : 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
@@ -2311,7 +2318,7 @@ struct ChatView: View {
                     } else {
                         saveButton(file: fileSource)
                     }
-                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
+                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file, ciSenderProfile(ci, chat.chatInfo)) {
                     downloadButton(file: file)
                 }
                 if ci.meta.editable && !mc.isVoice && !live {

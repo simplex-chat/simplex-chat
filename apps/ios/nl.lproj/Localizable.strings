@@ -883,9 +883,6 @@ marked deleted chat item preview text */
 "calling…" = "bellen…";
 
 /* No comment provided by engineer. */
-"Calls" = "Oproepen";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Bellen niet toegestaan!";
 
 /* No comment provided by engineer. */
@@ -949,9 +946,6 @@ new chat action */
 
 /* authentication reason */
 "Change lock mode" = "Wijzig de vergrendelings modus";
-
-/* No comment provided by engineer. */
-"Change member role?" = "Rol van lid wijzigen?";
 
 /* authentication reason */
 "Change passcode" = "Toegangscode wijzigen";
@@ -1767,13 +1761,10 @@ alert button */
 "Details" = "Details";
 
 /* No comment provided by engineer. */
-"Develop" = "Ontwikkelen";
+"Developer" = "Ontwikkelaar";
 
 /* No comment provided by engineer. */
 "Developer options" = "Ontwikkelaars opties";
-
-/* No comment provided by engineer. */
-"Developer tools" = "Ontwikkel gereedschap";
 
 /* No comment provided by engineer. */
 "Device" = "Apparaat";
@@ -2112,7 +2103,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "fout";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Fout";
 
 /* No comment provided by engineer. */
@@ -2341,6 +2332,7 @@ chat item action */
 "Error: " = "Fout: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Fout: %@";
@@ -3040,7 +3032,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Groot bestand!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Kom meer te weten";
 
 /* swipe action */
@@ -3167,13 +3159,13 @@ servers warning */
 "Member reports" = "Ledenrapporten";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "De rol van het lid wordt gewijzigd naar \"%@\". Alle chatleden worden op de hoogte gebracht.";
+"Role will be changed to \"%@\". All chat members will be notified." = "De rol van het lid wordt gewijzigd naar \"%@\". Alle chatleden worden op de hoogte gebracht.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "De rol van lid wordt gewijzigd in \"%@\". Alle groepsleden worden op de hoogte gebracht.";
+"Role will be changed to \"%@\". All group members will be notified." = "De rol van lid wordt gewijzigd in \"%@\". Alle groepsleden worden op de hoogte gebracht.";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "De rol van lid wordt gewijzigd in \"%@\". Het lid ontvangt een nieuwe uitnodiging.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "De rol van lid wordt gewijzigd in \"%@\". Het lid ontvangt een nieuwe uitnodiging.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Lid wordt verwijderd uit de chat - dit kan niet ongedaan worden gemaakt!";
@@ -3927,9 +3919,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Eerder verbonden servers";
-
-/* No comment provided by engineer. */
-"Privacy & security" = "Privacy en beveiliging";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Privacy voor uw klanten.";
@@ -4990,9 +4979,6 @@ report reason */
 "Subscriptions ignored" = "Subscriptions genegeerd";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Ondersteuning van SimpleX Chat";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Wisselen tussen audio en video tijdens het gesprek.";
 
 /* No comment provided by engineer. */
@@ -5510,9 +5496,6 @@ server test failure */
 "v%@" = "v%@";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify code with desktop" = "Code verifiëren met desktop";
 
 /* No comment provided by engineer. */
@@ -5777,9 +5760,6 @@ server test failure */
 "You can enable later via Settings" = "U kunt later inschakelen via Instellingen";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Je kunt het nog een keer proberen.";
 
 /* No comment provided by engineer. */
@@ -5934,9 +5914,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Uw oproepen";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Uw chat database";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Uw chat database is niet versleuteld, stel een wachtwoord in om deze te versleutelen.";

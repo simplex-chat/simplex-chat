@@ -248,6 +248,8 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
 private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
+    text = contact.displayName,
+    parseHtml = false,
     buttons = {
       Column {
         // Only delete conversation
@@ -306,7 +308,8 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
 
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${contact.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
+    parseHtml = false,
     buttons = {
       Column {
         // Keep conversation toggle
@@ -361,7 +364,8 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
 private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
+    parseHtml = false,
     buttons = {
       Column {
         // Delete and notify contact
@@ -417,7 +421,8 @@ private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, c
 private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
+    parseHtml = false,
     buttons = {
       // Confirm
       SectionItemView({
@@ -492,7 +497,8 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
 fun clearChatDialog(chat: Chat, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.clear_chat_question),
-    text = generalGetString(MR.strings.clear_chat_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.clear_chat_warning)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.clear_verb),
     onConfirm = { controller.clearChat(chat, close) },
     destructive = true,
@@ -709,19 +715,32 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val displayName = contact.profile.displayName.trim()
+    val badge = cInfo.nameBadge
     val text = buildAnnotatedString {
       if (contact.verified) {
         appendInlineContent(id = "shieldIcon")
       }
       append(displayName)
-    }
-    val inlineContent: Map<String, InlineTextContent> = mapOf(
-      "shieldIcon" to InlineTextContent(
-        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      if (badge != null) {
+        append(" ")
+        appendInlineContent(id = "nameBadge")
       }
-    )
+    }
+    val nameFontSize = MaterialTheme.typography.h1.fontSize
+    val uriHandler = LocalUriHandler.current
+    val inlineContent: Map<String, InlineTextContent> = buildMap {
+      put(
+        "shieldIcon",
+        InlineTextContent(
+          Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+        ) {
+          Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+        }
+      )
+      if (badge != null) {
+        put("nameBadge", nameBadgeInline(badge, nameFontSize) { showBadgeInfoAlert(displayName, badge, uriHandler) })
+      }
+    }
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = fun (name: String) {
       clipboard.setText(AnnotatedString(name))
@@ -738,6 +757,20 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    val domain = contact.profile.contactDomain
+    if (domain != null && (contact.profile.contactDomainVerified != null || domain.proof != null)) {
+      SimplexNameView(
+        simplexName = "@${domain.domain}",
+        verified = contact.profile.contactDomainVerified,
+        verify = {
+          val rhId = chatModel.remoteHostId()
+          chatModel.controller.apiVerifyContactDomain(rhId, contact.contactId)?.let { (ct, reason) ->
+            chatModel.chatsContext.updateContact(rhId, ct)
+            ct.profile.contactDomainVerified to reason
+          }
+        }
+      )
+    }
   }
 }
 

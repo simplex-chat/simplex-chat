@@ -111,23 +111,16 @@ struct NetworkAndServers: View {
                     Button("Save servers", action: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) })
                         .disabled(!serversCanBeSaved(ss.servers.currUserServers, ss.servers.userServers, ss.servers.serverErrors))
                 } footer: {
-                    if let errStr = globalServersError(ss.servers.serverErrors) {
-                        ServersErrorView(errStr: errStr)
+                    let errs = globalServersErrors(ss.servers.serverErrors)
+                    if !errs.isEmpty {
+                        ForEach(errs, id: \.self) { err in
+                            ServersErrorView(errStr: err)
+                        }
                     } else if !ss.servers.serverErrors.isEmpty {
                         ServersErrorView(errStr: NSLocalizedString("Errors in servers configuration.", comment: "servers error"))
                     }
-                    if let warnStr = globalServersWarning(ss.servers.serverWarnings) {
-                        ServersWarningView(warnStr: warnStr)
-                    }
-                }
-
-                Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
-                    NavigationLink {
-                        RTCServers()
-                            .navigationTitle("Your ICE servers")
-                            .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("WebRTC ICE servers")
+                    ForEach(globalServersWarnings(ss.servers.serverWarnings), id: \.self) { warn in
+                        ServersWarningView(warnStr: warn)
                     }
                 }
 
@@ -407,17 +400,12 @@ struct ServersWarningView: View {
     }
 }
 
-func globalServersError(_ serverErrors: [UserServersError]) -> String? {
-    for err in serverErrors {
-        if let errStr = err.globalError {
-            return errStr
-        }
-    }
-    return nil
+func globalServersErrors(_ serverErrors: [UserServersError]) -> [String] {
+    serverErrors.compactMap { $0.globalError }
 }
 
-func globalServersWarning(_ serverWarnings: [UserServersWarning]) -> String? {
-    for warn in serverWarnings {
+func globalServersWarnings(_ serverWarnings: [UserServersWarning]) -> [String] {
+    serverWarnings.map { warn in
         switch warn {
         case let .noChatRelays(user):
             let text = NSLocalizedString("No chat relays enabled.", comment: "servers warning")
@@ -427,9 +415,16 @@ func globalServersWarning(_ serverWarnings: [UserServersWarning]) -> String? {
                     user.localDisplayName
                 ) + " " + text
             } else { return text }
+        case let .noNamesServers(user):
+            let text = NSLocalizedString("No servers to resolve names.", comment: "servers warning")
+            if let user = user {
+                return String.localizedStringWithFormat(
+                    NSLocalizedString("For chat profile %@:", comment: "servers warning"),
+                    user.localDisplayName
+                ) + " " + text
+            } else { return text }
         }
     }
-    return nil
 }
 
 func bindingForChatRelays(_ userServers: Binding<[UserOperatorServers]>, _ opIndex: Int) -> Binding<[UserChatRelay]> {

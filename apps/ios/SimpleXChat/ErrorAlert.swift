@@ -34,18 +34,14 @@ public struct ErrorAlert: Error {
     }
 
     public init(_ error: any Error) {
-        self = if let e = error as? ChatError {
-            ErrorAlert(e)
+        self = if let chatError = error as? ChatError {
+            if let a = getNetworkErrorAlert(chatError) {
+                ErrorAlert(title: "\(a.title)", message: a.message.map { "\($0)" })
+            } else {
+                ErrorAlert("\(chatErrorString(chatError))")
+            }
         } else {
             ErrorAlert("\(error.localizedDescription)")
-        }
-    }
-
-    public init(_ chatError: ChatError) {
-        self = if let networkErrorAlert = getNetworkErrorAlert(chatError) {
-            networkErrorAlert
-        } else {
-            ErrorAlert("\(chatErrorString(chatError))")
         }
     }
 }
@@ -83,18 +79,33 @@ extension View {
     }
 }
 
-public func getNetworkErrorAlert(_ e: ChatError) -> ErrorAlert? {
+public func getNetworkErrorAlert(_ e: ChatError) -> (title: String, message: String?)? {
     switch e {
     case let .errorAgent(.BROKER(addr, .TIMEOUT)):
-        ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+        (
+            title: NSLocalizedString("Connection timeout", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Please check your network connection with %@ and try again.", comment: ""), serverHostname(addr))
+        )
     case let .errorAgent(.BROKER(addr, .NETWORK(.unknownCAError))):
-        ErrorAlert(title: "Connection error", message: "Fingerprint in server address does not match certificate: \(serverHostname(addr)).")
+        (
+            title: NSLocalizedString("Connection error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Fingerprint in server address does not match certificate: %@.", comment: ""), serverHostname(addr))
+        )
     case let .errorAgent(.BROKER(addr, .NETWORK)):
-        ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+        (
+            title: NSLocalizedString("Connection error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Please check your network connection with %@ and try again.", comment: ""), serverHostname(addr))
+        )
     case let .errorAgent(.BROKER(addr, .HOST)):
-        ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
+        (
+            title: NSLocalizedString("Connection error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Server address is incompatible with network settings: %@.", comment: ""), serverHostname(addr))
+        )
     case let .errorAgent(.BROKER(addr, .TRANSPORT(.version))):
-        ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
+        (
+            title: NSLocalizedString("Connection error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Server version is incompatible with your app: %@.", comment: ""), serverHostname(addr))
+        )
     case let .errorAgent(.SMP(serverAddress, .PROXY(proxyErr))):
         smpProxyErrorAlert(proxyErr, serverAddress)
     case let .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr)))):
@@ -103,39 +114,72 @@ public func getNetworkErrorAlert(_ e: ChatError) -> ErrorAlert? {
     }
 }
 
-private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> ErrorAlert? {
+private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> (title: String, message: String?)? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Error connecting to forwarding server %@. Please try later.", comment: ""), serverHostname(srvAddr))
+        )
     case .BROKER(brokerErr: .NETWORK(.unknownCAError)):
-        return ErrorAlert(title: "Private routing error", message: "Fingerprint in forwarding server address does not match certificate: \(serverHostname(srvAddr)).")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Fingerprint in forwarding server address does not match certificate: %@.", comment: ""), serverHostname(srvAddr))
+        )
     case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Error connecting to forwarding server %@. Please try later.", comment: ""), serverHostname(srvAddr))
+        )
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server address is incompatible with network settings: \(serverHostname(srvAddr)).")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Forwarding server address is incompatible with network settings: %@.", comment: ""), serverHostname(srvAddr))
+        )
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server version is incompatible with network settings: \(serverHostname(srvAddr)).")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Forwarding server version is incompatible with network settings: %@.", comment: ""), serverHostname(srvAddr))
+        )
     default:
-        return nil
+        nil
     }
 }
 
-private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> ErrorAlert? {
+private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> (title: String, message: String?)? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Forwarding server %@ failed to connect to destination server %@. Please try later.", comment: ""), serverHostname(proxyServer), serverHostname(relayServer))
+        )
     case .BROKER(brokerErr: .NETWORK(.unknownCAError)):
-        return ErrorAlert(title: "Private routing error", message: "Fingerprint in destination server address does not match certificate: \(serverHostname(relayServer)).")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Fingerprint in destination server address does not match certificate: %@.", comment: ""), serverHostname(relayServer))
+        )
     case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Forwarding server %@ failed to connect to destination server %@. Please try later.", comment: ""), serverHostname(proxyServer), serverHostname(relayServer))
+        )
     case .NO_SESSION:
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Forwarding server %@ failed to connect to destination server %@. Please try later.", comment: ""), serverHostname(proxyServer), serverHostname(relayServer))
+        )
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Destination server address of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)) settings.")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Destination server address of %@ is incompatible with forwarding server %@ settings.", comment: ""), serverHostname(relayServer), serverHostname(proxyServer))
+        )
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Destination server version of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)).")
+        (
+            title: NSLocalizedString("Private routing error", comment: ""),
+            message: String.localizedStringWithFormat(NSLocalizedString("Destination server version of %@ is incompatible with forwarding server %@.", comment: ""), serverHostname(relayServer), serverHostname(proxyServer))
+        )
     default:
-        return nil
+        nil
     }
 }
 

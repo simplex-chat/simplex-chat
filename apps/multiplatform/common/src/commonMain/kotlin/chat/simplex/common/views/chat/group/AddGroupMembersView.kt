@@ -228,7 +228,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
   ) {
     val values = GroupMemberRole.selectableRoles
       .filter { it <= groupInfo.membership.memberRole }
-      .map { it to it.text }
+      .map { it to it.text(isChannel = groupInfo.isChannel) }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.new_member_role),
       values,
@@ -353,9 +353,10 @@ fun ContactCheckRow(
   ) {
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-    Text(
+    NameWithBadge(
       contact.chatViewName,
-      modifier = Modifier.weight(10f, fill = true),
+      if (contact.active) contact.profile.localBadge else null,
+      Modifier.weight(10f, fill = true),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified

@@ -170,9 +170,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   @Composable
   fun ForwardedFromSender(forwardedFromItem: AChatItem) {
     @Composable
-    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground) {
-      Text(
+    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground, badge: LocalBadge? = null) {
+      NameWithBadge(
         text,
+        badge,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.body1,
@@ -191,13 +192,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         if (forwardedFromItem.chatItem.chatDir.sent) {
           ItemText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
           Spacer(Modifier.height(7.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
-          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
+          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName, badge = forwardedFromItem.chatItem.chatDir.groupMember.nameBadge)
           Spacer(Modifier.height(7.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else {
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground, badge = forwardedFromItem.chatInfo.nameBadge)
         }
       }
     }
@@ -271,7 +272,16 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (deleteAt != null) {
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
-      if (devTools) {
+      if (ci.meta.msgVerified.verified) {
+        val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
+        InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_verified))
+      } else if (ci.meta.msgVerified is MsgVerified.SigMissing) {
+        InfoRow(stringResource(MR.strings.signature_missing_alert_title), "", icon = painterResource(MR.images.ic_verified_missing), iconTint = Color.Red)
+      }
+    }
+    if (devTools) {
+      SectionDividerSpaced()
+      SectionView {
         InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
         InfoRow(stringResource(MR.strings.info_row_updated_at), localTimestamp(ci.meta.updatedAt))
         ExpandableInfoRow(stringResource(MR.strings.info_row_message_status), jsonShort.encodeToString(ci.meta.itemStatus))
@@ -344,9 +354,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ) {
       MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-      Text(
+      NameWithBadge(
         member.chatViewName,
-        modifier = Modifier.weight(10f, fill = true),
+        member.nameBadge,
+        Modifier.weight(10f, fill = true),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -556,6 +567,11 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   val deleteAt = ci.meta.itemTimed?.deleteAt
   if (deleteAt != null) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_disappears_at), localTimestamp(deleteAt)))
+  }
+  if (ci.meta.msgVerified.verified) {
+    shareText.add(generalGetString(if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified))
+  } else if (ci.meta.msgVerified is MsgVerified.SigMissing) {
+    shareText.add(generalGetString(MR.strings.signature_missing_alert_title))
   }
   if (devTools) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_database_id), meta.itemId))

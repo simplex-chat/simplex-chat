@@ -1461,6 +1461,17 @@ data class Chat(
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
 
+  // the badge shown for a chat's name: an active contact's or a contact request's (groups have none).
+  // a badge that expired over a month ago (ExpiredOld) is not shown at all.
+  val nameBadge: LocalBadge? get() {
+    val badge = when {
+      this is Direct && contact.active -> contact.profile.localBadge
+      this is ContactRequest -> contactRequest.profile.localBadge
+      else -> null
+    }
+    return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
+  }
+
   @Serializable @SerialName("direct")
   data class Direct(val contact: Contact): ChatInfo() {
     override val chatType get() = ChatType.Direct
@@ -1649,9 +1660,6 @@ sealed class ChatInfo: SomeChat, NamedChat {
           if (groupInfo.membership.memberActive) {
             when (groupChatScope) {
               null -> {
-                if (allRelaysBroken && groupInfo.useRelays) {
-                  return generalGetString(MR.strings.cant_broadcast_message) to null
-                }
                 if (groupInfo.membership.memberPending) {
                   return generalGetString(MR.strings.reviewed_by_admins) to generalGetString(MR.strings.observer_cant_send_message_desc)
                 }
@@ -1661,6 +1669,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
                   } else {
                     generalGetString(MR.strings.observer_cant_send_message_title) to generalGetString(MR.strings.observer_cant_send_message_desc)
                   }
+                }
+                if (allRelaysBroken && groupInfo.useRelays) {
+                  return generalGetString(MR.strings.cant_broadcast_message) to null
                 }
                 return null
               }
@@ -2025,14 +2036,18 @@ data class Profile(
   override val localAlias : String = "",
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
-  val peerType: ChatPeerType? = null
+  val peerType: ChatPeerType? = null,
+  // the badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
+  // but preserved so passing a link profile back to the core (apiPrepareContact) keeps the proof
+  val badge: BadgeProof? = null,
+  val contactDomain: SimplexDomainClaim? = null
 ): NamedChat {
   val profileViewName: String
     get() {
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
 
   companion object {
     val sampleData = Profile(
@@ -2053,11 +2068,14 @@ data class LocalProfile(
   override val localAlias: String,
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
-  val peerType: ChatPeerType? = null
+  val peerType: ChatPeerType? = null,
+  val localBadge: LocalBadge? = null,
+  val contactDomain: SimplexDomainClaim? = null,
+  val contactDomainVerified: Boolean? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType)
+  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
 
   companion object {
     val sampleData = LocalProfile(
@@ -2076,6 +2094,70 @@ enum class ChatPeerType {
   @SerialName("human") Human,
   @SerialName("bot") Bot
 }
+
+// Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
+// Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
+@Serializable(with = BadgeTypeSerializer::class)
+sealed class BadgeType {
+  @Serializable @SerialName("supporter") object Supporter: BadgeType()
+  @Serializable @SerialName("legend") object Legend: BadgeType()
+  @Serializable @SerialName("investor") object Investor: BadgeType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): BadgeType()
+
+  // the disclosed (signed) type name, shown to the user for verified badges
+  val text: String
+    get() = when (this) {
+      is Supporter -> "supporter"
+      is Legend -> "legend"
+      is Investor -> "investor"
+      is Unknown -> type
+    }
+}
+
+object BadgeTypeSerializer : KSerializer<BadgeType> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeType", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeType =
+    when (val v = decoder.decodeString()) {
+      "supporter" -> BadgeType.Supporter
+      "legend" -> BadgeType.Legend
+      "investor" -> BadgeType.Investor
+      else -> BadgeType.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: BadgeType) = encoder.encodeString(value.text)
+}
+
+@Serializable
+enum class BadgeStatus {
+  @SerialName("active") Active,
+  @SerialName("expired") Expired,
+  // expired over a month ago - the badge is not shown at all
+  @SerialName("expiredOld") ExpiredOld,
+  @SerialName("failed") Failed,
+  // signed with a key index this app version does not know - shown as a warning
+  @SerialName("unknownKey") UnknownKey
+}
+
+@Serializable
+data class BadgeInfo(
+  val badgeType: BadgeType,
+  val badgeExpiry: Instant? = null,
+  val badgeExtra: String = ""
+)
+
+@Serializable
+data class LocalBadge(
+  val badge: BadgeInfo,
+  val status: BadgeStatus
+)
+
+// the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
+@Serializable
+data class BadgeProof(
+  val badgeKeyIdx: Int,
+  val presHeader: String,
+  val proof: String,
+  val badgeInfo: BadgeInfo
+)
 
 @Serializable
 data class UserProfileUpdateSummary(
@@ -2119,6 +2201,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
+  val groupDomainVerified: Boolean? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2178,6 +2261,7 @@ data class GroupInfo (
       GroupFeature.Reports -> p.reports.on
       GroupFeature.History -> p.history.on
       GroupFeature.Support -> p.support.on
+      GroupFeature.SignMessages -> p.signMessages.on
     }
   }
 
@@ -2241,9 +2325,17 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class SimplexDomainClaim(
+  val domain: String,
+  val proof: SimplexDomainProof? = null
+) {
+  val shortName: String get() = domain.removeSuffix(".simplex")
+}
+
+@Serializable
 data class PublicGroupAccess(
   val groupWebPage: String? = null,
-  val groupDomain: String? = null,
+  val groupDomainClaim: SimplexDomainClaim? = null,
   val domainWebPage: Boolean = false,
   val allowEmbedding: Boolean = false
 )
@@ -2309,7 +2401,9 @@ enum class MemberCriteria {
 data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
-  val business: Boolean
+  val business: Boolean,
+  // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
+  val localBadge: LocalBadge? = null
 )
 
 @Serializable
@@ -2330,10 +2424,31 @@ data class GroupShortLinkData (
 )
 
 @Serializable
+enum class MsgSigStatus {
+  @SerialName("verified") Verified,
+  @SerialName("signedNoKey") SignedNoKey;
+}
+
+@Serializable
+sealed class MsgVerified {
+  @Serializable @SerialName("signed") data class Signed(val sigStatus: MsgSigStatus): MsgVerified()
+  @Serializable @SerialName("sigMissing") object SigMissing: MsgVerified()
+  @Serializable @SerialName("unsigned") object Unsigned: MsgVerified()
+
+  val verified: Boolean get() = this is Signed && sigStatus == MsgSigStatus.Verified
+
+  val sigMissingInfo: Pair<String, String>? get() = when (this) {
+    is SigMissing -> generalGetString(MR.strings.signature_missing_alert_title) to generalGetString(MR.strings.signature_missing_alert_desc)
+    else -> null
+  }
+}
+
+@Serializable
 enum class RelayStatus {
   @SerialName("new") New,
   @SerialName("invited") Invited,
   @SerialName("accepted") Accepted,
+  @SerialName("acknowledgedRoster") AcknowledgedRoster,
   @SerialName("active") Active,
   @SerialName("inactive") Inactive,
   @SerialName("rejected") Rejected;
@@ -2342,6 +2457,7 @@ enum class RelayStatus {
     New -> generalGetString(MR.strings.relay_status_new)
     Invited -> generalGetString(MR.strings.relay_status_invited)
     Accepted -> generalGetString(MR.strings.relay_status_accepted)
+    AcknowledgedRoster -> generalGetString(MR.strings.relay_status_acknowledged_roster)
     Active -> generalGetString(MR.strings.relay_status_active)
     Inactive -> generalGetString(MR.strings.relay_status_inactive)
     Rejected -> generalGetString(MR.strings.relay_status_rejected)
@@ -2393,6 +2509,7 @@ data class BusinessChatInfo (
   val chatType: BusinessChatType,
   val businessId: String,
   val customerId: String,
+  val businessDomain: SimplexDomainClaim? = null,
 )
 
 @Serializable
@@ -2440,6 +2557,11 @@ data class GroupMember (
   override val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
+  // the badge shown for a member's name; a badge that expired over a month ago (ExpiredOld) is not shown
+  val nameBadge: LocalBadge? get() {
+    val badge = memberProfile.localBadge
+    return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
+  }
   val blocked get() = blockedByAdmin || !memberSettings.showMessages
 
   override val localAlias: String = memberProfile.localAlias
@@ -2529,8 +2651,15 @@ data class GroupMember (
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (memberRole == GroupMemberRole.Relay || !canBeRemoved(groupInfo) || memberStatus == GroupMemberStatus.MemRemoved || memberStatus == GroupMemberStatus.MemLeft || memberPending) null
+    else if (groupInfo.useRelays && !groupInfo.isOwner) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.selectableRoles.filter { it <= userRole }
+      if (groupInfo.useRelays)
+        // TODO [relays]: for now owners can only set observer/member in channels.
+        //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
+        // GroupMemberRole.selectableRoles.filter { it <= userRole && it != GroupMemberRole.Owner }
+        listOf(GroupMemberRole.Observer, GroupMemberRole.Member)
+      else
+        GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
@@ -2608,11 +2737,11 @@ enum class GroupMemberRole(val memberRole: String) {
     val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Moderator, Admin, Owner)
   }
 
-  val text: String get() = when (this) {
+  fun text(isChannel: Boolean): String = when (this) {
     Relay -> generalGetString(MR.strings.group_member_role_relay)
-    Observer -> generalGetString(MR.strings.group_member_role_observer)
+    Observer -> generalGetString(if (isChannel) MR.strings.group_member_role_observer_channel else MR.strings.group_member_role_observer)
     Author -> generalGetString(MR.strings.group_member_role_author)
-    Member -> generalGetString(MR.strings.group_member_role_member)
+    Member -> generalGetString(if (isChannel) MR.strings.group_member_role_member_channel else MR.strings.group_member_role_member)
     Moderator -> generalGetString(MR.strings.group_member_role_moderator)
     Admin -> generalGetString(MR.strings.group_member_role_admin)
     Owner -> generalGetString(MR.strings.group_member_role_owner)
@@ -2758,7 +2887,7 @@ class UserContactRequest (
   val contactRequestId: Long,
   val cReqChatVRange: VersionRange,
   override val localDisplayName: String,
-  val profile: Profile,
+  val profile: LocalProfile,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -2784,7 +2913,7 @@ class UserContactRequest (
       contactRequestId = 1,
       cReqChatVRange = VersionRange(1, 1),
       localDisplayName = "alice",
-      profile = Profile.sampleData,
+      profile = LocalProfile.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -3447,7 +3576,8 @@ data class CIMeta (
   val userMention: Boolean,
   val deletable: Boolean,
   val editable: Boolean,
-  val showGroupAsSender: Boolean
+  val showGroupAsSender: Boolean,
+  val msgVerified: MsgVerified = MsgVerified.Unsigned
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 
@@ -4779,15 +4909,33 @@ enum class SimplexLinkType(val linkType: String) {
 @Serializable
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
-  val nameDomain: SimplexNameDomain
-)
+  val nameDomain: SimplexDomain
+) {
+  // mirrors backend shortNameInfoStr: "#name" for a simplex public group, else prefix + full domain
+  val shortStr: String get() = when {
+    nameType == SimplexNameType.publicGroup && nameDomain.nameTLD == SimplexTLD.simplex && nameDomain.subDomain.isEmpty() -> "#" + nameDomain.domain
+    else -> (if (nameType == SimplexNameType.publicGroup) "#" else "@") + nameDomain.fullDomainName
+  }
+}
 
 @Serializable
-data class SimplexNameDomain(
+data class SimplexDomain(
   val nameTLD: SimplexTLD,
   val domain: String,
   val subDomain: List<String>
-)
+) {
+  // mirrors backend fullDomainName: reverse(subDomain) + [domain] + tld
+  val fullDomainName: String get() {
+    val tld = when (nameTLD) {
+      SimplexTLD.simplex -> listOf("simplex")
+      SimplexTLD.testing -> listOf("testing")
+      SimplexTLD.web -> emptyList()
+    }
+    return (subDomain.reversed() + domain + tld).joinToString(".")
+  }
+
+  val cmdString: String get() = "domain=$fullDomainName"
+}
 
 @Serializable
 enum class SimplexTLD {
@@ -4801,6 +4949,14 @@ enum class SimplexNameType {
   @SerialName("publicGroup") publicGroup,
   @SerialName("contact") contact
 }
+
+// peer's signed name claim; UI only checks presence
+@Serializable
+data class SimplexDomainProof(
+  val linkOwnerId: String? = null,
+  val presHeader: String,
+  val signature: String
+)
 
 @Serializable
 enum class FormatColor(val color: String) {
@@ -5006,13 +5162,13 @@ sealed class RcvGroupEvent() {
     is MemberAccepted -> String.format(generalGetString(MR.strings.rcv_group_event_member_accepted), profile.profileViewName)
     is UserAccepted -> generalGetString(MR.strings.rcv_group_event_user_accepted)
     is MemberLeft -> generalGetString(MR.strings.rcv_group_event_member_left)
-    is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
+    is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text(isChannel = isChannel))
     is MemberBlocked -> if (blocked) {
       String.format(generalGetString(MR.strings.rcv_group_event_member_blocked), profile.profileViewName)
     } else {
       String.format(generalGetString(MR.strings.rcv_group_event_member_unblocked), profile.profileViewName)
     }
-    is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text)
+    is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text(isChannel = isChannel))
     is MemberDeleted -> String.format(generalGetString(MR.strings.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(MR.strings.rcv_group_event_user_deleted)
     is GroupDeleted -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_channel_deleted else MR.strings.rcv_group_event_group_deleted)
@@ -5051,8 +5207,8 @@ sealed class SndGroupEvent() {
   val text: String get() = text(isChannel = false)
 
   fun text(isChannel: Boolean): String = when (this) {
-    is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
-    is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text)
+    is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text(isChannel = isChannel))
+    is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text(isChannel = isChannel))
     is MemberBlocked -> if (blocked) {
       String.format(generalGetString(MR.strings.snd_group_event_member_blocked), profile.profileViewName)
     } else {

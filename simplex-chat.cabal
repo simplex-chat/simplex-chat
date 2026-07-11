@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.5.4.1
+version:        7.0.0.8
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -38,6 +38,9 @@ library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.AppSettings
+      Simplex.Chat.Badges
+      Simplex.Chat.Badges.CLI
+      Simplex.Chat.Names
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -51,6 +54,7 @@ library
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Messages.CIContent.Events
       Simplex.Chat.Mobile
+      Simplex.Chat.Mobile.Badges
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
       Simplex.Chat.Mobile.WebRTC
@@ -90,6 +94,7 @@ library
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
       Simplex.Chat.Util
+      Simplex.Chat.Web
   if !flag(client_library)
       exposed-modules:
           Simplex.Chat.Bot
@@ -134,9 +139,15 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260507_relay_inactive_at
           Simplex.Chat.Store.Postgres.Migrations.M20260514_relay_request_group_link_index
           Simplex.Chat.Store.Postgres.Migrations.M20260515_public_group_access
+          Simplex.Chat.Store.Postgres.Migrations.M20260516_supporter_badges
           Simplex.Chat.Store.Postgres.Migrations.M20260529_delivery_job_senders
           Simplex.Chat.Store.Postgres.Migrations.M20260530_client_services
           Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
+          Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
+          Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
+          Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
+          Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
+          Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -293,9 +304,15 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260507_relay_inactive_at
           Simplex.Chat.Store.SQLite.Migrations.M20260514_relay_request_group_link_index
           Simplex.Chat.Store.SQLite.Migrations.M20260515_public_group_access
+          Simplex.Chat.Store.SQLite.Migrations.M20260516_supporter_badges
           Simplex.Chat.Store.SQLite.Migrations.M20260529_delivery_job_senders
           Simplex.Chat.Store.SQLite.Migrations.M20260530_client_services
           Simplex.Chat.Store.SQLite.Migrations.M20260531_member_removed_at
+          Simplex.Chat.Store.SQLite.Migrations.M20260601_relay_sent_web_domain
+          Simplex.Chat.Store.SQLite.Migrations.M20260602_group_roster
+          Simplex.Chat.Store.SQLite.Migrations.M20260603_simplex_name
+          Simplex.Chat.Store.SQLite.Migrations.M20260629_roster_catchup
+          Simplex.Chat.Store.SQLite.Migrations.M20260707_file_digest
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -556,6 +573,7 @@ test-suite simplex-chat-test
   main-is: Test.hs
   other-modules:
       APIDocs
+      BadgeTests
       Bots.BroadcastTests
       Bots.DirectoryTests
       ChatClient
@@ -568,12 +586,14 @@ test-suite simplex-chat-test
       ChatTests.Forward
       ChatTests.Groups
       ChatTests.Local
+      ChatTests.Names
       ChatTests.Profiles
       ChatTests.Utils
       JSONFixtures
       JSONTests
       MarkdownTests
       MemberRelationsTests
+      NameResolver
       MessageBatching
       OperatorTests
       ProtocolTests
@@ -654,6 +674,8 @@ test-suite simplex-chat-test
     , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
+    , wai ==3.2.*
+    , warp ==3.3.*
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:

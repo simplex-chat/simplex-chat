@@ -33,6 +33,7 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -155,7 +156,7 @@ getMsgDeliveryTask_ db taskId =
     toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender)) =
       case (toJobScope_ jobScopeRow, J.eitherDecodeStrict' msgBody) of
         (Just jobScope, Right chatMsg) ->
-          let fwdSender = if showGroupAsSender then FwdChannel else FwdMember senderMemberId senderMemberName
+          let fwdSender = if showGroupAsSender && isNothing chatBinding_ then FwdChannel else FwdMember senderMemberId senderMemberName
               -- Re-parsed from msg_body: validates stored content against current code.
               -- Signed: original bytes preserved (re-encoding would invalidate signature).
               -- Unsigned: re-encoded from parsed ChatMessage on forward (sanitizes content).
@@ -348,8 +349,8 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
     (status, errReason_, currentTs, jobId)
 
 -- TODO [relays] possible improvement is to prioritize owners and "active" members
-getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
+getGroupMembersByCursor :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
+getGroupMembersByCursor db cxt user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
   gmIds :: [Int64] <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
@@ -367,13 +368,14 @@ getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} curs
               :. (cursorGMId, count)
           )
 #if defined(dbPostgres)
-  map (toContactMember vr user) <$>
+  currentTs <- getCurrentTime
+  map (toContactMember currentTs cxt user) <$>
     DB.query
       db
-      (groupMemberQuery <> " WHERE m.group_member_id IN ?")
+      (groupMemberQuery <> " WHERE m.group_member_id IN ? ORDER BY m.group_member_id ASC")
       (Only (In gmIds))
 #else
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) gmIds
+  rights <$> mapM (runExceptT . getGroupMemberById db cxt user) gmIds
 #endif
   where
     query =

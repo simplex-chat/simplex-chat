@@ -31,6 +31,7 @@ data class AvailableRelay(
 
 @Composable
 fun AddGroupRelayView(
+  rhId: Long?,
   groupInfo: GroupInfo,
   existingRelayIds: Set<Long>,
   onRelayAdded: () -> Unit,
@@ -46,7 +47,7 @@ fun AddGroupRelayView(
 
   LaunchedEffect(Unit) {
     try {
-      val servers = ChatController.getUserServers(null)
+      val servers = ChatController.getUserServers(rhId)
       if (servers != null) {
         val relays = mutableListOf<AvailableRelay>()
         for (op in servers) {
@@ -80,7 +81,7 @@ fun AddGroupRelayView(
       if (relayIds.isEmpty()) return@AddGroupRelayLayout
       isAdding = true
       scope.launch {
-        addSelectedRelays(groupInfo, relayIds, selectedRelayIds, availableRelays, onRelayAdded, close) { newSelectedIds, newAvailableRelays ->
+        addSelectedRelays(rhId, groupInfo, relayIds, selectedRelayIds, availableRelays, onRelayAdded, close) { newSelectedIds, newAvailableRelays ->
           selectedRelayIds = newSelectedIds
           availableRelays = newAvailableRelays
           isAdding = false
@@ -183,6 +184,7 @@ private fun AddRelaysButton(onClick: () -> Unit, disabled: Boolean) {
 }
 
 private suspend fun addSelectedRelays(
+  rhId: Long?,
   groupInfo: GroupInfo,
   relayIds: List<Long>,
   selectedRelayIds: Set<Long>,
@@ -192,7 +194,7 @@ private suspend fun addSelectedRelays(
   updateState: (Set<Long>, List<AvailableRelay>) -> Unit
 ) {
   try {
-    val result = ChatController.apiAddGroupRelays(groupInfo.groupId, relayIds)
+    val result = ChatController.apiAddGroupRelays(rhId, groupInfo.groupId, relayIds)
     if (result == null) {
       updateState(selectedRelayIds, availableRelays)
       return

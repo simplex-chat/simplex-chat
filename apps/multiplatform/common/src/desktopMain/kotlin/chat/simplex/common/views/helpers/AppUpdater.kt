@@ -29,6 +29,7 @@ import java.net.Proxy
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import kotlin.math.min
+import kotlin.system.exitProcess
 
 data class SemVer(
   val major: Int,
@@ -315,13 +316,21 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
     call.execute().use { response ->
       response.body?.use { body ->
         body.byteStream().use { stream ->
+          // On Windows the install path exits the app before it can delete the downloaded file, so a
+          // previous update's installer can be left in the temp dir; remove it here at the next
+          // download instead of letting it accumulate. Other platforms delete the file after install.
+          if (desktopPlatform.isWindows()) File(tmpDir, asset.name).delete()
           createTmpFileAndDelete { file ->
             // It's important to close output stream (with use{}), otherwise, Windows cannot rename the file
             file.outputStream().use { output ->
               stream.copyTo(output)
             }
             val newFile = File(file.parentFile, asset.name)
-            file.renameTo(newFile)
+            // Moving instead of renameTo: a bare rename can silently fail (returns false, ignored),
+            // and the enclosing createTmpFileAndDelete then deletes the only copy in its finally block,
+            // leaving the user with an empty download dir. Files.move performs the same in-place rename
+            // when possible, falls back to copy when it can't, and throws (handled below) on real failure.
+            Files.move(file.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
 
             AlertManager.shared.showAlertDialogButtonsColumn(
               generalGetString(MR.strings.app_check_for_updates_download_completed_title),
@@ -429,19 +438,12 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
       }
     }
     desktopPlatform.isWindows() -> {
-      val process = Runtime.getRuntime().exec("msiexec /i ${file.absolutePath}"/* /qb */).onExit().join()
-      val startedInstallation = process.exitValue() == 0
-      if (!startedInstallation) {
-        Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
-        // Failed to start installation. show directory with the file for manual installation
-        desktopOpenDir(file.parentFile)
-      } else {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
-          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
-        )
-        file.delete()
-      }
+      // Launch the installer, then exit so our files are no longer locked. While the app runs it
+      // holds SimpleX.exe/JRE/DLLs open, which forces the MSI to defer replacement to a reboot and
+      // corrupts the upgrade (the app then fails to launch). Array form passes the path as a single
+      // argument so a space in the temp path does not break the command.
+      Runtime.getRuntime().exec(arrayOf("msiexec", "/i", file.absolutePath))
+      exitProcess(0)
     }
     desktopPlatform.isMac() -> {
       // Default mount point if no other DMGs were mounted before
