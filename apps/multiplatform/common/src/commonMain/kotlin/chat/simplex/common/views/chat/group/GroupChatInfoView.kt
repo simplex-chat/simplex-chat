@@ -638,13 +638,6 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
-            val channelDomain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
-            SettingsActionItem(
-              painterResource(MR.images.ic_tag),
-              if (channelDomain != null) "#$channelDomain" else stringResource(MR.strings.simplex_name),
-              setSimplexName,
-              iconColor = MaterialTheme.colors.secondary
-            )
           } else if (channelLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
@@ -669,6 +662,29 @@ fun ModalData.GroupChatInfoLayout(
         }
         if (!groupInfo.isOwner && channelLink != null) {
           SectionTextFooter(stringResource(MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect))
+        }
+        if (groupInfo.isOwner && groupLink != null) {
+          SectionDividerSpaced()
+          val channelDomain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
+          if (channelDomain != null) {
+            SectionView(stringResource(MR.strings.channel_simplex_name)) {
+              SettingsActionItem(
+                painterResource(MR.images.ic_tag),
+                channelDomain,
+                setSimplexName,
+                iconColor = MaterialTheme.colors.secondary
+              )
+            }
+          } else {
+            SectionView {
+              SettingsActionItem(
+                painterResource(MR.images.ic_tag),
+                stringResource(MR.strings.get_simplex_name_beta),
+                setSimplexName,
+                iconColor = MaterialTheme.colors.secondary
+              )
+            }
+          }
         }
       } else {
         SectionView {

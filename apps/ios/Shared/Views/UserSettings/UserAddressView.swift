@@ -191,47 +191,19 @@ struct UserAddressView: View {
             }
         }
 
-        Section {
-            NavigationLink {
-                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.domain { "@\(d)" } else { "" }
-                SetSimplexDomainView(
-                    title: "Your SimpleX name",
-                    footer: "Let people connect to you via name registered with your SimpleX address.",
-                    prompt: "@yourname.testing",
-                    simplexName: simplexName,
-                    save: { simplexDomain in
-                        if simplexDomain != chatModel.currentUser?.profile.contactDomain?.domain {
-                            let confirmed = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
-                                DispatchQueue.main.async {
-                                    showAlert(
-                                        NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert title"),
-                                        actions: {[
-                                            UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in
-                                                cont.resume(returning: true)
-                                            },
-                                            UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel) { _ in
-                                                cont.resume(returning: false)
-                                            }
-                                        ]}
-                                    )
-                                }
-                            }
-                            if !confirmed { return false }
-                        }
-                        do {
-                            let u = try await apiSetUserDomain(simplexDomain)
-                            await MainActor.run { chatModel.updateUser(u) }
-                            return true
-                        } catch {
-                            return false
-                        }
-                    }
-                )
-            } label: {
-                if let d = chatModel.currentUser?.profile.contactDomain?.domain {
-                    Label("@\(d)", systemImage: "at")
-                } else {
-                    Label("Your SimpleX name", systemImage: "at")
+        if let d = chatModel.currentUser?.profile.contactDomain?.domain {
+            Section {
+                setSimplexNameButton {
+                    Label("\(d)", systemImage: "at")
+                }
+            } header: {
+                Text("Your SimpleX name")
+                    .foregroundColor(theme.colors.secondary)
+            }
+        } else {
+            Section {
+                setSimplexNameButton {
+                    Label("Get SimpleX name (BETA)", systemImage: "at")
                 }
             }
         }
@@ -252,6 +224,47 @@ struct UserAddressView: View {
         } footer: {
             Text("Your contacts will remain connected.")
                 .foregroundColor(theme.colors.secondary)
+        }
+    }
+
+    private func setSimplexNameButton<L: View>(@ViewBuilder label: () -> L) -> some View {
+        NavigationLink {
+            let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.domain { "@\(d)" } else { "" }
+            SetSimplexDomainView(
+                title: "Your SimpleX name",
+                footer: "Let people connect to you via name registered with your SimpleX address.",
+                prompt: "@yourname.testing",
+                simplexName: simplexName,
+                save: { simplexDomain in
+                    if simplexDomain != chatModel.currentUser?.profile.contactDomain?.domain {
+                        let confirmed = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
+                            DispatchQueue.main.async {
+                                showAlert(
+                                    NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert title"),
+                                    actions: {[
+                                        UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in
+                                            cont.resume(returning: true)
+                                        },
+                                        UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel) { _ in
+                                            cont.resume(returning: false)
+                                        }
+                                    ]}
+                                )
+                            }
+                        }
+                        if !confirmed { return false }
+                    }
+                    do {
+                        let u = try await apiSetUserDomain(simplexDomain)
+                        await MainActor.run { chatModel.updateUser(u) }
+                        return true
+                    } catch {
+                        return false
+                    }
+                }
+            )
+        } label: {
+            label()
         }
     }
 
@@ -774,6 +787,16 @@ struct SetSimplexDomainView: View {
             }
             Section {
                 Button {
+                    openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
+                } label: {
+                    Text("Register a test name")
+                }
+                if !original.isEmpty {
+                    Button("Remove") {
+                        simplexName = ""
+                    }
+                }
+                Button {
                     saving = true
                     Task {
                         let ok = await save(normalized(simplexName))
@@ -789,14 +812,6 @@ struct SetSimplexDomainView: View {
                     Text("Save")
                 }
                 .disabled(saving || !isValid || !changed)
-                if !original.isEmpty {
-                    Button("Copy") {
-                        UIPasteboard.general.string = simplexName
-                    }
-                    Button("Remove") {
-                        simplexName = ""
-                    }
-                }
             }
         }
         .navigationTitle(title)

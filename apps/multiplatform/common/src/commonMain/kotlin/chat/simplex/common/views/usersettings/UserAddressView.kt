@@ -365,11 +365,11 @@ private fun UserAddressLayout(
           }
 
           SectionDividerSpaced()
-          SectionView {
-            val domain = user?.profile?.contactDomain?.domain
+          val domain = user?.profile?.contactDomain?.domain
+          SectionView(title = if (domain != null) generalGetString(MR.strings.your_simplex_name) else null) {
             SettingsActionItem(
               painterResource(MR.images.ic_at),
-              if (domain != null) "@$domain" else generalGetString(MR.strings.your_simplex_name),
+              if (domain != null) "$domain" else generalGetString(MR.strings.get_simplex_name_beta),
               click = {
                 ModalManager.start.showCustomModal { close ->
                   SetSimplexDomainView(

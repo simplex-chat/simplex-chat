@@ -112,7 +112,6 @@ struct GroupChatInfoView: View {
                             // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
                             if groupInfo.isOwner && groupLink != nil {
                                 channelLinkButton()
-                                channelSimplexNameButton()
                             } else if let link = groupInfo.groupProfile.publicGroup?.groupLink {
                                 SimpleXLinkQRCode(uri: link)
                                 Button {
@@ -157,6 +156,18 @@ struct GroupChatInfoView: View {
                             }
                         } header: {
                             Text("")
+                        }
+                    }
+
+                    if groupInfo.useRelays && groupInfo.isOwner && groupLink != nil {
+                        if groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName != nil {
+                            Section(header: Text("Channel SimpleX name").foregroundColor(theme.colors.secondary)) {
+                                channelSimplexNameButton()
+                            }
+                        } else {
+                            Section {
+                                channelSimplexNameButton()
+                            }
                         }
                     }
 
@@ -732,9 +743,9 @@ struct GroupChatInfoView: View {
             )
         } label: {
             if let d = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName {
-                Label("#\(d)", systemImage: "number")
+                Label("\(d)", systemImage: "number")
             } else {
-                Label("SimpleX name", systemImage: "number")
+                Label("Get SimpleX name (BETA)", systemImage: "number")
             }
         }
     }

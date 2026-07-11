@@ -10,11 +10,11 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
+import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
@@ -40,7 +40,7 @@ fun SetSimplexDomainView(
 ) {
   val name = rememberSaveable { mutableStateOf(simplexName) }
   val saving = remember { mutableStateOf(false) }
-  val clipboard = LocalClipboardManager.current
+  val uriHandler = LocalUriHandler.current
 
   fun addSimplexTLD(s: String): String {
     return if (s.contains(".")) s else "$s.simplex"
@@ -135,22 +135,19 @@ fun SetSimplexDomainView(
       SectionTextFooter(footer)
       SectionDividerSpaced()
       SectionView {
+        SectionItemView({ openBrowserAlert("https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md", uriHandler) }) {
+          Text(stringResource(MR.strings.register_test_name), color = MaterialTheme.colors.primary)
+        }
+        if (simplexName.isNotBlank()) {
+          SectionItemView({ name.value = "" }) {
+            Text(stringResource(MR.strings.remove_verb), color = MaterialTheme.colors.primary)
+          }
+        }
         SectionItemView({ doSave(close) }, disabled = unchanged || saving.value || !isValid) {
           Text(
             stringResource(MR.strings.save_verb),
             color = if (unchanged || saving.value || !isValid) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
           )
-        }
-        if (simplexName.isNotBlank()) {
-          SectionItemView({
-            clipboard.setText(AnnotatedString(name.value))
-            showToast(generalGetString(MR.strings.copied))
-          }) {
-            Text(stringResource(MR.strings.copy_verb), color = MaterialTheme.colors.primary)
-          }
-          SectionItemView({ name.value = "" }) {
-            Text(stringResource(MR.strings.remove_verb), color = MaterialTheme.colors.primary)
-          }
         }
       }
       SectionBottomSpacer()
