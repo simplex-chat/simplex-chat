@@ -790,12 +790,10 @@ struct SetSimplexDomainView: View {
             }
             Section {
                 if editing {
-                    if simplexName.isEmpty {
-                        Button {
-                            openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
-                        } label: {
-                            Text("Register a test name")
-                        }
+                    Button {
+                        openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
+                    } label: {
+                        Text("Register a test name")
                     }
                     Button {
                         if let w = broadcastWarning, changed {
