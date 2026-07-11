@@ -393,7 +393,6 @@
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
   <string name="copy_verb">Copy</string>
-  <string name="remove_verb">Remove</string>
   <string name="save_simplex_name_question">Save SimpleX name?</string>
   <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
   <string name="channel_simplex_name">Channel SimpleX name</string>
