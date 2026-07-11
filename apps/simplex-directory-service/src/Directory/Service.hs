@@ -570,7 +570,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   ("The " <> gt <> " " <> userGroupRef <> " is updated" <> byMember)
                     <> ".\nIt is hidden from the directory until approved."
                 notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
-                sendToApprove g' gr' n'
+                verifyAndSendToApprove g' gr' n'
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing) >>= \case
             Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) ->
               case dbOwnerMemberId gr of
@@ -657,7 +657,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           (badRolesMsg <$$> getGroupRolesStatus toGroup gr) >>= \case
             Left e -> notifyOwner gr $ "Error: getGroupRolesStatus. Please notify the developers.\n" <> T.pack e
             Right (Just msg) -> notifyOwner gr msg
-            Right Nothing -> sendToApprove toGroup gr gaId
+            Right Nothing -> verifyAndSendToApprove toGroup gr gaId
 
     dePendingMember :: GroupInfo -> GroupMember -> IO ()
     dePendingMember g@GroupInfo {groupProfile = GroupProfile {displayName}} m
@@ -811,10 +811,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       alwaysCaptcha || useMemberFilter image (passCaptcha a)
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
-    sendToApprove g0 GroupReg {dbContactId, promoted} gaId = do
-      -- verify the claimed name first, so admins see its actual state
-      g@GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} <-
-        if groupDomainVerified g0 /= Just True then verifyGroupDomain_ g0 else pure g0
+    sendToApprove g@GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
       ct_ <- getContact' cc user dbContactId
       let gt = maybe "group" groupTypeStr' pg_
           -- admins see an unverified claim, marked; users never do
@@ -827,6 +824,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       withAdminUsers $ \cId -> do
         let approveCmd = MCText $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
         sendComposedMessages cc (SRDirect cId) [msg, approveCmd]
+
+    -- the link-check reapproval path verifies before it reaches sendToApprove, so it uses sendToApprove directly
+    verifyAndSendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
+    verifyAndSendToApprove g gr gaId = verifyGroupDomain_ g >>= \g' -> sendToApprove g' gr gaId
 
     deGroupLinkCheck :: GroupInfo -> IO ()
     deGroupLinkCheck gInfo@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, groupSummary = summary} =
@@ -885,7 +886,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 notifyOwner gr' $ uCtRole <> ".\n\nThe group is listed in the directory again."
                 notifyAdminUsers $ "The group " <> groupRef <> " is listed " <> suCtRole
             GRSPendingApproval gaId | rStatus == GRSOk -> do
-              sendToApprove g gr gaId
+              verifyAndSendToApprove g gr gaId
               notifyOwner gr $ uCtRole <> ".\n\nThe group is submitted for approval."
             GRSActive | rStatus /= GRSOk ->
               setGroupStatus notifyAdminUsers st env cc groupId GRSSuspendedBadRoles $ \gr' -> do
@@ -912,7 +913,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 notifyAdminUsers $ "The group " <> groupRef <> " is listed " <> suSrvRole
           GRSPendingApproval gaId | serviceRole == GRAdmin ->
             whenContactIsOwner gr $ do
-              sendToApprove g gr gaId
+              verifyAndSendToApprove g gr gaId
               notifyOwner gr $ uSrvRole <> ".\n\nThe group is submitted for approval."
           GRSActive | serviceRole /= GRAdmin ->
             setGroupStatus notifyAdminUsers st env cc groupId GRSSuspendedBadRoles $ \gr' -> do
@@ -1049,7 +1050,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   Left _ ->
                     addGroupReg notifyAdminUsers st cc user ct g (GRSPendingApproval 1) $ \gr -> do
                       void $ setGroupRegOwner cc groupId ownerMember
-                      sendToApprove g gr 1
+                      verifyAndSendToApprove g gr 1
             | role < GROwner -> sendMessage cc ct $ "You must be the " <> gt <> " owner to register it."
             | otherwise -> sendMessage cc ct $ "Waiting for the owner member to be connected to the " <> gt <> "."
         Left _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
@@ -1072,7 +1073,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n) $ \gr' -> do
             notifyOwner gr' $
               "The " <> gt <> " " <> userGroupRef <> " is submitted for approval.\nIt is hidden from the directory until approved."
-            sendToApprove g gr' n
+            verifyAndSendToApprove g gr' n
     deReregistration ct _ _ _ =
       sendMessage cc ct "Error: could not verify ownership. Please report it to directory admins."
 
@@ -1086,7 +1087,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 then setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
                   notifyOwner gr' $ "Joined the " <> gt <> " " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
                   notifyOwner gr' $ recommendedSettingsNotice (userGroupRegId gr')
-                  sendToApprove g gr' 1
+                  verifyAndSendToApprove g gr' 1
                 else do
                   setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \_ -> pure ()
                   sendMessage' cc (dbContactId gr) "The signing key does not belong to a current owner. Registration cancelled."

@@ -225,8 +225,6 @@ grDirectoryStatus = \case
   GRSRemoved -> DSRemoved
   _ -> DSRegistered
 
--- the group's claimed SimpleX name, only when its verification status is recorded as
--- verified - the display criterion for all user-facing directory surfaces
 verifiedGroupDomain :: GroupInfo -> Maybe SimplexDomain
 verifiedGroupDomain GroupInfo {groupProfile = GroupProfile {publicGroup}, groupDomainVerified}
   | groupDomainVerified == Just True = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)

@@ -1476,8 +1476,6 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        -- the claim is marked verified only when the caller resolved this name to reach this link
-        -- data; updateGroupProfile above clears verification on a claim change, so set it afterwards
         g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True else pure g'
         pure (g'', profileChanged)
   | otherwise = pure (gInfo, False)
