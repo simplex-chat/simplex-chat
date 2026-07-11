@@ -2902,4 +2902,17 @@
     <string name="your_simplex_name">Il tuo nome SimpleX</string>
     <string name="connect_plan_connect_to_name">Connetti a %s</string>
     <string name="connect_plan_join_name">Entra nel canale %s</string>
+    <string name="do_not_require_message_signatures">Non richiedere la firma dei messaggi.</string>
+    <string name="message_signatures_are_not_required">La firma dei messaggi non è richiesta.</string>
+    <string name="message_signatures_are_required">La firma dei messaggi è richiesta.</string>
+    <string name="require_message_signatures">Richiedi la firma dei messaggi.</string>
+    <string name="show_encryption">Mostra la crittografia</string>
+    <string name="show_signature">Mostra la firma</string>
+    <string name="signature_missing_alert_title">Firma mancante</string>
+    <string name="info_row_signed">Firmato</string>
+    <string name="info_row_signed_verified">Firmato e verificato</string>
+    <string name="sign_message_desc">La firma dimostra che hai scritto questo messaggio e non può essere negato più tardi.</string>
+    <string name="sign_message">Firma il messaggio</string>
+    <string name="sign_messages">Firma i messaggi</string>
+    <string name="signature_missing_alert_desc">Il canale ha richiesto di firmare questo messaggio, ma la firma non è presente.</string>
 </resources>
