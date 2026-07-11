@@ -6,6 +6,7 @@ import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
+import itemHPadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -132,7 +133,7 @@ fun SetSimplexDomainView(
       SectionView {
         if (editing.value) {
           Box(Modifier.fillMaxWidth().heightIn(min = DEFAULT_MIN_SECTION_ITEM_HEIGHT), contentAlignment = Alignment.CenterEnd) {
-            PlainTextEditor(name, placeholder = placeholder)
+            PlainTextEditor(name, placeholder = placeholder, contentPadding = PaddingValues(horizontal = itemHPadding, vertical = DEFAULT_PADDING_HALF))
             if (!isValid) {
               Icon(painterResource(MR.images.ic_error), null, Modifier.padding(end = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.error)
             }
