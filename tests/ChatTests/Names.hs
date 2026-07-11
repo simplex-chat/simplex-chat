@@ -5,7 +5,7 @@ module ChatTests.Names where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (prepareChannel1Relay)
+import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.Text as T
@@ -20,6 +20,8 @@ chatNamesTests = do
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name fails to resolve" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
+  it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
+  it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
   it "connect by name resolving to channel (primary) and direct contact" testConnectByNameChannelAndContact
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
@@ -114,6 +116,59 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       _ <- getContactLinks alice True
       alice ##> "/_set domain 1 alice.simplex"
       alice <## "SimpleX name alice.simplex has no valid connection link"
+
+-- A member who joined via link does not get the claimed name verified, even after a link-data
+-- refresh - the group's self-claim is not proof of name ownership.
+testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
+testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
+        registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
+        alice ##> "/public group access #team domain=team.simplex"
+        alice <## "updated public group access: domain=team.simplex"
+        cath <## "alice updated group #team: (signed)"
+        cath <## "updated public group access: domain=team.simplex"
+        memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+        -- a link-data refresh must not mark the self-claimed name verified
+        bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
+        bob <## "group link: known group #team"
+        bob <## "use #team <message> to send messages" -- no "SimpleX name" line: status stays unknown
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+
+-- A2 (verify by name<->profile-link consistency), A3 (owner verified on set), and A1 (a failed
+-- status is retained across a link-data refresh, not erased to verified).
+testChannelDomainVerify :: HasCallStack => TestParams -> IO ()
+testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
+        registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
+        alice ##> "/public group access #team domain=team.simplex"
+        alice <## "updated public group access: domain=team.simplex"
+        cath <## "alice updated group #team: (signed)"
+        cath <## "updated public group access: domain=team.simplex"
+        -- A3: setting the name resolved it, so the owner's channel is verified
+        alice ##> "/_verify domain #1"
+        alice <## "SimpleX name #team verified"
+        memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
+        -- A2: resolving the name leads to the profile's link
+        bob ##> "/_verify domain #1"
+        bob <## "SimpleX name #team verified"
+        -- the name is re-pointed to a different link: verification fails
+        registerName reg teamName (channelNameRecord "team" "https://simplex.chat/other")
+        bob ##> "/_verify domain #1"
+        bob <## "SimpleX name #team not verified: the name does not resolve to the link in the group profile"
+        -- A1: a link-data refresh keeps the failed status (it does not overwrite it with verified)
+        bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
+        bob <## "group link: known group #team"
+        bob <## "SimpleX name: #team (verification failed)"
+        bob <## "use #team <message> to send messages"
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 testConnectByChannelName :: HasCallStack => TestParams -> IO ()
 testConnectByChannelName ps = withSmpServerAndNames $ \reg ->

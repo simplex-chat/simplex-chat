@@ -64,11 +64,12 @@ import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.View (serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), AgentErrorType (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
+import Simplex.Chat.View (groupSimplexDomain, serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), AgentErrorType (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), SimplexDomain, sameConnReqContact, sameShortLinkContact)
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ErrorType (..))
+import Simplex.Messaging.SimplexName (SimplexNameInfo (..), SimplexNameType (..), shortNameInfoStr)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (eitherToMaybe, raceAny_, safeDecodeUtf8, tshow, unlessM, (<$$>))
@@ -361,7 +362,17 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let msg = "Error: " <> err <> ", group: " <> tshow groupId <> " " <> localDisplayName <> ", " <> T.pack e
           notifyAdminUsers msg
           logError msg
-    groupInfoText p@GroupProfile {description = d, publicGroup} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d <> linkToJoin
+    -- validates that resolving the claimed name leads to the link in the group profile,
+    -- updating the group's verification status; leaves it unchanged on network errors
+    verifyGroupDomain_ :: GroupInfo -> IO GroupInfo
+    verifyGroupDomain_ g@GroupInfo {groupId}
+      | isJust (groupSimplexDomain g) =
+          sendChatCmd cc (APIVerifyGroupDomain groupId) >>= \case
+            Right CRGroupDomainVerified {groupInfo = g'} -> pure g'
+            Right r -> g <$ logError ("verifyGroupDomain_: unexpected response " <> tshow r)
+            Left e -> g <$ logInfo ("verifyGroupDomain_: error " <> tshow e)
+      | otherwise = pure g
+    groupInfoText simplexName_ p@GroupProfile {description = d, publicGroup} = groupNameDescr p <> maybe "" ("\nSimpleX name: " <>) simplexName_ <> maybe "" ("\nWelcome message:\n" <>) d <> linkToJoin
       where
         linkToJoin = case publicGroup of
           Just pg@PublicGroupProfile {groupLink} ->
@@ -800,13 +811,18 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       alwaysCaptcha || useMemberFilter image (passCaptcha a)
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
-    sendToApprove GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
+    sendToApprove g0 GroupReg {dbContactId, promoted} gaId = do
+      -- verify the claimed name first, so admins see its actual state
+      g@GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} <-
+        if groupDomainVerified g0 /= Just True then verifyGroupDomain_ g0 else pure g0
       ct_ <- getContact' cc user dbContactId
       let gt = maybe "group" groupTypeStr' pg_
+          -- admins see an unverified claim, marked; users never do
+          nameStr_ = (\d -> simplexNameStr d <> (if groupDomainVerified g == Just True then "" else " (NOT verified - will not be shown)")) <$> groupSimplexDomain g
           membersStr = "_" <> membersCountStr p groupSummary <> "_\n"
           text =
             either (\_ -> "The " <> gt <> " ID " <> tshow groupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the " <> gt <> " ID " <> tshow groupId <> ": ") ct_
-              <> ("\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:")
+              <> ("\n" <> groupInfoText nameStr_ p <> "\n" <> membersStr <> "\nTo approve send:")
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
       withAdminUsers $ \cId -> do
         let approveCmd = MCText $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
@@ -821,8 +837,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing) >>= \case
               Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}))) ->
                 checkValidOwner dbOwnerMemberId owners $ do
-                  when groupUpdated $ reapprove pg gr groupRegStatus g'
-                  when (groupUpdated || summary /= groupSummary g') $ listingsUpdated env
+                  -- re-verified every cycle: the directory re-publishes the name, so it must
+                  -- know the name still resolves to the link in the (just refreshed) profile
+                  g'' <- verifyGroupDomain_ g'
+                  when groupUpdated $ reapprove pg gr groupRegStatus g''
+                  when (groupUpdated || summary /= groupSummary g'' || groupDomainVerified g'' /= groupDomainVerified gInfo) $ listingsUpdated env
               Left (ChatErrorAgent {agentError = SMP _ err}) | linkDeleted err ->
                 setGroupStatus logError st env cc groupId GRSRemoved $ \gr' ->
                   notifyOwner gr' "The channel link is no longer valid.\nThe channel is removed from the directory."
@@ -1202,9 +1221,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just PCAll -> "_enabled_"
             Just PCNoImage -> "_enabled for profiles without image_"
       DCShowUpgradeGroupLink gId gName_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, localDisplayName = gName} _ -> case pg_ of
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, localDisplayName = gName} _ -> case pg_ of
           Just pg@PublicGroupProfile {groupLink} ->
             sendReply $ "The link to join the " <> groupTypeStr' pg <> " " <> groupReference' gId gName <> ":\n" <> strEncodeTxt groupLink
+              <> maybe "" (("\nSimpleX name: " <>) . simplexNameStr) (verifiedGroupDomain g)
           Nothing -> do
             let groupRef = groupReference' gId gName
             withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink groupId) $
@@ -1289,10 +1309,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _) =
+            foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _) =
               let membersStr = "_" <> membersCountStr p groupSummary <> "_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
-                  text = T.unlines $ [showId <> groupInfoText p, membersStr] ++ knockingStr memberAdmission
+                  text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p, membersStr] ++ knockingStr memberAdmission
                in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
             moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
 
@@ -1490,7 +1510,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               membersStr = "_" <> membersCountStr p groupSummary <> "_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
               ownerStr = maybe "" (("Owner: " <>) . either (("getContact error: " <>) . T.pack) localDisplayName') ct_
-              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockingStr memberAdmission ++ [cmds]
+              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockingStr memberAdmission ++ [cmds]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)
 
@@ -1563,3 +1583,6 @@ unexpectedError err = "Unexpected error: " <> err <> ", please notify the develo
 
 strEncodeTxt :: StrEncoding a => a -> Text
 strEncodeTxt = safeDecodeUtf8 . strEncode
+
+simplexNameStr :: SimplexDomain -> Text
+simplexNameStr = shortNameInfoStr . SimplexNameInfo NTPublicGroup

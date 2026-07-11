@@ -74,6 +74,7 @@ main = do
       describe "Random servers" randomServersTests
 #if !defined(dbPostgres)
       around (tmpTestBracket chatQueryStats agentQueryStats) $ describe "names tests" chatNamesTests
+      around (tmpTestBracket chatQueryStats agentQueryStats) $ xdescribe'' "SimpleX Directory names" directoryNameTests
 #endif
 #if defined(dbPostgres)
       createdDropDb . around testBracket

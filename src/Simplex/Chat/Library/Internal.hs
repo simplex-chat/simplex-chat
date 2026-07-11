@@ -1463,9 +1463,12 @@ updatePublicGroupData user gInfo
       withStore $ \db -> updatePublicMemberCount db cxt user gInfo
   | otherwise = pure gInfo
 
-updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> CM (GroupInfo, Bool)
-updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupDomainVerified, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData}
-  | profileChanged || countChanged || verifyChanged = do
+-- resolvedDomain_ is the name the caller just resolved, by explicit user action, to reach
+-- this link data; a link-data refresh alone (resolvedDomain_ = Nothing) never marks a
+-- claim verified, and names are never resolved here.
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> CM (GroupInfo, Bool)
+updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
+  | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
       withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
@@ -1473,9 +1476,9 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupDomainVerif
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        -- the group's own link is authoritative for its domain claim, so a claim in the link profile is
-        -- verified; updateGroupProfile above clears verification on a claim change, so set it afterwards
-        g'' <- if verifyChanged then liftIO $ setGroupDomainVerified db user g' True else pure g'
+        -- the claim is marked verified only when the caller resolved this name to reach this link
+        -- data; updateGroupProfile above clears verification on a claim change, so set it afterwards
+        g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True else pure g'
         pure (g'', profileChanged)
   | otherwise = pure (gInfo, False)
   where
@@ -1485,7 +1488,9 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupDomainVerif
       _ -> False
     groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
     newClaim = groupClaim groupProfile
-    verifyChanged = isJust newClaim && (groupDomainVerified /= Just True || groupClaim p /= newClaim)
+    -- mark verified whenever the caller resolved exactly this claim (connect-by-name); idempotent,
+    -- so no need to special-case an already-verified status (which updateGroupProfile may just have reset)
+    verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
 
 updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
 updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
