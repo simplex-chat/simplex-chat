@@ -298,6 +298,15 @@ fun saveFileFromUri(
 
       null
     }
+  } catch (e: FileTooLargeException) {
+    Log.e(TAG, "Util.kt saveFileFromUri file too large: ${e.message}")
+    if (withAlertOnException) {
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.large_file),
+        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxBytes))
+      )
+    }
+    null
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
     if (withAlertOnException) showWrongUriAlert()
