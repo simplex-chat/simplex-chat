@@ -3,6 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -10,13 +11,16 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.AnnotatedString
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.item.openBrowserAlert
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 
@@ -40,7 +44,9 @@ fun SetSimplexDomainView(
 ) {
   val name = rememberSaveable { mutableStateOf(simplexName) }
   val saving = remember { mutableStateOf(false) }
+  val editing = rememberSaveable { mutableStateOf(simplexName.isBlank()) }
   val uriHandler = LocalUriHandler.current
+  val clipboard = LocalClipboardManager.current
 
   fun addSimplexTLD(s: String): String {
     return if (s.contains(".")) s else "$s.simplex"
@@ -123,31 +129,44 @@ fun SetSimplexDomainView(
     ColumnWithScrollBar {
       AppBarTitle(title)
       SectionView {
-        Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          ProfileNameField(
-            name,
-            placeholder,
-            isValid = { isValidName(it) },
-            onInvalidTap = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.invalid_name)) }
-          )
+        if (editing.value) {
+          Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+            ProfileNameField(
+              name,
+              placeholder,
+              isValid = { isValidName(it) },
+              onInvalidTap = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.invalid_name)) }
+            )
+          }
+        } else {
+          SectionItemViewSpaceBetween(click = {
+            clipboard.setText(AnnotatedString(name.value))
+            showToast(generalGetString(MR.strings.copied))
+          }) {
+            Text(name.value)
+            Icon(painterResource(MR.images.ic_content_copy), stringResource(MR.strings.copy_verb), tint = MaterialTheme.colors.secondary)
+          }
         }
       }
       SectionTextFooter(footer)
       SectionDividerSpaced()
       SectionView {
-        SectionItemView({ openBrowserAlert("https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md", uriHandler) }) {
-          Text(stringResource(MR.strings.register_test_name), color = MaterialTheme.colors.primary)
-        }
-        if (simplexName.isNotBlank()) {
-          SectionItemView({ name.value = "" }) {
-            Text(stringResource(MR.strings.remove_verb), color = MaterialTheme.colors.primary)
+        if (editing.value) {
+          if (name.value.isBlank()) {
+            SectionItemView({ openBrowserAlert("https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md", uriHandler) }) {
+              Text(stringResource(MR.strings.register_test_name), color = MaterialTheme.colors.primary)
+            }
           }
-        }
-        SectionItemView({ doSave(close) }, disabled = unchanged || saving.value || !isValid) {
-          Text(
-            stringResource(MR.strings.save_verb),
-            color = if (unchanged || saving.value || !isValid) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-          )
+          SectionItemView({ doSave(close) }, disabled = unchanged || saving.value || !isValid) {
+            Text(
+              stringResource(MR.strings.save_verb),
+              color = if (unchanged || saving.value || !isValid) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+            )
+          }
+        } else {
+          SectionItemView({ name.value = ""; editing.value = true }) {
+            Text(stringResource(MR.strings.remove_name), color = MaterialTheme.colors.primary)
+          }
         }
       }
       SectionBottomSpacer()

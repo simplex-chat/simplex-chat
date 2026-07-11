@@ -757,6 +757,17 @@ struct SetSimplexDomainView: View {
     @State private var saving = false
     @State private var original = ""
     @State private var didSave = false
+    @State private var editing = false
+
+    init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, save: @escaping (String?) async -> Bool) {
+        self.title = title
+        self.footer = footer
+        self.prompt = prompt
+        self._simplexName = State(initialValue: simplexName)
+        self.save = save
+        self._original = State(initialValue: simplexName)
+        self._editing = State(initialValue: simplexName.isEmpty)
+    }
 
     private var changed: Bool {
         normalized(simplexName) != normalized(original)
@@ -770,14 +781,28 @@ struct SetSimplexDomainView: View {
     var body: some View {
         List {
             Section {
-                ZStack(alignment: .trailing) {
-                    TextField(prompt, text: $simplexName)
-                        .autocorrectionDisabled(true)
-                        .textInputAutocapitalization(.never)
-                        .padding(.trailing, isValid ? 0 : 20)
-                    if !isValid {
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundColor(.red)
+                if editing {
+                    ZStack(alignment: .trailing) {
+                        TextField(prompt, text: $simplexName)
+                            .autocorrectionDisabled(true)
+                            .textInputAutocapitalization(.never)
+                            .padding(.trailing, isValid ? 0 : 20)
+                        if !isValid {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    Button {
+                        UIPasteboard.general.string = simplexName
+                    } label: {
+                        HStack {
+                            Text(simplexName)
+                                .foregroundColor(theme.colors.onBackground)
+                            Spacer()
+                            Image(systemName: "doc.on.doc")
+                                .foregroundColor(theme.colors.secondary)
+                        }
                     }
                 }
             } header: {
@@ -786,37 +811,40 @@ struct SetSimplexDomainView: View {
                 Text(footer).foregroundColor(theme.colors.secondary)
             }
             Section {
-                Button {
-                    openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
-                } label: {
-                    Text("Register a test name")
-                }
-                if !original.isEmpty {
-                    Button("Remove") {
-                        simplexName = ""
-                    }
-                }
-                Button {
-                    saving = true
-                    Task {
-                        let ok = await save(normalized(simplexName))
-                        await MainActor.run {
-                            saving = false
-                            if ok {
-                                didSave = true
-                                dismiss()
-                            }
+                if editing {
+                    if simplexName.isEmpty {
+                        Button {
+                            openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
+                        } label: {
+                            Text("Register a test name")
                         }
                     }
-                } label: {
-                    Text("Save")
+                    Button {
+                        saving = true
+                        Task {
+                            let ok = await save(normalized(simplexName))
+                            await MainActor.run {
+                                saving = false
+                                if ok {
+                                    didSave = true
+                                    dismiss()
+                                }
+                            }
+                        }
+                    } label: {
+                        Text("Save")
+                    }
+                    .disabled(saving || !isValid || !changed)
+                } else {
+                    Button("Remove name") {
+                        simplexName = ""
+                        editing = true
+                    }
                 }
-                .disabled(saving || !isValid || !changed)
             }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
-        .onAppear { original = simplexName }
         .onDisappear {
             if !didSave, changed, isValid {
                 let domain = normalized(simplexName)
