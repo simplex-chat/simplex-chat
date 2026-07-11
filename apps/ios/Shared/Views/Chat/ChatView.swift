@@ -55,6 +55,7 @@ struct ChatView: View {
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
+    @UserDefault(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @State private var selectedRange = NSRange()
     @State private var keyboardVisible = false
     @State private var keyboardHiddenDate = Date.now
@@ -359,6 +360,27 @@ struct ChatView: View {
             revealedItems = Set()
             stopAudioPlayer()
             if let cId {
+                // ComposeView.onDisappear does not run when another chat is opened in place -
+                // save or clear the previous chat's draft here, as in onDisappear.
+                // Skipped in secondary (member support) chat views sharing the group's chat id,
+                // and for forwarding, live messages and voice recordings.
+                if im.secondaryIMFilter == nil,
+                   cId != chat.id,
+                   !composeState.forwarding,
+                   composeState.liveMessage == nil,
+                   composeState.voiceMessageRecordingState != .recording {
+                    if !composeState.empty && !composeState.inProgress {
+                        // keep draft prepared for the opened chat (shareChatLink)
+                        if saveLastDraft, chatModel.draftChatId != cId {
+                            chatModel.draft = composeState
+                            chatModel.draftChatId = chat.id
+                        }
+                    } else if chatModel.draftChatId == chat.id {
+                        chatModel.draft = nil
+                        chatModel.draftChatId = nil
+                    }
+                    composeState = ComposeState()
+                }
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
