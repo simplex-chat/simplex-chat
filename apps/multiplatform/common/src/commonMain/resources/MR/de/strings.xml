@@ -2971,4 +2971,17 @@
     <string name="your_simplex_name">Ihr SimpleX-Name</string>
     <string name="connect_plan_connect_to_name">Mit %s verbinden</string>
     <string name="connect_plan_join_name">Kanal %s beitreten</string>
+    <string name="do_not_require_message_signatures">Signatur für Nachrichten nicht erforderlich.</string>
+    <string name="message_signatures_are_not_required">Nachrichten müssen nicht signiert werden.</string>
+    <string name="message_signatures_are_required">Nachrichten müssen signiert werden.</string>
+    <string name="require_message_signatures">Signatur für Nachrichten erforderlich.</string>
+    <string name="show_encryption">Verschlüsselung anzeigen</string>
+    <string name="show_signature">Signatur anzeigen</string>
+    <string name="signature_missing_alert_title">Signatur fehlt</string>
+    <string name="info_row_signed">Signiert</string>
+    <string name="info_row_signed_verified">Signiert und verifiziert</string>
+    <string name="sign_message_desc">Die Signatur bestätigt, dass Sie diese Nachricht verfasst haben und sie später nicht abtreiten können.</string>
+    <string name="sign_message">Nachricht signieren</string>
+    <string name="sign_messages">Nachrichten signieren</string>
+    <string name="signature_missing_alert_desc">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</string>
 </resources>
