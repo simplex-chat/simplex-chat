@@ -11,7 +11,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.ImageResource
-import chat.simplex.common.model.SimplexNameInfo
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
@@ -28,6 +28,7 @@ import kotlinx.coroutines.*
 fun SimplexNameView(
   simplexName: String,
   verified: Boolean?,
+  verifiable: Boolean = true,
   verify: suspend () -> Pair<Boolean?, String?>?
 ) {
   val scope = rememberCoroutineScope()
@@ -60,7 +61,7 @@ fun SimplexNameView(
   }
 
   LaunchedEffect(Unit) {
-    if (chatModel.controller.appPrefs.privacyVerifySimplexNames.get() && verified == null) runVerify(manual = false)
+    if (verifiable && chatModel.controller.appPrefs.privacyVerifySimplexNames.get() && verified == null) runVerify(manual = false)
   }
 
   val clipboard = LocalClipboardManager.current
@@ -82,6 +83,7 @@ fun SimplexNameView(
           clipboard.setText(AnnotatedString(simplexName))
           showToast(generalGetString(MR.strings.copied))
         }
+      !verifiable -> Text(simplexName, style = nameStyle)
       verified == false ->
         SimplexNameWithIcon(simplexName, nameStyle, MR.images.ic_close, Color.Red) { runVerify(manual = true) }
       else -> {
@@ -111,5 +113,57 @@ private fun SimplexNameWithIcon(name: String, style: TextStyle, icon: ImageResou
       Modifier.size(22.dp).alignBy { it.measuredHeight * 73 / 100 },
       tint = tint
     )
+  }
+}
+
+@Composable
+fun ContactSimplexNameView(contact: Contact, verifiable: Boolean = true) {
+  val domain = contact.profile.contactDomain
+  if (domain != null && (contact.profile.contactDomainVerified != null || domain.proof != null)) {
+    SimplexNameView(
+      simplexName = "@${domain.domain}",
+      verified = contact.profile.contactDomainVerified,
+      verifiable = verifiable,
+      verify = {
+        val rhId = chatModel.remoteHostId()
+        chatModel.controller.apiVerifyContactDomain(rhId, contact.contactId)?.let { (ct, reason) ->
+          chatModel.chatsContext.updateContact(rhId, ct)
+          ct.profile.contactDomainVerified to reason
+        }
+      }
+    )
+  }
+}
+
+@Composable
+fun GroupSimplexNameView(groupInfo: GroupInfo, verifiable: Boolean = true) {
+  if (groupInfo.businessChat == null) {
+    val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
+    val domain = access?.groupDomainClaim?.shortName
+    if (domain != null && (groupInfo.groupDomainVerified != null || access.groupDomainClaim?.proof != null)) {
+      SimplexNameView(
+        simplexName = "#${domain}",
+        verified = groupInfo.groupDomainVerified,
+        verifiable = verifiable,
+        verify = {
+          val rhId = chatModel.remoteHostId()
+          chatModel.controller.apiVerifyGroupDomain(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
+            chatModel.chatsContext.updateGroup(rhId, gInfo)
+            gInfo.groupDomainVerified to reason
+          }
+        }
+      )
+    }
+  } else {
+    val businessClaim = groupInfo.businessChat?.businessDomain
+    if (businessClaim != null && (groupInfo.groupDomainVerified != null || businessClaim.proof != null)) {
+      // A business presents as a contact, so the name retains its .simplex suffix; it cannot be re-verified.
+      SimplexNameView(
+        simplexName = "@${businessClaim.domain}",
+        verified = groupInfo.groupDomainVerified,
+        verifiable = false,
+        verify = { null }
+      )
+    }
   }
 }

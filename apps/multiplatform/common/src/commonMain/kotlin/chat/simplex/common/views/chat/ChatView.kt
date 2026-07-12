@@ -2344,55 +2344,8 @@ fun BoxScope.ChatItemsList(
         }
 
         when (chatInfo) {
-          is ChatInfo.Direct -> {
-            val contact = chatInfo.contact
-            val domain = contact.profile.contactDomain
-            if (domain != null && (contact.profile.contactDomainVerified != null || domain.proof != null)) {
-              SimplexNameView(
-                simplexName = "@${domain.domain}",
-                verified = contact.profile.contactDomainVerified,
-                verify = {
-                  val rhId = chatModel.remoteHostId()
-                  chatModel.controller.apiVerifyContactDomain(rhId, contact.contactId)?.let { (ct, reason) ->
-                    chatModel.chatsContext.updateContact(rhId, ct)
-                    ct.profile.contactDomainVerified to reason
-                  }
-                }
-              )
-            }
-          }
-          is ChatInfo.Group -> {
-            val groupInfo = chatInfo.groupInfo
-            if (groupInfo.businessChat == null) {
-              val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-              val domain = access?.groupDomainClaim?.shortName
-              if (domain != null && (groupInfo.groupDomainVerified != null || access.groupDomainClaim?.proof != null)) {
-                SimplexNameView(
-                  simplexName = "#${domain}",
-                  verified = groupInfo.groupDomainVerified,
-                  verify = {
-                    val rhId = chatModel.remoteHostId()
-                    chatModel.controller.apiVerifyGroupDomain(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
-                      chatModel.chatsContext.updateGroup(rhId, gInfo)
-                      gInfo.groupDomainVerified to reason
-                    }
-                  }
-                )
-              }
-            } else {
-              val businessClaim = groupInfo.businessChat?.businessDomain
-              if (businessClaim != null && (groupInfo.groupDomainVerified != null || businessClaim.proof != null)) {
-                // A business presents as a contact, so the name retains its .simplex suffix. The tick comes from
-                // groupDomainVerified (set at connect); its domain proof is not received on the wire yet, so
-                // re-verification is not wired.
-                SimplexNameView(
-                  simplexName = "@${businessClaim.domain}",
-                  verified = groupInfo.groupDomainVerified,
-                  verify = { null }
-                )
-              }
-            }
-          }
+          is ChatInfo.Direct -> ContactSimplexNameView(chatInfo.contact, verifiable = false)
+          is ChatInfo.Group -> GroupSimplexNameView(chatInfo.groupInfo, verifiable = false)
           else -> {}
         }
 

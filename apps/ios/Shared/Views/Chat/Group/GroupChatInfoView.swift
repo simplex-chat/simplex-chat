@@ -341,38 +341,7 @@ struct GroupChatInfoView: View {
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
-               let domain = access.groupDomainClaim?.shortName,
-               groupInfo.groupDomainVerified != nil || access.groupDomainClaim?.proof != nil {
-                SimplexNameView(
-                    simplexName: "#\(domain)",
-                    verified: groupInfo.groupDomainVerified,
-                    verify: {
-                        do {
-                            let (gInfo, reason) = try await apiVerifyGroupDomain(groupInfo.groupId)
-                            await MainActor.run {
-                                chatModel.updateGroup(gInfo)
-                                groupInfo = gInfo
-                            }
-                            return (gInfo.groupDomainVerified, reason)
-                        } catch {
-                            logger.error("apiVerifyGroupDomain: \(responseError(error))")
-                            return nil
-                        }
-                    }
-                )
-            }
-            if let claim = groupInfo.businessChat?.businessDomain,
-               groupInfo.groupDomainVerified != nil || claim.proof != nil {
-                // A business presents as a contact, so the name retains its .simplex suffix. The tick comes from
-                // groupDomainVerified (set at connect); its domain proof is not received on the wire yet, so
-                // re-verification is not wired.
-                SimplexNameView(
-                    simplexName: "@\(claim.domain)",
-                    verified: groupInfo.groupDomainVerified,
-                    verify: { nil }
-                )
-            }
+            groupSimplexNameView(groupInfo) { groupInfo = $0 }
             if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
                let url = URL(string: webPage) {
                 Link(destination: url) {

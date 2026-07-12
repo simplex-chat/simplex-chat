@@ -1039,57 +1039,9 @@ struct ChatView: View {
 
                 switch chat.chatInfo {
                 case let .direct(contact):
-                    if let domain = contact.profile.contactDomain,
-                       contact.profile.contactDomainVerified != nil || domain.proof != nil {
-                        SimplexNameView(
-                            simplexName: "@\(domain.domain)",
-                            verified: contact.profile.contactDomainVerified,
-                            verify: {
-                                do {
-                                    let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
-                                    await MainActor.run {
-                                        ChatModel.shared.updateContact(ct)
-                                    }
-                                    return (ct.profile.contactDomainVerified, reason)
-                                } catch {
-                                    logger.error("apiVerifyContactDomain: \(responseError(error))")
-                                    return nil
-                                }
-                            }
-                        )
-                    }
+                    contactSimplexNameView(contact, verifiable: false)
                 case let .group(groupInfo, _):
-                    if groupInfo.businessChat == nil {
-                        if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
-                           let domain = access.groupDomainClaim?.shortName,
-                           groupInfo.groupDomainVerified != nil || access.groupDomainClaim?.proof != nil {
-                            SimplexNameView(
-                                simplexName: "#\(domain)",
-                                verified: groupInfo.groupDomainVerified,
-                                verify: {
-                                    do {
-                                        let (gInfo, reason) = try await apiVerifyGroupDomain(groupInfo.groupId)
-                                        await MainActor.run {
-                                            ChatModel.shared.updateGroup(gInfo)
-                                        }
-                                        return (gInfo.groupDomainVerified, reason)
-                                    } catch {
-                                        logger.error("apiVerifyGroupDomain: \(responseError(error))")
-                                        return nil
-                                    }
-                                }
-                            )
-                        }
-                    } else {
-                        if let claim = groupInfo.businessChat?.businessDomain,
-                           groupInfo.groupDomainVerified != nil || claim.proof != nil {
-                            SimplexNameView(
-                                simplexName: "@\(claim.domain)",
-                                verified: groupInfo.groupDomainVerified,
-                                verify: { nil }
-                            )
-                        }
-                    }
+                    groupSimplexNameView(groupInfo, verifiable: false)
                 default:
                     EmptyView()
                 }
