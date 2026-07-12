@@ -3149,7 +3149,7 @@ processChatCommand cxt nm = \case
     processChatCommand cxt nm $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
-    runUpdateGroupProfile user gInfo p'
+    runUpdateGroupProfile user gInfo p' False
   UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName, shortDescr}
   ShowGroupProfile gName -> withUser $ \user ->
@@ -3167,14 +3167,8 @@ processChatCommand cxt nm = \case
           when domainChanged $ do
             NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) newDomain
             unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
-        r <- runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}}
-        -- the resolution above proved name <-> link consistency; record it (the profile
-        -- update resets the status on a claim change)
-        case r of
-          CRGroupUpdated {fromGroup, toGroup, member_, msgSigned} | isJust newClaim && domainChanged -> do
-            toGroup' <- withFastStore' $ \db -> setGroupDomainVerified db user toGroup True
-            pure CRGroupUpdated {user, fromGroup, toGroup = toGroup', member_, msgSigned}
-          _ -> pure r
+        -- the resolution above proved name <-> link consistency, so mark it verified in the update
+        runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
     gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
@@ -3932,11 +3926,15 @@ processChatCommand cxt nm = \case
               void (sendDirectContactMessage user ct' $ XInfo p) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
-    runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> CM ChatResponse
-    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n'} = do
+    runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> Bool -> CM ChatResponse
+    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n'} domainVerified = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
-      gInfo' <- withStore $ \db -> updateGroupProfile db user gInfo p'
+      -- updateGroupProfile resets domain verification on a claim change; the caller sets domainVerified
+      -- when it has already resolved the new name, so it stays verified
+      gInfo' <- withStore $ \db -> do
+        g <- updateGroupProfile db user gInfo p'
+        if domainVerified then liftIO $ setGroupDomainVerified db user g True else pure g
       msg <- case businessChat of
         Just BusinessChatInfo {businessId} -> do
           ms <- withStore' $ \db -> getGroupMembers db cxt user gInfo'
@@ -4029,7 +4027,7 @@ processChatCommand cxt nm = \case
             applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
         unless applicable $
           throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
-      runUpdateGroupProfile user gInfo $ update p
+      runUpdateGroupProfile user gInfo (update p) False
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> CM (Maybe Call)) -> CM ChatResponse
     withCurrentCall ctId action = do
       (user, ct) <- withStore $ \db -> do
