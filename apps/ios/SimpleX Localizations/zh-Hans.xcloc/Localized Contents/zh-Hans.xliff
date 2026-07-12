@@ -200,16 +200,19 @@
         <target>%d 月</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d owner" xml:space="preserve">
+      <trans-unit id="%d owner" xml:space="preserve" approved="no">
         <source>%d owner</source>
+        <target state="translated">%d位所有者</target>
         <note>channel owners count</note>
       </trans-unit>
-      <trans-unit id="%d owners" xml:space="preserve">
+      <trans-unit id="%d owners" xml:space="preserve" approved="no">
         <source>%d owners</source>
+        <target state="translated">%d位所有者</target>
         <note>channel owners count</note>
       </trans-unit>
-      <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve" approved="no">
         <source>%d owners &amp; contributors</source>
+        <target state="translated">%d位所有者和贡献者</target>
         <note>channel members count</note>
       </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
@@ -1767,8 +1770,9 @@ new chat action</note>
         <target>改变角色</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change role?" xml:space="preserve">
+      <trans-unit id="Change role?" xml:space="preserve" approved="no">
         <source>Change role?</source>
+        <target state="translated">改变角色？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change self-destruct mode" xml:space="preserve">
@@ -2270,8 +2274,9 @@ server test step</note>
         <target>更快地连接！🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to %@" xml:space="preserve">
+      <trans-unit id="Connect to %@" xml:space="preserve" approved="no">
         <source>Connect to %@</source>
+        <target state="translated">连接到%@</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -2383,8 +2388,9 @@ This is your own one-time link!</source>
         <target>连接被阻止</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection blocked: %@" xml:space="preserve">
+      <trans-unit id="Connection blocked: %@" xml:space="preserve" approved="no">
         <source>Connection blocked: %@</source>
+        <target state="translated">连接被阻止：%@</target>
         <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -2402,10 +2408,11 @@ This is your own one-time link!</source>
         <target>连接失败</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
+      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve" approved="no">
         <source>Connection is blocked by server operator:
 %@</source>
-        <target>连接被运营方 %@ 阻止</target>
+        <target state="translated">连接已被运营方阻止：
+%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
@@ -3180,7 +3187,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
         <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
-        <target state="needs-translation">目标服务器地址 %@ 与转发服务器 %@ 设置不兼容。</target>
+        <target state="translated">目标服务器地址 %1$@ 与转发服务器 %2$@ 设置不兼容。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -3190,7 +3197,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
         <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
-        <target state="needs-translation">目标服务器版本 %@ 与转发服务器 %@ 不兼容。</target>
+        <target state="translated">目标服务器版本 %1$@ 与转发服务器 %2$@ 不兼容。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
@@ -5292,8 +5299,9 @@ More improvements are coming soon!</source>
         <target>加入频道</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join channel %@" xml:space="preserve">
+      <trans-unit id="Join channel %@" xml:space="preserve" approved="no">
         <source>Join channel %@</source>
+        <target state="translated">加入频道%@</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
@@ -5418,12 +5426,14 @@ This is your link for group %@!</source>
         <target>消耗更少的移动网络数据。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let people connect to you via name registered with your SimpleX address." xml:space="preserve">
+      <trans-unit id="Let people connect to you via name registered with your SimpleX address." xml:space="preserve" approved="no">
         <source>Let people connect to you via name registered with your SimpleX address.</source>
+        <target state="translated">让别人通过用你的 SimpleX 地址注册的名称和你建立联系。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let people join via name registered with this channel link." xml:space="preserve">
+      <trans-unit id="Let people join via name registered with this channel link." xml:space="preserve" approved="no">
         <source>Let people join via name registered with this channel link.</source>
+        <target state="translated">让别人通过用这个频道链接注册的名称加入。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
@@ -5966,8 +5976,9 @@ This is your link for group %@!</source>
         <target>名称</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Name not found" xml:space="preserve">
+      <trans-unit id="Name not found" xml:space="preserve" approved="no">
         <source>Name not found</source>
+        <target state="translated">未找到名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -6304,8 +6315,9 @@ The most secure encryption.</source>
         <target>无消息接收服务器。</target>
         <note>servers error</note>
       </trans-unit>
-      <trans-unit id="No servers to resolve names." xml:space="preserve">
+      <trans-unit id="No servers to resolve names." xml:space="preserve" approved="no">
         <source>No servers to resolve names.</source>
+        <target state="translated">没有解析名称的服务器。</target>
         <note>servers warning</note>
       </trans-unit>
       <trans-unit id="No servers to send files." xml:space="preserve">
@@ -6323,8 +6335,9 @@ The most secure encryption.</source>
         <target>没有未读聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No valid link" xml:space="preserve">
+      <trans-unit id="No valid link" xml:space="preserve" approved="no">
         <source>No valid link</source>
+        <target state="translated">无有效链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
@@ -6337,8 +6350,9 @@ The most secure encryption.</source>
         <target>非营利治理</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." xml:space="preserve">
+      <trans-unit id="None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." xml:space="preserve" approved="no">
         <source>None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</source>
+        <target state="translated">你的服务器没有一台被设定为解析 SimpleX 名称。配置服务器或使用连接链接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
@@ -7772,8 +7786,9 @@ swipe action</note>
         <target>成员角色将更改为 "%@"。所有群成员将收到通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve" approved="no">
         <source>Role will be changed to "%@". All subscribers will be notified.</source>
+        <target state="translated">角色将被变更为“%@”。所有订阅者将会收到通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
@@ -8767,16 +8782,19 @@ chat item action</note>
         <target>不允许SimpleX 链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX name" xml:space="preserve">
+      <trans-unit id="SimpleX name" xml:space="preserve" approved="no">
         <source>SimpleX name</source>
+        <target state="translated">SimpleX 名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX name error" xml:space="preserve">
+      <trans-unit id="SimpleX name error" xml:space="preserve" approved="no">
         <source>SimpleX name error</source>
+        <target state="translated">SimpleX 名称错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX name not verified" xml:space="preserve">
+      <trans-unit id="SimpleX name not verified" xml:space="preserve" approved="no">
         <source>SimpleX name not verified</source>
+        <target state="translated">SimpleX 名称未验证</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
