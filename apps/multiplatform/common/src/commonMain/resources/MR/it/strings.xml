@@ -2915,7 +2915,7 @@
     <string name="sign_message">Firma il messaggio</string>
     <string name="sign_messages">Firma i messaggi</string>
     <string name="signature_missing_alert_desc">Il canale ha richiesto di firmare questo messaggio, ma la firma non è presente.</string>
-    <string name="channel_simplex_name">Nome SimpleX del canale</string>
+    <string name="channel_simplex_name">Nome SimpleX per il canale</string>
     <string name="get_simplex_name_beta">Ottieni nome SimpleX (BETA)</string>
     <string name="register_test_name">Registra un nome di prova</string>
     <string name="remove_name">Rimuovi nome</string>
