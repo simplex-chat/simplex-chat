@@ -831,12 +831,12 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         forM_ pg_ $ \pg@PublicGroupProfile {groupLink} ->
           when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
             let link = ACL SCMContact $ CLShort groupLink
-            logDebug $ "LNKDBG deGroupLinkCheck ENTER groupId=" <> tshow groupId <> " regStatus=" <> tshow groupRegStatus <> " dbOwnerMemberId=" <> tshow dbOwnerMemberId <> " groupLink=" <> strEncodeTxt groupLink
+            logDebug $ "LNKDBG " <> tshow groupId <> " deGroupLinkCheck ENTER regStatus=" <> tshow groupRegStatus <> " dbOwnerMemberId=" <> tshow dbOwnerMemberId <> " groupLink=" <> strEncodeTxt groupLink
             planResp <- sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing)
-            logDebug $ "LNKDBG deGroupLinkCheck groupId=" <> tshow groupId <> " APIConnectPlan response=" <> tshow planResp
+            logDebug $ "LNKDBG " <> tshow groupId <> " deGroupLinkCheck APIConnectPlan response=" <> tshow planResp
             case planResp of
               Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}))) -> do
-                logDebug $ "LNKDBG deGroupLinkCheck groupId=" <> tshow groupId <> " GLPKnown groupUpdated=" <> tshow groupUpdated <> " linkOwnersCount=" <> tshow (length owners) <> " linkOwners=" <> tshow owners
+                logDebug $ "LNKDBG " <> tshow groupId <> " deGroupLinkCheck GLPKnown groupUpdated=" <> tshow groupUpdated <> " linkOwnersCount=" <> tshow (length owners) <> " linkOwners=" <> tshow owners
                 checkValidOwner dbOwnerMemberId owners $ do
                   -- re-verify every cycle: a name that stopped resolving to the link must lose verified status
                   g'' <- verifyGroupDomain_ g'
@@ -845,7 +845,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               Left (ChatErrorAgent {agentError = SMP _ err}) | linkDeleted err ->
                 setGroupStatus logError st env cc groupId GRSRemoved $ \gr' ->
                   notifyOwner gr' "The channel link is no longer valid.\nThe channel is removed from the directory."
-              _ -> logDebug $ "LNKDBG deGroupLinkCheck groupId=" <> tshow groupId <> " UNHANDLED plan response (no-op, channel left listed)"
+              _ -> logDebug $ "LNKDBG " <> tshow groupId <> " deGroupLinkCheck UNHANDLED plan response (no-op, channel left listed)"
       where
         linkDeleted = \case
           AUTH -> True
@@ -854,20 +854,20 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         checkValidOwner dbOwnerMemberId owners onValid = case dbOwnerMemberId of
           Just ownerGMId ->
             withDB "checkGroupLink" cc (\db -> withExceptT show $ getGroupMember db (storeCxt cc) user groupId ownerGMId) >>= \memberRes -> do
-              logDebug $ "LNKDBG checkValidOwner groupId=" <> tshow groupId <> " dbOwnerMemberId=" <> tshow ownerGMId
+              logDebug $ "LNKDBG " <> tshow groupId <> " checkValidOwner dbOwnerMemberId=" <> tshow ownerGMId
                 <> " getGroupMember=" <> either (\e -> "FAILED: " <> T.pack e) (\GroupMember {memberId, memberPubKey} -> "id=" <> tshow memberId <> " hasPubKey=" <> tshow (isJust memberPubKey)) memberRes
                 <> " linkOwnersCount=" <> tshow (length owners) <> " linkOwners=" <> tshow owners
               case memberRes of
                 Right GroupMember {memberId, memberPubKey}
                   | any (\GroupLinkOwner {memberId = mId, memberKey} -> memberId == mId && memberPubKey == Just memberKey) owners -> do
-                      logDebug $ "LNKDBG checkValidOwner groupId=" <> tshow groupId <> " OWNER MATCHED -> keep listed"
+                      logDebug $ "LNKDBG " <> tshow groupId <> " checkValidOwner OWNER MATCHED -> keep listed"
                       onValid
                 _ -> do
-                  logDebug $ "LNKDBG checkValidOwner groupId=" <> tshow groupId <> " OWNER NOT MATCHED -> DELIST (GRSSuspendedBadRoles)"
+                  logDebug $ "LNKDBG " <> tshow groupId <> " checkValidOwner OWNER NOT MATCHED -> DELIST (GRSSuspendedBadRoles)"
                   setGroupStatus logError st env cc groupId GRSSuspendedBadRoles $ \gr' ->
                     notifyOwner gr' "The registration owner is no longer a channel owner.\nThe channel is no longer listed in the directory."
           Nothing -> do
-            logDebug $ "LNKDBG checkValidOwner groupId=" <> tshow groupId <> " dbOwnerMemberId=Nothing -> keep listed"
+            logDebug $ "LNKDBG " <> tshow groupId <> " checkValidOwner dbOwnerMemberId=Nothing -> keep listed"
             onValid
         reapprove pg gr groupRegStatus g' = do
           let gt = groupTypeStr' pg

@@ -4320,27 +4320,26 @@ processChatCommand cxt nm = \case
             CTName n -> serverShortLink <$> resolveNameLink n
           con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
           gPlan (ccl, g) = if memberRemoved (membership g) then Nothing else Just (ACCL SCMContact ccl, CPGroupLink (GLPKnown g False Nothing (ListDef [])))
+          planGid p = case p of
+            CPGroupLink (GLPKnown g _ _ _) -> tshow (groupId' g)
+            CPGroupLink (GLPOwnLink g) -> tshow (groupId' g)
+            CPGroupLink (GLPConnectingProhibit (Just g)) -> tshow (groupId' g)
+            _ -> "unknown"
           groupShortLinkPlan :: CM (ACreatedConnLink, ConnectionPlan)
           groupShortLinkPlan =
             knownLinkPlans >>= \case
               Just (_, CPGroupLink (GLPKnown g _ _ _))
                 | resolveMode == PRMAllGroups -> do
-                    logDebug $ "LNKDBG groupShortLinkPlan: known group + PRMAllGroups -> resolveKnownGroup groupId=" <> tshow (groupId' g)
+                    logDebug $ "LNKDBG " <> tshow (groupId' g) <> " groupShortLinkPlan: known group + PRMAllGroups -> resolveKnownGroup"
                     resolveKnownGroup g
               Just r -> do
-                logDebug $ "LNKDBG groupShortLinkPlan: known plan returned as-is (linkOwners may be empty): " <> tshow (snd r)
+                logDebug $ "LNKDBG " <> planGid (snd r) <> " groupShortLinkPlan known plan returned as-is (linkOwners may be empty): " <> tshow (snd r)
                 pure r
               Nothing -> do
-                logDebug "LNKDBG groupShortLinkPlan: knownLinkPlans MISSED -> fresh-fetch (a found group here yields GLPKnown with EMPTY linkOwners)"
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                logDebug $ "LNKDBG groupShortLinkPlan FRESH-FETCH data: link=" <> tshow l'
-                  <> " direct=" <> tshow direct <> " relaysCount=" <> tshow (length relays)
-                  <> " ownersCount=" <> tshow (length owners) <> " owners=" <> tshow owners
-                  <> " fixedLinkData=" <> tshow fd <> " connLinkData=" <> tshow cData
-                  <> " decodedGroupData=" <> tshow groupSLinkData_
                 if
                   | not direct && unsupportedGroupType groupSLinkData_ -> pure (con l' (linkConnReq fd), CPGroupLink (GLPUpdateRequired groupSLinkData_))
                   | not direct && null relays -> pure (con l' (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
@@ -4371,7 +4370,11 @@ processChatCommand cxt nm = \case
                               CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
                               _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
                          in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
-                      logDebug $ "LNKDBG groupShortLinkPlan FRESH-FETCH resulting plan=" <> tshow plan
+                      logDebug $ "LNKDBG " <> planGid plan <> " groupShortLinkPlan FRESH-FETCH"
+                        <> " link=" <> tshow l' <> " direct=" <> tshow direct <> " relaysCount=" <> tshow (length relays)
+                        <> " ownersCount=" <> tshow (length owners) <> " owners=" <> tshow owners
+                        <> " fixedLinkData=" <> tshow fd <> " connLinkData=" <> tshow cData
+                        <> " decodedGroupData=" <> tshow groupSLinkData_ <> " plan=" <> tshow plan
                       pure (con l' cReq, plan)
             where
               unsupportedGroupType = \case
@@ -4386,17 +4389,17 @@ processChatCommand cxt nm = \case
                 l' <- resolveSLink
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                logDebug $ "LNKDBG resolveKnownGroup groupId=" <> tshow (groupId' g) <> " link=" <> tshow l'
+                logDebug $ "LNKDBG " <> tshow (groupId' g) <> " resolveKnownGroup link=" <> tshow l'
                   <> " ownersCount=" <> tshow (length owners) <> " owners=" <> tshow owners
                   <> " fixedLinkData=" <> tshow fd <> " connLinkData=" <> tshow cData
                   <> " decodedGroupData=" <> tshow groupSLinkData_
                 let ov = verifyLinkOwner rk owners l' sig_
                     glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
-                logDebug $ "LNKDBG resolveKnownGroup groupId=" <> tshow (groupId' g) <> " ov=" <> tshow ov <> " glOwnersCount=" <> tshow (length glOwners) <> " glOwners=" <> tshow glOwners
+                logDebug $ "LNKDBG " <> tshow (groupId' g) <> " resolveKnownGroup ov=" <> tshow ov <> " glOwnersCount=" <> tshow (length glOwners) <> " glOwners=" <> tshow glOwners
                 (g', updated) <- case groupSLinkData_ of
                   Just sLinkData -> updateGroupFromLinkData user g sLinkData Nothing
                   _ -> pure (g, False)
-                logDebug $ "LNKDBG resolveKnownGroup groupId=" <> tshow (groupId' g) <> " profileUpdated=" <> tshow updated
+                logDebug $ "LNKDBG " <> tshow (groupId' g) <> " resolveKnownGroup profileUpdated=" <> tshow updated
                 pure (con l' (linkConnReq fd), CPGroupLink (GLPKnown g' updated ov (ListDef glOwners)))
           -- resolve a name to its first contact/channel short link
           resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
@@ -4521,7 +4524,7 @@ processChatCommand cxt nm = \case
       | otherwise = plan $ GLPOk linkInfo gld ov
       where
         plan p = do
-          logDebug $ "LNKDBG groupPlan groupId=" <> tshow (groupId' gInfo) <> " memberStatus=" <> tshow (memberStatus membership) <> " -> " <> tshow p
+          logDebug $ "LNKDBG " <> tshow (groupId' gInfo) <> " groupPlan memberStatus=" <> tshow (memberStatus membership) <> " -> " <> tshow p
           pure $ CPGroupLink p
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
