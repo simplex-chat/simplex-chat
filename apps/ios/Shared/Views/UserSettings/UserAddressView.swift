@@ -825,7 +825,7 @@ struct SetSimplexDomainView: View {
             }
         }
         .onDisappear {
-            if !didSave, changed, isValid {
+            if !didSave, !saving, changed, isValid {
                 let domain = normalized(simplexName)
                 let saveName = save
                 showAlert(
