@@ -5,6 +5,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -76,6 +77,7 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Session (SessionVar (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
 import Simplex.Messaging.Agent.Store.DB (SQLError)
@@ -305,6 +307,8 @@ data ChatController = ChatController
     deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
+    entityWorkers :: TMap (Maybe ChatLockEntity) (SessionVar EntityWorker), -- per-entity agent event processing; Nothing key is the general worker
+    entityWorkerSeq :: TVar Int,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
     chatRelayTests :: TMap ConnId RelayTest,
@@ -319,6 +323,23 @@ data ChatController = ChatController
     assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool
+  }
+
+-- agent event with its chat lock entity resolved once (in the callback), threaded to the handler.
+-- ResolvedEvent shares AEvent's AEntity index, so the resolved value and the event always match.
+data ResolvedEvent (e :: AEntity) where
+  REConn :: Maybe ChatLockEntity -> ResolvedEvent AEConn -- Nothing: DEL_RCVQS / DEL_CONNS / empty-conn ERR
+  RESndFile :: Maybe ChatRef -> FileTransferId -> ResolvedEvent AESndFile
+  RERcvFile :: Maybe ChatRef -> FileTransferId -> ResolvedEvent AERcvFile
+  RENone :: ResolvedEvent AENone
+
+data ResolvedEvt = forall e. AEntityI e => ResolvedEvt (ResolvedEvent e) (AEvent e)
+
+type ResolvedTransmission = (ACorrId, AEntityId, ResolvedEvt)
+
+data EntityWorker = EntityWorker
+  { eventQ :: TQueue ResolvedTransmission,
+    workerThreadId :: Weak ThreadId
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase

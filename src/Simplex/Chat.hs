@@ -170,7 +170,7 @@ newChatController
     ccVar <- newEmptyTMVarIO
     let processEvent _ t = do
           cc <- atomically $ readTMVar ccVar
-          runReaderT (processAgentEvent t) cc
+          queueAgentEvent cc t
     runExceptT (getSMPAgentClient aCfg {tbqSize} servers agentStore processEvent)
       >>= mapM (mkChatController config randomPresetServers randomAgentServers ccVar)
     where
@@ -200,6 +200,8 @@ newChatController
         deliveryTaskWorkers <- TM.emptyIO
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
+        entityWorkers <- TM.emptyIO
+        entityWorkerSeq <- newTVarIO 0
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
@@ -246,6 +248,8 @@ newChatController
                   deliveryTaskWorkers,
                   deliveryJobWorkers,
                   relayRequestWorkers,
+                  entityWorkers,
+                  entityWorkerSeq,
                   relayGroupLinkChecksAsync,
                   webPreviewState,
                   chatRelayTests,

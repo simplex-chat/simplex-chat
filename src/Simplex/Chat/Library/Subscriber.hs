@@ -118,23 +118,24 @@ verifyGroupSig key publicGroupId memberId signatures signedBody =
   let prefix = smpEncode CBGroup <> smpEncode (publicGroupId, memberId)
    in all (\case (MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 key) sig (prefix <> signedBody)) signatures
 
-processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
-processAgentMessage _ _ (DEL_RCVQS delQs) =
+-- the lock entity is resolved by the caller (resolveEvent) and threaded in; entity-less events (DEL_*, empty-conn ERR) ignore it
+processAgentMessage :: Maybe ChatLockEntity -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
+processAgentMessage _ _ _ (DEL_RCVQS delQs) =
   toView $ CEvtAgentRcvQueuesDeleted $ L.map rcvQ delQs
   where
     rcvQ (connId, server, rcvId, err_) = DeletedRcvQueue (AgentConnId connId) server (AgentQueueId rcvId) err_
-processAgentMessage _ _ (DEL_CONNS connIds) =
+processAgentMessage _ _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
-processAgentMessage _ "" (ERR e) =
+processAgentMessage _ _ "" (ERR e) =
   eToView $ chatErrorAgent e
-processAgentMessage corrId connId msg = do
-  lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
+processAgentMessage (Just lockEntity) corrId connId msg =
   withEntityLock "processAgentMessage" lockEntity $ do
     cxt <- chatStoreCxt
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
     critical connId (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
       Just user -> processAgentMessageConn cxt user corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+processAgentMessage Nothing _ connId _ = throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -177,9 +178,9 @@ processAgentMessageNoConn = \case
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 
-processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
-processAgentMsgSndFile _corrId aFileId msg = do
-  (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
+-- (cRef_, fileId) are resolved by the caller (resolveEvent) and threaded in
+processAgentMsgSndFile :: (Maybe ChatRef, FileTransferId) -> ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
+processAgentMsgSndFile (cRef_, fileId) _corrId aFileId msg =
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
       Just user -> process user fileId `catchAllErrors` eToView
@@ -317,9 +318,8 @@ agentFileError = \case
       SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
       e -> srvErr . SrvErrOther $ tshow e
 
-processAgentMsgRcvFile :: ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
-processAgentMsgRcvFile _corrId aFileId msg = do
-  (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
+processAgentMsgRcvFile :: (Maybe ChatRef, FileTransferId) -> ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
+processAgentMsgRcvFile (cRef_, fileId) _corrId aFileId msg =
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
       Just user -> process user fileId `catchAllErrors` eToView

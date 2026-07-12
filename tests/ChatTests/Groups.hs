@@ -2984,7 +2984,7 @@ testGroupLinkMemberRole =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 100000
+      threadDelay 500000
 
       alice ##> "/ms team"
       alice
@@ -3154,7 +3154,7 @@ testGroupLinkHostProfileReceived =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 100000
+      threadDelay 500000
 
       aliceImage <- getProfilePictureByName bob "alice"
       aliceImage `shouldBe` Just profileImage
@@ -3218,7 +3218,13 @@ testGLinkRejectBlockedName =
       bob <## "#team: joining the group..."
       bob <## "#team: join rejected, reason: GRRBlockedName"
 
-      threadDelay 100000
+      -- bob's contact is removed by async reject/handshake/delete events (~0.2-0.4s via per-entity workers); poll instead of a fixed delay
+      let waitRejected n = do
+            ps <- getContactProfiles alice
+            if "bob" `notElem` ps || (n :: Int) <= 0
+              then pure ()
+              else threadDelay 10000 >> waitRejected (n - 1)
+      waitRejected 300
 
       alice `hasContactProfiles` ["alice"]
       memCount <- withCCTransaction alice $ \db ->

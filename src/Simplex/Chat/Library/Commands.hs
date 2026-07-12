@@ -113,6 +113,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
+import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
 import Simplex.Messaging.Util
@@ -122,10 +123,11 @@ import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
+import System.Mem.Weak (deRefWeak)
 import System.Random (randomRIO)
 import System.Timeout (timeout)
 import UnliftIO.Async
-import UnliftIO.Concurrent (forkIO, threadDelay)
+import UnliftIO.Concurrent (forkIO, forkIOWithUnmask, killThread, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
@@ -296,10 +298,11 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, chatRunning, subscribeAsync, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+stopChatController ChatController {smpAgent, chatRunning, subscribeAsync, entityWorkers, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
+  readTVarIO entityWorkers >>= mapM_ stopEntityWorker
   readTVarIO subscribeAsync >>= mapM_ (void . forkIO . uninterruptibleCancel)
   closeFiles sndFiles
   closeFiles rcvFiles
@@ -308,7 +311,10 @@ stopChatController ChatController {smpAgent, chatRunning, subscribeAsync, sndFil
     forM_ keys $ \k -> TM.insert k False expireCIFlags
     writeTVar chatRunning False
     writeTVar subscribeAsync Nothing
+    TM.clear entityWorkers -- drop the killed workers so a restart (/_start) creates fresh ones
   where
+    stopEntityWorker v =
+      atomically (tryReadTMVar $ sessionVar v) >>= mapM_ (\EntityWorker {workerThreadId} -> deRefWeak workerThreadId >>= mapM_ killThread)
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
       fs <- readTVarIO files
@@ -5024,12 +5030,65 @@ setAllExpireCIFlags b = do
     keys <- M.keys <$> readTVar expireFlags
     forM_ keys $ \k -> TM.insert k b expireFlags
 
-processAgentEvent :: ATransmission -> CM' ()
-processAgentEvent (corrId, entId, AEvt e msg) = run $ case e of
-  SAENone -> processAgentMessageNoConn msg
-  SAEConn -> processAgentMessage corrId entId msg
-  SAERcvFile -> processAgentMsgRcvFile corrId entId msg
-  SAESndFile -> processAgentMsgSndFile corrId entId msg
+-- agent event callback: resolve the event's lock entity, then hand it to that entity's worker.
+-- runs on the agent thread (under its connection lock), so it must not block - the worker queue is unbounded.
+queueAgentEvent :: ChatController -> ATransmission -> IO ()
+queueAgentEvent cc t =
+  runReaderT (runExceptT $ resolveEvent t) cc >>= \case
+    Right rt -> getEntityWorker cc (workerKey rt) >>= \q -> atomically (writeTQueue q rt)
+    Left e -> runReaderT (eToView' e) cc
+
+-- resolves the event's chat lock entity once, used both to pick the worker and (threaded through) by the handler.
+-- a lookup failure is surfaced by queueAgentEvent and the event is not enqueued (not ACKed either, so it is redelivered).
+resolveEvent :: ATransmission -> CM ResolvedTransmission
+resolveEvent (corrId, entId, AEvt sae ev) = (corrId,entId,) <$> case sae of
+  SAEConn -> (\me -> ResolvedEvt (REConn me) ev) <$> connLockEntity
+  SAESndFile -> (\(cRef, fId) -> ResolvedEvt (RESndFile cRef fId) ev) <$> withStore (`getXFTPSndFileDBIds` AgentSndFileId entId)
+  SAERcvFile -> (\(cRef, fId) -> ResolvedEvt (RERcvFile cRef fId) ev) <$> withStore (`getXFTPRcvFileDBIds` AgentRcvFileId entId)
+  SAENone -> pure $ ResolvedEvt RENone ev
+  where
+    connLockEntity
+      | B.null entId = pure Nothing -- DEL_RCVQS / DEL_CONNS / empty-conn ERR are entity-less
+      | otherwise = Just <$> critical entId (withStore (`getChatLockEntity` AgentConnId entId))
+
+workerKey :: ResolvedTransmission -> Maybe ChatLockEntity
+workerKey (_, _, ResolvedEvt re _) = case re of
+  REConn me -> me
+  RESndFile cRef fId -> Just $ fileEntity cRef fId
+  RERcvFile cRef fId -> Just $ fileEntity cRef fId
+  RENone -> Nothing
+
+-- file events run on the chat entity's worker; files with no chat entity use CLFile
+fileEntity :: Maybe ChatRef -> FileTransferId -> ChatLockEntity
+fileEntity cRef fId = case cRef of
+  Just (ChatRef CTDirect cId _) -> CLContact cId
+  Just (ChatRef CTGroup gId _) -> CLGroup gId
+  _ -> CLFile fId
+
+getEntityWorker :: ChatController -> Maybe ChatLockEntity -> IO (TQueue ResolvedTransmission)
+getEntityWorker cc@ChatController {entityWorkerSeq, entityWorkers} key = do
+  ts <- getCurrentTime
+  withGetSessVar' entityWorkerSeq key entityWorkers ts createWorker existingWorker
+  where
+    createWorker v = do
+      q <- newTQueueIO
+      -- forkIOWithUnmask (not forkIO): the callback runs under uninterruptibleMask, an inherited mask makes the worker unkillable
+      tId <- mkWeakThreadId =<< forkIOWithUnmask (\unmask -> unmask $ entityWorkerLoop cc q)
+      atomically $ putTMVar (sessionVar v) EntityWorker {eventQ = q, workerThreadId = tId}
+      pure q
+    existingWorker v = eventQ <$> atomically (readTMVar $ sessionVar v)
+
+entityWorkerLoop :: ChatController -> TQueue ResolvedTransmission -> IO ()
+entityWorkerLoop cc q = forever $
+  -- unmasked while blocked on the queue (killable at teardown), uninterruptible while processing so each event completes atomically
+  atomically (readTQueue q) >>= \rt -> E.uninterruptibleMask_ $ runReaderT (processAgentEvent rt) cc
+
+processAgentEvent :: ResolvedTransmission -> CM' ()
+processAgentEvent (corrId, entId, ResolvedEvt re ev) = run $ case re of
+  RENone -> processAgentMessageNoConn ev
+  REConn me -> processAgentMessage me corrId entId ev
+  RERcvFile cRef fId -> processAgentMsgRcvFile (cRef, fId) corrId entId ev
+  RESndFile cRef fId -> processAgentMsgSndFile (cRef, fId) corrId entId ev
   where
     run action = action `catchAllOwnErrors'` eToView'
 
