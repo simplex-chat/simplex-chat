@@ -1833,13 +1833,18 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
-viewGroupInfo gInfo@GroupInfo {groupId, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
+viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, groupProfile = GroupProfile {publicGroup}, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
   [ "group ID: " <> sShow groupId,
     memberCountLine
   ]
+    <> domainLine
     <> viewUITheme uiThemes
     <> viewCustomData customData
   where
+    -- a business presents as a contact (@-name); a public group/channel shows its #-name
+    domainLine = case businessChat of
+      Just bc -> simplexDomainLine NTContact (businessDomain bc) groupDomainVerified
+      Nothing -> simplexDomainLine NTPublicGroup (publicGroup >>= publicGroupAccess >>= groupDomainClaim) groupDomainVerified
     memberCountLine
       | useRelays' gInfo, Just count <- publicMemberCount = "subscribers: " <> sShow count
       | otherwise = "current members: " <> sShow currentMembers

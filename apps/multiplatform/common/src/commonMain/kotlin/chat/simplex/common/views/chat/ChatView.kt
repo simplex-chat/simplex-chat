@@ -2343,6 +2343,12 @@ fun BoxScope.ChatItemsList(
           )
         }
 
+        when (chatInfo) {
+          is ChatInfo.Direct -> ContactSimplexNameView(chatInfo.contact, verifiable = false)
+          is ChatInfo.Group -> GroupSimplexNameView(chatInfo.groupInfo, verifiable = false)
+          else -> {}
+        }
+
         val contextStr = chatContext()
         if (contextStr != null) {
           Text(

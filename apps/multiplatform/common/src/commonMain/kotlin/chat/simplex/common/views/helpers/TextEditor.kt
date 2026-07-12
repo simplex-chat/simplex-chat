@@ -107,12 +107,16 @@ fun TextEditor(
 fun PlainTextEditor(
   value: MutableState<String>,
   placeholder: String? = null,
-  singleLine: Boolean = true
+  singleLine: Boolean = true,
+  contentPadding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 12.dp),
+  focusRequester: FocusRequester? = null
 ) {
   BasicTextField(
     value = value.value,
     onValueChange = { value.value = it },
-    modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = 12.dp),
+    modifier = Modifier.fillMaxWidth()
+      .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+      .padding(contentPadding),
     textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
     singleLine = singleLine,
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),

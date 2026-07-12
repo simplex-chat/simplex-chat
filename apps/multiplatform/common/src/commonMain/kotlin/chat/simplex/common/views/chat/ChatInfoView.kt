@@ -757,20 +757,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
-    val domain = contact.profile.contactDomain
-    if (domain != null && (contact.profile.contactDomainVerified != null || domain.proof != null)) {
-      SimplexNameView(
-        simplexName = "@${domain.domain}",
-        verified = contact.profile.contactDomainVerified,
-        verify = {
-          val rhId = chatModel.remoteHostId()
-          chatModel.controller.apiVerifyContactDomain(rhId, contact.contactId)?.let { (ct, reason) ->
-            chatModel.chatsContext.updateContact(rhId, ct)
-            ct.profile.contactDomainVerified to reason
-          }
-        }
-      )
-    }
+    ContactSimplexNameView(contact)
   }
 }
 

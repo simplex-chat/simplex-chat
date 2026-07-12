@@ -638,12 +638,6 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
-            SettingsActionItem(
-              painterResource(MR.images.ic_tag),
-              stringResource(MR.strings.simplex_name),
-              setSimplexName,
-              iconColor = MaterialTheme.colors.secondary
-            )
           } else if (channelLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
@@ -668,6 +662,18 @@ fun ModalData.GroupChatInfoLayout(
         }
         if (!groupInfo.isOwner && channelLink != null) {
           SectionTextFooter(stringResource(MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect))
+        }
+        if (groupInfo.isOwner && groupLink != null) {
+          SectionDividerSpaced()
+          val channelDomain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
+          SectionView(title = if (channelDomain != null) generalGetString(MR.strings.channel_simplex_name) else null) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_tag),
+              channelDomain ?: generalGetString(MR.strings.get_simplex_name_beta),
+              setSimplexName,
+              iconColor = MaterialTheme.colors.secondary
+            )
+          }
         }
       } else {
         SectionView {
@@ -973,32 +979,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
-    val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-    val domain = access?.groupDomainClaim?.shortName
-    if (domain != null && (groupInfo.groupDomainVerified != null || access.groupDomainClaim?.proof != null)) {
-      SimplexNameView(
-        simplexName = "#${domain}",
-        verified = groupInfo.groupDomainVerified,
-        verify = {
-          val rhId = chatModel.remoteHostId()
-          chatModel.controller.apiVerifyGroupDomain(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
-            chatModel.chatsContext.updateGroup(rhId, gInfo)
-            gInfo.groupDomainVerified to reason
-          }
-        }
-      )
-    }
-    val businessClaim = groupInfo.businessChat?.businessDomain
-    if (businessClaim != null && (groupInfo.groupDomainVerified != null || businessClaim.proof != null)) {
-      // A business presents as a contact, so the name retains its .simplex suffix. The tick comes from
-      // groupDomainVerified (set at connect); its domain proof is not received on the wire yet, so
-      // re-verification is not wired.
-      SimplexNameView(
-        simplexName = "@${businessClaim.domain}",
-        verified = groupInfo.groupDomainVerified,
-        verify = { null }
-      )
-    }
+    GroupSimplexNameView(groupInfo)
     val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
     if (webPage != null) {
       val uriHandler = LocalUriHandler.current
