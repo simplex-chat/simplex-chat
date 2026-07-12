@@ -3098,7 +3098,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          ct <- withStore $ \db -> createDirectContact db cxt user conn' p
+          ews <- asks entityWorkers
+          let Connection {connId} = conn'
+          -- keep this connection's events on one worker across the CLConnection->CLContact transition: register the existing worker under the contact key inside the tx (before the row is visible, so no enqueue can resolve CLContact and create a rival); the connection key is left in place (removing it could strand a stale pre-commit enqueue)
+          ct <- withStore $ \db -> do
+            ct@Contact {contactId} <- createDirectContact db cxt user conn' p
+            liftIO $ atomically $ TM.lookup (Just $ CLConnection connId) ews >>= mapM_ (\w -> TM.insert (Just $ CLContact contactId) w ews)
+            pure ct
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
