@@ -8537,6 +8537,7 @@ testScopedSupportMemberLeaves =
     alice <## "members require attention: 1"
     alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
 
+    threadDelay 100000
     bob ##> "/l team"
     concurrentlyN_
       [ do
