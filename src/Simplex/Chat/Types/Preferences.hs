@@ -179,6 +179,7 @@ data GroupFeature
   | GFSupport
   | GFSessions
   | GFComments
+  | GFSignMessages
   deriving (Show)
 
 data SGroupFeature (f :: GroupFeature) where
@@ -194,6 +195,7 @@ data SGroupFeature (f :: GroupFeature) where
   SGFSupport :: SGroupFeature 'GFSupport
   SGFSessions :: SGroupFeature 'GFSessions
   SGFComments :: SGroupFeature 'GFComments
+  SGFSignMessages :: SGroupFeature 'GFSignMessages
 
 deriving instance Show (SGroupFeature f)
 
@@ -223,6 +225,7 @@ groupFeatureNameText = \case
   GFSupport -> "Chat with admins"
   GFSessions -> "Chat sessions"
   GFComments -> "Comments"
+  GFSignMessages -> "Sign messages"
 
 groupFeatureNameText' :: SGroupFeature f -> Text
 groupFeatureNameText' = groupFeatureNameText . toGroupFeature
@@ -249,7 +252,8 @@ allGroupFeatures =
     AGF SGFSimplexLinks,
     AGF SGFReports,
     AGF SGFHistory,
-    AGF SGFSupport
+    AGF SGFSupport,
+    AGF SGFSignMessages
   ]
 
 -- Channels (public groups) show a subset of group features. Direct messages, voice,
@@ -271,9 +275,31 @@ groupFeatureInChannel = \case
   GFSupport -> True
   GFSessions -> False
   GFComments -> False
+  GFSignMessages -> True
+
+-- Regular groups show a subset of group features. Signing is channel-only for now
+-- (keys are not shared between members in regular groups), so it is excluded.
+regularGroupFeatures :: [AGroupFeature]
+regularGroupFeatures = filter (\(AGF f) -> groupFeatureInRegularGroup (toGroupFeature f)) allGroupFeatures
+
+groupFeatureInRegularGroup :: GroupFeature -> Bool
+groupFeatureInRegularGroup = \case
+  GFTimedMessages -> True
+  GFDirectMessages -> True
+  GFFullDelete -> True
+  GFReactions -> True
+  GFVoice -> True
+  GFFiles -> True
+  GFSimplexLinks -> True
+  GFReports -> True
+  GFHistory -> True
+  GFSupport -> True
+  GFSessions -> False
+  GFComments -> False
+  GFSignMessages -> False
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
-groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments} = case f of
+groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments, signMessages} = case f of
   SGFTimedMessages -> timedMessages
   SGFDirectMessages -> directMessages
   SGFFullDelete -> fullDelete
@@ -286,6 +312,7 @@ groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reac
   SGFSupport -> support
   SGFSessions -> sessions
   SGFComments -> comments
+  SGFSignMessages -> signMessages
 
 toGroupFeature :: SGroupFeature f -> GroupFeature
 toGroupFeature = \case
@@ -301,6 +328,7 @@ toGroupFeature = \case
   SGFSupport -> GFSupport
   SGFSessions -> GFSessions
   SGFComments -> GFComments
+  SGFSignMessages -> GFSignMessages
 
 class GroupPreferenceI p where
   getGroupPreference :: SGroupFeature f -> p -> GroupFeaturePreference f
@@ -312,7 +340,7 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
 
 instance GroupPreferenceI FullGroupPreferences where
-  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments} = case f of
+  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments, signMessages} = case f of
     SGFTimedMessages -> timedMessages
     SGFDirectMessages -> directMessages
     SGFFullDelete -> fullDelete
@@ -325,6 +353,7 @@ instance GroupPreferenceI FullGroupPreferences where
     SGFSupport -> support
     SGFSessions -> sessions
     SGFComments -> comments
+    SGFSignMessages -> signMessages
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -341,6 +370,7 @@ data GroupPreferences = GroupPreferences
     support :: Maybe SupportGroupPreference,
     sessions :: Maybe SessionsGroupPreference,
     comments :: Maybe CommentsGroupPreference,
+    signMessages :: Maybe SignMessagesGroupPreference,
     commands :: Maybe [ChatBotCommand]
   }
   deriving (Eq, Show)
@@ -393,6 +423,7 @@ setGroupPreference_ f pref prefs =
     SGFSupport -> prefs {support = pref}
     SGFSessions -> prefs {sessions = pref}
     SGFComments -> prefs {comments = pref}
+    SGFSignMessages -> prefs {signMessages = pref}
 
 setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
 setGroupTimedMessagesPreference pref prefs_ =
@@ -437,6 +468,7 @@ data FullGroupPreferences = FullGroupPreferences
     support :: SupportGroupPreference,
     sessions :: SessionsGroupPreference,
     comments :: CommentsGroupPreference,
+    signMessages :: SignMessagesGroupPreference,
     commands :: ListDef ChatBotCommand
   }
   deriving (Eq, Show)
@@ -508,11 +540,12 @@ defaultGroupPrefs =
       support = SupportGroupPreference {enable = FEOn},
       sessions = SessionsGroupPreference {enable = FEOff, role = Nothing},
       comments = CommentsGroupPreference {enable = FEOff, duration = Nothing},
+      signMessages = SignMessagesGroupPreference {enable = FEOff},
       commands = ListDef []
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions, commands} =
@@ -546,6 +579,7 @@ defaultBusinessGroupPrefs =
       support = Just $ SupportGroupPreference FEOn,
       sessions = Just $ SessionsGroupPreference FEOn Nothing,
       comments = Just $ CommentsGroupPreference FEOff Nothing,
+      signMessages = Just $ SignMessagesGroupPreference FEOff,
       commands = Nothing
     }
 
@@ -672,6 +706,10 @@ data ReportsGroupPreference = ReportsGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show)
 
+data SignMessagesGroupPreference = SignMessagesGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show)
+
 data HistoryGroupPreference = HistoryGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show)
@@ -728,6 +766,9 @@ instance HasField "enable" SimplexLinksGroupPreference GroupFeatureEnabled where
 
 instance HasField "enable" ReportsGroupPreference GroupFeatureEnabled where
   hasField p@ReportsGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" SignMessagesGroupPreference GroupFeatureEnabled where
+  hasField p@SignMessagesGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
   hasField p@HistoryGroupPreference {enable} = (\e -> p {enable = e}, enable)
@@ -789,6 +830,12 @@ instance GroupFeatureI 'GFReports where
   groupPrefParam _ = Nothing
   groupPrefRole _ = Nothing
 
+instance GroupFeatureI 'GFSignMessages where
+  type GroupFeaturePreference 'GFSignMessages = SignMessagesGroupPreference
+  sGroupFeature = SGFSignMessages
+  groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
+
 instance GroupFeatureI 'GFHistory where
   type GroupFeaturePreference 'GFHistory = HistoryGroupPreference
   sGroupFeature = SGFHistory
@@ -820,6 +867,8 @@ instance GroupFeatureNoRoleI 'GFFullDelete
 instance GroupFeatureNoRoleI 'GFReactions
 
 instance GroupFeatureNoRoleI 'GFReports
+
+instance GroupFeatureNoRoleI 'GFSignMessages
 
 instance GroupFeatureNoRoleI 'GFHistory
 
@@ -1020,6 +1069,7 @@ mergeGroupPreferences groupPreferences =
       support = pref SGFSupport,
       sessions = pref SGFSessions,
       comments = pref SGFComments,
+      signMessages = pref SGFSignMessages,
       commands = ListDef $ fromMaybe [] $ groupPreferences >>= commands_
     }
   where
@@ -1041,6 +1091,7 @@ toGroupPreferences groupPreferences@FullGroupPreferences {commands = ListDef cmd
       support = pref SGFSupport,
       sessions = pref SGFSessions,
       comments = pref SGFComments,
+      signMessages = pref SGFSignMessages,
       commands = Just cmds
     }
   where
@@ -1166,6 +1217,12 @@ $(J.deriveJSON defaultJSON ''FilesGroupPreference)
 $(J.deriveJSON defaultJSON ''SimplexLinksGroupPreference)
 
 $(J.deriveJSON defaultJSON ''ReportsGroupPreference)
+
+$(J.deriveToJSON defaultJSON ''SignMessagesGroupPreference)
+
+instance FromJSON SignMessagesGroupPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''SignMessagesGroupPreference) v
+  omittedField = Just SignMessagesGroupPreference {enable = FEOff}
 
 $(J.deriveJSON defaultJSON ''HistoryGroupPreference)
 

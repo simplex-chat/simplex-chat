@@ -1037,6 +1037,15 @@ struct ChatView: View {
                         .padding(.horizontal)
                 }
 
+                switch chat.chatInfo {
+                case let .direct(contact):
+                    contactSimplexNameView(contact, verifiable: false)
+                case let .group(groupInfo, _):
+                    groupSimplexNameView(groupInfo, verifiable: false)
+                default:
+                    EmptyView()
+                }
+
                 if let chatContext {
                     Text(chatContext)
                         .font(.callout)

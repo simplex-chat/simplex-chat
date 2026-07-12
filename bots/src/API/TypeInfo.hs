@@ -240,7 +240,8 @@ toTypeInfo tr =
       [ "FullDeleteGroupPreference",
         "ReactionsGroupPreference",
         "ReportsGroupPreference",
-        "HistoryGroupPreference"
+        "HistoryGroupPreference",
+        "SignMessagesGroupPreference"
       ]
     roleGroupPrefTypes =
       [ "DirectMessagesGroupPreference",

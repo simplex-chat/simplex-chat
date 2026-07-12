@@ -199,6 +199,7 @@ struct UserAddressView: View {
                     footer: "Let people connect to you via name registered with your SimpleX address.",
                     prompt: "@yourname.testing",
                     simplexName: simplexName,
+                    broadcastWarning: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert title"),
                     save: { simplexDomain in
                         do {
                             let u = try await apiSetUserDomain(simplexDomain)
@@ -210,7 +211,15 @@ struct UserAddressView: View {
                     }
                 )
             } label: {
-                Label("Your SimpleX name", systemImage: "at")
+                if let d = chatModel.currentUser?.profile.contactDomain?.domain {
+                    Label("\(d)", systemImage: "at")
+                } else {
+                    Label("Get SimpleX name (BETA)", systemImage: "at")
+                }
+            }
+        } header: {
+            if chatModel.currentUser?.profile.contactDomain?.domain != nil {
+                Text("Your SimpleX name").foregroundColor(theme.colors.secondary)
             }
         }
 
@@ -716,51 +725,161 @@ struct SetSimplexDomainView: View {
     let footer: LocalizedStringKey
     let prompt: String
     @State var simplexName: String
+    let broadcastWarning: String?
     let save: (String?) async -> Bool
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var saving = false
+    @State private var original = ""
+    @State private var didSave = false
+    @State private var editing = false
+    @FocusState private var nameFocused: Bool
+
+    init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, broadcastWarning: String? = nil, save: @escaping (String?) async -> Bool) {
+        self.title = title
+        self.footer = footer
+        self.prompt = prompt
+        self._simplexName = State(initialValue: simplexName)
+        self.broadcastWarning = broadcastWarning
+        self.save = save
+        self._original = State(initialValue: simplexName)
+        self._editing = State(initialValue: simplexName.isEmpty)
+    }
+
+    private var changed: Bool {
+        normalized(simplexName) != normalized(original)
+    }
+
+    private var isValid: Bool {
+        guard let d = normalized(simplexName) else { return true }
+        return isValidSimplexDomain(d)
+    }
 
     var body: some View {
         List {
             Section {
-                TextField(prompt, text: $simplexName)
-                    .autocorrectionDisabled(true)
-                    .textInputAutocapitalization(.never)
+                if editing {
+                    ZStack(alignment: .trailing) {
+                        TextField(prompt, text: $simplexName)
+                            .focused($nameFocused)
+                            .autocorrectionDisabled(true)
+                            .textInputAutocapitalization(.never)
+                            .padding(.trailing, isValid ? 0 : 20)
+                        if !isValid {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    Button {
+                        UIPasteboard.general.string = simplexName
+                    } label: {
+                        HStack {
+                            Text(simplexName)
+                                .foregroundColor(theme.colors.onBackground)
+                            Spacer()
+                            Image(systemName: "doc.on.doc")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+                }
             } header: {
                 Text(verbatim: "")
             } footer: {
                 Text(footer).foregroundColor(theme.colors.secondary)
             }
             Section {
-                Button {
-                    saving = true
-                    Task {
-                        let ok = await save(normalized())
-                        await MainActor.run {
-                            saving = false
-                            if ok { dismiss() }
-                        }
+                if editing {
+                    Button {
+                        openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
+                    } label: {
+                        Text("Register a test name")
                     }
-                } label: {
-                    Text("Save")
+                    Button {
+                        if let w = broadcastWarning, changed {
+                            showAlert(w, actions: {[
+                                UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in saveAndDismiss() },
+                                UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel)
+                            ]})
+                        } else {
+                            saveAndDismiss()
+                        }
+                    } label: {
+                        Text("Save")
+                    }
+                    .disabled(saving || !isValid || !changed)
+                } else {
+                    Button("Remove name") {
+                        simplexName = ""
+                        editing = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { nameFocused = true }
+                    }
                 }
-                .disabled(saving)
             }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            if editing {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { nameFocused = true }
+            }
+        }
+        .onDisappear {
+            if !didSave, !saving, changed, isValid {
+                let domain = normalized(simplexName)
+                let saveName = save
+                showAlert(
+                    NSLocalizedString("Save SimpleX name?", comment: "alert title"),
+                    message: broadcastWarning,
+                    actions: {[
+                        UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in
+                            Task { _ = await saveName(domain) }
+                        },
+                        UIAlertAction(title: NSLocalizedString("Don't save", comment: "alert action"), style: .cancel)
+                    ]}
+                )
+            }
+        }
     }
 
-    private func normalized() -> String? {
-        let s = simplexName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return s.isEmpty
+    private func saveAndDismiss() {
+        saving = true
+        Task {
+            let ok = await save(normalized(simplexName))
+            await MainActor.run {
+                saving = false
+                if ok {
+                    didSave = true
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private func normalized(_ s: String) -> String? {
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty
                 ? nil
-                : addSimplexTLD(s.hasPrefix("@") || s.hasPrefix("#") ? String(s.dropFirst()) : s)
+                : addSimplexTLD((t.hasPrefix("@") || t.hasPrefix("#") ? String(t.dropFirst()) : t).lowercased())
     }
 
     private func addSimplexTLD(_ d: String) -> String {
         if d.contains(".") { d } else { "\(d).simplex" }
+    }
+
+    private func isValidSimplexDomain(_ s: String) -> Bool {
+        if s.utf8.count > 253 { return false }
+        let labels = s.split(separator: ".", omittingEmptySubsequences: false)
+        if labels.count < 2 { return false }
+        for label in labels {
+            if !isValidNameLabel(label) { return false }
+        }
+        return true
+    }
+
+    private func isValidNameLabel(_ label: Substring) -> Bool {
+        if label.isEmpty || label.utf8.count > 63 { return false }
+        return label.range(of: "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$", options: .regularExpression) != nil
     }
 }
 

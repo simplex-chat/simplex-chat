@@ -363,18 +363,20 @@ private fun UserAddressLayout(
           }
 
           SectionDividerSpaced()
-          SectionView {
+          val domain = user?.profile?.contactDomain?.domain
+          SectionView(title = if (domain != null) generalGetString(MR.strings.your_simplex_name) else null) {
             SettingsActionItem(
               painterResource(MR.images.ic_at),
-              stringResource(MR.strings.your_simplex_name),
+              if (domain != null) "$domain" else generalGetString(MR.strings.get_simplex_name_beta),
               click = {
                 ModalManager.start.showCustomModal { close ->
-                  val domain = user?.profile?.contactDomain?.domain
                   SetSimplexDomainView(
                     title = generalGetString(MR.strings.set_simplex_name),
                     footer = generalGetString(MR.strings.set_user_simplex_name_footer),
                     placeholder = "@yourname.testing",
                     simplexName = if (domain == null) "" else "@$domain",
+                    registerBackgroundClose = true,
+                    broadcastWarning = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),
                     save = { simplexDomain ->
                       try {
                         val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)

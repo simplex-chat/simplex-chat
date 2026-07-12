@@ -48,6 +48,7 @@ struct MsgContentView: View {
     @State private var phase: CGFloat = 0
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
 
     var body: some View {
         let v = msgContentView()
@@ -131,7 +132,7 @@ struct MsgContentView: View {
 
     @inline(__always)
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
     }
 }
 
