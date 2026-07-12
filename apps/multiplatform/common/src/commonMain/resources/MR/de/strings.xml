@@ -2984,4 +2984,9 @@
     <string name="sign_message">Nachricht signieren</string>
     <string name="sign_messages">Nachrichten signieren</string>
     <string name="signature_missing_alert_desc">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</string>
+    <string name="channel_simplex_name">Kanal SimpleX-Name</string>
+    <string name="get_simplex_name_beta">SimpleX-Name erhalten (BETA)</string>
+    <string name="register_test_name">Einen Test-Name registrieren</string>
+    <string name="remove_name">Name entfernen</string>
+    <string name="save_simplex_name_question">SimpleX-Name speichern?</string>
 </resources>
