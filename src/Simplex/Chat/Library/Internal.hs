@@ -1469,9 +1469,7 @@ updatePublicGroupData user gInfo
       withStore $ \db -> updatePublicMemberCount db cxt user gInfo
   | otherwise = pure gInfo
 
--- resolvedDomain_ is the name the caller just resolved, by explicit user action, to reach
--- this link data; a link-data refresh alone (resolvedDomain_ = Nothing) never marks a
--- claim verified, and names are never resolved here.
+-- must not resolve names here: a background link-data refresh would leak channel membership to the resolver
 updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> CM (GroupInfo, Bool)
 updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
   | profileChanged || countChanged || verifyResolved = do
@@ -1492,8 +1490,6 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
       _ -> False
     groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
     newClaim = groupClaim groupProfile
-    -- mark verified whenever the caller resolved exactly this claim (connect-by-name); idempotent,
-    -- so no need to special-case an already-verified status (which updateGroupProfile may just have reset)
     verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
 
 updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact

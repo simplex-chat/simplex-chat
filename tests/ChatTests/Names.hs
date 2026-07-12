@@ -117,8 +117,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       alice ##> "/_set domain 1 alice.simplex"
       alice <## "SimpleX name alice.simplex has no valid connection link"
 
--- A member who joined via link does not get the claimed name verified, even after a link-data
--- refresh - the group's self-claim is not proof of name ownership.
+-- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
 testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -138,8 +137,6 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
--- A2 (verify by name<->profile-link consistency), A3 (owner verified on set), and A1 (a failed
--- status is retained across a link-data refresh, not erased to verified).
 testChannelDomainVerify :: HasCallStack => TestParams -> IO ()
 testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -151,18 +148,17 @@ testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
         alice <## "updated public group access: domain=team.simplex"
         cath <## "alice updated group #team: (signed)"
         cath <## "updated public group access: domain=team.simplex"
-        -- A3: setting the name resolved it, so the owner's channel is verified
+        -- setting the name resolved it, so the owner's channel is verified
         alice ##> "/_verify domain #1"
         alice <## "SimpleX name #team verified"
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
-        -- A2: resolving the name leads to the profile's link
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
         -- the name is re-pointed to a different link: verification fails
         registerName reg teamName (channelNameRecord "team" "https://simplex.chat/other")
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team not verified: the name does not resolve to the link in the group profile"
-        -- A1: a link-data refresh keeps the failed status (it does not overwrite it with verified)
+        -- a link-data refresh keeps the failed status, not overwritten with verified
         bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
         bob <## "group link: known group #team"
         bob <## "SimpleX name: #team (verification failed)"

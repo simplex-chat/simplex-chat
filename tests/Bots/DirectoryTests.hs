@@ -102,8 +102,7 @@ directoryServiceTests = do
     it "should handle re-registration when already listed" testReregistrationAlreadyListed
     it "should update subscriber count periodically" testLinkCheckUpdatesCount
 
--- these run under a names-enabled SMP server (withSmpServerAndNames), so they are a
--- separate spec from directoryServiceTests (which runs under a plain SMP server)
+-- separate spec from directoryServiceTests: these need a names-enabled SMP server (withSmpServerAndNames)
 directoryNameTests :: SpecWith TestParams
 directoryNameTests = do
   it "should verify and show a channel's SimpleX name" testDirectoryChannelName
@@ -2126,8 +2125,7 @@ testRegisterChannelViaCard ps =
         superUser <# "'SimpleX Directory'> The channel ID 1 (news) is de-listed (channel owner left)."
         relay <## "#news: 'SimpleX Directory' left the group (signed)"
 
--- the owner sets a SimpleX name on a channel; the directory verifies name<->link consistency
--- against the resolver and shows the verified name in the admin approval message
+-- owner sets a name; directory verifies name<->link consistency and shows the verified name to the admin
 testDirectoryChannelName :: HasCallStack => TestParams -> IO ()
 testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
@@ -2167,8 +2165,7 @@ testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
   where
     newsName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "news" [])
 
--- after the owner set the name, the registry entry is re-pointed to a different link; the
--- directory's verification fails, so the admin sees the name marked as not verified
+-- registry re-pointed to a different link after the owner set the name: directory verification fails
 testDirectoryChannelNameNotVerified :: HasCallStack => TestParams -> IO ()
 testDirectoryChannelNameNotVerified ps = withSmpServerAndNames $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->

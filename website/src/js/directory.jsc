@@ -112,7 +112,6 @@ function filterEntries(mode, s) {
   );
 }
 
-// matches '#team', 'team' and 'team.simplex' against an entry displaying '#team'
 function simplexNameIncludesQuery(name, query) {
   if (!name) return false;
   const q = normalizeSimplexName(query);

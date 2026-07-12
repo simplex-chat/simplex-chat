@@ -2311,9 +2311,7 @@ processChatCommand cxt nm = \case
     g@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     PublicGroupProfile {groupLink, publicGroupAccess} <- maybe (throwCmdError "not a public group") pure publicGroup
     claim <- maybe (throwCmdError "group has no name to verify") pure $ publicGroupAccess >>= groupDomainClaim
-    -- name <-> link consistency: resolving the claimed name must lead to the link in the group
-    -- profile - the same check the owner's client runs when setting the name; the link used
-    -- to join is not compared, links may rotate
+    -- checks the profile link, not the link we joined through (which may have rotated)
     (verified, reason) <-
       tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) (claimDomain claim)) >>= \case
         Right NameRecord {nrSimplexChannel}
@@ -3167,7 +3165,6 @@ processChatCommand cxt nm = \case
           when domainChanged $ do
             NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) newDomain
             unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
-        -- the resolution above proved name <-> link consistency, so mark it verified in the update
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -3930,8 +3927,7 @@ processChatCommand cxt nm = \case
     runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n'} domainVerified = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
-      -- updateGroupProfile resets domain verification on a claim change; the caller sets domainVerified
-      -- when it has already resolved the new name, so it stays verified
+      -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
       gInfo' <- withStore $ \db -> do
         g <- updateGroupProfile db user gInfo p'
         if domainVerified then liftIO $ setGroupDomainVerified db user g True else pure g

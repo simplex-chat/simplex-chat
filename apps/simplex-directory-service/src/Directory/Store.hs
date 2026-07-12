@@ -402,8 +402,7 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           pure (gs, n)
         where
           s = T.toLower search
-          -- names are searched without the # / @ prefix; "#" (empty after stripping) cannot
-          -- match any stored domain, so a bare prefix does not match every named group
+          -- a bare "#"/"@" maps to "#", matching no stored domain (domains are stored unprefixed)
           sDomain = case T.uncons s of
             Just (c, rest) | c == '#' || c == '@' -> if T.null rest then "#" else rest
             _ -> s

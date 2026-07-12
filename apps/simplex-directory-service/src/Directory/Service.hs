@@ -362,8 +362,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let msg = "Error: " <> err <> ", group: " <> tshow groupId <> " " <> localDisplayName <> ", " <> T.pack e
           notifyAdminUsers msg
           logError msg
-    -- validates that resolving the claimed name leads to the link in the group profile,
-    -- updating the group's verification status; leaves it unchanged on network errors
     verifyGroupDomain_ :: GroupInfo -> IO GroupInfo
     verifyGroupDomain_ g@GroupInfo {groupId}
       | isJust (groupSimplexDomain g) =
@@ -814,7 +812,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     sendToApprove g@GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
       ct_ <- getContact' cc user dbContactId
       let gt = maybe "group" groupTypeStr' pg_
-          -- admins see an unverified claim, marked; users never do
           nameStr_ = (\d -> simplexNameStr d <> (if groupDomainVerified g == Just True then "" else " (NOT verified - will not be shown)")) <$> groupSimplexDomain g
           membersStr = "_" <> membersCountStr p groupSummary <> "_\n"
           text =
@@ -825,7 +822,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         let approveCmd = MCText $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
         sendComposedMessages cc (SRDirect cId) [msg, approveCmd]
 
-    -- the link-check reapproval path verifies before it reaches sendToApprove, so it uses sendToApprove directly
     verifyAndSendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     verifyAndSendToApprove g gr gaId = verifyGroupDomain_ g >>= \g' -> sendToApprove g' gr gaId
 
@@ -838,8 +834,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing) >>= \case
               Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}))) ->
                 checkValidOwner dbOwnerMemberId owners $ do
-                  -- re-verified every cycle: the directory re-publishes the name, so it must
-                  -- know the name still resolves to the link in the (just refreshed) profile
+                  -- re-verify every cycle: a name that stopped resolving to the link must lose verified status
                   g'' <- verifyGroupDomain_ g'
                   when groupUpdated $ reapprove pg gr groupRegStatus g''
                   when (groupUpdated || summary /= groupSummary g'' || groupDomainVerified g'' /= groupDomainVerified gInfo) $ listingsUpdated env
