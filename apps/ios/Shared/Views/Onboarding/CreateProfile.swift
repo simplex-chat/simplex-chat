@@ -372,6 +372,8 @@ struct CreateFirstProfile: View {
         do {
             AppChatState.shared.set(.active)
             m.currentUser = try apiCreateActiveUser(profile)
+            // new users don't need the local file encryption indicator (all files are encrypted); existing users keep it on
+            UserDefaults.standard.set(false, forKey: DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION)
             try startChat(onboarding: true)
             onboardingStageDefault.set(.step3_ChooseServerOperators)
             nextStepNavLinkActive = true
