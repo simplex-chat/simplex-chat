@@ -139,11 +139,12 @@ fun MorePrivacyView(chatModel: ChatModel) {
         stringResource(MR.strings.verify_simplex_names),
         chatModel.controller.appPrefs.privacyVerifySimplexNames
       )
-      SettingsPreferenceItem(
-        painterResource(MR.images.ic_verified),
-        stringResource(MR.strings.show_signature),
-        chatModel.controller.appPrefs.privacyShowSignature
-      )
+      // hidden until message signing is user-facing (recipient-only stage)
+//      SettingsPreferenceItem(
+//        painterResource(MR.images.ic_verified),
+//        stringResource(MR.strings.show_signature),
+//        chatModel.controller.appPrefs.privacyShowSignature
+//      )
     }
     SectionDividerSpaced()
 

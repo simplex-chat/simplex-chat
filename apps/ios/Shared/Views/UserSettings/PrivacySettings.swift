@@ -199,9 +199,10 @@ struct PrivacySettings: View {
                 settingsRow("number", color: theme.colors.secondary) {
                     Toggle("Verify SimpleX names", isOn: $verifySimplexNames)
                 }
-                settingsRow("checkmark.seal", color: theme.colors.secondary) {
-                    Toggle("Show signature", isOn: $showSignature)
-                }
+                // hidden until message signing is user-facing (recipient-only stage)
+//                settingsRow("checkmark.seal", color: theme.colors.secondary) {
+//                    Toggle("Show signature", isOn: $showSignature)
+//                }
             } header: {
                 Text("Chats")
                     .foregroundColor(theme.colors.secondary)
