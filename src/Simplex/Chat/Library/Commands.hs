@@ -4346,11 +4346,7 @@ processChatCommand cxt nm = \case
                       let ov = verifyLinkOwner rootKey owners l' sig_
                           glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
                           planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
-                      plan1 <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
-                      -- carry the link's owners on a known group, like resolveKnownGroup does; groupJoinRequestPlan/groupPlan leave them empty
-                      let plan0 = case plan1 of
-                            CPGroupLink (GLPKnown g u o _) -> CPGroupLink (GLPKnown g u o (ListDef glOwners))
-                            _ -> plan1
+                      plan0 <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov glOwners
                       -- a joined channel is found by link but not by name (its domain is not verified locally,
                       -- e.g. an un-upgraded relay dropped the claim); refresh its profile from the fresh link
                       -- data and mark it verified, so the check below passes and future by-name lookups match
@@ -4457,7 +4453,7 @@ processChatCommand cxt nm = \case
           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       case groupLinkId of
         Nothing -> contactRequestPlan user cReq Nothing Nothing
-        Just _ -> groupJoinRequestPlan user cReq Nothing Nothing Nothing
+        Just _ -> groupJoinRequestPlan user cReq Nothing Nothing Nothing []
     contactRequestPlan :: User -> ConnReqContact -> Maybe ContactShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
     contactRequestPlan user (CRContactUri crData) cld ov = do
       let cReqSchemas = contactCReqSchemas crData
@@ -4479,10 +4475,10 @@ processChatCommand cxt nm = \case
               | contactDeleted ct -> plan $ CAPOk cld ov
               | otherwise -> plan $ CAPKnown ct
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
-            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing Nothing Nothing
+            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing Nothing Nothing []
             Just _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection or RcvGroupMsgConnection"
-    groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
-    groupJoinRequestPlan user (CRContactUri crData) linkInfo gld ov = do
+    groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> [GroupLinkOwner] -> CM ConnectionPlan
+    groupJoinRequestPlan user (CRContactUri crData) linkInfo gld ov glOwners = do
       let cReqSchemas = contactCReqSchemas crData
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
           plan p = pure $ CPGroupLink p
@@ -4499,13 +4495,13 @@ processChatCommand cxt nm = \case
               | not (contactReady ct) && contactActive ct -> plan $ GLPConnectingProhibit gInfo_
               | otherwise -> plan $ GLPOk linkInfo gld ov
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
-            (Just gInfo, _) -> groupPlan gInfo linkInfo gld ov
-    groupPlan :: GroupInfo -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
-    groupPlan gInfo@GroupInfo {membership} linkInfo gld ov
-      | memberStatus membership == GSMemRejected = plan $ GLPKnown gInfo False ov (ListDef [])
+            (Just gInfo, _) -> groupPlan gInfo linkInfo gld ov glOwners
+    groupPlan :: GroupInfo -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> [GroupLinkOwner] -> CM ConnectionPlan
+    groupPlan gInfo@GroupInfo {membership} linkInfo gld ov glOwners
+      | memberStatus membership == GSMemRejected = plan $ GLPKnown gInfo False ov (ListDef glOwners)
       | not (memberActive membership) && not (memberRemoved membership) =
           plan $ GLPConnectingProhibit $ Just gInfo
-      | memberActive membership = plan $ GLPKnown gInfo False ov (ListDef [])
+      | memberActive membership = plan $ GLPKnown gInfo False ov (ListDef glOwners)
       | otherwise = plan $ GLPOk linkInfo gld ov
       where
         plan p = pure $ CPGroupLink p

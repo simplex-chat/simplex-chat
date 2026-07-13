@@ -2859,10 +2859,19 @@ getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe 
       _ -> Left $ SEInternalError "no conn req or group ID"
 
 getGroupViaShortLinkToConnect :: DB.Connection -> StoreCxt -> User -> ShortLinkContact -> ExceptT StoreError IO (Maybe (ConnReqContact, GroupInfo))
-getGroupViaShortLinkToConnect db cxt user@User {userId} shortLink =
-  liftIO (maybeFirstRow id $ DB.query db "SELECT group_id, conn_full_link_to_connect FROM groups WHERE user_id = ? AND conn_short_link_to_connect = ?" (userId, shortLink)) >>= \case
+getGroupViaShortLinkToConnect db cxt user@User {userId, userContactId} shortLink =
+  liftIO (maybeFirstRow id $ DB.query db q (userContactId, userId, shortLink, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)) >>= \case
     Just (gId :: Int64, Just cReq) -> Just . (cReq,) <$> getGroupInfo db cxt user gId
     _ -> pure Nothing
+  where
+    q =
+      [sql|
+        SELECT g.group_id, g.conn_full_link_to_connect
+        FROM groups g
+        JOIN group_members mu ON mu.group_id = g.group_id AND mu.contact_id = ?
+        WHERE g.user_id = ? AND g.conn_short_link_to_connect = ?
+          AND mu.member_status NOT IN (?,?,?,?)
+      |]
 
 getGroupInfoByGroupLinkHash :: DB.Connection -> StoreCxt -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)
 getGroupInfoByGroupLinkHash db cxt user@User {userId, userContactId} (groupLinkHash1, groupLinkHash2) = do
