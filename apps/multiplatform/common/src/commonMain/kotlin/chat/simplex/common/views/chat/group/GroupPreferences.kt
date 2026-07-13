@@ -216,8 +216,9 @@ private fun GroupPreferencesLayout(
       SectionDividerSpaced()
       SupportPreference(disabled = true)
     } else {
-      SignMessagesPreference()
-      SectionDividerSpaced()
+      // hidden until message signing is user-facing (recipient-only stage)
+//      SignMessagesPreference()
+//      SectionDividerSpaced()
       TimedMessagesPreference()
       SectionDividerSpaced()
       FullDeletePreference()
