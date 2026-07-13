@@ -2898,4 +2898,22 @@
     <string name="verify_simplex_name_action">Verificar nombre</string>
     <string name="verify_simplex_names">Verificar nombres SimpleX</string>
     <string name="your_simplex_name">Mi nombre SimpleX</string>
+    <string name="save_simplex_name_question">¿Guardar el nombre SimpleX?</string>
+    <string name="get_simplex_name_beta">Obtener nombre SimpleX (BETA)</string>
+    <string name="remove_name">Eliminar nombre</string>
+    <string name="sign_message">Firmar mensaje</string>
+    <string name="sign_message_desc">La firma prueba que has autorizado el mensaje sin posibilidad de repudio.</string>
+    <string name="info_row_signed">Firmado</string>
+    <string name="info_row_signed_verified">Firmado y verificado</string>
+    <string name="sign_messages">Firmar mensaje</string>
+    <string name="require_message_signatures">Se requieren mensajes firmados.</string>
+    <string name="do_not_require_message_signatures">No se requieren mensajes firmados.</string>
+    <string name="message_signatures_are_required">Los mensajes firmados son obligatorios.</string>
+    <string name="message_signatures_are_not_required">Los mensajes firmados no son obligatorios.</string>
+    <string name="show_signature">Mostrar firma</string>
+    <string name="show_encryption">Mostrar cifrado</string>
+    <string name="signature_missing_alert_title">Falta la firma</string>
+    <string name="signature_missing_alert_desc">El canal requiere que el mensaje esté firmado, pero falta la firma.</string>
+    <string name="channel_simplex_name">Nombre SimpleX del canal</string>
+    <string name="register_test_name">Registrar nombre para pruebas</string>
 </resources>
