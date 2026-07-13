@@ -66,6 +66,7 @@ import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportSe
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
+import System.FilePath ((</>))
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -79,7 +80,6 @@ import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
-import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
