@@ -17,4 +17,6 @@ actual fun Modifier.onRightClick(action: () -> Unit): Modifier = this
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = this
 
+actual fun desktopSetHoverCursor(hand: Boolean) {}
+
 actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier = Modifier

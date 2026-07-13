@@ -8,7 +8,12 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draganddrop.*
 import androidx.compose.ui.draganddrop.DragData
 import androidx.compose.ui.input.pointer.*
+import chat.simplex.common.simplexWindowState
+import java.awt.Component
+import java.awt.Container
+import java.awt.Cursor
 import java.awt.Image
+import javax.swing.SwingUtilities
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
 import java.awt.image.BufferedImage
@@ -80,6 +85,30 @@ private class DragDataImageImpl(private val transferable: Transferable) {
 actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpenDetector { action() }
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+
+// This runs on every mouse move over clickable text, so the canvas lookup is cached:
+// steady-state cost is a parent-chain check plus an int comparison, no allocations.
+private var cachedSkiaCanvas: Component? = null
+
+actual fun desktopSetHoverCursor(hand: Boolean) {
+  val window = simplexWindowState.window ?: return
+  val type = if (hand) Cursor.HAND_CURSOR else Cursor.TEXT_CURSOR
+  var canvas = cachedSkiaCanvas
+  if (canvas == null || !canvas.isDisplayable || SwingUtilities.getWindowAncestor(canvas) !== window) {
+    canvas = findSkiaCanvas(window) ?: return
+    cachedSkiaCanvas = canvas
+  }
+  if (canvas.cursor.type != type) canvas.cursor = Cursor.getPredefinedCursor(type)
+}
+
+// Compose writes the pointer icon to its skia canvas component (ComposeSceneMediator.setPointerIcon
+// -> contentComponent.cursor, a SkiaLayer/SkiaSwingLayer). Writing to the same component keeps
+// last-write-wins consistent with the framework's own cursor updates (e.g. reset to default on exit).
+private fun findSkiaCanvas(c: Component): Component? = when {
+  c.javaClass.name.contains("Skia") -> c
+  c is Container -> c.components.firstNotNullOfOrNull { findSkiaCanvas(it) }
+  else -> null
+}
 
 actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier =
   this then Modifier

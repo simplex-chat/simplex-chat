@@ -26,6 +26,15 @@ expect fun Modifier.onRightClick(action: () -> Unit): Modifier
 
 expect fun Modifier.desktopPointerHoverIconHand(): Modifier
 
+/**
+ * Directly sets the mouse cursor (hand or text) on desktop, bypassing Compose's pointerHoverIcon.
+ * pointerHoverIcon is edge-triggered (it displays the icon only on a per-node Enter event, or on an
+ * icon change while the node is marked in-bounds) and those edges can be silently lost when chat
+ * items shift/recompose under the cursor, leaving a stale cursor. Calling this on every hover move
+ * keeps the cursor self-correcting. No-op on Android.
+ */
+expect fun desktopSetHoverCursor(hand: Boolean)
+
 expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
 
 @Composable

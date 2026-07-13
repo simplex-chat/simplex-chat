@@ -394,12 +394,10 @@ fun MarkdownText (
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
-            icon.value =
-              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")) {
-                PointerIcon.Hand
-              } else {
-                PointerIcon.Text
-              }
+            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
+            icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
+            // pointerHoverIcon alone loses updates when items shift/recompose under the cursor, see desktopSetHoverCursor
+            desktopSetHoverCursor(hand)
           },
           shouldConsumeEvent = { offset ->
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
