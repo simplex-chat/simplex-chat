@@ -92,11 +92,14 @@ suspend fun PointerInputScope.detectGesture(
   }
 }
 
-suspend fun PointerInputScope.detectCursorMove(onMove: (Offset) -> Unit = {},) = coroutineScope {
-  forEachGesture {
-    awaitPointerEventScope {
+suspend fun PointerInputScope.detectCursorMove(onMove: (Offset) -> Unit = {},) {
+  // One never-exiting scope: exiting/re-entering awaitPointerEventScope per event (as forEachGesture did)
+  // drops events that arrive between scopes, leaving a stale cursor icon.
+  // Enter matters too: when content shifts under a stationary cursor, the newly hovered item gets Enter, not Move.
+  awaitPointerEventScope {
+    while (true) {
       val event = awaitPointerEvent()
-      if (event.type == PointerEventType.Move) {
+      if (event.type == PointerEventType.Move || event.type == PointerEventType.Enter) {
         onMove(event.changes[0].position)
       }
     }
