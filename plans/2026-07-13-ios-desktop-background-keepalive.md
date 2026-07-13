@@ -1,231 +1,104 @@
-# iOS: keep a remote desktop session alive in background
-
-Upstream PR: [simplex-chat/simplex-chat#7234](https://github.com/simplex-chat/simplex-chat/pull/7234)
+# iOS: keep remote desktop session alive in background
 
 ## Problem
 
 An iOS remote desktop session depends on the mobile chat controller remaining
-active. When the app enters the background, its normal lifecycle suspends the
-controller and closes the shared store so notification and share extensions can
-use it. That also stops an active desktop session, so the user has to keep the
-iOS app open to continue using SimpleX from desktop.
+active. The normal background lifecycle suspends the controller and closes the
+shared store, which also stops the desktop session. Users therefore have to keep
+the iOS app open while controlling it from desktop.
 
-iOS 26 adds `BGContinuedProcessingTask`, which can continue a foreground,
-user-initiated activity after the app is backgrounded. Earlier iOS versions only
-provide the short, system-granted `UIApplication` background-task window.
+iOS 26 provides `BGContinuedProcessingTask` for foreground, user-initiated work
+that should continue after the app is backgrounded. Earlier versions only offer
+the short window granted by `UIApplication.beginBackgroundTask`.
 
-Apple's [continued-processing documentation](https://developer.apple.com/documentation/backgroundtasks/performing-long-running-tasks-on-ios-and-ipados)
-requires foreground, user-initiated submission and permits `.fail` when the work
-is only useful if it can start immediately. The
-[WWDC25 background-tasks session](https://developer.apple.com/videos/play/wwdc2025/227/)
-also confirms that these handlers may be registered dynamically when the user
-expresses intent, and that the system monitors progress and may expire the task.
+## Behavior
 
-## Goals
+- **iOS 26:** submit a continued-processing request after successful desktop
+  verification. The system controls its duration; the app shows no countdown or
+  fixed limit.
+- **iOS 26 rejection:** use the legacy background task when the app backgrounds
+  rather than queueing a request that may start after the session is useful.
+- **Pre-iOS 26:** use only the system-granted legacy background window.
+- **No remote session:** preserve the existing suspension and background-refresh
+  lifecycle.
 
-- Start continued processing only after the user successfully verifies a
-  desktop session in the foreground.
-- On iOS 26, let the system control how long the session may continue; do not
-  invent a countdown or fixed application limit.
-- On pre-iOS 26, and when iOS 26 rejects immediate continued processing, use
-  only the legacy background time granted by the system.
-- End the remote session cleanly when background execution expires, then restore
-  the existing chat suspension and background-refresh lifecycle.
-- Preserve the share extension's database-ownership handshake while a desktop
-  session is connected.
+The "Keep the app open to use it from desktop" footer remains visible when only
+the legacy mechanism is available and is hidden when continued processing was
+accepted.
 
-## Platform behavior
+## Implementation
 
-| State | Keepalive | User-facing behavior |
-|---|---|---|
-| iOS 26, continued-processing submission accepted | `BGContinuedProcessingTask` starts from successful verification and remains active across backgrounding | The system shows the continued activity; the in-app "Keep the app open" footer is hidden |
-| iOS 26, registration or submission rejected | `UIApplication.beginBackgroundTask` starts when the app backgrounds | The session lasts only for the system-granted window; the footer remains visible |
-| iOS 25 and earlier | `UIApplication.beginBackgroundTask` starts when the app backgrounds | The session lasts only for the system-granted window; the footer remains visible |
-| No active remote session | Existing lifecycle is unchanged | The chat suspends and schedules background refresh normally |
+Add a `@MainActor` `RemoteCtrlBGKeepAlive` singleton in `SuspendChat.swift`. It
+owns the continued-processing task, the legacy task identifier, and all
+expiration cleanup.
 
-The iOS 26 request uses the `.fail` submission strategy. A task that cannot run
-immediately must fall back to the legacy path rather than being queued after the
-desktop session is no longer useful. Progress is indeterminate because a remote
-control session has no honest completion percentage or predetermined duration.
+After `verifyRemoteCtrlSession` changes the session to `.connected`, register and
+submit `BGContinuedProcessingTaskRequest` with `.fail`. Registration happens at
+this foreground user action, which is supported for continued-processing tasks.
+The request uses indeterminate progress because a desktop session has no honest
+completion percentage or predetermined duration.
 
-## Design
+On background transition with an active remote session:
 
-### Keepalive owner
+1. Start a legacy task only when continued processing is not active.
+2. Keep the chat controller running instead of calling `suspendChat()`.
+3. Skip `BGManager.schedule()` while the keepalive owns background execution.
 
-Add a `@MainActor` `RemoteCtrlBGKeepAlive` singleton alongside the existing chat
-suspension lifecycle. It owns all system-task state:
+On expiration, stop remote control, restore the local session, finish the system
+task, and then run the normal suspension/background-refresh path if the app is
+still backgrounded. Explicit disconnect and `remoteCtrlStopped` also finish the
+keepalive. Foregrounding ends only the legacy task so the connected session can
+continue.
 
-- one lazily registered iOS 26 continued-processing handler;
-- the active `BGContinuedProcessingTask`, if the system launched it;
-- one legacy `UIBackgroundTaskIdentifier`;
-- whether continued processing was successfully submitted, used to prevent the
-  legacy and continued mechanisms from overlapping.
+Add the continued-processing identifier and `processing` mode to the iOS
+Info.plist, and update the iOS product/spec documentation.
 
-The iOS 26 task identifier is declared under
-`BGTaskSchedulerPermittedIdentifiers`, and the iOS target declares the
-`processing` background mode. Dynamic registration is performed during the
-foreground verification action, as permitted for continued-processing tasks.
-
-### Start and scene lifecycle
-
-Successful `verifyRemoteCtrlSession` first changes the model session to
-`.connected`, then submits the iOS 26 continued-processing request. The
-redundant `remoteCtrlConnected` event does not submit a request because it is not
-an independent foreground user action.
-
-When the app enters the background with an active remote session:
-
-1. Start the legacy task only if continued processing is not in use.
-2. Keep the main chat controller active for the remote session.
-3. Skip the normal `suspendChat()` and `BGManager.schedule()` path while this
-   keepalive owns execution.
-
-When the app becomes active, end any legacy task. A successfully submitted iOS
-26 continued-processing activity remains associated with the desktop session
-until the session or task ends.
-
-### Expiration and teardown
-
-Both system expiration handlers converge on one cleanup path:
-
-1. Ask the core to stop remote control.
-2. Switch back to the local session when the UI still represents a connected
-   remote session, or clear incomplete session state.
-3. Complete/cancel the continued task and end the legacy task idempotently.
-4. If the app is still in the background, suspend chat and schedule the existing
-   background refresh.
-
-Explicit user disconnect and the core's `remoteCtrlStopped` event also finish
-the keepalive so no system task outlives its remote session.
-
-### Share and notification extensions
+### Extension coordination
 
 Do not add a global `activeRemoteCtrl` guard to `suspendChat()`. The share
-extension deliberately sends `.sendingMessage` to make the main app release the
-shared database before the extension writes. Scoping the keepalive exception to
-the app's background scene transition preserves that handshake; the extension
-can suspend the controller temporarily and the existing `.inactive` response
-reactivates it afterward.
-
-While keepalive is active, the main app remains the chat-controller owner and
-processes incoming activity. After expiration, normal suspension closes the
-store so notification/background processing can resume under the existing
-coordination rules.
+extension uses `.sendingMessage` to make the main app release the shared database
+before it writes. Keeping the exception in the scene-background path preserves
+that handshake; the existing `.inactive` response reactivates chat afterward.
 
 ## Threat model
 
-This change adds no pairing method, remote-control command, or new network
-input. It extends the time during which an already verified desktop retains its
-existing authority after the phone is backgrounded or locked.
+The change adds no pairing flow, command, or network input. It extends how long
+an already verified desktop keeps its existing authority while the phone is
+backgrounded or locked. A compromised paired desktop can therefore act for
+longer, but gains no new permissions. Continued processing starts only after
+foreground verification, and user disconnect, remote stop, system cancellation,
+or expiration ends the keepalive.
 
-- A malicious or compromised paired desktop can continue issuing every command
-  already allowed by that remote session during the system-granted background
-  window. It gains no authority beyond the verified session, but the usable
-  window is longer than before.
-- Continued processing begins only from successful foreground verification, so
-  a background event or unsolicited core event cannot create that extended
-  authority by itself.
-- The user can disconnect in the app or cancel the activity through the system
-  UI. Remote-stop events and system expiration also revoke the keepalive and
-  restore local/suspended state.
-- Keeping the main store open longer must not permit concurrent extension
-  access. The share-extension suspension handshake remains authoritative; task
-  expiration restores the notification-extension-compatible suspended state.
+## Risks and required fixes
 
-## Scope and non-goals
+- `beginBackgroundTask` may return `.invalid`. `startLegacyTask()` must report
+  whether time was granted; otherwise the scene path can skip suspension without
+  receiving an expiration callback. Denial should stop/restore the remote session
+  or fall through to normal suspension.
+- Expiration handlers have little cleanup time. Verify on a real device that
+  awaiting remote teardown does not prevent task completion and store suspension.
+- Confirm that the iOS 26 legacy fallback is intentional. It matches the current
+  implementation, while the PR summary mentions legacy behavior only for
+  pre-iOS 26.
+- Continued processing may be rejected or expired at any time and does not
+  guarantee an indefinite desktop session.
 
-- No guarantee of indefinite execution: iOS can reject, expire, throttle, or
-  terminate either background mechanism.
-- No background creation, reconnection, or recovery of a desktop session.
-- No new remote-control protocol or core behavior.
-- No countdown, artificial timeout, or fabricated progress percentage.
-- No broad refactor of the existing remote-session lifecycle. Consolidating the
-  repeated disconnect-and-restore logic can be a separate change if another
-  lifecycle path needs it.
+## Scope
 
-## Risks and trade-offs
-
-- Continued-processing tasks are designed for user-initiated work that makes
-  progress. A live remote session is intentionally indeterminate, so a real
-  iOS 26 device must confirm that the system grants useful runtime and presents
-  the activity appropriately.
-- Expiration offers little cleanup time. Remote teardown currently completes
-  before the system task is ended so the database and UI state are not left
-  inconsistent, but a slow teardown increases termination risk.
-- The legacy fallback is inherently short and unpredictable. Its purpose is a
-  graceful limited window, not parity with iOS 26.
-- Keepalive transitions are invoked from verification, scene lifecycle,
-  explicit disconnect, and remote-stop handling. Each new remote-session end
-  path must also finish the keepalive until lifecycle ownership is centralized.
-
-## Required before merge
-
-- Handle `UIApplication.beginBackgroundTask` returning `.invalid`. The current
-  scene path skips normal suspension whenever a remote session is active, even
-  if iOS grants no legacy background time and therefore supplies no expiration
-  callback. `startLegacyTask()` should report whether it acquired a valid task;
-  denial must immediately stop/restore the remote session or fall through to the
-  normal suspension and background-refresh path.
-- Confirm with the maintainer that using the legacy mechanism on iOS 26 after a
-  continued-processing rejection is intentional. It is a sensible immediate
-  fallback and is documented here, but the PR body currently mentions legacy
-  execution only for pre-iOS 26.
-- Smoke-test expiration on a real device. The handler awaits remote teardown
-  before ending the system task; if that work can exceed the expiration budget,
-  cleanup needs a bounded or synchronous cancellation path.
-
-Rollback is limited to removing `RemoteCtrlBGKeepAlive` and its call sites,
-removing the new background identifier/mode, and restoring the prior scene-phase
-suspension and footer behavior.
+- No background creation or reconnection of a desktop session.
+- No remote-control protocol or core changes.
+- No broad lifecycle refactor; repeated disconnect cleanup can be consolidated
+  separately if another path needs it.
 
 ## Verification
 
-### iOS 26 real device
-
-1. Verify a desktop session in the foreground and confirm the system continued
-   activity appears with the localized title.
-2. Background and lock the phone; confirm desktop commands continue without an
-   app-defined timeout or countdown.
-3. Return to the app; confirm the session remains connected and no legacy task
-   is left active.
-4. Disconnect from the phone, disconnect from desktop, and exercise a network
-   stop; in each case confirm the system activity ends exactly once and the app
-   returns to local state.
-5. Force or wait for expiration; confirm remote control stops, the app suspends,
-   and background refresh/notification processing resumes.
-6. Exercise registration/submission rejection; confirm the footer remains and
-   backgrounding uses the legacy task instead of queuing the continued request.
-
-### iOS 25 or earlier
-
-1. Connect and background the app; confirm the desktop remains usable only for
-   the system-granted legacy window.
-2. Foreground before expiration; confirm the legacy task ends without ending the
-   remote session.
-3. Allow expiration; confirm remote control is stopped and normal suspension is
-   restored.
-
-### Extension and regression coverage
-
-- While connected to desktop and backgrounded, send text and an attachment from
-  the share extension; confirm it does not hit the two-second database wait and
-  the remote session recovers after the suspension handshake.
-- After keepalive expiration, receive a notification and confirm the notification
-  service extension can open the shared store.
-- Confirm calls still use the existing CallKit suspension exception when no
-  remote session is active.
-- Confirm ordinary background/foreground transitions are unchanged with no
-  remote session.
-- Build the iOS app against an iOS 26 SDK and an iOS 15+ deployment target.
-
-## Implementation surface
-
-- `apps/ios/Shared/Model/SuspendChat.swift` — keepalive owner and expiration
-  cleanup.
-- `apps/ios/Shared/SimpleXApp.swift` — scene-phase integration.
-- `apps/ios/Shared/Views/RemoteAccess/ConnectDesktopView.swift` — foreground
-  submission, explicit teardown, and conditional footer.
-- `apps/ios/Shared/Model/SimpleXAPI.swift` — remote-stop teardown.
-- `apps/ios/SimpleX--iOS--Info.plist` — permitted identifier and processing mode.
-- `apps/ios/product/` and `apps/ios/spec/` — product, architecture, and impact
-  documentation.
+- On an iOS 26 device, verify a session, background/lock the phone, and confirm
+  desktop commands continue while the system activity is active.
+- Exercise submission rejection and confirm the legacy fallback and footer.
+- On pre-iOS 26, confirm the session lasts only for the granted legacy window.
+- Confirm foregrounding, user disconnect, remote stop, and expiration each end
+  the appropriate task exactly once and restore local state.
+- Send text and an attachment from the share extension while connected; confirm
+  database coordination and remote-session recovery.
+- After expiration, confirm notification processing and ordinary background
+  suspension still work.
