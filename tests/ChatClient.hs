@@ -283,13 +283,13 @@ createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {cha
   insertUser agentStore
   ts <- getCurrentTime
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecordAt db' (AgentUserId 1) chatRelay clientService profile True ts
-  startTestChat_ ps db cfg opts user
+  startTestChat_ ps db cfg opts dbPrefix user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
   Right db@ChatDatabase {chatStore} <- createDatabase ps coreOptions dbPrefix
   Just user <- find activeUser <$> withTransaction chatStore getUsers
-  startTestChat_ ps db cfg opts user
+  startTestChat_ ps db cfg opts dbPrefix user
 
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
@@ -306,12 +306,12 @@ insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) VALUES (1)")
 #endif
 
-startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
-startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} user = do
+startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> String -> User -> IO TestCC
+startTestChat_ TestParams {tmpPath, printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} dbPrefix user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   Right cc <- newChatController db (Just user) cfg opts False
-  void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
+  void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
