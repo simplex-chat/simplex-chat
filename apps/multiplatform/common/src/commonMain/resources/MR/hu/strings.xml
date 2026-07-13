@@ -49,7 +49,7 @@
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Az összes partnerével továbbra is kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
-    <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
+    <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (béta).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új, véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
     <string name="app_version_code">Alkalmazás összeállítási száma: %s</string>
@@ -233,7 +233,7 @@
     <string name="receipts_section_contacts">Partnerek</string>
     <string name="connection_error">Kapcsolódási hiba</string>
     <string name="alert_title_contact_connection_pending">A partnere még nem kapcsolódott!</string>
-    <string name="v5_3_discover_join_groups_descr">- kapcsolódás a könyvtárszolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
+    <string name="v5_3_discover_join_groups_descr">- kapcsolódás a könyvtárszolgáltatáshoz (béta)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
     <string name="contribute">Közreműködés</string>
     <string name="group_member_status_intro_invitation">kapcsolódás (bemutatkozó meghívó)</string>
     <string name="create_simplex_address">SimpleX-cím létrehozása</string>
@@ -1607,7 +1607,7 @@
     <string name="migrate_to_device_download_failed">Sikertelen letöltés</string>
     <string name="migrate_to_device_downloading_archive">Archívum letöltése</string>
     <string name="migrate_to_device_downloading_details">Letöltési hivatkozás részletei</string>
-    <string name="v5_6_quantum_resistant_encryption_descr">Engedélyezés a közvetlen csevegésekben (BÉTA)!</string>
+    <string name="v5_6_quantum_resistant_encryption_descr">Engedélyezés a közvetlen csevegésekben (béta)!</string>
     <string name="migrate_to_device_enter_passphrase">Adja meg a jelmondatot</string>
     <string name="migrate_from_device_error_saving_settings">Hiba történt a beállítások mentésekor</string>
     <string name="migrate_to_device_error_downloading_archive">Hiba történt az archívum letöltésekor</string>
@@ -2879,4 +2879,9 @@
     <string name="show_encryption">Titkosítás megjelenítése</string>
     <string name="signature_missing_alert_title">Hiányzik az aláírás</string>
     <string name="signature_missing_alert_desc">A csatorna megköveteli az üzenet aláírását, de az hiányzik.</string>
+    <string name="channel_simplex_name">Csatorna SimpleX-neve</string>
+    <string name="get_simplex_name_beta">SimpleX-név beszerzése (béta)</string>
+    <string name="register_test_name">Egy név regisztrálása tesztelési céllal</string>
+    <string name="remove_name">Név eltávolítása</string>
+    <string name="save_simplex_name_question">Menti a Simplex-nevet?</string>
 </resources>
