@@ -162,7 +162,12 @@ instance TextEncoding MsgVerified where
     "unsigned" -> Just MVUnsigned
     s -> MVSigned <$> textDecode s
 
-instance ToField MsgVerified where toField = toField . textEncode
+-- MVUnsigned is stored as NULL (not "unsigned") so downgraded clients, which read this column as
+-- MsgSigStatus, decode it as Nothing instead of failing on unknown text. Read maps NULL to MVUnsigned.
+instance ToField MsgVerified where
+  toField = \case
+    MVUnsigned -> toField (Nothing :: Maybe Text)
+    v -> toField (textEncode v)
 
 instance FromField MsgVerified where fromField = fromTextField_ textDecode
 
