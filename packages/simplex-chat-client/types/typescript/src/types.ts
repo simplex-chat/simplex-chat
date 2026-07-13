@@ -842,7 +842,7 @@ export interface CIMeta {
   editable: boolean
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
-  msgVerified: MsgVerified
+  msgVerified?: MsgVerified
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
 }
@@ -3211,10 +3211,10 @@ export enum MsgSigStatus {
   SignedNoKey = "signedNoKey",
 }
 
-export type MsgVerified = MsgVerified.Signed | MsgVerified.SigMissing | MsgVerified.Unsigned
+export type MsgVerified = MsgVerified.Signed | MsgVerified.SigMissing
 
 export namespace MsgVerified {
-  export type Tag = "signed" | "sigMissing" | "unsigned"
+  export type Tag = "signed" | "sigMissing"
 
   interface Interface {
     type: Tag
@@ -3227,10 +3227,6 @@ export namespace MsgVerified {
 
   export interface SigMissing extends Interface {
     type: "sigMissing"
-  }
-
-  export interface Unsigned extends Interface {
-    type: "unsigned"
   }
 }
 
