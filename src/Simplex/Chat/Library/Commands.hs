@@ -751,7 +751,7 @@ processChatCommand cxt nm = \case
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
                           event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
-                          reuseSign = case msgVerified of MVSigned _ -> True; _ -> False
+                          reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
                       SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients reuseSign event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
@@ -848,7 +848,7 @@ processChatCommand cxt nm = \case
           delEvent msgId =
             let evt = XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) onlyHistory
              in (groupMsgSigning (onlyHistory || itemSigned) gInfo evt, evt)
-          itemSigned = case msgVerified of MVSigned _ -> True; _ -> False
+          itemSigned = case msgVerified of Just (MVSigned _) -> True; _ -> False
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     -- TODO [knocking] check scope is Nothing for all items? (prohibit moderation in support chats?)

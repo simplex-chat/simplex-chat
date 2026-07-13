@@ -2433,7 +2433,6 @@ enum class MsgSigStatus {
 sealed class MsgVerified {
   @Serializable @SerialName("signed") data class Signed(val sigStatus: MsgSigStatus): MsgVerified()
   @Serializable @SerialName("sigMissing") object SigMissing: MsgVerified()
-  @Serializable @SerialName("unsigned") object Unsigned: MsgVerified()
 
   val verified: Boolean get() = this is Signed && sigStatus == MsgSigStatus.Verified
 
@@ -3577,7 +3576,7 @@ data class CIMeta (
   val deletable: Boolean,
   val editable: Boolean,
   val showGroupAsSender: Boolean,
-  val msgVerified: MsgVerified = MsgVerified.Unsigned
+  val msgVerified: MsgVerified? = null
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 

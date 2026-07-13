@@ -874,7 +874,7 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
-- msgVerified: [MsgVerified](#msgverified)
+- msgVerified: [MsgVerified](#msgverified)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -2968,9 +2968,6 @@ Signed:
 
 SigMissing:
 - type: "sigMissing"
-
-Unsigned:
-- type: "unsigned"
 
 
 ---

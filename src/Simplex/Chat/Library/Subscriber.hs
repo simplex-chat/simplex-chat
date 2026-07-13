@@ -2300,9 +2300,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
             -- a verified item requires a verified edit (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
-            requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> MsgVerified -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+            requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgVerified -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
             requireVerifiedEdit cd itemVerified action
-              | itemVerified == MVSigned MSSVerified =
+              | itemVerified == Just (MVSigned MSSVerified) =
                   case msgSigned of
                     Just MSSVerified -> action
                     Just MSSSignedNoKey -> logWarn "x.msg.update: unverified update of a signed item (no key to verify), dropped" $> Nothing
@@ -2413,7 +2413,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         -- a verified item requires a verified delete (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
         requireVerifiedDelete :: CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
         requireVerifiedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgVerified = itemVerified}}) action
-          | itemVerified == MVSigned MSSVerified =
+          | itemVerified == Just (MVSigned MSSVerified) =
               case msgSigned of
                 Just MSSVerified -> action
                 Just MSSSignedNoKey -> logWarn "x.msg.del: unverified delete of a signed item (no key to verify), dropped" $> Nothing
