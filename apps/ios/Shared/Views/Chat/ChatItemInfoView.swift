@@ -162,7 +162,7 @@ struct ChatItemInfoView: View {
             if let deleteAt = meta.itemTimed?.deleteAt {
                 infoRow("Disappears at", localTimestamp(deleteAt))
             }
-            if meta.msgVerified.verified {
+            if meta.msgVerified?.verified == true {
                 let signedText: LocalizedStringKey = ci.chatDir.sent ? "Signed" : "Signed & verified"
                 HStack {
                     Label {
@@ -528,7 +528,7 @@ struct ChatItemInfoView: View {
         if let deleteAt = meta.itemTimed?.deleteAt {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
         }
-        if meta.msgVerified.verified {
+        if meta.msgVerified?.verified == true {
             shareText += [ci.chatDir.sent
                 ? NSLocalizedString("Signed", comment: "copied message info")
                 : NSLocalizedString("Signed & verified", comment: "copied message info")]

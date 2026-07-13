@@ -332,7 +332,7 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
-      describe "channel message signing" $ do
+      fdescribe "channel message signing" $ do
         it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
         it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
         it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign

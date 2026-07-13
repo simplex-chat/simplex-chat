@@ -149,35 +149,24 @@ instance FromField MsgSigStatus where fromField = fromTextField_ textDecode
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MSS") ''MsgSigStatus)
 
-data MsgVerified = MVSigned {sigStatus :: MsgSigStatus} | MVSigMissing | MVUnsigned
+data MsgVerified = MVSigned {sigStatus :: MsgSigStatus} | MVSigMissing
   deriving (Eq, Show)
 
 instance TextEncoding MsgVerified where
   textEncode = \case
     MVSigned s -> textEncode s
     MVSigMissing -> "sig_missing"
-    MVUnsigned -> "unsigned"
   textDecode = \case
     "sig_missing" -> Just MVSigMissing
-    "unsigned" -> Just MVUnsigned
     s -> MVSigned <$> textDecode s
 
--- MVUnsigned is stored as NULL (not "unsigned") so downgraded clients, which read this column as
--- MsgSigStatus, decode it as Nothing instead of failing on unknown text. Read maps NULL to MVUnsigned.
-instance ToField MsgVerified where
-  toField = \case
-    MVUnsigned -> toField (Nothing :: Maybe Text)
-    v -> toField (textEncode v)
+instance ToField MsgVerified where toField = toField . textEncode
 
 instance FromField MsgVerified where fromField = fromTextField_ textDecode
 
-$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "MV") ''MsgVerified)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "MV") ''MsgVerified)
 
-instance FromJSON MsgVerified where
-  parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "MV") ''MsgVerified)
-  omittedField = Just MVUnsigned
-
-toMsgVerified :: Bool -> Maybe MsgSigStatus -> MsgVerified
+toMsgVerified :: Bool -> Maybe MsgSigStatus -> Maybe MsgVerified
 toMsgVerified signRequired = \case
-  Just s -> MVSigned s
-  Nothing -> if signRequired then MVSigMissing else MVUnsigned
+  Just s -> Just (MVSigned s)
+  Nothing -> if signRequired then Just MVSigMissing else Nothing

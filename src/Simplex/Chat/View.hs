@@ -395,11 +395,11 @@ sigStatusStr = \case
   Just MSSSignedNoKey -> " (signed, no key to verify)"
   Nothing -> ""
 
-msgVerifiedStr :: IsString a => MsgVerified -> a
+msgVerifiedStr :: IsString a => Maybe MsgVerified -> a
 msgVerifiedStr = \case
-  MVSigned s -> sigStatusStr (Just s)
-  MVSigMissing -> " (signature missing)"
-  MVUnsigned -> ""
+  Just (MVSigned s) -> sigStatusStr (Just s)
+  Just MVSigMissing -> " (signature missing)"
+  Nothing -> ""
 
 signedStr :: IsString a => Bool -> a
 signedStr signed = if signed then " (signed)" else ""

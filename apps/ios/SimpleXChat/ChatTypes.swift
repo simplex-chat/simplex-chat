@@ -2796,7 +2796,6 @@ public enum MsgSigStatus: String, Decodable, Equatable, Hashable {
 public enum MsgVerified: Decodable, Equatable, Hashable {
     case signed(sigStatus: MsgSigStatus)
     case sigMissing
-    case unsigned
 
     public var verified: Bool {
         if case let .signed(sigStatus) = self { return sigStatus == .verified }
@@ -3791,7 +3790,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 deletable: false,
                 editable: false,
                 showGroupAsSender: false,
-                msgVerified: .unsigned
+                msgVerified: nil
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
             quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
@@ -3816,7 +3815,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 deletable: false,
                 editable: false,
                 showGroupAsSender: false,
-                msgVerified: .unsigned
+                msgVerified: nil
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
@@ -3841,7 +3840,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 deletable: false,
                 editable: false,
                 showGroupAsSender: false,
-                msgVerified: .unsigned
+                msgVerified: nil
             ),
             content: .sndMsgContent(msgContent: .text("")),
             quotedItem: nil,
@@ -3920,7 +3919,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
     public var showGroupAsSender: Bool
-    public var msgVerified: MsgVerified
+    public var msgVerified: MsgVerified?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
@@ -3947,7 +3946,7 @@ public struct CIMeta: Decodable, Hashable {
             deletable: deletable,
             editable: editable,
             showGroupAsSender: false,
-            msgVerified: .unsigned
+            msgVerified: nil
         )
     }
 
@@ -3966,7 +3965,7 @@ public struct CIMeta: Decodable, Hashable {
             deletable: false,
             editable: false,
             showGroupAsSender: false,
-            msgVerified: .unsigned
+            msgVerified: nil
         )
     }
 }

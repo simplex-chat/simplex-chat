@@ -581,14 +581,14 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgS
           CDChannelRcv GroupInfo {membership = GroupMember {memberId = userMemberId}} _ ->
             (Just $ Just userMemberId == memberId, memberId)
 
-createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Bool -> MsgVerified -> UTCTime -> UTCTime -> IO ChatItemId
+createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection showGroupAsSender ciContent sharedMsgId_ hasLink msgVerified itemTs =
   createNewChatItem_ db user chatDirection showGroupAsSender Nothing sharedMsgId_ ciContent quoteRow Nothing Nothing False False hasLink itemTs Nothing msgVerified
   where
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
-createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> MsgVerified -> UTCTime -> IO ChatItemId
+createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> Maybe MsgVerified -> UTCTime -> IO ChatItemId
 createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember msgVerified createdAt = do
   DB.execute
     db
@@ -610,7 +610,7 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, MsgVerified) :. (Maybe Int, Maybe UTCTime)
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgVerified) :. (Maybe Int, Maybe UTCTime)
     itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, mcTag_, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> justTrue live, BI userMention, BI hasLink, BI itemViewed, BI showGroupAsSender, msgVerified) :. ciTimedRow timed
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
     idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId, Maybe NoteFolderId)
@@ -1116,7 +1116,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
             _ -> Just (CIDeleted @'CTLocal deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False (fromMaybe MVUnsigned msgSigned) createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2323,7 +2323,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
             _ -> Just (CIDeleted @'CTDirect deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False (fromMaybe MVUnsigned msgSigned) createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2412,7 +2412,7 @@ toGroupChatItem
               _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
             itemEdited' = maybe False unBI itemEdited
             itemForwarded = toCIForwardedFrom forwardedFromRow
-         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs forwardedByMember showGroupAsSender (fromMaybe MVUnsigned msgSigned) createdAt updatedAt
+         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt
       ciTimed :: Maybe CITimed
       ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 

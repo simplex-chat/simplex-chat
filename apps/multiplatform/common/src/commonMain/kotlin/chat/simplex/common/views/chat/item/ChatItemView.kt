@@ -127,7 +127,7 @@ fun ChatItemView(
     modifier = (if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier),
     contentAlignment = alignment,
   ) {
-    val info = cItem.meta.itemStatus.statusInto ?: cItem.meta.msgVerified.sigMissingInfo
+    val info = cItem.meta.itemStatus.statusInto ?: cItem.meta.msgVerified?.sigMissingInfo
     val onClick = if (info != null) {
       {
         AlertManager.shared.showAlertMsg(
