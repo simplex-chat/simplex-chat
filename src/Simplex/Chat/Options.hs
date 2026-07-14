@@ -473,7 +473,7 @@ chatOptsP appDir defaultDbName = do
       strOption
         ( long "user-image-file"
             <> metavar "FILE"
-            <> help "Set user profile image from .png/.jpg file (requires --user-display-name); does not notify existing contacts"
+            <> help "Set user profile image from .png/.jpg/.jpeg file when the profile is created (requires --user-display-name); ignored if the user already exists (use \"/set profile image file <path>\" to change it)"
         )
   pure
     ChatOpts

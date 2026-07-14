@@ -20,7 +20,6 @@ import Control.Monad.Reader
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
-import Data.Char (toLower)
 import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -70,21 +69,20 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
           exitFailure
         Right cc -> do
           forM_ (preStartHook chatHooks) ($ cc)
-          img_ <- mapM loadImageFile userImageFile
           u <- case u_ of
-            Nothing -> noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName img_
+            Nothing -> do
+              noMaintenance
+              img_ <- mapM loadImageFile userImageFile
+              createActiveUser cc coreOptions createBot userDisplayName img_
             Just u@User {localDisplayName} -> do
               forM_ userDisplayName $ \name ->
                 when (localDisplayName /= name) $ do
                   putStrLn $ "Active user display name " <> show localDisplayName <> " does not match --user-display-name " <> show name
                   exitFailure
-              case img_ of
-                Nothing -> pure u
-                Just img ->
-                  execChatCommand' (UpdateProfileImage (Just img)) 0 `runReaderT` cc >>= \case
-                    Right (CRUserProfileUpdated u' _ _ _) -> pure u'
-                    Right (CRUserProfileNoChange u') -> pure u'
-                    r -> printResponseEvent (Nothing, Nothing) (config cc) r >> exitFailure
+              -- --user-image-file only applies when the profile is created; ignore it for an existing user
+              forM_ userImageFile $ \_ ->
+                putStrLn "Note: --user-image-file is ignored for an existing user (it only sets the image on profile creation); use \"/set profile image file <path>\" to change it"
+              pure u
           unless testView $ putStrLn $ "Current user: " <> userStr u
           runSimplexChat cfg opts u cc chat
     noMaintenance = when maintenance $ do
@@ -216,15 +214,11 @@ onOffPrompt prompt def =
       _ -> putStrLn "Invalid input, please enter 'y' or 'n'" >> onOffPrompt prompt def
 
 loadImageFile :: FilePath -> IO ImageData
-loadImageFile path = case map toLower (takeExtension path) of
-  ".png" -> readAs "image/png"
-  ".jpg" -> readAs "image/jpg"
-  ".jpeg" -> readAs "image/jpg"
-  ext -> putStrLn ("--user-image-file: unsupported image extension " <> show ext <> " (only .png, .jpg, .jpeg)") >> exitFailure
-  where
-    readAs mime = do
-      bs <- BS.readFile path
-      pure $ ImageData $ "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
+loadImageFile path = case profileImageMime path of
+  Just mime -> do
+    bs <- BS.readFile path
+    pure $ ImageData $ "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
+  Nothing -> putStrLn ("--user-image-file: unsupported image extension " <> show (takeExtension path) <> " (only .png, .jpg, .jpeg)") >> exitFailure
 
 userStr :: User -> String
 userStr User {localDisplayName, profile = LocalProfile {fullName}} =

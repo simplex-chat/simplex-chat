@@ -182,6 +182,24 @@ checkGroupProfileSize gProfile = do
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 
+-- MIME type for a supported profile image file, based on its extension (case-insensitive)
+profileImageMime :: FilePath -> Maybe Text
+profileImageMime path = case map toLower (takeExtension path) of
+  ".png" -> Just "image/png"
+  ".jpg" -> Just "image/jpg"
+  ".jpeg" -> Just "image/jpg"
+  _ -> Nothing
+
+-- read a .png/.jpg/.jpeg file and encode it as a data: URL ImageData
+readProfileImageFile :: FilePath -> CM ImageData
+readProfileImageFile path = case profileImageMime path of
+  Nothing -> throwCmdError $ "unsupported image extension in " <> path <> " (only .png, .jpg, .jpeg)"
+  Just mime -> do
+    exists <- doesFileExist path
+    unless exists $ throwCmdError $ "image file not found: " <> path
+    bs <- liftIO $ B.readFile path
+    pure $ ImageData $ "data:" <> mime <> ";base64," <> safeDecodeUtf8 (B64.encode bs)
+
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
 
@@ -3468,6 +3486,10 @@ processChatCommand cxt nm = \case
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
+  UpdateProfileImageFromFile path -> withUser $ \user@User {profile} -> do
+    img <- readProfileImageFile path
+    let p = (fromLocalProfile profile :: Profile) {image = Just img}
+    updateProfile user p
   ShowProfileImage -> withUser $ \user@User {profile} -> pure $ CRUserProfileImage user $ fromLocalProfile profile
   SetUserFeature (ACF f) allowed -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
@@ -5627,6 +5649,7 @@ chatCommandP =
       ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
       ("/welcome" <|> "/w") $> Welcome,
+      "/set profile image file " *> (UpdateProfileImageFromFile <$> filePath),
       "/set profile image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
       "/delete profile image" $> UpdateProfileImage Nothing,
       "/show profile image" $> ShowProfileImage,

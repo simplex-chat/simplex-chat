@@ -48,6 +48,7 @@ chatProfileTests = do
     it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
     it "reject profile image that is too large" testSetProfileImageTooLarge
+    it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
     it "present supporter badge to contacts" testUserBadgeBroadcast
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
@@ -442,6 +443,29 @@ testSetProfileImageTooLarge =
             unless (take (length errPrefix) l == errPrefix) expectError
       expectError
       (bob </)
+
+testSetProfileImageFromFile :: HasCallStack => TestParams -> IO ()
+testSetProfileImageFromFile ps = testChat aliceProfile test ps
+  where
+    tmp = tmpPath ps
+    pngPath = tmp <> "/avatar.png"
+    gifPath = tmp <> "/avatar.gif"
+    missingPath = tmp <> "/missing.png"
+    test alice = do
+      B.writeFile pngPath "fake png bytes" -- content is not validated, only the extension
+      -- set profile image from a .png file
+      alice ##> ("/set profile image file " <> pngPath)
+      alice <## "profile image updated"
+      alice ##> "/show profile image"
+      alice <## "Profile image:"
+      alice <##. "data:image/png;base64,"
+      -- unsupported extension is rejected
+      B.writeFile gifPath "GIF89a"
+      alice ##> ("/set profile image file " <> gifPath)
+      alice <##. "bad chat command: unsupported image extension"
+      -- missing file is rejected
+      alice ##> ("/set profile image file " <> missingPath)
+      alice <##. "bad chat command: image file not found"
 
 testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =
