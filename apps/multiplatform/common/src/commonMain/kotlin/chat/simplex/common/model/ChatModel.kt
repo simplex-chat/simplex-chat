@@ -1522,6 +1522,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.fullName
     override val shortDescr get() = groupInfo.groupProfile.shortDescr
+    override val profileDescription get() = groupInfo.profileDescription
     override val image get() = groupInfo.image
     override val localAlias get() = groupInfo.localAlias
 
@@ -2236,6 +2237,7 @@ data class GroupInfo (
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
   override val shortDescr get() = groupProfile.shortDescr
+  override val profileDescription get() = if (businessChat != null) groupProfile.description else null
   override val image get() = groupProfile.image
 
   val isOwner: Boolean

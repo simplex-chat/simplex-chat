@@ -1117,8 +1117,8 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv invId reqChatVRange init
   agentAcceptContactAsync cmdId acId False invId msg PQSupportOff chatV subMode
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
-businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
-  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences =
+  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
 
 introduceToModerators :: StoreCxt -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToModerators cxt user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
