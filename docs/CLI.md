@@ -1,9 +1,9 @@
 ---
 title: Terminal CLI
-revision: 31.01.2023
+revision: 29.06.2026
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
+| Updated 29.06.2026 | Languages: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
 
 # SimpleX Chat terminal (console) app for Linux/MacOS/Windows
 
@@ -19,12 +19,13 @@ revision: 31.01.2023
     - [Using Haskell in any OS](#in-any-os)
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
-  - [Access messaging servers via Tor](#access-messaging-servers-via-tor-beta)
+  - [Access messaging servers via Tor](#access-messaging-servers-via-tor)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
   - [User contact addresses](#user-contact-addresses)
   - [Access chat history](#access-chat-history)
+  - [Running as a WebSocket server](#running-as-a-websocket-server)
 
 ## Terminal chat features
 
@@ -37,10 +38,12 @@ revision: 31.01.2023
 - Demo SMP servers available and pre-configured in the app - or you can [deploy your own server](https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent).
 - No global identity or any names visible to the server(s), ensuring full privacy of your contacts and conversations.
 - Two layers of E2E encryption (double-ratchet for duplex connections, using X3DH key agreement with ephemeral Curve448 keys, and NaCl crypto_box for SMP queues, using Curve25519 keys) and out-of-band passing of recipient keys (see [How to use SimpleX chat](#how-to-use-simplex-chat)).
+- Post-quantum resistant key exchange in the double ratchet protocol (since v5.6).
 - Message integrity validation (via including the digests of the previous messages).
 - Authentication of each command/message by SMP servers with automatically generated Ed448 keys.
 - TLS 1.3 transport encryption.
 - Additional encryption of messages from SMP server to recipient to reduce traffic correlation.
+- Private message routing to conceal your IP address from destination servers (enabled by default since v6.0).
 
 Public keys involved in key exchange are not used as identity, they are randomly generated for each contact.
 
@@ -78,6 +81,8 @@ mv <binary> ~/.local/bin/simplex-chat
 On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com/en-us/HT202491).
 
 #### Windows
+
+Download the binary from the [latest stable release](https://github.com/simplex-chat/simplex-chat/releases) and move it to a directory on your `PATH`:
 
 ```sh
 move <binary> %APPDATA%/local/bin/simplex-chat.exe
@@ -117,7 +122,7 @@ git clone git@github.com:simplex-chat/simplex-chat.git
 cd simplex-chat
 git checkout stable
 # or to build a specific version:
-# git checkout v5.3.0-beta.8
+# git checkout v6.5.1
 ```
 
 `master` is a development branch, it may contain unstable code.
@@ -133,12 +138,12 @@ cp scripts/cabal.project.local.linux cabal.project.local
 
 On Mac:
 
-```
+```shell
 brew install openssl@3.0
 cp scripts/cabal.project.local.mac cabal.project.local
 ```
 
-You may need to amend cabal.project.local to point to the actual openssl location.
+You may need to amend `cabal.project.local` to point to the actual openssl location.
 
 4. Build the app:
 
@@ -153,50 +158,48 @@ cabal install simplex-chat
 
 To start the chat client, run `simplex-chat` from the terminal.
 
-By default, app data directory is created in the home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and two SQLite database files `simplex_v1_chat.db` and `simplex_v1_agent.db` are initialized in it.
+By default, the app data directory is created in your home directory (`~/.simplex`, or `%APPDATA%/simplex` on Windows), and two SQLite database files `simplex_v1_chat.db` and `simplex_v1_agent.db` are initialized in it.
 
-To specify a different file path prefix for the database files use `-d` command line option:
+To specify a different file path prefix for the database files use the `-d` command line option:
 
 ```shell
 $ simplex-chat -d alice
 ```
 
-Running above, for example, would create `alice_v1_chat.db` and `alice_v1_agent.db` database files in current directory.
+Running the above, for example, would create `alice_v1_chat.db` and `alice_v1_agent.db` database files in the current directory.
 
-Three default SMP servers are hosted on Linode - they are [pre-configured in the app](https://github.com/simplex-chat/simplex-chat/blob/stable/src/Simplex/Chat/Options.hs#L42).
-
-If you deployed your own SMP server(s) you can configure client via `-s` option:
+Default SMP servers are pre-configured in the app. If you deployed your own SMP server(s) you can configure the client via the `-s` option:
 
 ```shell
 $ simplex-chat -s smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@smp.example.com
 ```
 
-Base64url encoded string preceding the server address is the server's offline certificate fingerprint which is validated by client during TLS handshake.
+The Base64url encoded string preceding the server address is the server's offline certificate fingerprint, which is validated by the client during the TLS handshake.
 
-You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
+You can still talk to people using the default or any other server — it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
 Run `simplex-chat -h` to see all available options.
 
 ### Access messaging servers via Tor
 
-Install Tor and run it as SOCKS5 proxy on port 9050, e.g. on Mac you can:
+Install Tor and run it as a SOCKS5 proxy on port 9050. On Mac you can do this with Homebrew:
 
-```
+```shell
 brew install tor
 brew services start tor
 ```
 
-Use `-x` option to access servers via Tor:
+Use the `-x` option to access servers via Tor:
 
-```
+```shell
 simplex-chat -x
 ```
 
-You can also use option `--socks-proxy=ipv4:port` or `--socks-proxy=:port` to configure host and port of your SOCKS5 proxy, e.g. if you are running it on some other host or port.
+You can also use option `--socks-proxy=ipv4:port` or `--socks-proxy=:port` to configure the host and port of your SOCKS5 proxy, e.g. if you are running it on a different host or port.
 
 ### How to use SimpleX chat
 
-Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" to create a local chat profile. Your display name is an alias for your contacts to refer to you by - it is not unique and does not serve as a global identity. If some of your contacts chose the same display name, the chat client adds a numeric suffix to their local display name.
+Once you have started the chat, you will be prompted to specify your "display name" and an optional "full name" to create a local chat profile. Your display name is an alias for your contacts to refer to you by — it is not unique and does not serve as a global identity. If some of your contacts chose the same display name, the chat client adds a numeric suffix to their local display name.
 
 The diagram below shows how to connect and message a contact:
 
@@ -208,11 +211,11 @@ Once you've set up your local profile, enter `/c` (for `/connect`) to create a n
 
 You are able to create multiple invitations by entering `/connect` multiple times and sending these invitations to the corresponding contacts you'd like to connect with.
 
-The invitation can only be used once and even if this is intercepted, the attacker would not be able to use it to send you the messages via this queue once your contact confirms that the connection is established. See agent protocol for explanation of [invitation format](https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md#connection-request).
+The invitation can only be used once — even if it is intercepted, the attacker would not be able to use it to send you messages via this queue once your contact confirms the connection is established. See the agent protocol for an explanation of the [invitation format](https://github.com/simplex-chat/simplexmq/blob/master/protocol/agent-protocol.md#connection-request).
 
 The contact who received the invitation should enter `/c <invitation>` to accept the connection. This establishes the connection, and both parties are notified.
 
-They would then use `@<name> <message>` commands to send messages. You may also just start typing a message to send it to the contact that was the last.
+They would then use `@<name> <message>` commands to send messages. You may also just start typing a message to send it to the most recent contact.
 
 Use `/help` in chat to see the list of available commands.
 
@@ -222,15 +225,17 @@ To create a group use `/g <group>`, then add contacts to it with `/a <group> <na
 
 ![simplex-chat](../images/groups.gif)
 
-> **Please note**: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
+> **Please note**: the groups are not stored on any server — they are maintained as a list of members in the app database, and messages are sent directly to each member.
 
 ### Sending files
 
-You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. Use `/help files` for other commands.
+You can send a file to your contact with `/f @<contact> <file_path>` — the recipient will have to accept it before it is sent. Use `/help files` for other commands.
 
 ![simplex-chat](../images/files.gif)
 
 You can send files to a group with `/f #<group> <file_path>`.
+
+For large files, SimpleX uses the [XFTP protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html) automatically, which provides efficient and private chunked file transfer.
 
 ### User contact addresses
 
@@ -238,8 +243,41 @@ As an alternative to one-time invitation links, you can create a long-term addre
 
 You can accept or reject incoming requests with `/ac <name>` and `/rc <name>` commands.
 
-User address is "long-term" in a sense that it is a multiple-use connection link - it can be used until it is deleted by the user, in which case all established connections would still remain active (unlike how it works with email, when changing the address results in people not being able to message you).
+User address is "long-term" in the sense that it is a multiple-use connection link — it can be used until it is deleted by the user, in which case all established connections would still remain active (unlike email, where changing your address prevents people from messaging you).
 
 Use `/help address` for other commands.
 
 ![simplex-chat](../images/user-addresses.gif)
+
+### Access chat history
+
+The terminal app stores all messages in a local SQLite database. You can search and retrieve chat history using the following commands inside the chat:
+
+```
+/tail @<contact> [<count>]     - show the last messages with a contact (default: 10)
+/tail #<group> [<count>]       - show the last messages in a group
+/search @<contact> <search>    - search messages with a contact
+/search #<group> <search>      - search messages in a group
+```
+
+Examples:
+
+```
+/tail @alice 20       - show last 20 messages with alice
+/search @alice hello  - search for "hello" in conversation with alice
+/search #devs deploy  - search for "deploy" in group #devs
+```
+
+> **Please note**: message history is stored only on your local device. There is no server-side history — if you delete your database, the history is gone permanently.
+
+### Running as a WebSocket server
+
+The terminal CLI can run as a local WebSocket server, which allows you to build chat bots and integrations in any programming language. Start it with the `-p` flag:
+
+```shell
+simplex-chat -p 5225
+```
+
+This starts SimpleX Chat listening on port `5225`. Your application can then connect to `ws://localhost:5225` and send/receive JSON commands via the WebSocket API.
+
+See the [bot API reference](https://github.com/simplex-chat/simplex-chat/blob/stable/bots/README.md) and the [TypeScript client SDK](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client) for details on building integrations.

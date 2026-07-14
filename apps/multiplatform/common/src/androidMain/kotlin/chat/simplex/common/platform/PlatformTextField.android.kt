@@ -8,8 +8,10 @@ import android.text.InputType
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.*
+import android.view.inputmethod.InputConnectionWrapper
 import android.widget.EditText
 import android.widget.TextView
+import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -96,6 +98,12 @@ actual fun PlatformTextField(
   }
 
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+  // Tracks whether the IME currently has an active composition (e.g. mid-autocorrect or
+  // mid-CJK candidate selection). While true we must NOT call setText/setSelection from
+  // the Compose update block, otherwise we undo the IME's pending commit and the user
+  // sees their autocorrect suggestion or dictionary tap get reverted. See #6913.
+  val imeComposing = remember { AtomicBoolean(false) }
+
   AndroidView(modifier = Modifier, factory = { context ->
     val editText = @SuppressLint("AppCompatCustomView") object: EditText(context) {
       override fun setOnReceiveContentListener(
@@ -117,7 +125,28 @@ actual fun PlatformTextField(
           ChatModel.sharedContent.value = SharedContent.Media("", listOf(inputContentInfo.contentUri.toURI()))
           true
         }
-        return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
+        // Wrap the InputConnection so we can observe setComposingText / finishComposingText
+        // and keep imeComposing accurate without relying on internal EditText state.
+        val wrapped = InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
+        return object : InputConnectionWrapper(wrapped, true) {
+          override fun setComposingText(text: CharSequence?, newCursorPosition: Int): Boolean {
+            imeComposing.set(true)
+            return super.setComposingText(text, newCursorPosition)
+          }
+          override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
+            // commitText is called when the IME finalises a word (tap on suggestion,
+            // space-triggered autocorrect, etc.). Clear the composing flag *after*
+            // the commit so the Compose update block sees the settled text.
+            val result = super.commitText(text, newCursorPosition)
+            imeComposing.set(false)
+            return result
+          }
+          override fun finishComposingText(): Boolean {
+            val result = super.finishComposingText()
+            imeComposing.set(false)
+            return result
+          }
+        }
       }
 
       override fun onSelectionChanged(selStart: Int, selEnd: Int) {
@@ -178,7 +207,13 @@ actual fun PlatformTextField(
     it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
-    if (cs.message.text != it.text.toString() || cs.message.selection.start != it.selectionStart || cs.message.selection.end != it.selectionEnd) {
+    // Do not forcibly resync text/selection while the IME has an active composition.
+    // Doing so during a suggestion tap or space-autocorrect reverts the committed word
+    // back to the pre-commit characters, which is the bug reported in #6913.
+    // We only skip the resync; doOnTextChanged still fires and updates composeState
+    // normally once the IME finishes composing.
+    val composingNow = imeComposing.get()
+    if (!composingNow && (cs.message.text != it.text.toString() || cs.message.selection.start != it.selectionStart || cs.message.selection.end != it.selectionEnd)) {
       it.setText(cs.message.text)
       it.setSelection(cs.message.selection.start, cs.message.selection.end)
     }
