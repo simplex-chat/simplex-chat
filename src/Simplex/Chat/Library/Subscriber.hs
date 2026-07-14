@@ -2832,7 +2832,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           when contentChanged $ updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
-              m' <- withStore $ \db -> updateMemberProfile db cxt user m p'
+              m' <- withStore $ \db -> updateMemberProfile db cxt user m pr'
               unless (muteEventInChannel gInfo m') $ do
                 when contentChanged $ forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2857,6 +2857,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise =
           pure m
       where
+        pr' = redactMemberProfileDescription gInfo m p'
         contentChanged = not (sameProfileContent (redactedMemberProfile gInfo m (fromLocalProfile p)) (redactedMemberProfile gInfo m p'))
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do

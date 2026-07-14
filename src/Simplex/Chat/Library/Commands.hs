@@ -5746,7 +5746,7 @@ chatCommandP =
     newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -5755,7 +5755,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

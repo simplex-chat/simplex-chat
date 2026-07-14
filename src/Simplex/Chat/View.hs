@@ -1815,9 +1815,10 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> plain (strEncode (simplexChatContact' l))]) contactLink
     <> simplexDomainLine NTContact contactDomain contactDomainVerified
@@ -1856,11 +1857,12 @@ viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink, localBadge}, activeConn} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink, localBadge, description}, activeConn} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> viewContactBadge localBadge
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> maybe ["member not connected"] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
     <> ["alias: " <> plain localAlias | localAlias /= ""]

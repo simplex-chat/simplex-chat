@@ -259,11 +259,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. ContactDomainRow) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. ContactDomainRow) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
 
 toMaybeGroupMember :: UTCTime -> Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. domainRow) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
-  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. domainRow) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
+toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, description, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. domainRow) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
+  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. domainRow) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
 toMaybeGroupMember _ _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -2062,7 +2062,7 @@ createJoiningMember
   User {userId, userContactId}
   GroupInfo {groupId, membership}
   cReqChatVRange
-  Profile {displayName, fullName, shortDescr, image, contactLink, badge, preferences}
+  Profile {displayName, fullName, shortDescr, description, image, contactLink, badge, preferences}
   cReqXContactId_
   cReqMemberId_
   welcomeMsgId_
@@ -2075,8 +2075,8 @@ createJoiningMember
       liftIO $
         DB.execute
           db
-          "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-          ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
+          "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          ((displayName, fullName, shortDescr, description, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
       profileId <- liftIO $ insertedRowId db
       case cReqMemberId_ of
         Just memberId -> do
@@ -2443,13 +2443,13 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
   createNewMember_ db user gInfo newMember badgeVerified currentTs
 
 createNewMemberProfile_ :: DB.Connection -> StoreCxt -> User -> Profile -> UTCTime -> ExceptT StoreError IO (Text, ProfileId, Maybe Bool)
-createNewMemberProfile_ db cxt User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, badge, preferences} createdAt =
+createNewMemberProfile_ db cxt User {userId} Profile {displayName, fullName, shortDescr, description, image, contactLink, badge, preferences} createdAt =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, createdAt, createdAt) :. badgeToRow badge badgeVerified)
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((displayName, fullName, shortDescr, description, image, contactLink, userId, preferences, createdAt, createdAt) :. badgeToRow badge badgeVerified)
     profileId <- insertedRowId db
     pure $ Right (ldn, profileId, badgeVerified)
 

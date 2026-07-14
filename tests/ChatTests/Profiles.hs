@@ -46,6 +46,8 @@ chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
+    it "profile description round-trips and shows in contact info" testProfileDescriptionShown
+    it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
     it "use multiword profile names" testMultiWordProfileNames
     it "present supporter badge to contacts" testUserBadgeBroadcast
@@ -198,6 +200,69 @@ testUpdateProfile =
             bob <## "contact cate changed to cat (Cate)"
             bob <## "use @cat <message> to send messages"
         ]
+
+-- Profile.description survives the connect-time round-trip and is shown in the contact /i view.
+testProfileDescriptionShown :: HasCallStack => TestParams -> IO ()
+testProfileDescriptionShown =
+  testChat2 aliceProfile bobWithDescr $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/i @bob"
+      alice <## "contact ID: 2"
+      alice <## "description:"
+      alice <## "check https://simplex.chat out"
+      alice <##. "receiving messages via"
+      alice <##. "sending messages via"
+      alice <## "you've shared main profile with this contact"
+      alice <## "connection not verified, use /code command to see security code"
+      alice <## "quantum resistant end-to-end encryption"
+      alice <##. "peer chat protocol version range"
+  where
+    bobWithDescr = bobProfile {description = Just "check https://simplex.chat out"}
+
+-- for a member without a direct contact, the description is redacted per the group's link/name policy
+testMemberDescriptionRedacted :: HasCallStack => TestParams -> IO ()
+testMemberDescriptionRedacted =
+  testChat3 aliceProfile bobProfile cathWithDescr $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      -- prohibit direct messages (and thus simplex links) before members join
+      alice ##> "/set direct #team off"
+      alice <## "updated group preferences:"
+      alice <## "Direct messages: off"
+      addMember "team" alice bob GRAdmin
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      -- cath joins and is introduced to bob with a redacted profile (link stripped)
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      -- bob has no direct contact to cath, so his stored member profile has the link stripped
+      bob ##> "/i #team cath"
+      bob <## "group ID: 1"
+      bob <##. "member ID:"
+      bob <## "description:"
+      bob <## "check  out"
+      bob <##. "receiving messages via"
+      bob <##. "sending messages via"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <##. "peer chat protocol version range"
+  where
+    cathWithDescr = cathProfile {description = Just "check https://simplex.chat out"}
 
 -- the test issuer key under index 1 in the test config
 testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
@@ -497,7 +562,7 @@ testMultiWordProfileNames =
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
     cathProfile' = baseProfile {displayName = "Cath Johnson"}
-    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
+    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
 
 testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =
