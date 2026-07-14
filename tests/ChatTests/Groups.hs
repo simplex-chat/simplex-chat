@@ -3835,9 +3835,6 @@ setupDesynchronizedRatchet ps alice = do
     bob <# "#team alice> 1"
     bob #> "#team 2"
     alice <# "#team bob> 2"
-    -- exchange ends with bob receiving so alice's delivery receipts for bob's messages are drained
-    -- from bob's queue (in-order) before close, otherwise a trailing receipt lingers and is
-    -- redelivered to the bob_old copy below, inflating its decryption-error count
     bob #> "#team 3"
     alice <# "#team bob> 3"
     alice #> "#team 4"
@@ -6202,7 +6199,7 @@ testGroupHistoryDisappearingMessage =
 
       threadDelay 1000000
 
-      -- TTL is generous so messages 2 and 3 survive until cath receives them in history (adding a member is a multi-connection flow that can take a few seconds); deletions are awaited explicitly below
+      -- 8 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
       alice ##> "/set disappear #team on 8"
       alice <## "updated group preferences:"
       alice <## "Disappearing messages: on (8 sec)"
@@ -6252,7 +6249,6 @@ testGroupHistoryDisappearingMessage =
       r1 <- chat <$> getTermLine cath
       r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
 
-      -- wait past the 8s TTL (counted from receipt, latest for cath who got them in history) so all deletions have fired and are buffered before we read them
       threadDelay 9000000
 
       concurrentlyN_

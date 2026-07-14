@@ -3067,7 +3067,7 @@ getContactOrMember_ db cxt user ids =
     (_, Just gId, Just gmId) -> COMGroupMember <$> getGroupMember db cxt user gId gmId
     _ -> throwError $ SEInternalError ""
 
--- returns True if this call performed the association; concurrent workers racing to associate the same member all call this, only the first wins
+-- returns True if this call performed the association to handle concurrent workers
 associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO Bool
 associateMemberWithContactRecord
   db
@@ -3075,7 +3075,7 @@ associateMemberWithContactRecord
   Contact {contactId, localDisplayName, profile = LocalProfile {profileId}}
   GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}} = do
     currentTs <- getCurrentTime
-    -- atomic compare-and-set: WHERE contact_id IS NULL makes a losing concurrent association a no-op; RETURNING reports whether we won
+    -- atomic compare-and-set: WHERE contact_id IS NULL makes a losing concurrent association a no-op; RETURNING reports whether it was set
     won <- isJust <$> maybeFirstRow fromOnly (DB.query db [sql|
         UPDATE group_members
         SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
@@ -3087,7 +3087,7 @@ associateMemberWithContactRecord
       when (memLDN /= localDisplayName) $ deleteUnusedDisplayName_ db userId memLDN
     pure won
 
--- returns Just the updated contact if this call performed the association, Nothing if a concurrent worker won the race first
+-- returns Just the updated contact if this call performed the association, Nothing if a concurrent worker did it
 associateContactWithMemberRecord :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> ExceptT StoreError IO (Maybe Contact)
 associateContactWithMemberRecord
   db
