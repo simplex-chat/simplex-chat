@@ -123,6 +123,7 @@ import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
+import Debug.Trace (traceIO)
 import System.Mem.Weak (deRefWeak)
 import System.Random (randomRIO)
 import System.Timeout (timeout)
@@ -815,8 +816,12 @@ processChatCommand cxt nm = \case
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let signedEvents = L.nonEmpty $ mapMaybe (delEventSigned gInfo chatScopeInfo False) items
+          liftIO $ traceIO ("DELBCAST before send: " <> show (length items) <> " items, " <> show (length recipients) <> " recipients")
           mapM_ (sendGroupSignedMessages user gInfo Nothing False recipients) signedEvents
-          delGroupChatItems user gInfo chatScopeInfo items False
+          liftIO $ traceIO "DELBCAST before delGroupChatItems"
+          ds <- delGroupChatItems user gInfo chatScopeInfo items False
+          liftIO $ traceIO "DELBCAST done"
+          pure ds
         CIDMHistory -> do
           unless (publicGroupEditor gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
           recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
