@@ -166,13 +166,8 @@ fun CustomServer(
   onDelete: (() -> Unit)?,
 ) {
   val serverAddress = remember { mutableStateOf(server.value.server) }
-  val valid = remember {
-    derivedStateOf {
-      with(parseServerAddress(serverAddress.value)) {
-        this?.valid == true
-      }
-    }
-  }
+  val parsed = remember { derivedStateOf { parseServerAddress(serverAddress.value) } }
+  val valid = remember { derivedStateOf { parsed.value?.valid == true } }
   SectionView(
     stringResource(MR.strings.smp_servers_your_server_address),
     icon = painterResource(MR.images.ic_error),
@@ -196,10 +191,40 @@ fun CustomServer(
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
+  if (parsed.value?.serverProtocol == ServerProtocol.SMP) {
+    SectionDividerSpaced()
+    ServerRolesSection(server)
+  }
+
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device)) {
       QRCode(serverAddress.value, small = true)
+    }
+  }
+}
+
+@Composable
+private fun ServerRolesSection(server: MutableState<UserServer>) {
+  val roles = server.value.roles ?: ServerRoles(storage = true, proxy = true, names = false)
+  SectionView(stringResource(MR.strings.operator_use_for_messages)) {
+    PreferenceToggle(
+      stringResource(MR.strings.operator_use_for_messages_receiving),
+      checked = roles.storage
+    ) {
+      server.value = server.value.copy(roles = roles.copy(storage = it))
+    }
+    PreferenceToggle(
+      stringResource(MR.strings.operator_use_for_messages_private_routing),
+      checked = roles.proxy
+    ) {
+      server.value = server.value.copy(roles = roles.copy(proxy = it))
+    }
+    PreferenceToggle(
+      stringResource(MR.strings.operator_use_for_names),
+      checked = roles.names
+    ) {
+      server.value = server.value.copy(roles = roles.copy(names = it))
     }
   }
 }

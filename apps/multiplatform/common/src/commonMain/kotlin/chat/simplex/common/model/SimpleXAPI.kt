@@ -4801,7 +4801,8 @@ data class UserServer(
   val preset: Boolean,
   val tested: Boolean? = null,
   val enabled: Boolean,
-  val deleted: Boolean
+  val deleted: Boolean,
+  val roles: ServerRoles? = null
 ) {
   @Transient
   private val createdAt: Date = Date()
