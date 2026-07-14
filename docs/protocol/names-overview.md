@@ -107,6 +107,23 @@ SimpleX resolves names through the network itself. Operators can enable a *names
 1. The client selects a names router among its configured servers and sends the lookup *through an SMP proxy operated by a different operator*, encrypted so the proxy cannot read it.
 2. The proxy forwards the lookup without access to its content; the names router responds from its local chain state.
 
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant P as SMP proxy<br/>(operator A)
+    participant N as Names router<br/>(operator B)
+    participant E as Ethereum node<br/>(operator B, local)
+
+    C->>P: lookup, encrypted for the names router
+    note over P: sees the client,<br/>not the name
+    P->>N: forwarded lookup
+    note over N: sees the name,<br/>not the client
+    N->>E: read name record (eth_call)
+    E-->>N: name record
+    N-->>P: response, encrypted for the client
+    P-->>C: name record: channel and contact links
+```
+
 The result is a knowledge split with no single observer: the proxy sees which client communicates with a names router, but not the name; the names router sees the name, but not which client sent the query - no client address, session, or identity. A passive network observer sees fixed-size encrypted blocks indistinguishable from other traffic. Clients also keep the set of parties that see a lookup minimal: a query is sent to one names router, and after an authoritative response the client does not repeat the name to other servers.
 
 This layer is not specific to names. Anonymous access to blockchain state via independent operators is a network capability that can be used in other contexts in the future.
@@ -131,6 +148,24 @@ Names are used only to establish connections, not to deliver messages. Once conn
 ## Differences from ENS
 
 The on-chain layer is the SimpleX Name Service (SNS), a fork of the [Ethereum Name Service](https://ens.domains) (ENS). ENS is the most widely used decentralized naming system, and SNS retains its core design: the registry and resolver contracts, commit-reveal registration, and expiry-based ownership.
+
+Each top-level name (`.testing`, `.simplex`) is an independent deployment of the same contracts:
+
+```mermaid
+flowchart TD
+    CT["Controller<br/>commit-reveal registration"]
+    RG["Registrar<br/>name tokens, on-chain name index"]
+    PR["Resolver<br/>simplex.contact / simplex.channel records"]
+    R["Registry<br/>owner and resolver of every name"]
+    MR["Metadata renderer<br/>token metadata as on-chain JSON + SVG"]
+    SR["Subname registrar<br/>creates and indexes subnames"]
+
+    CT -->|registers names| RG
+    CT -->|writes records| PR
+    RG -->|sets name ownership| R
+    RG -->|renders tokens| MR
+    SR -->|owns subname nodes| R
+```
 
 ENS, however, is not fully decentralized in use. Its applications depend on two off-chain services: an indexer (the subgraph) for queries such as listing the names held by an address (without it the ENS app is unusable), and a hosted metadata service to render name tokens in wallets. SNS removes both dependencies, and simplifies the ownership model:
 
