@@ -542,16 +542,19 @@ fun GroupMemberInfoLayout(
       member.memberRole != GroupMemberRole.Relay &&
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
+    val canVerifyCode = connectionCode != null && member.memberRole != GroupMemberRole.Relay
+    val canSyncConn = cStats != null && cStats.ratchetSyncAllowed
 
-    if (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) {
+    if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent))
+        && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
       SectionView {
         if (showMemberSupportChat) {
           SupportChatButton()
         }
-        if (connectionCode != null && !(groupInfo.useRelays && member.memberRole == GroupMemberRole.Relay)) {
+        if (canVerifyCode) {
           VerifyCodeButton(member.verified, verifyClicked)
         }
-        if (cStats != null && cStats.ratchetSyncAllowed) {
+        if (canSyncConn) {
           SynchronizeConnectionButton(syncMemberConnection)
         }
 //        } else if (developerTools) {

@@ -126,18 +126,19 @@ struct GroupMemberInfoView: View {
                         && member.memberRole != .relay
                         && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
                             || member.supportChat != nil)
+                    let canVerifyCode = connectionCode != nil && member.memberRole != .relay
+                    let canSyncConn = connectionStats?.ratchetSyncAllowed ?? false
 
-                    if member.memberActive || (groupInfo.useRelays && member.memberCurrent) {
+                    if (member.memberActive || (groupInfo.useRelays && member.memberCurrent))
+                        && (showMemberSupportChat || canVerifyCode || canSyncConn) {
                         Section {
                             if showMemberSupportChat {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
-                            if let code = connectionCode,
-                               !(groupInfo.useRelays && member.memberRole == .relay) {
+                            if canVerifyCode, let code = connectionCode {
                                 verifyCodeButton(code)
                             }
-                            if let connStats = connectionStats,
-                               connStats.ratchetSyncAllowed {
+                            if canSyncConn {
                                 synchronizeConnectionButton()
                             }
                             // } else if developerTools {
