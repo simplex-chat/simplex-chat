@@ -592,7 +592,8 @@ struct GroupMemberInfoView: View {
                         return r
                     }
                     return nil
-                }
+                },
+                verificationText: groupInfo.useRelays ? "To verify this member's key, compare (or scan) the code on your devices." : nil
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")

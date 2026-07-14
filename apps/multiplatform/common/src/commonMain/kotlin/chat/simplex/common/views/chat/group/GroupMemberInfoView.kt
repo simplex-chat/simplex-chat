@@ -230,6 +230,7 @@ fun GroupMemberInfoView(
                 }
               },
               close,
+              verifyDescription = if (groupInfo.useRelays) MR.strings.to_verify_channel_member_key else MR.strings.to_verify_compare,
             )
           }
         }
