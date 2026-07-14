@@ -389,7 +389,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDesc
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withBGApi {
     chatModel.currentUser.value = chatModel.controller.apiCreateActiveUser(
-      null, Profile(displayName.trim(), "", shortDescr = null)
+      null, Profile(displayName.trim(), "", null, null)
     ) ?: return@withBGApi
     chatModel.localUserCreated.value = true
     // new users don't need the local file encryption indicator (all files are encrypted); existing users keep it on

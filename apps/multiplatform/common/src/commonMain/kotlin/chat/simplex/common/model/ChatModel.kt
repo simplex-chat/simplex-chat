@@ -1367,8 +1367,6 @@ interface NamedChat {
   val displayName: String
   val fullName: String
   val shortDescr: String?
-  // the full profile description (contacts/business/bot addresses); null for chats that have none.
-  // named distinctly from shortDescr and from PendingContactConnection.description (a connection-status string).
   val profileDescription: String? get() = null
   val image: String?
   val localAlias: String
@@ -4872,7 +4870,6 @@ sealed class Format {
   @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
-  // app-only span (not sent over the wire): a tappable "modal" reference; the renderer resolves modalName to content in the current context
   @Serializable @SerialName("modal") class Modal(val modalName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()

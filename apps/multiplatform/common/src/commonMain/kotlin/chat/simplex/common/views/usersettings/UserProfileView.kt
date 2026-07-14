@@ -76,8 +76,6 @@ fun UserProfileLayout(
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
   val focusRequester = remember { FocusRequester() }
   val descrFocusRequester = remember { FocusRequester() }
-  // the description is edited on a separate screen shown in place of the profile form (same composition,
-  // so the edited value survives). It is persisted together with the rest of the profile by the save button.
   var editingDescription by remember { mutableStateOf(false) }
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
@@ -195,8 +193,6 @@ fun UserProfileLayout(
             ProfileNameField(shortDescr)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            // shows the description editor in place of this form; the edited value is saved together
-            // with the rest of the profile by the "Save and notify contacts" button below.
             Text(
               stringResource(if (description.value.isBlank()) MR.strings.add_description else MR.strings.edit_description),
               color = MaterialTheme.colors.primary,

@@ -783,9 +783,6 @@ fun ChatInfoDescription(c: NamedChat, displayName: String, copyNameToClipboard: 
   )
 }
 
-// A compact profile description: shows shortDescr, or a truncated first line of the full description,
-// with a tappable "Read more" that opens the full description in a modal. Used for contacts and, later,
-// business/bot addresses. Groups keep showing only shortDescr (their welcome message is shown separately).
 @Composable
 fun ProfileDescriptionText(shortDescr: String?, description: String?, style: TextStyle, modifier: Modifier = Modifier) {
   val short = shortDescr?.trim()?.ifEmpty { null }

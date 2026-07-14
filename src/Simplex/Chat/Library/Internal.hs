@@ -1265,35 +1265,41 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
 
 redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
 redactedMemberProfile g m Profile {displayName, fullName, shortDescr, description, image, contactLink = lnk, peerType, badge, contactDomain} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, description = redactGroupDescription g m =<< description, image, contactLink, preferences = Nothing, peerType, badge, contactDomain = redactedDomain}
+  Profile {displayName, fullName, shortDescr = redactLinkedText dropWholeOnLink allowSimplexLinks =<< shortDescr, description = redactGroupDescription g m =<< description, image, contactLink, preferences = Nothing, peerType, badge, contactDomain = redactedDomain}
   where
     contactLink = if allowSimplexLinks then lnk else Nothing
     redactedDomain = if allowDirect then (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain else Nothing
     allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
-    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
-    removeSimplexLink s
-      | allowSimplexLinks = Just s
-      | hasObfuscatedSimplexLink s = Nothing
-      | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
+    allowSimplexLinks = memberLinksAllowed g m
 
--- redact only the description of an incoming member profile (receive side), per the group's link/name policy
 redactMemberProfileDescription :: GroupInfo -> GroupMember -> Profile -> Profile
-redactMemberProfileDescription g m p@Profile {description} = p {description = redactGroupDescription g m =<< description}
+redactMemberProfileDescription g m p@Profile {description} =
+  p {description = redactGroupDescription g m =<< description}
 
--- strip link/name spans inline from a group member's description (keeping the prose), dropping the whole field only on an obfuscated link
 redactGroupDescription :: GroupInfo -> GroupMember -> Text -> Maybe Text
-redactGroupDescription g m s
+redactGroupDescription g m = redactLinkedText stripLinkSpans (memberLinksAllowed g m)
+
+memberLinksAllowed :: GroupInfo -> GroupMember -> Bool
+memberLinksAllowed g m = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
+
+redactLinkedText :: (Text -> [FormattedText] -> Maybe Text) -> Bool -> Text -> Maybe Text
+redactLinkedText fromSpans allowSimplexLinks s
   | allowSimplexLinks = Just s
   | hasObfuscatedSimplexLink s = Nothing
-  | otherwise = case parseMaybeMarkdownList s of
-      Nothing -> Just s
-      Just fts ->
-        let kept = T.concat [t | FormattedText f t <- fts, not (maybe False isLinkOrName f)]
-         in if T.null (T.strip kept) then Nothing else Just kept
+  | otherwise = maybe (Just s) (fromSpans s) $ parseMaybeMarkdownList s
+
+dropWholeOnLink :: Text -> [FormattedText] -> Maybe Text
+dropWholeOnLink s fts
+  | any ftIsSimplexLink fts = Nothing
+  | otherwise = Just s
+
+stripLinkSpans :: Text -> [FormattedText] -> Maybe Text
+stripLinkSpans _ fts
+  | T.null (T.strip kept) = Nothing
+  | otherwise = Just kept
   where
-    allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
-    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
-    isLinkOrName f = isLink f || case f of Mention {} -> True; _ -> False
+    kept = T.concat [t | FormattedText f t <- fts, not (maybe False linkOrMention f)]
+    linkOrMention f = isLink f || case f of Mention {} -> True; _ -> False
 
 -- Roles carried by the roster; owners are on the link, not the roster.
 isRosterRole :: GroupMemberRole -> Bool
