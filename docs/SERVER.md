@@ -1220,7 +1220,7 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
 
 ## Name resolution
 
-SimpleX public names (like `alice.simplex`) resolve to contact and channel addresses. These records are stored in the SimpleX Namespace registry contracts on Ethereum, so resolving a name means reading from an Ethereum node.
+SimpleX public names (like `alice.simplex`) resolve to contact and channel addresses. These records are stored in the SimpleX Namespace registry contracts on Ethereum, so resolving a name means reading from an Ethereum node. You can read more about SimpleX Public Names in [the protocol overview](./protocol/names-overview.md).
 
 With the `[NAMES]` section enabled, your smp-server resolves names for the clients connected to it: it forwards their lookups to a local REST resolver and returns the addresses. Resolution is off by default and requires running a resolver stack (an Ethereum node plus the resolver service), which needs:
 
