@@ -75,6 +75,10 @@ fun UserProfileLayout(
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
   val focusRequester = remember { FocusRequester() }
+  val descrFocusRequester = remember { FocusRequester() }
+  // the description is edited on a separate screen shown in place of the profile form (same composition,
+  // so the edited value survives). It is persisted together with the rest of the profile by the save button.
+  var editingDescription by remember { mutableStateOf(false) }
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
       sheetContent = {
@@ -101,7 +105,26 @@ fun UserProfileLayout(
           showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }, close)
         }
       }
-      ModalView(close = closeWithAlert) {
+      LaunchedEffect(editingDescription) {
+        if (editingDescription) {
+          delay(200)
+          descrFocusRequester.requestFocus()
+        }
+      }
+      ModalView(close = if (editingDescription) ({ editingDescription = false }) else closeWithAlert) {
+        if (editingDescription) {
+          ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+            AppBarTitle(stringResource(MR.strings.profile_description__field), withPadding = false)
+            TextEditor(
+              description,
+              Modifier.heightIn(min = 100.dp),
+              placeholder = stringResource(MR.strings.enter_description_optional),
+              contentPadding = PaddingValues(),
+              focusRequester = descrFocusRequester,
+            )
+            SectionBottomSpacer()
+          }
+        } else {
         ColumnWithScrollBar(
           Modifier
             .padding(horizontal = DEFAULT_PADDING),
@@ -171,14 +194,12 @@ fun UserProfileLayout(
             ProfileNameField(shortDescr)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            // opens the description editor on top of the profile editor; the edited value is saved
-            // together with the rest of the profile by the "Save and notify contacts" button below.
+            // shows the description editor in place of this form; the edited value is saved together
+            // with the rest of the profile by the "Save and notify contacts" button below.
             Text(
               stringResource(if (description.value.isBlank()) MR.strings.add_description else MR.strings.edit_description),
               color = MaterialTheme.colors.primary,
-              modifier = Modifier.clickable {
-                ModalManager.start.showModalCloseable { ProfileDescriptionEditor(description) }
-              }
+              modifier = Modifier.clickable { editingDescription = true }
             )
 
             Spacer(Modifier.height(DEFAULT_PADDING))
@@ -201,6 +222,7 @@ fun UserProfileLayout(
             }
           }
           SectionBottomSpacer()
+        }
         }
       }
     }
@@ -229,29 +251,6 @@ fun DeleteImageButton(click: () -> Unit) {
       contentDescription = stringResource(MR.strings.delete_image),
       tint = MaterialTheme.colors.primary,
     )
-  }
-}
-
-// Editor for the full profile description, opened on top of the profile editor. It edits the shared
-// `description` state in place; there is no separate save here — the profile "Save and notify contacts"
-// button persists it together with the rest of the profile.
-@Composable
-private fun ProfileDescriptionEditor(description: MutableState<String>) {
-  val focusRequester = remember { FocusRequester() }
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.profile_description__field), withPadding = false)
-    TextEditor(
-      description,
-      Modifier.heightIn(min = 100.dp),
-      placeholder = stringResource(MR.strings.enter_description_optional),
-      contentPadding = PaddingValues(),
-      focusRequester = focusRequester,
-    )
-    SectionBottomSpacer()
-  }
-  LaunchedEffect(Unit) {
-    delay(200)
-    focusRequester.requestFocus()
   }
 }
 
