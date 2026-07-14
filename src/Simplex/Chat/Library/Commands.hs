@@ -164,41 +164,44 @@ checkProfileImageSize = mapM_ $ \(ImageData t) ->
    in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
 
 checkProfileSize :: Profile -> CM ()
-checkProfileSize profile = do
-  vr <- chatVersionRange
-  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = XInfo profile}
-  case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded _ -> pure ()
-    ECMLarge -> throwCmdError "Profile is too large"
+checkProfileSize p = checkInfoSize "Profile" (XInfo p)
 
 checkGroupProfileSize :: GroupProfile -> CM ()
-checkGroupProfileSize gProfile = do
+checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
+
+-- validates that the profile update event fits into the connection info sent to peers
+checkInfoSize :: String -> ChatMsgEvent 'Json -> CM ()
+checkInfoSize what event = do
   vr <- chatVersionRange
-  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = XGrpInfo gProfile}
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = event}
   case encodeChatMessage maxEncodedInfoLength info of
     ECMEncoded _ -> pure ()
-    ECMLarge -> throwCmdError "Group profile is too large"
+    ECMLarge -> throwCmdError $ what <> " is too large"
 
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 
--- MIME type for a supported profile image file, based on its extension (case-insensitive)
-profileImageMime :: FilePath -> Maybe Text
-profileImageMime path = case map toLower (takeExtension path) of
-  ".png" -> Just "image/png"
-  ".jpg" -> Just "image/jpg"
-  ".jpeg" -> Just "image/jpg"
-  _ -> Nothing
+-- read a .png/.jpg/.jpeg image file and encode it as a data: URL ImageData, or return an error message
+loadImageData :: FilePath -> IO (Either String ImageData)
+loadImageData path = case map toLower (takeExtension path) of
+  ".png" -> readImage "image/png"
+  ".jpg" -> readImage "image/jpg"
+  ".jpeg" -> readImage "image/jpg"
+  _ -> pure $ Left $ "unsupported image extension in " <> path <> " (only .png, .jpg, .jpeg)"
+  where
+    readImage mime = do
+      exists <- doesFileExist path
+      if not exists
+        then pure $ Left $ "image file not found: " <> path
+        else do
+          bs <- B.readFile path
+          pure $
+            if B.null bs
+              then Left $ "image file is empty: " <> path
+              else Right $ ImageData $ "data:" <> mime <> ";base64," <> safeDecodeUtf8 (B64.encode bs)
 
--- read a .png/.jpg/.jpeg file and encode it as a data: URL ImageData
 readProfileImageFile :: FilePath -> CM ImageData
-readProfileImageFile path = case profileImageMime path of
-  Nothing -> throwCmdError $ "unsupported image extension in " <> path <> " (only .png, .jpg, .jpeg)"
-  Just mime -> do
-    exists <- doesFileExist path
-    unless exists $ throwCmdError $ "image file not found: " <> path
-    bs <- liftIO $ B.readFile path
-    pure $ ImageData $ "data:" <> mime <> ";base64," <> safeDecodeUtf8 (B64.encode bs)
+readProfileImageFile path = liftIO (loadImageData path) >>= either throwCmdError pure
 
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="

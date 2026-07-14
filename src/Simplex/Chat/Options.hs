@@ -343,10 +343,10 @@ coreChatOptsP appDir defaultDbName = do
         chatRelay,
         webPreviewConfig,
         chatRelayServer = case chatRelayServer of
-          Just _ | not chatRelay -> error "--relay-address-server option requires --relay option"
+          Just _ | not chatRelay -> errorWithoutStackTrace "--relay-address-server option requires --relay option"
           _ -> chatRelayServer,
         headless = case headless of
-          True | not chatRelay -> error "--headless option requires --relay option"
+          True | not chatRelay -> errorWithoutStackTrace "--headless option requires --relay option"
           _ -> headless,
         highlyAvailable,
         yesToUpMigrations,

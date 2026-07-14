@@ -451,6 +451,7 @@ testSetProfileImageFromFile ps = testChat aliceProfile test ps
     pngPath = tmp <> "/avatar.png"
     gifPath = tmp <> "/avatar.gif"
     missingPath = tmp <> "/missing.png"
+    emptyPath = tmp <> "/empty.png"
     test alice = do
       B.writeFile pngPath "fake png bytes" -- content is not validated, only the extension
       -- set profile image from a .png file
@@ -466,6 +467,10 @@ testSetProfileImageFromFile ps = testChat aliceProfile test ps
       -- missing file is rejected
       alice ##> ("/set profile image file " <> missingPath)
       alice <##. "bad chat command: image file not found"
+      -- empty file is rejected
+      B.writeFile emptyPath ""
+      alice ##> ("/set profile image file " <> emptyPath)
+      alice <##. "bad chat command: image file is empty"
 
 testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =

@@ -17,16 +17,13 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import System.FilePath (takeExtension)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
@@ -214,11 +211,7 @@ onOffPrompt prompt def =
       _ -> putStrLn "Invalid input, please enter 'y' or 'n'" >> onOffPrompt prompt def
 
 loadImageFile :: FilePath -> IO ImageData
-loadImageFile path = case profileImageMime path of
-  Just mime -> do
-    bs <- BS.readFile path
-    pure $ ImageData $ "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
-  Nothing -> putStrLn ("--user-image-file: unsupported image extension " <> show (takeExtension path) <> " (only .png, .jpg, .jpeg)") >> exitFailure
+loadImageFile path = loadImageData path >>= either (\e -> putStrLn ("--user-image-file: " <> e) >> exitFailure) pure
 
 userStr :: User -> String
 userStr User {localDisplayName, profile = LocalProfile {fullName}} =
