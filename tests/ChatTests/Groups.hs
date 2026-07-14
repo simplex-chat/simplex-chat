@@ -8791,9 +8791,6 @@ setupRelay owner relay = do
   owner <## "ok"
   pure relaySLink
 
--- A channel owner and a subscriber have no connection to each other, so their security code
--- is derived from their membership keys. Both sides must compute the same code, verification
--- must persist, and a wrong code must not verify.
 testChannelMemberSecurityCode :: HasCallStack => TestParams -> IO ()
 testChannelMemberSecurityCode ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
