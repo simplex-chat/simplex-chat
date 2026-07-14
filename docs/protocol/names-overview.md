@@ -55,9 +55,9 @@ Names must be globally unique, so they require a shared registry. Every conventi
 
 - **DNS** is subject to domain seizure at the registrar and registry level, and requires registrant records.
 
-A record on a public blockchain has no operator: only the holder of the registration key can change what a name points to, and no authority can delete it. This mitigates censorship on these levels:
+A record on a public blockchain has no operator: only the holder of the registration key can change what a name points to, and no authority can delete it. This mitigates censorship at these levels:
 
-- **SMP routers.** That router's operator can delete it, and the link stops working for everyone who saved it. A name is not affected: the owner points it at a new link on a different router, and clients connect via the same name as before.
+- **SMP routers.** The router that hosts a link can delete it, and the link stops working for everyone who saved it. A name is not affected: the owner points it to a new link on a different router, and clients connect via the same name as before.
 
 - **Centralized registries.** An on-chain record cannot be revoked, because there is no intermediary.
 
@@ -65,7 +65,7 @@ A record on a public blockchain has no operator: only the holder of the registra
 
 Names do not:
 
-- **Identify users.** There is no user directory, no requirement to register a name, and nothing links a name to the people who contact it.
+- **Identify users.** There is no user directory, no requirement to register a name, and nothing links a name to the people who connect to it.
 
 - **Put communication on the chain.** The blockchain stores only the mapping from a name to links and optional public profile fields. Messages, membership, and channel content are never stored on the blockchain.
 
@@ -132,13 +132,13 @@ This layer is not specific to names. Private access to blockchain state via inde
 
 A name is trustworthy when:
 
-1. **The on-chain record points at the link.** Only the name owner's wallet key can set this.
+1. **The on-chain record points to the link.** Only the name owner's wallet key can set this.
 2. **The link's profile claims the name.** Only the link owner's keys can publish this, and the claim is signed by the link's owner key, binding it to that specific link.
 
 For name resolution to succeed, SimpleX clients require both to be true. This mutual binding prevents abuse, such as:
 
-- Registering a name that points at someone else's address. The profile does not claim the name, so clients refuse to connect to it.
-- Claiming a name in a profile without owning it. The on-chain record does not point at that profile's address, so the claim fails verification.
+- Registering a name that points to someone else's address. The profile does not claim the name, so clients refuse to connect to it.
+- Claiming a name in a profile without owning it. The on-chain record does not point to that profile's address, so the claim fails verification.
 
 Apps display the outcome next to the name - verified (the record and the claim match), failed, or not yet verified - and can re-verify on demand or automatically. Verification is a fresh resolution through the private RPC layer, so it reflects the current on-chain state.
 
@@ -189,7 +189,7 @@ The current implementation uses a web app for registration, which accesses the c
 1. **Non-custodial.** Only the holder of the name's key can change or transfer the record; there is no registrar, operator, or intermediary with override authority.
 2. **No infrastructure censorship.** A name does not depend on any single router: the links it points to can be replaced without changing the name, and resolution uses chain state held by many independent operators.
 3. **Impersonation resistance.** A name is shown as verified only when the on-chain record and the signed claim in the link's profile match.
-4. **Lookup privacy.** No single party observes both the user resolving the name and the name that is looked up.
+4. **Lookup privacy.** No single party observes both the user and the name being resolved.
 5. **Availability.** A record can list multiple links across routers, and any names-capable router of the user's choosing can respond to a lookup.
 
 ### Threat model
@@ -230,7 +230,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 *cannot:*
 
 - Register a visually identical variant of an existing name using other scripts or invisible characters.
-- Achieve verified status for a name pointing at someone else's address, or for an address whose name points elsewhere.
+- Achieve verified status for a name pointing to someone else's address, or for an address whose name points elsewhere.
 
 **Compromise of the owner's wallet key**
 
