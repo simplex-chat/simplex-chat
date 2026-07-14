@@ -421,6 +421,7 @@ signMessagesRequired :: ChatDirection c d -> Bool
 signMessagesRequired = \case
   CDChannelRcv g _ -> groupFeatureAllowed SGFSignMessages g
   CDGroupRcv g _ _ -> groupFeatureAllowed SGFSignMessages g
+  CDGroupSnd g _ -> groupFeatureAllowed SGFSignMessages g
   _ -> False
 
 contactChatDeleted :: ChatDirection c d -> Bool

@@ -4636,6 +4636,7 @@ processChatCommand cxt nm = \case
       assertGroupContentAllowed
       processComposedMessages
       where
+        signMsgs = sign || groupFeatureAllowed SGFSignMessages gInfo
         allowedRole :: Maybe GroupMemberRole
         allowedRole = case scope of
           Nothing -> Just GRAuthor
@@ -4660,7 +4661,7 @@ processChatCommand cxt nm = \case
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length recipients)
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
-          (msgs_, gsr) <- sendGroupMessages user gInfo Nothing showGroupAsSender recipients sign chatMsgEvents
+          (msgs_, gsr) <- sendGroupMessages user gInfo Nothing showGroupAsSender recipients signMsgs chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) showGroupAsSender itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
@@ -4680,7 +4681,7 @@ processChatCommand cxt nm = \case
                   fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients
                   fInv' <-
-                    if sign && useRelays' gInfo
+                    if signMsgs && useRelays' gInfo
                       then (\d -> (fInv :: FileInvitation) {fileDigest = Just d}) <$> cryptoFileDigest file
                       else pure fInv
                   pure (Just fInv', Just ciFile)
