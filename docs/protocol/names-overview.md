@@ -25,11 +25,11 @@ Revision 1, 2026-07-14
 
 ## Introduction
 
-The SimpleX network provides communication without user identifiers - people connect by exchanging links out of band. This protects private communication, but public entities - channels and businesses - need to be discoverable. Today this requires distributing a long link, which is hard to remember and can be deleted by the router that hosts it. SimpleX names provide discoverability without adding identifiers for people.
+The SimpleX network provides communication without user identifiers - people connect by exchanging links out of band. This protects private communication, but public entities - channels and businesses - need to be discoverable. Today this requires distributing a long link, which is impossible to remember and can be deleted by the router that hosts it. SimpleX public names provide memorability and ease of connection without adding user identifiers.
 
 ### Names
 
-A SimpleX name is a human-readable name, registered on a public blockchain, that resolves to SimpleX links: `#name.simplex` opens a channel (for the `.simplex` namespace, the short variant `#name` can also be used) and `@name.simplex` connects to a contact or business address. One name can include both links - a business can publish `@name.simplex` for customer conversations and `#name.simplex` for its announcement channel from a single registration. Names support subnames (`support.name.simplex`). A separate test namespace (`.testing`) is deployed for early adopters before the main namespace launches.
+A SimpleX name is a human-readable name, registered on a public blockchain, that resolves to SimpleX links: `#example.simplex` opens a channel (for the `.simplex` namespace, the short variant `#example` can also be used for channel names) and `@example.simplex` connects to a contact or business address. One name can include both links - a business can publish `@example.simplex` for customer conversations and `#example.simplex` for its announcement channel from a single registration. Names support subnames (`support.example.simplex`). A separate test namespace (`.testing`) is deployed for early adopters before the main namespace launches.
 
 A name is not an account and not an identity. It is a record that maps a human-readable string to the links a channel or business already has, controlled by a cryptographic key that only its owner holds. The network does not use or require names; they are a discovery layer on top of it, described in this document.
 
@@ -39,9 +39,9 @@ This document covers the naming layer built for [SimpleX Channels](./channels-ov
 
 Names are intended for entities that are already public:
 
-- **Channels.** A channel reachable as `#name` can be easily shared in many ways - conversation, print, social media, and messages. If the channel's link is destroyed or blocked, the owner points the name at a new link, and the channel remains reachable by name.
+- **Channels.** A channel reachable as `#example` can be easily shared in many ways - conversation, print, social media, and messages. If the channel's link is removed or blocked, the owner can point the name to a new link, and the channel remains reachable via the same name.
 
-- **Businesses and organizations.** A business address reachable as `@name.simplex` gives customers a way to start a conversation without scanning a QR code or trusting a link from a search result.
+- **Businesses and organizations.** A business address reachable as `@example.simplex` gives customers a way to start a conversation without scanning a QR code or trusting a link from a search result.
 
 - **Creators and public figures.** Anyone publishing to an audience can be reachable by name while their audience remains private.
 
@@ -55,30 +55,30 @@ Names must be globally unique, so they require a shared registry. Every conventi
 
 - **DNS** is subject to domain seizure at the registrar and registry level, and requires registrant records.
 
-A record on a public blockchain has no operator: only the holder of the registration key can change what a name points to, and no authority can delete it. This mitigates censorship at the levels where links fail:
+A record on a public blockchain has no operator: only the holder of the registration key can change what a name points to, and no authority can delete it. This mitigates censorship on these levels:
 
-- **A link is hosted by one SMP router.** That router's operator can delete it, and the link stops working for everyone who saved it. A name is not affected: the owner points it at a new link on a different router, and clients connect by name as before.
+- **SMP routers.** That router's operator can delete it, and the link stops working for everyone who saved it. A name is not affected: the owner points it at a new link on a different router, and clients connect via the same name as before.
 
-- **Registries can be pressured.** An on-chain record cannot be seized from its owner or removed by a court order served on an intermediary, because there is no intermediary.
+- **Centralized registries.** An on-chain record cannot be revoked, because there is no intermediary.
 
 ### Privacy considerations
 
 Names do not:
 
-- **Identify users.** There is no user directory, no requirement to register, and nothing links a name to the people who read or contact it.
+- **Identify users.** There is no user directory, no requirement to register a name, and nothing links a name to the people who contact it.
 
 - **Put communication on the chain.** The blockchain stores only the mapping from a name to links and optional public profile fields. Messages, membership, and channel content are never stored on the blockchain.
 
 - **Certify identity.** A verified name proves that the name's owner controls the address it points to - not who the owner is. It is the same trust model as a domain name.
 
-- **Replace links.** Links remain the primary connection mechanism and the more private one, since resolving a name reveals interest in it to one resolver operator. Names are for public entities that choose to be discoverable.
+- **Replace links.** Links remain the primary and the more private connection mechanism, since resolving a name reveals interest in it to one resolver operator. Names are for public entities that choose to be contactable more easily.
 
 
 ## Architecture
 
 ### Names and records
 
-Names are lowercase labels of ASCII letters, digits, and single hyphens, forming domains under the `.simplex` top-level name (`privacy.simplex`, `my-channel.simplex`), with `.simplex` implied when omitted for channels: `#privacy` is interpreted as `#privacy.simplex`. The restricted alphabet prevents homograph attacks: visually identical names from mixed scripts cannot exist as distinct records.
+Names are lowercase labels of ASCII letters, digits, and single hyphens, forming domains under the `.simplex` top-level name (`example.simplex`, `my-channel.simplex`), with `.simplex` implied when omitted for channels: `#example` is interpreted as `#example.simplex`. The restricted alphabet prevents homograph attacks: visually identical names from mixed scripts cannot exist as distinct records.
 
 A name's on-chain record stores:
 
@@ -126,7 +126,7 @@ sequenceDiagram
 
 The result is a knowledge split with no single observer: the proxy sees which client communicates with a names router, but not the name; the names router sees the name, but not which client sent the query - no client address, session, or identity. A passive network observer sees fixed-size encrypted blocks indistinguishable from other traffic. Clients also keep the set of parties that see a lookup minimal: a query is sent to one names router, and after an authoritative response the client does not repeat the name to other servers.
 
-This layer is not specific to names. Anonymous access to blockchain state via independent operators is a network capability that can be used in other contexts in the future.
+This layer is not specific to names. Private access to blockchain state via independent operators is a network capability that can be used in other contexts in the future.
 
 ### Claiming and verification
 
@@ -169,7 +169,7 @@ flowchart TD
 
 ENS, however, is not fully decentralized in use. Its applications depend on two off-chain services: an indexer (the subgraph) for queries such as listing the names held by an address (without it the ENS app is unusable), and a hosted metadata service to render name tokens in wallets. SNS removes both dependencies, and simplifies the ownership model:
 
-1. **No indexer.** The SNS contracts index names on-chain: reverse lookup from an address to the names it holds, from a token to its plaintext label, and from a name to its subnames are all direct contract reads. Every view in the SNS web app (currently, the app for test names is https://testing-names.simplex.chat) - the list of owned names, their subnames, and each name's records - is served by plain `eth_call`s against any Ethereum node, including a self-hosted one.
+1. **No indexer.** The SNS contracts index names on-chain: reverse lookup from an address to the names it holds, from a token to its plaintext label, and from a name to its subnames are all direct contract reads. Every view in the SNS web app (currently, the app for test names is https://testing-names.simplex.chat) - the list of owned names, their subnames, and each name's records - is served by plain `eth_call`s against an Ethereum RPC.
 
 2. **Fully on-chain tokens.** A name's token metadata and image are generated by the contract as inline JSON and SVG. There is no metadata server; wallets render the name from chain data alone.
 
@@ -186,10 +186,10 @@ The current implementation uses a web app for registration, which accesses the c
 
 ### Design objectives
 
-1. **No seizure.** Only the holder of the name's key can change or transfer the record; there is no registrar, operator, or intermediary with override authority.
+1. **Non-custodial.** Only the holder of the name's key can change or transfer the record; there is no registrar, operator, or intermediary with override authority.
 2. **No infrastructure censorship.** A name does not depend on any single router: the links it points to can be replaced without changing the name, and resolution uses chain state held by many independent operators.
 3. **Impersonation resistance.** A name is shown as verified only when the on-chain record and the signed claim in the link's profile match.
-4. **Lookup privacy.** No single party observes both who is looking up and what is looked up.
+4. **Lookup privacy.** No single party observes both the user resolving the name and the name that is looked up.
 5. **Availability.** A record can list multiple links across routers, and any names-capable router of the user's choosing can respond to a lookup.
 
 ### Threat model
@@ -214,7 +214,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 
 *can:*
 
-- See that a client communicates with a names router, which is an ordinary SMP router.
+- See that a client communicates with a names router (which is an ordinary SMP router).
 
 *cannot:*
 
@@ -250,7 +250,7 @@ An attacker holding the registration key can repoint or transfer the name. New l
 
 1. **Single-resolver lookups.** A client currently accepts the response of one names router per lookup. Cross-checking two operators' resolvers is designed but not implemented - see below.
 2. **No state proofs.** The names router is trusted to report chain state correctly; responses do not yet include proofs verifiable against a chain header.
-3. **Self-hosted routers.** All pre-configured routers support name resolution, but most self-hosted servers do not support it yet. Name resolution requires at least one configured server with the names role.
+3. **Self-hosted routers.** All pre-configured routers support name resolution, but most self-hosted routers do not support it yet. Name resolution requires at least one configured server with the names role.
 
 
 ## Future work
@@ -263,9 +263,7 @@ An attacker holding the registration key can repoint or transfer the name. New l
 
 - **Registration via an app.** Registration currently requires an on-chain transaction from a wallet.
 
-- **Primary names.** Reverse resolution from an address to a primary name, retained from ENS.
-
-- **DNS-anchored names.** The client already parses arbitrary domains (`name.example.com`) as web links. In the future, it will be possible to register owned domains in the SNS contract to use them as channel and contact names (`#name.example.com` and `@name.example.com`).
+- **DNS-based names.** The client already parses arbitrary domains (`example.com`) as web links. In the future, it will be possible to register owned domains in the SNS contract to use them as channel and contact names (`#example.com` and `@example.com`).
 
 
 ## Conclusion
