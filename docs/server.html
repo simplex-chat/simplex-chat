@@ -970,6 +970,7 @@ window.addEventListener('click',(e)=>{
 </ul>
 </li>
 <li><a href="#server-information-page">Server information page</a></li>
+<li><a href="#name-resolution">Name resolution</a></li>
 <li><a href="#documentation">Documentation</a>
 <ul>
 <li><a href="#smp-server-address">SMP server address</a></li>
@@ -2017,6 +2018,51 @@ chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${key_name}&quot;
 <p>Access the webpage you've deployed from your browser (<code>https://smp.example.org</code>). You should see the smp-server information that you've provided in your ini file.</p>
 </li>
 </ol>
+<h2 id="name-resolution" tabindex="-1">Name resolution</h2>
+<p>SimpleX public names (like <code>alice.simplex</code>) resolve to contact and channel addresses. These records are stored in the SimpleX Namespace registry contracts on Ethereum, so resolving a name means reading from an Ethereum node. Read more about <a href="/docs/protocol/names-overview.html">SimpleX Public Names</a>.</p>
+<p>With the <code>[NAMES]</code> section enabled, your smp-server resolves names for the clients connected to it: it forwards their lookups to a local REST resolver and returns the addresses. Resolution is off by default and requires running a resolver stack (an Ethereum node plus the resolver service), which needs:</p>
+<ul>
+<li>300 GB or more of NVMe SSD (TLC, not QLC, which stalls during sync)</li>
+<li>32 GB RAM and a fast multi-core CPU</li>
+<li>about one day for the initial Ethereum sync</li>
+</ul>
+<h3 id="1-deploy-the-resolver-stack" tabindex="-1">1. Deploy the resolver stack</h3>
+<p>The resolver stack (a reth + nimbus Ethereum node plus the resolver service) ships in <a href="https://github.com/simplex-chat/simplexmq/tree/master/scripts/resolver"><code>scripts/resolver</code></a> and starts with one command. See its <a href="https://github.com/simplex-chat/simplexmq/blob/master/scripts/resolver/README.md">README</a> for details.</p>
+<pre><code class="language-sh">git clone https://github.com/simplex-chat/simplexmq
+cd simplexmq/scripts/resolver
+docker compose up -d
+</code></pre>
+<p>The shipped <code>.env</code> targets Ethereum mainnet and needs no changes. Open the peer-to-peer ports so the node can sync:</p>
+<pre><code class="language-sh">ufw allow 30303 &amp;&amp;\
+ufw allow 9000
+</code></pre>
+<p>The resolver returns errors until the node finishes syncing, which takes about a day.</p>
+<h3 id="2-check-the-resolver" tabindex="-1">2. Check the resolver</h3>
+<p>Once synced, confirm the resolver is healthy and resolves a name:</p>
+<pre><code class="language-sh">curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:8000/resolve/foobar.testing
+</code></pre>
+<p>The first should report <code>&quot;ok&quot;: true</code>. The second should return the records for the test name <code>foobar.testing</code>.</p>
+<h3 id="3-point-smp-server-at-the-resolver" tabindex="-1">3. Point smp-server at the resolver</h3>
+<p>In <code>/etc/opt/simplex/smp-server.ini</code>, set the <code>[NAMES]</code> section:</p>
+<pre><code class="language-ini">[NAMES]
+enable: on
+resolver_endpoint: http://127.0.0.1:8000
+</code></pre>
+<p>No authentication is needed while smp-server and the resolver share a host over loopback. Behind a TLS reverse proxy on another host, use its HTTPS address and add credentials (<code>resolver_auth</code> over plain <code>http</code> is only allowed for loopback):</p>
+<pre><code class="language-ini">[NAMES]
+enable: on
+resolver_endpoint: https://names.example.com:443
+resolver_auth: basic &lt;username&gt;:&lt;password&gt;
+</code></pre>
+<h3 id="4-restart-smp-server" tabindex="-1">4. Restart smp-server</h3>
+<pre><code class="language-sh">systemctl restart smp-server
+</code></pre>
+<p>The server logs the resolver status on start:</p>
+<pre><code>[NAMES] resolver enabled, endpoint=http://127.0.0.1:8000
+[NAMES] endpoint probe ok
+</code></pre>
+<p>If the node is still syncing the server starts anyway, and name lookups fail until the resolver is ready.</p>
 <h2 id="documentation" tabindex="-1">Documentation</h2>
 <p>All necessary files for <code>smp-server</code> are located in <code>/etc/opt/simplex/</code> folder.</p>
 <p>Stored messages, connections, statistics and server log are located in <code>/var/opt/simplex/</code> folder.</p>
