@@ -23,7 +23,7 @@ import Simplex.Chat.Operators.Presets
 import Simplex.Chat.Protocol (RelayProfile (..), mkRelayProfile)
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol
@@ -33,6 +33,7 @@ operatorTests :: Spec
 operatorTests = describe "managing server operators" $ do
   validateServersTest
   updatedServersTest
+  perServerRolesTest
 
 validateServersTest :: Spec
 validateServersTest = describe "validate user servers" $ do
@@ -121,6 +122,59 @@ updatedServersTest = describe "validate user servers" $ do
     relayName' (AUCR _ UserChatRelay {relayProfile = RelayProfile {displayName}}) = displayName
     PresetServers {operators} = presetServers defaultChatConfig
     customRelayAddr = either error id $ strDecode "https://relay.example.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
+
+-- Tests for per-server roles: how self-hosted vs operator-matched servers
+-- resolve their roles in agentServerCfgs, and how per-server names roles
+-- feed the USWNoNamesServers coverage warning in validateUserServers.
+perServerRolesTest :: Spec
+perServerRolesTest = describe "per-server roles" $ do
+  describe "agentServerCfgs resolution" $ do
+    it "self-hosted server keeps its per-server roles" $
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP (Just (ServerRoles True False True))] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          rolesTuple roles `shouldBe` (True, False, True)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "self-hosted server without roles falls back to default roles" $
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP Nothing] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          -- default: storage + proxy on, names off
+          rolesTuple roles `shouldBe` (True, True, False)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "operator-matched server uses operator roles, ignoring per-server field" $
+      -- per-server roles are all off, but the resolved cfg must use the operator's roles
+      case agentServerCfgs SPSMP opDomains [opMatchedSMP (Just (ServerRoles False False False))] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Just 1
+          rolesTuple roles `shouldBe` rolesTuple (operatorRoles SPSMP testOp)
+        cfgs -> expectationFailure $ "expected one operator-matched ServerCfg, got: " <> show cfgs
+  describe "validateUserServers per-server names coverage" $ do
+    it "self-hosted-only user without names servers warns USWNoNamesServers" $ do
+      let (_errs, warns) = validateUserServers [selfHostedUser Nothing] []
+      warns `shouldSatisfy` elem (USWNoNamesServers Nothing)
+    it "self-hosted user with a names server does not warn USWNoNamesServers" $ do
+      let (_errs, warns) = validateUserServers [selfHostedUser (Just allRoles)] []
+      warns `shouldSatisfy` notElem (USWNoNamesServers Nothing)
+  where
+    testOp = operatorSimpleXChat {operatorId = DBEntityId 1}
+    opDomains = operatorDomains [testOp]
+    -- host does not match any operator domain -> treated as self-hosted
+    selfHostedSMP :: Maybe ServerRoles -> NewUserServer 'PSMP
+    selfHostedSMP r = (newUserServer "smp://abcd@self.example.com" :: NewUserServer 'PSMP) {roles = r}
+    -- host matches the SimpleX Chat operator domain (simplex.im)
+    opMatchedSMP :: Maybe ServerRoles -> NewUserServer 'PSMP
+    opMatchedSMP r = (newUserServer "smp://abcd@smp8.simplex.im" :: NewUserServer 'PSMP) {roles = r}
+    selfHostedUser :: Maybe ServerRoles -> UpdatedUserOperatorServers
+    selfHostedUser r =
+      UpdatedUserOperatorServers
+        { operator = Nothing,
+          smpServers = [AUS SDBNew $ selfHostedSMP r],
+          xftpServers = [],
+          chatRelays = []
+        }
+    rolesTuple :: ServerRoles -> (Bool, Bool, Bool)
+    rolesTuple ServerRoles {storage, proxy, names} = (storage, proxy, names)
 
 deriving instance Eq User
 
