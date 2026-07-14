@@ -543,7 +543,7 @@ fun GroupMemberInfoLayout(
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
 
-    if (member.memberActive) {
+    if (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) {
       SectionView {
         if (showMemberSupportChat) {
           SupportChatButton()
@@ -557,11 +557,6 @@ fun GroupMemberInfoLayout(
 //        } else if (developerTools) {
 //          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
 //        }
-      }
-      SectionDividerSpaced()
-    } else if (groupInfo.useRelays && member.memberCurrent && showMemberSupportChat) {
-      SectionView {
-        SupportChatButton()
       }
       SectionDividerSpaced()
     }

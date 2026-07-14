@@ -127,7 +127,7 @@ struct GroupMemberInfoView: View {
                         && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
                             || member.supportChat != nil)
 
-                    if member.memberActive {
+                    if member.memberActive || (groupInfo.useRelays && member.memberCurrent) {
                         Section {
                             if showMemberSupportChat {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
@@ -143,10 +143,6 @@ struct GroupMemberInfoView: View {
                             // } else if developerTools {
                             //     synchronizeConnectionButtonForce()
                             // }
-                        }
-                    } else if groupInfo.useRelays && member.memberCurrent && showMemberSupportChat {
-                        Section {
-                            MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                         }
                     }
 
@@ -300,7 +296,8 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    let getCode = member.memberActive || (groupInfo.useRelays && member.memberCurrent)
+                    let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
                         connectionStats = stats

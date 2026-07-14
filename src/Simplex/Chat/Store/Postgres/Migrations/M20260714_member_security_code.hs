@@ -10,7 +10,7 @@ m20260714_member_security_code :: Text
 m20260714_member_security_code =
   [r|
 ALTER TABLE group_members ADD COLUMN member_security_code TEXT;
-ALTER TABLE group_members ADD COLUMN member_security_code_verified_at TEXT;
+ALTER TABLE group_members ADD COLUMN member_security_code_verified_at TIMESTAMPTZ;
 |]
 
 down_m20260714_member_security_code :: Text
