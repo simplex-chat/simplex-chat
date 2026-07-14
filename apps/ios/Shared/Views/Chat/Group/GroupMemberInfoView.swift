@@ -585,7 +585,11 @@ struct GroupMemberInfoView: View {
                         let (verified, existingCode) = r
                         let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
-                        member.activeConn?.connectionCode = connCode
+                        if groupInfo.useRelays {
+                            member.memberVerifiedCode = connCode
+                        } else {
+                            member.activeConn?.connectionCode = connCode
+                        }
                         _ = chatModel.upsertGroupMember(groupInfo, member)
                         return r
                     }

@@ -214,11 +214,12 @@ fun GroupMemberInfoView(
               verify = { code ->
                 chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
                   val (verified, existingCode) = r
-                  val copy = mem.copy(
-                    activeConn = mem.activeConn?.copy(
-                      connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
-                    )
-                  )
+                  val code = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+                  val copy = if (groupInfo.useRelays) {
+                    mem.copy(memberVerifiedCode = code)
+                  } else {
+                    mem.copy(activeConn = mem.activeConn?.copy(connectionCode = code))
+                  }
                   withContext(Dispatchers.Main) {
                     chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, copy)
                   }
