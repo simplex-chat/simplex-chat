@@ -21,10 +21,50 @@ linksData.forEach(entry => {
   entry.imageExists = entry.image && fs.existsSync(path.join(linkImagesDir, entry.image))
 })
 
+// Rewrites relative markdown links to website permalinks or GitHub URLs.
+// Shared by the main markdown renderer (markdownLib) and the glossary renderer
+// below, so glossary tooltips injected into pages get absolute, working links.
+function replaceLink(link, _env) {
+  let parsed = uri.parse(link)
+  if (parsed.scheme || parsed.host) return link
+
+  let hostFile = path.resolve(_env.page.inputPath)
+  let linkFile = path.resolve(hostFile, '..', parsed.path)
+  if (parsed.path.startsWith('/')) {
+    let srcIndex = hostFile.indexOf("/src")
+    if (srcIndex !== -1) {
+      linkFile = path.join(hostFile.slice(0, srcIndex + 4), parsed.path)
+    }
+  }
+
+  if (fs.existsSync(linkFile) && fs.statSync(linkFile).isFile()) {
+    // this condition works if the link is a valid website file
+    const fileContent = fs.readFileSync(linkFile, 'utf8')
+    parsed.path = (matter(fileContent).data?.permalink || parsed.path).replace(/\.md$/, ".html").toLowerCase()
+  } else if (!fs.existsSync(linkFile)) {
+    linkFile = linkFile.replace('/website/src', '')
+    if (fs.existsSync(linkFile)) {
+      // this condition works if the link is a valid project file
+      const githubUrl = "https://github.com/simplex-chat/simplex-chat/blob/stable"
+      const repoRoot = hostFile.slice(0, hostFile.indexOf('/website/src'))
+      const repoPath = linkFile.slice(repoRoot.length)
+      return `${githubUrl}${repoPath}`
+    } else {
+      // if the link is not a valid website file or project file
+      throw new Error(`Broken link: ${parsed.path} in ${hostFile}`)
+    }
+  }
+
+  return uri.serialize(parsed)
+}
+
 // The implementation of Glossary feature
-const md = new markdownIt()
+const md = new markdownIt({ replaceLink }).use(markdownItReplaceLink)
+// Resolve the glossary's relative links (e.g. ./SIMPLEX.md) as if rendered from
+// its built location, so tooltips embedded on other pages get absolute URLs.
+const glossaryInputPath = path.resolve(__dirname, 'src/docs/GLOSSARY.md')
 const glossaryMarkdownContent = fs.readFileSync(path.resolve(__dirname, '../docs/GLOSSARY.md'), 'utf8')
-const glossaryHtmlContent = md.render(glossaryMarkdownContent)
+const glossaryHtmlContent = md.render(glossaryMarkdownContent, { page: { inputPath: glossaryInputPath } })
 const glossaryDOM = new JSDOM(glossaryHtmlContent)
 const glossaryDocument = glossaryDOM.window.document
 const glossary = require('./src/_data/glossary.json')
@@ -63,7 +103,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
-const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", "why", "file", ""]
+const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", "why", "file", "downloads", "faq", "reproduce", "transparency", "security", "jobs", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {
@@ -320,6 +360,9 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/blog/images")
   ty.addPassthroughCopy("src/docs/*.png")
   ty.addPassthroughCopy("src/docs/images")
+  ty.addPassthroughCopy("src/docs/guide/images")
+  ty.addPassthroughCopy("src/docs/guide/diagrams")
+  ty.addPassthroughCopy("src/docs/themes")
   ty.addPassthroughCopy("src/docs/protocol/diagrams")
   ty.addPassthroughCopy("src/docs/protocol/*.json")
   ty.addPassthroughCopy("src/images")
@@ -418,39 +461,7 @@ module.exports = function (ty) {
     html: true,
     breaks: true,
     linkify: true,
-    replaceLink: function (link, _env) {
-      let parsed = uri.parse(link)
-      if (parsed.scheme || parsed.host) return link
-
-      let hostFile = path.resolve(_env.page.inputPath)
-      let linkFile = path.resolve(hostFile, '..', parsed.path)
-      if (parsed.path.startsWith('/')) {
-        let srcIndex = hostFile.indexOf("/src")
-        if (srcIndex !== -1) {
-          linkFile = path.join(hostFile.slice(0, srcIndex + 4), parsed.path)
-        }
-      }
-
-      if (fs.existsSync(linkFile) && fs.statSync(linkFile).isFile()) {
-        // this condition works if the link is a valid website file
-        const fileContent = fs.readFileSync(linkFile, 'utf8')
-        parsed.path = (matter(fileContent).data?.permalink || parsed.path).replace(/\.md$/, ".html").toLowerCase()
-      } else if (!fs.existsSync(linkFile)) {
-        linkFile = linkFile.replace('/website/src', '')
-        if (fs.existsSync(linkFile)) {
-          // this condition works if the link is a valid project file
-          const githubUrl = "https://github.com/simplex-chat/simplex-chat/blob/stable"
-          const repoRoot = hostFile.slice(0, hostFile.indexOf('/website/src'))
-          const repoPath = linkFile.slice(repoRoot.length)
-          return `${githubUrl}${repoPath}`
-        } else {
-          // if the link is not a valid website file or project file
-          throw new Error(`Broken link: ${parsed.path} in ${hostFile}`)
-        }
-      }
-
-      return uri.serialize(parsed)
-    }
+    replaceLink: replaceLink
   }).use(markdownItAnchor, {
     slugify: (str) =>
       slugify(str, {
