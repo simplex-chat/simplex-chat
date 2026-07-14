@@ -2913,9 +2913,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         COMContact c1@Contact {profile = p1} ->
           case cgm2 of
             COMGroupMember m2@GroupMember {memberProfile = p2, memberContactId}
-              | isNothing memberContactId && profilesMatch p1 p2 -> do
-                  void . sendDirectContactMessage user c1 $ XInfoProbeOk probe
-                  COMContact <$$> associateMemberAndContact c1 m2
+              -- send XInfoProbeOk only if this side actually performed the association (won the concurrent race), otherwise stay silent
+              | isNothing memberContactId && profilesMatch p1 p2 ->
+                  associateMemberAndContact c1 m2 >>= mapM (\c1' -> COMContact c1' <$ sendDirectContactMessage user c1 (XInfoProbeOk probe))
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
             COMContact _ -> messageWarning "probeMatch ignored: contacts are not merged" >> pure Nothing
         COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId} ->
@@ -2923,9 +2923,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             COMContact c2@Contact {profile = p2}
               | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 ->
                   case memberConn m1 of
-                    Just conn -> do
-                      void $ sendDirectMemberMessage conn (XInfoProbeOk probe) groupId
-                      COMContact <$$> associateMemberAndContact c2 m1
+                    Just conn ->
+                      associateMemberAndContact c2 m1 >>= mapM (\c2' -> COMContact c2' <$ sendDirectMemberMessage conn (XInfoProbeOk probe) groupId)
                     _ -> messageWarning "probeMatch ignored: matched member doesn't have connection" >> pure Nothing
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
@@ -3065,8 +3064,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           GroupMember {localDisplayName = mLDN} = m
       case (suffixOrd displayName cLDN, suffixOrd displayName mLDN) of
         (Just cOrd, Just mOrd)
-          | cOrd < mOrd -> Just <$> associateMemberWithContact c m
-          | mOrd < cOrd -> Just <$> associateContactWithMember m c
+          | cOrd < mOrd -> associateMemberWithContact c m
+          | mOrd < cOrd -> associateContactWithMember m c
           | otherwise -> pure Nothing
         _ -> pure Nothing
 
@@ -3077,20 +3076,21 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           Just suffix -> readMaybe $ T.unpack suffix
           Nothing -> Nothing
 
-    associateMemberWithContact :: Contact -> GroupMember -> CM Contact
+    associateMemberWithContact :: Contact -> GroupMember -> CM (Maybe Contact)
     associateMemberWithContact c1 m2@GroupMember {groupId} = do
-      g <- withStore $ \db -> do
-        liftIO $ associateMemberWithContactRecord db user c1 m2
-        getGroupInfo db cxt user groupId
-      toView $ CEvtContactAndMemberAssociated user c1 g m2 c1
-      pure c1
+      (won, g) <- withStore $ \db -> do
+        won <- liftIO $ associateMemberWithContactRecord db user c1 m2
+        g <- getGroupInfo db cxt user groupId
+        pure (won, g)
+      when won $ toView $ CEvtContactAndMemberAssociated user c1 g m2 c1
+      pure $ if won then Just c1 else Nothing
 
-    associateContactWithMember :: GroupMember -> Contact -> CM Contact
+    associateContactWithMember :: GroupMember -> Contact -> CM (Maybe Contact)
     associateContactWithMember m1@GroupMember {groupId} c2 = do
-      (c2', g) <- withStore $ \db ->
+      (c2'_, g) <- withStore $ \db ->
         liftM2 (,) (associateContactWithMemberRecord db cxt user m1 c2) (getGroupInfo db cxt user groupId)
-      toView $ CEvtContactAndMemberAssociated user c2 g m1 c2'
-      pure c2'
+      forM_ c2'_ $ \c2' -> toView $ CEvtContactAndMemberAssociated user c2 g m1 c2'
+      pure c2'_
 
     saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Maybe GroupInfo)
     saveConnInfo activeConn connInfo = do

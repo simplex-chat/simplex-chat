@@ -137,7 +137,7 @@ chatGroupTests = do
 #if !defined(dbPostgres)
   -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
-    it "show message decryption error" testGroupMsgDecryptError
+    it "show message decryption error" (withTestOutput testGroupMsgDecryptError)
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
 #endif
@@ -3830,18 +3830,23 @@ setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
     bob <## "subscribed 2 connections on server localhost"
+    threadDelay 2000000
     alice #> "#team 1"
     bob <# "#team alice> 1"
     bob #> "#team 2"
     alice <# "#team bob> 2"
-    alice #> "#team 3"
-    bob <# "#team alice> 3"
-    bob #> "#team 4"
-    alice <# "#team bob> 4"
-  withTestChat ps "bob_old" $ \bob -> do
-    bob <## "subscribed 2 connections on server localhost"
+    -- exchange ends with bob receiving so alice's delivery receipts for bob's messages are drained
+    -- from bob's queue (in-order) before close, otherwise a trailing receipt lingers and is
+    -- redelivered to the bob_old copy below, inflating its decryption-error count
+    bob #> "#team 3"
+    alice <# "#team bob> 3"
+    alice #> "#team 4"
+    bob <# "#team alice> 4"
+    -- /sync is prohibited while the ratchet is in sync; checked here on a deterministically in-sync connection (bob_old below may already detect desync on subscribe, racing the command)
     bob ##> "/sync #team alice"
     bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
+  withTestChat ps "bob_old" $ \bob -> do
+    bob <## "subscribed 2 connections on server localhost"
     alice #> "#team 1"
     bob <## "#team alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync #team alice to synchronize"
@@ -6197,13 +6202,13 @@ testGroupHistoryDisappearingMessage =
 
       threadDelay 1000000
 
-      -- 3 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
-      alice ##> "/set disappear #team on 4"
+      -- TTL is generous so messages 2 and 3 survive until cath receives them in history (adding a member is a multi-connection flow that can take a few seconds); deletions are awaited explicitly below
+      alice ##> "/set disappear #team on 8"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages: on (4 sec)"
+      alice <## "Disappearing messages: on (8 sec)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages: on (4 sec)"
+      bob <## "Disappearing messages: on (8 sec)"
 
       bob #> "#team 2"
       alice <# "#team bob> 2"
@@ -6246,6 +6251,9 @@ testGroupHistoryDisappearingMessage =
       cath ##> "/_get chat #1 count=100"
       r1 <- chat <$> getTermLine cath
       r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+
+      -- wait past the 8s TTL (counted from receipt, latest for cath who got them in history) so all deletions have fired and are buffered before we read them
+      threadDelay 9000000
 
       concurrentlyN_
         [ alice
