@@ -1809,7 +1809,7 @@ struct ServerOperator: Identifiable, Equatable, Codable {
     )
 }
 
-struct ServerRoles: Equatable, Codable {
+struct ServerRoles: Equatable, Codable, Hashable {
     var storage: Bool
     var proxy: Bool
     var names: Bool
@@ -1962,11 +1962,12 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
     var tested: Bool?
     var enabled: Bool
     var deleted: Bool
+    var roles: ServerRoles? = nil
     var createdAt = Date()
 
     static func == (l: UserServer, r: UserServer) -> Bool {
         l.serverId == r.serverId && l.server == r.server && l.preset == r.preset && l.tested == r.tested &&
-        l.enabled == r.enabled && l.deleted == r.deleted
+        l.enabled == r.enabled && l.deleted == r.deleted && l.roles == r.roles
     }
 
     var id: String { "\(server) \(createdAt)" }
@@ -2026,6 +2027,7 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
         case tested
         case enabled
         case deleted
+        case roles
     }
 }
 

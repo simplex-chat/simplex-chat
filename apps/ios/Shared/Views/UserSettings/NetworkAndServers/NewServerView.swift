@@ -65,6 +65,9 @@ struct NewServerView: View {
                     }
                 }
                 useServerSection(valid)
+                if serverAddress?.serverProtocol == .smp {
+                    serverRolesSection()
+                }
                 if valid {
                     Section(header: Text("Add to another device").foregroundColor(theme.colors.secondary)) {
                         MutableQRCode(uri: $serverToEdit.server, small: true)
@@ -72,6 +75,20 @@ struct NewServerView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func serverRolesSection() -> some View {
+        let roles = Binding(
+            get: { serverToEdit.roles ?? ServerRoles(storage: true, proxy: true, names: false) },
+            set: { serverToEdit.roles = $0 }
+        )
+        return Section {
+            Toggle("To receive", isOn: roles.storage)
+            Toggle("For private routing", isOn: roles.proxy)
+            Toggle("To resolve names", isOn: roles.names)
+        } header: {
+            Text("Use for messages").foregroundColor(theme.colors.secondary)
         }
     }
 
