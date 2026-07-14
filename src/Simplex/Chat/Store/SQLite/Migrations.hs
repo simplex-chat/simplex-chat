@@ -165,6 +165,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260603_simplex_name
 import Simplex.Chat.Store.SQLite.Migrations.M20260629_roster_catchup
 import Simplex.Chat.Store.SQLite.Migrations.M20260707_file_digest
 import Simplex.Chat.Store.SQLite.Migrations.M20260714_member_security_code
+import Simplex.Chat.Store.SQLite.Migrations.M20260714_server_roles
 import Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
@@ -331,6 +332,7 @@ schemaMigrations =
     ("20260629_roster_catchup", m20260629_roster_catchup, Just down_m20260629_roster_catchup),
     ("20260707_file_digest", m20260707_file_digest, Just down_m20260707_file_digest),
     ("20260714_member_security_code", m20260714_member_security_code, Just down_m20260714_member_security_code),
+    ("20260714_server_roles", m20260714_server_roles, Just down_m20260714_server_roles),
     ("20260715_profile_description", m20260715_profile_description, Just down_m20260715_profile_description)
   ]
 
