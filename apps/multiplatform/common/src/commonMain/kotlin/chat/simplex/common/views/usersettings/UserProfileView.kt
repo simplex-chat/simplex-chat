@@ -40,7 +40,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
       profile = profile,
-      close,
+      close = close,
       saveProfile = { displayName, fullName, shortDescr, description, image ->
         withBGApi {
           val updatedProfile = profile.copy(displayName = displayName.trim(), fullName = fullName.trim(), shortDescr = shortDescr.trim().ifEmpty { null }, description = description.trim().ifEmpty { null }, image = image)
@@ -124,7 +124,8 @@ fun UserProfileLayout(
             )
             SectionBottomSpacer()
           }
-        } else {
+          return@ModalView
+        }
         ColumnWithScrollBar(
           Modifier
             .padding(horizontal = DEFAULT_PADDING),
@@ -222,7 +223,6 @@ fun UserProfileLayout(
             }
           }
           SectionBottomSpacer()
-        }
         }
       }
     }
