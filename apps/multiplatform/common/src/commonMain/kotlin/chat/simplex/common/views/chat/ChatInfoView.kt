@@ -775,19 +775,69 @@ fun ChatInfoDescription(c: NamedChat, displayName: String, copyNameToClipboard: 
       modifier = Modifier.padding(top = DEFAULT_PADDING_HALF).combinedClickable(onClick = copyFullName, onLongClick = copyFullName).onRightClick(copyFullName)
     )
   }
-  val descr = c.shortDescr?.trim()
-  if (descr != null && descr != "") {
+  ProfileDescriptionText(
+    shortDescr = c.shortDescr,
+    description = c.profileDescription,
+    style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
+    modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+  )
+}
+
+// A compact profile description: shows shortDescr, or a truncated first line of the full description,
+// with a tappable "Read more" that opens the full description in a modal. Used for contacts and, later,
+// business/bot addresses. Groups keep showing only shortDescr (their welcome message is shown separately).
+@Composable
+fun ProfileDescriptionText(shortDescr: String?, description: String?, style: TextStyle, modifier: Modifier = Modifier) {
+  val short = shortDescr?.trim()?.ifEmpty { null }
+  val descr = description?.trim()?.ifEmpty { null }
+  val uriHandler = LocalUriHandler.current
+  val linkMode = chatModel.simplexLinkMode.value
+  if (descr == null) {
+    // no full description: render shortDescr as before (or nothing)
+    if (short != null) {
+      MarkdownText(
+        short, parseToMarkdown(short), toggleSecrets = true, style = style, maxLines = 4,
+        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
+      )
+    }
+    return
+  }
+  val firstLine = descr.lineSequence().first()
+  val truncated = firstLine.length > 100
+  val multiline = descr.length > firstLine.length
+  // when there is no shortDescr and the whole description already fits on one short line, show it inline
+  if (short == null && !truncated && !multiline) {
     MarkdownText(
-      descr,
-      parseToMarkdown(descr),
-      toggleSecrets = true,
-      style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
-      maxLines = 4,
-      overflow = TextOverflow.Ellipsis,
-      uriHandler = LocalUriHandler.current,
-      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF),
-      linkMode = chatModel.simplexLinkMode.value
+      descr, parseToMarkdown(descr), toggleSecrets = true, style = style, maxLines = 4,
+      overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
     )
+    return
+  }
+  val teaser = short ?: (if (truncated) firstLine.take(100).trimEnd() + "…" else firstLine + "…")
+  val readMore = stringResource(MR.strings.whats_new_read_more)
+  val formatted = (parseToMarkdown(teaser) ?: FormattedText.plain(teaser)) +
+    FormattedText(" ") + FormattedText(readMore, Format.Modal("description"))
+  MarkdownText(
+    "$teaser $readMore", formatted, toggleSecrets = true, style = style, maxLines = 4,
+    overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode,
+    onModalClick = { showFullProfileDescription(descr) }
+  )
+}
+
+private fun showFullProfileDescription(description: String) {
+  ModalManager.end.showModalCloseable { _ ->
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.profile_description__field))
+      MarkdownText(
+        description,
+        parseToMarkdown(description),
+        toggleSecrets = true,
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+        uriHandler = LocalUriHandler.current,
+        linkMode = chatModel.simplexLinkMode.value,
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
+      )
+    }
   }
 }
 

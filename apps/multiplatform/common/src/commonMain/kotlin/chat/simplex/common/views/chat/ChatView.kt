@@ -2328,20 +2328,12 @@ fun BoxScope.ChatItemsList(
           )
         }
 
-        val descr = chatInfo.shortDescr?.trim()
-        if (descr != null && descr != "") {
-          MarkdownText(
-            descr,
-            parseToMarkdown(descr),
-            toggleSecrets = true,
-            style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
-            maxLines = 4,
-            overflow = TextOverflow.Ellipsis,
-            uriHandler = LocalUriHandler.current,
-            modifier = Modifier.padding(top = DEFAULT_PADDING_HALF),
-            linkMode = linkMode
-          )
-        }
+        ProfileDescriptionText(
+          shortDescr = chatInfo.shortDescr,
+          description = chatInfo.profileDescription,
+          style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
+          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+        )
 
         when (chatInfo) {
           is ChatInfo.Direct -> ContactSimplexNameView(chatInfo.contact, verifiable = false)

@@ -113,6 +113,7 @@ fun MarkdownText (
   linkMode: SimplexLinkMode,
   inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = null,
   onLinkLongClick: (link: String) -> Unit = {},
+  onModalClick: ((modalName: String) -> Unit)? = null,
   showViaProxy: Boolean = false,
   showTimestamp: Boolean = true,
   prefix: AnnotatedString? = null,
@@ -193,6 +194,7 @@ fun MarkdownText (
       var hasLinks = false
       var hasSecrets = false
       var hasCommands = false
+      var hasModals = false
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
@@ -302,6 +304,17 @@ fun MarkdownText (
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
+            is Format.Modal -> {
+              if (onModalClick == null) {
+                append(ft.text)
+              } else {
+                hasModals = true
+                val ftStyle = Format.linkStyle
+                withAnnotation(tag = "MODAL", annotation = ft.format.modalName) {
+                  withStyle(ftStyle) { append(ft.text) }
+                }
+              }
+            }
             is Format.Unknown -> append(ft.text)
           }
         }
@@ -315,7 +328,7 @@ fun MarkdownText (
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
-      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
+      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || (hasModals && onModalClick != null)) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
@@ -353,11 +366,14 @@ fun MarkdownText (
             if (hasCommands && sendCommandMsg != null) {
               withAnnotation("COMMAND") { a -> sendCommandMsg("/${a.item}") }
             }
+            if (hasModals && onModalClick != null) {
+              withAnnotation("MODAL") { a -> onModalClick(a.item) }
+            }
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
             icon.value =
-              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
+              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")) {
                 PointerIcon.Hand
               } else {
                 PointerIcon.Text
@@ -367,6 +383,7 @@ fun MarkdownText (
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
+                || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
           },
           onTextLayout = { onTextLayoutResult?.invoke(it) }
         )
