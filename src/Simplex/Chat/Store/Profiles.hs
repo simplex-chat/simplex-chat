@@ -651,7 +651,7 @@ getProtocolServers db p User {userId} =
     toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, BoolInt, Maybe BoolInt, BoolInt) -> UserServer p
     toUserServer (serverId, host, port, keyHash, auth_, BI preset, tested, BI enabled) =
       let server = ProtoServerWithAuth (ProtocolServer p host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-       in UserServer {serverId, server, preset, tested = unBI <$> tested, enabled, deleted = False}
+       in UserServer {serverId, server, preset, tested = unBI <$> tested, enabled, roles = Nothing, deleted = False}
 
 insertProtocolServer :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> UTCTime -> NewUserServer p -> IO (UserServer p)
 insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, tested, enabled} = do

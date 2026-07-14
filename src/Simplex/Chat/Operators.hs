@@ -49,7 +49,7 @@ import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Protocol (RelayCapabilities (..), RelayProfile (..))
 import Simplex.Chat.Types (ShortLinkContact, User)
 import Simplex.Chat.Types.Shared (RelayStatus)
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (sameShortLinkContact)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Agent.Store.Entity
@@ -176,6 +176,11 @@ operatorRoles p op = case p of
   SPSMP -> smpRoles op
   SPXFTP -> xftpRoles op
 
+-- Default roles for a self-hosted server without stored roles: receive + private
+-- routing on, name resolution off. Also the default for newly added servers.
+defaultUserServerRoles :: ServerRoles
+defaultUserServerRoles = ServerRoles {storage = True, proxy = True, names = False}
+
 conditionsAccepted :: ServerOperator -> Bool
 conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
   CAAccepted {} -> True
@@ -245,6 +250,7 @@ data UserServer' s (p :: ProtocolType) = UserServer
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool,
+    roles :: Maybe ServerRoles,
     deleted :: Bool
   }
   deriving (Show)
@@ -330,7 +336,7 @@ newUserServer = newUserServer_ False True
 
 newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
-  UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
+  UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, roles = Nothing, deleted = False}
 
 presetChatRelay :: Bool -> RelayProfile -> [Text] -> ShortLinkContact -> NewUserChatRelay
 presetChatRelay = newChatRelay_ True
@@ -439,13 +445,13 @@ agentServerCfgs :: UserProtocol p => SProtocolType p -> [(Text, ServerOperator)]
 agentServerCfgs p opDomains = mapMaybe agentServer
   where
     agentServer :: UserServer' s p -> Maybe (ServerCfg p)
-    agentServer srv@UserServer {server, enabled} =
+    agentServer srv@UserServer {server, enabled, roles = srvRoles} =
       case find (\(d, _) -> any (matchingHost d) (srvHost srv)) opDomains of
         Just (_, op@ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled})
           | opEnabled -> Just ServerCfg {server, enabled, operator = Just opId, roles = operatorRoles p op}
           | otherwise -> Nothing
         Nothing ->
-          Just ServerCfg {server, enabled, operator = Nothing, roles = allRoles}
+          Just ServerCfg {server, enabled, operator = Nothing, roles = fromMaybe defaultUserServerRoles srvRoles}
 
 matchingHost :: Text -> TransportHost -> Bool
 matchingHost d = \case
