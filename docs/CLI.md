@@ -220,7 +220,7 @@ Use `/help` in chat to see the list of available commands.
 
 To create a group use `/g <group>`, then add contacts to it with `/a <group> <name>`. You can then send messages to the group by entering `#<group> <message>`. Use `/help groups` for other commands.
 
-![simplex-chat](../images/groups.gif)
+![simplex-chat](/images/groups.gif)
 
 > **Please note**: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
 
@@ -228,7 +228,7 @@ To create a group use `/g <group>`, then add contacts to it with `/a <group> <na
 
 You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. Use `/help files` for other commands.
 
-![simplex-chat](../images/files.gif)
+![simplex-chat](/images/files.gif)
 
 You can send files to a group with `/f #<group> <file_path>`.
 
@@ -242,4 +242,4 @@ User address is "long-term" in a sense that it is a multiple-use connection link
 
 Use `/help address` for other commands.
 
-![simplex-chat](../images/user-addresses.gif)
+![simplex-chat](/images/user-addresses.gif)
