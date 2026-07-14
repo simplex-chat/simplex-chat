@@ -24,10 +24,11 @@ Give each type an `unknownFields :: J.Object` that captures unrecognized keys on
 - `Library/Commands.hs` (decision 1): in `APIUpdateGroupProfile` (`:3132`), re-inject stored unknown pref keys into the caller's profile before `runUpdateGroupProfile`.
 - `tests/ProtocolTests.hs`: round-trip keeps an unknown key; all-known ⇒ `unknownFields == mempty`; `setGroupPreference` keeps an unknown key; values differing only by an unknown key are `/=`.
 
-## Open decisions
+## Decisions
 
-1. **Robustness vs. the lossy mobile save path.**
-   (A, recommended) core JSON + re-inject unknown keys in `APIUpdateGroupProfile` — makes the normal mobile save loss-free, zero UI changes.
-   (B) core JSON only — dormant survival guaranteed; an old-version owner editing prefs via mobile still strips.
-   (C) A + also preserve unknown prefs in the Kotlin/Swift models — belt-and-suspenders, unnecessary once A is in, touches two UI codebases.
-2. **Depth.** (recommended) new top-level features only; or also unknown sub-fields inside a leaf pref type (same mechanism, more types).
+1. **Include option A** — core JSON preservation **plus** re-inject stored unknown pref keys in `APIUpdateGroupProfile` (`Commands.hs:3132`), zero UI changes. Rationale: only owners re-broadcast group state (role-gated), so stale-owner stripping is a **multi-owner** problem — real for regular groups (single-owner channels are unexposed). And it **recurs at every version boundary**: the Kotlin/Swift UI rebuilds `groupPreferences` from its typed model (`GroupPreferences.kt:48`), so an owner still strips any pref newer than their version. A repairs this at the core boundary for every future pref, for any owner on ≥ the infra release. The only residual is owners on versions older than this release — the one-time cost.
+2. **Top-level features only.** Leaf sub-fields keep using `omittedField` for removed fields.
+
+## Alternative considered (rejected)
+
+Store prefs as a raw `J.Object` in the DB/wire and parse on demand. Same guarantee, but a much larger/riskier diff (`Profile`/`GroupProfile` and typed prefs are consumed pervasively; parse-on-demand is fallible; `Eq` change-detection becomes representational). Crucially it does **not** help the lossy mobile path — stripping is in the Kotlin/Swift models, independent of the core representation, so option A is still needed. `unknownFields` is the surgical form of the same "keep received JSON" idea.
