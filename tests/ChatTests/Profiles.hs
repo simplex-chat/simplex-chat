@@ -1056,13 +1056,17 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     biz <## "Welcome"
     alice ##> ("/c " <> cLink)
     alice <## "connection request sent!"
-    biz <## "#alice (Alice): accepting business address request..."
-    alice <## "#biz: joining the group..."
-    biz <# "#alice Welcome" -- auto reply
-    biz <## "#alice: alice_1 joined the group"
+    -- async processing delivers these setup events in a non-deterministic order, so consume in any order
+    biz
+      <###
+        [ "#alice (Alice): accepting business address request...",
+          WithTime "#alice Welcome", -- auto reply
+          "#alice: alice_1 joined the group"
+        ]
     alice
       <###
-        [ WithTime "#biz biz_1> Welcome",
+        [ "#biz: joining the group...",
+          WithTime "#biz biz_1> Welcome",
           "#biz: you joined the group"
         ]
     biz #> "#alice hi"
@@ -2666,20 +2670,24 @@ testTimedMessagesEnabledGlobally =
       alice ##> "/set disappear yes"
       alice <## "user profile did not change"
       connectUsers alice bob
-      bob ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
+      -- wait for async processing of connection feature items so they are ordered before the preference change
+      threadDelay 1000000
+      -- ttl 3 (not 1) gives margin: async processing makes the exchange slower, so a 1s ttl could
+      -- delete the messages before the "present" check below
+      bob ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 3}}"
       bob <## "you updated preferences for alice:"
-      bob <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes)"
+      bob <## "Disappearing messages: enabled (you allow: yes (3 sec), contact allows: yes)"
       alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
+      alice <## "Disappearing messages: enabled (you allow: yes (3 sec), contact allows: yes (3 sec))"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
-      threadDelay 1000000
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (3 sec)"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (3 sec)"), (0, "hi"), (1, "hey")])
+      threadDelay 3000000
       alice <### ["timed message deleted: hi", "timed message deleted: hey"]
       bob <### ["timed message deleted: hi", "timed message deleted: hey"]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (3 sec)")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (3 sec)")])
 
 testUpdateMultipleUserPrefs :: HasCallStack => TestParams -> IO ()
 testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
@@ -3424,11 +3432,12 @@ testShortLinkAddressPrepareBusiness = testChat3 businessProfile aliceProfile {fu
       bob <## "#biz: connection started"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
-      -- the next command can be prone to race conditions
-      bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business address: connecting to business #biz"
+      -- the connection completes quickly; consume the join events before the plan check to avoid the race
       biz <## "#bob: bob_1 joined the group"
       bob <## "#biz: you joined the group"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business address: known business #biz"
+      bob <## "use #biz <message> to send messages"
       biz #> "#bob hi"
       bob <# "#biz biz_1> hi"
       bob #> "#biz hello"

@@ -271,6 +271,8 @@ testSendImageWithTextAndQuote =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
       connectUsers alice bob
+      -- wait for async processing of connection feature items so they are ordered before "hi alice"
+      threadDelay 1000000
       bob #> "@alice hi alice"
       alice <# "bob> hi alice"
       alice ##> ("/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 1 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]")

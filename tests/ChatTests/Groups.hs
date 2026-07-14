@@ -137,7 +137,7 @@ chatGroupTests = do
 #if !defined(dbPostgres)
   -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
-    it "show message decryption error" (withTestOutput testGroupMsgDecryptError)
+    it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
 #endif
@@ -3830,7 +3830,6 @@ setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
     bob <## "subscribed 2 connections on server localhost"
-    threadDelay 2000000
     alice #> "#team 1"
     bob <# "#team alice> 1"
     bob #> "#team 2"
