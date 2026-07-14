@@ -126,7 +126,7 @@ fun ModalData.GroupChatInfoView(
         withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
-          val (_, code) = if (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) {
+          val (_, code) = if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay) {
             val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, member.groupMemberId)
             member to memCode?.second
           } else {

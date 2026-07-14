@@ -297,7 +297,7 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                    let getCode = member.memberActive || (groupInfo.useRelays && member.memberCurrent)
+                    let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
                     let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
