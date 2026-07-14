@@ -530,11 +530,10 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
     noServersErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
       | noServers opEnabled = [USENoServers p' user]
-      | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]
+      | otherwise = [USEStorageMissing p' user | not (hasRoleCoverage p storage uss)] <> [USEProxyMissing p' user | not (hasRoleCoverage p proxy uss)]
       where
         p' = AProtocolType p
         noServers cond = not $ any srvEnabled $ userServers p $ filter cond uss
-        hasRole roleSel = maybe True (\op@ServerOperator {enabled} -> enabled && roleSel (operatorRoles p op)) . operator'
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
     serverErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [u] -> [UserServersError]
     serverErrs p uss = mapMaybe duplicateErr_ srvs
@@ -548,6 +547,19 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
+    -- a server contributes role R if it is enabled, not deleted, and its effective
+    -- roles include R: operator servers use operator roles (per protocol), self-hosted
+    -- servers use their per-server roles (default when unset).
+    hasRoleCoverage :: (UserServersClass u, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> [u] -> Bool
+    hasRoleCoverage p roleSel = any $ \u ->
+      any (srvOk (operator' u)) (map aUserServer' (servers' p u))
+      where
+        srvOk op (AUS _ UserServer {enabled, deleted, roles}) =
+          enabled && not deleted && serverHasRole p roleSel op roles
+    serverHasRole :: UserProtocol p => SProtocolType p -> (ServerRoles -> Bool) -> Maybe ServerOperator -> Maybe ServerRoles -> Bool
+    serverHasRole p roleSel op srvRoles = case op of
+      Just o@ServerOperator {enabled} -> enabled && roleSel (operatorRoles p o)
+      Nothing -> roleSel (fromMaybe defaultUserServerRoles srvRoles)
     chatRelayErrs :: UserServersClass u => [u] -> [UserServersError]
     chatRelayErrs uss = concatMap duplicateErrs_ cRelays
       where
@@ -568,11 +580,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         noChatRelays cond = not $ any relayEnabled $ userChatRelays $ filter cond uss
         relayEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
     noNamesServersWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
-    noNamesServersWarns user uss = [USWNoNamesServers user | noNamesServers]
-      where
-        noNamesServers = not $ any srvEnabled $ userServers SPSMP $ filter namesEnabled uss
-        srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
-        namesEnabled = maybe True (\op@ServerOperator {enabled} -> enabled && names (operatorRoles SPSMP op)) . operator'
+    noNamesServersWarns user uss = [USWNoNamesServers user | not (hasRoleCoverage SPSMP names uss)]
     userChatRelays :: UserServersClass u => [u] -> [AUserChatRelay]
     userChatRelays = map aUserChatRelay' . concatMap chatRelays'
     opEnabled :: UserServersClass u => u -> Bool
