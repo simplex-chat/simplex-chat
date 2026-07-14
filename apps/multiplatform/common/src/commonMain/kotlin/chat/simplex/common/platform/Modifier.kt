@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.KeyChangeEffect
@@ -27,13 +28,15 @@ expect fun Modifier.onRightClick(action: () -> Unit): Modifier
 expect fun Modifier.desktopPointerHoverIconHand(): Modifier
 
 /**
- * Directly sets the mouse cursor (hand or text) on desktop, bypassing Compose's pointerHoverIcon.
- * pointerHoverIcon is edge-triggered (it displays the icon only on a per-node Enter event, or on an
- * icon change while the node is marked in-bounds) and those edges can be silently lost when chat
- * items shift/recompose under the cursor, leaving a stale cursor. Calling this on every hover move
- * keeps the cursor self-correcting. No-op on Android.
+ * Directly sets the mouse cursor on desktop ([PointerIcon.Hand], [PointerIcon.Text], anything else
+ * means default). Compose's pointerHoverIcon displays icons only on Enter/Exit edges or on icon
+ * change while marked in-bounds — edges that are silently lost when chat items shift/recompose
+ * under the cursor, leaving a stale cursor. Calling this on every hover move (and resetting on
+ * exit) keeps it self-correcting. No-op on Android.
+ * Verified against Compose 1.8.2, re-verify on upgrade (JetBrains/compose-multiplatform #2091,
+ * #1314, #3750). Details: plans/2026-07-13-fix-command-hover-cursor.md
  */
-expect fun desktopSetHoverCursor(hand: Boolean)
+expect fun desktopSetHoverCursor(icon: PointerIcon)
 
 expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
 

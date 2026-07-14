@@ -30,7 +30,17 @@ silently dropped. It also ignored `Enter` events entirely, so when the chat list
 stationary cursor (every command click appends the sent message), the newly hovered item — which
 receives `Enter`, not `Move` — never updated the icon state.
 
-**Fix:** one never-exiting `awaitPointerEventScope` loop reacting to both `Move` and `Enter`.
+**Fix:** one never-exiting `awaitPointerEventScope` loop reacting to `Move`, `Enter` and `Release`
+(plus an optional `onExit` callback used by the cursor fix below). `Release` refreshes hover at
+the final pointer position — after clicking a command the list shifts and the release is the only
+event a stationary pointer gets. Button-held events are ignored (gated on *no* pointer pressed,
+matching the old `forEachGesture` semantics which waited for all pointers up between events), and
+so are out-of-bounds positions: while a button is pressed the hit path is locked, so the pressed
+node keeps receiving events after the pointer leaves it — acting on those would apply hover
+effects at clamped positions (e.g. a wrong cursor stuck after drag-releasing outside the text).
+The other `detectCursorMove` call sites (scrollbar reveal in `ScrollableColumn.desktop.kt` and
+`OperatorView.desktop.kt`) were audited: reacting to `Enter`/`Release` there is harmless or an
+improvement, and `onExit` defaults to a no-op for them.
 
 ### Defect 2: display layer silently swallows updates (commit "set hover cursor directly…")
 
@@ -60,12 +70,35 @@ Clicking many commands maximizes exposure: each click inserts a message → reco
 list shift + (for `/join`) group-state changes — each transition can hit one of these edges.
 Related upstream issues: JetBrains/compose-multiplatform #2091, #1314, #3750.
 
-**Fix:** in `onHover` — which now fires reliably on every Move/Enter over the text — set the AWT
-cursor imperatively on desktop (`desktopSetHoverCursor`), in addition to the existing
-`pointerHoverIcon` modifier (kept for the normal reset-to-default on exit). The write targets the
-same Skia canvas component Compose writes to (`ComposeSceneMediator.setPointerIcon` →
-`contentComponent.cursor`), so last-write-wins stays consistent with the framework's own updates.
-No framework edge can leave the cursor stuck, because it is re-asserted on every mouse move.
+**Fix:** in `onHover` — which now fires reliably on every Move/Enter/Release over the text — set
+the AWT cursor imperatively on desktop (`desktopSetHoverCursor`), and symmetrically reset both the
+cursor and the `icon` state on the per-node `Exit` event (delivered reliably to the `pointerInput`
+node even when the hover-icon node is desynced and its own exit reset is a guarded no-op; the state
+reset prevents the hover-icon node from re-displaying a stale Hand on its next Enter). The set and
+reset live together in `MarkdownText` (`onHover`/`onHoverExit`), so other `ClickableText` callers
+are untouched. The existing `pointerHoverIcon` modifier is kept, so the normal framework path still
+works when its edges fire — and it remains the only path covering disposal-without-Exit and Android
+mice. The imperative write targets the same Skia canvas component Compose writes to
+(`ComposeSceneMediator.setPointerIcon` → `contentComponent.cursor`), so last-write-wins stays
+consistent with the framework's own updates; the canvas lookup is cached weakly (including negative
+results, with a one-time warning log if the component is not found after a Compose upgrade — the
+workaround then degrades to the framework-only path). No framework edge can leave the cursor
+stuck, because it is re-asserted on every mouse move and released on exit.
+
+The same lost-edge class also applies in principle to static `pointerHoverIcon` sites whose content
+shifts under a stationary cursor (e.g. the chat list link previews using
+`desktopPointerHoverIconHand`); those are low-exposure and left on the framework path — if a
+second report arrives, extract a shared reliable-hover-icon modifier from this wiring.
+
+### Residual limitation (known, strictly smaller than the fixed bug)
+
+If a hovered clickable text leaves the composition without the pointer ever getting an `Exit`
+event (e.g. the hovered message is deleted, or a fast fling disposes the item within a frame), the
+`onExit` reset does not run — the coroutine is simply cancelled. The retained `pointerHoverIcon`
+modifier's `onDetach` reset covers this when its node is in the normal (non-desynced) state; in the
+rare desynced state the cursor may stay a hand until the next hover write. This is the same event
+class the fix reduces, bounded to one stale frame region, and self-corrects on any subsequent
+hover.
 
 ## Performance
 

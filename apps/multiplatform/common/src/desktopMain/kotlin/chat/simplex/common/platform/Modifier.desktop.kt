@@ -13,12 +13,14 @@ import java.awt.Component
 import java.awt.Container
 import java.awt.Cursor
 import java.awt.Image
-import javax.swing.SwingUtilities
+import java.awt.Window
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
 import java.awt.image.BufferedImage
 import java.io.File
+import java.lang.ref.WeakReference
 import java.net.URI
+import javax.swing.SwingUtilities
 
 @Composable
 actual fun Modifier.desktopOnExternalDrag(
@@ -86,24 +88,35 @@ actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpen
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 
-// This runs on every mouse move over clickable text, so the canvas lookup is cached:
-// steady-state cost is a parent-chain check plus an int comparison, no allocations.
-private var cachedSkiaCanvas: Component? = null
+// Runs on every mouse move, so the canvas lookup (and its failure) is cached per window;
+// weak refs avoid retaining a recreated window's scene graph.
+private var cachedSkiaCanvas: WeakReference<Component>? = null
+private var skiaCanvasMissingIn: WeakReference<Window>? = null
 
-actual fun desktopSetHoverCursor(hand: Boolean) {
+actual fun desktopSetHoverCursor(icon: PointerIcon) {
+  // clickable message text only exists in the main window
   val window = simplexWindowState.window ?: return
-  val type = if (hand) Cursor.HAND_CURSOR else Cursor.TEXT_CURSOR
-  var canvas = cachedSkiaCanvas
-  if (canvas == null || !canvas.isDisplayable || SwingUtilities.getWindowAncestor(canvas) !== window) {
-    canvas = findSkiaCanvas(window) ?: return
-    cachedSkiaCanvas = canvas
+  val type = when (icon) {
+    PointerIcon.Hand -> Cursor.HAND_CURSOR
+    PointerIcon.Text -> Cursor.TEXT_CURSOR
+    else -> Cursor.DEFAULT_CURSOR
+  }
+  var canvas = cachedSkiaCanvas?.get()
+  if (canvas == null || SwingUtilities.getWindowAncestor(canvas) !== window) {
+    if (skiaCanvasMissingIn?.get() === window) return
+    canvas = findSkiaCanvas(window)
+    if (canvas == null) {
+      Log.w(TAG, "desktopSetHoverCursor: Skia canvas not found, hover cursor workaround disabled")
+      skiaCanvasMissingIn = WeakReference(window)
+      return
+    }
+    cachedSkiaCanvas = WeakReference(canvas)
   }
   if (canvas.cursor.type != type) canvas.cursor = Cursor.getPredefinedCursor(type)
 }
 
-// Compose writes the pointer icon to its skia canvas component (ComposeSceneMediator.setPointerIcon
-// -> contentComponent.cursor, a SkiaLayer/SkiaSwingLayer). Writing to the same component keeps
-// last-write-wins consistent with the framework's own cursor updates (e.g. reset to default on exit).
+// Compose writes pointer icons to its skia canvas component (ComposeSceneMediator.setPointerIcon);
+// writing to the same component keeps last-write-wins consistent with the framework's own updates.
 private fun findSkiaCanvas(c: Component): Component? = when {
   c.javaClass.name.contains("Skia") -> c
   c is Container -> c.components.firstNotNullOfOrNull { findSkiaCanvas(it) }

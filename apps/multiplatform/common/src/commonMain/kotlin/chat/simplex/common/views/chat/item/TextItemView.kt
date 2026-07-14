@@ -395,9 +395,15 @@ fun MarkdownText (
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
             val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
-            icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
+            val newIcon = if (hand) PointerIcon.Hand else PointerIcon.Text
+            icon.value = newIcon
             // pointerHoverIcon alone loses updates when items shift/recompose under the cursor, see desktopSetHoverCursor
-            desktopSetHoverCursor(hand)
+            desktopSetHoverCursor(newIcon)
+          },
+          onHoverExit = {
+            // also reset icon.value, or the pointerHoverIcon node re-displays a stale Hand on its next Enter
+            icon.value = PointerIcon.Text
+            desktopSetHoverCursor(PointerIcon.Default)
           },
           shouldConsumeEvent = { offset ->
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
@@ -431,6 +437,7 @@ fun ClickableText(
   onClick: (Int) -> Unit,
   onLongClick: (Int) -> Unit = {},
   onHover: (Int) -> Unit = {},
+  onHoverExit: () -> Unit = {},
   shouldConsumeEvent: (Int) -> Boolean
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -454,9 +461,9 @@ fun ClickableText(
       consume
     }
     )
-  }.pointerInput(onHover) {
+  }.pointerInput(onHover, onHoverExit) {
     if (appPlatform.isDesktop) {
-      detectCursorMove { pos ->
+      detectCursorMove(onExit = onHoverExit) { pos ->
         layoutResult.value?.let { layoutResult ->
           onHover(layoutResult.getOffsetForPosition(pos))
         }

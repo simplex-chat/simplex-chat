@@ -92,15 +92,20 @@ suspend fun PointerInputScope.detectGesture(
   }
 }
 
-suspend fun PointerInputScope.detectCursorMove(onMove: (Offset) -> Unit = {},) {
-  // One never-exiting scope: exiting/re-entering awaitPointerEventScope per event (as forEachGesture did)
-  // drops events that arrive between scopes, leaving a stale cursor icon.
-  // Enter matters too: when content shifts under a stationary cursor, the newly hovered item gets Enter, not Move.
+suspend fun PointerInputScope.detectCursorMove(onExit: () -> Unit = {}, onMove: (Offset) -> Unit = {},) {
+  // Single scope: re-entering awaitPointerEventScope per event (as forEachGesture did) drops events.
+  // Enter/Release matter too: a stationary cursor gets no Move when content shifts or after a click.
   awaitPointerEventScope {
     while (true) {
       val event = awaitPointerEvent()
-      if (event.type == PointerEventType.Move || event.type == PointerEventType.Enter) {
-        onMove(event.changes[0].position)
+      if (event.type == PointerEventType.Move || event.type == PointerEventType.Enter || event.type == PointerEventType.Release) {
+        val pos = event.changes[0].position
+        // while a button is held the pressed node keeps receiving events even outside its bounds
+        if (event.changes.none { it.pressed } && pos.x >= 0 && pos.y >= 0 && pos.x < size.width && pos.y < size.height) {
+          onMove(pos)
+        }
+      } else if (event.type == PointerEventType.Exit) {
+        onExit()
       }
     }
   }
