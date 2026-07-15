@@ -248,7 +248,7 @@ final class RemoteCtrlBGKeepAlive {
         } else {
             ChatModel.shared.remoteCtrlSession = nil
         }
-        finish(success: false)
+        finish(success: true)
         if UIApplication.shared.applicationState == .background {
             suspendChat()
             BGManager.shared.schedule()
