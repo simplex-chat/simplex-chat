@@ -34,31 +34,31 @@ Today only the creator can do 2, 4 and 5, and 3 works only for one owner at a ti
 
 Owner 2 must already be a channel member. Their member key is then already known to relays and subscribers, and the relay connections they will publish through already exist — a subscriber creates `GRRelay`/`GCHostMember` rows, so `getGroupRelayMembers` already returns them for a promoted subscriber and the transport works unchanged.
 
-Three events, all `requiresSignature`, all over the existing relay connections to the invitee:
+Two events, both `requiresSignature`, both over the existing relay connections to the invitee. They are named for promotion rather than ownership because the shape is general: a later release promoting to any role reuses them unchanged, and only the link-write fields are owner-specific.
 
 ```
-x.grp.owner.inv     { memberRole }                -- O1 -> M
-x.grp.owner.acpt    { invitationId, ownerKey, linkRcvKey }   -- M  -> O1
-x.grp.owner.creds   { linkRcvId }                 -- O1 -> M, after RKEY + LSET succeed
+x.grp.promote.inv    { invitationId, memberRole, linkRcvId? }   -- O1 -> M
+x.grp.promote.acpt   { invitationId, memberKey, linkRcvKey? }   -- M  -> O1
 ```
 
 - `memberRole` rides in the invitation even though acceptance is automatic, so a later release can let the invitee accept or reject a named role without a wire change.
-- `ownerKey` is the invitee's existing channel member public key — already signing their messages, already known to relays and subscribers. No new signing key.
-- `linkRcvKey` is a fresh SMP recipient auth **public** key the invitee generates, so it can write link data.
-- `invitationId` binds the acceptance to one invitation, so a relay cannot replay an old acceptance.
-- `linkRcvId` is the link queue's recipient ID — the only non-public datum in the exchange. It is sent last, so a declining invitee never receives it.
+- `invitationId` binds the acceptance to one invitation, so a relay cannot replay an old one.
+- `memberKey` is the invitee's existing channel member public key — already signing its messages, already known to relays and subscribers. No new signing key, and not new information: O1 already holds it, and O1 **must** check the two match and abort otherwise, so a promotion can never introduce a key.
+- `linkRcvId` is the link queue's recipient ID; `linkRcvKey` is a fresh SMP recipient auth **public** key the invitee generates. Both appear only for an owner promotion, since only an owner writes link data.
 
 Everything else owner 2 needs in order to write link data is public or derivable: `shortLinkKey` and `shortLinkId` from the channel link, and the fixed-data plaintext (hence `rootPubKey`) via `LGET`, re-encrypted under a fresh nonce — readers check `sha3_256(fd) == linkKey` and the root signature over the *plaintext*, not the ciphertext.
 
-**Routing this over relays is safe.** The relay sees `linkRcvKey` (a public key) and `linkRcvId`. Neither is exploitable: `Server.hs:1249` verifies *every* recipient command against `recipientKeys`, so `linkRcvId` alone authorises nothing, and the matching private key never leaves owner 2's device. The relay cannot forge an acceptance — it is signed by owner 2's key, which the relay does not hold — and `invitationId` closes replay. A relay can drop the exchange, which is a liveness failure, not an escalation.
+**There is no third message handing over credentials afterwards.** `linkRcvId` rides in the invitation because it authorises nothing on its own: `Server.hs:1249` verifies *every* recipient command against `recipientKeys`, so without a private key whose public half O1 has RKEY'd, the recipient ID is inert — which is equally why the relay carrying these messages learns nothing useful. An invitee that declines is never RKEY'd and never appears in the link, so it holds a useless identifier and nothing else. And M needs no confirmation message: it learns it is an owner from the `x.grp.mem.role` broadcast, which it receives as an ordinary member.
 
 O1 on acceptance, driven by a durable worker (mirroring `runRelayRequestWorker`: multi-step, cross-network, must survive a crash mid-way):
 
 1. `RKEY` — add `linkRcvKey` to the link queue's recipient keys.
-2. `LSET` — publish `owners = [oa1, …, oaN, mkOwnerAuth memberId2 ownerKey signingKey]`.
-3. `x.grp.owner.creds` to M; `x.grp.mem.role memberId2 GROwner (Just ownerKey)` to relays → forwarded to subscribers.
+2. `LSET` — publish `owners = [oa1, …, oaN, mkOwnerAuth memberId2 memberKey signingKey]`.
+3. `x.grp.mem.role memberId2 GROwner (Just memberKey)` to relays → forwarded to subscribers.
 
-LSET precedes the role broadcast so a joiner in the window learns owner 2 from the link — the authority — rather than by TOFU. Because LSET is a blind overwrite (§4.2), the worker must verify its entry survived and re-publish if not; LSET returning success does not mean the entry is still published.
+LSET precedes the role broadcast so a joiner in the window learns owner 2 from the link — the authority — rather than by TOFU.
+
+A relay cannot forge an acceptance: it is signed by M's key and bound to `invitationId`. It can drop the exchange, which is a liveness failure, not an escalation. **It may, however, have supplied that key in the first place — see §8.**
 
 ## 4. Concurrency
 
@@ -266,6 +266,14 @@ Both should be replaced by a `canManageLink` flag on `GroupInfo`, supplied by th
 
 ## 8. Security
 
+**An owner's copy of a subscriber's key is relay-asserted, so promoting a subscriber over relay-mediated messages lets a malicious relay become an owner.** This is the sharpest issue in the plan and it is not solved.
+
+The owner has no connection to subscribers. Everything it knows about a member arrived as `XGrpMemNew` from a relay, and that message is unsigned and relay-authored — the code says so at `Subscriber.hs:3125` (*"XGrpMemNew is unsigned"*) and defends only the *reverse* direction, where a receiver holding a roster-established key refuses a relay's differing assertion (`:3131-3134`). A plain subscriber is not on the roster, so on the owner there is nothing to check against: the relay's assertion *is* the owner's copy. The joining member does sign a key proof — `encodeXMemberConnInfo` (`Internal.hs:2234`), verified by `memberJoinRequestViaRelay` (`Subscriber.hs:1684`) — but that proof stops at the relay and is never forwarded to the owner.
+
+So a relay that substitutes its own key for a member at join time can be promoted to owner by an owner who thinks it is promoting that member, and thereby sign roster and administrative messages in its own right. Requiring M's signature on the acceptance does not help: the substituted key is the relay's, so the relay produces that signature. Nor does `x.grp.mem.role` carrying the key, since the owner is the one asserting it. Once promoted, nothing downstream can detect it — subscribers take owner keys from link data, which the legitimate owner signed.
+
+The attack is not cheap: the relay must substitute the key of a member it expects to be promoted, and then intercept and re-sign that member's entire traffic, or the substitution is exposed the first time the member speaks. It is also detectable out-of-band. But it defeats design objective 3 (*"No possibility for a relay to impersonate an owner"*) for the highest-privilege role in the system, and the mitigation is structural rather than clever: the owner needs a path to M's key that the relay did not mediate. A direct owner↔invitee connection — which is also how relays are invited — provides one. §11.
+
 **Any owner can destroy the channel.** `Server.hs:1249` — `vc SRecipient _ = verifyQueue $ \q -> verifiedWithKeys $ recipientKeys (snd q)`: any recipient key authorises any recipient command, including `DEL` (destroy the queue) and `LDEL` (destroy the link data), with no per-command scoping. This is consistent with any-owner-decides, and is recorded because it is stronger than any chat-level action — the link address is embedded in the published profile, so its loss cannot be repaired by re-publishing.
 
 **RKEY revocation is a race.** `updateKeys` replaces the whole list, so O1 can evict O2 and O2 can evict O1; last writer wins. Owner removal at the SMP level is not a clean operation.
@@ -289,6 +297,8 @@ Cases: owner 2 promoted, verified by an existing subscriber (TOFU path) and by a
 `channels-overview.md` §Governance — move v7 to current; qualify the creator-anonymity claim; record the §4.1 tie-break and the §4.2 residual. `channels-protocol.md` — new §Owner addition, and the `x.grp.owner.*` events in the signing table. Closes four TODOs: `Internal.hs:1508`, `Subscriber.hs:1426`, `Subscriber.hs:1451`, `Groups.hs:2320`.
 
 ## 11. Open questions
+
+**Promoting over relays trusts the relay for the invitee's key (§8).** The plan routes `x.grp.promote.*` over relays, which is fine for every payload in them but not for the key the whole promotion is built on: the owner's copy came from an unsigned, relay-authored `XGrpMemNew`, so a relay that substituted it at join time can be promoted to owner. The fix is a path to the invitee's key that the relay did not mediate — a direct owner↔invitee connection, the same shape by which relays are invited today. That would mean the invitee must be reachable directly, not merely be a channel member. Worth settling before implementation, since it changes who can be promoted.
 
 **Owner removal.** Out of scope here, and not yet designed. Three things make it harder than it looks: removing a chain entry invalidates every owner it transitively signed (§4.3); SMP-level revocation is a mutual-eviction race (§8); and there is **no last-owner protection anywhere** in the backend — `APIMembersRole` blocks only `selfSelected`, so two owners can already demote each other into an ownerless, unrecoverable channel, and RULE-19 is UI-only. The backend last-owner guard is worth adding regardless of how removal is designed.
 
