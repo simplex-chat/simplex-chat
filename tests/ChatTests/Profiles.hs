@@ -214,7 +214,7 @@ testProfileDescriptionShown =
       alice ##> "/i @bob"
       alice <## "contact ID: 2"
       alice <## "description:"
-      alice <## "check https://simplex.chat out"
+      alice <## "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"
       alice <##. "receiving messages via"
       alice <##. "sending messages via"
       alice <## "you've shared main profile with this contact"
@@ -222,7 +222,7 @@ testProfileDescriptionShown =
       alice <## "quantum resistant end-to-end encryption"
       alice <##. "peer chat protocol version range"
   where
-    bobWithDescr = bobProfile {description = Just "check https://simplex.chat out"}
+    bobWithDescr = bobProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
 
 -- for a member without a direct contact, the description is redacted per the group's link/name policy
 testMemberDescriptionRedacted :: HasCallStack => TestParams -> IO ()
@@ -266,7 +266,7 @@ testMemberDescriptionRedacted =
       bob <## "connection not verified, use /code command to see security code"
       bob <##. "peer chat protocol version range"
   where
-    cathWithDescr = cathProfile {description = Just "check https://simplex.chat out"}
+    cathWithDescr = cathProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
 
 -- the test issuer key under index 1 in the test config
 testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
