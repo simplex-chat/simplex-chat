@@ -83,7 +83,8 @@ mice. The imperative write targets the same Skia canvas component Compose writes
 consistent with the framework's own updates; the canvas lookup is cached weakly (including negative
 results, with a one-time warning log if the component is not found after a Compose upgrade — the
 workaround then degrades to the framework-only path). No framework edge can leave the cursor
-stuck, because it is re-asserted on every mouse move and released on exit.
+stuck, because it is re-asserted on every mouse move over clickable message text and released on
+exit — with the one exception described under "Residual limitation" below.
 
 The same lost-edge class also applies in principle to static `pointerHoverIcon` sites whose content
 shifts under a stationary cursor (e.g. the chat list link previews using
@@ -109,7 +110,8 @@ hover.
   `setCursor` call fires only when the cursor type actually changes. The canvas component lookup
   (recursive tree walk) runs once per window and is cached, including negative results (a miss is
   unreachable in practice — pointer events originate from the rendered canvas — kept as a guard).
-- No new recompositions: the icon state logic is unchanged; Android is a no-op.
+- One added recomposition when the pointer exits text that showed a Hand (the exit reset writes
+  `icon.value` Hand→Text); otherwise the icon state logic is unchanged. Android is a no-op.
 
 Framework line numbers cited above are from the official `ui-desktop-1.8.2`/`foundation-desktop-1.8.2`
 sources jars on Maven Central; they will drift on upgrade.
@@ -121,6 +123,10 @@ Verified on Linux (AppImage), in two stages:
 1. A build with only the detection-layer fix (lossless `detectCursorMove`) was tested first and
    the stale-cursor symptom **still reproduced** — this is the empirical justification for the
    imperative display-layer workaround; the declarative-only fix is not sufficient.
-2. With both layers: hovering commands after clicking several in a row, clicking stacked `/join`
-   commands without moving the mouse, and sweeping across commands quickly — the hand cursor
-   tracks correctly in all cases.
+2. With both layers (pre-hardening build, commit `df6b0655d`): hovering commands after clicking
+   several in a row, clicking stacked `/join` commands without moving the mouse, and sweeping
+   across commands quickly — the hand cursor tracks correctly in all cases.
+
+The later hardening commits (release refresh, pressed/bounds gating, exit resets, canvas cache)
+are verified by compilation on both targets and multi-pass adversarial review; runtime
+re-verification of the final build is pending.

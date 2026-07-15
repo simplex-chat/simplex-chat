@@ -100,7 +100,7 @@ suspend fun PointerInputScope.detectCursorMove(onExit: () -> Unit = {}, onMove: 
       val event = awaitPointerEvent()
       if (event.type == PointerEventType.Move || event.type == PointerEventType.Enter || event.type == PointerEventType.Release) {
         val pos = event.changes[0].position
-        // while a button is held the pressed node keeps receiving events even outside its bounds
+        // pressed nodes keep receiving events outside their bounds, both while held and at release
         if (event.changes.none { it.pressed } && pos.x >= 0 && pos.y >= 0 && pos.x < size.width && pos.y < size.height) {
           onMove(pos)
         }
