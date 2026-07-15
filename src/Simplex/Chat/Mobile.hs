@@ -262,6 +262,8 @@ mobileChatOpts dbOptions =
             deviceName = Nothing,
             chatRelay = False,
             webPreviewConfig = Nothing,
+            chatRelayServer = Nothing,
+            headless = False,
             highlyAvailable = False,
             yesToUpMigrations = False,
             migrationBackupPath = Just "",
@@ -278,7 +280,9 @@ mobileChatOpts dbOptions =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Nothing
+      createBot = Nothing,
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }
 
 defaultMobileConfig :: ChatConfig

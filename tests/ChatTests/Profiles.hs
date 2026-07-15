@@ -49,6 +49,8 @@ chatProfileTests = do
     it "profile description round-trips and shows in contact info" testProfileDescriptionShown
     it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
+    it "reject profile image that is too large" testSetProfileImageTooLarge
+    it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
     it "present supporter badge to contacts" testUserBadgeBroadcast
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
@@ -59,6 +61,7 @@ chatProfileTests = do
     it "supporter badge sent to contact connecting via address" testUserBadgeContactAddress
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -489,6 +492,52 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
+testSetProfileImageTooLarge :: HasCallStack => TestParams -> IO ()
+testSetProfileImageTooLarge =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      -- image within the size limit is accepted
+      alice ##> "/set profile image data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
+      alice <## "profile image updated"
+      -- image over the size limit is rejected;
+      -- the long command wraps in the virtual terminal, so drain echo lines until the error
+      alice `send` ("/set profile image data:image/png;base64," <> replicate 12500 'A')
+      let errPrefix = "bad chat command: Profile image is too large"
+          expectError = do
+            l <- getTermLine alice
+            unless (take (length errPrefix) l == errPrefix) expectError
+      expectError
+      (bob </)
+
+testSetProfileImageFromFile :: HasCallStack => TestParams -> IO ()
+testSetProfileImageFromFile ps = testChat aliceProfile test ps
+  where
+    tmp = tmpPath ps
+    pngPath = tmp <> "/avatar.png"
+    gifPath = tmp <> "/avatar.gif"
+    missingPath = tmp <> "/missing.png"
+    emptyPath = tmp <> "/empty.png"
+    test alice = do
+      B.writeFile pngPath "fake png bytes" -- content is not validated, only the extension
+      -- set profile image from a .png file
+      alice ##> ("/set profile image file " <> pngPath)
+      alice <## "profile image updated"
+      alice ##> "/show profile image"
+      alice <## "Profile image:"
+      alice <##. "data:image/png;base64,"
+      -- unsupported extension is rejected
+      B.writeFile gifPath "GIF89a"
+      alice ##> ("/set profile image file " <> gifPath)
+      alice <##. "bad chat command: unsupported image extension"
+      -- missing file is rejected
+      alice ##> ("/set profile image file " <> missingPath)
+      alice <##. "bad chat command: image file not found"
+      -- empty file is rejected
+      B.writeFile emptyPath ""
+      alice ##> ("/set profile image file " <> emptyPath)
+      alice <##. "bad chat command: image file is empty"
+
 testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =
   testChat3 aliceProfile' bobProfile' cathProfile' $
@@ -594,6 +643,32 @@ testUserContactLink =
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
+
+testCreateAddressOnServer :: HasCallStack => TestParams -> IO ()
+testCreateAddressOnServer ps = testChat aliceProfile test ps
+  where
+    tmp = tmpPath ps
+    -- second SMP server, distinct from alice's configured server (localhost:7001)
+    altServer = "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"
+    altServerCfg =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    test alice = do
+      withSmpServer' altServerCfg $ do
+        -- without a server the address is created on the configured server (7001)
+        alice ##> "/_address 1"
+        (_, defaultLink) <- getContactLinks alice True
+        defaultLink `shouldContain` "localhost%3A7001" -- server is URL-encoded in the link
+        alice ##> "/_delete_address 1"
+        alice <## "Your chat address is deleted - accepted contacts will remain connected."
+        alice <## "To create a new chat address use /ad"
+        -- with a server the address is pinned to the requested server (7003)
+        alice ##> ("/_address 1 " <> altServer)
+        (_, pinnedLink) <- getContactLinks alice True
+        pinnedLink `shouldContain` "localhost%3A7003"
+      alice <## "disconnected 1 connections on server localhost"
 
 testRetryConnectingViaContactLink :: HasCallStack => TestParams -> IO ()
 testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps

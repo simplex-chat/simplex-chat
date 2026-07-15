@@ -24,6 +24,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), mkStoreCxt)
+import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -241,7 +242,9 @@ genProfileImg = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
+    -- raw bytes that base64-encode to fit maxProfileImageSize when prefixed with "data:image/png;base64,"
+    lrgLen = (maxProfileImageSize - imagePrefixLen) * 3 `div` 4 - 1
+    imagePrefixLen = 22
 
 -- PQ combinators /
 
