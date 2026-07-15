@@ -61,6 +61,7 @@ module Simplex.Chat.Store.Messages
     markDirectChatItemDeleted,
     updateGroupChatItemStatus,
     updateGroupChatItem,
+    updateChatItemSignedMsg,
     createGroupCIMentions,
     updateGroupCIMentions,
     deleteGroupChatItem,
@@ -2759,6 +2760,19 @@ updateGroupChatItem db user groupId ci newContent edited live msgId_ = do
   liftIO $ updateGroupChatItem_ db user groupId ci' msgId_
   pure ci'
 
+-- overwrite the stored signed bytes when a signed edit is applied, so sendHistory forwards the latest signed content
+updateChatItemSignedMsg :: DB.Connection -> ChatItemId -> Maybe SignedMsg -> IO ()
+updateChatItemSignedMsg db itemId signedMsg_ =
+  DB.execute
+    db
+    "UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ? WHERE chat_item_id = ?"
+    (body_, cb_, sigs_, itemId)
+  where
+    (body_, cb_, sigs_) = case signedMsg_ of
+      Just SignedMsg {chatBinding, signatures, signedBody} ->
+        (Just (DB.Binary signedBody), Just chatBinding, Just (DB.Binary (smpEncode signatures)))
+      Nothing -> (Nothing, Nothing, Nothing)
+
 -- this function assumes that the group item with correct chat direction already exists,
 -- it should be checked before calling it
 updateGroupChatItem_ :: MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> Maybe MessageId -> IO ()
@@ -3698,11 +3712,36 @@ getGroupSndStatusCounts db itemId =
     |]
     (Only itemId)
 
-getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
+-- reconstruct the author-signed bytes stored for a history content item (mirroring the roster/messages storage)
+-- and the item's author member (memberId + name), needed to forward signed items as FwdMember so the recipient
+-- can reconstruct the signature binding and verify -- FwdChannel would discard the signature.
+getChatItemForwardInfo_ :: DB.Connection -> ChatItemId -> IO (Maybe SignedMsg, Maybe (MemberId, ContactName))
+getChatItemForwardInfo_ db itemId = do
+  rows <-
+    DB.query
+      db
+      [sql|
+        SELECT i.item_chat_binding, i.item_signatures, i.item_msg_body, am.member_id, ap.display_name
+        FROM chat_items i
+        LEFT JOIN messages msg ON msg.message_id = i.created_by_msg_id
+        LEFT JOIN group_members am ON am.group_member_id = msg.author_group_member_id
+        LEFT JOIN contact_profiles ap ON ap.contact_profile_id = COALESCE(am.member_profile_id, am.contact_profile_id)
+        WHERE i.chat_item_id = ?
+      |]
+      (Only itemId)
+  pure $ case rows of
+    (cb_ :: Maybe ChatBinding, sigs_ :: Maybe ByteString, body_ :: Maybe ByteString, authorMemberId_ :: Maybe MemberId, authorName_ :: Maybe ContactName) : _ ->
+      ( SignedMsg <$> cb_ <*> (sigs_ >>= eitherToMaybe . smpDecode) <*> body_,
+        (,) <$> authorMemberId_ <*> authorName_
+      )
+    _ -> (Nothing, Nothing)
+
+getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup, (Maybe SignedMsg, Maybe (MemberId, ContactName)))]
 getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
   ciIds <- getLastItemIds_
-  reverse <$> mapM (runExceptT . getGroupCIWithReactions db user g) ciIds
+  reverse <$> mapM loadItem ciIds
   where
+    loadItem ciId = runExceptT $ (,) <$> getGroupCIWithReactions db user g ciId <*> liftIO (getChatItemForwardInfo_ db ciId)
     getLastItemIds_ :: IO [ChatItemId]
     getLastItemIds_ =
       map fromOnly

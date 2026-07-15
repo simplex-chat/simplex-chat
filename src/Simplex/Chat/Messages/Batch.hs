@@ -13,6 +13,7 @@ module Simplex.Chat.Messages.Batch
     encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
+    batchElements,
     batchProfilesWithBody,
     batchProfiles,
     maxBatchElementSize,
@@ -102,6 +103,26 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       let encoded = encodeBinaryBatch (reverse msgBodies)
           body = if null accepted then Nothing else Just encoded
        in (body, reverse accepted, reverse large)
+
+-- | Pack pre-encoded batch elements into >=1 binary batches, each within maxLen, preserving order.
+-- Elements may be a mix of forward elements ('encodeFwdElement', signed or unsigned) and plain
+-- authored elements ('encodeBatchElement') -- the receiver parses each by its prefix. Returns the
+-- batches and the count of elements dropped for exceeding a singleton batch. Used to re-serve group
+-- history (forwards) together with the welcome message (authored) in one stream.
+batchElements :: Int -> [ByteString] -> ([ByteString], Int)
+batchElements maxLen els =
+  let (batches, cur, _, n, dropped) = foldl' addEl ([], [], 0 :: Int, 0 :: Int, 0 :: Int) els
+      batches' = if n == 0 then batches else encodeBinaryBatch (reverse cur) : batches
+   in (reverse batches', dropped)
+  where
+    addEl (batches, cur, len, n, dropped) el =
+      let elLen = B.length el
+       in if elLen + 4 > maxLen
+            then (batches, cur, len, n, dropped + 1)
+            else
+              if len + elLen + (n + 1) * 2 + 2 <= maxLen
+                then (batches, el : cur, len + elLen, n + 1, dropped)
+                else (encodeBinaryBatch (reverse cur) : batches, [el], elLen, 1, dropped)
 
 -- | Encode a batch element for relay groups: ><GrpMsgForward>[/<sigs>]<body>.
 encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString

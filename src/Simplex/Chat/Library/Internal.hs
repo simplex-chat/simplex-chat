@@ -60,7 +60,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -1307,20 +1307,30 @@ sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternal
 sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just conn} =
   when (m `supportsVersion` batchSendVersion) $ do
     (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
-    (errs', events) <- partitionEithers <$> mapM (tryAllErrors . itemForwardEvents) items
+    (errs', fwdMsgsByItem) <- partitionEithers <$> mapM (tryAllErrors . itemForwardMsgs) items
     let errors = map ChatErrorStore errs <> errs'
     unless (null errors) $ toView $ CEvtChatErrors errors
-    let events' = concat events
-    events_ <- case descrEvent_ of
-      Just descr -> mkEvents <$> withStore' (\db -> getMemberJoinRequest db user gInfo m)
-        where
-          mkEvents = \case
-            Just (_, Just _welcomeMsgId) -> events'
-            _ -> events' <> [descr]
-      Nothing -> pure events'
-    forM_ (L.nonEmpty events_) $ \events'' ->
-      sendGroupMemberMessages user gInfo conn events''
+    -- signed items keep the author's original bytes/signature, unsigned are re-encoded; the welcome message
+    -- (regular groups only; never channels) is an authored element -- all batch together in order.
+    let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
+    welcomeEl <- welcomeElement
+    let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
+    when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
+    forM_ batches $ \body ->
+      void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
   where
+    welcomeElement :: CM (Maybe ByteString)
+    welcomeElement = case descrEvent_ of
+      Just descr ->
+        withStore' (\db -> getMemberJoinRequest db user gInfo m) >>= \case
+          Just (_, Just _welcomeMsgId) -> pure Nothing
+          _ -> do
+            vr <- chatVersionRange
+            sharedMsgId <- SharedMsgId <$> drgRandomBytes 24
+            case encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = descr} of
+              ECMEncoded body -> pure $ Just (encodeBatchElement Nothing body)
+              ECMLarge -> Nothing <$ toView (CEvtChatErrors [ChatError $ CEInternalError "sendHistory: welcome message too large"])
+      Nothing -> pure Nothing
     descrEvent_ :: Maybe (ChatMsgEvent 'Json)
     descrEvent_
       -- in channels sendHistory runs on the relay, which cannot author XMsgNew (GRRelay < GRObserver);
@@ -1330,17 +1340,17 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
           fmap (\descr -> XMsgNew $ mcSimple (MCText descr)) description
       | otherwise = Nothing
-    itemForwardEvents :: CChatItem 'CTGroup -> CM [ChatMsgEvent 'Json]
-    itemForwardEvents cci = case cci of
+    itemForwardMsgs :: (CChatItem 'CTGroup, (Maybe SignedMsg, Maybe (MemberId, ContactName))) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+    itemForwardMsgs (cci, (signedMsg_, author_)) = case cci of
       (CChatItem SMDRcv ci@ChatItem {content = CIRcvMsgContent mc, file})
         | not (maybe False blockedByAdmin sender_) -> do
             fInvDescr_ <- join <$> forM file getRcvFileInvDescr
-            processContentItem sender_ ci mc fInvDescr_
+            processContentItem sender_ ci mc fInvDescr_ signedMsg_ author_
         | otherwise -> pure []
         where sender_ = chatItemRcvFromMember ci
       (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
         fInvDescr_ <- join <$> forM file getSndFileInvDescr
-        processContentItem (Just membership) ci mc fInvDescr_
+        processContentItem (Just membership) ci mc fInvDescr_ signedMsg_ author_
       _ -> pure []
       where
         getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText))
@@ -1373,8 +1383,8 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   fInv = xftpFileInvitation fileName fileSize fInvDescr
                in Just (fInv, fileDescrText)
           | otherwise = Nothing
-        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [ChatMsgEvent 'Json]
-        processContentItem sender_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
+        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> Maybe SignedMsg -> Maybe (MemberId, ContactName) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+        processContentItem sender_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ signedMsg_ author_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
@@ -1384,22 +1394,31 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   asGroup = isNothing sender_
-              -- TODO [knocking] send history to other scopes too?
-              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing asGroup mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
-              -- for channel messages default chat version range to membership range
-              let senderVRange = maybe (memberChatVRange' membership) memberChatVRange' sender_
-                  xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
+                  -- for channel messages default chat version range to membership range
+                  senderVRange = maybe (memberChatVRange' membership) memberChatVRange' sender_
+                  -- signed items forward as FwdMember (the author) so the recipient can reconstruct the binding and verify;
+                  -- FwdChannel discards the signature. Unsigned items keep the channel/member attribution as-is.
+                  fwdSender = case (signedMsg_, author_) of
+                    (Just _, Just (authorMemberId, authorName)) -> FwdMember authorMemberId authorName
+                    _ -> maybe FwdChannel (\s -> FwdMember (memberId' s) (memberShortenedName s)) sender_
+                  fwd = GrpMsgForward {fwdSender, fwdBrokerTs = itemTs}
+              -- signed items forward the author's original bytes so the signature stays valid; unsigned re-encode current content
+              contentVM <- case signedMsg_ of
+                Just sm@SignedMsg {signedBody}
+                  | Right chatMsg <- (J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json)) ->
+                      pure $ VMSigned MSSVerified sm chatMsg
+                _ -> do
+                  -- TODO [knocking] send history to other scopes too?
+                  (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing asGroup mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
+                  pure $ VMUnsigned ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
               fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
                 (Just fileDescrText, Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize fileDescrText
                   pure . L.toList $ L.map (XMsgFileDescr msgId) parts
                 _ -> pure []
-              let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
-                  fwdSender = maybe FwdChannel (\s -> FwdMember (memberId' s) (memberShortenedName s)) sender_
-                  fwd = GrpMsgForward {fwdSender, fwdBrokerTs = itemTs}
-                  msgForwardEvents = map (XGrpMsgForward fwd) (xMsgNewChatMsg : fileDescrChatMsgs)
-              pure msgForwardEvents
+              let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
+              pure $ map ((,) fwd) (contentVM : fileDescrVMs)
 
 memberShortenedName :: GroupMember -> ContactName
 memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
