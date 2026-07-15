@@ -88,7 +88,7 @@ actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpen
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 
-// hot path: canvas lookup (and its failure) cached per window, weakly to not retain a recreated window
+// called on every hover move: cache the canvas (and lookup failure) per window; weak refs let a closed window be GCed
 private var cachedSkiaCanvas: WeakReference<Component>? = null
 private var skiaCanvasMissingIn: WeakReference<Window>? = null
 
