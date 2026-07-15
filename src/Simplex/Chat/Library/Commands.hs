@@ -1144,39 +1144,23 @@ processChatCommand cxt nm = \case
               _ -> Nothing
         ownerSig <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
-            mkLinkOwnerSig memberPrivKey groupLink memberId <$$> shareChatBinding user toSendRef
+            mkLinkOwnerSig memberPrivKey groupLink (Just memberId) <$$> shareChatBinding user toSendRef
         let text = safeDecodeUtf8 $ strEncode groupLink
         pure $ CRChatMsgContent user MCChat {text, chatLink = MCLGroup groupLink gp, ownerSig}
-    where
-      mkLinkOwnerSig :: ConnectionModeI m => C.PrivateKeyEd25519 -> ConnShortLink m -> MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
-      mkLinkOwnerSig privKey connLink MemberId {unMemberId} (cbTag, bindingData) =
-        let ownerId = Just $ B64UrlByteString unMemberId
-            cb = encodeChatBinding cbTag bindingData
-            ownerSig = C.sign' privKey $ cb <> smpEncode connLink
-         in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
-      shareChatBinding :: User -> SendRef -> CM (Maybe (ChatBinding, ByteString))
-      shareChatBinding u = \case
-        SRDirect contactId -> do
-          ct <- withFastStore $ \db -> getContact db cxt u contactId
-          forM (contactConn ct) $ \conn ->
-            (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
-        SRGroup toGroupId _ asGroup -> do
-          GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = m} <- withFastStore $ \db -> getGroupInfo db cxt u toGroupId
-          pure $ mkBinding m <$> publicGroup
-          where
-            mkBinding GroupMember {memberId} PublicGroupProfile {publicGroupId = pgId}
-              | asGroup = (CBChannel, smpEncode pgId)
-              | otherwise = (CBGroup, smpEncode (pgId, memberId))
   APIShareChatMsgContent _ _ -> throwCmdError "sharing is only supported for public groups"
-  APIShareMyAddress _ -> withUser $ \user -> do
+  APIShareMyAddress toSendRef -> withUser $ \user -> do
     UserContactLink {connLinkContact = CCLink _ sl_, addressSettings} <- withFastStore (`getUserAddress` user)
     case sl_ of
       Nothing -> throwCmdError "your address has no short link to share"
       Just connLink -> do
+        conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
+        ownerSig <-
+          withAgent (`getConnLinkPrivKey` aConnId conn) $>>= \privKey ->
+            mkLinkOwnerSig privKey connLink Nothing <$$> shareChatBinding user toSendRef
         let business = businessAddress addressSettings
             profile = userProfileDirect user Nothing Nothing True
             text = safeDecodeUtf8 $ strEncode connLink
-        pure $ CRChatMsgContent user MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig = Nothing}
+        pure $ CRChatMsgContent user MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig}
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
@@ -4537,6 +4521,25 @@ processChatCommand cxt nm = \case
     serverShortLink = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
+    mkLinkOwnerSig :: ConnectionModeI m => C.PrivateKeyEd25519 -> ConnShortLink m -> Maybe MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
+    mkLinkOwnerSig privKey connLink ownerMemberId (cbTag, bindingData) =
+      let ownerId = (\MemberId {unMemberId} -> B64UrlByteString unMemberId) <$> ownerMemberId
+          cb = encodeChatBinding cbTag bindingData
+          ownerSig = C.sign' privKey $ cb <> smpEncode connLink
+       in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
+    shareChatBinding :: User -> SendRef -> CM (Maybe (ChatBinding, ByteString))
+    shareChatBinding u = \case
+      SRDirect contactId -> do
+        ct <- withFastStore $ \db -> getContact db cxt u contactId
+        forM (contactConn ct) $ \conn ->
+          (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
+      SRGroup toGroupId _ asGroup -> do
+        GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = m} <- withFastStore $ \db -> getGroupInfo db cxt u toGroupId
+        pure $ mkBinding m <$> publicGroup
+        where
+          mkBinding GroupMember {memberId} PublicGroupProfile {publicGroupId = pgId}
+            | asGroup = (CBChannel, smpEncode pgId)
+            | otherwise = (CBGroup, smpEncode (pgId, memberId))
     verifyLinkOwner :: ConnectionModeI m => C.PublicKeyEd25519 -> [OwnerAuth] -> ConnShortLink m -> Maybe LinkOwnerSig -> Maybe OwnerVerification
     verifyLinkOwner rootKey owners connLink =
       fmap $ \LinkOwnerSig {ownerId, chatBinding = B64UrlByteString bindingBytes, ownerSig} ->

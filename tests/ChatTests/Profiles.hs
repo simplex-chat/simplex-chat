@@ -26,9 +26,9 @@ import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (currentChatVersion)
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..), currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -38,7 +38,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util (encodeJSON)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
@@ -121,6 +121,7 @@ chatProfileTests = do
     it "should connect via one-time invitation" testShortLinkInvitation
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
+    it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
@@ -3025,6 +3026,38 @@ testPlanShortLinkInvitation =
 
 slSimplexScheme :: String -> String
 slSimplexScheme sl = T.unpack $ T.replace "https://localhost/" "simplex:/" (T.pack sl) <> "?h=localhost"
+
+testShareAddressViaChat :: HasCallStack => TestParams -> IO ()
+testShareAddressViaChat =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    alice ##> "/ad"
+    _ <- getContactLinks alice True
+    connectUsers alice bob
+    connectUsers bob cath
+    -- alice shares her signed address card to bob
+    alice ##> "/share address @bob"
+    alice <# "@bob contact address of @alice (signed):"
+    _ <- getTermLine alice -- link
+    _ <- getTermLine alice -- owner signature (testView)
+    bob <# "alice> contact address of @alice (signed):"
+    bLink <- getTermLine bob
+    bSig <- getTermLine bob
+    -- bob verifies alice's owner signature
+    bob ##> ("/_connect plan 1 " <> bLink <> " sig=" <> bSig)
+    bob <## "contact address: ok to connect"
+    bob <## "owner signature: verified"
+    _ <- getTermLine bob -- link data
+    -- bob replays alice's signed card to cath: the binding was alice->bob, so cath strips the signature
+    let sig = maybe (error "bad sig") id (decodeJSON (T.pack bSig) :: Maybe LinkOwnerSig)
+        cLink = either error id $ strDecode (B.pack bLink)
+        mc = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") False) (Just sig)
+        cm = "{\"msgContent\":" <> T.unpack (encodeJSON mc) <> "}"
+    bob ##> ("/_send @3 json [" <> cm <> "]")
+    bob <# "@cath contact address of @alice (signed):"
+    _ <- getTermLine bob -- link
+    _ <- getTermLine bob -- owner signature (bob's sent view)
+    cath <# "bob> contact address of @alice:"
+    void $ getTermLine cath -- link (signature stripped)
 
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =
