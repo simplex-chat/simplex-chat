@@ -164,6 +164,18 @@ perServerRolesTest = describe "per-server roles" $ do
           operator `shouldBe` Just 1
           rolesTuple roles `shouldBe` rolesTuple (operatorRoles SPSMP testOp)
         cfgs -> expectationFailure $ "expected one operator-matched ServerCfg, got: " <> show cfgs
+    it "two self-hosted servers resolve their three roles independently" $
+      -- server A: receive off, proxy on, names on; server B: receive on, proxy off,
+      -- names default (off) -- every toggle differs across the two servers, and each
+      -- resolves to its own concrete roles (order is preserved by agentServerCfgs)
+      let a = (newUserServer "smp://abcd@self.example.com" :: NewUserServer 'PSMP) {roles = ServerRolesOverride (Just False) (Just True) (Just True)}
+          b = (newUserServer "smp://abcd@self2.example.com" :: NewUserServer 'PSMP) {roles = ServerRolesOverride (Just True) (Just False) Nothing}
+       in case agentServerCfgs SPSMP opDomains [a, b] of
+            [ServerCfg {operator = opA, roles = rolesA}, ServerCfg {operator = opB, roles = rolesB}] -> do
+              (opA, opB) `shouldBe` (Nothing, Nothing)
+              rolesTuple rolesA `shouldBe` (False, True, True)
+              rolesTuple rolesB `shouldBe` (True, False, False)
+            cfgs -> expectationFailure $ "expected two self-hosted ServerCfgs, got: " <> show cfgs
   describe "validateUserServers per-server names coverage" $ do
     it "self-hosted-only user without names servers warns USWNoNamesServers" $ do
       let (_errs, warns) = validateUserServers [selfHostedUser emptyServerRolesOverride] []
