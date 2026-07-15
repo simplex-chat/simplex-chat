@@ -58,7 +58,7 @@ O1 on acceptance, driven by a durable worker (mirroring `runRelayRequestWorker`:
 
 LSET precedes the role broadcast so a joiner in the window learns owner 2 from the link — the authority — rather than by TOFU.
 
-A relay cannot forge an acceptance: it is signed by M's key and bound to `invitationId`. It can drop the exchange, which is a liveness failure, not an escalation. **It may, however, have supplied that key in the first place — see §8.**
+A relay cannot forge an acceptance: it is signed by M's key and bound to `invitationId`. It can drop the exchange, which is a liveness failure, not an escalation. What makes this sound is not the messages themselves but that M's key was verified out of band before the promotion — §8.
 
 ## 4. Concurrency
 
@@ -223,7 +223,8 @@ Two owners genuinely disagreeing — one adding a relay, the other removing the 
 - `Internal.hs:1458` `updatePublicGroupData`, `Commands.hs:4011` `runUpdateGroupProfile`, `Commands.hs:2713` `APIAddGroupRelays` — all gate on `memberRole' membership == GROwner` but need "can write link data" (an owner mid-handover cannot). One predicate, used at all three.
 - `Commands.hs:4016` `runUpdateGroupProfile` — commits the profile locally before the synchronous link write at `:4034`. Reorder to write first, then commit and broadcast (§4.2); this also fixes the existing case where a failed link write silently diverges the profile.
 - `Commands.hs:3268` `APIAddGroupShortLink` asserts no role at all — add the same gate.
-- `Commands.hs:2872` `APIMembersRole` — route `newRole == GROwner` on a channel into the §3 flow.
+- `Commands.hs:2872` `APIMembersRole` — route `newRole == GROwner` on a channel into the §3 flow, and check `memberVerifiedCode` is set on the invitee (§8); the promotion signs that key into the owners chain, so an unverified one is a relay assertion.
+- The invitation must carry the key O1 verified, and the acceptance's `memberKey` must equal it — otherwise abort. Verification is worthless if the key can change between verifying and promoting.
 - `Subscriber.hs:3345` `allowCreate` — widen so an owner-signed `x.grp.mem.role` carrying a key can TOFU-create a `GROwner`; `isRosterRole GROwner == False` blocks it today, so subscribers can never materialise a new owner.
 - `Commands.hs:2936` `mKey` — send the key on owner promotion, not only when a roster version is present.
 - `Subscriber.hs:4195` — the "owners are already known to every member" skip is false for a newly promoted owner; disseminate their profile.
@@ -259,6 +260,7 @@ The UI already pluralises owners (`ownersContributorsCountStr`, `ChatInfoToolbar
 Both should be replaced by a `canManageLink` flag on `GroupInfo`, supplied by the backend. It is not equivalent to `isOwner`: an owner mid-handover, or one whose `x.grp.owner.creds` never arrived, cannot write the link. Gate link, relay and domain-claim UI on it.
 
 - `canChangeRoleTo` (`ChatTypes.swift:3060`, `ChatModel.kt:2652`) hard-codes `[.observer, .member]` for channels. Add `.owner`, and handle that selecting it starts an async two-phase flow (pending → owner, or failed), not an immediate role change.
+- Promoting to owner warns when the invitee's key is unverified, and routes to the existing member-verification screen (`APIVerifyGroupMember` → `verifyChannelMemberCode`). This is the only thing standing between a substituted key and an owner-signed chain (§8), so the warning has to be prominent rather than a footnote — and unlike contact verification, the consequence is not "this conversation" but the channel's trust chain.
 - New: owners section in channel info; pending-owner state.
 - A role change an owner made can revert when it loses a tie-break (§4.1). Surface it.
 - **iOS-only:** `GroupChatInfoView.swift:303` skips the `apiGetGroupLink` fetch unless `isOwner`; Kotlin fetches unconditionally (`ChatView.kt:403/428`). Reconcile.
@@ -266,13 +268,11 @@ Both should be replaced by a `canManageLink` flag on `GroupInfo`, supplied by th
 
 ## 8. Security
 
-**An owner's copy of a subscriber's key is relay-asserted, so promoting a subscriber over relay-mediated messages lets a malicious relay become an owner.** This is the sharpest issue in the plan and it is not solved.
+**The invitee's key must be verified out of band before promoting to owner.** By default an owner's copy of a subscriber's key is relay-asserted: the owner has no connection to subscribers, so everything it knows about a member arrived as `XGrpMemNew`, which is unsigned and relay-authored (`Subscriber.hs:3125`). The code defends only the *reverse* direction — a receiver holding a roster-established key refuses a relay's differing assertion (`:3131-3134`) — and a plain subscriber is not on the roster, so on the owner there is nothing to check against. The joining member's own signed key proof (`encodeXMemberConnInfo`, `Internal.hs:2234`) is verified by the relay (`memberJoinRequestViaRelay`, `Subscriber.hs:1684`) and never forwarded. So a relay that substituted a member's key at join could be promoted to owner by an owner that believes it is promoting that member, and would then sign rosters and administrative messages in its own right. No in-protocol signature closes this: the substituted key *is* the relay's, so the relay signs the acceptance with it.
 
-The owner has no connection to subscribers. Everything it knows about a member arrived as `XGrpMemNew` from a relay, and that message is unsigned and relay-authored — the code says so at `Subscriber.hs:3125` (*"XGrpMemNew is unsigned"*) and defends only the *reverse* direction, where a receiver holding a roster-established key refuses a relay's differing assertion (`:3131-3134`). A plain subscriber is not on the roster, so on the owner there is nothing to check against: the relay's assertion *is* the owner's copy. The joining member does sign a key proof — `encodeXMemberConnInfo` (`Internal.hs:2234`), verified by `memberJoinRequestViaRelay` (`Subscriber.hs:1684`) — but that proof stops at the relay and is never forwarded to the owner.
+Out-of-band verification closes it, and the mechanism already exists. `APIVerifyGroupMember` (`Commands.hs:2021`) routes channels to `verifyChannelMemberCode`, whose code is `channelMemberCode ownKey memKey` (`Types.hs:1911`) — a hash over *both* member public keys, sorted so each side computes the same value. Two members comparing it out of band therefore detect a substitution of either key, and `setGroupMemberVerified` persists the result as `memberVerifiedCode`. This is the path to the key the relay did not mediate, and it is the same mechanism SimpleX already uses for contacts.
 
-So a relay that substitutes its own key for a member at join time can be promoted to owner by an owner who thinks it is promoting that member, and thereby sign roster and administrative messages in its own right. Requiring M's signature on the acceptance does not help: the substituted key is the relay's, so the relay produces that signature. Nor does `x.grp.mem.role` carrying the key, since the owner is the one asserting it. Once promoted, nothing downstream can detect it — subscribers take owner keys from link data, which the legitimate owner signed.
-
-The attack is not cheap: the relay must substitute the key of a member it expects to be promoted, and then intercept and re-sign that member's entire traffic, or the substitution is exposed the first time the member speaks. It is also detectable out-of-band. But it defeats design objective 3 (*"No possibility for a relay to impersonate an owner"*) for the highest-privilege role in the system, and the mitigation is structural rather than clever: the owner needs a path to M's key that the relay did not mediate. A direct owner↔invitee connection — which is also how relays are invited — provides one. §11.
+So promotion to owner is gated on it: the UI warns when the invitee's key is unverified, and the promotion is a deliberate act taken against a verified key. That is what makes routing `x.grp.promote.*` over relays sound — not that the messages are safe in themselves, but that the key they are built on was established outside the relay's reach.
 
 **Any owner can destroy the channel.** `Server.hs:1249` — `vc SRecipient _ = verifyQueue $ \q -> verifiedWithKeys $ recipientKeys (snd q)`: any recipient key authorises any recipient command, including `DEL` (destroy the queue) and `LDEL` (destroy the link data), with no per-command scoping. This is consistent with any-owner-decides, and is recorded because it is stronger than any chat-level action — the link address is embedded in the published profile, so its loss cannot be repaired by re-publishing.
 
@@ -297,8 +297,6 @@ Cases: owner 2 promoted, verified by an existing subscriber (TOFU path) and by a
 `channels-overview.md` §Governance — move v7 to current; qualify the creator-anonymity claim; record the §4.1 tie-break and the §4.2 residual. `channels-protocol.md` — new §Owner addition, and the `x.grp.owner.*` events in the signing table. Closes four TODOs: `Internal.hs:1508`, `Subscriber.hs:1426`, `Subscriber.hs:1451`, `Groups.hs:2320`.
 
 ## 11. Open questions
-
-**Promoting over relays trusts the relay for the invitee's key (§8).** The plan routes `x.grp.promote.*` over relays, which is fine for every payload in them but not for the key the whole promotion is built on: the owner's copy came from an unsigned, relay-authored `XGrpMemNew`, so a relay that substituted it at join time can be promoted to owner. The fix is a path to the invitee's key that the relay did not mediate — a direct owner↔invitee connection, the same shape by which relays are invited today. That would mean the invitee must be reachable directly, not merely be a channel member. Worth settling before implementation, since it changes who can be promoted.
 
 **Owner removal.** Out of scope here, and not yet designed. Three things make it harder than it looks: removing a chain entry invalidates every owner it transitively signed (§4.3); SMP-level revocation is a mutual-eviction race (§8); and there is **no last-owner protection anywhere** in the backend — `APIMembersRole` blocks only `selfSelected`, so two owners can already demote each other into an ownerless, unrecoverable channel, and RULE-19 is UI-only. The backend last-owner guard is worth adding regardless of how removal is designed.
 
