@@ -2920,4 +2920,5 @@
     <string name="register_test_name">Registra un nome di prova</string>
     <string name="remove_name">Rimuovi nome</string>
     <string name="save_simplex_name_question">Salvare il nome SimpleX?</string>
+    <string name="to_verify_channel_member_key">Per verificare le chiavi con questo iscritto, confrontate (o scansionate) il codice sui vostri dispositivi.</string>
 </resources>
