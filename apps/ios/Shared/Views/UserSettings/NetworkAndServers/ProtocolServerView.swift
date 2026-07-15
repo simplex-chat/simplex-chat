@@ -124,17 +124,22 @@ struct ProtocolServerView: View {
     }
 
     private func serverRolesSection() -> some View {
-        let roles = Binding(
-            get: { serverToEdit.roles ?? ServerRoles(storage: true, proxy: true, names: false) },
-            set: { serverToEdit.roles = $0 }
-        )
-        return Section {
-            Toggle("To receive", isOn: roles.storage)
-            Toggle("For private routing", isOn: roles.proxy)
-            Toggle("To resolve names", isOn: roles.names)
+        Section {
+            rolePicker("To receive", $serverToEdit.roles.storage, defaultOn: true)
+            rolePicker("For private routing", $serverToEdit.roles.proxy, defaultOn: true)
+            rolePicker("To resolve names", $serverToEdit.roles.names, defaultOn: false)
         } header: {
             Text("Use for messages").foregroundColor(theme.colors.secondary)
         }
+    }
+
+    private func rolePicker(_ title: LocalizedStringKey, _ selection: Binding<Bool?>, defaultOn: Bool) -> some View {
+        Picker(title, selection: selection) {
+            Text(String.localizedStringWithFormat(NSLocalizedString("default (%@)", comment: "pref value"), NSLocalizedString(defaultOn ? "yes" : "no", comment: "pref value"))).tag(Bool?.none)
+            Text("yes").tag(Bool?.some(true))
+            Text("no").tag(Bool?.some(false))
+        }
+        .frame(height: 36)
     }
 
     private func useServerSection(_ valid: Bool) -> some View {

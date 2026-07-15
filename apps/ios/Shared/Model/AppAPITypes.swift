@@ -1815,6 +1815,12 @@ struct ServerRoles: Equatable, Codable, Hashable {
     var names: Bool
 }
 
+struct ServerRolesOverride: Equatable, Codable, Hashable {
+    var storage: Bool?
+    var proxy: Bool?
+    var names: Bool?
+}
+
 struct UserOperatorServers: Identifiable, Equatable, Codable {
     var `operator`: ServerOperator?
     var smpServers: [UserServer]
@@ -1962,7 +1968,7 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
     var tested: Bool?
     var enabled: Bool
     var deleted: Bool
-    var roles: ServerRoles? = nil
+    var roles: ServerRolesOverride = ServerRolesOverride()
     var createdAt = Date()
 
     static func == (l: UserServer, r: UserServer) -> Bool {
