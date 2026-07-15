@@ -790,35 +790,33 @@ fun ProfileDescriptionText(shortDescr: String?, description: String?, style: Tex
   val uriHandler = LocalUriHandler.current
   val linkMode = chatModel.simplexLinkMode.value
   if (descr == null) {
-    // no full description: render shortDescr as before (or nothing)
     if (short != null) {
       MarkdownText(
         short, parseToMarkdown(short), toggleSecrets = true, style = style, maxLines = 4,
         overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
       )
     }
-    return
+  } else {
+    val firstLine = descr.lineSequence().first()
+    val truncated = firstLine.length > 100
+    val multiline = descr.length > firstLine.length
+    if (short == null && !truncated && !multiline) {
+      MarkdownText(
+        descr, parseToMarkdown(descr), toggleSecrets = true, style = style, maxLines = 4,
+        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
+      )
+    } else {
+      val teaser = short ?: (if (truncated) firstLine.take(100).trimEnd() + "…" else "$firstLine…")
+      val readMore = stringResource(MR.strings.whats_new_read_more)
+      val formatted = (parseToMarkdown(teaser) ?: FormattedText.plain(teaser)) +
+          FormattedText(" ") + FormattedText(readMore, Format.Modal("description"))
+      MarkdownText(
+        "$teaser $readMore", formatted, toggleSecrets = true, style = style, maxLines = 4,
+        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode,
+        onModalClick = { showFullProfileDescription(descr) }
+      )
+    }
   }
-  val firstLine = descr.lineSequence().first()
-  val truncated = firstLine.length > 100
-  val multiline = descr.length > firstLine.length
-  // when there is no shortDescr and the whole description already fits on one short line, show it inline
-  if (short == null && !truncated && !multiline) {
-    MarkdownText(
-      descr, parseToMarkdown(descr), toggleSecrets = true, style = style, maxLines = 4,
-      overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
-    )
-    return
-  }
-  val teaser = short ?: (if (truncated) firstLine.take(100).trimEnd() + "…" else firstLine + "…")
-  val readMore = stringResource(MR.strings.whats_new_read_more)
-  val formatted = (parseToMarkdown(teaser) ?: FormattedText.plain(teaser)) +
-    FormattedText(" ") + FormattedText(readMore, Format.Modal("description"))
-  MarkdownText(
-    "$teaser $readMore", formatted, toggleSecrets = true, style = style, maxLines = 4,
-    overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode,
-    onModalClick = { showFullProfileDescription(descr) }
-  )
 }
 
 private fun showFullProfileDescription(description: String) {
