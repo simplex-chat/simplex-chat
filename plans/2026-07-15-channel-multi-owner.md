@@ -46,15 +46,25 @@ x.grp.promote.acpt   { invitationId, memberKey, linkRcvKey? }   -- M  -> O1
 
 Everything else M needs to write link data is public or derivable: `shortLinkKey`/`shortLinkId` from the channel link; fixed-data plaintext (hence `rootPubKey`) via `LGET`, re-encrypted under a fresh nonce — readers check `sha3_256(fd) == linkKey` and the root signature over the *plaintext*.
 
-No third credentials message: `linkRcvId` authorises nothing on its own (`Server.hs:1249` verifies every recipient command against `recipientKeys`), which is equally why the relay carrying these learns nothing. A decliner is never RKEY'd and never enters the link. M learns it is an owner from the `x.grp.mem.role` broadcast it receives as a member.
+No third credentials message: `linkRcvId` authorises nothing on its own (`Server.hs:1249` verifies every recipient command against `recipientKeys`), which is equally why the relay carrying these learns nothing. A decliner is never RKEY'd and never enters the link.
 
 O1 on acceptance, via a durable worker (mirror `runRelayRequestWorker` — multi-step, cross-network, must survive a crash):
 
-1. `RKEY` — add `linkRcvKey` to the link queue's recipient keys.
+1. Add `linkRcvKey` to the link queue's recipient keys (see below — `RKEY` as shipped cannot do this).
 2. `LSET` — publish `owners = [oa1, …, oaN, mkOwnerAuth memberId2 memberKey signingKey]`.
 3. `x.grp.mem.role memberId2 GROwner (Just memberKey)` → relays → subscribers.
 
-LSET precedes the broadcast so a joiner in the window learns the owner from the link, not by TOFU.
+**Step 1 needs an additive RKEY.** `RKEY :: NonEmpty RcvPublicAuthKey` *replaces* the whole list (`updateKeys st sq rKeys = … q {recipientKeys = rKeys}`), and nothing reads it back — `QueueInfo` carries `qiSnd`/`qiNtf`/`qiSub`/`qiSize`/`qiMsg` and no keys. So a writer must already know every key in the list. The creator does, having issued every RKEY. **A promoted owner does not, and never can** — so owner 2 adding owner 3 would RKEY a list built from its own knowledge and silently evict owner 1's link-write capability. That defeats the point of equal owners.
+
+Publishing each owner's recipient key in link data would fix the knowledge gap but not the race: `RKEY` has no compare-and-swap, so two owners adding concurrently would each write a list missing the other's addition. An **additive** RKEY needs neither — the caller supplies one key, cannot evict anyone by construction, and two concurrent additions both land. Removal keeps the existing replace semantics, and is deferred (§11). The server caps the list.
+
+This is the same version bump as compare-and-swap, so the marginal cost is one command.
+
+**The role event is the commit point.** M must not treat itself as an owner on sending the acceptance, only on receiving `x.grp.mem.role` for itself — which the existing `xGrpMemRole` self-branch (`Subscriber.hs:3338`) already applies. O1 sends it only after 1 and 2 succeed, so the event means *the link says you are an owner*. Set the role earlier and any failure or crash between acceptance and LSET leaves M believing it is an owner while absent from the chain: it would write link data and be refused, and sign admin messages that every subscriber rejects, since its key is not in the published owners.
+
+Each step must therefore be idempotent and resumable — on restart the worker re-reads the published chain and skips what has landed. If O1 never completes, M stays pending, holding an unused `linkRcvId` and a `linkRcvKey` that was never RKEY'd, and the invitation expires on the same pattern as `relayRequestExpiry`.
+
+LSET precedes the broadcast so a joiner in the window learns the owner from the link, not by TOFU. Once published, M's entry cannot be evicted by another owner's write: `owners` merges as published-plus-mine (§4.2).
 
 ## 4. Concurrency
 
@@ -200,7 +210,7 @@ Two owners genuinely disagreeing — one adding a relay, the other removing the 
 
 - `Crypto/ShortLink.hs` — extract `mkOwnerAuth :: OwnerId -> PublicKeyEd25519 -> PrivateKeyEd25519 -> OwnerAuth`; redefine `newOwnerAuth` on it; export. Kills the cross-repo duplicate.
 - Persist `linkRootSigKey` — `rcv_queues` column + migration (`AgentStore.hs:2514`).
-- RKEY agent API — add a recipient key to a contact-link queue.
+- Additive RKEY (§3): a new command taking one key and appending it, capped. `RKEY` as shipped replaces the list and nothing reads it back (`QueueInfo` has no keys), so a promoted owner cannot use it without evicting the others. Additive also removes the concurrent-addition race, since `RKEY` has no compare-and-swap. Plus the agent API.
 - Link-write API for an owner that does not own the queue. Prefer a standalone `setForeignLinkData` taking explicit creds over faking an `RcvQueue`/`ContactConnection`: the latter needs an `rcvDhSecret` owner 2 must not have, and risks it subscribing to owner 1's queue and racing on inbound requests.
 - CAS on `LSET` (§4.2): new command tag carrying the expected fingerprint; new `BrokerMsg` for the rejection carrying current user data; `currentSMPClientVersion` 4 → 5. Server check beside `lnkId' /= lnkId -> err AUTH` (`Server.hs:1484`) — bytes to hash and return are already in `queueData qr`, so no storage change. Agent keeps the fingerprint with link creds. Fall back to blind writes below v5.
 - `LINK` notifies with the client's own `userLinkData` (`Agent.hs:1813`) — return the server's state or drop the payload, so callers cannot mistake it for confirmation.
@@ -231,7 +241,7 @@ Out-of-band verification closes it and already exists. `APIVerifyGroupMember` (`
 
 **Any owner can destroy the channel.** `Server.hs:1249` — any recipient key authorises any recipient command, including `DEL` and `LDEL`, with no per-command scoping. Consistent with any-owner-decides; recorded because it is stronger than any chat-level action: the link address is in the published profile, so its loss cannot be repaired by re-publishing.
 
-**RKEY revocation is a race.** `updateKeys` replaces the whole list, so O1 can evict O2 and vice versa; last writer wins.
+**RKEY revocation is a race.** `updateKeys` replaces the whole list and has no compare-and-swap, so O1 can evict O2 and vice versa; last writer wins. Additions avoid this via the additive command (§3); removal cannot, which is input to owner removal (§11).
 
 **Chain order is load-bearing.** A reordered or partially-published chain makes link data unreadable to every client and bricks joins. Publish in `owner_auth_index` order and validate locally before `LSET` — the agent rejects a bad chain anyway, but as `CMD PROHIBITED`, not a legible error.
 
