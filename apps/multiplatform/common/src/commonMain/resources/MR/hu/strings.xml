@@ -2884,4 +2884,5 @@
     <string name="register_test_name">Egy név regisztrálása tesztelési céllal</string>
     <string name="remove_name">Név eltávolítása</string>
     <string name="save_simplex_name_question">Menti a Simplex-nevet?</string>
+    <string name="to_verify_channel_member_key">A kulcsok ellenőrzéséhez ezzel a feliratkozóval hasonlítsa össze (vagy olvassa be) az eszközökön található kódot.</string>
 </resources>
