@@ -111,16 +111,16 @@ fun UserProfileLayout(
       }
       ModalView(close = if (editingDescription) ({ editingDescription = false }) else closeWithAlert) {
         if (editingDescription) {
-          ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
             AppBarTitle(stringResource(MR.strings.profile_description__field), withPadding = false)
             TextEditor(
               description,
-              Modifier.heightIn(min = 100.dp),
+              Modifier.weight(1f, fill = false).heightIn(min = 140.dp).padding(bottom = DEFAULT_PADDING),
               placeholder = stringResource(MR.strings.enter_description_optional),
               contentPadding = PaddingValues(),
               focusRequester = descrFocusRequester,
+              maxLines = Int.MAX_VALUE
             )
-            SectionBottomSpacer()
           }
           return@ModalView
         }

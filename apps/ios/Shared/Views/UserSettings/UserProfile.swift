@@ -17,7 +17,6 @@ struct UserProfile: View {
     @State private var currentProfileHash: Int?
     @State private var shortDescr = ""
     @State private var description = ""
-    @State private var editingDescription = false
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -56,8 +55,10 @@ struct UserProfile: View {
                         }
                     }
                 }
-                Button {
-                    editingDescription = true
+                NavigationLink {
+                    ProfileDescriptionEditor(description: $description)
+                        .navigationTitle("Description")
+                        .modifier(ThemedBackground(grouped: true))
                 } label: {
                     Text(description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Add description" : "Edit description")
                 }
@@ -133,9 +134,6 @@ struct UserProfile: View {
             }
         }
         .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
-        .sheet(isPresented: $editingDescription) {
-            ProfileDescriptionEditor(description: $description)
-        }
     }
 
     private func showFullName(_ user: User) -> Bool {
@@ -252,30 +250,49 @@ func editImageButton(action: @escaping () -> Void) -> some View {
 }
 
 struct ProfileDescriptionEditor: View {
-    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @Binding var description: String
+    @FocusState private var keyboardVisible: Bool
+    // grows with content (starts at the welcome-message editor size, then the List scrolls)
+    @State private var textHeight: CGFloat = 130
 
     var body: some View {
-        NavigationView {
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $description)
-                if description.isEmpty {
-                    Text("Enter description (optional)")
-                        .foregroundColor(theme.colors.secondary)
-                        .padding(.top, 8)
-                        .padding(.leading, 5)
-                        .allowsHitTesting(false)
+        List {
+            Section {
+                ZStack(alignment: .topLeading) {
+                    // invisible sizer mirrors the editor text to drive the height
+                    Text(description.isEmpty ? " " : description)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 5)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(GeometryReader { g in
+                            Color.clear.preference(key: EditorHeightKey.self, value: g.size.height)
+                        })
+                        .hidden()
+                    if description.isEmpty {
+                        Text("Enter description (optional)")
+                            .foregroundColor(theme.colors.secondary)
+                            .padding(.top, 8)
+                            .padding(.leading, 5)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $description)
+                        .focused($keyboardVisible)
+                        .padding(.horizontal, -5)
+                        .padding(.top, -8)
                 }
-            }
-            .padding()
-            .navigationTitle("Description")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
+                .frame(height: max(130, textHeight), alignment: .topLeading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+        .onPreferenceChange(EditorHeightKey.self) { textHeight = $0 }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { keyboardVisible = true }
+        }
     }
+}
+
+private struct EditorHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 130
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
