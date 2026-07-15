@@ -1013,7 +1013,7 @@
   <string name="mark_code_verified">Mark verified</string>
   <string name="clear_verification">Clear verification</string>
   <string name="to_verify_compare">To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</string>
-  <string name="to_verify_channel_member_key">To verify this subscriber\'s key, compare (or scan) the code on your devices.</string>
+  <string name="to_verify_channel_member_key">To verify keys with this subscriber, compare (or scan) the code on your devices.</string>
   <string name="is_verified">%s is verified</string>
   <string name="is_not_verified">%s is not verified</string>
 
