@@ -1273,15 +1273,16 @@ redactedMemberProfile g m Profile {displayName, fullName, shortDescr, descriptio
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
     removeSimplexLink dropOnLink s
       | allowSimplexLinks = Just s
-      | hasObfuscatedSimplexLink s = Nothing
       | otherwise = case parseMaybeMarkdownList s of
-          Nothing -> Just s
+          Nothing -> dropObfuscated
           Just fts
-            | not (any ftIsSimplexLink fts) -> Just s
+            | not (any ftIsSimplexLink fts) -> dropObfuscated
             | dropOnLink || T.null (T.strip kept) -> Nothing
             | otherwise -> Just kept
             where
               kept = T.concat $ map (\(FormattedText _ t) -> t) $ filter (not . ftIsSimplexLink) fts
+      where
+        dropObfuscated = if hasObfuscatedSimplexLink s then Nothing else Just s
 
 -- Roles carried by the roster; owners are on the link, not the roster.
 isRosterRole :: GroupMemberRole -> Bool
