@@ -253,22 +253,17 @@ struct ProfileDescriptionEditor: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var description: String
     @FocusState private var keyboardVisible: Bool
-    // grows with content (starts at the welcome-message editor size, then the List scrolls)
-    @State private var textHeight: CGFloat = 130
 
     var body: some View {
         List {
             Section {
                 ZStack(alignment: .topLeading) {
-                    // invisible sizer mirrors the editor text to drive the height
+                    // invisible copy of the text sizes the row (min = welcome-editor height, then grows with content)
                     Text(description.isEmpty ? " " : description)
                         .padding(.vertical, 8)
                         .padding(.horizontal, 5)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(GeometryReader { g in
-                            Color.clear.preference(key: EditorHeightKey.self, value: g.size.height)
-                        })
-                        .hidden()
+                        .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+                        .foregroundColor(.clear)
                     if description.isEmpty {
                         Text("Enter description (optional)")
                             .foregroundColor(theme.colors.secondary)
@@ -281,18 +276,10 @@ struct ProfileDescriptionEditor: View {
                         .padding(.horizontal, -5)
                         .padding(.top, -8)
                 }
-                .frame(height: max(130, textHeight), alignment: .topLeading)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .onPreferenceChange(EditorHeightKey.self) { textHeight = $0 }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { keyboardVisible = true }
         }
     }
-}
-
-private struct EditorHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 130
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }

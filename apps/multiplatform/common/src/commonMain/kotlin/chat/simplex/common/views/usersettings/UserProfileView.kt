@@ -111,7 +111,15 @@ fun UserProfileLayout(
       }
       ModalView(close = if (editingDescription) ({ editingDescription = false }) else closeWithAlert) {
         if (editingDescription) {
-          Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+          Column(
+            Modifier
+              .fillMaxSize()
+              .imePadding()
+              .statusBarsPadding()
+              .navigationBarsPadding()
+              .padding(top = AppBarHeight * fontSizeSqrtMultiplier)
+              .padding(horizontal = DEFAULT_PADDING)
+          ) {
             AppBarTitle(stringResource(MR.strings.profile_description__field), withPadding = false)
             TextEditor(
               description,
