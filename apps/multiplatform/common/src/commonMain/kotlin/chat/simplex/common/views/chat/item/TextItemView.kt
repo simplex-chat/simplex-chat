@@ -397,13 +397,12 @@ fun MarkdownText (
             val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
             val newIcon = if (hand) PointerIcon.Hand else PointerIcon.Text
             icon.value = newIcon
-            // pointerHoverIcon alone loses updates when items shift/recompose under the cursor, see desktopSetHoverCursor
+            // pointerHoverIcon alone loses updates, see desktopSetHoverCursor
             desktopSetHoverCursor(newIcon)
           },
           onHoverExit = {
-            // also reset icon.value, or the pointerHoverIcon node re-displays a stale Hand on its next Enter;
-            // values differ on purpose: Text is this node's neutral icon, Default is what the cursor
-            // should be outside the text
+            // reset icon.value too, or its node re-displays a stale Hand on next Enter;
+            // Text = this node's neutral icon, Default = cursor outside the text
             icon.value = PointerIcon.Text
             desktopSetHoverCursor(PointerIcon.Default)
           },

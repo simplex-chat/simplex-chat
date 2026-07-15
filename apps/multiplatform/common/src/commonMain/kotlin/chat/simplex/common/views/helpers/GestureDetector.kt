@@ -93,14 +93,13 @@ suspend fun PointerInputScope.detectGesture(
 }
 
 suspend fun PointerInputScope.detectCursorMove(onExit: () -> Unit = {}, onMove: (Offset) -> Unit = {},) {
-  // Single scope: re-entering awaitPointerEventScope per event (as forEachGesture did) drops events.
-  // Enter/Release matter too: a stationary cursor gets no Move when content shifts or after a click.
+  // Single scope: per-event scope re-entry (old forEachGesture) drops events; Enter/Release cover stationary cursors.
   awaitPointerEventScope {
     while (true) {
       val event = awaitPointerEvent()
       if (event.type == PointerEventType.Move || event.type == PointerEventType.Enter || event.type == PointerEventType.Release) {
         val pos = event.changes[0].position
-        // pressed nodes keep receiving events outside their bounds, both while held and at release
+        // pressed nodes receive events outside their bounds (during drag and at release)
         if (event.changes.none { it.pressed } && pos.x >= 0 && pos.y >= 0 && pos.x < size.width && pos.y < size.height) {
           onMove(pos)
         }

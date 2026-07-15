@@ -29,12 +29,9 @@ expect fun Modifier.desktopPointerHoverIconHand(): Modifier
 
 /**
  * Directly sets the mouse cursor on desktop ([PointerIcon.Hand], [PointerIcon.Text], anything else
- * means default). Compose's pointerHoverIcon displays icons only on Enter/Exit edges or on icon
- * change while marked in-bounds — edges that are silently lost when chat items shift/recompose
- * under the cursor, leaving a stale cursor. Calling this on every hover move (and resetting on
- * exit) keeps it self-correcting. No-op on Android.
- * Verified against Compose 1.8.2, re-verify on upgrade (JetBrains/compose-multiplatform #2091,
- * #1314, #3750). Details: plans/2026-07-13-fix-command-hover-cursor.md
+ * means default); no-op on Android. Compose's pointerHoverIcon is edge-triggered and silently loses
+ * updates when chat items shift/recompose under the cursor; calling this on every hover move (and
+ * resetting on exit) keeps the cursor correct. Details: plans/2026-07-13-fix-command-hover-cursor.md
  */
 expect fun desktopSetHoverCursor(icon: PointerIcon)
 

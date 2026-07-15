@@ -88,8 +88,7 @@ actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpen
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 
-// Runs on every mouse move, so the canvas lookup (and its failure) is cached per window;
-// weak refs avoid retaining a recreated window's scene graph.
+// hot path: canvas lookup (and its failure) cached per window, weakly to not retain a recreated window
 private var cachedSkiaCanvas: WeakReference<Component>? = null
 private var skiaCanvasMissingIn: WeakReference<Window>? = null
 
@@ -115,8 +114,7 @@ actual fun desktopSetHoverCursor(icon: PointerIcon) {
   if (canvas.cursor.type != type) canvas.cursor = Cursor.getPredefinedCursor(type)
 }
 
-// Compose writes pointer icons to its skia canvas component (ComposeSceneMediator.setPointerIcon);
-// writing to the same component keeps last-write-wins consistent with the framework's own updates.
+// the same component Compose writes pointer icons to (ComposeSceneMediator.setPointerIcon)
 private fun findSkiaCanvas(c: Component): Component? = when {
   c.javaClass.name.contains("Skia") -> c
   c is Container -> c.components.firstNotNullOfOrNull { findSkiaCanvas(it) }
