@@ -1935,6 +1935,7 @@ class GroupMember(TypedDict):
     supportChat: NotRequired["GroupSupportChat"]
     memberPubKey: NotRequired[str]
     relayLink: NotRequired[str]
+    memberVerifiedCode: NotRequired["SecurityCode"]
 
 class GroupMemberAdmission(TypedDict):
     review: NotRequired["MemberCriteria"]

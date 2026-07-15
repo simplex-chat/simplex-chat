@@ -1141,7 +1141,10 @@ data GroupMember = GroupMember
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
     memberPubKey :: Maybe C.PublicKeyEd25519,
-    relayLink :: Maybe ShortLinkContact
+    relayLink :: Maybe ShortLinkContact,
+    -- out-of-band verified security code for connectionless (channel) members;
+    -- regular members carry it in activeConn instead (see memberSecurityCode)
+    memberVerifiedCode :: Maybe SecurityCode
   }
   deriving (Eq, Show)
 
@@ -1221,7 +1224,7 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
   | otherwise = Nothing
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
-memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
+memberSecurityCode GroupMember {activeConn, memberVerifiedCode} = memberVerifiedCode <|> (connectionCode =<< activeConn)
 
 memberBlocked :: GroupMember -> Bool
 memberBlocked m = blockedByAdmin m || not (showMessages $ memberSettings m)
@@ -1905,6 +1908,15 @@ sameVerificationCode :: Text -> Text -> Bool
 sameVerificationCode c1 c2 = noSpaces c1 == noSpaces c2
   where
     noSpaces = T.filter (/= ' ')
+
+-- keys are ordered so both members derive the same code regardless of who computes it
+channelMemberCode :: C.PublicKeyEd25519 -> C.PublicKeyEd25519 -> Text
+channelMemberCode k1 k2 =
+  let (lo, hi) = if b1 <= b2 then (b1, b2) else (b2, b1)
+   in verificationCode $ C.sha256Hash (lo <> hi)
+  where
+    b1 = C.pubKeyBytes k1
+    b2 = C.pubKeyBytes k2
 
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId

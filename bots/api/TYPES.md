@@ -2455,6 +2455,7 @@ UpdateRequired:
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - memberPubKey: string?
 - relayLink: string?
+- memberVerifiedCode: [SecurityCode](#securitycode)?
 
 
 ---
