@@ -749,7 +749,7 @@
     <string name="invite_prohibited_description">Вы пытаетесь пригласить контакт, который знает Ваш профиль инкогнито, в группу, где Вы используете основной профиль</string>
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить в группу</string>
-    <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
+    <string name="group_info_section_title_num_members">%1$s Членов группы</string>
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
@@ -780,7 +780,7 @@
     <string name="change_role">Поменять роль</string>
     <string name="change_verb">Поменять</string>
     <string name="switch_verb">Переключить</string>
-    <string name="change_member_role_question">Поменять роль в группе?</string>
+    <string name="change_member_role_question">Изменить роль?</string>
     <string name="member_role_will_be_changed_with_notification">Роль будет изменена на "%s". Все в группе получат сообщение.</string>
     <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на "%s". Будет отправлено новое приглашение.</string>
     <string name="error_removing_member">Ошибка при удалении члена группы</string>
@@ -2286,7 +2286,7 @@
     <string name="info_row_chat">Разговор</string>
     <string name="member_will_be_removed_from_chat_cannot_be_undone">Член будет удалён из разговора - это действие нельзя отменить!</string>
     <string name="network_preset_servers_title">Серверы по умолчанию</string>
-    <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на %s. Все участники разговора получат уведомление.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на "%s". Все участники разговора получат уведомление.</string>
     <string name="chat_main_profile_sent">Ваш профиль будет отправлен участникам разговора</string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Те же условия будут действовать для оператора <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Те же условия будут действовать для операторов: <b>%s</b>.]]></string>
@@ -2648,7 +2648,6 @@
     <string name="relay_conn_status_connecting">соединяется</string>
     <string name="create_channel_title">Создать публичный канал</string>
     <string name="create_channel_button">Создать публичный канал</string>
-    <string name="create_channel_beta_button">Создать публичный канал (БЕТА)</string>
     <string name="creating_channel">Создание канала</string>
     <string name="rcv_channel_events_count">%d событий канала</string>
     <string name="button_delete_channel">Удалить канал</string>
@@ -2858,7 +2857,7 @@
     <string name="relay_conn_status_failed">ошибка</string>
     <string name="relay_status_new">новый</string>
     <string name="relay_bar_all_relays_failed">Все релеи недоступны</string>
-    <string name="relay_bar_owner_no_delivery">Добавить релеи чтобы восстановить доставку сообщений.</string>
+    <string name="relay_bar_owner_no_delivery">Добавить релеи для восстановления доставки сообщений.</string>
     <string name="relay_bar_subscriber_waiting">Ожидает, когда владелец канала добавит релеи.</string>
     <string name="via_relay_hostname">через %1$s</string>
     <string name="relay_section_footer_owner">Подписчики используют ссылку релея для подключения к каналу.\nАдрес релея был использован для настройки этого релея для канала.</string>
@@ -2879,4 +2878,42 @@
     <string name="add_relays_title">Добавить релеи</string>
     <string name="button_cancel_and_delete_channel">Отменить и удалить канал</string>
     <string name="close_behavior_dialog_close">Закрыть приложение</string>
+    <string name="channel_owner_count_singular">%1$d владелец</string>
+    <string name="channel_owner_count_plural">%1$d владельцев</string>
+    <string name="channel_owners_contributors_count">%1$d владельцев и участников канала</string>
+    <string name="badge_supported_simplex">%1$s поддерживал SimpleX Chat. Срок действия бейджа истек %2$s.</string>
+    <string name="settings_section_title_about">О приложении</string>
+    <string name="advanced_settings">Продвинутые настройки</string>
+    <string name="another_instance_title">Приложение уже запущено</string>
+    <string name="app_update_required">Необходимо обновление приложения</string>
+    <string name="relay_status_acknowledged_roster">подтвержденный список</string>
+    <string name="webpage_code_footer">Добавьте этот код на свой веб-сайт. Он отобразит предпросмотр вашего канала или группы.</string>
+    <string name="allow_anyone_to_embed">Разрешить всем встраивать</string>
+    <string name="embed_any_webpage_can_show">Предпросмотр можно отобразить на любой веб-странице.</string>
+    <string name="badge_unknown_key_title">Не удалось проверить подлинность значка.</string>
+    <string name="badge_unknown_key_desc">Этот значок подписан ключом, который неизвестен текущей версии приложения. Обновите приложение, чтобы проверить его подлинность.</string>
+    <string name="badge_unverified_desc">Не удалось проверить подлинность этого значка. Возможно, он не является подлинным.</string>
+    <string name="badge_unverified_title">Неподтвержденный значок</string>
+    <string name="badge_invested">%s инвестировал(а) в краудфандинг SimpleX Chat.</string>
+    <string name="badge_support_from_v7">Вы можете поддержать SimpleX начиная с версии приложения v7.</string>
+    <string name="badge_supports_simplex">%s поддерживает SimpleX Chat.</string>
+    <string name="appearance_minimize_to_tray_desc">Работает в фоновом режиме для получения сообщений</string>
+    <string name="no_names_servers_enabled">Нет серверов для разрешения имён.</string>
+    <string name="advanced_options">Продвинутые настройки</string>
+    <string name="another_instance_not_responding">Другой экземпляр приложения уже запущен или был завершён некорректно. Продолжить запуск?</string>
+    <string name="channel_webpage">Веб-страница канала</string>
+    <string name="num_relays_selected">Выбрано %d релеев</string>
+    <string name="chat_data">Данные чата</string>
+    <string name="channel_name_requires_newer_app_version">Для подключения по имени канала требуется более новая версия приложения.</string>
+    <string name="contact_name_requires_newer_app_version">Для подключения по имени контакта требуется более новая версия приложения.</string>
+    <string name="settings_section_title_contact">Контакт</string>
+    <string name="group_member_role_member_channel">соавтор</string>
+    <string name="group_member_role_observer_channel">подписчик</string>
+    <string name="button_remove_relay">Удалить релей</string>
+    <string name="button_remove_relay_question">Удалить релей?</string>
+    <string name="appearance_minimize_to_tray">Свернуть в трей</string>
+    <string name="copy_code">Скопировать код</string>
+    <string name="relay_bar_no_relays">Релеи отсутствуют</string>
+    <string name="no_relays_selected">Релеи не выбраны</string>
+    <string name="tray_tooltip_unread">SimpleX - %d непрочитанных сообщений</string>
 </resources>

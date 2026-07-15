@@ -256,6 +256,7 @@ expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
 
 fun saveFileFromUri(
   uri: URI,
+  maxBytes: Long,
   withAlertOnException: Boolean = true,
   hiddenFileNamePrefix: String? = null
 ): CryptoFile? {
@@ -277,7 +278,7 @@ fun saveFileFromUri(
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
-          Files.copy(inputStream, tmpFile.toPath())
+          copyInputStreamToFile(inputStream, tmpFile, maxBytes)
           try {
             val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
             CryptoFile(destFileName, args)
@@ -288,7 +289,7 @@ fun saveFileFromUri(
           }
         }
       } else {
-        Files.copy(inputStream, destFile.toPath())
+        copyInputStreamToFile(inputStream, destFile, maxBytes)
         CryptoFile.plain(destFileName)
       }
     } else {
@@ -297,11 +298,41 @@ fun saveFileFromUri(
 
       null
     }
+  } catch (e: FileTooLargeException) {
+    Log.e(TAG, "Util.kt saveFileFromUri file too large: ${e.message}")
+    if (withAlertOnException) {
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.large_file),
+        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxBytes))
+      )
+    }
+    null
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
     if (withAlertOnException) showWrongUriAlert()
 
     null
+  }
+}
+
+class FileTooLargeException(maxBytes: Long) : IOException("file exceeds $maxBytes bytes")
+
+fun copyInputStreamToFile(inputStream: InputStream, destFile: File, maxBytes: Long) {
+  try {
+    destFile.outputStream().use { output ->
+      val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+      var copied = 0L
+      while (true) {
+        val read = inputStream.read(buffer)
+        if (read < 0) break
+        if (copied > maxBytes - read) throw FileTooLargeException(maxBytes)
+        output.write(buffer, 0, read)
+        copied += read
+      }
+    }
+  } catch (e: Throwable) {
+    destFile.delete()
+    throw e
   }
 }
 

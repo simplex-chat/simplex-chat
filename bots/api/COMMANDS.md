@@ -283,20 +283,21 @@ Send messages.
 - sendRef: [ChatRef](./TYPES.md#chatref)
 - liveMessage: bool
 - ttl: int?
+- signMessages: bool
 - composedMessages: [[ComposedMessage](./TYPES.md#composedmessage)]
 
 **Syntax**:
 
 ```
-/_send <str(sendRef)>[ live=on][ ttl=<ttl>] json <json(composedMessages)>
+/_send <str(sendRef)>[ live=on][ ttl=<ttl>][ sign=on] json <json(composedMessages)>
 ```
 
 ```javascript
-'/_send ' + ChatRef.cmdString(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
+'/_send ' + ChatRef.cmdString(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + (signMessages ? ' sign=on' : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
 ```
 
 ```python
-'/_send ' + ChatRef_cmd_string(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
+'/_send ' + ChatRef_cmd_string(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + (' sign=on' if signMessages else '') + ' json ' + json.dumps(composedMessages) # Python
 ```
 
 **Responses**:
@@ -1363,28 +1364,28 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIConnectPlan
 
-Determine SimpleX link type and if the bot is already connected via this link.
+Determine SimpleX link type and if the bot is already connected via this link or name.
 
 *Network usage*: interactive.
 
 **Parameters**:
 - userId: int64
-- connectionLink: string?
-- resolveKnown: bool
+- connectTarget: string?
+- resolveMode: [PlanResolveMode](./TYPES.md#planresolvemode)
 - linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
 **Syntax**:
 
 ```
-/_connect plan <userId> <connectionLink>
+/_connect plan <userId> <connectTarget>
 ```
 
 ```javascript
-'/_connect plan ' + userId + ' ' + connectionLink // JavaScript
+'/_connect plan ' + userId + ' ' + connectTarget // JavaScript
 ```
 
 ```python
-'/_connect plan ' + str(userId) + ' ' + connectionLink # Python
+'/_connect plan ' + str(userId) + ' ' + connectTarget # Python
 ```
 
 **Responses**:
@@ -1393,6 +1394,8 @@ ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
+- otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
 ChatCmdError: Command error (only used in WebSockets API).
@@ -1455,26 +1458,26 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### Connect
 
-Connect via SimpleX link as string in the active user profile.
+Connect via SimpleX link or name as string in the active user profile.
 
 *Network usage*: interactive.
 
 **Parameters**:
 - incognito: bool
-- connLink_: string?
+- connTarget_: string?
 
 **Syntax**:
 
 ```
-/connect[ <connLink_>]
+/connect[ <connTarget_>]
 ```
 
 ```javascript
-'/connect' + (connLink_ ? ' ' + connLink_ : '') // JavaScript
+'/connect' + (connTarget_ ? ' ' + connTarget_ : '') // JavaScript
 ```
 
 ```python
-'/connect' + ((' ' + connLink_) if connLink_ is not None else '') # Python
+'/connect' + ((' ' + connTarget_) if connTarget_ is not None else '') # Python
 ```
 
 **Responses**:

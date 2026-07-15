@@ -38,9 +38,9 @@ validateServersTest :: Spec
 validateServersTest = describe "validate user servers" $ do
   it "should pass valid user servers" $ validateUserServers [valid] [] `shouldBe` ([], [])
   it "should fail without servers" $ do
-    validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [])
-    validateUserServers [invalidDisabled] [] `shouldBe` ([USENoServers aSMP Nothing], [])
-    validateUserServers [invalidDisabledOp] [] `shouldBe` ([USENoServers aSMP Nothing, USENoServers aXFTP Nothing], [USWNoChatRelays Nothing])
+    validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [USWNoNamesServers Nothing])
+    validateUserServers [invalidDisabled] [] `shouldBe` ([USENoServers aSMP Nothing], [USWNoNamesServers Nothing])
+    validateUserServers [invalidDisabledOp] [] `shouldBe` ([USENoServers aSMP Nothing, USENoServers aXFTP Nothing], [USWNoChatRelays Nothing, USWNoNamesServers Nothing])
   it "should fail without servers with storage role" $ do
     validateUserServers [invalidNoStorage] [] `shouldBe` ([USEStorageMissing aSMP Nothing], [])
   it "should fail with duplicate host" $ do

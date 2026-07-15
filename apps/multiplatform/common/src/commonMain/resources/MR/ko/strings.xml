@@ -107,7 +107,7 @@
     <string name="icon_descr_contact_checked">대화 상대 확인됨</string>
     <string name="create_group_link">그룹 링크 생성</string>
     <string name="button_create_group_link">링크 생성</string>
-    <string name="change_member_role_question">그룹 역할을 바꾸시겠습니까\?</string>
+    <string name="change_member_role_question">그룹 역할을 바꾸시겠습니까?</string>
     <string name="info_row_connection">연결</string>
     <string name="users_add">프로필 추가</string>
     <string name="chat_preferences_always">항상</string>

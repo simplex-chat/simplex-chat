@@ -48,6 +48,7 @@ struct MsgContentView: View {
     @State private var phase: CGFloat = 0
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
 
     var body: some View {
         let v = msgContentView()
@@ -131,7 +132,7 @@ struct MsgContentView: View {
 
     @inline(__always)
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp, showSignature: showSignature)
     }
 }
 
@@ -214,8 +215,8 @@ private func handleTextTaps(
         var simplex: Bool = false
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
-                if let nameInfo = attrs[nameAttrKey] as? SimplexNameInfo {
-                    showUnsupportedNameAlert(nameInfo)
+                if attrs[nameAttrKey] is SimplexNameInfo {
+                    planAndConnect(s.attributedSubstring(from: range).string, theme: AppTheme.shared, dismiss: false)
                 } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url
                     browser = attrs[webLinkAttrKey] != nil

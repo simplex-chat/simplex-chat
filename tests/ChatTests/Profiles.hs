@@ -65,12 +65,9 @@ chatProfileTests = do
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
-    -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
     it "auto-reply message" testAutoReplyMessage
-    it "auto-reply message in incognito" testAutoReplyMessageInIncognito
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
-      -- TODO [short links] test business auto-reply with current version, with connecting client not preparing contact
       it "update profiles with business address" testBusinessUpdateProfiles
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
@@ -82,7 +79,6 @@ chatProfileTests = do
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
-    it "accept contact request incognito" testAcceptContactRequestIncognito
     it "set connection incognito" testSetConnectionIncognito
     it "reset connection incognito" testResetConnectionIncognito
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
@@ -501,7 +497,7 @@ testMultiWordProfileNames =
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
     cathProfile' = baseProfile {displayName = "Cath Johnson"}
-    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing}
+    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
 
 testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =
@@ -974,10 +970,10 @@ testContactLinkDeletedConnectedContactWorks = testChat2 aliceProfile bobProfile 
     bob @@@ [("@alice", "hey")]
 
 testAutoReplyMessage :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessage = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
+testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
-    cLink <- getContactLinkNoShortLink alice True
+    cLink <- getContactLink alice True
     alice ##> "/auto_accept on incognito=off text hello!"
     alice <## "auto_accept on"
     alice <## "auto reply:"
@@ -993,31 +989,6 @@ testAutoReplyMessage = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile 
           bob <# "alice> hello!"
           bob <## "alice (Alice): contact is connected",
         alice <## "bob (Bob): contact is connected"
-      ]
-
-testAutoReplyMessageInIncognito :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessageInIncognito = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
-  \alice bob -> do
-    alice ##> "/ad"
-    cLink <- getContactLinkNoShortLink alice True
-    alice ##> "/auto_accept on incognito=on text hello!"
-    alice <## "auto_accept on, incognito"
-    alice <## "auto reply:"
-    alice <## "hello!"
-
-    bob ##> ("/c " <> cLink)
-    bob <## "connection request sent!"
-    alice <## "bob (Bob): accepting contact request..."
-    alice <## "bob (Bob): you can send messages to contact"
-    alice <# "i @bob hello!"
-    aliceIncognito <- getTermLine alice
-    concurrentlyN_
-      [ do
-          bob <# (aliceIncognito <> "> hello!")
-          bob <## (aliceIncognito <> ": contact is connected"),
-        do
-          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice <## "use /i bob to print out this incognito profile again"
       ]
 
 testBusinessAddress :: HasCallStack => TestParams -> IO ()
@@ -1075,10 +1046,10 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
-testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile aliceProfile bobProfile cathProfile $
+testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
   \biz alice bob cath -> do
     biz ##> "/ad"
-    cLink <- getContactLinkNoShortLink biz True
+    cLink <- getContactLink biz True
     biz ##> "/auto_accept on business text Welcome"
     biz <## "auto_accept on, business"
     biz <## "auto reply:"
@@ -1108,7 +1079,7 @@ testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile al
     biz ##> "/mr alisa alisa_1 admin"
     biz <## "#alisa: you changed the role of alisa_1 to admin"
     alice <## "#biz: biz_1 changed your role from member to admin"
-    connectUsersNoShortLink alice bob
+    connectUsers alice bob
     alice ##> "/a #biz bob"
     alice <## "invitation to join the group #biz sent to bob"
     bob <## "#biz (Biz Inc): alisa invites you to join the group as member"
@@ -1139,7 +1110,7 @@ testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile al
     alice <# "#biz robert> hi there"
     biz <# "#alisa robert> hi there"
     -- add business team member
-    connectUsersNoShortLink biz cath
+    connectUsers biz cath
     biz ##> "/a #alisa cath"
     biz <## "invitation to join the group #alisa sent to cath"
     cath <## "#alisa: biz invites you to join the group as member"
@@ -1627,54 +1598,6 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
-
-testAcceptContactRequestIncognito :: HasCallStack => TestParams -> IO ()
-testAcceptContactRequestIncognito = testChatCfg3 testCfgNoShortLinks aliceProfile bobProfile cathProfile $
-  \alice bob cath -> do
-    alice ##> "/ad"
-    cLink <- getContactLinkNoShortLink alice True
-    -- GUI /_accept api
-    bob ##> ("/c " <> cLink)
-    alice <#? bob
-    alice ##> "/_accept incognito=on 1"
-    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-    aliceIncognitoBob <- getTermLine alice
-    concurrentlyN_
-      [ bob <## (aliceIncognitoBob <> ": contact is connected"),
-        do
-          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognitoBob)
-          alice <## "use /i bob to print out this incognito profile again"
-      ]
-    -- conversation is incognito
-    alice ?#> "@bob my profile is totally inconspicuous"
-    bob <# (aliceIncognitoBob <> "> my profile is totally inconspicuous")
-    bob #> ("@" <> aliceIncognitoBob <> " I know!")
-    alice ?<# "bob> I know!"
-    -- list contacts
-    alice ##> "/contacts"
-    alice <## "i bob (Bob)"
-    alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognitoBob]
-    -- delete contact, incognito profile is deleted
-    alice ##> "/d bob"
-    alice <## "bob: contact is deleted"
-    bob <## (aliceIncognitoBob <> " deleted contact with you")
-    alice ##> "/contacts"
-    (alice </)
-    alice `hasContactProfiles` ["alice"]
-    -- terminal /accept api
-    cath ##> ("/c " <> cLink)
-    alice <#? cath
-    alice ##> "/accept incognito cath"
-    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
-    aliceIncognitoCath <- getTermLine alice
-    concurrentlyN_
-      [ cath <## (aliceIncognitoCath <> ": contact is connected"),
-        do
-          alice <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> aliceIncognitoCath)
-          alice <## "use /i cath to print out this incognito profile again"
-      ]
-    alice `hasContactProfiles` ["alice", "cath", T.pack aliceIncognitoCath]
-    cath `hasContactProfiles` ["cath", T.pack aliceIncognitoCath]
 
 testSetConnectionIncognito :: HasCallStack => TestParams -> IO ()
 testSetConnectionIncognito = testChat2 aliceProfile bobProfile $

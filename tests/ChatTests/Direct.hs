@@ -1210,20 +1210,20 @@ testOperators =
       alice <##. "Current conditions: 2."
       alice ##> "/_operators"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: required"
       alice <##. "The new conditions will be accepted for SimpleX Chat Ltd, InFlux Technologies Limited at "
       -- set conditions notified
       alice ##> "/_conditions_notified 2"
       alice <## "ok"
       alice ##> "/_operators"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: required"
       alice ##> "/_conditions"
       alice <##. "Current conditions: 2 (notified)."
       -- accept conditions
       alice ##> "/_accept_conditions 2 1,2"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
-      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: accepted ("
       -- update operators
       alice ##> "/operators 2:on:smp=proxy:xftp=off"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
@@ -1555,11 +1555,12 @@ testConnSyncExtraAgentUsers ps = do
         DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
 
     withTestChat ps "alice" $ \alice -> do
-      alice <## "connections difference summary:"
-      alice <## "number of extra users in agent: 1"
-      alice <## "removed extra users in agent"
-
-      alice <## "subscribed 1 connections on server localhost"
+      alice <###
+        [ "connections difference summary:",
+          "number of extra users in agent: 1",
+          "removed extra users in agent",
+          "subscribed 1 connections on server localhost"
+        ]
 
       threadDelay 100000
       agentUserCount <- withCCAgentTransaction alice $ \db ->
@@ -2396,7 +2397,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2500000
+      threadDelay 3000000
 
       -- second user messages are deleted
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])

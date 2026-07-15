@@ -268,28 +268,32 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     if (currentRemoteHost == null && networkUseSocksProxy.value) {
       SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
     }
-    val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
 
-    SectionItemView(
-      { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
-      disabled = saveDisabled,
-    ) {
-      Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+    SectionDividerSpaced()
+    SectionView {
+      val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
+      SectionItemView(
+        { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
+        disabled = saveDisabled,
+      ) {
+        Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+      }
     }
-    val serversErr = globalServersError(serverErrors.value)
-    if (serversErr != null) {
-      SectionCustomFooter {
-        ServersErrorFooter(serversErr)
+    val serversErrs = globalServersErrors(serverErrors.value)
+    if (serversErrs.isNotEmpty()) {
+      serversErrs.forEach { err ->
+        SectionCustomFooter {
+          ServersErrorFooter(err)
+        }
       }
     } else if (serverErrors.value.isNotEmpty()) {
       SectionCustomFooter {
         ServersErrorFooter(generalGetString(MR.strings.errors_in_servers_configuration))
       }
     }
-    val serversWarn = globalServersWarning(serverWarnings.value)
-    if (serversWarn != null) {
+    globalServersWarnings(serverWarnings.value).forEach { warn ->
       SectionCustomFooter {
-        ServersWarningFooter(serversWarn)
+        ServersWarningFooter(warn)
       }
     }
 
@@ -491,8 +495,8 @@ fun SocksProxySettings(
         UseOnionHosts(onionHosts, rememberUpdatedState(networkUseSocksProxy && proxyAuthRandomUnsaved.value)) {
           onionHosts.value = it
         }
-        SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
       }
+      SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
 
       SectionDividerSpaced()
 
@@ -522,8 +526,8 @@ fun SocksProxySettings(
             )
           }
         }
-        SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
       }
+      SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
 
       SectionDividerSpaced()
 
@@ -951,23 +955,11 @@ fun serversCanBeSaved(
   return userServers != currUserServers && serverErrors.isEmpty()
 }
 
-fun globalServersError(serverErrors: List<UserServersError>): String? {
-  for (err in serverErrors) {
-    if (err.globalError != null) {
-      return err.globalError
-    }
-  }
-  return null
-}
+fun globalServersErrors(serverErrors: List<UserServersError>): List<String> =
+  serverErrors.mapNotNull { it.globalError }
 
-fun globalServersWarning(serverWarnings: List<UserServersWarning>): String? {
-  for (warn in serverWarnings) {
-    if (warn.globalWarning != null) {
-      return warn.globalWarning
-    }
-  }
-  return null
-}
+fun globalServersWarnings(serverWarnings: List<UserServersWarning>): List<String> =
+  serverWarnings.mapNotNull { it.globalWarning }
 
 fun globalSMPServersError(serverErrors: List<UserServersError>): String? {
   for (err in serverErrors) {

@@ -200,6 +200,21 @@
         <target>%d months</target>
         <note>time interval</note>
       </trans-unit>
+      <trans-unit id="%d owner" xml:space="preserve">
+        <source>%d owner</source>
+        <target>%d owner</target>
+        <note>channel owners count</note>
+      </trans-unit>
+      <trans-unit id="%d owners" xml:space="preserve">
+        <source>%d owners</source>
+        <target>%d owners</target>
+        <note>channel owners count</note>
+      </trans-unit>
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
+        <source>%d owners &amp; contributors</source>
+        <target>%d owners &amp; contributors</target>
+        <note>channel members count</note>
+      </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
         <source>%d relays failed</source>
         <target>%d relays failed</target>
@@ -1735,11 +1750,6 @@ new chat action</note>
         <target>Change lock mode</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve">
-        <source>Change member role?</source>
-        <target>Change member role?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
         <source>Change passcode</source>
         <target>Change passcode</target>
@@ -1758,6 +1768,11 @@ new chat action</note>
       <trans-unit id="Change role" xml:space="preserve">
         <source>Change role</source>
         <target>Change role</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change role?" xml:space="preserve">
+        <source>Change role?</source>
+        <target>Change role?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change self-destruct mode" xml:space="preserve">
@@ -2259,6 +2274,11 @@ server test step</note>
         <target>Connect faster! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect to %@" xml:space="preserve">
+        <source>Connect to %@</source>
+        <target>Connect to %@</target>
+        <note>new chat action</note>
+      </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
         <source>Connect to desktop</source>
         <target>Connect to desktop</target>
@@ -2353,16 +2373,6 @@ This is your own one-time link!</target>
         <target>Connecting to desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting via channel name requires a newer app version." xml:space="preserve">
-        <source>Connecting via channel name requires a newer app version.</source>
-        <target>Connecting via channel name requires a newer app version.</target>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Connecting via contact name requires a newer app version." xml:space="preserve">
-        <source>Connecting via contact name requires a newer app version.</source>
-        <target>Connecting via contact name requires a newer app version.</target>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
         <source>Connection</source>
         <target>Connection</target>
@@ -2377,6 +2387,11 @@ This is your own one-time link!</target>
         <source>Connection blocked</source>
         <target>Connection blocked</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection blocked: %@" xml:space="preserve">
+        <source>Connection blocked: %@</source>
+        <target>Connection blocked: %@</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
@@ -3171,8 +3186,8 @@ alert button</note>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
-        <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
-        <target>Destination server address of %@ is incompatible with forwarding server %@ settings.</target>
+        <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
+        <target>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -3181,8 +3196,8 @@ alert button</note>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
-        <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
-        <target>Destination server version of %@ is incompatible with forwarding server %@.</target>
+        <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
+        <target>Destination server version of %1$@ is incompatible with forwarding server %2$@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
@@ -3739,7 +3754,7 @@ chat item action</note>
       <trans-unit id="Error" xml:space="preserve">
         <source>Error</source>
         <target>Error</target>
-        <note>conn error description</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error aborting address change" xml:space="preserve">
         <source>Error aborting address change</source>
@@ -4041,6 +4056,11 @@ chat item action</note>
         <target>Error saving group profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving name" xml:space="preserve">
+        <source>Error saving name</source>
+        <target>Error saving name</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error saving passcode" xml:space="preserve">
         <source>Error saving passcode</source>
         <target>Error saving passcode</target>
@@ -4175,6 +4195,7 @@ chat item action</note>
         <source>Error: %@</source>
         <target>Error: %@</target>
         <note>alert message
+conn error description
 file error text
 snd error text</note>
       </trans-unit>
@@ -5279,6 +5300,11 @@ More improvements are coming soon!</target>
         <target>Join channel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Join channel %@" xml:space="preserve">
+        <source>Join channel %@</source>
+        <target>Join channel %@</target>
+        <note>new chat action</note>
+      </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>Join group</target>
@@ -5399,6 +5425,16 @@ This is your link for group %@!</target>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
         <source>Less traffic on mobile networks.</source>
         <target>Less traffic on mobile networks.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Let people connect to you via name registered with your SimpleX address." xml:space="preserve">
+        <source>Let people connect to you via name registered with your SimpleX address.</source>
+        <target>Let people connect to you via name registered with your SimpleX address.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Let people join via name registered with this channel link." xml:space="preserve">
+        <source>Let people join via name registered with this channel link.</source>
+        <target>Let people join via name registered with this channel link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
@@ -5580,21 +5616,6 @@ This is your link for group %@!</target>
         <source>Member reports</source>
         <target>Member reports</target>
         <note>chat feature</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
-        <source>Member role will be changed to "%@". All chat members will be notified.</source>
-        <target>Member role will be changed to "%@". All chat members will be notified.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
-        <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target>Member role will be changed to "%@". All group members will be notified.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
-        <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target>Member role will be changed to "%@". The member will receive a new invitation.</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
@@ -5956,6 +5977,11 @@ This is your link for group %@!</target>
         <target>Name</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Name not found" xml:space="preserve">
+        <source>Name not found</source>
+        <target>Name not found</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Network &amp; servers</target>
@@ -6290,6 +6316,11 @@ The most secure encryption.</target>
         <target>No servers to receive messages.</target>
         <note>servers error</note>
       </trans-unit>
+      <trans-unit id="No servers to resolve names." xml:space="preserve">
+        <source>No servers to resolve names.</source>
+        <target>No servers to resolve names.</target>
+        <note>servers warning</note>
+      </trans-unit>
       <trans-unit id="No servers to send files." xml:space="preserve">
         <source>No servers to send files.</source>
         <target>No servers to send files.</target>
@@ -6305,6 +6336,11 @@ The most secure encryption.</target>
         <target>No unread chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No valid link" xml:space="preserve">
+        <source>No valid link</source>
+        <target>No valid link</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
         <source>Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.</source>
         <target>Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.</target>
@@ -6313,6 +6349,11 @@ The most secure encryption.</target>
       <trans-unit id="Non-profit governance" xml:space="preserve">
         <source>Non-profit governance</source>
         <target>Non-profit governance</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." xml:space="preserve">
+        <source>None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</source>
+        <target>None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
@@ -6734,9 +6775,9 @@ alert button</note>
         <target>Owner</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Owners" xml:space="preserve">
-        <source>Owners</source>
-        <target>Owners</target>
+      <trans-unit id="Owners &amp; contributors" xml:space="preserve">
+        <source>Owners &amp; contributors</source>
+        <target>Owners &amp; contributors</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ownership: you can run your own relays." xml:space="preserve">
@@ -6927,11 +6968,6 @@ Error: %@</target>
         <source>Please try to disable and re-enable notfications.</source>
         <target>Please try to disable and re-enable notfications.</target>
         <note>token info</note>
-      </trans-unit>
-      <trans-unit id="Please upgrade the app." xml:space="preserve">
-        <source>Please upgrade the app.</source>
-        <target>Please upgrade the app.</target>
-        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve">
         <source>Please wait for group moderators to review your request to join the group.</source>
@@ -7657,6 +7693,11 @@ swipe action</note>
         <target>Reset to user theme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Resolver error: %@" xml:space="preserve">
+        <source>Resolver error: %@</source>
+        <target>Resolver error: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
         <source>Restart the app to create a new chat profile</source>
         <target>Restart the app to create a new chat profile</target>
@@ -7735,6 +7776,26 @@ swipe action</note>
       <trans-unit id="Role" xml:space="preserve">
         <source>Role</source>
         <target>Role</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All chat members will be notified.</source>
+        <target>Role will be changed to "%@". All chat members will be notified.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All group members will be notified.</source>
+        <target>Role will be changed to "%@". All group members will be notified.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All subscribers will be notified.</source>
+        <target>Role will be changed to "%@". All subscribers will be notified.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
+        <source>Role will be changed to "%@". The member will receive a new invitation.</source>
+        <target>Role will be changed to "%@". The member will receive a new invitation.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -8283,6 +8344,11 @@ chat item action</note>
         <target>Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve">
+        <source>Server %@ does not support name resolution. Configure servers, or use a connection link.</source>
+        <target>Server %@ does not support name resolution. Configure servers, or use a connection link.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve">
         <source>Server added to operator %@.</source>
         <target>Server added to operator %@.</target>
@@ -8718,6 +8784,21 @@ chat item action</note>
         <source>SimpleX links not allowed</source>
         <target>SimpleX links not allowed</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name" xml:space="preserve">
+        <source>SimpleX name</source>
+        <target>SimpleX name</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name error" xml:space="preserve">
+        <source>SimpleX name error</source>
+        <target>SimpleX name error</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name not verified" xml:space="preserve">
+        <source>SimpleX name not verified</source>
+        <target>SimpleX name not verified</target>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
         <source>SimpleX one-time invitation</source>
@@ -9197,6 +9278,26 @@ It can happen because of some bug or when the connection is compromised.</source
 It can happen because of some bug or when the connection is compromised.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve">
+        <source>The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.</source>
+        <target>The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.</target>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve">
+        <source>The SimpleX name %@ is registered, but it has no valid link.</source>
+        <target>The SimpleX name %@ is registered, but it has no valid link.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve">
+        <source>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</source>
+        <target>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve">
+        <source>The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</source>
+        <target>The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</target>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
         <source>The address will be short, and your profile will be shared via the address.</source>
         <target>The address will be short, and your profile will be shared via the address.</target>
@@ -9384,6 +9485,11 @@ your contacts and groups.</target>
         <target>They can be overridden in contact and group settings.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve">
+        <source>This SimpleX name is not registered. Please check the name.</source>
+        <target>This SimpleX name is not registered. Please check the name.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
         <target>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</target>
@@ -9567,6 +9673,11 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>To record voice message please grant permission to use Microphone.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To resolve names" xml:space="preserve">
+        <source>To resolve names</source>
+        <target>To resolve names</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
         <target>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</target>
@@ -9692,6 +9803,11 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Unblock subscriber for all?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unconfirmed name" xml:space="preserve">
+        <source>Unconfirmed name</source>
+        <target>Unconfirmed name</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Undelivered messages" xml:space="preserve">
         <source>Undelivered messages</source>
         <target>Undelivered messages</target>
@@ -9789,20 +9905,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Unread</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Unsupported channel name" xml:space="preserve">
-        <source>Unsupported channel name</source>
-        <target>Unsupported channel name</target>
-        <note>alert title</note>
-      </trans-unit>
       <trans-unit id="Unsupported connection link" xml:space="preserve">
         <source>Unsupported connection link</source>
         <target>Unsupported connection link</target>
         <note>conn error description</note>
-      </trans-unit>
-      <trans-unit id="Unsupported contact name" xml:space="preserve">
-        <source>Unsupported contact name</source>
-        <target>Unsupported contact name</target>
-        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Unverified badge" xml:space="preserve">
         <source>Unverified badge</source>
@@ -10064,6 +10170,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Verify</target>
         <note>relay test step</note>
       </trans-unit>
+      <trans-unit id="Verify SimpleX names" xml:space="preserve">
+        <source>Verify SimpleX names</source>
+        <target>Verify SimpleX names</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
         <source>Verify code with desktop</source>
         <target>Verify code with desktop</target>
@@ -10087,6 +10198,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Verify database passphrase" xml:space="preserve">
         <source>Verify database passphrase</source>
         <target>Verify database passphrase</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify name" xml:space="preserve">
+        <source>Verify name</source>
+        <target>Verify name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify passphrase" xml:space="preserve">
@@ -10742,6 +10858,11 @@ Repeat connection request?</target>
         <target>Your SimpleX address</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your SimpleX name" xml:space="preserve">
+        <source>Your SimpleX name</source>
+        <target>Your SimpleX name</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
         <target>Your business contact</target>
@@ -11231,6 +11352,11 @@ marked deleted chat item preview text</note>
         <source>contact should accept…</source>
         <target>contact should accept…</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="contributor" xml:space="preserve">
+        <source>contributor</source>
+        <target>contributor</target>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
         <source>creator</source>
@@ -11884,6 +12010,11 @@ last received msg: %2$@</target>
         <source>strike</source>
         <target>strike</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="subscriber" xml:space="preserve">
+        <source>subscriber</source>
+        <target>subscriber</target>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
         <source>this contact</source>

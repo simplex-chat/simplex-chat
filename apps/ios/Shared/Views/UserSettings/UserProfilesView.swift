@@ -319,8 +319,9 @@ struct UserProfilesView: View {
             }
         } catch let error {
             logger.error("Error deleting user profile: \(error)")
-            let a = getErrorAlert(error, "Error deleting user profile")
-            alert = .error(title: a.title, error: a.message)
+            await MainActor.run {
+                showErrorAlert(error, NSLocalizedString("Error deleting user profile", comment: ""))
+            }
         }
 
         func deleteUser() async throws {
@@ -436,8 +437,9 @@ struct UserProfilesView: View {
                     }
                 }
             } catch let error {
-                let a = getErrorAlert(error, "Error updating user privacy")
-                alert = .error(title: a.title, error: a.message)
+                await MainActor.run {
+                    showErrorAlert(error, NSLocalizedString("Error updating user privacy", comment: ""))
+                }
             }
         }
     }

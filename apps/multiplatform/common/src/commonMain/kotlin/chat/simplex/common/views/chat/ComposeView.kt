@@ -133,15 +133,12 @@ data class ComposeState(
   )
 
   val memberMentions: Map<String, Long>
-    get() = this.mentions.mapNotNull {
-      val memberRef = it.value.memberRef
-
-      if (memberRef != null) {
-        it.key to memberRef.groupMemberId
-      } else {
-        null
-      }
-    }.toMap()
+    get() = parsedMessage
+      .mapNotNull { (it.format as? Format.Mention)?.memberName }
+      .distinct()
+      .mapNotNull { name -> mentions[name]?.memberRef?.groupMemberId?.let { name to it } }
+      .take(MAX_NUMBER_OF_MENTIONS)
+      .toMap()
 
   val editing: Boolean
     get() =
@@ -542,7 +539,7 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: Map<String, Long>): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: Map<String, Long>, sign: Boolean = false): ChatItem? {
     val cInfo = chat.chatInfo
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(
@@ -559,6 +556,7 @@ fun ComposeView(
         sendAsGroup = cInfo.sendAsGroup,
         live = live,
         ttl = ttl,
+        sign = sign,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
       )
     if (!chatItems.isNullOrEmpty()) {
@@ -675,7 +673,7 @@ fun ComposeView(
     }
   }
 
-  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
+  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false): List<ChatItem>? {
     val cs = composeState.value
     var sent: List<ChatItem>?
     var lastMessageFailedToSend: ComposeState? = null
@@ -800,7 +798,7 @@ fun ComposeView(
       if (cs.message.text.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
           } else {
             message
           }
@@ -840,7 +838,7 @@ fun ComposeView(
                 if (remoteHost == null) saveAnimImage(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, hiddenFileNamePrefix = "video")
+                if (remoteHost == null) saveFileFromUri(it.uri, cs.maxFileSize, hiddenFileNamePrefix = "video")
                 else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
@@ -889,7 +887,7 @@ fun ComposeView(
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
-            saveFileFromUri(preview.uri)
+            saveFileFromUri(preview.uri, cs.maxFileSize)
           } else {
             CryptoFile.desktopPlain(preview.uri)
           }
@@ -917,7 +915,8 @@ fun ComposeView(
         val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl,
-          mentions = cs.memberMentions
+          mentions = cs.memberMentions,
+          sign = sign
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {
@@ -944,9 +943,9 @@ fun ComposeView(
     return sent
   }
 
-  fun sendMessage(ttl: Int?) {
+  fun sendMessage(ttl: Int?, sign: Boolean = false) {
     withLongRunningApi(slow = 120_000) {
-      sendMessageAsync(null, false, ttl)
+      sendMessageAsync(null, false, ttl, sign)
     }
   }
 
@@ -1390,10 +1389,16 @@ fun ComposeView(
       allowVoiceToContact = ::allowVoiceToContact,
       sendButtonColor = sendButtonColor,
       timedMessageAllowed = timedMessageAllowed,
+      showSign = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.useRelays == true,
+      signMessageAlertShown = chatModel.controller.appPrefs.signMessageAlertShown,
       customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
       placeholder = if (userCantSendReason.value != null) "" else placeholder ?: composeState.value.placeholder,
       sendMessage = { ttl ->
         sendMessage(ttl)
+        resetLinkPreview()
+      },
+      sendSignedMessage = {
+        sendMessage(null, sign = true)
         resetLinkPreview()
       },
       sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,

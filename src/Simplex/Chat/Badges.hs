@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -27,8 +28,8 @@ module Simplex.Chat.Badges
     maxXFTPFileSize,
     maxFileSizeSupporter,
     maxFileSizeLegend,
-    BadgePresHeaderTag (..),
-    BadgePresHeader (..),
+    ProofPresHeaderTag (..),
+    ProofPresHeader (..),
     BadgePurchase (..),
     BadgeMasterKey (..),
     BadgeRequest (..),
@@ -197,9 +198,9 @@ maxXFTPFileSize = \case
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
-data BadgePresHeaderTag = PHTestTag | PHUnknownTag Char
+data ProofPresHeaderTag = PHTestTag | PHUnknownTag Char
 
-instance StrEncoding BadgePresHeaderTag where
+instance StrEncoding ProofPresHeaderTag where
   strEncode = B.singleton . \case
     PHTestTag -> 'T'
     PHUnknownTag c -> c
@@ -209,11 +210,13 @@ instance StrEncoding BadgePresHeaderTag where
         'T' -> PHTestTag
         c -> PHUnknownTag c
 
-data BadgePresHeader
+data ProofPresHeader
   = PHTest ByteString
   | PHUnknown Char ByteString
+  deriving (Eq, Show)
+  deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
 
-instance StrEncoding BadgePresHeader where
+instance StrEncoding ProofPresHeader where
   strEncode = \case
     PHTest nonce -> strEncode PHTestTag <> nonce
     PHUnknown c b -> strEncode (PHUnknownTag c) <> b
@@ -223,8 +226,8 @@ instance StrEncoding BadgePresHeader where
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
 -- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
-badgePresHeaderAccepted :: BadgePresHeader -> Bool
-badgePresHeaderAccepted = \case
+proofPresHeaderAccepted :: ProofPresHeader -> Bool
+proofPresHeaderAccepted = \case
   PHTest _ -> True
   PHUnknown _ _ -> True
 
@@ -311,7 +314,7 @@ generateBadgeProof pk (BadgeCredential keyIdx masterKey signature badgeInfo) ph 
   fmap (\p -> BadgeProof keyIdx ph p badgeInfo) <$> bbsProofGen pk signature bbsBadgeHeader ph bbsBadgeDisclosedIndexes (badgeMessages masterKey badgeInfo)
 
 -- application-level proof generation with a semantic presentation header
-badgeProof :: BBSPublicKey -> BadgeCredential -> BadgePresHeader -> IO (Either String BadgeProof)
+badgeProof :: BBSPublicKey -> BadgeCredential -> ProofPresHeader -> IO (Either String BadgeProof)
 badgeProof pk cred ph = generateBadgeProof pk cred (BBSPresHeader $ strEncode ph)
 
 -- Recipient-side: verify a badge proof with the configured key its index points to.
@@ -324,7 +327,7 @@ verifyBadge keys b@(BadgeProof keyIdx _ _ _) = case M.lookup keyIdx keys of
 
 verifyBadgeWith :: BBSPublicKey -> BadgeProof -> IO Bool
 verifyBadgeWith pk (BadgeProof _ ph@(BBSPresHeader phBytes) proof badgeInfo)
-  | either (const False) badgePresHeaderAccepted (strDecode phBytes) =
+  | either (const False) proofPresHeaderAccepted (strDecode phBytes) =
       bbsProofVerify pk proof bbsBadgeHeader ph bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeInfoMessages badgeInfo)
   | otherwise = pure False
 

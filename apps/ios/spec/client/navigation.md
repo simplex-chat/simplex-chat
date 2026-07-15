@@ -299,7 +299,7 @@ Migration state (`ChatModel.migrationState != nil`) takes precedence over onboar
 
 ### Entry Point
 
-`NewChatMenuButton` includes a NavigationLink "Create channel (BETA)" with antenna icon, navigating to `AddChannelView`.
+`NewChatMenuButton` includes a NavigationLink "Create public channel" with antenna icon, navigating to `AddChannelView`.
 
 ### Three-Step Wizard
 
