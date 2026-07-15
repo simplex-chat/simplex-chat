@@ -574,6 +574,7 @@
   <string name="forward_message">Forward message…</string>
   <string name="forward_multiple">Forward messages…</string>
   <string name="share_channel">Share channel…</string>
+  <string name="share_address">Share address…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
   <string name="share_via_chat">Share via chat</string>
@@ -586,6 +587,7 @@
   <string name="chat_link_from_owner">(from owner)</string>
   <string name="chat_link_signed">(signed)</string>
   <string name="error_sharing_channel">Error sharing channel</string>
+  <string name="error_sharing_address">Error sharing address</string>
   <string name="owner_verification_passed">Link signature verified.</string>
   <string name="owner_verification_failed">⚠️ Signature verification failed: %s.</string>
 
