@@ -41,6 +41,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
 import Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
 import Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
 import Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
+import Simplex.Chat.Store.Postgres.Migrations.M20260714_member_security_code
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -81,7 +82,8 @@ schemaMigrations =
     ("20260602_group_roster", m20260602_group_roster, Just down_m20260602_group_roster),
     ("20260603_simplex_name", m20260603_simplex_name, Just down_m20260603_simplex_name),
     ("20260629_roster_catchup", m20260629_roster_catchup, Just down_m20260629_roster_catchup),
-    ("20260707_file_digest", m20260707_file_digest, Just down_m20260707_file_digest)
+    ("20260707_file_digest", m20260707_file_digest, Just down_m20260707_file_digest),
+    ("20260714_member_security_code", m20260714_member_security_code, Just down_m20260714_member_security_code)
   ]
 
 -- | The list of migrations in ascending order by date

@@ -2931,6 +2931,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var supportChat: GroupSupportChat?
     public var memberChatVRange: VersionRange
     public var relayLink: String?
+    public var memberVerifiedCode: SecurityCode?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -2952,7 +2953,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
     public var nameBadge: LocalBadge? { memberProfile.localBadge }
-    public var verified: Bool { activeConn?.connectionCode != nil }
+    public var verified: Bool { memberVerifiedCode != nil || activeConn?.connectionCode != nil }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
     var directChatId: ChatId? {

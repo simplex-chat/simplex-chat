@@ -2535,7 +2535,8 @@ data class GroupMember (
   var activeConn: Connection? = null,
   val supportChat: GroupSupportChat? = null,
   val memberChatVRange: VersionRange,
-  val relayLink: String? = null
+  val relayLink: String? = null,
+  val memberVerifiedCode: SecurityCode? = null
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
   val ready get() = activeConn?.connStatus == ConnStatus.Ready
@@ -2555,7 +2556,7 @@ data class GroupMember (
   override val shortDescr: String? get() = memberProfile.shortDescr
   override val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
-  val verified get() = activeConn?.connectionCode != null
+  val verified get() = memberVerifiedCode != null || activeConn?.connectionCode != null
   // the badge shown for a member's name; a badge that expired over a month ago (ExpiredOld) is not shown
   val nameBadge: LocalBadge? get() {
     val badge = memberProfile.localBadge

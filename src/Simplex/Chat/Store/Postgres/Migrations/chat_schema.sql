@@ -836,7 +836,9 @@ CREATE TABLE test_chat_schema.group_members (
     relay_link bytea,
     member_pub_key bytea,
     removed_at timestamp with time zone,
-    roster_served_version bigint
+    roster_served_version bigint,
+    member_security_code text,
+    member_security_code_verified_at timestamp with time zone
 );
 
 

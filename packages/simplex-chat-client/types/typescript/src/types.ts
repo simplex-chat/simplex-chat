@@ -2747,6 +2747,7 @@ export interface GroupMember {
   supportChat?: GroupSupportChat
   memberPubKey?: string
   relayLink?: string
+  memberVerifiedCode?: SecurityCode
 }
 
 export interface GroupMemberAdmission {

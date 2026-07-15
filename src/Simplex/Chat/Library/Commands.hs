@@ -1990,28 +1990,41 @@ processChatCommand cxt nm = \case
       Nothing -> throwChatError $ CEContactNotActive ct
   APIGetGroupMemberCode gId gMemberId -> withUser $ \user -> do
     (g, m@GroupMember {activeConn}) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
-    case activeConn of
-      Just conn@Connection {connId} -> do
-        code <- getConnectionCode $ aConnId conn
+    if useRelays' g
+      then do
+        code <- getChannelMemberCode g m
         m' <- case memberSecurityCode m of
           Just SecurityCode {securityCode}
             | sameVerificationCode code securityCode -> pure m
             | otherwise -> do
-                withFastStore' $ \db -> setConnectionVerified db user connId Nothing
-                pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
+                withFastStore' $ \db -> setGroupMemberVerified db user (groupMemberId' m) Nothing
+                pure m {memberVerifiedCode = Nothing}
           _ -> pure m
         pure $ CRGroupMemberCode user g m' code
-      _ -> throwChatError CEGroupMemberNotActive
+      else case activeConn of
+        Just conn@Connection {connId} -> do
+          code <- getConnectionCode $ aConnId conn
+          m' <- case memberSecurityCode m of
+            Just SecurityCode {securityCode}
+              | sameVerificationCode code securityCode -> pure m
+              | otherwise -> do
+                  withFastStore' $ \db -> setConnectionVerified db user connId Nothing
+                  pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
+            _ -> pure m
+          pure $ CRGroupMemberCode user g m' code
+        _ -> throwChatError CEGroupMemberNotActive
   APIVerifyContact contactId code -> withUser $ \user -> do
     ct@Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
     case activeConn of
       Just conn -> verifyConnectionCode user conn code
       Nothing -> throwChatError $ CEContactNotActive ct
   APIVerifyGroupMember gId gMemberId code -> withUser $ \user -> do
-    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db cxt user gId gMemberId
-    case activeConn of
-      Just conn -> verifyConnectionCode user conn code
-      _ -> throwChatError CEGroupMemberNotActive
+    (g, m@GroupMember {activeConn}) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
+    if useRelays' g
+      then verifyChannelMemberCode user g m code
+      else case activeConn of
+        Just conn -> verifyConnectionCode user conn code
+        _ -> throwChatError CEGroupMemberNotActive
   APIEnableContact contactId -> withUser $ \user -> do
     ct@Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
     case activeConn of
@@ -3661,6 +3674,11 @@ processChatCommand cxt nm = \case
       getGroupAndMemberId user gName mName >>= processChatCommand cxt nm . uncurry cmd
     getConnectionCode :: ConnId -> CM Text
     getConnectionCode connId = verificationCode <$> withAgent (`getConnectionRatchetAdHash` connId)
+    getChannelMemberCode :: GroupInfo -> GroupMember -> CM Text
+    getChannelMemberCode GroupInfo {membership} m =
+      case (memberPubKey membership, memberPubKey m) of
+        (Just ownKey, Just memKey) -> pure $ channelMemberCode ownKey memKey
+        _ -> throwCmdError "no member key to compute security code"
     verifyConnectionCode :: User -> Connection -> Maybe Text -> CM ChatResponse
     verifyConnectionCode user conn@Connection {connId} (Just code) = do
       code' <- getConnectionCode $ aConnId conn
@@ -3670,6 +3688,16 @@ processChatCommand cxt nm = \case
     verifyConnectionCode user conn@Connection {connId} _ = do
       code' <- getConnectionCode $ aConnId conn
       withFastStore' $ \db -> setConnectionVerified db user connId Nothing
+      pure $ CRConnectionVerified user False code'
+    verifyChannelMemberCode :: User -> GroupInfo -> GroupMember -> Maybe Text -> CM ChatResponse
+    verifyChannelMemberCode user g m (Just code) = do
+      code' <- getChannelMemberCode g m
+      let verified = sameVerificationCode code code'
+      when verified . withFastStore' $ \db -> setGroupMemberVerified db user (groupMemberId' m) $ Just code'
+      pure $ CRConnectionVerified user verified code'
+    verifyChannelMemberCode user g m _ = do
+      code' <- getChannelMemberCode g m
+      withFastStore' $ \db -> setGroupMemberVerified db user (groupMemberId' m) Nothing
       pure $ CRConnectionVerified user False code'
     getSentChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId _scope) msg = case cType of
