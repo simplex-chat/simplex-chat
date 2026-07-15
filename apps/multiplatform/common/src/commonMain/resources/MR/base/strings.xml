@@ -585,7 +585,6 @@
   <string name="chat_link_contact_address">Contact address</string>
   <string name="chat_link_one_time">One-time link</string>
   <string name="chat_link_from_owner">(from owner)</string>
-  <string name="chat_link_signed">(signed)</string>
   <string name="error_sharing_channel">Error sharing channel</string>
   <string name="error_sharing_address">Error sharing address</string>
   <string name="owner_verification_passed">Link signature verified.</string>

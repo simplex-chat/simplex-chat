@@ -4825,7 +4825,7 @@ sealed class MsgChatLink {
       is Invitation -> generalGetString(MR.strings.chat_link_one_time)
     }
     if (signed) {
-      s += " " + if (isPublicGroup) generalGetString(MR.strings.chat_link_from_owner) else generalGetString(MR.strings.chat_link_signed)
+      s += " " + generalGetString(MR.strings.chat_link_from_owner)
     }
     return s
   }
