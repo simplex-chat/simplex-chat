@@ -102,15 +102,25 @@ hover.
 
 ## Performance
 
-- `detectCursorMove` is now cheaper per event than before (no scope teardown/re-entry per event).
+- `detectCursorMove` is now cheaper per event than before (no scope teardown/re-entry per event);
+  the pressed check allocates one list iterator per event.
 - `desktopSetHoverCursor` runs at mouse-move rate: steady-state cost is a cached component
   reference check (parent-chain walk, no allocations) plus an int comparison; the native
   `setCursor` call fires only when the cursor type actually changes. The canvas component lookup
-  (recursive tree walk) runs once per window and is cached.
+  (recursive tree walk) runs once per window and is cached, including negative results (a miss is
+  unreachable in practice — pointer events originate from the rendered canvas — kept as a guard).
 - No new recompositions: the icon state logic is unchanged; Android is a no-op.
+
+Framework line numbers cited above are from the official `ui-desktop-1.8.2`/`foundation-desktop-1.8.2`
+sources jars on Maven Central; they will drift on upgrade.
 
 ## Testing
 
-Verified on Linux (AppImage): hovering commands after clicking several in a row, clicking stacked
-`/join` commands without moving the mouse, and sweeping across commands quickly — the hand cursor
-now tracks correctly in all cases.
+Verified on Linux (AppImage), in two stages:
+
+1. A build with only the detection-layer fix (lossless `detectCursorMove`) was tested first and
+   the stale-cursor symptom **still reproduced** — this is the empirical justification for the
+   imperative display-layer workaround; the declarative-only fix is not sufficient.
+2. With both layers: hovering commands after clicking several in a row, clicking stacked `/join`
+   commands without moving the mouse, and sweeping across commands quickly — the hand cursor
+   tracks correctly in all cases.
