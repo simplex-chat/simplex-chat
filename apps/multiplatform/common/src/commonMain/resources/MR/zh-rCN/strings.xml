@@ -2902,4 +2902,5 @@
     <string name="sign_message">签署消息</string>
     <string name="sign_messages">签署消息</string>
     <string name="signature_missing_alert_desc">频道要求签署此消息，但签名缺失。</string>
+    <string name="to_verify_channel_member_key">要验证此订阅者的密钥，比较（或扫描）设备上的代码。</string>
 </resources>
