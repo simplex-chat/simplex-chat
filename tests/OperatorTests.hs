@@ -130,42 +130,57 @@ perServerRolesTest :: Spec
 perServerRolesTest = describe "per-server roles" $ do
   describe "agentServerCfgs resolution" $ do
     it "self-hosted server keeps its per-server roles" $
-      case agentServerCfgs SPSMP opDomains [selfHostedSMP (Just (ServerRoles True False True))] of
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride (Just True) (Just False) (Just True))] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Nothing
           rolesTuple roles `shouldBe` (True, False, True)
         cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
     it "self-hosted server without roles falls back to default roles" $
-      case agentServerCfgs SPSMP opDomains [selfHostedSMP Nothing] of
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP emptyServerRolesOverride] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Nothing
           -- default: storage + proxy on, names off
           rolesTuple roles `shouldBe` (True, True, False)
         cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "self-hosted partial override keeps defaults for unset roles" $
+      -- storage/proxy unset (default on), names explicitly on -> a per-role
+      -- default and an explicit value coexist on one server
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride Nothing Nothing (Just True))] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          rolesTuple roles `shouldBe` (True, True, True)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "self-hosted explicit No overrides a default-yes role" $
+      -- storage explicitly off beats its default on; proxy default on, names default off
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride (Just False) Nothing Nothing)] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          rolesTuple roles `shouldBe` (False, True, False)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
     it "operator-matched server uses operator roles, ignoring per-server field" $
       -- per-server roles are all off, but the resolved cfg must use the operator's roles
-      case agentServerCfgs SPSMP opDomains [opMatchedSMP (Just (ServerRoles False False False))] of
+      case agentServerCfgs SPSMP opDomains [opMatchedSMP (ServerRolesOverride (Just False) (Just False) (Just False))] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Just 1
           rolesTuple roles `shouldBe` rolesTuple (operatorRoles SPSMP testOp)
         cfgs -> expectationFailure $ "expected one operator-matched ServerCfg, got: " <> show cfgs
   describe "validateUserServers per-server names coverage" $ do
     it "self-hosted-only user without names servers warns USWNoNamesServers" $ do
-      let (_errs, warns) = validateUserServers [selfHostedUser Nothing] []
+      let (_errs, warns) = validateUserServers [selfHostedUser emptyServerRolesOverride] []
       warns `shouldSatisfy` elem (USWNoNamesServers Nothing)
     it "self-hosted user with a names server does not warn USWNoNamesServers" $ do
-      let (_errs, warns) = validateUserServers [selfHostedUser (Just allRoles)] []
+      let (_errs, warns) = validateUserServers [selfHostedUser (ServerRolesOverride Nothing Nothing (Just True))] []
       warns `shouldSatisfy` notElem (USWNoNamesServers Nothing)
   where
     testOp = operatorSimpleXChat {operatorId = DBEntityId 1}
     opDomains = operatorDomains [testOp]
     -- host does not match any operator domain -> treated as self-hosted
-    selfHostedSMP :: Maybe ServerRoles -> NewUserServer 'PSMP
+    selfHostedSMP :: ServerRolesOverride -> NewUserServer 'PSMP
     selfHostedSMP r = (newUserServer "smp://abcd@self.example.com" :: NewUserServer 'PSMP) {roles = r}
     -- host matches the SimpleX Chat operator domain (simplex.im)
-    opMatchedSMP :: Maybe ServerRoles -> NewUserServer 'PSMP
+    opMatchedSMP :: ServerRolesOverride -> NewUserServer 'PSMP
     opMatchedSMP r = (newUserServer "smp://abcd@smp8.simplex.im" :: NewUserServer 'PSMP) {roles = r}
-    selfHostedUser :: Maybe ServerRoles -> UpdatedUserOperatorServers
+    selfHostedUser :: ServerRolesOverride -> UpdatedUserOperatorServers
     selfHostedUser r =
       UpdatedUserOperatorServers
         { operator = Nothing,
