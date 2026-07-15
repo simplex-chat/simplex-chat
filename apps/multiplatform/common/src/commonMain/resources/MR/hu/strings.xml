@@ -1109,7 +1109,7 @@
     <string name="settings_section_title_you">Profil</string>
     <string name="network_proxy_port">%d-s port</string>
     <string name="to_connect_via_link_title">Kapcsolódás egy hivatkozáson keresztül</string>
-    <string name="share_address">Cím megosztása</string>
+    <string name="share_address">Cím megosztása…</string>
     <string name="smp_servers_scan_qr">Kiszolgáló QR-kódjának beolvasása</string>
     <string name="stop_chat_confirmation">Megállítás</string>
     <string name="stop_sharing_address">Megállítja a címmegosztást?</string>
@@ -2885,4 +2885,9 @@
     <string name="remove_name">Név eltávolítása</string>
     <string name="save_simplex_name_question">Menti a Simplex-nevet?</string>
     <string name="to_verify_channel_member_key">A kulcsok ellenőrzéséhez ezzel a feliratkozóval hasonlítsa össze (vagy olvassa be) az eszközökön található kódot.</string>
+    <string name="error_sharing_address">Hiba történt a cím megosztásakor</string>
+    <string name="profile_description__field">Leírás</string>
+    <string name="add_description">Leírás hozzáadása</string>
+    <string name="edit_description">Leírás szerkesztése</string>
+    <string name="enter_description_optional">Adja meg a leírást (nem kötelező)</string>
 </resources>
