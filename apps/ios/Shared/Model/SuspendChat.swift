@@ -218,13 +218,17 @@ final class RemoteCtrlBGKeepAlive {
         }
     }
 
-    func startLegacyTask() {
-        guard !usingContinuedProcessing, ChatModel.shared.activeRemoteCtrl, legacyTask == .invalid else { return }
-        legacyTask = UIApplication.shared.beginBackgroundTask {
-            Task { @MainActor in
-                await RemoteCtrlBGKeepAlive.shared.expire()
+    func keepSessionInBackground() -> Bool {
+        guard ChatModel.shared.activeRemoteCtrl else { return false }
+        if usingContinuedProcessing { return true }
+        if legacyTask == .invalid {
+            legacyTask = UIApplication.shared.beginBackgroundTask {
+                Task { @MainActor in
+                    await RemoteCtrlBGKeepAlive.shared.expire()
+                }
             }
         }
+        return legacyTask != .invalid
     }
 
     func stopLegacyTask() {
