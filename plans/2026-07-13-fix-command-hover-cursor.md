@@ -110,15 +110,17 @@ hover.
   `setCursor` call fires only when the cursor type actually changes. The canvas component lookup
   (recursive tree walk) runs once per window and is cached, including negative results (a miss is
   unreachable in practice — pointer events originate from the rendered canvas — kept as a guard).
-- One added recomposition when the pointer exits text that showed a Hand (the exit reset writes
-  `icon.value` Hand→Text); otherwise the icon state logic is unchanged. Android is a no-op.
+- Up to two added recompositions per exit/re-enter cycle of a Hand region (the exit reset writes
+  `icon.value` Hand→Text, making the next re-enter a Text→Hand write where pre-fix both were
+  no-ops); otherwise the icon state logic is unchanged. Android is a no-op.
 
 Framework line numbers cited above are from the official `ui-desktop-1.8.2`/`foundation-desktop-1.8.2`
 sources jars on Maven Central; they will drift on upgrade.
 
 ## Testing
 
-Verified on Linux (AppImage), in two stages:
+Verified on Linux (AppImage), in two stages (commit subjects name the defect layer each commit
+fixes; the user-visible symptom needed both layers, per stage 1 below):
 
 1. A build with only the detection-layer fix (lossless `detectCursorMove`) was tested first and
    the stale-cursor symptom **still reproduced** — this is the empirical justification for the
