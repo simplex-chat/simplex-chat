@@ -31,7 +31,8 @@ CREATE TABLE contact_profiles(
   badge_key_idx INTEGER,
   contact_domain TEXT,
   contact_domain_proof TEXT,
-  contact_domain_verified INTEGER
+  contact_domain_verified INTEGER,
+  description TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,

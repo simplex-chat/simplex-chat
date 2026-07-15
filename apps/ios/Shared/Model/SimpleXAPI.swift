@@ -509,6 +509,12 @@ func apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatT
     throw r.unexpected
 }
 
+func apiShareMyAddress(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool) async throws -> MsgContent {
+    let r: ChatResponse1 = try await chatSendCmd(.apiShareMyAddress(toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup))
+    if case let .chatMsgContent(_, mc) = r { return mc }
+    throw r.unexpected
+}
+
 func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool = false, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
     let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)

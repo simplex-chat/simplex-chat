@@ -370,7 +370,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDesc
   withBGApi {
     val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
-      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image)
+      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
     ) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {

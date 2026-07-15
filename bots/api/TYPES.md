@@ -2774,6 +2774,7 @@ Unknown:
 - displayName: string
 - fullName: string
 - shortDescr: string?
+- description: string?
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
@@ -3163,6 +3164,7 @@ count=<count>
 - displayName: string
 - fullName: string
 - shortDescr: string?
+- description: string?
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?

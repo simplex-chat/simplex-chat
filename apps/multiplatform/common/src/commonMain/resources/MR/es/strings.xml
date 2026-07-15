@@ -2776,7 +2776,6 @@
     <string name="share_channel">Compartir canal…</string>
     <string name="share_via_chat">Compartir en chat</string>
     <string name="owner_verification_failed">⚠️ Verificación de firma fallida: %s.</string>
-    <string name="chat_link_signed">(firmado)</string>
     <string name="members_can_chat_with_admins_channel">Los suscriptores pueden chatear con los administradores.</string>
     <string name="talk_to_someone">Para comunicarte</string>
     <string name="tap_to_open">Pulsa para abrir</string>

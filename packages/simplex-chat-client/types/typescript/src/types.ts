@@ -3011,6 +3011,7 @@ export interface LocalProfile {
   displayName: string
   fullName: string
   shortDescr?: string
+  description?: string
   image?: string
   contactLink?: string
   preferences?: Preferences
@@ -3413,6 +3414,7 @@ export interface Profile {
   displayName: string
   fullName: string
   shortDescr?: string
+  description?: string
   image?: string
   contactLink?: string
   preferences?: Preferences

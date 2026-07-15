@@ -133,7 +133,7 @@ import Database.SQLite.Simple.QQ (sql)
 #endif
 
 createUserRecordAt :: DB.Connection -> AgentUserId -> Bool -> Bool -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
-createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} activeUser currentTs =
+createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {displayName, fullName, shortDescr, description, image, peerType, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
@@ -154,8 +154,8 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (displayName, displayName, userId, currentTs, currentTs)
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, chat_peer_type, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (displayName, fullName, shortDescr, image, peerType, userId, userPreferences, currentTs, currentTs)
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, chat_peer_type, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+      (displayName, fullName, shortDescr, description, image, peerType, userId, userPreferences, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -163,7 +163,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -353,22 +353,22 @@ updateUserProfile db user p'
           DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
           pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
-    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || img' /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
-    Profile {displayName = newName, fullName = fn', shortDescr = d', image = img', preferences} = p'
+    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
+    Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', preferences} = p'
     fullPreferences = fullPreferences' preferences
 
 -- own profile field update; leaves the badge columns alone (the credential is owned by setUserBadge/addUserBadge)
 updateUserProfileFields_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateUserProfileFields_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} updatedAt =
+updateUserProfileFields_' db userId profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType} updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, updatedAt) :. (userId, profileId))
 
 -- store the user's own badge credential; touches only the badge columns.
 -- bumps user_member_profile_updated_at so groups receive the updated profile (with the badge) on the next message.
@@ -417,14 +417,14 @@ getUserContactProfiles db User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT display_name, full_name, short_descr, image, contact_link, chat_peer_type, contact_domain, preferences
+        SELECT display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, contact_domain, preferences
         FROM contact_profiles
         WHERE user_id = ?
       |]
       (Only userId)
   where
-    toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe SimplexDomain, Maybe Preferences) -> Profile
-    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, domain_, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain = mkDomainClaim <$> domain_, peerType, preferences, badge = Nothing}
+    toContactProfile :: (ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe SimplexDomain, Maybe Preferences) -> Profile
+    toContactProfile (displayName, fullName, shortDescr, description, image, contactLink, peerType, domain_, preferences) = Profile {displayName, fullName, shortDescr, description, image, contactLink, contactDomain = mkDomainClaim <$> domain_, peerType, preferences, badge = Nothing}
 
 createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> C.PrivateKeyEd25519 -> ExceptT StoreError IO ()
 createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode linkPrivSigKey =

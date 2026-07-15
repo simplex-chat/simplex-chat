@@ -574,6 +574,7 @@
   <string name="forward_message">Forward message…</string>
   <string name="forward_multiple">Forward messages…</string>
   <string name="share_channel">Share channel…</string>
+  <string name="share_address">Share address…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
   <string name="share_via_chat">Share via chat</string>
@@ -584,8 +585,8 @@
   <string name="chat_link_contact_address">Contact address</string>
   <string name="chat_link_one_time">One-time link</string>
   <string name="chat_link_from_owner">(from owner)</string>
-  <string name="chat_link_signed">(signed)</string>
   <string name="error_sharing_channel">Error sharing channel</string>
+  <string name="error_sharing_address">Error sharing address</string>
   <string name="owner_verification_passed">Link signature verified.</string>
   <string name="owner_verification_failed">⚠️ Signature verification failed: %s.</string>
 
@@ -1248,6 +1249,10 @@
   <string name="full_name__field">Full name:</string>
   <string name="short_descr__field">Bio:</string>
   <string name="bio_too_large">Bio too large</string>
+  <string name="profile_description__field">Description</string>
+  <string name="add_description">Add description</string>
+  <string name="edit_description">Edit description</string>
+  <string name="enter_description_optional">Enter description (optional)</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>

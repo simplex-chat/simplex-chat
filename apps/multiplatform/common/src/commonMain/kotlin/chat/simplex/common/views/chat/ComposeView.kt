@@ -526,6 +526,7 @@ fun ComposeView(
         is SharedContent.Text -> emptyList()
         is SharedContent.Forward -> emptyList()
         is SharedContent.ChatLink -> emptyList()
+        is SharedContent.MyAddress -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -1533,6 +1534,22 @@ fun ComposeView(
         withBGApi {
           val mc = chatModel.controller.apiShareChatMsgContent(
             chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
+            cInfo.chatType, cInfo.apiId,
+            cInfo.groupChatScope(), sendAsGroup
+          )
+          if (mc is MsgContent.MCChat) {
+            composeState.value = composeState.value.copy(
+              preview = ComposePreview.ChatLinkPreview(mc.chatLink, mc.ownerSig)
+            )
+          }
+        }
+      }
+      is SharedContent.MyAddress -> {
+        val cInfo = chat.chatInfo
+        val sendAsGroup = cInfo.sendAsGroup
+        withBGApi {
+          val mc = chatModel.controller.apiShareMyAddress(
+            chat.remoteHostId,
             cInfo.chatType, cInfo.apiId,
             cInfo.groupChatScope(), sendAsGroup
           )

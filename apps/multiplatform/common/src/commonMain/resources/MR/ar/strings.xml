@@ -2745,7 +2745,6 @@
     <string name="share_channel">شارك القناة…</string>
     <string name="share_via_chat">شارك عبر الدردشة</string>
     <string name="owner_verification_failed">⚠️ فشل التحقق من التوقيع: %s.</string>
-    <string name="chat_link_signed">(موقّع)</string>
     <string name="group_reports_subscriber_reports">بلاغات المشترك</string>
     <string name="group_members_can_add_message_reactions_channel">يمكن للمشتركين إضافة ردود الفعل على الرسائل.</string>
     <string name="members_can_chat_with_admins_channel">يمكن للمشتركين الدردشة مع المُدراء.</string>

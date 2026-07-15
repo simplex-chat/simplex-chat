@@ -1193,30 +1193,23 @@ processChatCommand cxt nm = \case
               _ -> Nothing
         ownerSig <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
-            mkLinkOwnerSig memberPrivKey groupLink memberId <$$> shareChatBinding user toSendRef
+            mkLinkOwnerSig memberPrivKey groupLink (Just memberId) <$$> shareChatBinding user toSendRef
         let text = safeDecodeUtf8 $ strEncode groupLink
         pure $ CRChatMsgContent user MCChat {text, chatLink = MCLGroup groupLink gp, ownerSig}
-    where
-      mkLinkOwnerSig :: ConnectionModeI m => C.PrivateKeyEd25519 -> ConnShortLink m -> MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
-      mkLinkOwnerSig privKey connLink MemberId {unMemberId} (cbTag, bindingData) =
-        let ownerId = Just $ B64UrlByteString unMemberId
-            cb = encodeChatBinding cbTag bindingData
-            ownerSig = C.sign' privKey $ cb <> smpEncode connLink
-         in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
-      shareChatBinding :: User -> SendRef -> CM (Maybe (ChatBinding, ByteString))
-      shareChatBinding u = \case
-        SRDirect contactId -> do
-          ct <- withFastStore $ \db -> getContact db cxt u contactId
-          forM (contactConn ct) $ \conn ->
-            (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
-        SRGroup toGroupId _ asGroup -> do
-          GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = m} <- withFastStore $ \db -> getGroupInfo db cxt u toGroupId
-          pure $ mkBinding m <$> publicGroup
-          where
-            mkBinding GroupMember {memberId} PublicGroupProfile {publicGroupId = pgId}
-              | asGroup = (CBChannel, smpEncode pgId)
-              | otherwise = (CBGroup, smpEncode (pgId, memberId))
   APIShareChatMsgContent _ _ -> throwCmdError "sharing is only supported for public groups"
+  APIShareMyAddress toSendRef -> withUser $ \user -> do
+    UserContactLink {connLinkContact = CCLink _ sl_, addressSettings} <- withFastStore (`getUserAddress` user)
+    case sl_ of
+      Nothing -> throwCmdError "your address has no short link to share"
+      Just connLink -> do
+        conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
+        ownerSig <-
+          withAgent (`getConnLinkPrivKey` aConnId conn) $>>= \privKey ->
+            mkLinkOwnerSig privKey connLink Nothing <$$> shareChatBinding user toSendRef
+        let business = businessAddress addressSettings
+            profile = userProfileDirect user Nothing Nothing True
+            text = safeDecodeUtf8 $ strEncode connLink
+        pure $ CRChatMsgContent user MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig}
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
@@ -2506,6 +2499,18 @@ processChatCommand cxt nm = \case
         pure $ SRGroup gId scope_ (useRelays' gInfo)
       _ -> throwCmdError "unsupported share target"
     processChatCommand cxt nm (APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) sendRef) >>= \case
+      CRChatMsgContent _ mc ->
+        processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage Nothing mc]
+      r -> pure r
+  ShareMyAddress toChatName -> withUser $ \user -> do
+    toChatRef <- getChatRef user toChatName
+    sendRef <- case toChatRef of
+      ChatRef CTDirect ctId _ -> pure $ SRDirect ctId
+      ChatRef CTGroup gId scope_ -> do
+        gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
+        pure $ SRGroup gId scope_ (useRelays' gInfo)
+      _ -> throwCmdError "unsupported share target"
+    processChatCommand cxt nm (APIShareMyAddress sendRef) >>= \case
       CRChatMsgContent _ mc ->
         processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage Nothing mc]
       r -> pure r
@@ -4603,6 +4608,25 @@ processChatCommand cxt nm = \case
     serverShortLink = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
+    mkLinkOwnerSig :: ConnectionModeI m => C.PrivateKeyEd25519 -> ConnShortLink m -> Maybe MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
+    mkLinkOwnerSig privKey connLink ownerMemberId (cbTag, bindingData) =
+      let ownerId = (\MemberId {unMemberId} -> B64UrlByteString unMemberId) <$> ownerMemberId
+          cb = encodeChatBinding cbTag bindingData
+          ownerSig = C.sign' privKey $ cb <> smpEncode connLink
+       in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
+    shareChatBinding :: User -> SendRef -> CM (Maybe (ChatBinding, ByteString))
+    shareChatBinding u = \case
+      SRDirect contactId -> do
+        ct <- withFastStore $ \db -> getContact db cxt u contactId
+        forM (contactConn ct) $ \conn ->
+          (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
+      SRGroup toGroupId _ asGroup -> do
+        GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = m} <- withFastStore $ \db -> getGroupInfo db cxt u toGroupId
+        pure $ mkBinding m <$> publicGroup
+        where
+          mkBinding GroupMember {memberId} PublicGroupProfile {publicGroupId = pgId}
+            | asGroup = (CBChannel, smpEncode pgId)
+            | otherwise = (CBGroup, smpEncode (pgId, memberId))
     verifyLinkOwner :: ConnectionModeI m => C.PublicKeyEd25519 -> [OwnerAuth] -> ConnShortLink m -> Maybe LinkOwnerSig -> Maybe OwnerVerification
     verifyLinkOwner rootKey owners connLink =
       fmap $ \LinkOwnerSig {ownerId, chatBinding = B64UrlByteString bindingBytes, ownerSig} ->
@@ -5440,6 +5464,7 @@ chatCommandP =
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" as_group=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_share chat content " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> sendRefP),
+      "/_share address " *> (APIShareMyAddress <$> sendRefP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),
@@ -5637,6 +5662,7 @@ chatCommandP =
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
       "/share chat #" *> (SharePublicGroup <$> displayNameP <* A.space <*> chatNameP),
+      "/share address " *> (ShareMyAddress <$> chatNameP),
       SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
       "/accept_member_contact @" *> (AcceptMemberContact <$> displayNameP),
@@ -5834,7 +5860,7 @@ chatCommandP =
     newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -5843,7 +5869,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

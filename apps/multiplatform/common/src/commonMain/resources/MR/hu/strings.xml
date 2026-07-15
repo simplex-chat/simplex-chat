@@ -2670,7 +2670,6 @@
     <string name="share_channel">Csatorna megosztása…</string>
     <string name="share_via_chat">Megosztás egy csevegésen keresztül</string>
     <string name="owner_verification_failed">⚠️ Nem sikerült ellenőrizni az aláírást: %s.</string>
-    <string name="chat_link_signed">(aláírva)</string>
     <string name="tap_to_open">Koppintson ide a megnyitáshoz</string>
     <string name="link_previews_alert_disable">Letiltás</string>
     <string name="link_previews_alert_enable">Engedélyezés</string>

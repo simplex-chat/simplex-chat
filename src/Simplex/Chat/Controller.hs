@@ -398,6 +398,7 @@ data ChatCommand
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIForwardChatItems {toChatRef :: ChatRef, sendAsGroup :: ShowGroupAsSender, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIShareChatMsgContent {shareChatRef :: ChatRef, toSendRef :: SendRef}
+  | APIShareMyAddress {toSendRef :: SendRef}
   | APIUserRead UserId
   | UserRead
   | APIChatRead {chatRef :: ChatRef}
@@ -563,6 +564,7 @@ data ChatCommand
   | ForwardGroupMessage {toChatName :: ChatName, fromGroupName :: GroupName, fromMemberName_ :: Maybe ContactName, forwardedMsg :: Text}
   | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
   | SharePublicGroup {shareGroupName :: GroupName, toChatName :: ChatName}
+  | ShareMyAddress {toChatName :: ChatName}
   | SendMessage SendName Text
   | SendMemberContactMessage GroupName ContactName Text
   | AcceptMemberContact ContactName
