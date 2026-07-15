@@ -16,6 +16,8 @@ struct UserProfile: View {
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
     @State private var shortDescr = ""
+    @State private var description = ""
+    @State private var editingDescription = false
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -54,6 +56,11 @@ struct UserProfile: View {
                         }
                     }
                 }
+                Button {
+                    editingDescription = true
+                } label: {
+                    Text(description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Add description" : "Edit description")
+                }
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
             }
@@ -64,7 +71,8 @@ struct UserProfile: View {
                 }
                 .disabled(
                     currentProfileHash == profile.hashValue &&
-                    (profile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
+                    (profile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces) &&
+                    (profile.description ?? "") == description.trimmingCharacters(in: .whitespacesAndNewlines)
                 )
                 Button(action: saveProfile) {
                     Text("Save (and notify contacts)")
@@ -125,6 +133,9 @@ struct UserProfile: View {
             }
         }
         .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
+        .sheet(isPresented: $editingDescription) {
+            ProfileDescriptionEditor(description: $description)
+        }
     }
 
     private func showFullName(_ user: User) -> Bool {
@@ -138,7 +149,8 @@ struct UserProfile: View {
     private var canSaveProfile: Bool {
         (
             currentProfileHash != profile.hashValue ||
-            (chatModel.currentUser?.profile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces)
+            (chatModel.currentUser?.profile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces) ||
+            (chatModel.currentUser?.profile.description ?? "") != description.trimmingCharacters(in: .whitespacesAndNewlines)
         ) &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
         validDisplayName(profile.displayName) &&
@@ -151,6 +163,8 @@ struct UserProfile: View {
             do {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
                 profile.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
+                let d = description.trimmingCharacters(in: .whitespacesAndNewlines)
+                profile.description = d.isEmpty ? nil : d
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     await MainActor.run {
                         chatModel.updateCurrentUser(newProfile)
@@ -170,6 +184,7 @@ struct UserProfile: View {
             profile = fromLocalProfile(user.profile)
             currentProfileHash = profile.hashValue
             shortDescr = profile.shortDescr ?? ""
+            description = profile.description ?? ""
         }
     }
 }
@@ -233,5 +248,34 @@ func editImageButton(action: @escaping () -> Void) -> some View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: 48)
+    }
+}
+
+struct ProfileDescriptionEditor: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var theme: AppTheme
+    @Binding var description: String
+
+    var body: some View {
+        NavigationView {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $description)
+                if description.isEmpty {
+                    Text("Enter description (optional)")
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.top, 8)
+                        .padding(.leading, 5)
+                        .allowsHitTesting(false)
+                }
+            }
+            .padding()
+            .navigationTitle("Description")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
