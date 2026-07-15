@@ -2211,7 +2211,6 @@
     <string name="chat_link_contact_address">連絡先アドレス</string>
     <string name="chat_link_one_time">ワンタイムリンク</string>
     <string name="chat_link_from_owner">（オーナーから）</string>
-    <string name="chat_link_signed">（署名済み）</string>
     <string name="error_sharing_channel">チャンネルの共有エラー</string>
     <string name="owner_verification_passed">リンクの署名が検証されました。</string>
     <string name="owner_verification_failed">⚠️ 署名の検証に失敗しました：%s。</string>

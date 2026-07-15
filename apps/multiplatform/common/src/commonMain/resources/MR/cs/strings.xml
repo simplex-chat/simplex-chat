@@ -2744,7 +2744,6 @@
     <string name="share_via_chat">Sdílet pomocí chatu</string>
     <string name="tray_show">Zobrazit SimpleX</string>
     <string name="owner_verification_failed">⚠️ Ověření podpisu selhalo: %s.</string>
-    <string name="chat_link_signed">(podepsán)</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX - %d nepřečteno</string>
     <string name="member_info_section_title_subscriber">ODBĚRATEL</string>

@@ -2805,7 +2805,6 @@
     <string name="v6_4_1_short_address">Kısa SimpleX adresi</string>
     <string name="tray_show">SimpleX\'i göster</string>
     <string name="owner_verification_failed">⚠️ İmza doğrulama başarısız oldu: %s.</string>
-    <string name="chat_link_signed">(imzalı)</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX - %d okunmamış</string>
     <string name="simplex_name">SimpleX adı</string>
