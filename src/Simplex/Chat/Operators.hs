@@ -176,10 +176,21 @@ operatorRoles p op = case p of
   SPSMP -> smpRoles op
   SPXFTP -> xftpRoles op
 
--- Default roles for a self-hosted server without stored roles: receive + private
--- routing on, name resolution off. Also the default for newly added servers.
-defaultUserServerRoles :: ServerRoles
-defaultUserServerRoles = ServerRoles {storage = True, proxy = True, names = False}
+data ServerRolesOverride = ServerRolesOverride
+  { storage :: Maybe Bool,
+    proxy :: Maybe Bool,
+    names :: Maybe Bool
+  }
+  deriving (Show)
+
+emptyServerRolesOverride :: ServerRolesOverride
+emptyServerRolesOverride = ServerRolesOverride {storage = Nothing, proxy = Nothing, names = Nothing}
+
+-- Resolve a per-server override to concrete roles: null falls back to the
+-- per-role default (receive on, private routing on, name resolution off).
+resolveServerRoles :: ServerRolesOverride -> ServerRoles
+resolveServerRoles ServerRolesOverride {storage, proxy, names} =
+  ServerRoles {storage = fromMaybe True storage, proxy = fromMaybe True proxy, names = fromMaybe False names}
 
 conditionsAccepted :: ServerOperator -> Bool
 conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
@@ -250,7 +261,7 @@ data UserServer' s (p :: ProtocolType) = UserServer
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool,
-    roles :: Maybe ServerRoles,
+    roles :: ServerRolesOverride,
     deleted :: Bool
   }
   deriving (Show)
@@ -336,7 +347,7 @@ newUserServer = newUserServer_ False True
 
 newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
-  UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, roles = Nothing, deleted = False}
+  UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, roles = emptyServerRolesOverride, deleted = False}
 
 presetChatRelay :: Bool -> RelayProfile -> [Text] -> ShortLinkContact -> NewUserChatRelay
 presetChatRelay = newChatRelay_ True
@@ -451,7 +462,7 @@ agentServerCfgs p opDomains = mapMaybe agentServer
           | opEnabled -> Just ServerCfg {server, enabled, operator = Just opId, roles = operatorRoles p op}
           | otherwise -> Nothing
         Nothing ->
-          Just ServerCfg {server, enabled, operator = Nothing, roles = fromMaybe defaultUserServerRoles srvRoles}
+          Just ServerCfg {server, enabled, operator = Nothing, roles = resolveServerRoles srvRoles}
 
 matchingHost :: Text -> TransportHost -> Bool
 matchingHost d = \case
@@ -530,7 +541,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
     noServersErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
       | noServers opEnabled = [USENoServers p' user]
-      | otherwise = [USEStorageMissing p' user | not (hasRoleCoverage p storage uss)] <> [USEProxyMissing p' user | not (hasRoleCoverage p proxy uss)]
+      | otherwise = [USEStorageMissing p' user | not (hasRoleCoverage p (\ServerRoles {storage} -> storage) uss)] <> [USEProxyMissing p' user | not (hasRoleCoverage p (\ServerRoles {proxy} -> proxy) uss)]
       where
         p' = AProtocolType p
         noServers cond = not $ any srvEnabled $ userServers p $ filter cond uss
@@ -556,10 +567,10 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
       where
         srvOk op (AUS _ UserServer {enabled, deleted, roles}) =
           enabled && not deleted && serverHasRole p roleSel op roles
-    serverHasRole :: UserProtocol p => SProtocolType p -> (ServerRoles -> Bool) -> Maybe ServerOperator -> Maybe ServerRoles -> Bool
+    serverHasRole :: UserProtocol p => SProtocolType p -> (ServerRoles -> Bool) -> Maybe ServerOperator -> ServerRolesOverride -> Bool
     serverHasRole p roleSel op srvRoles = case op of
       Just o@ServerOperator {enabled} -> enabled && roleSel (operatorRoles p o)
-      Nothing -> roleSel (fromMaybe defaultUserServerRoles srvRoles)
+      Nothing -> roleSel (resolveServerRoles srvRoles)
     chatRelayErrs :: UserServersClass u => [u] -> [UserServersError]
     chatRelayErrs uss = concatMap duplicateErrs_ cRelays
       where
@@ -580,7 +591,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         noChatRelays cond = not $ any relayEnabled $ userChatRelays $ filter cond uss
         relayEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
     noNamesServersWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
-    noNamesServersWarns user uss = [USWNoNamesServers user | not (hasRoleCoverage SPSMP names uss)]
+    noNamesServersWarns user uss = [USWNoNamesServers user | not (hasRoleCoverage SPSMP (\ServerRoles {names} -> names) uss)]
     userChatRelays :: UserServersClass u => [u] -> [AUserChatRelay]
     userChatRelays = map aUserChatRelay' . concatMap chatRelays'
     opEnabled :: UserServersClass u => u -> Bool
@@ -604,6 +615,8 @@ instance DBStoredI s => FromJSON (ServerOperator' s) where
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 $(JQ.deriveJSON defaultJSON ''ServerOperatorConditions)
+
+$(JQ.deriveJSON defaultJSON ''ServerRolesOverride)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer')
