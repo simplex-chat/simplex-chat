@@ -313,6 +313,7 @@ cliCommands =
     "UpdateLiveMessage",
     "UpdateProfile",
     "UpdateProfileImage",
+    "UpdateProfileImageFromFile",
     "UserRead",
     "VerifyContact",
     "VerifyGroupMember",
