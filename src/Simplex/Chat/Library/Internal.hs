@@ -1277,7 +1277,7 @@ redactedMemberProfile g m Profile {displayName, fullName, shortDescr, descriptio
           Nothing -> dropObfuscated
           Just fts
             | not (any ftIsSimplexLink fts) -> dropObfuscated
-            | dropOnLink || T.null (T.strip kept) -> Nothing
+            | dropOnLink || T.null (T.strip kept) || hasObfuscatedSimplexLink kept -> Nothing
             | otherwise -> Just kept
             where
               kept = T.concat $ map (\(FormattedText _ t) -> t) $ filter (not . ftIsSimplexLink) fts
