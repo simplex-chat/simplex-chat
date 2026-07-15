@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -130,7 +131,7 @@ private fun ProtocolServerLayout(
     if (server.value.preset) {
       PresetServer(server, testing, testServer)
     } else {
-      CustomServer(server, testing, testServer, onDelete)
+      CustomServer(server, testing, testServer, onDelete, showRoles = true)
     }
     SectionBottomSpacer()
   }
@@ -164,6 +165,7 @@ fun CustomServer(
   testing: Boolean,
   testServer: () -> Unit,
   onDelete: (() -> Unit)?,
+  showRoles: Boolean = false,
 ) {
   val serverAddress = remember { mutableStateOf(server.value.server) }
   val parsed = remember { derivedStateOf { parseServerAddress(serverAddress.value) } }
@@ -191,7 +193,7 @@ fun CustomServer(
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
-  if (parsed.value?.serverProtocol == ServerProtocol.SMP) {
+  if (showRoles && parsed.value?.serverProtocol == ServerProtocol.SMP) {
     SectionDividerSpaced()
     ServerRolesSection(server)
   }
@@ -206,27 +208,34 @@ fun CustomServer(
 
 @Composable
 private fun ServerRolesSection(server: MutableState<UserServer>) {
-  val roles = server.value.roles ?: ServerRoles(storage = true, proxy = true, names = false)
   SectionView(stringResource(MR.strings.operator_use_for_messages)) {
-    PreferenceToggle(
-      stringResource(MR.strings.operator_use_for_messages_receiving),
-      checked = roles.storage
-    ) {
-      server.value = server.value.copy(roles = roles.copy(storage = it))
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_receiving), server.value.roles.storage, defaultOn = true) {
+      server.value = server.value.copy(roles = server.value.roles.copy(storage = it))
     }
-    PreferenceToggle(
-      stringResource(MR.strings.operator_use_for_messages_private_routing),
-      checked = roles.proxy
-    ) {
-      server.value = server.value.copy(roles = roles.copy(proxy = it))
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_private_routing), server.value.roles.proxy, defaultOn = true) {
+      server.value = server.value.copy(roles = server.value.roles.copy(proxy = it))
     }
-    PreferenceToggle(
-      stringResource(MR.strings.operator_use_for_names),
-      checked = roles.names
-    ) {
-      server.value = server.value.copy(roles = roles.copy(names = it))
+    RoleDropDown(stringResource(MR.strings.operator_use_for_names), server.value.roles.names, defaultOn = false) {
+      server.value = server.value.copy(roles = server.value.roles.copy(names = it))
     }
   }
+}
+
+@Composable
+private fun RoleDropDown(title: String, value: Boolean?, defaultOn: Boolean, onSelected: (Boolean?) -> Unit) {
+  val values = remember(defaultOn, appPrefs.appLanguage.state.value) {
+    listOf(
+      null to String.format(generalGetString(MR.strings.chat_preferences_default), generalGetString(if (defaultOn) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)),
+      true to generalGetString(MR.strings.chat_preferences_yes),
+      false to generalGetString(MR.strings.chat_preferences_no)
+    )
+  }
+  ExposedDropDownSettingRow(
+    title,
+    values,
+    rememberUpdatedState(value),
+    onSelected = onSelected
+  )
 }
 
 @Composable
