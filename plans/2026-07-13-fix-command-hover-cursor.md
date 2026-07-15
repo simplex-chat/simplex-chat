@@ -2,10 +2,15 @@
 
 ## Problem
 
-On desktop, hovering over a clickable command in a message (e.g. `/join 143556`) sometimes does not
-change the mouse cursor to a hand. It usually works, but fails intermittently — most often when
-clicking several commands in a row — and once wrong, the cursor stays wrong while moving within the
-same message; it only recovers after leaving the message text and re-entering it.
+On desktop, the mouse cursor should change to a hand over clickable commands in chat messages
+(e.g. `/join 143556` in a bot's menu of commands) — the hand is what tells the user the command
+can be clicked. This did not work reliably: hovering a command sometimes left the text/arrow
+cursor in place, giving no indication that the command is clickable. It usually worked, but failed
+intermittently — most often when clicking many commands in a row in a chat, because every click
+inserts the sent message and shifts the list under the pointer — and once wrong, the cursor stayed
+wrong even while moving within the same message; it only recovered after leaving the message text
+and re-entering it. The same mechanism affects all clickable elements in message text (links,
+simplex addresses, secrets), but command menus made it most visible.
 
 ## Investigation
 
