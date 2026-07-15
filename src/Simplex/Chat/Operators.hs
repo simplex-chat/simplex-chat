@@ -181,7 +181,7 @@ data ServerRolesOverride = ServerRolesOverride
     proxy :: Maybe Bool,
     names :: Maybe Bool
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 emptyServerRolesOverride :: ServerRolesOverride
 emptyServerRolesOverride = ServerRolesOverride {storage = Nothing, proxy = Nothing, names = Nothing}
