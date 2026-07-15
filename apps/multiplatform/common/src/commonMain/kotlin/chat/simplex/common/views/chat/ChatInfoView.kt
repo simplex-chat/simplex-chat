@@ -809,28 +809,10 @@ fun ProfileDescriptionText(shortDescr: String?, description: String?, style: Tex
       val teaser = short ?: (if (truncated) firstLine.take(100).trimEnd() + "…" else "$firstLine…")
       val readMore = stringResource(MR.strings.whats_new_read_more)
       val formatted = (parseToMarkdown(teaser) ?: FormattedText.plain(teaser)) +
-          FormattedText(" ") + FormattedText(readMore, Format.Modal("description"))
+          FormattedText(" ") + FormattedText(readMore, Format.Modal(Format.Modal.Description, descr))
       MarkdownText(
         "$teaser $readMore", formatted, toggleSecrets = true, style = style, maxLines = 4,
-        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode,
-        onModalClick = { showFullProfileDescription(descr) }
-      )
-    }
-  }
-}
-
-private fun showFullProfileDescription(description: String) {
-  ModalManager.end.showModalCloseable { _ ->
-    ColumnWithScrollBar {
-      AppBarTitle(stringResource(MR.strings.profile_description__field))
-      MarkdownText(
-        description,
-        parseToMarkdown(description),
-        toggleSecrets = true,
-        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
-        uriHandler = LocalUriHandler.current,
-        linkMode = chatModel.simplexLinkMode.value,
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
+        overflow = TextOverflow.Ellipsis, uriHandler = uriHandler, modifier = modifier, linkMode = linkMode
       )
     }
   }

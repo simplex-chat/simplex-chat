@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import SectionItemView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.MaterialTheme
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.SelectionHighlightColor
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -36,6 +38,29 @@ fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolea
     if (senderBold) b.withStyle(boldFont) { append(sender) }
     else b.append(sender)
     b.append(": ")
+  }
+}
+
+private fun openMarkdownModal(modal: Format.Modal) {
+  when (modal.modalName) {
+    Format.Modal.Description -> showFullProfileDescription(modal.text)
+  }
+}
+
+private fun showFullProfileDescription(description: String) {
+  ModalManager.end.showModalCloseable { _ ->
+    ColumnWithScrollBar {
+      AppBarTitle(generalGetString(MR.strings.profile_description__field))
+      MarkdownText(
+        description,
+        parseToMarkdown(description),
+        toggleSecrets = true,
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+        uriHandler = LocalUriHandler.current,
+        linkMode = chatModel.simplexLinkMode.value,
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
+      )
+    }
   }
 }
 
@@ -113,7 +138,6 @@ fun MarkdownText (
   linkMode: SimplexLinkMode,
   inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = null,
   onLinkLongClick: (link: String) -> Unit = {},
-  onModalClick: ((modalName: String) -> Unit)? = null,
   showViaProxy: Boolean = false,
   showTimestamp: Boolean = true,
   prefix: AnnotatedString? = null,
@@ -305,14 +329,10 @@ fun MarkdownText (
               }
             }
             is Format.Modal -> {
-              if (onModalClick == null) {
-                append(ft.text)
-              } else {
-                hasModals = true
-                val ftStyle = Format.linkStyle
-                withAnnotation(tag = "MODAL", annotation = ft.format.modalName) {
-                  withStyle(ftStyle) { append(ft.text) }
-                }
+              hasModals = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "MODAL", annotation = i.toString()) {
+                withStyle(ftStyle) { append(ft.text) }
               }
             }
             is Format.Unknown -> append(ft.text)
@@ -328,7 +348,7 @@ fun MarkdownText (
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
-      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || (hasModals && onModalClick != null)) {
+      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
@@ -366,8 +386,10 @@ fun MarkdownText (
             if (hasCommands && sendCommandMsg != null) {
               withAnnotation("COMMAND") { a -> sendCommandMsg("/${a.item}") }
             }
-            if (hasModals && onModalClick != null) {
-              withAnnotation("MODAL") { a -> onModalClick(a.item) }
+            if (hasModals) {
+              withAnnotation("MODAL") { a ->
+                (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.Modal)?.let { openMarkdownModal(it) }
+              }
             }
           },
           onHover = { offset ->

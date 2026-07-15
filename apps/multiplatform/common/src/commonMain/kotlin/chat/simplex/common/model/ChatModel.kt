@@ -4872,7 +4872,11 @@ sealed class Format {
   @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
-  @Serializable @SerialName("modal") class Modal(val modalName: String): Format()
+  @Serializable @SerialName("modal") class Modal(val modalName: String, val text: String): Format() {
+    companion object {
+      const val Description = "description"
+    }
+  }
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
   @Serializable @SerialName("unknown") class Unknown: Format()
