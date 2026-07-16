@@ -81,6 +81,7 @@ struct ProtocolServerView: View {
                         .textSelection(.enabled)
                 }
                 useServerSection(true)
+                serverRolesSectionIfNeeded()
             }
         }
     }
@@ -110,9 +111,7 @@ struct ProtocolServerView: View {
                     }
                 }
                 useServerSection(valid)
-                if serverAddress?.serverProtocol == .smp {
-                    serverRolesSection()
-                }
+                serverRolesSectionIfNeeded()
                 if valid {
                     Section(header: Text("Add to another device").foregroundColor(theme.colors.secondary)) {
                         MutableQRCode(uri: $serverToEdit.server, small: true)
@@ -123,11 +122,18 @@ struct ProtocolServerView: View {
         }
     }
 
-    private func serverRolesSection() -> some View {
+    @ViewBuilder private func serverRolesSectionIfNeeded() -> some View {
+        let serverAddress = parseServerAddress(serverToEdit.server)
+        if serverAddress?.serverProtocol == .smp, !serverToEdit.preset || serverToEdit.roles != ServerRolesOverride() {
+            serverRolesSection(inherited: serverProtocolAndOperator(serverToEdit, userServers)?.1?.smpRoles ?? ServerRoles(storage: true, proxy: true, names: false))
+        }
+    }
+
+    private func serverRolesSection(inherited: ServerRoles) -> some View {
         Section {
-            rolePicker("To receive", $serverToEdit.roles.storage, defaultOn: true)
-            rolePicker("For private routing", $serverToEdit.roles.proxy, defaultOn: true)
-            rolePicker("To resolve names", $serverToEdit.roles.names, defaultOn: false)
+            rolePicker("To receive", $serverToEdit.roles.storage, defaultOn: inherited.storage)
+            rolePicker("For private routing", $serverToEdit.roles.proxy, defaultOn: inherited.proxy)
+            rolePicker("To resolve names", $serverToEdit.roles.names, defaultOn: inherited.names)
         } header: {
             Text("Use for messages").foregroundColor(theme.colors.secondary)
         }

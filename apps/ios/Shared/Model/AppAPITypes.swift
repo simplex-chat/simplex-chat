@@ -1845,7 +1845,7 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
                 serverDomains: [],
                 conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
-                smpRoles: ServerRoles(storage: true, proxy: true, names: true),
+                smpRoles: ServerRoles(storage: true, proxy: true, names: false),
                 xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
             )
         }
