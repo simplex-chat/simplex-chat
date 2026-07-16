@@ -111,24 +111,33 @@ fun UserProfileLayout(
       }
       ModalView(close = if (editingDescription) ({ editingDescription = false }) else closeWithAlert) {
         if (editingDescription) {
-          Column(
-            Modifier
-              .fillMaxSize()
-              .imePadding()
-              .statusBarsPadding()
-              .navigationBarsPadding()
-              .padding(top = AppBarHeight * fontSizeSqrtMultiplier)
-              .padding(horizontal = DEFAULT_PADDING)
-          ) {
+          // app bar is top (default) or bottom (one-handed) — mirror ColumnWithScrollBar's spacers
+          // so the entry area never runs under the app bar, keyboard, or system bars
+          val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
+          Column(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING)) {
+            if (oneHandUI.value) {
+              Spacer(Modifier.padding(top = DEFAULT_PADDING + 5.dp).windowInsetsTopHeight(WindowInsets.statusBars))
+            } else {
+              Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+            }
             AppBarTitle(stringResource(MR.strings.profile_description__field), withPadding = false)
-            TextEditor(
-              description,
-              Modifier.weight(1f, fill = false).heightIn(min = 140.dp).padding(bottom = DEFAULT_PADDING),
-              placeholder = stringResource(MR.strings.enter_description_optional),
-              contentPadding = PaddingValues(),
-              focusRequester = descrFocusRequester,
-              maxLines = Int.MAX_VALUE
-            )
+            // weight goes on the Box (a direct Column child); TextEditor forwards its modifier
+            // to the inner BasicTextField, where weight would be ignored
+            Box(Modifier.weight(1f, fill = false).padding(bottom = DEFAULT_PADDING)) {
+              TextEditor(
+                description,
+                Modifier.heightIn(min = 140.dp),
+                placeholder = stringResource(MR.strings.enter_description_optional),
+                contentPadding = PaddingValues(),
+                focusRequester = descrFocusRequester,
+                maxLines = Int.MAX_VALUE
+              )
+            }
+            if (oneHandUI.value) {
+              Spacer(Modifier.navigationBarsPadding().padding(bottom = AppBarHeight * fontSizeSqrtMultiplier))
+            } else {
+              Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+            }
           }
           return@ModalView
         }

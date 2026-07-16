@@ -253,30 +253,46 @@ struct ProfileDescriptionEditor: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var description: String
     @FocusState private var keyboardVisible: Bool
+    @State private var keyboardHeight: CGFloat = 0
 
     var body: some View {
-        List {
-            Section {
-                ZStack(alignment: .topLeading) {
-                    // invisible copy of the text sizes the row (min = welcome-editor height, then grows with content)
-                    Text(description.isEmpty ? " " : description)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 5)
-                        .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
-                        .foregroundColor(.clear)
-                    if description.isEmpty {
-                        Text("Enter description (optional)")
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.top, 8)
-                            .padding(.leading, 5)
-                            .allowsHitTesting(false)
+        GeometryReader { geo in
+            List {
+                Section {
+                    ZStack(alignment: .topLeading) {
+                        // invisible copy of the text sizes the row: grows from the welcome-editor
+                        // height up to the available area, then the TextEditor scrolls internally
+                        Text(description.isEmpty ? " " : description)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 5)
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .foregroundColor(.clear)
+                        if description.isEmpty {
+                            Text("Enter description (optional)")
+                                .foregroundColor(theme.colors.secondary)
+                                .padding(.top, 8)
+                                .padding(.leading, 5)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $description)
+                            .focused($keyboardVisible)
+                            .padding(.horizontal, -5)
+                            .padding(.top, -8)
                     }
-                    TextEditor(text: $description)
-                        .focused($keyboardVisible)
-                        .padding(.horizontal, -5)
-                        .padding(.top, -8)
+                    // geo is already below the nav bar; subtract the keyboard so the entry area
+                    // never runs under it. ~90 leaves room for the large title + list insets.
+                    .frame(minHeight: 130, maxHeight: max(130, geo.size.height - keyboardHeight - 90), alignment: .topLeading)
                 }
             }
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { note in
+            if let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                keyboardHeight = frame.height
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardHeight = 0
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { keyboardVisible = true }
