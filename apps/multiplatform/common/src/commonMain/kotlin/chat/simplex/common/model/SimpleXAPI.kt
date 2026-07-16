@@ -4675,7 +4675,7 @@ data class UserOperatorServers(
       serverDomains = emptyList(),
       conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
-      smpRoles = ServerRoles(storage = true, proxy = true, names = true),
+      smpRoles = ServerRoles(storage = true, proxy = true, names = false),
       xftpRoles = ServerRoles(storage = true, proxy = true, names = false)
     )
 

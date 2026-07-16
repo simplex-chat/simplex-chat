@@ -89,6 +89,7 @@ fun ProtocolServerView(
       ProtocolServerLayout(
         draftServer,
         serverProtocol,
+        userServers,
         testing.value,
         testServer = {
           testing.value = true
@@ -121,6 +122,7 @@ fun ProtocolServerView(
 private fun ProtocolServerLayout(
   server: MutableState<UserServer>,
   serverProtocol: ServerProtocol,
+  userServers: MutableState<List<UserOperatorServers>>,
   testing: Boolean,
   testServer: () -> Unit,
   onDelete: () -> Unit,
@@ -131,7 +133,12 @@ private fun ProtocolServerLayout(
     if (server.value.preset) {
       PresetServer(server, testing, testServer)
     } else {
-      CustomServer(server, testing, testServer, onDelete, showRoles = true)
+      CustomServer(server, testing, testServer, onDelete)
+    }
+    val op = remember(server.value.server) { serverProtocolAndOperator(server.value, userServers.value)?.second }
+    if (serverProtocol == ServerProtocol.SMP && (!server.value.preset || server.value.roles != ServerRolesOverride())) {
+      SectionDividerSpaced()
+      ServerRolesSection(server, op?.smpRoles ?: ServerRoles(storage = true, proxy = true, names = false))
     }
     SectionBottomSpacer()
   }
@@ -165,7 +172,6 @@ fun CustomServer(
   testing: Boolean,
   testServer: () -> Unit,
   onDelete: (() -> Unit)?,
-  showRoles: Boolean = false,
 ) {
   val serverAddress = remember { mutableStateOf(server.value.server) }
   val parsed = remember { derivedStateOf { parseServerAddress(serverAddress.value) } }
@@ -193,11 +199,6 @@ fun CustomServer(
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
-  if (showRoles && parsed.value?.serverProtocol == ServerProtocol.SMP) {
-    SectionDividerSpaced()
-    ServerRolesSection(server)
-  }
-
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device)) {
@@ -207,25 +208,25 @@ fun CustomServer(
 }
 
 @Composable
-private fun ServerRolesSection(server: MutableState<UserServer>) {
+private fun ServerRolesSection(server: MutableState<UserServer>, inherited: ServerRoles) {
   SectionView(stringResource(MR.strings.operator_use_for_messages)) {
-    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_receiving), server.value.roles.storage, defaultOn = true) {
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_receiving), server.value.roles.storage, default = inherited.storage) {
       server.value = server.value.copy(roles = server.value.roles.copy(storage = it))
     }
-    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_private_routing), server.value.roles.proxy, defaultOn = true) {
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_private_routing), server.value.roles.proxy, default = inherited.proxy) {
       server.value = server.value.copy(roles = server.value.roles.copy(proxy = it))
     }
-    RoleDropDown(stringResource(MR.strings.operator_use_for_names), server.value.roles.names, defaultOn = false) {
+    RoleDropDown(stringResource(MR.strings.operator_use_for_names), server.value.roles.names, default = inherited.names) {
       server.value = server.value.copy(roles = server.value.roles.copy(names = it))
     }
   }
 }
 
 @Composable
-private fun RoleDropDown(title: String, value: Boolean?, defaultOn: Boolean, onSelected: (Boolean?) -> Unit) {
-  val values = remember(defaultOn, appPrefs.appLanguage.state.value) {
+private fun RoleDropDown(title: String, value: Boolean?, default: Boolean, onSelected: (Boolean?) -> Unit) {
+  val values = remember(default, appPrefs.appLanguage.state.value) {
     listOf(
-      null to String.format(generalGetString(MR.strings.chat_preferences_default), generalGetString(if (defaultOn) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)),
+      null to String.format(generalGetString(MR.strings.chat_preferences_default), generalGetString(if (default) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)),
       true to generalGetString(MR.strings.chat_preferences_yes),
       false to generalGetString(MR.strings.chat_preferences_no)
     )
