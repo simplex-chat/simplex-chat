@@ -972,7 +972,7 @@
     <string name="scan_code">مسح الرمز</string>
     <string name="chat_with_the_founder">أرسل أسئلة وأفكار</string>
     <string name="share_address_with_contacts_question">مشاركة العنوان مع جهات اتصال SimpleX؟</string>
-    <string name="share_address">شارك العنوان</string>
+    <string name="share_address">شارك العنوان…</string>
     <string name="save_welcome_message_question">حفظ رسالة الترحيب؟</string>
     <string name="smp_servers_save">احفظ الخوادم</string>
     <string name="settings_section_title_delivery_receipts">أرسل إيصالات التسليم إلى</string>
@@ -2894,4 +2894,10 @@
     <string name="sign_message">وقِّع الرسالة</string>
     <string name="sign_messages">وقِّع الرسائل</string>
     <string name="signature_missing_alert_desc">طلبت القناة توقيع هذه الرسالة، لكن التوقيع غير موجود.</string>
+    <string name="add_description">أضف وصف</string>
+    <string name="profile_description__field">الوصف</string>
+    <string name="edit_description">حرّر الوصف</string>
+    <string name="enter_description_optional">أدِخل وصف (اختياري)</string>
+    <string name="error_sharing_address">خطأ في مشاركة العنوان</string>
+    <string name="to_verify_channel_member_key">للتحقق من المفاتيح مع هذا المشترك، قارن (أو امسح ضوئيًا) الرمز الموجود على أجهزتك.</string>
 </resources>
