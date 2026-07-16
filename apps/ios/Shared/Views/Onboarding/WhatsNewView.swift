@@ -664,6 +664,38 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
+    VersionDescription(
+        version: "v7.0",
+        post: nil,
+        features: [
+            .feature(Description(
+                icon: "at",
+                title: "SimpleX names",
+                description: "Register a name for your channel or business."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "More in channels 📢",
+                description: nil,
+                subfeatures: [
+                    ("server.rack", "Owners can add and remove relays."),
+                    ("person.badge.plus", "Promote subscribers to contributors."),
+                    ("globe", "Web preview for your channel."),
+                    ("text.alignleft", "Wider messages, easier to read."),
+                ]
+            )),
+            .feature(Description(
+                icon: "trash",
+                title: "Remove member's messages",
+                description: "Delete a removed member's messages."
+            )),
+            .feature(Description(
+                icon: "bolt",
+                title: "Faster, more reliable groups",
+                description: "Better delivery and quicker loading."
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
