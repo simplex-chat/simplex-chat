@@ -508,7 +508,10 @@ CREATE TABLE chat_items(
   show_group_as_sender INTEGER NOT NULL DEFAULT 0,
   has_link INTEGER NOT NULL DEFAULT 0,
   msg_signed TEXT,
-  item_viewed INTEGER NOT NULL DEFAULT 0
+  item_viewed INTEGER NOT NULL DEFAULT 0,
+  item_msg_body BLOB,
+  item_chat_binding TEXT,
+  item_signatures BLOB
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
