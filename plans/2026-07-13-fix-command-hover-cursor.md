@@ -79,26 +79,23 @@ Clicking many commands maximizes exposure: each click inserts a message → reco
 list shift + (for `/join`) group-state changes — each transition can hit one of these edges.
 Related upstream issues: JetBrains/compose-multiplatform #2091, #1314, #3750.
 
-**Fix:** in `onHover` — which now fires reliably on every Move/Enter/Release over the text — set
-the AWT cursor imperatively on desktop (`desktopSetHoverCursor`), and symmetrically reset both the
-cursor and the `icon` state on the per-node `Exit` event (delivered reliably to the `pointerInput`
-node even when the hover-icon node is desynced and its own exit reset is a guarded no-op; the state
-reset prevents the hover-icon node from re-displaying a stale Hand on its next Enter). The set and
-reset live together in `MarkdownText` (`onHover`/`onHoverExit`), so other `ClickableText` callers
-are untouched. The existing `pointerHoverIcon` modifier is kept, so the normal framework path still
-works when its edges fire — and it remains the only path covering disposal-without-Exit and Android
-mice. The imperative write targets the same Skia canvas component Compose writes to
-(`ComposeSceneMediator.setPointerIcon` → `contentComponent.cursor`), so last-write-wins stays
-consistent with the framework's own updates; the canvas lookup is cached weakly (including negative
-results, with a one-time warning log if the component is not found after a Compose upgrade — the
-workaround then degrades to the framework-only path). No framework edge can leave the cursor
-stuck, because it is re-asserted on every mouse move over clickable message text and released on
-exit — with the one exception described under "Residual limitation" below.
+**Fix (initial):** in `onHover` — which now fires reliably on every Move/Enter/Release over the
+text — set the AWT cursor imperatively on desktop (`desktopSetHoverCursor`, writing to the same
+Skia canvas component Compose writes to), and symmetrically reset both the cursor and the `icon`
+state on the per-node `Exit` event.
 
-The same lost-edge class also applies in principle to static `pointerHoverIcon` sites whose content
-shifts under a stationary cursor (e.g. the chat list link previews using
-`desktopPointerHoverIconHand`); those are low-exposure and left on the framework path — if a
-second report arrives, extract a shared reliable-hover-icon modifier from this wiring.
+**Removed after defect 5 was fixed at the root.** The empirical justification for the imperative
+layer (stage 1 under Testing) was contaminated: that test ran while defect 5 was live, i.e. while
+every message insertion reset every hover handler in the viewport — which alone explains the
+observed failure (a reset suspending handler restarts only on the next pointer event, leaving a
+stationary cursor blind after every click). With defects 1 and 5 fixed, the full hover matrix
+(rapid stationary-mouse command clicks, list shifting under a hovered pointer, fast sweeps across
+commands/links/text, press-drag-out-release-re-enter, wheel-scroll over commands) passes without
+the imperative layer, so it was deleted; `Modifier.kt`/`Modifier.desktop.kt`/`Modifier.android.kt`
+are untouched by this PR again. What remains of this defect's fix is the `icon.value = Text` reset
+on `Exit` in `MarkdownText` — without it, `pointerHoverIcon` re-displays a stale Hand on the next
+Enter. The display-layer edges documented above are real in the sources, but with stable handlers
+they are not practically reachable in these scenarios.
 
 ### Residual limitation (known, strictly smaller than the fixed bug)
 
@@ -197,11 +194,6 @@ recomposition dies with the per-recomposition instance and survives with the rem
 
 - `detectCursorMove` is now cheaper per event than before (no scope teardown/re-entry per event);
   the pressed check allocates one list iterator per event.
-- `desktopSetHoverCursor` runs at mouse-move rate: steady-state cost is a cached component
-  reference check (parent-chain walk, no allocations) plus an int comparison; the native
-  `setCursor` call fires only when the cursor type actually changes. The canvas component lookup
-  (recursive tree walk) runs once per window and is cached, including negative results (a miss is
-  unreachable in practice — pointer events originate from the rendered canvas — kept as a guard).
 - Up to two added recompositions per exit/re-enter cycle of a Hand region (the exit reset writes
   `icon.value` Hand→Text, making the next re-enter a Text→Hand write where pre-fix both were
   no-ops); otherwise the icon state logic is unchanged. Android is a no-op.
@@ -233,6 +225,11 @@ reproduced pre-fix, both register every click post-fix — including a click hel
 recomposition and two fast clicks back-to-back through real Compose event dispatch in
 `ImageComposeScene`), by compilation, and by multi-pass adversarial review (two clean passes
 pre-commit, two post-commit).
+
+Stage 1's conclusion is retroactively invalidated by defect 5 (see defect 2's removal note): the
+"detection fix alone is insufficient" evidence was gathered while insertions were resetting the
+detection handler itself. After defect 5's fix, the imperative workaround was removed and the
+hover scenarios re-verified passing on the framework path alone.
 
 Defects 4 and 5 were isolated with four rounds of temporary instrumentation in the real app
 (logging every gesture exit path, composable disposal, and handler/node identity — removed before
