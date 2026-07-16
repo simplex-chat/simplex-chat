@@ -1,6 +1,6 @@
 # Chat List (Home Screen)
 
-> **Related spec:** [spec/client/chat-list.md](../../spec/client/chat-list.md)
+> **Related spec:** [spec/client/chat-list.md](../../spec/client/chat-list.md) | [spec/architecture.md](../../spec/architecture.md)
 
 ## Purpose
 
@@ -26,6 +26,16 @@ Main screen of the SimpleX Chat app. Displays all conversations sorted by last a
 The toolbar supports two layout modes:
 - **Standard (top)**: Navigation bar with `.topBarLeading`, `.principal`, `.topBarTrailing` placements
 - **One-hand UI (bottom)**: Toolbar items placed in `.bottomBar` with the list vertically flipped via `scaleEffect(y: -1)`
+
+### Use from Desktop
+
+The UserPicker's **Use from desktop** action opens `ConnectDesktopView` for
+pairing and managing a remote desktop session. After verification, iOS 26 shows
+a system activity with the title "Connected to desktop" and an elapsed
+`Connected for HH:MM:SS` subtitle while the session can continue in background.
+Earlier iOS versions, or iOS 26 when continued processing is unavailable, show
+"Keep the app open to use it from desktop" and rely on the shorter system-granted
+background window.
 
 ### Search Bar
 
