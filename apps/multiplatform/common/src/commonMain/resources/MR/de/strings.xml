@@ -1177,7 +1177,7 @@
     <string name="v5_0_app_passcode">App-Zugangscode</string>
     <string name="calls_prohibited_with_this_contact">Audio-/Video-Anrufe sind nicht erlaubt.</string>
     <string name="address_section_title">Adresse</string>
-    <string name="share_address">Adresse teilen</string>
+    <string name="share_address">Adresse teilen…</string>
     <string name="export_theme">Design exportieren</string>
     <string name="import_theme_error">Fehler beim Importieren des Designs</string>
     <string name="color_title">Bezeichnung</string>
@@ -2989,4 +2989,10 @@
     <string name="register_test_name">Einen Test-Name registrieren</string>
     <string name="remove_name">Name entfernen</string>
     <string name="save_simplex_name_question">SimpleX-Name speichern?</string>
+    <string name="add_description">Beschreibung hinzufügen</string>
+    <string name="profile_description__field">Beschreibung</string>
+    <string name="edit_description">Beschreibung bearbeiten</string>
+    <string name="enter_description_optional">Beschreibung eingeben (optional)</string>
+    <string name="error_sharing_address">Fehler beim Teilen der Adresse</string>
+    <string name="to_verify_channel_member_key">Für die Überprüfung der Schlüssel mit diesem Abonnent vergleichen oder scannen Sie den Code auf Ihren Geräten.</string>
 </resources>
