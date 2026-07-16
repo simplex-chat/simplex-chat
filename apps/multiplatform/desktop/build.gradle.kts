@@ -43,10 +43,13 @@ compose {
         copyright = "(c) 2020-2026 SimpleX Chat"
         // For debugging via VisualVM
         if (debugJava) {
-          modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent")
+          modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent", "jdk.accessibility")
         } else {
           // 'jdk.unsupported' is for vlcj
-          modules("jdk.zipfs", "jdk.unsupported")
+          // 'jdk.accessibility' provides Java Access Bridge on Windows - without it the app
+          // fails to start with "Failed to launch JVM" when assistive technologies are enabled
+          // in the system (see #4146)
+          modules("jdk.zipfs", "jdk.unsupported", "jdk.accessibility")
         }
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
