@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionItemView
 import SectionView
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -39,36 +40,9 @@ fun ModalData.ChannelMembersView(
     }
     .sortedByDescending { it.memberRole }
 
-  val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
-  val sectionMembers: List<GroupMember>
-  val sectionTitle: String
-  val showUserRow: Boolean
-  val roleThreshold: GroupMemberRole
-  if (groupInfo.isOwner) {
-    sectionMembers = members
-    sectionTitle = subscriberCountStr(subscriberCount)
-    showUserRow = true
-    roleThreshold = GroupMemberRole.Member
-  } else {
-    val contributors = members.filter { it.memberRole >= GroupMemberRole.Member && it.memberStatus != GroupMemberStatus.MemUnknown }
-    val contributorCount = contributors.size + if (groupInfo.membership.memberRole >= GroupMemberRole.Member) 1 else 0
-    val withContributors = contributors.any { it.memberRole < GroupMemberRole.Owner } ||
-        groupInfo.membership.memberRole >= GroupMemberRole.Member
-    sectionMembers = contributors
-    sectionTitle = ownersContributorsCountStr(contributorCount, withContributors)
-    showUserRow = groupInfo.membership.memberRole >= GroupMemberRole.Member
-    roleThreshold = GroupMemberRole.Moderator
-  }
-
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
-  val filteredMembers = remember(sectionMembers) {
-    derivedStateOf {
-      val s = searchText.value.text.trim().lowercase()
-      if (s.isEmpty()) sectionMembers else sectionMembers.filter { m -> m.anyNameContains(s) }
-    }
-  }
-  val showSearch = sectionMembers.size > 8
-
+  val s = searchText.value.text.trim().lowercase()
+  val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
   val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
   val title = if (groupInfo.isOwner) {
     generalGetString(MR.strings.channel_members_title_subscribers)
@@ -82,14 +56,15 @@ fun ModalData.ChannelMembersView(
   ) {
     item {
       AppBarTitle(title)
-      SectionView(title = sectionTitle) {
-        if (showSearch) {
-          SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-            MemberListSearchRowView(searchText)
-          }
-        }
-        if (showUserRow) {
+    }
+    if (groupInfo.isOwner) {
+      val showSearch = members.size > 8
+      item {
+        SectionView(title = subscriberCountStr(subscriberCount)) {
           if (showSearch) {
+            SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
+              MemberListSearchRowView(searchText)
+            }
             Divider()
           }
           SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -97,21 +72,56 @@ fun ModalData.ChannelMembersView(
           }
         }
       }
-    }
-    itemsIndexed(filteredMembers.value, key = { _, m -> m.groupMemberId }) { index, member ->
-      if (index > 0 || showUserRow || showSearch) {
-        Divider()
+      val filtered = if (s.isEmpty()) members else members.filter { it.anyNameContains(s) }
+      channelMemberItems(filtered, groupInfo, GroupMemberRole.Member, dividerAboveFirst = true, showMemberInfo)
+    } else {
+      val contributors = members.filter { it.memberRole >= GroupMemberRole.Member && it.memberStatus != GroupMemberStatus.MemUnknown }
+      val contributorCount = contributors.size + if (groupInfo.membership.memberRole >= GroupMemberRole.Member) 1 else 0
+      val withContributors = contributors.any { it.memberRole < GroupMemberRole.Owner } ||
+          groupInfo.membership.memberRole >= GroupMemberRole.Member
+      val showSearch = contributors.size > 8
+      val showUserRow = groupInfo.membership.memberRole >= GroupMemberRole.Member
+      item {
+        SectionView(title = ownersContributorsCountStr(contributorCount, withContributors)) {
+          if (showSearch) {
+            SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
+              MemberListSearchRowView(searchText)
+            }
+            if (showUserRow) Divider()
+          }
+          if (showUserRow) {
+            SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+              ChannelMemberRow(groupInfo.membership, user = true, showRole = true, isChannel = groupInfo.isChannel)
+            }
+          }
+        }
       }
-      SectionItemView(
-        click = { showMemberInfo(member) },
-        minHeight = 54.dp,
-        padding = PaddingValues(horizontal = DEFAULT_PADDING)
-      ) {
-        ChannelMemberRow(member, user = false, showRole = member.memberRole >= roleThreshold, isChannel = groupInfo.isChannel)
-      }
+      val filtered = if (s.isEmpty()) contributors else contributors.filter { it.anyNameContains(s) }
+      channelMemberItems(filtered, groupInfo, GroupMemberRole.Moderator, dividerAboveFirst = showSearch || showUserRow, showMemberInfo)
     }
     item {
       SectionBottomSpacer()
+    }
+  }
+}
+
+private fun LazyListScope.channelMemberItems(
+  members: List<GroupMember>,
+  groupInfo: GroupInfo,
+  showRoleFrom: GroupMemberRole,
+  dividerAboveFirst: Boolean,
+  showMemberInfo: (GroupMember) -> Unit
+) {
+  itemsIndexed(members, key = { _, m -> m.groupMemberId }) { index, member ->
+    if (index > 0 || dividerAboveFirst) {
+      Divider()
+    }
+    SectionItemView(
+      click = { showMemberInfo(member) },
+      minHeight = 54.dp,
+      padding = PaddingValues(horizontal = DEFAULT_PADDING)
+    ) {
+      ChannelMemberRow(member, user = false, showRole = member.memberRole >= showRoleFrom, isChannel = groupInfo.isChannel)
     }
   }
 }
