@@ -15,6 +15,7 @@ struct UserProfile: View {
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
+    @State private var loaded = false
     @State private var shortDescr = ""
     @State private var description = ""
     // Modals
@@ -83,7 +84,12 @@ struct UserProfile: View {
         }
         // Lifecycle
         .onAppear {
-            getCurrentProfile()
+            // run once — popping back from the description editor re-fires onAppear,
+            // and reloading here would discard the in-progress edits
+            if !loaded {
+                getCurrentProfile()
+                loaded = true
+            }
         }
         .onDisappear {
             if canSaveProfile {
@@ -259,29 +265,25 @@ struct ProfileDescriptionEditor: View {
         GeometryReader { geo in
             List {
                 Section {
-                    ZStack(alignment: .topLeading) {
-                        // invisible copy of the text sizes the row: grows from the welcome-editor
-                        // height up to the available area, then the TextEditor scrolls internally
-                        Text(description.isEmpty ? " " : description)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 5)
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                            .foregroundColor(.clear)
-                        if description.isEmpty {
-                            Text("Enter description (optional)")
-                                .foregroundColor(theme.colors.secondary)
-                                .padding(.top, 8)
-                                .padding(.leading, 5)
-                                .allowsHitTesting(false)
+                    // placeholder is a matching disabled TextEditor so it shares the editor's insets
+                    // and background and stays aligned with the text (mirrors GroupWelcomeView)
+                    ZStack {
+                        Group {
+                            if description.isEmpty {
+                                TextEditor(text: Binding.constant(NSLocalizedString("Enter description (optional)", comment: "placeholder")))
+                                    .foregroundColor(theme.colors.secondary)
+                                    .disabled(true)
+                            }
+                            TextEditor(text: $description)
+                                .focused($keyboardVisible)
                         }
-                        TextEditor(text: $description)
-                            .focused($keyboardVisible)
-                            .padding(.horizontal, -5)
-                            .padding(.top, -8)
+                        .padding(.horizontal, -5)
+                        .padding(.top, -8)
+                        // fill the area between the nav bar (geo is below it) and the keyboard;
+                        // the editor scrolls internally. ~90 leaves room for the large title + list insets
+                        .frame(height: max(130, geo.size.height - keyboardHeight - 90), alignment: .topLeading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    // geo is already below the nav bar; subtract the keyboard so the entry area
-                    // never runs under it. ~90 leaves room for the large title + list insets.
-                    .frame(minHeight: 130, maxHeight: max(130, geo.size.height - keyboardHeight - 90), alignment: .topLeading)
                 }
             }
         }
