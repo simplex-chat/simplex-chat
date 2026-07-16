@@ -43,13 +43,18 @@ compose {
         copyright = "(c) 2020-2026 SimpleX Chat"
         // For debugging via VisualVM
         if (debugJava) {
-          modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent", "jdk.accessibility")
+          modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent")
         } else {
           // 'jdk.unsupported' is for vlcj
-          // 'jdk.accessibility' provides Java Access Bridge on Windows - without it the app
-          // fails to start with "Failed to launch JVM" when assistive technologies are enabled
-          // in the system (see #4146)
-          modules("jdk.zipfs", "jdk.unsupported", "jdk.accessibility")
+          modules("jdk.zipfs", "jdk.unsupported")
+        }
+        val os = System.getProperty("os.name", "generic").toDefaultLowerCase()
+        // 'jdk.accessibility' provides Java Access Bridge on Windows - without it the app
+        // fails to start with "Failed to launch JVM" when assistive technologies are enabled
+        // in the system (see #4146). Packages are always built on the target OS, so only
+        // the Windows build needs to bundle it.
+        if (os.contains("win")) {
+          modules("jdk.accessibility")
         }
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
@@ -100,7 +105,6 @@ compose {
             }
           }
         }
-        val os = System.getProperty("os.name", "generic").toDefaultLowerCase()
         if (os.contains("mac") || os.contains("win")) {
           packageName = "SimpleX"
         } else {

@@ -39,8 +39,10 @@ Bridge tooling creates the properties file when enabled).
 
 ## Fix
 
-Add `jdk.accessibility` to the jlink modules in `desktop/build.gradle.kts`
-(both the release and the `debugJava` module lists).
+Add `jdk.accessibility` to the jlink modules in `desktop/build.gradle.kts`,
+conditionally on the build host being Windows (desktop packages are always
+built natively on the target OS, so the host OS is the package OS). The
+conditional applies to both the release and the `debugJava` configurations.
 
 ## Why this fix and not alternatives
 
@@ -57,13 +59,14 @@ Add `jdk.accessibility` to the jlink modules in `desktop/build.gradle.kts`
 
 - Runtime size: +~112 KB (measured with jlink on Linux; same module set).
   No new transitive modules are pulled in.
-  The size increase applies to all platform packages.
+  The size increase applies to the Windows package only.
 - Machines without assistive technologies enabled: the provider-loading path is
   gated on the `javax.accessibility.assistive_technologies` property being
   non-blank (Toolkit.java:518), so the module stays dormant - no classes loaded,
   no behavior change.
-- Linux/macOS: the module exists on all platforms but its provider is
-  Windows-only, so jlink succeeds and there is no functional effect.
+- Linux/macOS: unaffected - the module is only bundled when building on
+  Windows. (Its provider is Windows-only anyway, so bundling it elsewhere
+  would have had no functional effect, only the size cost.)
 
 ## Verification
 
