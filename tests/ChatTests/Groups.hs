@@ -12465,7 +12465,6 @@ testChannelSignedHistory ps =
       alice <# "#team history one (signed)"
       relay <# "#team> history one (signed)"
       [bob, cath] *<# "#team> history one (signed) [>>]"
-      histSharedId <- itemSharedMsgId alice
       editId <- lastItemId alice
       alice ##> ("/_update item #1 " <> editId <> " text history one edited")
       alice <# "#team [edited] history one edited (signed)"
