@@ -186,8 +186,7 @@ data ServerRolesOverride = ServerRolesOverride
 emptyServerRolesOverride :: ServerRolesOverride
 emptyServerRolesOverride = ServerRolesOverride {storage = Nothing, proxy = Nothing, names = Nothing}
 
--- Resolve a per-server override to concrete roles: null falls back to the
--- per-role default (receive on, private routing on, name resolution off).
+-- null falls back to per-role default: receive on, proxy on, names off
 resolveServerRoles :: ServerRolesOverride -> ServerRoles
 resolveServerRoles ServerRolesOverride {storage, proxy, names} =
   ServerRoles {storage = fromMaybe True storage, proxy = fromMaybe True proxy, names = fromMaybe False names}
@@ -558,9 +557,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
-    -- a server contributes role R if it is enabled, not deleted, and its effective
-    -- roles include R: operator servers use operator roles (per protocol), self-hosted
-    -- servers use their per-server roles (default when unset).
+    -- effective role: operator servers use operator roles, self-hosted use per-server roles
     hasRoleCoverage :: (UserServersClass u, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> [u] -> Bool
     hasRoleCoverage p roleSel = any $ \u ->
       any (srvOk (operator' u)) (map aUserServer' (servers' p u))

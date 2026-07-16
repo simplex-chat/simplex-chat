@@ -399,9 +399,7 @@ withTestChatCfgOpts ps cfg opts dbPrefix = bracket (startTestChat ps cfg opts db
 withTestOutput :: HasCallStack => (HasCallStack => TestParams -> IO ()) -> TestParams -> IO ()
 withTestOutput test ps = test ps {printOutput = True}
 
--- Enable the `names` (name-resolution) role on the client's custom SMP servers.
--- Self-hosted SMP servers default the names role to OFF, so name-resolution
--- tests must opt in explicitly by re-setting the servers with names = Just True.
+-- Opt the client's SMP servers into name resolution (self-hosted servers default names off).
 enableNamesRole :: HasCallStack => TestCC -> IO ()
 enableNamesRole TestCC {chatController = cc} = do
   r <- execChatCommand' (APIGetUserServers 1) 0 `runReaderT` cc

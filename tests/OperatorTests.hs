@@ -123,9 +123,6 @@ updatedServersTest = describe "validate user servers" $ do
     PresetServers {operators} = presetServers defaultChatConfig
     customRelayAddr = either error id $ strDecode "https://relay.example.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
 
--- Tests for per-server roles: how self-hosted vs operator-matched servers
--- resolve their roles in agentServerCfgs, and how per-server names roles
--- feed the USWNoNamesServers coverage warning in validateUserServers.
 perServerRolesTest :: Spec
 perServerRolesTest = describe "per-server roles" $ do
   describe "agentServerCfgs resolution" $ do
@@ -139,35 +136,28 @@ perServerRolesTest = describe "per-server roles" $ do
       case agentServerCfgs SPSMP opDomains [selfHostedSMP emptyServerRolesOverride] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Nothing
-          -- default: storage + proxy on, names off
           rolesTuple roles `shouldBe` (True, True, False)
         cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
     it "self-hosted partial override keeps defaults for unset roles" $
-      -- storage/proxy unset (default on), names explicitly on -> a per-role
-      -- default and an explicit value coexist on one server
       case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride Nothing Nothing (Just True))] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Nothing
           rolesTuple roles `shouldBe` (True, True, True)
         cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
     it "self-hosted explicit No overrides a default-yes role" $
-      -- storage explicitly off beats its default on; proxy default on, names default off
       case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride (Just False) Nothing Nothing)] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Nothing
           rolesTuple roles `shouldBe` (False, True, False)
         cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
     it "operator-matched server uses operator roles, ignoring per-server field" $
-      -- per-server roles are all off, but the resolved cfg must use the operator's roles
       case agentServerCfgs SPSMP opDomains [opMatchedSMP (ServerRolesOverride (Just False) (Just False) (Just False))] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Just 1
           rolesTuple roles `shouldBe` rolesTuple (operatorRoles SPSMP testOp)
         cfgs -> expectationFailure $ "expected one operator-matched ServerCfg, got: " <> show cfgs
     it "two self-hosted servers resolve their three roles independently" $
-      -- server A: receive off, proxy on, names on; server B: receive on, proxy off,
-      -- names default (off) -- every toggle differs across the two servers, and each
-      -- resolves to its own concrete roles (order is preserved by agentServerCfgs)
+      -- agentServerCfgs preserves input order
       let a = (newUserServer "smp://abcd@self.example.com" :: NewUserServer 'PSMP) {roles = ServerRolesOverride (Just False) (Just True) (Just True)}
           b = (newUserServer "smp://abcd@self2.example.com" :: NewUserServer 'PSMP) {roles = ServerRolesOverride (Just True) (Just False) Nothing}
        in case agentServerCfgs SPSMP opDomains [a, b] of
@@ -186,10 +176,10 @@ perServerRolesTest = describe "per-server roles" $ do
   where
     testOp = operatorSimpleXChat {operatorId = DBEntityId 1}
     opDomains = operatorDomains [testOp]
-    -- host does not match any operator domain -> treated as self-hosted
+    -- host matches no operator domain -> self-hosted
     selfHostedSMP :: ServerRolesOverride -> NewUserServer 'PSMP
     selfHostedSMP r = (newUserServer "smp://abcd@self.example.com" :: NewUserServer 'PSMP) {roles = r}
-    -- host matches the SimpleX Chat operator domain (simplex.im)
+    -- host matches operator domain simplex.im
     opMatchedSMP :: ServerRolesOverride -> NewUserServer 'PSMP
     opMatchedSMP r = (newUserServer "smp://abcd@smp8.simplex.im" :: NewUserServer 'PSMP) {roles = r}
     selfHostedUser :: ServerRolesOverride -> UpdatedUserOperatorServers
