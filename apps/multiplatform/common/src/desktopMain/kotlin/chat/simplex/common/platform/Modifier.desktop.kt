@@ -8,19 +8,12 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draganddrop.*
 import androidx.compose.ui.draganddrop.DragData
 import androidx.compose.ui.input.pointer.*
-import chat.simplex.common.simplexWindowState
-import java.awt.Component
-import java.awt.Container
-import java.awt.Cursor
 import java.awt.Image
-import java.awt.Window
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
 import java.awt.image.BufferedImage
 import java.io.File
-import java.lang.ref.WeakReference
 import java.net.URI
-import javax.swing.SwingUtilities
 
 @Composable
 actual fun Modifier.desktopOnExternalDrag(
@@ -87,39 +80,6 @@ private class DragDataImageImpl(private val transferable: Transferable) {
 actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpenDetector { action() }
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
-
-// called on every hover move: cache the canvas (and lookup failure) per window; weak refs let a closed window be GCed
-private var cachedSkiaCanvas: WeakReference<Component>? = null
-private var skiaCanvasMissingIn: WeakReference<Window>? = null
-
-actual fun desktopSetHoverCursor(icon: PointerIcon) {
-  // clickable message text only exists in the main window
-  val window = simplexWindowState.window ?: return
-  val type = when (icon) {
-    PointerIcon.Hand -> Cursor.HAND_CURSOR
-    PointerIcon.Text -> Cursor.TEXT_CURSOR
-    else -> Cursor.DEFAULT_CURSOR
-  }
-  var canvas = cachedSkiaCanvas?.get()
-  if (canvas == null || SwingUtilities.getWindowAncestor(canvas) !== window) {
-    if (skiaCanvasMissingIn?.get() === window) return
-    canvas = findSkiaCanvas(window)
-    if (canvas == null) {
-      Log.w(TAG, "desktopSetHoverCursor: Skia canvas not found, hover cursor workaround disabled")
-      skiaCanvasMissingIn = WeakReference(window)
-      return
-    }
-    cachedSkiaCanvas = WeakReference(canvas)
-  }
-  if (canvas.cursor.type != type) canvas.cursor = Cursor.getPredefinedCursor(type)
-}
-
-// the same component Compose writes pointer icons to (ComposeSceneMediator.setPointerIcon)
-private fun findSkiaCanvas(c: Component): Component? = when {
-  c.javaClass.name.contains("Skia") -> c
-  c is Container -> c.components.firstNotNullOfOrNull { findSkiaCanvas(it) }
-  else -> null
-}
 
 actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier =
   this then Modifier

@@ -3,7 +3,6 @@ package chat.simplex.common.platform
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.pointer.PointerIcon
 import java.io.File
 
 @Composable
@@ -17,7 +16,5 @@ actual fun Modifier.desktopOnExternalDrag(
 actual fun Modifier.onRightClick(action: () -> Unit): Modifier = this
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = this
-
-actual fun desktopSetHoverCursor(icon: PointerIcon) {}
 
 actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier = Modifier

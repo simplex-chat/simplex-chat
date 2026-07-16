@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.KeyChangeEffect
@@ -26,14 +25,6 @@ expect fun Modifier.desktopOnExternalDrag(
 expect fun Modifier.onRightClick(action: () -> Unit): Modifier
 
 expect fun Modifier.desktopPointerHoverIconHand(): Modifier
-
-/**
- * Directly sets the mouse cursor on desktop ([PointerIcon.Hand], [PointerIcon.Text], anything else
- * means default); no-op on Android. Compose's pointerHoverIcon is edge-triggered and silently loses
- * updates when chat items shift/recompose under the cursor; calling this on every hover move (and
- * resetting on exit) keeps the cursor correct. Details: plans/2026-07-13-fix-command-hover-cursor.md
- */
-expect fun desktopSetHoverCursor(icon: PointerIcon)
 
 expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
 

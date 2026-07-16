@@ -397,16 +397,11 @@ fun MarkdownText (
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
             val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
-            val newIcon = if (hand) PointerIcon.Hand else PointerIcon.Text
-            icon.value = newIcon
-            // pointerHoverIcon alone is unreliable, see desktopSetHoverCursor
-            desktopSetHoverCursor(newIcon)
+            icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
           },
           onHoverExit = {
-            // reset icon.value too, or pointerHoverIcon re-displays a stale Hand on the next Enter;
-            // Text is the neutral icon inside text, Default is the cursor after leaving it
+            // reset icon.value too, or pointerHoverIcon re-displays a stale Hand on the next Enter
             icon.value = PointerIcon.Text
-            desktopSetHoverCursor(PointerIcon.Default)
           },
           shouldConsumeEvent = { offset ->
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
