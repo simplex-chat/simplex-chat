@@ -12,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.AnnotatedString.Range
@@ -450,6 +452,8 @@ fun ClickableText(
   val currentOnHover = rememberUpdatedState(onHover)
   val currentOnHoverExit = rememberUpdatedState(onHoverExit)
   val currentShouldConsumeEvent = rememberUpdatedState(shouldConsumeEvent)
+  // to tell a moved pointer from text that shifted under a stationary pointer (see waitForUpOrCancellation)
+  val textCoordinates = remember { mutableStateOf<LayoutCoordinates?>(null) }
   val pressIndicator = Modifier.pointerInput(Unit) {
     detectGesture(onLongPress = { pos ->
       layoutResult.value?.let { layoutResult ->
@@ -462,7 +466,7 @@ fun ClickableText(
           currentOnClick.value(layoutResult.getOffsetForPosition(pos))
         }
       }
-    }, shouldConsumeEvent = { pos ->
+    }, positionInWindow = { textCoordinates.value?.positionInWindow() ?: Offset.Zero }, shouldConsumeEvent = { pos ->
       var consume = false
       layoutResult.value?.let { layoutResult ->
         consume = currentShouldConsumeEvent.value(layoutResult.getOffsetForPosition(pos))
@@ -482,7 +486,8 @@ fun ClickableText(
 
   BasicText(
     text = text,
-    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator),
+    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator)
+      .onGloballyPositioned { textCoordinates.value = it },
     style = style,
     softWrap = softWrap,
     overflow = overflow,

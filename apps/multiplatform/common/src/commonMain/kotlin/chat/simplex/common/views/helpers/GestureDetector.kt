@@ -46,6 +46,7 @@ private val NoPressGesture: suspend PressGestureScope.(Offset) -> Unit = { }
 suspend fun PointerInputScope.detectGesture(
   onLongPress: ((Offset) -> Unit)? = null,
   onPress: suspend PressGestureScope.(Offset) -> Unit = NoPressGesture,
+  positionInWindow: (() -> Offset)? = null,
   shouldConsumeEvent: (Offset) -> Boolean
 ) = coroutineScope {
   val pressScope = PressGestureScopeImpl(this@detectGesture)
@@ -57,6 +58,7 @@ suspend fun PointerInputScope.detectGesture(
       val shouldConsume = shouldConsumeEvent(down.position)
       if (shouldConsume)
         down.consumeDownChange()
+      val downPositionInWindow = positionInWindow?.let { it() + down.position }
       // reset() suspends until the previous gesture's press handler released the mutex,
       // and release/cancel join resetJob, so flag writes can't be reordered across gestures
       // (a fast second click would otherwise drop the first click's onClick).
@@ -72,7 +74,7 @@ suspend fun PointerInputScope.detectGesture(
 
       try {
         val upOrCancel: PointerInputChange? = withTimeout(longPressTimeout) {
-          waitForUpOrCancellation()
+          waitForUpOrCancellation(downPositionInWindow, positionInWindow)
         }
         if (upOrCancel == null) {
           launch { resetJob.join(); pressScope.cancel() }
@@ -143,7 +145,16 @@ internal suspend fun AwaitPointerEventScope.awaitFirstDownOnPass(
   return event.changes[0]
 }
 
-suspend fun AwaitPointerEventScope.waitForUpOrCancellation(): PointerInputChange? {
+suspend fun AwaitPointerEventScope.waitForUpOrCancellation(
+  downPositionInWindow: Offset? = null,
+  positionInWindow: (() -> Offset)? = null
+): PointerInputChange? {
+  // out of bounds in local coordinates while stationary in window coordinates is the node
+  // moving under the pointer (chat list shifted after a sent message), not the pointer
+  // leaving the node — such a press stays valid
+  fun stationaryInWindow(change: PointerInputChange): Boolean =
+    downPositionInWindow != null && positionInWindow != null &&
+      (positionInWindow() + change.position - downPositionInWindow).getDistance() <= viewConfiguration.touchSlop
   while (true) {
     val event = awaitPointerEvent(PointerEventPass.Main)
     if (event.changes.all { it.changedToUp() }) {
@@ -151,7 +162,7 @@ suspend fun AwaitPointerEventScope.waitForUpOrCancellation(): PointerInputChange
     }
 
     if (event.changes.any {
-        it.consumed.downChange || it.isOutOfBounds(size, extendedTouchPadding)
+        it.consumed.downChange || (it.isOutOfBounds(size, extendedTouchPadding) && !stationaryInWindow(it))
       }
     ) {
       return null
