@@ -442,31 +442,39 @@ fun ClickableText(
   shouldConsumeEvent: (Int) -> Boolean
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val pressIndicator = Modifier.pointerInput(onClick, onLongClick) {
+  // pointerInput keyed on these lambdas restarts on every recomposition (they are new
+  // instances each time), and a restart mid-gesture swallows the click/hover in flight;
+  // key on Unit and read the latest handlers via rememberUpdatedState instead
+  val currentOnClick = rememberUpdatedState(onClick)
+  val currentOnLongClick = rememberUpdatedState(onLongClick)
+  val currentOnHover = rememberUpdatedState(onHover)
+  val currentOnHoverExit = rememberUpdatedState(onHoverExit)
+  val currentShouldConsumeEvent = rememberUpdatedState(shouldConsumeEvent)
+  val pressIndicator = Modifier.pointerInput(Unit) {
     detectGesture(onLongPress = { pos ->
       layoutResult.value?.let { layoutResult ->
-        onLongClick(layoutResult.getOffsetForPosition(pos))
+        currentOnLongClick.value(layoutResult.getOffsetForPosition(pos))
       }
     }, onPress = { pos ->
       layoutResult.value?.let { layoutResult ->
         val res  = tryAwaitRelease()
         if (res) {
-          onClick(layoutResult.getOffsetForPosition(pos))
+          currentOnClick.value(layoutResult.getOffsetForPosition(pos))
         }
       }
     }, shouldConsumeEvent = { pos ->
       var consume = false
       layoutResult.value?.let { layoutResult ->
-        consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
+        consume = currentShouldConsumeEvent.value(layoutResult.getOffsetForPosition(pos))
       }
       consume
     }
     )
-  }.pointerInput(onHover, onHoverExit) {
+  }.pointerInput(Unit) {
     if (appPlatform.isDesktop) {
-      detectCursorMove(onExit = onHoverExit) { pos ->
+      detectCursorMove(onExit = { currentOnHoverExit.value() }) { pos ->
         layoutResult.value?.let { layoutResult ->
-          onHover(layoutResult.getOffsetForPosition(pos))
+          currentOnHover.value(layoutResult.getOffsetForPosition(pos))
         }
       }
     }

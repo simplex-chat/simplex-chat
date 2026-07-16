@@ -57,8 +57,13 @@ suspend fun PointerInputScope.detectGesture(
       val shouldConsume = shouldConsumeEvent(down.position)
       if (shouldConsume)
         down.consumeDownChange()
-      pressScope.reset()
+      // reset() suspends until the previous gesture's press handler released the mutex,
+      // and release/cancel join resetJob, so flag writes can't be reordered across gestures
+      // (a fast second click would otherwise drop the first click's onClick).
+      // Mirrors detectTapGestures in Compose 1.8.2.
+      val resetJob = launch { pressScope.reset() }
       if (onPress !== NoPressGesture) launch {
+        resetJob.join()
         pressScope.onPress(down.position)
       }
       val longPressTimeout = onLongPress?.let {
@@ -70,22 +75,22 @@ suspend fun PointerInputScope.detectGesture(
           waitForUpOrCancellation()
         }
         if (upOrCancel == null) {
-          pressScope.cancel()
+          launch { resetJob.join(); pressScope.cancel() }
         } else {
           if (shouldConsume)
             upOrCancel.consumeDownChange()
-          pressScope.release()
+          launch { resetJob.join(); pressScope.release() }
         }
       } catch (_: PointerEventTimeoutCancellationException) {
         if (onLongPress != null) {
           onLongPress(down.position)
           if (shouldConsume)
             consumeUntilUp()
-          pressScope.cancel()
+          launch { resetJob.join(); pressScope.cancel() }
         } else {
           if (shouldConsume)
             consumeUntilUp()
-          pressScope.release()
+          launch { resetJob.join(); pressScope.release() }
         }
       }
     }
@@ -167,16 +172,18 @@ private class PressGestureScopeImpl(
 
   fun cancel() {
     isCanceled = true
-    mutex.unlock()
+    if (mutex.isLocked) mutex.unlock()
   }
 
   fun release() {
     isReleased = true
-    mutex.unlock()
+    if (mutex.isLocked) mutex.unlock()
   }
 
-  fun reset() {
-    mutex.tryLock()
+  // suspends until the previous gesture's tryAwaitRelease finished (or was never started):
+  // the mutex is the serialization token between consecutive gestures
+  suspend fun reset() {
+    mutex.lock()
     isReleased = false
     isCanceled = false
   }
@@ -184,6 +191,7 @@ private class PressGestureScopeImpl(
   override suspend fun tryAwaitRelease(): Boolean {
     if (!isReleased && !isCanceled) {
       mutex.lock()
+      mutex.unlock()
     }
     return isReleased && !isCanceled
   }
