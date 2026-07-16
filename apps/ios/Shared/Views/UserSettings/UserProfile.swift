@@ -12,6 +12,7 @@ import SimpleXChat
 struct UserProfile: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var ss: SaveableSettings
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
@@ -91,17 +92,10 @@ struct UserProfile: View {
                 loaded = true
             }
         }
-        .onDisappear {
-            if canSaveProfile {
-                showAlert(
-                    title: NSLocalizedString("Save your profile?", comment: "alert title"),
-                    message: NSLocalizedString("Your profile was changed. If you save it, the updated profile will be sent to all your contacts.", comment: "alert message"),
-                    buttonTitle: NSLocalizedString("Save (and notify contacts)", comment: "alert button"),
-                    buttonAction: saveProfile,
-                    cancelButton: true
-                )
-            }
-        }
+        // profile + description are one editable view; the "save profile?" prompt is owned by
+        // the sheet (UserPickerSheetView.onDisappear) so it fires only when the whole sheet is
+        // dismissed — not when navigating into/out of the description editor
+        .onChange(of: editSnapshot) { _ in updateProfileSaver() }
         .onChange(of: chosenImage) { image in
             Task {
                 let resized: String? = if let image {
@@ -189,6 +183,35 @@ struct UserProfile: View {
             currentProfileHash = profile.hashValue
             shortDescr = profile.shortDescr ?? ""
             description = profile.description ?? ""
+        }
+    }
+
+    // the fields that make up the edited profile; description is edited in the child
+    // ProfileDescriptionEditor via a binding, so it re-fires this view's onChange too
+    private var editSnapshot: [String] {
+        [profile.displayName, profile.fullName, profile.image ?? "", shortDescr, description]
+    }
+
+    private func updateProfileSaver() {
+        guard loaded, canSaveProfile else {
+            ss.profileSave = nil
+            return
+        }
+        var edited = profile
+        edited.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+        edited.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
+        let d = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        edited.description = d.isEmpty ? nil : d
+        ss.profileSave = {
+            Task {
+                do {
+                    if let (newProfile, _) = try await apiUpdateProfile(profile: edited) {
+                        await MainActor.run { ChatModel.shared.updateCurrentUser(newProfile) }
+                    }
+                } catch {
+                    logger.error("UserProfile save on dismiss error: \(responseError(error))")
+                }
+            }
         }
     }
 }

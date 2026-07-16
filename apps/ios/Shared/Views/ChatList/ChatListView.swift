@@ -66,6 +66,10 @@ enum ActiveFilter: Identifiable, Equatable {
 
 class SaveableSettings: ObservableObject {
     @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [], serverWarnings: [])
+    // set by UserProfile to the save action when there are unsaved changes (nil otherwise);
+    // the alert is shown from UserPickerSheetView.onDisappear (next to "Save servers?"), so it fires
+    // only when the whole sheet is dismissed — not on internal navigation into the description editor
+    var profileSave: (() -> Void)? = nil
 }
 
 struct ServerSettings {
@@ -132,6 +136,15 @@ struct UserPickerSheetView: View {
                     title: NSLocalizedString("Save servers?", comment: "alert title"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
                     buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
+                    cancelButton: true
+                )
+            }
+            if let saveProfile = ss.profileSave {
+                showAlert(
+                    title: NSLocalizedString("Save your profile?", comment: "alert title"),
+                    message: NSLocalizedString("Your profile was changed. If you save it, the updated profile will be sent to all your contacts.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save (and notify contacts)", comment: "alert button"),
+                    buttonAction: saveProfile,
                     cancelButton: true
                 )
             }
