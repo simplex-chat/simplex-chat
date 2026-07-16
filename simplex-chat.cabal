@@ -149,8 +149,8 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
           Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
           Simplex.Chat.Store.Postgres.Migrations.M20260714_member_security_code
-          Simplex.Chat.Store.Postgres.Migrations.M20260714_server_roles
           Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
+          Simplex.Chat.Store.Postgres.Migrations.M20260716_server_roles
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -317,8 +317,8 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260629_roster_catchup
           Simplex.Chat.Store.SQLite.Migrations.M20260707_file_digest
           Simplex.Chat.Store.SQLite.Migrations.M20260714_member_security_code
-          Simplex.Chat.Store.SQLite.Migrations.M20260714_server_roles
           Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
+          Simplex.Chat.Store.SQLite.Migrations.M20260716_server_roles
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
