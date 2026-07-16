@@ -87,7 +87,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
         ChatModel.shared.filesToDelete = []
         terminateChat()
-        RemoteCtrlBGKeepAlive.shared.stopKeepingSession()
     }
 
     func application(_ application: UIApplication,

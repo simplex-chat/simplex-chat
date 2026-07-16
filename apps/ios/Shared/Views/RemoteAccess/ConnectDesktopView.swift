@@ -298,7 +298,7 @@ struct ConnectDesktopView: View {
             Section {
                 disconnectButton()
             } footer: {
-                if !RemoteCtrlBGKeepAlive.shared.usingContinuedProcessing {
+                if !RemoteCtrlBGKeepAlive.shared.continuedProcessingAccepted {
                     Text("Keep the app open to use it from desktop")
                         .foregroundColor(theme.colors.secondary)
                 }
