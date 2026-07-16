@@ -281,6 +281,7 @@ chatGroupTests = do
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
       it "should remove member (signed)" testChannelRemoveMemberSigned
+      it "should verify member security code via membership keys" testChannelMemberSecurityCode
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
       it "owner should leave channel (signed)" testChannelOwnerLeave
@@ -8790,6 +8791,43 @@ setupRelay owner relay = do
   owner ##> ("/relays name=" <> rName <> " " <> relaySLink)
   owner <## "ok"
   pure relaySLink
+
+testChannelMemberSecurityCode :: HasCallStack => TestParams -> IO ()
+testChannelMemberSecurityCode ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        -- a channel message lets the relay-forwarded member keys settle on both sides
+        alice #> "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
+        threadDelay 1000000
+        -- owner and subscriber derive the same code from their membership keys
+        alice ##> "/code #team cath"
+        aCode <- getTermLine alice
+        cath ##> "/code #team alice"
+        cCode <- getTermLine cath
+        aCode `shouldBe` cCode
+        -- a wrong code does not verify
+        alice ##> "/verify #team cath 123"
+        alice <##. "connection not verified, current code is "
+        -- the correct code verifies and the verification persists
+        alice ##> ("/verify #team cath " <> aCode)
+        alice <## "connection verified"
+        alice ##> "/i #team cath"
+        alice <## "group ID: 1"
+        alice <##. "member ID: "
+        alice <## "member not connected"
+        alice <## "connection verified"
+        -- verification can be cleared
+        alice ##> "/verify #team cath"
+        alice <##. "connection not verified, current code is "
+        alice ##> "/i #team cath"
+        alice <## "group ID: 1"
+        alice <##. "member ID: "
+        alice <## "member not connected"
 
 prepareChannel1Relay :: String -> TestCC -> TestCC -> IO (String, String)
 prepareChannel1Relay gName owner relay = do

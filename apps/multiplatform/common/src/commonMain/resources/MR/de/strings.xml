@@ -2782,7 +2782,6 @@
     <string name="share_channel">Kanal teilen…</string>
     <string name="share_via_chat">Per Chat teilen</string>
     <string name="owner_verification_failed">⚠️ Signaturüberprüfung fehlgeschlagen: %s.</string>
-    <string name="chat_link_signed">(signiert)</string>
     <string name="tap_to_open">Zum Öffnen tippen</string>
     <string name="connection_reached_limit_of_undelivered_messages">Die Verbindung hat das Limit für nicht zugestellte Nachrichten erreicht</string>
     <string name="channel_preferences">Kanal-Präferenzen</string>

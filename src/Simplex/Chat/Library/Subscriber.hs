@@ -2833,7 +2833,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           when contentChanged $ updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
-              m' <- withStore $ \db -> updateMemberProfile db cxt user m p'
+              m' <- withStore $ \db -> updateMemberProfile db cxt user m p''
               unless (muteEventInChannel gInfo m') $ do
                 when contentChanged $ forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2858,7 +2858,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise =
           pure m
       where
-        contentChanged = not (sameProfileContent (redactedMemberProfile gInfo m (fromLocalProfile p)) (redactedMemberProfile gInfo m p'))
+        p'' = redactedMemberProfile gInfo m p'
+        contentChanged = not (sameProfileContent (redactedMemberProfile gInfo m (fromLocalProfile p)) p'')
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -4464,7 +4465,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   sigKeys <- liftIO $ atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
-                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData)
+                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData) Nothing
                   ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
                   sLnk <- case connShortLink' ccLink' of
                     Just sl -> pure sl

@@ -26,9 +26,9 @@ import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (currentChatVersion)
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..), currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -38,7 +38,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util (encodeJSON)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
@@ -46,7 +46,11 @@ chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
+    it "profile description round-trips and shows in contact info" testProfileDescriptionShown
+    it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
+    it "reject profile image that is too large" testSetProfileImageTooLarge
+    it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
     it "present supporter badge to contacts" testUserBadgeBroadcast
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
@@ -57,6 +61,7 @@ chatProfileTests = do
     it "supporter badge sent to contact connecting via address" testUserBadgeContactAddress
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -119,6 +124,7 @@ chatProfileTests = do
     it "should connect via one-time invitation" testShortLinkInvitation
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
+    it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
   describe "short links with attached data" shortLinkTests
   describe "client services" $ do
@@ -198,6 +204,69 @@ testUpdateProfile =
             bob <## "contact cate changed to cat (Cate)"
             bob <## "use @cat <message> to send messages"
         ]
+
+-- Profile.description survives the connect-time round-trip and is shown in the contact /i view.
+testProfileDescriptionShown :: HasCallStack => TestParams -> IO ()
+testProfileDescriptionShown =
+  testChat2 aliceProfile bobWithDescr $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/i @bob"
+      alice <## "contact ID: 2"
+      alice <## "description:"
+      alice <## "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"
+      alice <##. "receiving messages via"
+      alice <##. "sending messages via"
+      alice <## "you've shared main profile with this contact"
+      alice <## "connection not verified, use /code command to see security code"
+      alice <## "quantum resistant end-to-end encryption"
+      alice <##. "peer chat protocol version range"
+  where
+    bobWithDescr = bobProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
+
+-- for a member without a direct contact, the description is redacted per the group's link/name policy
+testMemberDescriptionRedacted :: HasCallStack => TestParams -> IO ()
+testMemberDescriptionRedacted =
+  testChat3 aliceProfile bobProfile cathWithDescr $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      -- prohibit direct messages (and thus simplex links) before members join
+      alice ##> "/set direct #team off"
+      alice <## "updated group preferences:"
+      alice <## "Direct messages: off"
+      addMember "team" alice bob GRAdmin
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      -- cath joins and is introduced to bob with a redacted profile (link stripped)
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      -- bob has no direct contact to cath, so his stored member profile has the link stripped
+      bob ##> "/i #team cath"
+      bob <## "group ID: 1"
+      bob <##. "member ID:"
+      bob <## "description:"
+      bob <## "check  out"
+      bob <##. "receiving messages via"
+      bob <##. "sending messages via"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <##. "peer chat protocol version range"
+  where
+    cathWithDescr = cathProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
 
 -- the test issuer key under index 1 in the test config
 testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
@@ -423,6 +492,52 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
+testSetProfileImageTooLarge :: HasCallStack => TestParams -> IO ()
+testSetProfileImageTooLarge =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      -- image within the size limit is accepted
+      alice ##> "/set profile image data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
+      alice <## "profile image updated"
+      -- image over the size limit is rejected;
+      -- the long command wraps in the virtual terminal, so drain echo lines until the error
+      alice `send` ("/set profile image data:image/png;base64," <> replicate 12500 'A')
+      let errPrefix = "bad chat command: Profile image is too large"
+          expectError = do
+            l <- getTermLine alice
+            unless (take (length errPrefix) l == errPrefix) expectError
+      expectError
+      (bob </)
+
+testSetProfileImageFromFile :: HasCallStack => TestParams -> IO ()
+testSetProfileImageFromFile ps = testChat aliceProfile test ps
+  where
+    tmp = tmpPath ps
+    pngPath = tmp <> "/avatar.png"
+    gifPath = tmp <> "/avatar.gif"
+    missingPath = tmp <> "/missing.png"
+    emptyPath = tmp <> "/empty.png"
+    test alice = do
+      B.writeFile pngPath "fake png bytes" -- content is not validated, only the extension
+      -- set profile image from a .png file
+      alice ##> ("/set profile image file " <> pngPath)
+      alice <## "profile image updated"
+      alice ##> "/show profile image"
+      alice <## "Profile image:"
+      alice <##. "data:image/png;base64,"
+      -- unsupported extension is rejected
+      B.writeFile gifPath "GIF89a"
+      alice ##> ("/set profile image file " <> gifPath)
+      alice <##. "bad chat command: unsupported image extension"
+      -- missing file is rejected
+      alice ##> ("/set profile image file " <> missingPath)
+      alice <##. "bad chat command: image file not found"
+      -- empty file is rejected
+      B.writeFile emptyPath ""
+      alice ##> ("/set profile image file " <> emptyPath)
+      alice <##. "bad chat command: image file is empty"
+
 testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =
   testChat3 aliceProfile' bobProfile' cathProfile' $
@@ -497,7 +612,7 @@ testMultiWordProfileNames =
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
     cathProfile' = baseProfile {displayName = "Cath Johnson"}
-    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
+    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
 
 testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =
@@ -528,6 +643,32 @@ testUserContactLink =
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
+
+testCreateAddressOnServer :: HasCallStack => TestParams -> IO ()
+testCreateAddressOnServer ps = testChat aliceProfile test ps
+  where
+    tmp = tmpPath ps
+    -- second SMP server, distinct from alice's configured server (localhost:7001)
+    altServer = "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"
+    altServerCfg =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    test alice = do
+      withSmpServer' altServerCfg $ do
+        -- without a server the address is created on the configured server (7001)
+        alice ##> "/_address 1"
+        (_, defaultLink) <- getContactLinks alice True
+        defaultLink `shouldContain` "localhost%3A7001" -- server is URL-encoded in the link
+        alice ##> "/_delete_address 1"
+        alice <## "Your chat address is deleted - accepted contacts will remain connected."
+        alice <## "To create a new chat address use /ad"
+        -- with a server the address is pinned to the requested server (7003)
+        alice ##> ("/_address 1 " <> altServer)
+        (_, pinnedLink) <- getContactLinks alice True
+        pinnedLink `shouldContain` "localhost%3A7003"
+      alice <## "disconnected 1 connections on server localhost"
 
 testRetryConnectingViaContactLink :: HasCallStack => TestParams -> IO ()
 testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
@@ -2960,6 +3101,38 @@ testPlanShortLinkInvitation =
 
 slSimplexScheme :: String -> String
 slSimplexScheme sl = T.unpack $ T.replace "https://localhost/" "simplex:/" (T.pack sl) <> "?h=localhost"
+
+testShareAddressViaChat :: HasCallStack => TestParams -> IO ()
+testShareAddressViaChat =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    alice ##> "/ad"
+    _ <- getContactLinks alice True
+    connectUsers alice bob
+    connectUsers bob cath
+    -- alice shares her signed address card to bob
+    alice ##> "/share address @bob"
+    alice <# "@bob contact address of @alice (signed):"
+    _ <- getTermLine alice -- link
+    _ <- getTermLine alice -- owner signature (testView)
+    bob <# "alice> contact address of @alice (signed):"
+    bLink <- getTermLine bob
+    bSig <- getTermLine bob
+    -- bob verifies alice's owner signature
+    bob ##> ("/_connect plan 1 " <> bLink <> " sig=" <> bSig)
+    bob <## "contact address: ok to connect"
+    bob <## "owner signature: verified"
+    _ <- getTermLine bob -- link data
+    -- bob replays alice's signed card to cath: the binding was alice->bob, so cath strips the signature
+    let sig = maybe (error "bad sig") id (decodeJSON (T.pack bSig) :: Maybe LinkOwnerSig)
+        cLink = either error id $ strDecode (B.pack bLink)
+        mc = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") False) (Just sig)
+        cm = "{\"msgContent\":" <> T.unpack (encodeJSON mc) <> "}"
+    bob ##> ("/_send @3 json [" <> cm <> "]")
+    bob <# "@cath contact address of @alice (signed):"
+    _ <- getTermLine bob -- link
+    _ <- getTermLine bob -- owner signature (bob's sent view)
+    cath <# "bob> contact address of @alice:"
+    void $ getTermLine cath -- link (signature stripped)
 
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =

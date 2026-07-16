@@ -2292,7 +2292,6 @@
     <string name="chat_link_contact_address">聯絡地址</string>
     <string name="chat_link_one_time">一次性連結</string>
     <string name="chat_link_from_owner">（來自擁有者）</string>
-    <string name="chat_link_signed">（已簽署）</string>
     <string name="error_sharing_channel">分享頻道時發生錯誤</string>
     <string name="owner_verification_passed">連結簽章已驗證。</string>
     <string name="owner_verification_failed">⚠️ 簽章驗證失敗：%s。</string>

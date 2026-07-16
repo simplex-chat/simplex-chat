@@ -34,6 +34,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var shortDescr: String? { profile.shortDescr }
+    public var profileDescription: String? { profile.description }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
@@ -116,6 +117,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         displayName: String,
         fullName: String,
         shortDescr: String? = nil,
+        description: String? = nil,
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
@@ -125,6 +127,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.displayName = displayName
         self.fullName = fullName
         self.shortDescr = shortDescr
+        self.description = description
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
@@ -134,6 +137,7 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var displayName: String
     public var fullName: String
     public var shortDescr: String?
+    public var description: String?
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
@@ -142,6 +146,8 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var badge: BadgeProof?
     public var localAlias: String { get { "" } }
     public var contactDomain: SimplexDomainClaim?
+
+    public var profileDescription: String? { description }
 
     var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
@@ -159,6 +165,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         displayName: String,
         fullName: String,
         shortDescr: String? = nil,
+        description: String? = nil,
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
@@ -172,6 +179,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.displayName = displayName
         self.fullName = fullName
         self.shortDescr = shortDescr
+        self.description = description
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
@@ -186,6 +194,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var displayName: String
     public var fullName: String
     public var shortDescr: String?
+    public var description: String?
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
@@ -194,6 +203,8 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localAlias: String
     public var contactDomain: SimplexDomainClaim?
     public var contactDomainVerified: Bool?
+
+    public var profileDescription: String? { description }
 
     var profileViewName: String {
         localAlias == ""
@@ -285,6 +296,7 @@ public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias
         displayName: profile.displayName,
         fullName: profile.fullName,
         shortDescr: profile.shortDescr,
+        description: profile.description,
         image: profile.image,
         contactLink: profile.contactLink,
         preferences: profile.preferences,
@@ -298,6 +310,7 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
         displayName: profile.displayName,
         fullName: profile.fullName,
         shortDescr: profile.shortDescr,
+        description: profile.description,
         image: profile.image,
         contactLink: profile.contactLink,
         preferences: profile.preferences,
@@ -323,11 +336,14 @@ public protocol NamedChat {
     var displayName: String { get }
     var fullName: String { get }
     var shortDescr: String? { get }
+    var profileDescription: String? { get }
     var image: String? { get }
     var localAlias: String { get }
 }
 
 extension NamedChat {
+    public var profileDescription: String? { nil }
+
     public var chatViewName: String {
         localAlias == ""
         ? displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)")
@@ -1608,6 +1624,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var profileDescription: String? {
+        switch self {
+        case let .direct(contact): contact.profile.description
+        case let .group(groupInfo, _): groupInfo.profileDescription
+        case .local: nil
+        case let .contactRequest(contactRequest): contactRequest.profile.description
+        case .contactConnection: nil
+        case .invalidJSON: nil
+        }
+    }
+
     public var image: String? {
         get {
             switch self {
@@ -2168,6 +2195,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var shortDescr: String? { profile.shortDescr }
+    public var profileDescription: String? { profile.description }
     public var image: String? { get { profile.image } }
     public var contactLink: String? { get { profile.contactLink } }
     public var localAlias: String { profile.localAlias }
@@ -2386,6 +2414,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var ready: Bool { get { true } }
     public var displayName: String { get { profile.displayName } }
     public var shortDescr: String? { profile.shortDescr }
+    public var profileDescription: String? { profile.description }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { "" }
@@ -2562,6 +2591,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var shortDescr: String? { groupProfile.shortDescr }
+    public var profileDescription: String? { businessChat != nil ? groupProfile.description : nil }
     public var image: String? { get { groupProfile.image } }
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
@@ -2931,6 +2961,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var supportChat: GroupSupportChat?
     public var memberChatVRange: VersionRange
     public var relayLink: String?
+    public var memberVerifiedCode: SecurityCode?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -2952,7 +2983,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
     public var nameBadge: LocalBadge? { memberProfile.localBadge }
-    public var verified: Bool { activeConn?.connectionCode != nil }
+    public var verified: Bool { memberVerifiedCode != nil || activeConn?.connectionCode != nil }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
     var directChatId: ChatId? {
@@ -5202,11 +5233,7 @@ public enum MsgChatLink: Equatable, Hashable {
             NSLocalizedString("One-time link", comment: "chat link info line")
         }
         if signed {
-            s += " " + (
-                self.isPublicGroup
-                    ? NSLocalizedString("(from owner)", comment: "chat link info line")
-                    : NSLocalizedString("(signed)", comment: "chat link info line")
-            )
+            s += " " + NSLocalizedString("(from owner)", comment: "chat link info line")
         }
         return s
     }
@@ -5309,9 +5336,13 @@ public enum Format: Decodable, Equatable, Hashable {
     case simplexName(nameInfo: SimplexNameInfo)
     case command(commandStr: String)
     case mention(memberName: String)
+    case modal(modalName: String, text: String)
     case email
     case phone
     case unknown
+
+    // client-only format that opens a modal when tapped, see openMarkdownModal
+    public static let modalDescription = "description"
 
     public var isSimplexLink: Bool {
         get {

@@ -25,6 +25,7 @@ struct UserAddressView: View {
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
     @State private var alert: UserAddressAlert?
     @State private var progressIndicator = false
+    @State private var showShareViaChat = false
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
@@ -156,6 +157,7 @@ struct UserAddressView: View {
                 upgradeAddressButton()
             }
             shareAddressButton(userAddress)
+            shareViaChatButton(userAddress)
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
             // }
@@ -378,6 +380,32 @@ struct UserAddressView: View {
         }
     }
 
+    private func shareViaChatButton(_ userAddress: UserContactLink) -> some View {
+        Button {
+            if userAddress.shouldBeUpgraded {
+                showAlert(
+                    NSLocalizedString("Upgrade address?", comment: "alert title"),
+                    message: NSLocalizedString("The address will be short, and your profile will be shared via the address.", comment: "alert message"),
+                    actions: {[
+                        UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
+                            addShortLink(progressIndicator: $progressIndicator, onComplete: { showShareViaChat = true })
+                        },
+                        cancelAlertAction
+                    ]}
+                )
+            } else {
+                showShareViaChat = true
+            }
+        } label: {
+            settingsRow("arrowshape.turn.up.forward", color: theme.colors.primary) {
+                Text("Share via chat").foregroundColor(theme.colors.primary)
+            }
+        }
+        .sheet(isPresented: $showShareViaChat) {
+            shareAddressPicker()
+        }
+    }
+
     private func shareViaEmailButton(_ userAddress: UserContactLink) -> some View {
         Button {
             showMailView = true
@@ -451,7 +479,60 @@ func upgradeAndShareAddressAlert(progressIndicator: Binding<Bool>, shareAddress:
     )
 }
 
-private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: Bool = false) {
+@ViewBuilder
+func shareAddressPicker(composeState: Binding<ComposeState>? = nil) -> some View {
+    let v = ChatItemForwardingView(
+        title: "Share address",
+        isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+        onSelectChat: { chat in shareMyAddress(chat, composeState: composeState) },
+        includeLocal: false
+    )
+    if #available(iOS 16.0, *) {
+        v.presentationDetents([.fraction(0.8)])
+    } else {
+        v
+    }
+}
+
+func shareMyAddress(_ destChat: Chat, composeState: Binding<ComposeState>? = nil) {
+    let sendAsGroup = if let gInfo = destChat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
+    Task {
+        do {
+            let mc = try await apiShareMyAddress(
+                toChatType: destChat.chatInfo.chatType, toChatId: destChat.chatInfo.apiId,
+                toScope: destChat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
+            )
+            if case let .chat(_, chatLink, ownerSig) = mc {
+                await MainActor.run {
+                    dismissAllSheets {
+                        let cs = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        if let composeState {
+                            composeState.wrappedValue = cs
+                        } else {
+                            ChatModel.shared.draft = cs
+                            ChatModel.shared.draftChatId = destChat.id
+                        }
+                        if destChat.id != ChatModel.shared.chatId {
+                            ItemsModel.shared.loadOpenChat(destChat.id)
+                        }
+                    }
+                }
+            } else {
+                logger.error("shareMyAddress: unexpected MsgContent: \(String(describing: mc))")
+                await MainActor.run {
+                    showAlert(NSLocalizedString("Error sharing address", comment: "alert title"), message: String(describing: mc))
+                }
+            }
+        } catch {
+            logger.error("shareMyAddress error: \(error.localizedDescription)")
+            await MainActor.run {
+                showAlert(NSLocalizedString("Error sharing address", comment: "alert title"), message: error.localizedDescription)
+            }
+        }
+    }
+}
+
+private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: Bool = false, onComplete: (() -> Void)? = nil) {
     progressIndicator.wrappedValue = true
     Task {
         do {
@@ -462,6 +543,7 @@ private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: B
                 if shareOnCompletion, let userAddress {
                     userAddress.shareAddress(short: true)
                 }
+                onComplete?()
             }
         } catch let error {
             logger.error("apiAddMyAddressShortLink: \(responseError(error))")

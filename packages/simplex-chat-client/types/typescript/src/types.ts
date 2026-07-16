@@ -2747,6 +2747,7 @@ export interface GroupMember {
   supportChat?: GroupSupportChat
   memberPubKey?: string
   relayLink?: string
+  memberVerifiedCode?: SecurityCode
 }
 
 export interface GroupMemberAdmission {
@@ -3010,6 +3011,7 @@ export interface LocalProfile {
   displayName: string
   fullName: string
   shortDescr?: string
+  description?: string
   image?: string
   contactLink?: string
   preferences?: Preferences
@@ -3412,6 +3414,7 @@ export interface Profile {
   displayName: string
   fullName: string
   shortDescr?: string
+  description?: string
   image?: string
   contactLink?: string
   preferences?: Preferences

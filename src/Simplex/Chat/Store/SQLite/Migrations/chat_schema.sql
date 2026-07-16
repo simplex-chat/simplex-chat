@@ -31,7 +31,8 @@ CREATE TABLE contact_profiles(
   badge_key_idx INTEGER,
   contact_domain TEXT,
   contact_domain_proof TEXT,
-  contact_domain_verified INTEGER
+  contact_domain_verified INTEGER,
+  description TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -252,6 +253,8 @@ CREATE TABLE group_members(
   member_pub_key BLOB,
   removed_at TEXT,
   roster_served_version INTEGER,
+  member_security_code TEXT,
+  member_security_code_verified_at TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

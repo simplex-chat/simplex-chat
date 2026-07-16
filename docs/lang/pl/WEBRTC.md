@@ -139,7 +139,7 @@ To tyle - teraz możesz wykonywać połączenia audio i wideo za pośrednictwem 
 
   2. W sekcji **Build up ICE Server List** dodaj:
 
-     <img src="./stun_1.png">
+     <img src="/docs/stun_1.png">
 
      - `STUN: stun:<twoje_ip_lub_domena>:<port>` kliknij `Add STUN`
      - `TURN: turn:<twoje_ip_lub_domena>:<port>`, `Username: <twój_login>`, `Credential: <twoje_hasło>` kliknij `Add TURN`
@@ -148,11 +148,11 @@ To tyle - teraz możesz wykonywać połączenia audio i wideo za pośrednictwem 
 
   3. Powinieneś zobaczyć swoje serwery w sekcji **ICE server list**. Jeśli wszystko jest skonfigurowane poprawnie, naciśnij `Start test`:
 
-     <img src="./stun_2.png">
+     <img src="/docs/stun_2.png">
 
   4. W sekcji **Results** powinieneś zobaczyć coś takiego:
 
-     <img src="./stun_3.png">
+     <img src="/docs/stun_3.png">
 
      Jeśli wyniki pokazują `srflx` i `relay`, wszystko jest skonfigurowane poprawnie!
 

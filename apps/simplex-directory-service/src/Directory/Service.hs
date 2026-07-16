@@ -638,8 +638,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               Right CRGroupLink {groupLink = GroupLink {connLinkContact = CCLink cr sl_}} ->
                 let linkBefore_ = profileGroupLinkText fromGroup
                     linkNow_ = profileGroupLinkText toGroup
-                    profileGroupLinkText GroupInfo {groupProfile = gp} =
-                      maybe Nothing (fmap (\(FormattedText _ t) -> t) . find ftHasLink) $ parseMaybeMarkdownList =<< description gp
+                    profileGroupLinkText GroupInfo {groupProfile = GroupProfile {description = descr_}} =
+                      maybe Nothing (fmap (\(FormattedText _ t) -> t) . find ftHasLink) $ parseMaybeMarkdownList =<< descr_
                     ftHasLink = \case
                       FormattedText (Just SimplexLink {simplexUri = ACL SCMContact cLink}) _ -> case cLink of
                         CLFull cr' -> sameConnReqContact cr' cr
