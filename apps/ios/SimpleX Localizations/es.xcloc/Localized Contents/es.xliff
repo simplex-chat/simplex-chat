@@ -2138,9 +2138,9 @@ chat toolbar</note>
         <target>Modo de color</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Community guidelines violation" xml:space="preserve">
+      <trans-unit id="Community guidelines violation" xml:space="preserve" approved="no">
         <source>Community guidelines violation</source>
-        <target>Violación de las normas de la comunidad</target>
+        <target state="translated">Violación de las normas</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Compare file" xml:space="preserve">
