@@ -150,11 +150,12 @@ perServerRolesTest = describe "per-server roles" $ do
           operator `shouldBe` Nothing
           rolesTuple roles `shouldBe` (False, True, False)
         cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
-    it "operator-matched server uses operator roles, ignoring per-server field" $
-      case agentServerCfgs SPSMP opDomains [opMatchedSMP (ServerRolesOverride (Just False) (Just False) (Just False))] of
+    it "operator-matched server applies its override over operator roles" $
+      -- operator roles are all on; override turns storage/names off, proxy inherits (on)
+      case agentServerCfgs SPSMP opDomains [opMatchedSMP (ServerRolesOverride (Just False) Nothing (Just False))] of
         [ServerCfg {operator, roles}] -> do
           operator `shouldBe` Just 1
-          rolesTuple roles `shouldBe` rolesTuple (operatorRoles SPSMP testOp)
+          rolesTuple roles `shouldBe` (False, True, False)
         cfgs -> expectationFailure $ "expected one operator-matched ServerCfg, got: " <> show cfgs
     it "two self-hosted servers resolve their three roles independently" $
       -- agentServerCfgs preserves input order

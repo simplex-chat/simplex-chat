@@ -186,10 +186,11 @@ data ServerRolesOverride = ServerRolesOverride
 emptyServerRolesOverride :: ServerRolesOverride
 emptyServerRolesOverride = ServerRolesOverride {storage = Nothing, proxy = Nothing, names = Nothing}
 
--- null falls back to per-role default: receive on, proxy on, names off
-resolveServerRoles :: ServerRolesOverride -> ServerRoles
-resolveServerRoles ServerRolesOverride {storage, proxy, names} =
-  ServerRoles {storage = fromMaybe True storage, proxy = fromMaybe True proxy, names = fromMaybe False names}
+-- each role: override if set, else the operator's role (if any), else default (receive on, proxy on, names off)
+resolveServerRoles :: UserProtocol p => SProtocolType p -> Maybe ServerOperator -> ServerRolesOverride -> ServerRoles
+resolveServerRoles p op ServerRolesOverride {storage, proxy, names} =
+  ServerRoles {storage = fromMaybe s storage, proxy = fromMaybe pr proxy, names = fromMaybe n names}
+  where ServerRoles {storage = s, proxy = pr, names = n} = maybe (ServerRoles True True False) (operatorRoles p) op
 
 conditionsAccepted :: ServerOperator -> Bool
 conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
@@ -458,10 +459,10 @@ agentServerCfgs p opDomains = mapMaybe agentServer
     agentServer srv@UserServer {server, enabled, roles = srvRoles} =
       case find (\(d, _) -> any (matchingHost d) (srvHost srv)) opDomains of
         Just (_, op@ServerOperator {operatorId = DBEntityId opId, enabled = opEnabled})
-          | opEnabled -> Just ServerCfg {server, enabled, operator = Just opId, roles = operatorRoles p op}
+          | opEnabled -> Just ServerCfg {server, enabled, operator = Just opId, roles = resolveServerRoles p (Just op) srvRoles}
           | otherwise -> Nothing
         Nothing ->
-          Just ServerCfg {server, enabled, operator = Nothing, roles = resolveServerRoles srvRoles}
+          Just ServerCfg {server, enabled, operator = Nothing, roles = resolveServerRoles p Nothing srvRoles}
 
 matchingHost :: Text -> TransportHost -> Bool
 matchingHost d = \case
@@ -540,7 +541,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
     noServersErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
       | noServers opEnabled = [USENoServers p' user]
-      | otherwise = [USEStorageMissing p' user | not (hasRoleCoverage p (\ServerRoles {storage} -> storage) uss)] <> [USEProxyMissing p' user | not (hasRoleCoverage p (\ServerRoles {proxy} -> proxy) uss)]
+      | otherwise = [USEStorageMissing p' user | not (any (hasRole p (\ServerRoles {storage} -> storage)) uss)] <> [USEProxyMissing p' user | not (any (hasRole p (\ServerRoles {proxy} -> proxy)) uss)]
       where
         p' = AProtocolType p
         noServers cond = not $ any srvEnabled $ userServers p $ filter cond uss
@@ -557,17 +558,10 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
-    -- effective role: operator servers use operator roles, self-hosted use per-server roles
-    hasRoleCoverage :: (UserServersClass u, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> [u] -> Bool
-    hasRoleCoverage p roleSel = any $ \u ->
-      any (srvOk (operator' u)) (map aUserServer' (servers' p u))
-      where
-        srvOk op (AUS _ UserServer {enabled, deleted, roles}) =
-          enabled && not deleted && serverHasRole p roleSel op roles
-    serverHasRole :: UserProtocol p => SProtocolType p -> (ServerRoles -> Bool) -> Maybe ServerOperator -> ServerRolesOverride -> Bool
-    serverHasRole p roleSel op srvRoles = case op of
-      Just o@ServerOperator {enabled} -> enabled && roleSel (operatorRoles p o)
-      Nothing -> roleSel (resolveServerRoles srvRoles)
+    -- a group covers a role if its operator is enabled and some enabled server resolves it on
+    hasRole :: (UserServersClass u, UserProtocol p) => SProtocolType p -> (ServerRoles -> Bool) -> u -> Bool
+    hasRole p roleSel u =
+      opEnabled u && any (\(AUS _ UserServer {enabled, deleted, roles}) -> enabled && not deleted && roleSel (resolveServerRoles p (operator' u) roles)) (map aUserServer' (servers' p u))
     chatRelayErrs :: UserServersClass u => [u] -> [UserServersError]
     chatRelayErrs uss = concatMap duplicateErrs_ cRelays
       where
@@ -588,7 +582,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         noChatRelays cond = not $ any relayEnabled $ userChatRelays $ filter cond uss
         relayEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
     noNamesServersWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
-    noNamesServersWarns user uss = [USWNoNamesServers user | not (hasRoleCoverage SPSMP (\ServerRoles {names} -> names) uss)]
+    noNamesServersWarns user uss = [USWNoNamesServers user | not (any (hasRole SPSMP (\ServerRoles {names} -> names)) uss)]
     userChatRelays :: UserServersClass u => [u] -> [AUserChatRelay]
     userChatRelays = map aUserChatRelay' . concatMap chatRelays'
     opEnabled :: UserServersClass u => u -> Bool
