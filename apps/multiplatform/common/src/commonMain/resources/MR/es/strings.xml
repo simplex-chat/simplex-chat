@@ -1108,7 +1108,7 @@
     <string name="one_time_link_short">Enlace de un solo uso</string>
     <string name="simplex_address">Dirección SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Cuando alguien solicite conectarse podrás aceptar o rechazar su solicitud.</string>
-    <string name="share_address">Compartir dirección</string>
+    <string name="share_address">Compartir dirección…</string>
     <string name="enter_welcome_message">Deja un mensaje de bienvenida…</string>
     <string name="theme_simplex">SimpleX</string>
     <string name="color_primary_variant">Color adicional</string>
@@ -2304,7 +2304,7 @@
     <string name="report_compose_reason_header_profile">Informar del perfil de un miembro: sólo los moderadores del grupo lo verán.</string>
     <string name="report_reason_other">Otro motivo</string>
     <string name="report_item_archived">informes archivados</string>
-    <string name="report_reason_community">Violación de las normas de la comunidad</string>
+    <string name="report_reason_community">Violación de las normas</string>
     <string name="report_reason_illegal">Contenido inapropiado</string>
     <string name="report_reason_profile">Perfil inapropiado</string>
     <string name="report_item_visibility_moderators">Solo el remitente y el moderador pueden verlo</string>
@@ -2916,4 +2916,10 @@
     <string name="signature_missing_alert_desc">El canal requiere que el mensaje esté firmado, pero falta la firma.</string>
     <string name="channel_simplex_name">Nombre SimpleX del canal</string>
     <string name="register_test_name">Registrar nombre para pruebas</string>
+    <string name="add_description">Añadir descripción</string>
+    <string name="profile_description__field">Descripción</string>
+    <string name="edit_description">Editar descripción</string>
+    <string name="enter_description_optional">Introduce descripción (opcional)</string>
+    <string name="error_sharing_address">Error compartiendo dirección</string>
+    <string name="to_verify_channel_member_key">Para verificar la clave con el suscriptor, compara (o escanea) el código en tu dispositivo.</string>
 </resources>
