@@ -189,6 +189,14 @@ func startChatAndActivate(_ completion: @escaping () -> Void) {
 
 private let remoteCtrlKeepAliveTaskId = "chat.simplex.app.remote-control.keepalive.session"
 
+private func remoteCtrlConnectedSubtitle(_ seconds: Int64) -> String {
+    let duration = durationText(Int(seconds))
+    return String.localizedStringWithFormat(
+        NSLocalizedString("Connected for %@", comment: "continued background activity duration"),
+        seconds < 3600 ? "00:\(duration)" : duration
+    )
+}
+
 @MainActor
 final class RemoteCtrlBGKeepAlive {
     static let shared = RemoteCtrlBGKeepAlive()
@@ -196,6 +204,7 @@ final class RemoteCtrlBGKeepAlive {
     private var registered = false
     private var continuedTask: BGTask?
     private var continuedProgressTask: Task<Void, Never>?
+    private var remoteCtrlElapsedSecondsProvider: (() -> Int64)?
     private var legacyTask: UIBackgroundTaskIdentifier = .invalid
     private var legacyTaskToken: UUID?
     private var expirationInProgress = false
@@ -205,16 +214,21 @@ final class RemoteCtrlBGKeepAlive {
 
     @available(iOS 26.0, *)
     func startContinuedProcessing() {
+        let clock = ContinuousClock()
+        let connectedAt = clock.now
         guard ChatModel.shared.activeRemoteCtrl, registerContinuedProcessing() else { return }
 
         let request = BGContinuedProcessingTaskRequest(
             identifier: remoteCtrlKeepAliveTaskId,
             title: NSLocalizedString("Connected to desktop", comment: "continued background activity title"),
-            subtitle: "SimpleX Chat"
+            subtitle: remoteCtrlConnectedSubtitle(0)
         )
         request.strategy = .fail
         do {
             try BGTaskScheduler.shared.submit(request)
+            remoteCtrlElapsedSecondsProvider = {
+                connectedAt.duration(to: clock.now).components.seconds
+            }
             continuedProcessingAccepted = true
         } catch {
             logger.error("RemoteCtrlBGKeepAlive.submit error: \(error.localizedDescription)")
@@ -312,12 +326,19 @@ final class RemoteCtrlBGKeepAlive {
         task.progress.totalUnitCount = -1
         task.progress.completedUnitCount = 0
         continuedProgressTask = Task { @MainActor [weak task] in
-            guard let task else { return }
+            let clock = ContinuousClock()
+            guard let task,
+                  let elapsedSeconds = RemoteCtrlBGKeepAlive.shared.remoteCtrlElapsedSecondsProvider else { return }
             while !Task.isCancelled,
                   RemoteCtrlBGKeepAlive.shared.continuedTask === task,
                   ChatModel.shared.activeRemoteCtrl {
-                task.progress.completedUnitCount += 1
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                let connectedSeconds = max(
+                    task.progress.completedUnitCount,
+                    elapsedSeconds()
+                )
+                task.progress.completedUnitCount = connectedSeconds
+                task.updateTitle(task.title, subtitle: remoteCtrlConnectedSubtitle(connectedSeconds))
+                try? await clock.sleep(for: .seconds(1))
             }
         }
         stopLegacyTask()
@@ -326,6 +347,7 @@ final class RemoteCtrlBGKeepAlive {
     private func finish(success: Bool) {
         continuedProgressTask?.cancel()
         continuedProgressTask = nil
+        remoteCtrlElapsedSecondsProvider = nil
         if #available(iOS 26.0, *) {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: remoteCtrlKeepAliveTaskId)
             continuedTask?.setTaskCompleted(success: success)
