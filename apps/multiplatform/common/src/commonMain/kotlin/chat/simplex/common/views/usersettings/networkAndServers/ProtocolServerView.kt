@@ -138,7 +138,7 @@ private fun ProtocolServerLayout(
     val op = remember(server.value.server) { serverProtocolAndOperator(server.value, userServers.value)?.second }
     if (serverProtocol == ServerProtocol.SMP && (!server.value.preset || server.value.roles != ServerRolesOverride())) {
       SectionDividerSpaced()
-      ServerRolesSection(server, op?.smpRoles ?: ServerRoles(storage = true, proxy = true, names = false))
+      ServerRolesSection(server, op?.smpRoles ?: ServerRoles.noOperatorDefault)
     }
     SectionBottomSpacer()
   }
@@ -174,8 +174,7 @@ fun CustomServer(
   onDelete: (() -> Unit)?,
 ) {
   val serverAddress = remember { mutableStateOf(server.value.server) }
-  val parsed = remember { derivedStateOf { parseServerAddress(serverAddress.value) } }
-  val valid = remember { derivedStateOf { parsed.value?.valid == true } }
+  val valid = remember { derivedStateOf { parseServerAddress(serverAddress.value)?.valid == true } }
   SectionView(
     stringResource(MR.strings.smp_servers_your_server_address),
     icon = painterResource(MR.images.ic_error),
@@ -210,23 +209,23 @@ fun CustomServer(
 @Composable
 private fun ServerRolesSection(server: MutableState<UserServer>, inherited: ServerRoles) {
   SectionView(stringResource(MR.strings.operator_use_for_messages)) {
-    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_receiving), server.value.roles.storage, default = inherited.storage) {
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_receiving), server.value.roles.storage, defaultOn = inherited.storage) {
       server.value = server.value.copy(roles = server.value.roles.copy(storage = it))
     }
-    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_private_routing), server.value.roles.proxy, default = inherited.proxy) {
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_private_routing), server.value.roles.proxy, defaultOn = inherited.proxy) {
       server.value = server.value.copy(roles = server.value.roles.copy(proxy = it))
     }
-    RoleDropDown(stringResource(MR.strings.operator_use_for_names), server.value.roles.names, default = inherited.names) {
+    RoleDropDown(stringResource(MR.strings.operator_use_for_names), server.value.roles.names, defaultOn = inherited.names) {
       server.value = server.value.copy(roles = server.value.roles.copy(names = it))
     }
   }
 }
 
 @Composable
-private fun RoleDropDown(title: String, value: Boolean?, default: Boolean, onSelected: (Boolean?) -> Unit) {
-  val values = remember(default, appPrefs.appLanguage.state.value) {
+private fun RoleDropDown(title: String, value: Boolean?, defaultOn: Boolean, onSelected: (Boolean?) -> Unit) {
+  val values = remember(defaultOn, appPrefs.appLanguage.state.value) {
     listOf(
-      null to String.format(generalGetString(MR.strings.chat_preferences_default), generalGetString(if (default) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)),
+      null to String.format(generalGetString(MR.strings.chat_preferences_default), generalGetString(if (defaultOn) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)),
       true to generalGetString(MR.strings.chat_preferences_yes),
       false to generalGetString(MR.strings.chat_preferences_no)
     )

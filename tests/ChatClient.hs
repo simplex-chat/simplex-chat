@@ -58,10 +58,10 @@ import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
-import Simplex.Messaging.Protocol (ProtocolType (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Protocol (ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)

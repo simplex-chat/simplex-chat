@@ -2131,7 +2131,6 @@ testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
-        enableNamesRole bob
         bob `connectVia` dsLink
         (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
         registerName reg newsName (channelNameRecord "news" (T.pack shortLink))
@@ -2172,7 +2171,6 @@ testDirectoryChannelNameNotVerified ps = withSmpServerAndNames $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
-        enableNamesRole bob
         bob `connectVia` dsLink
         (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
         registerName reg newsName (channelNameRecord "news" (T.pack shortLink))

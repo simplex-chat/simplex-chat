@@ -81,7 +81,9 @@ struct ProtocolServerView: View {
                         .textSelection(.enabled)
                 }
                 useServerSection(true)
-                serverRolesSectionIfNeeded()
+                if let inherited = serverRolesInherited {
+                    serverRolesSection(inherited: inherited)
+                }
             }
         }
     }
@@ -111,7 +113,9 @@ struct ProtocolServerView: View {
                     }
                 }
                 useServerSection(valid)
-                serverRolesSectionIfNeeded()
+                if let inherited = serverRolesInherited {
+                    serverRolesSection(inherited: inherited)
+                }
                 if valid {
                     Section(header: Text("Add to another device").foregroundColor(theme.colors.secondary)) {
                         MutableQRCode(uri: $serverToEdit.server, small: true)
@@ -122,11 +126,12 @@ struct ProtocolServerView: View {
         }
     }
 
-    @ViewBuilder private func serverRolesSectionIfNeeded() -> some View {
-        let serverAddress = parseServerAddress(serverToEdit.server)
-        if serverAddress?.serverProtocol == .smp, !serverToEdit.preset || serverToEdit.roles != ServerRolesOverride() {
-            serverRolesSection(inherited: serverProtocolAndOperator(serverToEdit, userServers)?.1?.smpRoles ?? ServerRoles(storage: true, proxy: true, names: false))
-        }
+    // inherited SMP roles for the per-server roles section, nil when the section should not be shown
+    private var serverRolesInherited: ServerRoles? {
+        guard let (serverProtocol, serverOperator) = serverProtocolAndOperator(serverToEdit, userServers),
+              serverProtocol == .smp, !serverToEdit.preset || serverToEdit.roles != ServerRolesOverride()
+        else { return nil }
+        return serverOperator?.smpRoles ?? ServerRoles.noOperatorDefault
     }
 
     private func serverRolesSection(inherited: ServerRoles) -> some View {

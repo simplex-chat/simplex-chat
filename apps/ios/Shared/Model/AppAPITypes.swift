@@ -1809,10 +1809,13 @@ struct ServerOperator: Identifiable, Equatable, Codable {
     )
 }
 
-struct ServerRoles: Equatable, Codable, Hashable {
+struct ServerRoles: Equatable, Codable {
     var storage: Bool
     var proxy: Bool
     var names: Bool
+
+    // roles applied when a server matches no operator, mirrors core resolveServerRoles (Operators.hs)
+    static let noOperatorDefault = ServerRoles(storage: true, proxy: true, names: false)
 }
 
 struct ServerRolesOverride: Equatable, Codable, Hashable {
@@ -1845,8 +1848,8 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
                 serverDomains: [],
                 conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
-                smpRoles: ServerRoles(storage: true, proxy: true, names: false),
-                xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
+                smpRoles: ServerRoles.noOperatorDefault,
+                xftpRoles: ServerRoles.noOperatorDefault
             )
         }
         set { `operator` = newValue }
