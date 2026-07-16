@@ -158,6 +158,41 @@ structurally identical in upstream Compose 1.8.2 (`launchAwaitingReset` joins on
 gesture's reset job), is not reachable by human input, and fixing it would diverge from the
 mirrored upstream — left as upstream parity.
 
+### Defect 4: press cancelled when the list shifts under the pointer (commit "multiplatform: don't cancel command click when chat list shifts under the pointer")
+
+Clicks were still lost after defect 3's fixes. `waitForUpOrCancellation` cancels a press when an
+event's position is out of the node's bounds — correct for a pointer dragged away, wrong when the
+*node* moved out from under a stationary pointer, which is exactly what happens when the sent
+command's message inserts and shifts the list during the press. In node-local coordinates the two
+cases are numerically identical; reproduced in a headless harness (60px shift under a held
+pointer → synthetic `Exit` at out-of-bounds local position → press cancelled).
+
+**Fix:** the two cases separate in window coordinates. `ClickableText` tracks its
+`LayoutCoordinates` (`onGloballyPositioned`) and passes a window-position lambda into
+`detectGesture`; `waitForUpOrCancellation` exempts the out-of-bounds cancel when the pointer moved
+≤ `touchSlop` in window space since the down. Real drag-aways (> slop) cancel as before; both
+parameters default to null, reducing the check literally to the old expression for other callers.
+
+### Defect 5: every message insertion reset all pointer handlers (commit "multiplatform: stop pointer handler resets on chat item recomposition…")
+
+The dominant residual mechanism, found by instrumenting handler lifecycle: every insertion
+produced a burst of gesture-handler cancellations for all visible clickable messages — with the
+composables *not* disposed and the handler restarting on the *same* node. A press in flight during
+such a burst died silently (`down` with no release/cancel), needing a second click; the hover
+handler reset the same way, causing the residual hand-cursor flicker.
+
+Cause: `ChatViewListItem` provided `LocalViewConfiguration.current.bigTouchSlop()` — a **new
+anonymous `ViewConfiguration` instance on every recomposition** of every item, and
+`SuspendingPointerInputModifierNodeImpl.onViewConfigurationChange()` is
+`resetPointerInputHandler()` (verified in the 1.8.2 sources). Insertions recompose all visible
+items (shifting `index`), so each insertion reset every pointer handler in the viewport.
+
+**Fix:** provide a remembered instance — `remember(viewConfiguration) {
+viewConfiguration.bigTouchSlop() }` — keyed on the parent `ViewConfiguration` so a real platform
+change still regenerates it. Values are unchanged (the wrapper delegates); only the identity that
+the reset machinery reacts to is stabilized. Verified in a harness: a press held across a
+recomposition dies with the per-recomposition instance and survives with the remembered one.
+
 ## Performance
 
 - `detectCursorMove` is now cheaper per event than before (no scope teardown/re-entry per event);
@@ -197,5 +232,12 @@ Defect 3 is verified by the two isolated repro harnesses described above (both m
 reproduced pre-fix, both register every click post-fix — including a click held across a
 recomposition and two fast clicks back-to-back through real Compose event dispatch in
 `ImageComposeScene`), by compilation, and by multi-pass adversarial review (two clean passes
-pre-commit, two post-commit). Runtime verification of fast successive command clicks in the
-real app is pending.
+pre-commit, two post-commit).
+
+Defects 4 and 5 were isolated with four rounds of temporary instrumentation in the real app
+(logging every gesture exit path, composable disposal, and handler/node identity — removed before
+commit), each mechanism reproduced and its fix verified in a headless harness, reviewed through
+two clean adversarial passes, and confirmed fixed by runtime testing on Linux: fast successive
+command clicks all register, and the residual hand-cursor flicker on message insertion is gone.
+Known unfixable-at-this-layer residue: a click that lands where a command *was* before the list
+shifted (pre-press shift — an aiming race, not an event-handling defect).
