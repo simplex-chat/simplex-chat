@@ -12,6 +12,10 @@ wrong even while moving within the same message; it only recovered after leaving
 and re-entering it. The same mechanism affects all clickable elements in message text (links,
 simplex addresses, secrets), but command menus made it most visible.
 
+A second user-visible problem surfaced while testing this fix: a click on a command was sometimes
+not registered at all when clicking two commands (e.g. two `/join`s) in short succession. That is
+defect 3 below — two independent mechanisms in the click path, unrelated to the cursor layers.
+
 ## Investigation
 
 The cursor is driven by two cooperating layers in `ClickableText` (TextItemView.kt):
@@ -106,6 +110,54 @@ rare desynced state the cursor may stay a hand until the next hover write. This 
 class the fix reduces, bounded to one stale frame region, and self-corrects on any subsequent
 hover.
 
+### Defect 3: command clicks intermittently lost (commit "multiplatform: fix command clicks lost on quick successive clicks")
+
+Clicking two commands in short succession sometimes lost a click. Two independent mechanisms,
+each reproduced in an isolated harness before fixing and re-verified fixed with the same harness:
+
+1. **Press-scope race in `detectGesture`** (GestureDetector.kt — a 2022 copy of
+   `detectTapGestures` predating upstream's hardening; the file has not been resynced since).
+   The single `PressGestureScopeImpl` is shared across gestures, and its methods run in two
+   different lanes of the UI thread: `reset()`/`release()` synchronously inside pointer-event
+   dispatch, while the `onPress` handler (which awaits release, then calls `onClick`) runs in a
+   launched coroutine resumed through the dispatcher queue. With the old non-suspending
+   `reset()` (`mutex.tryLock()`), two fast clicks interleave as: up₁ `release()` sets
+   `isReleased` and unlocks — the first click's `tryAwaitRelease` resumption is only *queued* —
+   then down₂ `reset()` clears `isReleased` synchronously, so the queued resumption reads
+   `false` and the first click's `onClick` never fires. Reproduced deterministically in a
+   single-threaded coroutine harness replaying this ordering (`click1=false click2=true`).
+
+   **Fix:** mirror the `detectTapGestures` serialization from Compose 1.8.2 (`foundation`
+   `TapGestureDetector.kt`): `reset()` is `suspend` and takes the mutex, so a new gesture cannot
+   clear the flags until the previous gesture's press handler finished; `release()`/`cancel()`
+   unlock guardedly (`if (mutex.isLocked)`) and are launched joining the reset job, so flag
+   writes cannot be reordered across gestures; `tryAwaitRelease()` releases the mutex after
+   acquiring it, which is what lets the next `reset()` proceed. The mutex becomes a
+   serialization token between consecutive gestures. `detectGesture` also runs for Android
+   touch, so the same quick-tap loss is fixed there.
+
+2. **`pointerInput` restart swallowing an in-flight click** (TextItemView.kt). `ClickableText`
+   keyed `pointerInput(onClick, onLongClick)` on lambdas that are new instances every
+   recomposition, so any recomposition of the message restarted the gesture coroutine and
+   destroyed a gesture in flight: the cancelled `onPress` never resumes, and the restarted
+   detector waits for a fresh down that never comes for the press already held. Clicking
+   command 1 sends a message whose insertion recomposes the item 50–300 ms later — exactly when
+   the second click tends to be pressed. Reproduced in a headless `ImageComposeScene` driving
+   the verbatim repo gesture code with synthetic pointer events: press → recomposition applies →
+   release lost the click, while control clicks on either side registered.
+
+   **Fix:** key both `pointerInput` blocks on `Unit` and read the latest handlers through
+   `rememberUpdatedState` (the standard idiom for long-lived event coroutines). This also stops
+   recompositions from cancelling `detectCursorMove` mid-stream — the same event-loss class as
+   defect 1 — and gives all `ClickableText` callers latest-capture semantics for
+   `annotatedText` (previously the handlers could act on a stale capture until the restart).
+
+A theoretical residue remains: if three gestures' pointer events were all processed before the
+dispatcher ran any of the second gesture's jobs, flags could still mispair. This exposure is
+structurally identical in upstream Compose 1.8.2 (`launchAwaitingReset` joins only its own
+gesture's reset job), is not reachable by human input, and fixing it would diverge from the
+mirrored upstream — left as upstream parity.
+
 ## Performance
 
 - `detectCursorMove` is now cheaper per event than before (no scope teardown/re-entry per event);
@@ -118,6 +170,9 @@ hover.
 - Up to two added recompositions per exit/re-enter cycle of a Hand region (the exit reset writes
   `icon.value` Hand→Text, making the next re-enter a Text→Hand write where pre-fix both were
   no-ops); otherwise the icon state logic is unchanged. Android is a no-op.
+- The defect 3 fix launches two extra short-lived coroutines per gesture (reset job, release/cancel
+  job) — negligible at click rate. Not restarting `pointerInput` on every recomposition removes
+  per-recomposition coroutine churn that existed before.
 
 Framework line numbers cited above are from the official `ui-desktop-1.8.2`/`foundation-desktop-1.8.2`
 sources jars on Maven Central; they will drift on upgrade.
@@ -137,3 +192,10 @@ fixes; the user-visible symptom needed both layers, per stage 1 below):
 The later hardening commits (release refresh, pressed/bounds gating, exit resets, canvas cache)
 are verified by compilation on both targets and multi-pass adversarial review; runtime
 re-verification of the final build is pending.
+
+Defect 3 is verified by the two isolated repro harnesses described above (both mechanisms
+reproduced pre-fix, both register every click post-fix — including a click held across a
+recomposition and two fast clicks back-to-back through real Compose event dispatch in
+`ImageComposeScene`), by compilation, and by multi-pass adversarial review (two clean passes
+pre-commit, two post-commit). Runtime verification of fast successive command clicks in the
+real app is pending.
