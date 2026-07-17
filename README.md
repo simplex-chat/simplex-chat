@@ -220,6 +220,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Apr 30, 2026 SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech](./blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md)
+
 [Jul 29, 2025 SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
 
 [Jul 3, 2025 SimpleX network: new experience of connecting with people &mdash; available in SimpleX Chat v6.4-beta.4](./blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.md)
