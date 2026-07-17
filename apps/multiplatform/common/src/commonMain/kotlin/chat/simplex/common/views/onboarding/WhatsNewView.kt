@@ -912,6 +912,28 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       ),
     )
   ),
+  VersionDescription(
+    version = "7.0-beta.4",
+    post = null,
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_alternate_email,
+        titleId = MR.strings.v7_0_simplex_names,
+        descrId = MR.strings.v7_0_simplex_names_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v7_0_channels,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_person_add to MR.strings.v7_0_channels_contributors,
+          MR.images.ic_travel_explore to MR.strings.v7_0_channels_previews,
+          MR.images.ic_dns to MR.strings.v7_0_channels_relays,
+          MR.images.ic_article to MR.strings.v7_0_channels_wider_messages,
+        )
+      ),
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version

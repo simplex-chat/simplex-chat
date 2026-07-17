@@ -664,6 +664,28 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
+    VersionDescription(
+        version: "7.0-beta.4",
+        post: nil,
+        features: [
+            .feature(Description(
+                icon: "at",
+                title: "SimpleX names (BETA)",
+                description: "Names for your channel or business."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better channels 📢",
+                description: nil,
+                subfeatures: [
+                    ("person.badge.plus", "Add contributors."),
+                    ("globe", "Create web preview."),
+                    ("server.rack", "Manage your relays."),
+                    ("text.alignleft", "Easier to read."),
+                ]
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
