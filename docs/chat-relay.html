@@ -49,7 +49,7 @@
 
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Sending messages</title>
+        <title>Hosting your own Chat Relay</title>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
 
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
@@ -151,7 +151,7 @@
                     
                         <li><a href="/docs/guide/readme.html" class="">Quick start</a></li>
                     
-                        <li><a href="/docs/guide/send-messages.html" class="active">Sending messages</a></li>
+                        <li><a href="/docs/guide/send-messages.html" class="">Sending messages</a></li>
                     
                         <li><a href="/docs/guide/secret-groups.html" class="">Secret groups</a></li>
                     
@@ -210,7 +210,7 @@
                     
                         <li><a href="/docs/xftp-server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Host XFTP Server</a></li>
                     
-                        <li><a href="/docs/chat-relay.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Host Chat Relay</a></li>
+                        <li><a href="/docs/chat-relay.html" class="active lg:px-[20px] inline-block whitespace-nowrap">Host Chat Relay</a></li>
                     
                         <li><a href="/docs/webrtc.html" class=" lg:px-[20px] inline-block whitespace-nowrap">WebRTC servers</a></li>
                     
@@ -344,7 +344,7 @@
                         
                             
                                 <li>
-                                    <a href="/docs/guide/send-messages.html">
+                                    <a href="/docs/chat-relay.html">
                                         <p>English</p>
                                     </a>
                                 </li>
@@ -545,7 +545,7 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="active" href="/docs/guide/send-messages.html">Sending messages</a>
+                                                    <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
                                                 </li>
                                             
                                                 <li>
@@ -647,7 +647,7 @@ window.addEventListener('click',(e)=>{
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/chat-relay.html">Hosting your own Chat Relay</a>
+                                                    <a class="active" href="/docs/chat-relay.html">Hosting your own Chat Relay</a>
                                                 </li>
                                             
                                                 <li>
@@ -803,74 +803,233 @@ window.addEventListener('click',(e)=>{
                             </div>
                         </div>
                     </div> -->
-                    <div><h1 id="sending-editing-and-deleting-messages" tabindex="-1">Sending, editing and deleting messages</h1>
-<p>Sending text messages on SimpleX Chat is pretty straightforward, tap on your contact and then tap on text area, type in your message and tap on &quot;Send&quot; button.</p>
-<p>You need to open a conversation to send messages.</p>
-<h2 id="sending-messages" tabindex="-1">Sending messages</h2>
-<h3 id="sending-text-messages" tabindex="-1">Sending text messages</h3>
-<p>You can send, edit and quote messages in a conversation.</p>
-<p>To send, simply type in the message in the entry box and tap &quot;Send&quot;.</p>
-<p>To edit or quote a message, tap and hold the message and choose the action.</p>
-<h3 id="sending-images-and-files" tabindex="-1">Sending images and files</h3>
+                    <div><h1 id="hosting-your-own-chat-relay" tabindex="-1">Hosting your own Chat Relay</h1>
+<p>Chat relays are used to deliver channel messages in SimpleX Network. Read more about channels in this <a href="https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md">whitepaper</a> and this <a href="https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html">blog post</a>.</p>
+<p>A chat relay is the SimpleX Chat CLI (<code>simplex-chat</code>) running in relay mode (<code>--relay</code>). It has its own profile (a display name and a picture), its own address, and in addition to delivering messages, it can generate data for web previews of the channels it delivers.</p>
+<p>This guide explains how to set up a chat relay on a Linux server, how to run it, and (optionally) how to configure <a href="https://caddyserver.com">Caddy</a> to serve data for channel web previews.</p>
+<blockquote>
+<p><strong>Please note</strong>: This guide applies only to SimpleX Chat v7.0.0-beta.4 and later.</p>
+</blockquote>
+<h2 id="table-of-contents" tabindex="-1">Table of Contents</h2>
 <ul>
-<li>Tap 📎 (paperclip) button on the left of the message entry box.</li>
-<li>Choose between &quot;Use Camera&quot;, &quot;From Gallery&quot; and &quot;Choose file&quot;.</li>
-<li>Once you have chosen what you wish to send, tap on &quot;Send&quot; button.</li>
-</ul>
-<p>On iOS you can also paste images from the clipboard.</p>
-<h3 id="sending-voice-messages" tabindex="-1">Sending voice messages</h3>
-<img src="../../blog/images/20221206-voice.png" width="288">
+<li><a href="#install-the-cli">Install the CLI</a></li>
+<li><a href="#run-the-relay">Run the relay</a>
 <ul>
-<li>Tap 🎤 (microphone) button on the right of the message entry box.</li>
-<li>Allow SimpleX Chat to record the voice if prompted. You will have to tap on the microphone button once again if this happens.</li>
-<li>Speak, once you've finished the recording, tap on the square stop icon on the right.</li>
-<li>You may listen to the recording before sending it, and re-record if necessary.</li>
-<li>Tap on &quot;Send&quot; button to send the recorded voice message.</li>
+<li><a href="#relay-options">Relay options</a></li>
+<li><a href="#get-the-relay-address">Get the relay address</a></li>
+<li><a href="#run-relay-commands">Run relay commands</a></li>
 </ul>
-<p>You can also tap and hold the microphone button to record a voice message. In this case the recording will stop once you release the button. You still need to tap &quot;Send&quot; to send the message.</p>
-<p><strong>Please note</strong>: if the microphone button is gray, that means voice messages are disabled in this conversation. Ask your contact or group owner to enable them (they are enabled by default).</p>
-<h3 id="how-to-use-disappearing-messages" tabindex="-1">How to use disappearing messages</h3>
-<p><img src="../../blog/images/20230103-disappearing2.png" width="288">    <img src="../../blog/images/20230103-disappearing1.png" width="288"></p>
+</li>
+<li><a href="#channel-web-previews">Channel web previews</a>
 <ul>
-<li>Tap on name of the conversation.</li>
-<li>Toggle the slider next to &quot;Disappearing messages&quot;.</li>
-<li>Choose how long until messages are deleted after being sent in &quot;Delete after&quot;.</li>
+<li><a href="#relay-web-options">Relay web options</a></li>
+<li><a href="#serve-the-previews-with-caddy">Serve the previews with Caddy</a></li>
+<li><a href="#reload-cors-automatically">Reload CORS automatically</a></li>
+<li><a href="#verify">Verify</a></li>
 </ul>
-<p><strong>Please note</strong>: Your contact must also enable disappearing messages. In a group, only group owner can enable disappearing messages.</p>
-<h3 id="sending-live-messages" tabindex="-1">Sending &quot;live&quot; messages</h3>
-<img src="../../blog/images/20230103-live.png" width="288">
-<p>You can use &quot;live&quot; messages for your recipients to see the messages as you type them, without having to tap &quot;Send&quot; button until it's completed. It can be useful in these scenarios:</p>
-<ol>
-<li>Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would see it. Also people don’t need to guess what you’re typing. This allows to avoid interrupting the flow of conversation and still send longer messages.</li>
-<li>An activist doing live reporting when there is a risk to lose the phone or connection at any moment. This feature allows to send as much as possible, up to the last word, without having to send only very short messages.</li>
-</ol>
-<p>To send a &quot;live&quot; message:</p>
-<ul>
-<li>Tap ⚡️ (lightning) button on the right of the message entry box.</li>
-<li>When you do it first time, you would see and alert explaining the feature. Tap &quot;OK&quot;, and tap it again.</li>
-<li>Now you can start typing the messages, the app will be periodically sending the updates to your recipients, as you type (every few seconds, and only complete words).</li>
+</li>
 </ul>
-<h3 id="sending-stickers-and-animated-messages" tabindex="-1">Sending stickers and animated messages</h3>
-<p><img src="../../blog/images/20230103-stickers1.png" width="288">    <img src="../../blog/images/20230103-stickers2.png" width="303"></p>
-<p>While there are no stickers and GIFs in the app itself, you can send them using third-party (such as <a href="https://apps.apple.com/us/app/giphy-the-gif-search-engine/id974748812">GIPHY</a> on iOS) or native (Android 13+) keyboards.</p>
-<h3 id="message-drafts" tabindex="-1">Message drafts</h3>
-<p><img src="../../blog/images/20230204-draft1.png" width="288">    <img src="../../blog/images/20230204-draft2.png" width="288"></p>
-<p>Messages are kept in the chat until they are sent, even if you leave the chat.</p>
-<p>For privacy and simplicity, we decided to allow only one message draft and keep it only until the app is stopped.</p>
-<p>Read more in <a href="/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#message-draft">this post</a>.</p>
-<h2 id="deleting-messages" tabindex="-1">Deleting messages</h2>
-<p><img src="../../blog/images/20221206-deleted1.png" width="288">    <img src="../../blog/images/20221206-deleted2.png" width="288"></p>
-<p>To delete a message, tap and hold the message and choose &quot;Delete&quot;.</p>
-<p>If you sent this message yourself within the last 24 hours, you will be offered two options:</p>
-<ul>
-<li><code>delete for everyone</code> - this will either mark the message as deleted for you and the recipient(s) (this is the default) or fully delete the message on your and recipients' devices (if you have enabled &quot;Delete for everyone&quot; in the conversation preferences)</li>
-<li><code>delete for me</code> - this will delete the message only locally.</li>
-</ul>
-<p>Please read about <a href="/blog/20221206-simplex-chat-v4.3-voice-messages.html#irreversible-message-deletion">reasons for not allowing full deletion by default</a>. TL;DR: data sovereignty.</p>
-<h2 id="moderating-messages-in-the-groups" tabindex="-1">Moderating messages in the groups</h2>
-<p>Group admins can delete member messages that are inappropriate for the groups.</p>
-<p>To remove a message of another member, tap and hold the message and choose &quot;Moderate&quot;.</p>
-<p>Please read about <a href="/blog/20230328-simplex-chat-v4-6-hidden-profiles.html#community-moderation">group moderation</a>.</p>
+<h2 id="install-the-cli" tabindex="-1">Install the CLI</h2>
+<p>The relay is the standard <code>simplex-chat</code> CLI binary. Install or update it with the install script:</p>
+<pre><code class="language-sh">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
+</code></pre>
+<p>Other options (manual binary download, building from source) are in the <a href="/docs/cli.html#download-chat-client">CLI guide</a>.</p>
+<p>Copy the installed <code>simplex-chat</code> binary to <code>/usr/local/bin/simplex-chat-relay</code>. The guide uses that name so the relay is separate from any interactive <code>simplex-chat</code> you also run on the server.</p>
+<p>Create a dedicated user for the relay (called <code>relay</code> below), so it does not run as root and keeps its database in one place:</p>
+<pre><code class="language-sh">sudo useradd -m relay
+</code></pre>
+<p>The <code>useradd -m</code> flag creates its home directory <code>/home/relay</code>, where the guide keeps the database and picture. Run the relay commands (the <code>-e</code> commands below) as this user, for example with <code>sudo -u relay ...</code>; run the <code>systemd</code> and Caddy steps as root.</p>
+<h2 id="run-the-relay" tabindex="-1">Run the relay</h2>
+<p>Run the relay as a <code>systemd</code> service. With <code>--headless</code> it starts without any interactive prompts. It creates its profile and address on the first start, and writes its output to the journal.</p>
+<p>Create a run script <code>/usr/local/bin/relay-run</code>:</p>
+<pre><code class="language-sh">#!/bin/sh
+exec /usr/local/bin/simplex-chat-relay \
+  --relay \
+  --headless \
+  --user-display-name &quot;My Relay&quot; \
+  --user-image-file /home/relay/avatar.png \
+  -d /home/relay/relay
+</code></pre>
+<pre><code class="language-sh">chmod +x /usr/local/bin/relay-run
+</code></pre>
+<p>Create <code>/etc/systemd/system/simplex-relay.service</code>:</p>
+<pre><code class="language-ini">[Unit]
+Description=SimpleX Chat relay
+After=network.target
+
+[Service]
+User=relay
+ExecStart=/usr/local/bin/relay-run
+Restart=always
+StandardInput=null
+
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+<p>Enable and start it:</p>
+<pre><code class="language-sh">systemctl daemon-reload
+systemctl enable --now simplex-relay
+</code></pre>
+<p>The first start creates the relay profile (with the given name and picture) and its address; later starts reuse them. Both are written to the journal:</p>
+<pre><code>Current user: My Relay
+Chat relay address is created:
+https://smp4.simplex.im/r#73iEnnvCqPTVGArCAWUcRaj5hxRb7TbPCSZ2JY2VjCQ
+</code></pre>
+<h3 id="relay-options" tabindex="-1">Relay options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--relay</code></td>
+<td>Run as a chat relay. Required.</td>
+</tr>
+<tr>
+<td><code>--headless</code></td>
+<td>Don't ask interactive questions; create the profile and address automatically. On first start it also needs <code>--user-display-name</code>.</td>
+</tr>
+<tr>
+<td><code>--user-display-name NAME</code></td>
+<td>The relay's display name. Creates the profile on first start; on later starts it must match the existing profile.</td>
+</tr>
+<tr>
+<td><code>--user-image-file FILE</code></td>
+<td>The relay's picture, from a <code>.png</code>, <code>.jpg</code> or <code>.jpeg</code> file. Applied <strong>only when the profile is created</strong>; ignored afterwards.</td>
+</tr>
+<tr>
+<td><code>--relay-address-server SERVER</code></td>
+<td>Create the relay address on a specific SMP server, e.g. <code>smp://&lt;fingerprint&gt;@smp.example.com</code>. By default a preset server is used. Requires <code>--relay</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="get-the-relay-address" tabindex="-1">Get the relay address</h3>
+<p>The address is created and logged on the first start. Read it from the journal at any time:</p>
+<pre><code class="language-sh">journalctl -u simplex-relay | grep -A1 &quot;address is created&quot;
+</code></pre>
+<h3 id="run-relay-commands" tabindex="-1">Run relay commands</h3>
+<p>The service runs headless, so there is no attached terminal to type into. To run a one-off command, stop the service, run the command against the relay's database with <code>-e</code>, then start it again. For example, to change the picture (<code>--user-image-file</code> only sets it when the profile is first created):</p>
+<pre><code class="language-sh">systemctl stop simplex-relay
+simplex-chat-relay -d /home/relay/relay -e &quot;/set profile image file /home/relay/new-avatar.png&quot;
+systemctl start simplex-relay
+</code></pre>
+<h2 id="channel-web-previews" tabindex="-1">Channel web previews</h2>
+<p>Chat relays can render recent messages of its public channels as JSON files, which can be served over HTTPS using a web server to create channel web previews. This is optional.</p>
+<h3 id="relay-web-options" tabindex="-1">Relay web options</h3>
+<p>Add these to the run script (<code>--relay-web-domain</code> and <code>--relay-web-dir</code> must be given together):</p>
+<pre><code class="language-sh">  --relay-web-domain relay.example.com \
+  --relay-web-dir /var/www/relay-web-channels/channel \
+  --relay-web-cors-file /var/www/relay-web-channels/cors.conf \
+  --relay-web-interval 30 \
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--relay-web-domain DOMAIN</code></td>
+<td>Domain the previews are served from.</td>
+</tr>
+<tr>
+<td><code>--relay-web-dir DIR</code></td>
+<td>Directory the relay writes channel JSON files to.</td>
+</tr>
+<tr>
+<td><code>--relay-web-cors-file FILE</code></td>
+<td>File the relay writes the generated Caddy CORS config to.</td>
+</tr>
+<tr>
+<td><code>--relay-web-interval SECONDS</code></td>
+<td>How often previews are regenerated (default <code>300</code>).</td>
+</tr>
+<tr>
+<td><code>--relay-web-item-count COUNT</code></td>
+<td>Recent messages per channel preview (default <code>50</code>).</td>
+</tr>
+</tbody>
+</table>
+<p>Create the web directory, owned by the relay user:</p>
+<pre><code class="language-sh">mkdir -p /var/www/relay-web-channels/channel
+chmod 0755 /var/www/relay-web-channels
+chown -R relay:relay /var/www/relay-web-channels
+</code></pre>
+<p>Restart the relay so the new flags take effect:</p>
+<pre><code class="language-sh">systemctl restart simplex-relay
+</code></pre>
+<h3 id="serve-the-previews-with-caddy" tabindex="-1">Serve the previews with Caddy</h3>
+<p>This section uses <a href="https://caddyserver.com">Caddy</a> as the web server. Install it (Debian/Ubuntu):</p>
+<pre><code class="language-sh">sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl &amp;&amp;\
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg &amp;&amp;\
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list &amp;&amp;\
+sudo apt update &amp;&amp; sudo apt install caddy
+</code></pre>
+<p>The relay writes files to <code>/var/www/relay-web-channels/channel/&lt;id&gt;.json</code>. Serve them, and import the relay's generated CORS rules, in your <code>Caddyfile</code>:</p>
+<pre><code>relay.example.com {
+  encode zstd gzip
+
+  handle /channel/* {
+    root * /var/www/relay-web-channels    # files resolve to .../channel/&lt;id&gt;.json
+    file_server
+    import /etc/caddy/simplex-cors.conf
+  }
+}
+</code></pre>
+<p>Keep <code>root</code> at the parent directory with a non-stripping <code>handle</code>. That is what makes <code>/channel/&lt;id&gt;.json</code> resolve to <code>.../channel/&lt;id&gt;.json</code>. Do not point <code>root</code> at the <code>channel</code> subdirectory: the relay's generated CORS matchers are <code>/channel/*.json</code>, which only match when the prefix is kept.</p>
+<pre><code class="language-sh">touch /etc/caddy/simplex-cors.conf      # so the import doesn't fail before the first write
+usermod -aG relay caddy                 # let caddy read the relay user's files
+systemctl restart caddy                 # restart (not reload) to pick up the group
+</code></pre>
+<h3 id="reload-cors-automatically" tabindex="-1">Reload CORS automatically</h3>
+<p>The relay updates its CORS file as channels change. Copy it into Caddy's config and reload Caddy whenever it changes.</p>
+<p>Create <code>/usr/local/bin/simplex-cors-sync.sh</code>:</p>
+<pre><code class="language-sh">#!/bin/sh
+set -eu
+SRC=/var/www/relay-web-channels/cors.conf
+DST=/etc/caddy/simplex-cors.conf
+[ -f &quot;$SRC&quot; ] || exit 0
+cmp -s &quot;$SRC&quot; &quot;$DST&quot; 2&gt;/dev/null &amp;&amp; exit 0
+install -m 0644 &quot;$SRC&quot; &quot;$DST&quot;
+systemctl reload caddy
+logger -t simplex-cors &quot;reloaded caddy&quot;
+</code></pre>
+<p>Create <code>/etc/systemd/system/simplex-cors-sync.service</code>:</p>
+<pre><code class="language-ini">[Unit]
+Description=Sync SimpleX relay CORS config to Caddy
+StartLimitIntervalSec=30
+StartLimitBurst=10
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 2
+ExecStart=/usr/local/bin/simplex-cors-sync.sh
+</code></pre>
+<p>Create <code>/etc/systemd/system/simplex-cors-sync.path</code> to run the service whenever the relay's CORS file changes:</p>
+<pre><code class="language-ini">[Unit]
+Description=Watch SimpleX relay CORS config
+After=caddy.service
+[Path]
+PathChanged=/var/www/relay-web-channels/cors.conf
+Unit=simplex-cors-sync.service
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+<p>Enable it:</p>
+<pre><code class="language-sh">chmod +x /usr/local/bin/simplex-cors-sync.sh
+systemctl daemon-reload
+systemctl enable --now simplex-cors-sync.path
+</code></pre>
+<h3 id="verify" tabindex="-1">Verify</h3>
+<pre><code class="language-sh">systemctl status simplex-cors-sync.path              # active (waiting)
+ls /var/www/relay-web-channels/channel               # a JSON file appears once a public channel renders
+curl -sI https://relay.example.com/channel/&lt;id&gt;.json | grep -i access-control
+</code></pre>
+<p>The <code>curl</code> should return <code>access-control-*</code> headers, and the channel link should open a web preview in a browser.</p>
 </div>
                 </article>
             </main>
