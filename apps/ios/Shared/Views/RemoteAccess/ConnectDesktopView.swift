@@ -14,6 +14,7 @@ struct ConnectDesktopView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS) private var deviceName = UIDevice.current.name
     @AppStorage(DEFAULT_CONFIRM_REMOTE_SESSIONS) private var confirmRemoteSessions = false
     @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST) private var connectRemoteViaMulticast = true
@@ -105,7 +106,7 @@ struct ConnectDesktopView: View {
             }
         }
         .onDisappear {
-            if m.remoteCtrlSession != nil {
+            if scenePhase == .active, m.remoteCtrlSession != nil {
                 showConnectScreen = false
                 disconnectDesktop()
             }
