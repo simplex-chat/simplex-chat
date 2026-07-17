@@ -5,11 +5,13 @@ revision: 16.07.2026
 
 # Hosting your own Chat Relay
 
-A chat relay is the SimpleX Chat CLI (`simplex-chat`) running in relay mode (`--relay`). It has its own profile (a display name and a picture), its own address, and it can serve web preview pages for the channels it hosts.
+Chat relays are used to deliver channel messages in SimpleX Network. Read more about channels in this [whitepaper](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md) and this [blog post](https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html).
 
-This guide sets up a relay on a Linux server, runs it, and (optionally) serves channel web previews behind [Caddy](https://caddyserver.com).
+A chat relay is the SimpleX Chat CLI (`simplex-chat`) running in relay mode (`--relay`). It has its own profile (a display name and a picture), its own address, and in addition to delivering messages, it can generate data for web previews of the channels it delivers.
 
-> **This guide applies only to SimpleX Chat v7.0.0-beta.4, which is not yet released.** The flags and behaviour it describes are not available in earlier versions.
+This guide explains how to set up a chat relay on a Linux server, how to run it, and (optionally) how to configure [Caddy](https://caddyserver.com) to serve data for channel web previews.
+
+> **Please note**: This guide applies only to SimpleX Chat v7.0.0-beta.4 and later.
 
 ## Table of Contents
 
@@ -126,7 +128,7 @@ systemctl start simplex-relay
 
 ## Channel web previews
 
-A relay can render recent messages of its public channels as JSON files, which you serve over HTTPS so channel links open a web preview. This is optional.
+Chat relays can render recent messages of its public channels as JSON files, which can be served over HTTPS using a web server to create channel web previews. This is optional.
 
 ### Relay web options
 
