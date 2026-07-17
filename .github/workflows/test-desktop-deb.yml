@@ -1,0 +1,107 @@
+name: test-desktop-deb
+
+# Temporary test workflow for the updater arch-filter fix (PR #7270).
+# Builds Ubuntu x86_64 desktop .deb packages with a downgraded version
+# (7.0-beta.2) so the in-app updater can be triggered, and uploads them
+# as workflow artifacts. Delete this branch/workflow after testing.
+
+on:
+  push:
+    branches:
+      - nd/test-updater-deb-build
+
+jobs:
+  build-desktop-deb:
+    name: "ubuntu-${{ matrix.os }}-x86_64 desktop deb"
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 22.04
+            os_underscore: 22_04
+            runner: "ubuntu-22.04"
+            ghc: "9.6.3"
+            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
+          - os: 24.04
+            os_underscore: 24_04
+            runner: "ubuntu-24.04"
+            ghc: "9.6.3"
+            hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Get UID and GID
+        id: ids
+        run: |
+          echo "uid=$(id -u)" >> $GITHUB_OUTPUT
+          echo "gid=$(id -g)" >> $GITHUB_OUTPUT
+
+      - name: Free disk space
+        shell: bash
+        run: ./scripts/ci/linux_util_free_space.sh
+
+      - name: Restore cached build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ubuntu-${{ matrix.os }}-x86_64-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
+
+      - name: Set up Docker Buildx
+        uses: simplex-chat/docker-setup-buildx-action@v3
+
+      - name: Build and cache Docker image
+        uses: simplex-chat/docker-build-push-action@v6
+        with:
+          context: .
+          load: true
+          file: Dockerfile.build
+          tags: build/${{ matrix.os }}:latest
+          build-args: |
+            TAG=${{ matrix.os }}
+            HASH=${{ matrix.hash }}
+            GHC=${{ matrix.ghc }}
+            USER_UID=${{ steps.ids.outputs.uid }}
+            USER_GID=${{ steps.ids.outputs.gid }}
+
+      - name: Start container
+        shell: bash
+        run: |
+          docker run -t -d \
+            --device /dev/fuse \
+            --cap-add SYS_ADMIN \
+            --security-opt apparmor:unconfined \
+            --name builder \
+            -v ~/.cabal:/root/.cabal \
+            -v /home/runner/work/_temp:/home/runner/work/_temp \
+            -v ${{ github.workspace }}:/project \
+            build/${{ matrix.os }}:latest
+
+      - name: Prepare cabal.project.local
+        shell: bash
+        run: |
+          echo "ignore-project: False"    >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl"      >> cabal.project.local
+
+      - name: Build Desktop deb
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          export ASSETS_DIR='../../assets'
+          scripts/desktop/make-deb-linux.sh
+
+      - name: Rename deb
+        shell: bash
+        run: |
+          cp apps/multiplatform/release/main/deb/simplex_x86_64.deb \
+             simplex-desktop-ubuntu-${{ matrix.os_underscore }}-x86_64.deb
+
+      - name: Upload deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplex-desktop-ubuntu-${{ matrix.os_underscore }}-x86_64-deb
+          path: simplex-desktop-ubuntu-${{ matrix.os_underscore }}-x86_64.deb
+          if-no-files-found: error
