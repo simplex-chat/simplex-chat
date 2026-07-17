@@ -323,7 +323,7 @@ final class RemoteCtrlBGKeepAlive {
                 await RemoteCtrlBGKeepAlive.shared.expireContinuedProcessingTask(task)
             }
         }
-        task.progress.totalUnitCount = -1
+        task.progress.totalUnitCount = 24 * 60 * 60
         task.progress.completedUnitCount = 0
         continuedProgressTask = Task { @MainActor [weak task] in
             let clock = ContinuousClock()
