@@ -2765,7 +2765,7 @@ updateChatItemSignedMsg :: DB.Connection -> ChatItemId -> Maybe SignedMsg -> May
 updateChatItemSignedMsg db itemId signedMsg_ signedByGMId_ =
   DB.execute
     db
-    "UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ?"
+    "UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1"
     (body_, cb_, sigs_, author_, itemId)
   where
     (body_, cb_, sigs_, author_) = case signedMsg_ of
@@ -3712,38 +3712,21 @@ getGroupSndStatusCounts db itemId =
     |]
     (Only itemId)
 
--- reconstruct the author-signed bytes stored for a history content item (mirroring the roster/messages storage)
--- and the item's author member (memberId + name), needed to forward signed items as FwdMember so the recipient
--- can reconstruct the signature binding and verify -- FwdChannel would discard the signature.
-getChatItemForwardInfo_ :: DB.Connection -> ChatItemId -> IO (Maybe SignedMsg, Maybe GroupMemberId)
-getChatItemForwardInfo_ db itemId = do
-  rows <-
-    DB.query
-      db
-      [sql|
-        SELECT item_chat_binding, item_signatures, item_msg_body, item_signed_by_group_member_id
-        FROM chat_items
-        WHERE chat_item_id = ?
-      |]
-      (Only itemId)
-  pure $ case rows of
-    (cb_ :: Maybe ChatBinding, sigs_ :: Maybe ByteString, body_ :: Maybe ByteString, signedByGMId_ :: Maybe GroupMemberId) : _ ->
-      (SignedMsg <$> cb_ <*> (sigs_ >>= eitherToMaybe . smpDecode) <*> body_, signedByGMId_)
-    _ -> (Nothing, Nothing)
-
 getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup, (Maybe SignedMsg, Maybe GroupMemberId))]
 getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
-  ciIds <- getLastItemIds_
-  reverse <$> mapM loadItem ciIds
+  items <- getLastItems_
+  reverse <$> mapM loadItem items
   where
-    loadItem ciId = runExceptT $ (,) <$> getGroupCIWithReactions db user g ciId <*> liftIO (getChatItemForwardInfo_ db ciId)
-    getLastItemIds_ :: IO [ChatItemId]
-    getLastItemIds_ =
-      map fromOnly
+    -- forward-info (stored signature + author, both NULL for unsigned/regular items) rides along with the item id,
+    -- so signed items can be re-served as FwdMember (attributed, verifiable) rather than FwdChannel
+    loadItem (ciId, fwdInfo) = runExceptT $ (,fwdInfo) <$> getGroupCIWithReactions db user g ciId
+    getLastItems_ :: IO [(ChatItemId, (Maybe SignedMsg, Maybe GroupMemberId))]
+    getLastItems_ =
+      map toItem
         <$> DB.query
           db
           [sql|
-            SELECT i.chat_item_id
+            SELECT i.chat_item_id, i.item_chat_binding, i.item_signatures, i.item_msg_body, i.item_signed_by_group_member_id
             FROM chat_items i
             LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
             WHERE s.group_snd_item_status_id IS NULL
@@ -3754,6 +3737,9 @@ getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
             LIMIT ?
           |]
           (groupMemberId' m, userId, groupId, count)
+    toItem :: (ChatItemId, Maybe ChatBinding, Maybe ByteString, Maybe ByteString, Maybe GroupMemberId) -> (ChatItemId, (Maybe SignedMsg, Maybe GroupMemberId))
+    toItem (ciId, cb_, sigs_, body_, signedByGMId_) =
+      (ciId, (SignedMsg <$> cb_ <*> (sigs_ >>= eitherToMaybe . smpDecode) <*> body_, signedByGMId_))
 
 getGroupWebPreviewItems :: DB.Connection -> User -> GroupInfo -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
 getGroupWebPreviewItems db user@User {userId} g@GroupInfo {groupId} count = do
