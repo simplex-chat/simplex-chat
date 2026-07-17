@@ -217,8 +217,11 @@ Create `/etc/systemd/system/simplex-cors-sync.service`:
 ```ini
 [Unit]
 Description=Sync SimpleX relay CORS config to Caddy
+StartLimitIntervalSec=30
+StartLimitBurst=10
 [Service]
 Type=oneshot
+ExecStartPre=/bin/sleep 2
 ExecStart=/usr/local/bin/simplex-cors-sync.sh
 ```
 
