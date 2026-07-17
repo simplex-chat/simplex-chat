@@ -90,17 +90,35 @@ fun UserProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      val dataUnchanged =
+      fun dataUnchanged(): Boolean =
         displayName.value.trim() == profile.displayName &&
             fullName.value.trim() == profile.fullName &&
             shortDescr.value.trim() == (profile.shortDescr ?: "") &&
             description.value.trim() == (profile.description ?: "") &&
             profile.image == profileImage.value
-      val closeWithAlert = {
-        if (dataUnchanged || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
-          close()
-        } else {
-          showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }, close)
+      fun onClose(close: () -> Unit): Boolean = if (dataUnchanged() || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
+        chatModel.centerPanelBackgroundClickHandler = null
+        close()
+        false
+      } else {
+        showUnsavedChangesAlert(
+          {
+            chatModel.centerPanelBackgroundClickHandler = null
+            saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value)
+          },
+          {
+            chatModel.centerPanelBackgroundClickHandler = null
+            close()
+          }
+        )
+        true
+      }
+      DisposableEffect(Unit) {
+        onDispose { chatModel.centerPanelBackgroundClickHandler = null }
+      }
+      LaunchedEffect(Unit) {
+        chatModel.centerPanelBackgroundClickHandler = {
+          onClose(close = { ModalManager.start.closeModals() })
         }
       }
       LaunchedEffect(editingDescription) {
@@ -109,7 +127,7 @@ fun UserProfileLayout(
           descrFocusRequester.requestFocus()
         }
       }
-      ModalView(close = if (editingDescription) ({ editingDescription = false }) else closeWithAlert) {
+      ModalView(close = if (editingDescription) ({ editingDescription = false }) else ({ onClose(close) })) {
         if (editingDescription) {
           // app bar is top (default) or bottom (one-handed) — mirror ColumnWithScrollBar's spacers
           // so the entry area never runs under the app bar, keyboard, or system bars
@@ -217,7 +235,7 @@ fun UserProfileLayout(
             )
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canSaveProfile(displayName.value, shortDescr.value, profile)
+            val enabled = !dataUnchanged() && canSaveProfile(displayName.value, shortDescr.value, profile)
             val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(

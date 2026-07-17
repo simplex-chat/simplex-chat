@@ -85,16 +85,12 @@ struct UserProfile: View {
         }
         // Lifecycle
         .onAppear {
-            // run once — popping back from the description editor re-fires onAppear,
-            // and reloading here would discard the in-progress edits
+            // load once — returning from the description editor re-fires onAppear and would discard edits
             if !loaded {
                 getCurrentProfile()
                 loaded = true
             }
         }
-        // profile + description are one editable view; the "save profile?" prompt is owned by
-        // the sheet (UserPickerSheetView.onDisappear) so it fires only when the whole sheet is
-        // dismissed — not when navigating into/out of the description editor
         .onChange(of: editSnapshot) { _ in updateProfileSaver() }
         .onChange(of: chosenImage) { image in
             Task {
@@ -186,8 +182,6 @@ struct UserProfile: View {
         }
     }
 
-    // the fields that make up the edited profile; description is edited in the child
-    // ProfileDescriptionEditor via a binding, so it re-fires this view's onChange too
     private var editSnapshot: [String] {
         [profile.displayName, profile.fullName, profile.image ?? "", shortDescr, description]
     }
@@ -279,48 +273,29 @@ func editImageButton(action: @escaping () -> Void) -> some View {
 }
 
 struct ProfileDescriptionEditor: View {
-    @EnvironmentObject var theme: AppTheme
     @Binding var description: String
-    @FocusState private var keyboardVisible: Bool
-    @State private var keyboardHeight: CGFloat = 0
+    @State private var teHeight: CGFloat = NativeTextEditor.minHeight
+    @State private var focused = false
+    @State private var lastUnfocused: Date = .now
+    @State private var selectedRange = NSRange(location: 0, length: 0)
 
     var body: some View {
-        GeometryReader { geo in
-            List {
-                Section {
-                    // placeholder is a matching disabled TextEditor so it shares the editor's insets
-                    // and background and stays aligned with the text (mirrors GroupWelcomeView)
-                    ZStack {
-                        Group {
-                            if description.isEmpty {
-                                TextEditor(text: Binding.constant(NSLocalizedString("Enter description (optional)", comment: "placeholder")))
-                                    .foregroundColor(theme.colors.secondary)
-                                    .disabled(true)
-                            }
-                            TextEditor(text: $description)
-                                .focused($keyboardVisible)
-                        }
-                        .padding(.horizontal, -5)
-                        .padding(.top, -8)
-                        // fill the area between the nav bar (geo is below it) and the keyboard;
-                        // the editor scrolls internally. ~90 leaves room for the large title + list insets
-                        .frame(height: max(130, geo.size.height - keyboardHeight - 90), alignment: .topLeading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
+        List {
+            Section {
+                NativeTextEditor(
+                    text: $description,
+                    disableEditing: Binding.constant(false),
+                    height: $teHeight,
+                    focused: $focused,
+                    lastUnfocusedDate: $lastUnfocused,
+                    placeholder: Binding<String?>.constant(NSLocalizedString("Enter description (optional)", comment: "placeholder")),
+                    selectedRange: $selectedRange,
+                    onImagesAdded: { _ in },
+                    autoFocus: true
+                )
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 130, alignment: .topLeading)
             }
-        }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { note in
-            if let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                keyboardHeight = frame.height
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardHeight = 0
-        }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { keyboardVisible = true }
         }
     }
 }

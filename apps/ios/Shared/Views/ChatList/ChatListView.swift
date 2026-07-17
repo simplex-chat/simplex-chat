@@ -66,9 +66,6 @@ enum ActiveFilter: Identifiable, Equatable {
 
 class SaveableSettings: ObservableObject {
     @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [], serverWarnings: [])
-    // set by UserProfile to the save action when there are unsaved changes (nil otherwise);
-    // the alert is shown from UserPickerSheetView.onDisappear (next to "Save servers?"), so it fires
-    // only when the whole sheet is dismissed — not on internal navigation into the description editor
     var profileSave: (() -> Void)? = nil
 }
 
