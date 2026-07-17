@@ -1105,7 +1105,7 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
         case .errorAgent(.SMP(_, .AUTH)):
             showAlert(
                 NSLocalizedString("Connection link removed", comment: ""),
-                message: NSLocalizedString("This link no longer works: your contact removed it, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.", comment: "")
+                message: NSLocalizedString("Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.", comment: "")
             )
         case let .errorAgent(.SMP(_, .BLOCKED(info))):
             showAlert(
