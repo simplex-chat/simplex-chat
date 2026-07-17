@@ -89,7 +89,9 @@ struct ConnectDesktopView: View {
             updateRemoteCtrls()
             showConnectScreen = !useMulticast
             if m.remoteCtrlSession != nil {
-                disconnectDesktop()
+                if !m.activeRemoteCtrl {
+                    disconnectDesktop()
+                }
             } else if useMulticast {
                 findKnownDesktop()
             }
@@ -103,7 +105,7 @@ struct ConnectDesktopView: View {
             }
         }
         .onDisappear {
-            if m.remoteCtrlSession != nil {
+            if m.remoteCtrlSession != nil && !m.activeRemoteCtrl {
                 showConnectScreen = false
                 disconnectDesktop()
             }
