@@ -241,6 +241,13 @@ textWithUri = describe "text with Uri" do
     "example.academy" <==> uri "example.academy"
     "this is example.com" <==> "this is " <> uri "example.com"
     "x.com" <==> uri "x.com"
+    -- non-ASCII (IRI) links, see https://github.com/simplex-chat/simplex-chat/issues/7188
+    "https://www.aljazeera.net/sukoon/2018/1/22/مجموعة-السوائل-طريقك-إلى-نظرية-باومان"
+      <==> uri "https://www.aljazeera.net/sukoon/2018/1/22/مجموعة-السوائل-طريقك-إلى-نظرية-باومان"
+    "https://ru.wikipedia.org/wiki/Витамин" <==> uri "https://ru.wikipedia.org/wiki/Витамин"
+    "this is https://example.com/страница now" <==> "this is " <> uri "https://example.com/страница" <> " now"
+    "https://example.com/страница." <==> uri "https://example.com/страница" <> "."
+    "https://example.com/page#раздел" <==> uri "https://example.com/page#раздел"
   it "ignored as markdown" do
     "_https://simplex.chat" <==> "_https://simplex.chat"
     "this is _https://simplex.chat" <==> "this is _https://simplex.chat"
@@ -276,6 +283,7 @@ textWithHyperlink = describe "text with HyperLink without link text" do
     "For details [click here](https://example.com)" <==> "For details " <> web "click here" "https://example.com" "[click here](https://example.com)"
     "[example.com](https://example.com)" <==> web "example.com" "https://example.com" "[example.com](https://example.com)"
     "[example.com/page](https://example.com/page)" <==> web "example.com/page" "https://example.com/page" "[example.com/page](https://example.com/page)"
+    "[страница](https://example.com/страница)" <==> web "страница" "https://example.com/страница" "[страница](https://example.com/страница)"
     ("[Connect to me](" <> addr <> ")") <==> Markdown (simplexLinkFormat XLContact addr' ["smp6.simplex.im"] (Just "Connect to me")) ("[Connect to me](" <> addr <> ")")
   it "potentially spoofed link" do
     "[https://example.com](https://another.com)" <==> "[https://example.com](https://another.com)"

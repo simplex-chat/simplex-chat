@@ -371,8 +371,22 @@ markdownP = mconcat <$> A.many' fragmentP
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
 
+-- non-ASCII characters (e.g. in the path) make a link an IRI, not a URI, and uri-bytestring rejects them.
+-- percent-encoding non-ASCII octets converts the IRI to an equivalent URI (RFC 3987) so the link is recognized.
+percentEncodeNonAscii :: ByteString -> ByteString
+percentEncodeNonAscii = B.concatMap enc
+  where
+    enc c
+      | isAscii c = B.singleton c
+      | otherwise = B.pack ['%', hexDigit hi, hexDigit lo]
+      where
+        n = fromEnum c
+        hi = n `div` 16
+        lo = n `mod` 16
+    hexDigit d = "0123456789ABCDEF" `B.index` d
+
 parseUri :: ByteString -> Either Text U.URI
-parseUri s = case U.parseURI U.laxURIParserOptions s of
+parseUri s = case U.parseURI U.laxURIParserOptions (percentEncodeNonAscii s) of
   Left e -> Left $ "Invalid URI: " <> tshow e
   Right uri@U.URI {uriScheme = U.Scheme sch, uriAuthority}
     | sch /= "http" && sch /= "https" -> Left $ "Unsupported URI scheme: " <> safeDecodeUtf8 sch
