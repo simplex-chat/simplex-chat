@@ -282,7 +282,7 @@ struct ProfileDescriptionEditor: View {
             Section {
                 if #available(iOS 16.0, *) {
                     TextField("Enter description (optional)", text: $description, axis: .vertical)
-                        .lineLimit(6...15)
+                        .lineLimit(6...12)
                         .focused($keyboardVisible)
                 } else {
                     // iOS 15 has no vertically-growing TextField (axis:) — fixed-height editor instead
