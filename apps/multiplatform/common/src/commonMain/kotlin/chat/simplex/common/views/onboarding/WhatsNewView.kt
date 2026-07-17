@@ -913,7 +913,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     )
   ),
   VersionDescription(
-    version = "v7.0",
+    version = "7.0-beta.4",
     post = null,
     features = listOf(
       VersionFeature.FeatureDescription(
@@ -931,16 +931,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
           MR.images.ic_dns to MR.strings.v7_0_channels_relays,
           MR.images.ic_article to MR.strings.v7_0_channels_wider_messages,
         )
-      ),
-      VersionFeature.FeatureDescription(
-        icon = MR.images.ic_delete,
-        titleId = MR.strings.v7_0_remove_member_messages,
-        descrId = MR.strings.v7_0_remove_member_messages_descr
-      ),
-      VersionFeature.FeatureDescription(
-        icon = MR.images.ic_bolt,
-        titleId = MR.strings.v7_0_reliable_groups,
-        descrId = MR.strings.v7_0_reliable_groups_descr
       ),
     )
   ),

@@ -2741,10 +2741,6 @@
   <string name="v7_0_channels_relays">Manage your relays.</string>
   <string name="v7_0_channels_contributors">Add contributors.</string>
   <string name="v7_0_channels_wider_messages">Easier to read.</string>
-  <string name="v7_0_remove_member_messages">Remove member\'s messages</string>
-  <string name="v7_0_remove_member_messages_descr">Delete a removed member\'s messages.</string>
-  <string name="v7_0_reliable_groups">Faster, more reliable groups</string>
-  <string name="v7_0_reliable_groups_descr">Better delivery and quicker loading.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->

@@ -665,7 +665,7 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "v7.0",
+        version: "7.0-beta.4",
         post: nil,
         features: [
             .feature(Description(
@@ -683,16 +683,6 @@ private let versionDescriptions: [VersionDescription] = [
                     ("server.rack", "Manage your relays."),
                     ("text.alignleft", "Easier to read."),
                 ]
-            )),
-            .feature(Description(
-                icon: "trash",
-                title: "Remove member's messages",
-                description: "Delete a removed member's messages."
-            )),
-            .feature(Description(
-                icon: "bolt",
-                title: "Faster, more reliable groups",
-                description: "Better delivery and quicker loading."
             ))
         ]
     ),
