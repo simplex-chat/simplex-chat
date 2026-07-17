@@ -25,6 +25,10 @@
             "url": "/docs/xftp-server.html"
         },
         {
+            "title": "docs-dropdown-16",
+            "url": "/docs/chat-relay.html"
+        },
+        {
             "title": "docs-dropdown-6",
             "url": "/docs/webrtc.html"
         },
