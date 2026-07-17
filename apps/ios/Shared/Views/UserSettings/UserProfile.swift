@@ -273,28 +273,40 @@ func editImageButton(action: @escaping () -> Void) -> some View {
 }
 
 struct ProfileDescriptionEditor: View {
+    @EnvironmentObject var theme: AppTheme
     @Binding var description: String
-    @State private var teHeight: CGFloat = NativeTextEditor.minHeight
-    @State private var focused = false
-    @State private var lastUnfocused: Date = .now
-    @State private var selectedRange = NSRange(location: 0, length: 0)
+    @FocusState private var keyboardVisible: Bool
 
     var body: some View {
         List {
             Section {
-                NativeTextEditor(
-                    text: $description,
-                    disableEditing: Binding.constant(false),
-                    height: $teHeight,
-                    focused: $focused,
-                    lastUnfocusedDate: $lastUnfocused,
-                    placeholder: Binding<String?>.constant(NSLocalizedString("Enter description (optional)", comment: "placeholder")),
-                    selectedRange: $selectedRange,
-                    onImagesAdded: { _ in },
-                    autoFocus: true
-                )
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(minHeight: 130, alignment: .topLeading)
+                if #available(iOS 16.0, *) {
+                    TextField("Enter description (optional)", text: $description, axis: .vertical)
+                        .lineLimit(6...15)
+                        .focused($keyboardVisible)
+                } else {
+                    // iOS 15 has no vertically-growing TextField (axis:) — fixed-height editor instead
+                    ZStack {
+                        Group {
+                            if description.isEmpty {
+                                TextEditor(text: Binding.constant(NSLocalizedString("Enter description (optional)", comment: "placeholder")))
+                                    .foregroundColor(theme.colors.secondary)
+                                    .disabled(true)
+                            }
+                            TextEditor(text: $description)
+                                .focused($keyboardVisible)
+                        }
+                        .padding(.horizontal, -5)
+                        .padding(.top, -8)
+                        .frame(height: 130, alignment: .topLeading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                keyboardVisible = true
             }
         }
     }
