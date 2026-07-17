@@ -323,7 +323,8 @@ final class RemoteCtrlBGKeepAlive {
                 await RemoteCtrlBGKeepAlive.shared.expireContinuedProcessingTask(task)
             }
         }
-        task.progress.totalUnitCount = 24 * 60 * 60
+        let progressWindow: Int64 = 600
+        task.progress.totalUnitCount = progressWindow
         task.progress.completedUnitCount = 0
         continuedProgressTask = Task { @MainActor [weak task] in
             let clock = ContinuousClock()
@@ -332,13 +333,19 @@ final class RemoteCtrlBGKeepAlive {
             while !Task.isCancelled,
                   RemoteCtrlBGKeepAlive.shared.continuedTask === task,
                   ChatModel.shared.activeRemoteCtrl {
-                let connectedSeconds = max(
-                    task.progress.completedUnitCount,
-                    elapsedSeconds()
-                )
-                task.progress.completedUnitCount = connectedSeconds
+                do {
+                    try await clock.sleep(for: .seconds(1))
+                } catch {
+                    break
+                }
+                guard RemoteCtrlBGKeepAlive.shared.continuedTask === task,
+                      ChatModel.shared.activeRemoteCtrl else { break }
+                task.progress.completedUnitCount += 1
+                if task.progress.completedUnitCount * 2 > task.progress.totalUnitCount {
+                    task.progress.totalUnitCount += progressWindow
+                }
+                let connectedSeconds = elapsedSeconds()
                 task.updateTitle(task.title, subtitle: remoteCtrlConnectedSubtitle(connectedSeconds))
-                try? await clock.sleep(for: .seconds(1))
             }
         }
         stopLegacyTask()
