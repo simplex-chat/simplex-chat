@@ -345,7 +345,11 @@ CREATE TABLE test_chat_schema.chat_items (
     show_group_as_sender smallint DEFAULT 0 NOT NULL,
     has_link smallint DEFAULT 0 NOT NULL,
     msg_signed text,
-    item_viewed smallint DEFAULT 0 NOT NULL
+    item_viewed smallint DEFAULT 0 NOT NULL,
+    item_msg_body bytea,
+    item_chat_binding text,
+    item_signatures bytea,
+    item_signed_by_group_member_id bigint
 );
 
 
@@ -989,7 +993,7 @@ CREATE TABLE test_chat_schema.groups (
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
-    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 01:00:00+01'::timestamp with time zone NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
     relay_inactive_at timestamp with time zone,
     relay_sent_web_domain text,
     roster_version bigint,
@@ -2081,6 +2085,10 @@ CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON test_chat_schema.
 
 
 
+CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON test_chat_schema.chat_items USING btree (item_signed_by_group_member_id);
+
+
+
 CREATE INDEX idx_chat_items_item_status ON test_chat_schema.chat_items USING btree (item_status);
 
 
@@ -2763,6 +2771,11 @@ ALTER TABLE ONLY test_chat_schema.chat_items
 
 ALTER TABLE ONLY test_chat_schema.chat_items
     ADD CONSTRAINT chat_items_item_deleted_by_group_member_id_fkey FOREIGN KEY (item_deleted_by_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_items
+    ADD CONSTRAINT chat_items_item_signed_by_group_member_id_fkey FOREIGN KEY (item_signed_by_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
 
 
 
