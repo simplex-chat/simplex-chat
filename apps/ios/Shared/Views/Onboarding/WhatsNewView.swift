@@ -670,18 +670,18 @@ private let versionDescriptions: [VersionDescription] = [
         features: [
             .feature(Description(
                 icon: "at",
-                title: "SimpleX names",
-                description: "Register a name for your channel or business."
+                title: "SimpleX names (BETA)",
+                description: "Names for your channel or business."
             )),
             .feature(Description(
                 icon: nil,
-                title: "More in channels 📢",
+                title: "Better channels 📢",
                 description: nil,
                 subfeatures: [
-                    ("server.rack", "Owners can add and remove relays."),
-                    ("person.badge.plus", "Promote subscribers to contributors."),
-                    ("globe", "Web preview for your channel."),
-                    ("text.alignleft", "Wider messages, easier to read."),
+                    ("person.badge.plus", "Add contributors."),
+                    ("globe", "Create web preview."),
+                    ("server.rack", "Manage your relays."),
+                    ("text.alignleft", "Easier to read."),
                 ]
             )),
             .feature(Description(

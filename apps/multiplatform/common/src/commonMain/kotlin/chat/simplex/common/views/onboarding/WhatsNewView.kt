@@ -926,9 +926,9 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         titleId = MR.strings.v7_0_channels,
         descrId = null,
         subfeatures = listOf(
-          MR.images.ic_dns to MR.strings.v7_0_channels_relays,
           MR.images.ic_person_add to MR.strings.v7_0_channels_contributors,
           MR.images.ic_travel_explore to MR.strings.v7_0_channels_previews,
+          MR.images.ic_dns to MR.strings.v7_0_channels_relays,
           MR.images.ic_article to MR.strings.v7_0_channels_wider_messages,
         )
       ),
