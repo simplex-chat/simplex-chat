@@ -344,6 +344,7 @@ chatGroupTests = do
         it "should verify signed file digest" testChannelSignedFile
         it "should warn on missing signature when signing is required" testChannelSignMessagesRequired
         it "should preserve signatures in history for catch-up subscribers" testChannelSignedHistory
+        it "should forward unsigned channel history for catch-up subscribers" testChannelUnsignedHistory
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -12480,13 +12481,77 @@ testChannelSignedHistory ps =
       alice #$> ("/_delete item #1 " <> delId <> " history", id, "message marked deleted")
       relay <# "#team> [marked deleted] history two (signed)"
 
-      -- catch-up subscriber joins late and receives signed history: edited current content, deleted item excluded
+      -- promoted member posts a signed message (from-member): history attributes it to the member, still verified
+      promoteChannelMember "team" alice relay cath [bob]
+      cath ##> "/_send #1 text from cath member"
+      cath <# "#team from cath member (signed)"
+      relay <# "#team cath> from cath member (signed)"
+      concurrentlyN_
+        [ alice <# "#team cath> from cath member (signed) [>>]",
+          do
+            bob <### [EndsWith "updated to cath"]
+            bob <## "#team: relay introduced cath (Catherine) in the channel"
+            bob <# "#team cath> from cath member (signed) [>>]"
+        ]
+
+      -- catch-up subscriber joins late: as-group edited content + signed member post (author unknown to dan, shown by id hash), deleted excluded
       memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
       dan <# "#team> [edited] history one edited (signed)"
+      dan <### [EndsWith "> from cath member (signed) [>>]"]
       dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited (signed)")])
+      dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member (signed)")])
       dan #$> ("/_get chat #1 count=100 search=history two", chat, [])
-      -- dan holds the catch-up item as verified (MVSigned MSSVerified), so §7 enforcement protects its edits/deletes
-      -- (forged-edit rejection of a held-signed item is covered by testChannelMemberUpdateEnforcement)
+
+testChannelUnsignedHistory :: HasCallStack => TestParams -> IO ()
+testChannelUnsignedHistory ps =
+  testChat4 aliceProfile bobProfile cathProfile danProfile test ps
+  where
+    test alice bob cath dan = withRelay ps $ \relay -> do
+      (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink bob
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink cath
+
+      -- unsigned as-group post that is edited: history carries the current content
+      alice ##> "/_send #1(as_group=on) text history one"
+      alice <# "#team history one"
+      relay <# "#team> history one"
+      [bob, cath] *<# "#team> history one [>>]"
+      editId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> editId <> " text history one edited")
+      alice <# "#team [edited] history one edited"
+      relay <# "#team> [edited] history one edited"
+      [bob, cath] *<# "#team> [edited] history one edited"
+
+      -- unsigned as-group post deleted from history: excluded
+      alice ##> "/_send #1(as_group=on) text history two"
+      alice <# "#team history two"
+      relay <# "#team> history two"
+      [bob, cath] *<# "#team> history two [>>]"
+      delId <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> delId <> " history", id, "message marked deleted")
+      relay <# "#team> [marked deleted] history two"
+
+      -- promoted member posts an unsigned message (from-member): history attributes it to the member
+      promoteChannelMember "team" alice relay cath [bob]
+      cath ##> "/_send #1 text from cath member"
+      cath <# "#team from cath member"
+      relay <# "#team cath> from cath member"
+      concurrentlyN_
+        [ alice <# "#team cath> from cath member [>>]",
+          do
+            bob <### [EndsWith "updated to cath"]
+            bob <## "#team: relay introduced cath (Catherine) in the channel"
+            bob <# "#team cath> from cath member [>>]"
+        ]
+
+      -- catch-up subscriber joins late: unsigned edits re-encode as current content (no [edited] marker, unlike signed);
+      -- member post shown by id hash (author unknown to dan); deleted excluded
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
+      dan <# "#team> history one edited [>>]"
+      dan <### [EndsWith "> from cath member [>>]"]
+      dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited")])
+      dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member")])
+      dan #$> ("/_get chat #1 count=100 search=history two", chat, [])
 
 testChannelAsGroupSpoof :: HasCallStack => TestParams -> IO ()
 testChannelAsGroupSpoof ps =

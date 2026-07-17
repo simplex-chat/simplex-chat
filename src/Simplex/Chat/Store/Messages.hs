@@ -339,7 +339,7 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, verifiedMsg, b
         ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, (\SignedMsg {chatBinding} -> chatBinding) <$> signedMsg_, DB.Binary . smpEncode . signatures <$> signedMsg_, brokerTs, currentTs, currentTs, connId_, groupId_)
          :. (sharedMsgId_, authorMember, forwardedByMember))
       msgId <- insertedRowId db
-      pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgSigned, signedMsg_, forwardedByMember}
+      pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgSigned, signedMsg_, signedByGMId_ = signedMsg_ *> authorMember, forwardedByMember}
     (msgSigned, signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 
 updateSndMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> IO ()
@@ -546,7 +546,7 @@ setSupportChatMemberAttention db cxt user g m memberAttention = do
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded timed live hasLink createdAt =
-  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing (toMsgVerified (signMessagesRequired chatDirection) (MSSVerified <$ signedMsg_)) signedMsg_ createdAt
+  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing (toMsgVerified (signMessagesRequired chatDirection) (MSSVerified <$ signedMsg_)) signedMsg_ Nothing createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -561,9 +561,9 @@ createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, 
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
 createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c), Maybe CIForwardedFrom)
-createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, signedMsg_, forwardedByMember} sharedMsgId_ ciContent timed live userMention hasLink itemTs createdAt = do
+createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, signedMsg_, signedByGMId_, forwardedByMember} sharedMsgId_ ciContent timed live userMention hasLink itemTs createdAt = do
   let showAsGroup = case chatDirection of CDChannelRcv {} -> True; _ -> False
-  ciId <- createNewChatItem_ db user chatDirection showAsGroup (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember (toMsgVerified (signMessagesRequired chatDirection) msgSigned) signedMsg_ createdAt
+  ciId <- createNewChatItem_ db user chatDirection showAsGroup (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember (toMsgVerified (signMessagesRequired chatDirection) msgSigned) signedMsg_ signedByGMId_ createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem, itemForwarded)
   where
@@ -584,13 +584,13 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgS
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection showGroupAsSender ciContent sharedMsgId_ hasLink msgVerified itemTs =
-  createNewChatItem_ db user chatDirection showGroupAsSender Nothing sharedMsgId_ ciContent quoteRow Nothing Nothing False False hasLink itemTs Nothing msgVerified Nothing
+  createNewChatItem_ db user chatDirection showGroupAsSender Nothing sharedMsgId_ ciContent quoteRow Nothing Nothing False False hasLink itemTs Nothing msgVerified Nothing Nothing
   where
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
-createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> Maybe MsgVerified -> Maybe SignedMsg -> UTCTime -> IO ChatItemId
-createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember msgVerified signedMsg_ createdAt = do
+createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> Maybe MsgVerified -> Maybe SignedMsg -> Maybe GroupMemberId -> UTCTime -> IO ChatItemId
+createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember msgVerified signedMsg_ signedByGMId_ createdAt = do
   DB.execute
     db
     [sql|
@@ -599,26 +599,26 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, item_viewed, show_group_as_sender, msg_signed, item_msg_body, item_chat_binding, item_signatures, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, item_viewed, show_group_as_sender, msg_signed, item_msg_body, item_chat_binding, item_signatures, item_signed_by_group_member_id, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ((userId, msgId_) :. idsRow :. groupScopeRow :. itemRow :. quoteRow' :. forwardedFromRow)
   ciId <- insertedRowId db
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgVerified) :. (Maybe (DB.Binary ByteString), Maybe ChatBinding, Maybe (DB.Binary ByteString)) :. (Maybe Int, Maybe UTCTime)
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgVerified) :. (Maybe (DB.Binary ByteString), Maybe ChatBinding, Maybe (DB.Binary ByteString), Maybe GroupMemberId) :. (Maybe Int, Maybe UTCTime)
     itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, mcTag_, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> justTrue live, BI userMention, BI hasLink, BI itemViewed, BI showGroupAsSender, msgVerified) :. signedRow :. ciTimedRow timed
-    -- store the signed bytes only for history content items, mirroring messages/roster storage, so sendHistory can forward them signed
-    signedRow :: (Maybe (DB.Binary ByteString), Maybe ChatBinding, Maybe (DB.Binary ByteString))
+    -- keep the signature and its author on history items so sendHistory can re-forward them signed and attributed
+    signedRow :: (Maybe (DB.Binary ByteString), Maybe ChatBinding, Maybe (DB.Binary ByteString), Maybe GroupMemberId)
     signedRow = case signedMsg_ of
       Just SignedMsg {chatBinding, signatures, signedBody} | includeInHistory ->
-        (Just (DB.Binary signedBody), Just chatBinding, Just (DB.Binary (smpEncode signatures)))
-      _ -> (Nothing, Nothing, Nothing)
+        (Just (DB.Binary signedBody), Just chatBinding, Just (DB.Binary (smpEncode signatures)), signedByGMId_)
+      _ -> (Nothing, Nothing, Nothing, Nothing)
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
     idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId, Maybe NoteFolderId)
     idsRow = case chatDirection of
@@ -2760,18 +2760,18 @@ updateGroupChatItem db user groupId ci newContent edited live msgId_ = do
   liftIO $ updateGroupChatItem_ db user groupId ci' msgId_
   pure ci'
 
--- overwrite the stored signed bytes when a signed edit is applied, so sendHistory forwards the latest signed content
-updateChatItemSignedMsg :: DB.Connection -> ChatItemId -> Maybe SignedMsg -> IO ()
-updateChatItemSignedMsg db itemId signedMsg_ =
+-- overwrite the stored signed bytes and author when a signed edit is applied, so sendHistory forwards the latest signed content
+updateChatItemSignedMsg :: DB.Connection -> ChatItemId -> Maybe SignedMsg -> Maybe GroupMemberId -> IO ()
+updateChatItemSignedMsg db itemId signedMsg_ signedByGMId_ =
   DB.execute
     db
-    "UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ? WHERE chat_item_id = ?"
-    (body_, cb_, sigs_, itemId)
+    "UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ?"
+    (body_, cb_, sigs_, author_, itemId)
   where
-    (body_, cb_, sigs_) = case signedMsg_ of
+    (body_, cb_, sigs_, author_) = case signedMsg_ of
       Just SignedMsg {chatBinding, signatures, signedBody} ->
-        (Just (DB.Binary signedBody), Just chatBinding, Just (DB.Binary (smpEncode signatures)))
-      Nothing -> (Nothing, Nothing, Nothing)
+        (Just (DB.Binary signedBody), Just chatBinding, Just (DB.Binary (smpEncode signatures)), signedByGMId_)
+      Nothing -> (Nothing, Nothing, Nothing, Nothing)
 
 -- this function assumes that the group item with correct chat direction already exists,
 -- it should be checked before calling it
@@ -3715,28 +3715,23 @@ getGroupSndStatusCounts db itemId =
 -- reconstruct the author-signed bytes stored for a history content item (mirroring the roster/messages storage)
 -- and the item's author member (memberId + name), needed to forward signed items as FwdMember so the recipient
 -- can reconstruct the signature binding and verify -- FwdChannel would discard the signature.
-getChatItemForwardInfo_ :: DB.Connection -> ChatItemId -> IO (Maybe SignedMsg, Maybe (MemberId, ContactName))
+getChatItemForwardInfo_ :: DB.Connection -> ChatItemId -> IO (Maybe SignedMsg, Maybe GroupMemberId)
 getChatItemForwardInfo_ db itemId = do
   rows <-
     DB.query
       db
       [sql|
-        SELECT i.item_chat_binding, i.item_signatures, i.item_msg_body, am.member_id, ap.display_name
-        FROM chat_items i
-        LEFT JOIN messages msg ON msg.message_id = i.created_by_msg_id
-        LEFT JOIN group_members am ON am.group_member_id = msg.author_group_member_id
-        LEFT JOIN contact_profiles ap ON ap.contact_profile_id = COALESCE(am.member_profile_id, am.contact_profile_id)
-        WHERE i.chat_item_id = ?
+        SELECT item_chat_binding, item_signatures, item_msg_body, item_signed_by_group_member_id
+        FROM chat_items
+        WHERE chat_item_id = ?
       |]
       (Only itemId)
   pure $ case rows of
-    (cb_ :: Maybe ChatBinding, sigs_ :: Maybe ByteString, body_ :: Maybe ByteString, authorMemberId_ :: Maybe MemberId, authorName_ :: Maybe ContactName) : _ ->
-      ( SignedMsg <$> cb_ <*> (sigs_ >>= eitherToMaybe . smpDecode) <*> body_,
-        (,) <$> authorMemberId_ <*> authorName_
-      )
+    (cb_ :: Maybe ChatBinding, sigs_ :: Maybe ByteString, body_ :: Maybe ByteString, signedByGMId_ :: Maybe GroupMemberId) : _ ->
+      (SignedMsg <$> cb_ <*> (sigs_ >>= eitherToMaybe . smpDecode) <*> body_, signedByGMId_)
     _ -> (Nothing, Nothing)
 
-getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup, (Maybe SignedMsg, Maybe (MemberId, ContactName)))]
+getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup, (Maybe SignedMsg, Maybe GroupMemberId))]
 getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
   ciIds <- getLastItemIds_
   reverse <$> mapM loadItem ciIds

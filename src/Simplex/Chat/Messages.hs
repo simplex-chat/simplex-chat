@@ -1180,6 +1180,7 @@ data RcvMessage = RcvMessage
     sharedMsgId_ :: Maybe SharedMsgId,
     msgSigned :: Maybe MsgSigStatus,
     signedMsg_ :: Maybe SignedMsg,
+    signedByGMId_ :: Maybe GroupMemberId,
     forwardedByMember :: Maybe GroupMemberId
   }
 

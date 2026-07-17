@@ -2238,7 +2238,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           groupMsgToView cInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_} brokerTs ttl_ live_ asGroup_
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -2320,7 +2320,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 let edited = itemLive /= Just True
                 ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
                 ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
-                updateChatItemSignedMsg db (chatItemId' ci) signedMsg_
+                updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions
               toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
