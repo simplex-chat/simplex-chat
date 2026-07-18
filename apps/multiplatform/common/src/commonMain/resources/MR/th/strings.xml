@@ -1058,8 +1058,7 @@
     <string name="simplex_link_connection">ผ่าน %1$s</string>
     <string name="failed_to_create_user_duplicate_desc">คุณมีโปรไฟล์แชทที่ใช้ชื่อแสดงเดียวกันอยู่แล้ว กรุณาเลือกชื่ออื่น</string>
     <string name="you_are_already_connected_to_vName_via_this_link">คุณเชื่อมต่อกับ %1$s แล้ว</string>
-    <string name="connection_error_auth_desc">เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน
-\nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร</string>
+    <string name="connection_error_auth_desc">เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน \nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร</string>
     <string name="smp_server_test_upload_file">อัปโหลดไฟล์</string>
     <string name="enter_passphrase_notification_desc">หากต้องการรับการแจ้งเตือน โปรดป้อนรหัสผ่านของฐานข้อมูล</string>
     <string name="simplex_service_notification_title">บริการ  SimpleX Chat </string>
