@@ -1817,14 +1817,8 @@ alert button */
 /* No comment provided by engineer. */
 "Desktop devices" = "Urządzenia komputerowe";
 
-/* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Adres serwera docelowego %@ jest niekompatybilny z ustawieniami serwera przekazującego %@.";
-
 /* snd error text */
 "Destination server error: %@" = "Błąd docelowego serwera: %@";
-
-/* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Wersja serwera docelowego %@ jest niekompatybilna z serwerem przekierowującym %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Szczegółowe statystyki";

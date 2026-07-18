@@ -187,6 +187,15 @@
 /* time interval */
 "%d months" = "%d 月";
 
+/* channel owners count */
+"%d owner" = "%d位所有者";
+
+/* channel owners count */
+"%d owners" = "%d位所有者";
+
+/* channel members count */
+"%d owners & contributors" = "%d位所有者和贡献者";
+
 /* channel relay bar
 channel subscriber relay bar */
 "%d relays failed" = "%d 个中继失败";
@@ -1150,6 +1159,9 @@ new chat action */
 /* No comment provided by engineer. */
 "Change role" = "改变角色";
 
+/* No comment provided by engineer. */
+"Change role?" = "改变角色？";
+
 /* authentication reason */
 "Change self-destruct mode" = "更改自毁模式";
 
@@ -1478,6 +1490,9 @@ server test step */
 /* No comment provided by engineer. */
 "Connect faster! 🚀" = "更快地连接！🚀";
 
+/* new chat action */
+"Connect to %@" = "连接到%@";
+
 /* No comment provided by engineer. */
 "Connect to desktop" = "连接到桌面";
 
@@ -1568,6 +1583,9 @@ server test step */
 /* No comment provided by engineer. */
 "Connection blocked" = "连接被阻止";
 
+/* conn error description */
+"Connection blocked: %@" = "连接被阻止：%@";
+
 /* alert title */
 "Connection error" = "连接错误";
 
@@ -1578,7 +1596,7 @@ server test step */
 "Connection failed" = "连接失败";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "连接被运营方 %@ 阻止";
+"Connection is blocked by server operator:\n%@" = "连接已被运营方阻止：\n%@";
 
 /* conn error description */
 "Connection link removed" = "连接错误";
@@ -2100,13 +2118,13 @@ alert button */
 "Desktop devices" = "桌面设备";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "目标服务器地址 %@ 与转发服务器 %@ 设置不兼容。";
+"Destination server address of %@ is incompatible with forwarding server %@ settings." = "目标服务器地址 %1$@ 与转发服务器 %2$@ 设置不兼容。";
 
 /* snd error text */
 "Destination server error: %@" = "目标服务器错误：%@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "目标服务器版本 %@ 与转发服务器 %@ 不兼容。";
+"Destination server version of %@ is incompatible with forwarding server %@." = "目标服务器版本 %1$@ 与转发服务器 %2$@ 不兼容。";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "详细的统计数据";
@@ -3498,6 +3516,9 @@ servers warning */
 /* No comment provided by engineer. */
 "Join channel" = "加入频道";
 
+/* new chat action */
+"Join channel %@" = "加入频道%@";
+
 /* new chat sheet title */
 "Join group" = "加入群组";
 
@@ -3569,6 +3590,12 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Less traffic on mobile networks." = "消耗更少的移动网络数据。";
+
+/* No comment provided by engineer. */
+"Let people connect to you via name registered with your SimpleX address." = "让别人通过用你的 SimpleX 地址注册的名称和你建立联系。";
+
+/* No comment provided by engineer. */
+"Let people join via name registered with this channel link." = "让别人通过用这个频道链接注册的名称加入。";
 
 /* No comment provided by engineer. */
 "Let someone connect to you" = "让某人连接到你";
@@ -3940,6 +3967,9 @@ servers warning */
 "Name" = "名称";
 
 /* No comment provided by engineer. */
+"Name not found" = "未找到名称";
+
+/* No comment provided by engineer. */
 "Network & servers" = "网络和服务器";
 
 /* No comment provided by engineer. */
@@ -4152,6 +4182,9 @@ servers warning */
 /* servers error */
 "No servers to receive messages." = "无消息接收服务器。";
 
+/* servers warning */
+"No servers to resolve names." = "没有解析名称的服务器。";
+
 /* servers error */
 "No servers to send files." = "无文件发送服务器。";
 
@@ -4168,10 +4201,16 @@ servers warning */
 "No unread chats" = "没有未读聊天";
 
 /* No comment provided by engineer. */
+"No valid link" = "无有效链接";
+
+/* No comment provided by engineer. */
 "Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "没有人追踪你的谈话内容。没有人绘制你去过的地方的地图。隐私从来都不是一项功能--而是一种生活方式。";
 
 /* No comment provided by engineer. */
 "Non-profit governance" = "非营利治理";
+
+/* No comment provided by engineer. */
+"None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." = "你的服务器没有一台被设定为解析 SimpleX 名称。配置服务器或使用连接链接。";
 
 /* No comment provided by engineer. */
 "Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "别人家的门锁再好也比不上这里。房东再好也比不上这里，他既尊重你的隐私，又保留着所有访客的记录。你不是客人，你是家。没有国王能闯入--你是主人。";
@@ -5128,6 +5167,9 @@ swipe action */
 "Role will be changed to \"%@\". All group members will be notified." = "成员角色将更改为 \"%@\"。所有群成员将收到通知。";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All subscribers will be notified." = "角色将被变更为“%@”。所有订阅者将会收到通知。";
+
+/* No comment provided by engineer. */
 "Role will be changed to \"%@\". The member will receive a new invitation." = "成员角色将更改为 \"%@\"。该成员将收到一份新的邀请。";
 
 /* No comment provided by engineer. */
@@ -5741,6 +5783,15 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "已开启 SimpleX 锁定";
+
+/* No comment provided by engineer. */
+"SimpleX name" = "SimpleX 名称";
+
+/* No comment provided by engineer. */
+"SimpleX name error" = "SimpleX 名称错误";
+
+/* alert title */
+"SimpleX name not verified" = "SimpleX 名称未验证";
 
 /* simplex link type */
 "SimpleX one-time invitation" = "SimpleX 一次性邀请";

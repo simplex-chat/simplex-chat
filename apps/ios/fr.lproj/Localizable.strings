@@ -2040,14 +2040,8 @@ alert button */
 /* No comment provided by engineer. */
 "Desktop devices" = "Appareils de bureau";
 
-/* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "L'adresse du serveur de destination %@ est incompatible avec les paramètres du serveur de redirection %@.";
-
 /* snd error text */
 "Destination server error: %@" = "Erreur du serveur de destination : %@";
-
-/* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "La version du serveur de destination %@ est incompatible avec le serveur de redirection %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Statistiques détaillées";

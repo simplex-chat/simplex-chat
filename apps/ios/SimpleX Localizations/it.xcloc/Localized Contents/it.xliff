@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="it" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -200,19 +200,19 @@
         <target>%d mesi</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d owner" xml:space="preserve" approved="no">
+      <trans-unit id="%d owner" xml:space="preserve">
         <source>%d owner</source>
-        <target state="translated">%d proprietario</target>
+        <target>%d proprietario</target>
         <note>channel owners count</note>
       </trans-unit>
-      <trans-unit id="%d owners" xml:space="preserve" approved="no">
+      <trans-unit id="%d owners" xml:space="preserve">
         <source>%d owners</source>
-        <target state="translated">%d proprietari</target>
+        <target>%d proprietari</target>
         <note>channel owners count</note>
       </trans-unit>
-      <trans-unit id="%d owners &amp; contributors" xml:space="preserve" approved="no">
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
         <source>%d owners &amp; contributors</source>
-        <target state="translated">%d proprietari e collaboratori</target>
+        <target>%d proprietari e collaboratori</target>
         <note>channel members count</note>
       </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
@@ -1777,9 +1777,9 @@ new chat action</note>
         <target>Cambia ruolo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change role?" xml:space="preserve" approved="no">
+      <trans-unit id="Change role?" xml:space="preserve">
         <source>Change role?</source>
-        <target state="translated">Cambiare il ruolo?</target>
+        <target>Cambiare il ruolo?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change self-destruct mode" xml:space="preserve">
@@ -2285,9 +2285,9 @@ server test step</note>
         <target>Connettiti più velocemente! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to %@" xml:space="preserve" approved="no">
+      <trans-unit id="Connect to %@" xml:space="preserve">
         <source>Connect to %@</source>
-        <target state="translated">Connetti a %@</target>
+        <target>Connetti a %@</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -2399,9 +2399,9 @@ Questo è il tuo link una tantum!</target>
         <target>Connessione bloccata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection blocked: %@" xml:space="preserve" approved="no">
+      <trans-unit id="Connection blocked: %@" xml:space="preserve">
         <source>Connection blocked: %@</source>
-        <target state="translated">Connessione bloccata: %@</target>
+        <target>Connessione bloccata: %@</target>
         <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -3195,9 +3195,9 @@ alert button</note>
         <target>Dispositivi desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
+      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
         <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
-        <target state="translated">L'indirizzo del server di destinazione di %1$@ è incompatibile con le impostazioni del server di inoltro %2$@.</target>
+        <target>L'indirizzo del server di destinazione di %1$@ è incompatibile con le impostazioni del server di inoltro %2$@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -3205,9 +3205,9 @@ alert button</note>
         <target>Errore del server di destinazione: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
+      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
         <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
-        <target state="translated">La versione del server di destinazione di %1$@ è incompatibile con il server di inoltro %2$@.</target>
+        <target>La versione del server di destinazione di %1$@ è incompatibile con il server di inoltro %2$@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
@@ -4086,9 +4086,9 @@ chat item action</note>
         <target>Errore nel salvataggio del profilo del gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving name" xml:space="preserve" approved="no">
+      <trans-unit id="Error saving name" xml:space="preserve">
         <source>Error saving name</source>
-        <target state="translated">Errore di salvataggio del nome</target>
+        <target>Errore di salvataggio del nome</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving passcode" xml:space="preserve">
@@ -5338,9 +5338,9 @@ Altri miglioramenti sono in arrivo!</target>
         <target>Iscriviti al canale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join channel %@" xml:space="preserve" approved="no">
+      <trans-unit id="Join channel %@" xml:space="preserve">
         <source>Join channel %@</source>
-        <target state="translated">Entra nel canale %@</target>
+        <target>Entra nel canale %@</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
@@ -5465,14 +5465,14 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Meno traffico sulle reti mobili.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let people connect to you via name registered with your SimpleX address." xml:space="preserve" approved="no">
+      <trans-unit id="Let people connect to you via name registered with your SimpleX address." xml:space="preserve">
         <source>Let people connect to you via name registered with your SimpleX address.</source>
-        <target state="translated">Consenti alle persone di collegarsi tramite il nome registrato con il tuo indirizzo SimpleX.</target>
+        <target>Consenti alle persone di collegarsi tramite il nome registrato con il tuo indirizzo SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let people join via name registered with this channel link." xml:space="preserve" approved="no">
+      <trans-unit id="Let people join via name registered with this channel link." xml:space="preserve">
         <source>Let people join via name registered with this channel link.</source>
-        <target state="translated">Consenti alle persone di entrare attraverso il nome registrato con questo link del canale.</target>
+        <target>Consenti alle persone di entrare attraverso il nome registrato con questo link del canale.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
@@ -6027,9 +6027,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nome</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Name not found" xml:space="preserve" approved="no">
+      <trans-unit id="Name not found" xml:space="preserve">
         <source>Name not found</source>
-        <target state="translated">Nome non trovato</target>
+        <target>Nome non trovato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Names for your channel or business." xml:space="preserve">
@@ -6370,9 +6370,9 @@ La crittografia più sicura.</target>
         <target>Nessun server per ricevere messaggi.</target>
         <note>servers error</note>
       </trans-unit>
-      <trans-unit id="No servers to resolve names." xml:space="preserve" approved="no">
+      <trans-unit id="No servers to resolve names." xml:space="preserve">
         <source>No servers to resolve names.</source>
-        <target state="translated">Nessun server per risolvere i nomi.</target>
+        <target>Nessun server per risolvere i nomi.</target>
         <note>servers warning</note>
       </trans-unit>
       <trans-unit id="No servers to send files." xml:space="preserve">
@@ -6390,9 +6390,9 @@ La crittografia più sicura.</target>
         <target>Nessuna chat non letta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No valid link" xml:space="preserve" approved="no">
+      <trans-unit id="No valid link" xml:space="preserve">
         <source>No valid link</source>
-        <target state="translated">Nessun link valido</target>
+        <target>Nessun link valido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
@@ -6405,9 +6405,9 @@ La crittografia più sicura.</target>
         <target>Organizzazione non a scopo di lucro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." xml:space="preserve" approved="no">
+      <trans-unit id="None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." xml:space="preserve">
         <source>None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</source>
-        <target state="translated">Nessuno dei tuoi server è impostato per risolvere i nomi SimpleX. Configura i server o usa un link di connessione.</target>
+        <target>Nessuno dei tuoi server è impostato per risolvere i nomi SimpleX. Configura i server o usa un link di connessione.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
@@ -6829,9 +6829,9 @@ alert button</note>
         <target>Proprietario</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Owners &amp; contributors" xml:space="preserve" approved="no">
+      <trans-unit id="Owners &amp; contributors" xml:space="preserve">
         <source>Owners &amp; contributors</source>
-        <target state="translated">Proprietari e collaboratori</target>
+        <target>Proprietari e collaboratori</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ownership: you can run your own relays." xml:space="preserve">
@@ -7760,9 +7760,9 @@ swipe action</note>
         <target>Ripristina al tema dell'utente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Resolver error: %@" xml:space="preserve" approved="no">
+      <trans-unit id="Resolver error: %@" xml:space="preserve">
         <source>Resolver error: %@</source>
-        <target state="translated">Errore del risolutore: %@</target>
+        <target>Errore del risolutore: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
@@ -7845,19 +7845,19 @@ swipe action</note>
         <target>Ruolo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve" approved="no">
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All chat members will be notified.</source>
-        <target state="translated">Il ruolo del membro verrà cambiato in "%@". Verranno avvisati tutti i membri della chat.</target>
+        <target>Il ruolo del membro verrà cambiato in "%@". Verranno avvisati tutti i membri della chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All group members will be notified.</source>
-        <target state="translated">Il ruolo del membro verrà cambiato in "%@". Verranno avvisati tutti i membri del gruppo.</target>
+        <target>Il ruolo del membro verrà cambiato in "%@". Verranno avvisati tutti i membri del gruppo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve" approved="no">
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All subscribers will be notified.</source>
-        <target state="translated">Il ruolo verrò cambiato in "%@". Verranno avvisati tutti gli iscritti.</target>
+        <target>Il ruolo verrò cambiato in "%@". Verranno avvisati tutti gli iscritti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
@@ -8411,9 +8411,9 @@ chat item action</note>
         <target>Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve" approved="no">
+      <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve">
         <source>Server %@ does not support name resolution. Configure servers, or use a connection link.</source>
-        <target state="translated">Il server %@ non supporta la risoluzione dei nomi. Configura i server o usa un link di connessione.</target>
+        <target>Il server %@ non supporta la risoluzione dei nomi. Configura i server o usa un link di connessione.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve">
@@ -8881,19 +8881,19 @@ copied message info</note>
         <target>Link di SimpleX non consentiti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX name" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX name" xml:space="preserve">
         <source>SimpleX name</source>
-        <target state="translated">Nome SimpleX</target>
+        <target>Nome SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX name error" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX name error" xml:space="preserve">
         <source>SimpleX name error</source>
-        <target state="translated">Errore del nome SimpleX</target>
+        <target>Errore del nome SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX name not verified" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX name not verified" xml:space="preserve">
         <source>SimpleX name not verified</source>
-        <target state="translated">Nome SimpleX non verificato</target>
+        <target>Nome SimpleX non verificato</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
@@ -9378,24 +9378,24 @@ It can happen because of some bug or when the connection is compromised.</source
 Può accadere a causa di qualche bug o quando la connessione è compromessa.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve" approved="no">
+      <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve">
         <source>The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.</source>
-        <target state="translated">Il nome SimpleX #%@ è registrato senza link del canale. Aggiungi il link del canale al nome tramite la pagina di registrazione.</target>
+        <target>Il nome SimpleX #%@ è registrato senza link del canale. Aggiungi il link del canale al nome tramite la pagina di registrazione.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve" approved="no">
+      <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve">
         <source>The SimpleX name %@ is registered, but it has no valid link.</source>
-        <target state="translated">Il nome SimpleX %@ è registrato, ma non ha alcun link valido.</target>
+        <target>Il nome SimpleX %@ è registrato, ma non ha alcun link valido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve" approved="no">
+      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve">
         <source>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</source>
-        <target state="translated">Il nome SimpleX %@ è registrato, ma non aggiunto al profilo. Aggiungilo al profilo del tuo indirizzo o canale, se sei il proprietario.</target>
+        <target>Il nome SimpleX %@ è registrato, ma non aggiunto al profilo. Aggiungilo al profilo del tuo indirizzo o canale, se sei il proprietario.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve" approved="no">
+      <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve">
         <source>The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</source>
-        <target state="translated">Il nome SimpleX @%@ è registrato senza indirizzo SimpleX. Aggiungi il tuo indirizzo SimpleX al nome tramite la pagina di registrazione.</target>
+        <target>Il nome SimpleX @%@ è registrato senza indirizzo SimpleX. Aggiungi il tuo indirizzo SimpleX al nome tramite la pagina di registrazione.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
@@ -9594,9 +9594,9 @@ i tuoi contatti e i tuoi gruppi.</target>
         <target>Possono essere sovrascritte nelle impostazioni dei contatti e dei gruppi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve" approved="no">
+      <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve">
         <source>This SimpleX name is not registered. Please check the name.</source>
-        <target state="translated">Questo nome SimpleX non è registrato. Controlla il nome.</target>
+        <target>Questo nome SimpleX non è registrato. Controlla il nome.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -9782,9 +9782,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Per registrare un messaggio vocale, concedi l'autorizzazione all'uso del microfono.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To resolve names" xml:space="preserve" approved="no">
+      <trans-unit id="To resolve names" xml:space="preserve">
         <source>To resolve names</source>
-        <target state="translated">Per risolvere nomi</target>
+        <target>Per risolvere nomi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
@@ -9916,9 +9916,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Sbloccare l'iscritto per tutti?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unconfirmed name" xml:space="preserve" approved="no">
+      <trans-unit id="Unconfirmed name" xml:space="preserve">
         <source>Unconfirmed name</source>
-        <target state="translated">Nome non confermato</target>
+        <target>Nome non confermato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Undelivered messages" xml:space="preserve">
@@ -10277,9 +10277,9 @@ alert title</note>
         <target>Verifica</target>
         <note>relay test step</note>
       </trans-unit>
-      <trans-unit id="Verify SimpleX names" xml:space="preserve" approved="no">
+      <trans-unit id="Verify SimpleX names" xml:space="preserve">
         <source>Verify SimpleX names</source>
-        <target state="translated">Verifica nomi SimpleX</target>
+        <target>Verifica nomi SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
@@ -10307,9 +10307,9 @@ alert title</note>
         <target>Verifica password del database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify name" xml:space="preserve" approved="no">
+      <trans-unit id="Verify name" xml:space="preserve">
         <source>Verify name</source>
-        <target state="translated">Verifica nome</target>
+        <target>Verifica nome</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify passphrase" xml:space="preserve">
@@ -10965,9 +10965,9 @@ Ripetere la richiesta di connessione?</target>
         <target>Il tuo indirizzo SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX name" xml:space="preserve" approved="no">
+      <trans-unit id="Your SimpleX name" xml:space="preserve">
         <source>Your SimpleX name</source>
-        <target state="translated">Il tuo nome SimpleX</target>
+        <target>Il tuo nome SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
@@ -11467,9 +11467,9 @@ marked deleted chat item preview text</note>
         <target>il contatto dovrebbe accettare…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contributor" xml:space="preserve" approved="no">
+      <trans-unit id="contributor" xml:space="preserve">
         <source>contributor</source>
-        <target state="translated">collaboratore</target>
+        <target>collaboratore</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
@@ -12125,9 +12125,9 @@ ultimo msg ricevuto: %2$@</target>
         <target>barrato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="subscriber" xml:space="preserve" approved="no">
+      <trans-unit id="subscriber" xml:space="preserve">
         <source>subscriber</source>
-        <target state="translated">iscritto</target>
+        <target>iscritto</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
@@ -12334,7 +12334,7 @@ ultimo msg ricevuto: %2$@</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="it" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -12369,9 +12369,24 @@ ultimo msg ricevuto: %2$@</target>
       </trans-unit>
     </body>
   </file>
+  <file original="en.lproj/SimpleXChat-InfoPlist.strings" datatype="plaintext" source-language="en" target-language="it">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
+    </header>
+    <body>
+      <trans-unit id="CFBundleName" translate="no" xml:space="preserve">
+        <source>SimpleXChat</source>
+        <note>Bundle name</note>
+      </trans-unit>
+      <trans-unit id="NSHumanReadableCopyright" translate="no" xml:space="preserve">
+        <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
+        <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="it" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -12393,7 +12408,7 @@ ultimo msg ricevuto: %2$@</target>
   </file>
   <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="it" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="%d new events" xml:space="preserve">
@@ -12425,7 +12440,7 @@ ultimo msg ricevuto: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="it" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -12447,7 +12462,7 @@ ultimo msg ricevuto: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="it" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="%@" xml:space="preserve">

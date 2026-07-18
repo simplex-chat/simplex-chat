@@ -178,6 +178,12 @@
 /* time interval */
 "%d months" = "%d мес";
 
+/* channel owners count */
+"%d owners" = "%d владельцев";
+
+/* channel members count */
+"%d owners & contributors" = "%d владельцев и авторов";
+
 /* channel relay bar
 channel subscriber relay bar */
 "%d relays failed" = "%d релеев с ошибками";
@@ -477,6 +483,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Add profile" = "Добавить профиль";
+
+/* No comment provided by engineer. */
+"Add relay" = "Добавить релей";
 
 /* No comment provided by engineer. */
 "Add server" = "Добавить сервер";
@@ -2036,14 +2045,8 @@ alert button */
 /* No comment provided by engineer. */
 "Desktop devices" = "Компьютеры";
 
-/* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Адрес сервера назначения %@ несовместим с настройками пересылающего сервера %@.";
-
 /* snd error text */
 "Destination server error: %@" = "Ошибка сервера получателя: %@";
-
-/* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Версия сервера назначения %@ несовместима с пересылающим сервером %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Подробная статистика";
