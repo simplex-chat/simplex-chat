@@ -36,7 +36,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -343,6 +343,8 @@ chatGroupTests = do
         it "should always sign moderation delete" testChannelModerationDeleteSign
         it "should verify signed file digest" testChannelSignedFile
         it "should warn on missing signature when signing is required" testChannelSignMessagesRequired
+        it "should preserve signatures in history for catch-up subscribers" testChannelSignedHistory
+        it "should forward unsigned channel history for catch-up subscribers" testChannelUnsignedHistory
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -12383,13 +12385,13 @@ testChannelSignMessagesRequired ps =
             alice #$> ("/_get chat #1 count=100 search=signed by owner", chat, [(1, "signed by owner (signed)")])
             dan #$> ("/_get chat #1 count=100 search=signed by owner", chat, [(0, "signed by owner (signed)")])
 
-            -- owner posts as the channel, unsigned: recipients warn (held in db), sender does not
+            -- owner posts as the channel without explicit sign: auto-signed because signing is required
             alice ##> "/_send #1(as_group=on) text plain from owner"
-            alice <# "#team plain from owner"
-            bob <# "#team> plain from owner (signature missing)"
-            [cath, dan, eve] *<# "#team> plain from owner (signature missing) [>>]"
-            alice #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(1, "plain from owner")])
-            dan #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(0, "plain from owner (signature missing)")])
+            alice <# "#team plain from owner (signed)"
+            bob <# "#team> plain from owner (signed)"
+            [cath, dan, eve] *<# "#team> plain from owner (signed) [>>]"
+            alice #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(1, "plain from owner (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=plain from owner", chat, [(0, "plain from owner (signed)")])
 
             -- promoted subscriber posts signed: verified for recipients (members are required to sign too)
             cath ##> "/_send #1 sign=on text signed by member"
@@ -12409,16 +12411,147 @@ testChannelSignMessagesRequired ps =
             cath #$> ("/_get chat #1 count=100 search=signed by member", chat, [(1, "signed by member (signed)")])
             dan #$> ("/_get chat #1 count=100 search=signed by member", chat, [(0, "signed by member (signed)")])
 
-            -- promoted subscriber posts unsigned: recipients warn (held in db), sender does not
-            cath #> "#team plain from member"
-            bob <# "#team cath> plain from member (signature missing)"
+            -- promoted subscriber posts without explicit sign: auto-signed
+            cath ##> "/_send #1 text plain from member"
+            cath <# "#team plain from member (signed)"
+            bob <# "#team cath> plain from member (signed)"
             concurrentlyN_
-              [ alice <# "#team cath> plain from member (signature missing) [>>]",
-                dan <# "#team cath> plain from member (signature missing) [>>]",
-                eve <# "#team cath> plain from member (signature missing) [>>]"
+              [ alice <# "#team cath> plain from member (signed) [>>]",
+                dan <# "#team cath> plain from member (signed) [>>]",
+                eve <# "#team cath> plain from member (signed) [>>]"
               ]
-            cath #$> ("/_get chat #1 count=100 search=plain from member", chat, [(1, "plain from member")])
-            dan #$> ("/_get chat #1 count=100 search=plain from member", chat, [(0, "plain from member (signature missing)")])
+            cath #$> ("/_get chat #1 count=100 search=plain from member", chat, [(1, "plain from member (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=plain from member", chat, [(0, "plain from member (signed)")])
+
+            -- a malicious relay forwards an unsigned channel message; the recipient holds it with a missing-signature warning
+            danConnId <- relayConnIdToMember bob "dan"
+            forgeTs <- getCurrentTime
+            let ChatController {smpAgent = bobAgent} = chatController bob
+                forgedMsg = ChatMessage chatInitialVRange (Just (SharedMsgId "forged-unsigned-01")) (XMsgNew $ mcSimple (MCText "forged unsigned"))
+                forgedBody = encodeBinaryBatch [encodeFwdElement (GrpMsgForward FwdChannel forgeTs) (VMUnsigned forgedMsg)]
+            sentForged <- runExceptT $ sendMessages bobAgent [(danConnId, PQEncOff, MsgFlags False, vrValue forgedBody)]
+            either (fail . show) (const $ pure ()) sentForged
+            dan <# "#team> forged unsigned (signature missing) [>>]"
+            dan #$> ("/_get chat #1 count=100 search=forged unsigned", chat, [(0, "forged unsigned (signature missing)")])
+
+testChannelSignedHistory :: HasCallStack => TestParams -> IO ()
+testChannelSignedHistory ps =
+  testChat4 aliceProfile bobProfile cathProfile danProfile test ps
+  where
+    test alice bob cath dan = withRelay ps $ \relay -> do
+      (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink bob
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink cath
+      -- require signatures
+      alice ##> "/set signatures #team on"
+      alice <## "updated group preferences:"
+      alice <## "Sign messages: on"
+      concurrentlyN_
+        [ do
+            relay <## "alice updated group #team: (signed)"
+            relay <## "updated group preferences:"
+            relay <## "Sign messages: on",
+          do
+            bob <## "alice updated group #team: (signed)"
+            bob <## "updated group preferences:"
+            bob <## "Sign messages: on",
+          do
+            cath <## "alice updated group #team: (signed)"
+            cath <## "updated group preferences:"
+            cath <## "Sign messages: on"
+        ]
+
+      -- signed post that is edited: history must carry the current, signed content
+      alice ##> "/_send #1(as_group=on) text history one"
+      alice <# "#team history one (signed)"
+      relay <# "#team> history one (signed)"
+      [bob, cath] *<# "#team> history one (signed) [>>]"
+      editId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> editId <> " text history one edited")
+      alice <# "#team [edited] history one edited (signed)"
+      relay <# "#team> [edited] history one edited (signed)"
+      [bob, cath] *<# "#team> [edited] history one edited (signed)"
+
+      -- signed post that is deleted from history: excluded from history
+      alice ##> "/_send #1(as_group=on) text history two"
+      alice <# "#team history two (signed)"
+      relay <# "#team> history two (signed)"
+      [bob, cath] *<# "#team> history two (signed) [>>]"
+      delId <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> delId <> " history", id, "message marked deleted")
+      relay <# "#team> [marked deleted] history two (signed)"
+
+      -- promoted member posts a signed message (from-member): history attributes it to the member, still verified
+      promoteChannelMember "team" alice relay cath [bob]
+      cath ##> "/_send #1 text from cath member"
+      cath <# "#team from cath member (signed)"
+      relay <# "#team cath> from cath member (signed)"
+      concurrentlyN_
+        [ alice <# "#team cath> from cath member (signed) [>>]",
+          do
+            bob <### [EndsWith "updated to cath"]
+            bob <## "#team: relay introduced cath (Catherine) in the channel"
+            bob <# "#team cath> from cath member (signed) [>>]"
+        ]
+
+      -- catch-up subscriber joins late: as-group edited content + signed member post (author unknown to dan, shown by id hash), deleted excluded
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
+      dan <# "#team> [edited] history one edited (signed)"
+      dan .<## "> from cath member (signed) [>>]"
+      dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited (signed)")])
+      dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member (signed)")])
+      dan #$> ("/_get chat #1 count=100 search=history two", chat, [])
+
+testChannelUnsignedHistory :: HasCallStack => TestParams -> IO ()
+testChannelUnsignedHistory ps =
+  testChat4 aliceProfile bobProfile cathProfile danProfile test ps
+  where
+    test alice bob cath dan = withRelay ps $ \relay -> do
+      (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink bob
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink cath
+
+      -- unsigned as-group post that is edited: history carries the current content
+      alice ##> "/_send #1(as_group=on) text history one"
+      alice <# "#team history one"
+      relay <# "#team> history one"
+      [bob, cath] *<# "#team> history one [>>]"
+      editId <- lastItemId alice
+      alice ##> ("/_update item #1 " <> editId <> " text history one edited")
+      alice <# "#team [edited] history one edited"
+      relay <# "#team> [edited] history one edited"
+      [bob, cath] *<# "#team> [edited] history one edited"
+
+      -- unsigned as-group post deleted from history: excluded
+      alice ##> "/_send #1(as_group=on) text history two"
+      alice <# "#team history two"
+      relay <# "#team> history two"
+      [bob, cath] *<# "#team> history two [>>]"
+      delId <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> delId <> " history", id, "message marked deleted")
+      relay <# "#team> [marked deleted] history two"
+
+      -- promoted member posts an unsigned message (from-member): history attributes it to the member
+      promoteChannelMember "team" alice relay cath [bob]
+      cath ##> "/_send #1 text from cath member"
+      cath <# "#team from cath member"
+      relay <# "#team cath> from cath member"
+      concurrentlyN_
+        [ alice <# "#team cath> from cath member [>>]",
+          do
+            bob <### [EndsWith "updated to cath"]
+            bob <## "#team: relay introduced cath (Catherine) in the channel"
+            bob <# "#team cath> from cath member [>>]"
+        ]
+
+      -- catch-up subscriber joins late: unsigned edits re-encode as current content (no [edited] marker, unlike signed);
+      -- member post shown by id hash (author unknown to dan); deleted excluded
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
+      dan <# "#team> history one edited [>>]"
+      dan .<## "> from cath member [>>]"
+      dan #$> ("/_get chat #1 count=100 search=history one edited", chat, [(0, "history one edited")])
+      dan #$> ("/_get chat #1 count=100 search=from cath member", chat, [(0, "from cath member")])
+      dan #$> ("/_get chat #1 count=100 search=history two", chat, [])
 
 testChannelAsGroupSpoof :: HasCallStack => TestParams -> IO ()
 testChannelAsGroupSpoof ps =
