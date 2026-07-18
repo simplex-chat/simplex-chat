@@ -163,6 +163,8 @@ struct UserProfile: View {
                     await MainActor.run {
                         chatModel.updateCurrentUser(newProfile)
                         getCurrentProfile()
+                        // onChange(editSnapshot) won't fire when saved values equal typed, so clear the pending dismiss-save here
+                        ss.profileSave = nil
                     }
                 } else {
                     alert = .duplicateUserError
@@ -305,7 +307,7 @@ struct ProfileDescriptionEditor: View {
             }
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 keyboardVisible = true
             }
         }

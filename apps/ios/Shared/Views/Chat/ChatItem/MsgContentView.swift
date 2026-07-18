@@ -323,6 +323,7 @@ private struct FullProfileDescriptionView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 
