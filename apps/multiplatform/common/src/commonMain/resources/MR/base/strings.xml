@@ -217,7 +217,7 @@
   <string name="app_update_required">App update required</string>
   <string name="group_link_requires_newer_version">This group requires a newer version of the app. Please update the app to join.</string>
   <string name="connection_error_auth">Connection link removed</string>
-  <string name="connection_error_auth_desc">This link no longer works: your contact removed it, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.</string>
+  <string name="connection_error_auth_desc">Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.</string>
   <string name="connection_error_blocked">Connection blocked</string>
   <string name="connection_error_blocked_desc">Connection is blocked by server operator:\n%1$s.</string>
   <string name="connection_error_quota">Undelivered messages</string>
