@@ -1039,8 +1039,7 @@
     <string name="to_protect_privacy_simplex_has_ids_for_queues">כדי לשמור על הפרטיות, במקום מזהי משתמש הקיימים בכל הפלטפורמות האחרות, ל־SimpleX יש מזהים לתורי הודעות, נפרדים עבור כל אחד מאנשי הקשר שלך.</string>
     <string name="using_simplex_chat_servers">משתמש בשרתי SimpleX Chatז</string>
     <string name="trying_to_connect_to_server_to_receive_messages">מנסה להתחבר לשרת המשמש לקבלת הודעות מאיש קשר זה.</string>
-    <string name="connection_error_auth_desc">אלא אם איש הקשר שלכם מחק את החיבור או שהקישור הזה כבר היה בשימוש, זה עשוי להיות באג - אנא דווחו על כך.
-\nכדי להתחבר, אנא בקשו מאיש הקשר שלכם ליצור קישור חיבור נוסף ובידקו שיש לכם חיבור יציב לרשת.</string>
+    <string name="connection_error_auth_desc">אלא אם איש הקשר שלכם מחק את החיבור או שהקישור הזה כבר היה בשימוש, זה עשוי להיות באג - אנא דווחו על כך. \nכדי להתחבר, אנא בקשו מאיש הקשר שלכם ליצור קישור חיבור נוסף ובידקו שיש לכם חיבור יציב לרשת.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">כדי להגן על המידע שלכם, הפעילו את SimpleX Lock.
 \nתתבקשו להשלים את האימות לפני שתכונה זו תופעל.</string>
     <string name="smp_servers_use_server">השתמש בשרת</string>
