@@ -795,8 +795,7 @@
     <string name="ttl_hours">%d години</string>
     <string name="error_deleting_pending_contact_connection">Помилка видалення очікуючого з\'єднання з контактом</string>
     <string name="error_loading_details">Помилка завантаження деталей</string>
-    <string name="connection_error_auth_desc">Якщо ваш контакт не видалив з\'єднання або це посилання вже використано, це може бути помилкою - будь ласка, повідомте про це.
-\nДля підключення попросіть вашого контакту створити інше посилання на з\'єднання та перевірте стабільність мережевого підключення.</string>
+    <string name="connection_error_auth_desc">Якщо ваш контакт не видалив з\'єднання або це посилання вже використано, це може бути помилкою - будь ласка, повідомте про це. \nДля підключення попросіть вашого контакту створити інше посилання на з\'єднання та перевірте стабільність мережевого підключення.</string>
     <string name="error_deleting_contact">Помилка видалення контакту</string>
     <string name="error_deleting_group">Помилка видалення групи</string>
     <string name="smp_server_test_disconnect">Відключити</string>
