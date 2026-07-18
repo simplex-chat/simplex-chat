@@ -187,6 +187,15 @@
 /* time interval */
 "%d months" = "%d mesi";
 
+/* channel owners count */
+"%d owner" = "%d proprietario";
+
+/* channel owners count */
+"%d owners" = "%d proprietari";
+
+/* channel members count */
+"%d owners & contributors" = "%d proprietari e collaboratori";
+
 /* channel relay bar
 channel subscriber relay bar */
 "%d relays failed" = "%d relay falliti";
@@ -1150,6 +1159,9 @@ new chat action */
 /* No comment provided by engineer. */
 "Change role" = "Cambia ruolo";
 
+/* No comment provided by engineer. */
+"Change role?" = "Cambiare il ruolo?";
+
 /* authentication reason */
 "Change self-destruct mode" = "Cambia modalità di autodistruzione";
 
@@ -1478,6 +1490,9 @@ server test step */
 /* No comment provided by engineer. */
 "Connect faster! 🚀" = "Connettiti più velocemente! 🚀";
 
+/* new chat action */
+"Connect to %@" = "Connetti a %@";
+
 /* No comment provided by engineer. */
 "Connect to desktop" = "Connetti al desktop";
 
@@ -1567,6 +1582,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection blocked" = "Connessione bloccata";
+
+/* conn error description */
+"Connection blocked: %@" = "Connessione bloccata: %@";
 
 /* alert title */
 "Connection error" = "Errore di connessione";
@@ -1684,6 +1702,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Contribute" = "Contribuisci";
+
+/* member role */
+"contributor" = "collaboratore";
 
 /* No comment provided by engineer. */
 "Conversation deleted!" = "Conversazione eliminata!";
@@ -2100,13 +2121,13 @@ alert button */
 "Desktop devices" = "Dispositivi desktop";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "L'indirizzo del server di destinazione di %@ è incompatibile con le impostazioni del server di inoltro %@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "L'indirizzo del server di destinazione di %1$@ è incompatibile con le impostazioni del server di inoltro %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Errore del server di destinazione: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "La versione del server di destinazione di %@ è incompatibile con il server di inoltro %@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "La versione del server di destinazione di %1$@ è incompatibile con il server di inoltro %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Statistiche dettagliate";
@@ -2681,6 +2702,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Error saving ICE servers" = "Errore nel salvataggio dei server ICE";
+
+/* alert title */
+"Error saving name" = "Errore di salvataggio del nome";
 
 /* No comment provided by engineer. */
 "Error saving passcode" = "Errore nel salvataggio del codice di accesso";
@@ -3498,6 +3522,9 @@ servers warning */
 /* No comment provided by engineer. */
 "Join channel" = "Iscriviti al canale";
 
+/* new chat action */
+"Join channel %@" = "Entra nel canale %@";
+
 /* new chat sheet title */
 "Join group" = "Entra nel gruppo";
 
@@ -3569,6 +3596,12 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Less traffic on mobile networks." = "Meno traffico sulle reti mobili.";
+
+/* No comment provided by engineer. */
+"Let people connect to you via name registered with your SimpleX address." = "Consenti alle persone di collegarsi tramite il nome registrato con il tuo indirizzo SimpleX.";
+
+/* No comment provided by engineer. */
+"Let people join via name registered with this channel link." = "Consenti alle persone di entrare attraverso il nome registrato con questo link del canale.";
 
 /* No comment provided by engineer. */
 "Let someone connect to you" = "Lascia che qualcuno si connetta a te";
@@ -3940,6 +3973,9 @@ servers warning */
 "Name" = "Nome";
 
 /* No comment provided by engineer. */
+"Name not found" = "Nome non trovato";
+
+/* No comment provided by engineer. */
 "Network & servers" = "Rete e server";
 
 /* No comment provided by engineer. */
@@ -4152,6 +4188,9 @@ servers warning */
 /* servers error */
 "No servers to receive messages." = "Nessun server per ricevere messaggi.";
 
+/* servers warning */
+"No servers to resolve names." = "Nessun server per risolvere i nomi.";
+
 /* servers error */
 "No servers to send files." = "Nessun server per inviare file.";
 
@@ -4168,10 +4207,16 @@ servers warning */
 "No unread chats" = "Nessuna chat non letta";
 
 /* No comment provided by engineer. */
+"No valid link" = "Nessun link valido";
+
+/* No comment provided by engineer. */
 "Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Nessuno monitorava le tue conversazioni. Nessuno disegnava una mappa delle tue posizioni. La privacy non era mai stata una caratteristica, era uno stile di vita.";
 
 /* No comment provided by engineer. */
 "Non-profit governance" = "Organizzazione non a scopo di lucro";
+
+/* No comment provided by engineer. */
+"None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." = "Nessuno dei tuoi server è impostato per risolvere i nomi SimpleX. Configura i server o usa un link di connessione.";
 
 /* No comment provided by engineer. */
 "Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Non una serratura migliore sulla porta di qualcun altro. Non un padrone di casa più gentile che rispetta la tua privacy, ma che continua a tenere traccia di tutti i visitatori. Non sei un ospite. Sei a casa tua. Nessun re può entrarvi: sei tu il sovrano.";
@@ -4448,6 +4493,9 @@ alert button */
 
 /* feature role */
 "owners" = "proprietari";
+
+/* No comment provided by engineer. */
+"Owners & contributors" = "Proprietari e collaboratori";
 
 /* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "Proprietà: puoi gestire i tuoi relay personali.";
@@ -5065,6 +5113,9 @@ swipe action */
 "Reset to user theme" = "Ripristina al tema dell'utente";
 
 /* No comment provided by engineer. */
+"Resolver error: %@" = "Errore del risolutore: %@";
+
+/* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "Riavvia l'app per creare un nuovo profilo di chat";
 
 /* No comment provided by engineer. */
@@ -5119,10 +5170,13 @@ swipe action */
 "Role" = "Ruolo";
 
 /* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Verranno notificati tutti i membri della chat.";
+"Role will be changed to \"%@\". All chat members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Verranno avvisati tutti i membri della chat.";
 
 /* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Tutti i membri del gruppo verranno avvisati.";
+"Role will be changed to \"%@\". All group members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Verranno avvisati tutti i membri del gruppo.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All subscribers will be notified." = "Il ruolo verrà cambiato in \"%@\". Verranno avvisati tutti gli iscritti.";
 
 /* No comment provided by engineer. */
 "Role will be changed to \"%@\". The member will receive a new invitation." = "Il ruolo del membro verrà cambiato in \"%@\". Il membro riceverà un invito nuovo.";
@@ -5468,6 +5522,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Server" = "Server";
 
+/* No comment provided by engineer. */
+"Server %@ does not support name resolution. Configure servers, or use a connection link." = "Il server %@ non supporta la risoluzione dei nomi. Configura i server o usa un link di connessione.";
+
 /* alert message */
 "Server added to operator %@." = "Server aggiunto all'operatore %@.";
 
@@ -5739,6 +5796,15 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "SimpleX Lock attivato";
 
+/* No comment provided by engineer. */
+"SimpleX name" = "Nome SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX name error" = "Errore del nome SimpleX";
+
+/* alert title */
+"SimpleX name not verified" = "Nome SimpleX non verificato";
+
 /* simplex link type */
 "SimpleX one-time invitation" = "Invito SimpleX una tantum";
 
@@ -5871,6 +5937,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Subscribed" = "Iscritto/a";
+
+/* member role */
+"subscriber" = "iscritto";
 
 /* No comment provided by engineer. */
 "Subscriber" = "Iscritto";
@@ -6128,6 +6197,18 @@ server test failure */
 /* No comment provided by engineer. */
 "The servers for new files of your current chat profile **%@**." = "I server per nuovi file del tuo profilo di chat attuale **%@**.";
 
+/* alert message */
+"The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." = "Il nome SimpleX @%@ è registrato senza indirizzo SimpleX. Aggiungi il tuo indirizzo SimpleX al nome tramite la pagina di registrazione.";
+
+/* alert message */
+"The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." = "Il nome SimpleX #%@ è registrato senza link del canale. Aggiungi il link del canale al nome tramite la pagina di registrazione.";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but it has no valid link." = "Il nome SimpleX %@ è registrato, ma non ha alcun link valido.";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." = "Il nome SimpleX %@ è registrato, ma non aggiunto al profilo. Aggiungilo al profilo del tuo indirizzo o canale, se sei il proprietario.";
+
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Il testo che hai incollato non è un link SimpleX.";
 
@@ -6217,6 +6298,9 @@ alert subtitle */
 "This setting is for your current profile **%@**." = "Questa impostazione è per il tuo profilo attuale **%@**.";
 
 /* No comment provided by engineer. */
+"This SimpleX name is not registered. Please check the name." = "Questo nome SimpleX non è registrato. Controlla il nome.";
+
+/* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Il tempo di scomparsa è impostato solo per i contatti nuovi.";
 
 /* No comment provided by engineer. */
@@ -6263,6 +6347,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Per registrare un messaggio vocale, concedi l'autorizzazione all'uso del microfono.";
+
+/* No comment provided by engineer. */
+"To resolve names" = "Per risolvere nomi";
 
 /* No comment provided by engineer. */
 "To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Per rivelare il tuo profilo nascosto, inserisci una password completa in un campo di ricerca nella pagina **I tuoi profili di chat**.";
@@ -6341,6 +6428,9 @@ alert subtitle */
 
 /* rcv group event chat item */
 "unblocked %@" = "ha sbloccato %@";
+
+/* No comment provided by engineer. */
+"Unconfirmed name" = "Nome non confermato";
 
 /* No comment provided by engineer. */
 "Undelivered messages" = "Messaggi non consegnati";
@@ -6596,10 +6686,16 @@ alert title */
 "Verify database passphrase" = "Verifica password del database";
 
 /* No comment provided by engineer. */
+"Verify name" = "Verifica nome";
+
+/* No comment provided by engineer. */
 "Verify passphrase" = "Verifica password";
 
 /* No comment provided by engineer. */
 "Verify security code" = "Verifica codice di sicurezza";
+
+/* No comment provided by engineer. */
+"Verify SimpleX names" = "Verifica nomi SimpleX";
 
 /* relay hostname */
 "via %@" = "via %@";
@@ -7170,4 +7266,7 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Il tuo indirizzo SimpleX";
+
+/* No comment provided by engineer. */
+"Your SimpleX name" = "Il tuo nome SimpleX";
 

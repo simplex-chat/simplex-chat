@@ -109,6 +109,9 @@
 /* No comment provided by engineer. */
 "%@ downloaded" = "%@ indirildi";
 
+/* badge alert */
+"%@ invested in SimpleX Chat crowdfunding." = "%@, SimpleX Chat kitle fonlamasına yatırım yaptı.";
+
 /* notification title */
 "%@ is connected!" = "%@ bağlandı!";
 
@@ -123,6 +126,9 @@
 
 /* No comment provided by engineer. */
 "%@ servers" = "%@ sunucular";
+
+/* badge alert */
+"%@ supports SimpleX Chat." = "%@, SimpleX Chat'i destekliyor.";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ yüklendi";
@@ -141,6 +147,9 @@
 
 /* copied message info */
 "%@:" = "%@:";
+
+/* badge alert */
+"%1$@ supported SimpleX Chat. The badge expired on %2$@." = "%1$@, SimpleX Chat'i destekledi. Rozetin süresi %2$@ tarihinde doldu.";
 
 /* time interval */
 "%d days" = "%d gün";
@@ -168,6 +177,15 @@
 
 /* time interval */
 "%d months" = "%d ay";
+
+/* channel owners count */
+"%d owner" = "%d sahibi";
+
+/* channel owners count */
+"%d owners" = "%d sahibi";
+
+/* channel members count */
+"%d owners & contributors" = "%d sahibi & katkıda bulunanlar";
 
 /* channel relay bar
 channel subscriber relay bar */
@@ -1832,13 +1850,13 @@ alert button */
 "Desktop devices" = "Bilgisayar cihazları";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Hedef sunucu adresi %@, yönlendirme sunucusu %@ ayarlarıyla uyumlu değil.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Hedef sunucu adresi %1$@, yönlendirme sunucusu %2$@ ayarlarıyla uyumlu değil.";
 
 /* snd error text */
 "Destination server error: %@" = "Hedef sunucu hatası: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Hedef sunucu %@ sürümü, yönlendirme sunucusu %@ ile uyumlu değil.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "Hedef sunucu %1$@ sürümü, yönlendirme sunucusu %2$@ ile uyumlu değil.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Detaylı istatistikler";

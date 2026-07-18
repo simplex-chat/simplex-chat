@@ -2041,13 +2041,13 @@ alert button */
 "Desktop devices" = "Appareils de bureau";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "L'adresse du serveur de destination %@ est incompatible avec les paramètres du serveur de redirection %@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "L'adresse du serveur de destination %1$@ est incompatible avec les paramètres du serveur de redirection %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Erreur du serveur de destination : %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "La version du serveur de destination %@ est incompatible avec le serveur de redirection %@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "La version du serveur de destination %1$@ est incompatible avec le serveur de redirection %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Statistiques détaillées";

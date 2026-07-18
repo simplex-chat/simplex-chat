@@ -1746,13 +1746,13 @@ alert button */
 "Desktop devices" = "Desktop apparaten";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Het bestemmingsserveradres van %@ is niet compatibel met de doorstuurserverinstellingen %@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Het bestemmingsserveradres van %1$@ is niet compatibel met de doorstuurserverinstellingen %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Bestemmingsserverfout: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "De versie van de bestemmingsserver %@ is niet compatibel met de doorstuurserver %@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "De versie van de bestemmingsserver %1$@ is niet compatibel met de doorstuurserver %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Gedetailleerde statistieken";

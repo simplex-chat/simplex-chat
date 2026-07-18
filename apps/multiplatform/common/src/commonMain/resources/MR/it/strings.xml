@@ -811,7 +811,7 @@
     <string name="theme_system">Sistema</string>
     <string name="network_option_tcp_connection_timeout">Scadenza connessione TCP</string>
     <string name="group_is_decentralized">Completamente decentralizzato: visibile solo ai membri.</string>
-    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in "%s". Tutti i membri del gruppo riceveranno una notifica.</string>
+    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in %s. Verrà avvisato chiunque nel gruppo.</string>
     <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in "%s". Il membro riceverà un nuovo invito.</string>
     <string name="update_network_settings_confirmation">Aggiorna</string>
     <string name="update_network_settings_question">Aggiornare le impostazioni di rete\?</string>
@@ -1116,7 +1116,7 @@
     <string name="invite_friends">Invita amici</string>
     <string name="save_auto_accept_settings">Salva le impostazioni dell\'indirizzo SimpleX</string>
     <string name="you_can_create_it_later">Puoi crearlo più tardi</string>
-    <string name="share_address">Condividi indirizzo</string>
+    <string name="share_address">Condividi indirizzo…</string>
     <string name="enter_welcome_message">Inserisci il messaggio di benvenuto…</string>
     <string name="group_welcome_preview">Anteprima</string>
     <string name="you_can_share_this_address_with_your_contacts">Puoi condividere questo indirizzo con i contatti per consentire loro di connettersi con %s.</string>
@@ -2239,7 +2239,7 @@
     <string name="only_chat_owners_can_change_prefs">Solo i proprietari della chat possono modificarne le preferenze.</string>
     <string name="onboarding_notifications_mode_battery">Notifiche e batteria</string>
     <string name="maximum_message_size_reached_forwarding">Puoi copiare e ridurre la dimensione del messaggio per inviarlo.</string>
-    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in "%s". Verrà notificato a tutti nella chat.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in %s. Verrà avvisato chiunque nella chat.</string>
     <string name="chat_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri della chat</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Non riceverai più messaggi da questa chat. La cronologia della chat verrà conservata.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Quando più di un operatore è attivato, nessuno di essi ha metadati per capire chi comunica con chi.</string>
@@ -2890,7 +2890,7 @@
     <string name="simplex_name">Nome SimpleX</string>
     <string name="simplex_name_error">Errore del nome SimpleX</string>
     <string name="simplex_name_not_verified">Nome SimpleX non verificato</string>
-    <string name="simplex_name_no_valid_link_desc">Il nome SimpleX %1$s è registrato, ma non ha alcun collegamento valido.</string>
+    <string name="simplex_name_no_valid_link_desc">Il nome SimpleX %1$s è registrato, ma non ha alcun link valido.</string>
     <string name="simplex_name_unconfirmed_desc">Il nome SimpleX %1$s è registrato, ma non aggiunto al profilo. Aggiungilo al profilo del tuo indirizzo o canale, se sei il proprietario.</string>
     <string name="simplex_name_owner_no_channel_link">Il nome SimpleX %1$s è registrato senza link del canale. Aggiungi il link del canale al nome tramite la pagina di registrazione.</string>
     <string name="simplex_name_owner_no_address">Il nome SimpleX %1$s è registrato senza indirizzo SimpleX. Aggiungi il tuo indirizzo SimpleX al nome tramite la pagina di registrazione.</string>
@@ -2900,4 +2900,30 @@
     <string name="verify_simplex_name_action">Verifica nome</string>
     <string name="verify_simplex_names">Verifica nomi SimpleX</string>
     <string name="your_simplex_name">Il tuo nome SimpleX</string>
+    <string name="connect_plan_connect_to_name">Connetti a %s</string>
+    <string name="connect_plan_join_name">Entra nel canale %s</string>
+    <string name="do_not_require_message_signatures">Non richiedere la firma dei messaggi.</string>
+    <string name="message_signatures_are_not_required">La firma dei messaggi non è richiesta.</string>
+    <string name="message_signatures_are_required">La firma dei messaggi è richiesta.</string>
+    <string name="require_message_signatures">Richiedi la firma dei messaggi.</string>
+    <string name="show_encryption">Mostra la crittografia</string>
+    <string name="show_signature">Mostra la firma</string>
+    <string name="signature_missing_alert_title">Firma mancante</string>
+    <string name="info_row_signed">Firmato</string>
+    <string name="info_row_signed_verified">Firmato e verificato</string>
+    <string name="sign_message_desc">La firma dimostra che hai scritto questo messaggio e non può essere negato più tardi.</string>
+    <string name="sign_message">Firma il messaggio</string>
+    <string name="sign_messages">Firma i messaggi</string>
+    <string name="signature_missing_alert_desc">Il canale ha richiesto di firmare questo messaggio, ma la firma non è presente.</string>
+    <string name="channel_simplex_name">Nome SimpleX per il canale</string>
+    <string name="get_simplex_name_beta">Ottieni nome SimpleX (BETA)</string>
+    <string name="register_test_name">Registra un nome di prova</string>
+    <string name="remove_name">Rimuovi nome</string>
+    <string name="save_simplex_name_question">Salvare il nome SimpleX?</string>
+    <string name="to_verify_channel_member_key">Per verificare le chiavi con questo iscritto, confrontate (o scansionate) il codice sui vostri dispositivi.</string>
+    <string name="add_description">Aggiungi descrizione</string>
+    <string name="profile_description__field">Descrizione</string>
+    <string name="edit_description">Modifica descrizione</string>
+    <string name="enter_description_optional">Inserisci la descrizione (facoltativa)</string>
+    <string name="error_sharing_address">Errore di condivisione dell\'indirizzo</string>
 </resources>

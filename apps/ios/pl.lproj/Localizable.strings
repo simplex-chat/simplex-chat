@@ -1818,13 +1818,13 @@ alert button */
 "Desktop devices" = "Urządzenia komputerowe";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Adres serwera docelowego %@ jest niekompatybilny z ustawieniami serwera przekazującego %@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Adres serwera docelowego %1$@ jest niekompatybilny z ustawieniami serwera przekazującego %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Błąd docelowego serwera: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Wersja serwera docelowego %@ jest niekompatybilna z serwerem przekierowującym %@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "Wersja serwera docelowego %1$@ jest niekompatybilna z serwerem przekierowującym %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Szczegółowe statystyki";
