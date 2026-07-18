@@ -2386,11 +2386,6 @@ This is your own one-time link!</source>
         <target>Ошибка соединения</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>Ошибка соединения (AUTH)</target>
-        <note>conn error description</note>
-      </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
         <target>Ошибка соединения</target>
@@ -2402,6 +2397,11 @@ This is your own one-time link!</source>
         <target>Соединение заблокировано сервером оператора:
 %@</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>Ошибка соединения</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -8262,11 +8262,6 @@ chat item action</note>
         <target>Отправитель отменил передачу файла.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>Отправитель мог удалить запрос на соединение.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <target>Отправка картинки ссылки может раскрыть Ваш IP-адрес веб-сайту. Вы можете изменить это в настройках безопасности позже.</target>
@@ -9474,6 +9469,11 @@ your contacts and groups.</source>
         <target>Вторая галочка - знать, что доставлено! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>Отправитель мог удалить запрос на соединение.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>Отправитель не будет уведомлён</target>
@@ -9908,13 +9908,6 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <target>Если Вы не используете интерфейс iOS, включите режим Не отвлекать, чтобы звонок не прерывался.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.
-Чтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
@@ -10940,6 +10933,13 @@ Repeat connection request?</source>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
         <target>Ваш контакт</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.
+Чтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

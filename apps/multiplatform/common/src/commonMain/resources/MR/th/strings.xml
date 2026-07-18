@@ -172,7 +172,7 @@
     <string name="display_name_connection_established">สร้างการเชื่อมต่อแล้ว</string>
     <string name="connection_local_display_name">การเชื่อมต่อ %1$d</string>
     <string name="contact_already_exists">ผู้ติดต่อรายนี้มีอยู่แล้ว</string>
-    <string name="connection_error_auth">การเชื่อมต่อผิดพลาด (AUTH)</string>
+    <string name="connection_error_auth">การเชื่อมต่อผิดพลาด</string>
     <string name="smp_server_test_compare_file">เปรียบเทียบไฟล์</string>
     <string name="smp_server_test_connect">เชื่อมต่อ</string>
     <string name="smp_server_test_create_file">สร้างไฟล์</string>

@@ -2335,11 +2335,6 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Bağlantı hatası</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>Bağlantı hatası (DOĞRULAMA)</target>
-        <note>conn error description</note>
-      </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
         <note>No comment provided by engineer.</note>
@@ -2350,6 +2345,11 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Bağlantı sunucu operatörü tarafından engellendi:
 %@</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>Bağlantı hatası</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -8096,11 +8096,6 @@ chat item action</note>
         <target>Gönderici dosya gönderimini iptal etti.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>Gönderici bağlantı isteğini silmiş olabilir.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <note>alert message</note>
@@ -9274,6 +9269,11 @@ your contacts and groups.</source>
         <target>Özlediğimiz ikinci tik! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>Gönderici bağlantı isteğini silmiş olabilir.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>Gönderene BİLDİRİLMEYECEKTİR</target>
@@ -9700,13 +9700,6 @@ Bu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenec
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <target>iOS arama arayüzünü kullanmadığınız sürece, kesintileri önlemek için Rahatsız Etmeyin modunu etkinleştirin.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>Kişiniz bağlantıyı silmediyse veya bu bağlantı kullanılmadıysa, bu bir hata olabilir - lütfen bildirin.
-Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını isteyin ve sabit bir ağ bağlantınız olduğunu kontrol edin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
@@ -10711,6 +10704,13 @@ Bağlantı isteği tekrarlansın mı?</target>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
         <target>İrtibat kişiniz</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>Kişiniz bağlantıyı silmediyse veya bu bağlantı kullanılmadıysa, bu bir hata olabilir - lütfen bildirin.
+Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını isteyin ve sabit bir ağ bağlantınız olduğunu kontrol edin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

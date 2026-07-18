@@ -2403,11 +2403,6 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Kapcsolódási hiba</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>Kapcsolódási hiba (AUTH)</target>
-        <note>conn error description</note>
-      </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
         <target>Nem sikerült létrehozni a kapcsolatot</target>
@@ -2419,6 +2414,11 @@ Ez a saját egyszer használható meghívója!</target>
         <target>A kiszolgáló üzemeltetője letiltotta a kapcsolatot:
 %@</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>Kapcsolódási hiba</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -8299,11 +8299,6 @@ chat item action</note>
         <target>A fájl küldője visszavonta az átvitelt.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>A kérés küldője törölhette a kapcsolódási kérést.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <target>A hivatkozáselőnézet küldése felfedheti az Ön IP-címét a weboldal számára. Ezt később módosíthatja az adatvédelmi beállításokban.</target>
@@ -9514,6 +9509,11 @@ a saját kapcsolatait és csoportjait.</target>
         <target>A második pipa, ami már nagyon hiányzott! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>A kérés küldője törölhette a kapcsolódási kérést.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>A kérés küldője NEM lesz értesítve</target>
@@ -9951,13 +9951,6 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <target>Hacsak nem az iOS hívási felületét használja, engedélyezze a Ne zavarjanak módot a megszakadások elkerülése érdekében.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.
-A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
@@ -10989,6 +10982,13 @@ Megismétli a kapcsolódási kérést?</target>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
         <target>Partner</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.
+A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

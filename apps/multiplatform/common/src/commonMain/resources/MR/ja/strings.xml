@@ -200,7 +200,7 @@
     <string name="connect_via_link">リンク経由で繋がる。</string>
     <string name="connection_error">接続エラー</string>
     <string name="group_member_status_introduced">接続待ち (紹介済み)</string>
-    <string name="connection_error_auth">接続エラー (AUTH)</string>
+    <string name="connection_error_auth">接続エラー</string>
     <string name="connection_timeout">接続タイムアウト</string>
     <string name="connection_request_sent">接続リクエストを送信しました！</string>
     <string name="connection_local_display_name">接続 %1$d</string>

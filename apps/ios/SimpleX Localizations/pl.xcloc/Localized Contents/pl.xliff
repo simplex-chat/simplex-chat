@@ -2329,11 +2329,6 @@ To jest twój jednorazowy link!</target>
         <target>Błąd połączenia</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>Błąd połączenia (UWIERZYTELNIANIE)</target>
-        <note>conn error description</note>
-      </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
         <target>Połączenie nie powiodło się</target>
@@ -2345,6 +2340,11 @@ To jest twój jednorazowy link!</target>
         <target>Połączenie zostało zablokowane przez operatora serwera:
 %@</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>Błąd połączenia</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -8112,11 +8112,6 @@ chat item action</note>
         <target>Nadawca anulował transfer pliku.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>Nadawca mógł usunąć prośbę o połączenie.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <note>alert message</note>
@@ -9291,6 +9286,11 @@ your contacts and groups.</source>
         <target>Drugi tik, który przegapiliśmy! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>Nadawca mógł usunąć prośbę o połączenie.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>Nadawca NIE zostanie powiadomiony</target>
@@ -9720,13 +9720,6 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <target>O ile nie korzystasz z interfejsu połączeń systemu iOS, włącz tryb Nie przeszkadzać, aby uniknąć przerywania.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go.
-Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
@@ -10735,6 +10728,13 @@ Powtórzyć prośbę połączenia?</target>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
         <target>Twój kontakt</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go.
+Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
