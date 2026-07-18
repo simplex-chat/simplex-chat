@@ -372,5 +372,6 @@
     "send-file": "Invia file",
     "links": "Collegamenti",
     "links-title": "Link della comunità",
-    "links-all-languages": "Tutte le lingue"
+    "links-all-languages": "Tutte le lingue",
+    "docs-dropdown-16": "Gestisci un relay di chat"
 }
