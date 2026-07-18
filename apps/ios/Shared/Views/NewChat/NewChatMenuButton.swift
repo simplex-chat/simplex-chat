@@ -129,7 +129,7 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Create public channel (BETA)", systemImage: "antenna.radiowaves.left.and.right")
+                        Label("Create public channel", systemImage: "antenna.radiowaves.left.and.right")
                     }
                 }
                 

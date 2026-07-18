@@ -20,16 +20,24 @@ import kotlinx.coroutines.*
 import java.io.File
 
 fun main() {
-  if (!acquireSingleInstance()) return
-  // Disable hardware acceleration
-  //System.setProperty("skiko.renderApi", "SOFTWARE")
-  initHaskell()
-  runMigrations()
-  setupUpdateChecker()
-  initApp()
-  tmpDir.deleteRecursively()
-  tmpDir.mkdir()
-  return showApp()
+  try {
+    if (!acquireSingleInstance()) return
+    // Disable hardware acceleration
+    //System.setProperty("skiko.renderApi", "SOFTWARE")
+    initHaskell()
+    runMigrations()
+    setupUpdateChecker()
+    initApp()
+    tmpDir.deleteRecursively()
+    tmpDir.mkdir()
+    // showApp is inside the try: its first statements (SystemTray probe, Compose setup) are the
+    // process's first AWT init, which is itself a known startup failure cause (#4146). Crashes
+    // after the window appears are handled by the WindowExceptionHandler in showApp instead.
+    return showApp()
+  } catch (e: Throwable) {
+    showStartupError(e) // the jpackage launcher otherwise hides the error behind "Failed to launch JVM" (#4146)
+    throw e
+  }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)

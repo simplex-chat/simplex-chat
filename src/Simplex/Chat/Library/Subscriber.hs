@@ -349,13 +349,24 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             Just targetPath -> do
               fsTargetPath <- lift $ toFSFilePath targetPath
               renameFile xftpPath fsTargetPath
-              ci_ <- withStore $ \db -> do
-                liftIO $ do
-                  updateRcvFileStatus db fileId FSComplete
-                  updateCIFileStatus db user fileId CIFSRcvComplete
-                lookupChatItemByFileId db cxt user fileId
-              agentXFTPDeleteRcvFile aFileId fileId
-              toView $ maybe (CEvtRcvStandaloneFileComplete user fsTargetPath ft) (CEvtRcvFileComplete user) ci_
+              badDigest <- case ft of
+                RcvFileTransfer {fileInvitation = FileInvitation {fileDigest = Just d}, cryptoArgs} ->
+                  (/= d) <$> cryptoFileDigest (CryptoFile fsTargetPath cryptoArgs)
+                _ -> pure False
+              if badDigest
+                then do
+                  aci_ <- resetRcvCIFileStatus user fileId (CIFSRcvError $ FileErrOther "file digest")
+                  forM_ aci_ cleanupACIFile
+                  agentXFTPDeleteRcvFile aFileId fileId
+                  forM_ aci_ $ \aci -> toView $ CEvtChatItemUpdated user aci
+                else do
+                  ci_ <- withStore $ \db -> do
+                    liftIO $ do
+                      updateRcvFileStatus db fileId FSComplete
+                      updateCIFileStatus db user fileId CIFSRcvComplete
+                    lookupChatItemByFileId db cxt user fileId
+                  agentXFTPDeleteRcvFile aFileId fileId
+                  toView $ maybe (CEvtRcvStandaloneFileComplete user fsTargetPath ft) (CEvtRcvFileComplete user) ci_
         RFWARN e -> do
           ci <- withStore $ \db -> do
             liftIO $ updateCIFileStatus db user fileId (CIFSRcvWarning $ agentFileError e)
@@ -1422,7 +1433,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                               allRelayMembers
                           events = XGrpRelayNew <$> newlyActive
                       unless (null recipients) $
-                        void $ sendGroupMessages user gInfo Nothing False recipients events
+                        void $ sendGroupMessages user gInfo Nothing False recipients False events
                   where
                     updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
                     updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActiveLinks) =
@@ -2145,21 +2156,25 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         createContentItem gInfo Nothing Nothing
         -- no delivery task - message already forwarded by relay
         pure Nothing
-      Just m@GroupMember {memberId} -> do
-        (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
-        if blockedByAdmin m'
-          then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
-          else case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
-            Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
-            Nothing ->
-              withStore' (\db -> getCIModeration db cxt user gInfo' memberId sharedMsgId_) >>= \case
-                Just ciModeration -> do
-                  applyModeration gInfo' m' scopeInfo ciModeration
-                  withStore' $ \db -> deleteCIModeration db gInfo' memberId sharedMsgId_
-                  pure Nothing
-                Nothing -> do
-                  createContentItem gInfo' (Just m') scopeInfo
-                  pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
+      Just m@GroupMember {memberId}
+        -- only an owner may post as the channel; a non-owner's signed asGroup post (e.g. relay-injected) must not render as the channel
+        | sentAsGroup && memberRole' m < GROwner ->
+            messageError "x.msg.new: member is not allowed to send as group" $> Nothing
+        | otherwise -> do
+            (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
+            if blockedByAdmin m'
+              then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
+              else case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
+                Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
+                Nothing ->
+                  withStore' (\db -> getCIModeration db cxt user gInfo' memberId sharedMsgId_) >>= \case
+                    Just ciModeration -> do
+                      applyModeration gInfo' m' scopeInfo ciModeration
+                      withStore' $ \db -> deleteCIModeration db gInfo' memberId sharedMsgId_
+                      pure Nothing
+                    Nothing -> do
+                      createContentItem gInfo' (Just m') scopeInfo
+                      pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
       where
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
@@ -2223,7 +2238,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           groupMsgToView cInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_ asGroup_
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -2275,15 +2290,24 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC}
-              | isSender m' -> updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
+              | isSender m' -> requireVerifiedEdit (CDGroupRcv gInfo scopeInfo m') itemVerified $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC}
-              | maybe True (\m -> memberRole' m == GROwner) m_ -> updateCI True ci scopeInfo oldMC itemLive Nothing
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgVerified = itemVerified}, content = CIRcvMsgContent oldMC}
+              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireVerifiedEdit (CDChannelRcv gInfo scopeInfo) itemVerified $ updateCI True ci scopeInfo oldMC itemLive Nothing
               | otherwise -> messageError "x.msg.update: member attempted to update channel message" $> Nothing
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
+            -- a verified item requires a verified edit (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
+            requireVerifiedEdit :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgVerified -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+            requireVerifiedEdit cd itemVerified action
+              | itemVerified == Just (MVSigned MSSVerified) =
+                  case msgSigned of
+                    Just MSSVerified -> action
+                    Just MSSSignedNoKey -> logWarn "x.msg.update: unverified update of a signed item (no key to verify), dropped" $> Nothing
+                    Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
+              | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
         updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
@@ -2296,6 +2320,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 let edited = itemLive /= Just True
                 ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
                 ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
+                updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
                 updateGroupCIMentions db gInfo ci' ciMentions
               toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
@@ -2307,7 +2332,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
       findItem >>= \case
-        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> case (chatDir, m_) of
+        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> requireVerifiedDelete cci $ case (chatDir, m_) of
           (CIGroupRcv mem, Just m@GroupMember {memberId}) ->
             let msgMemberId = fromMaybe memberId sndMemberId_
                 isAuthor = sameMemberId memberId mem
@@ -2340,6 +2365,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               | senderRole < GRModerator -> do
                   messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
                   pure Nothing
+              -- a forged unsigned moderation would pre-censor a not-yet-received post via CIModeration; require verified (relay moderation always signs)
+              | useRelays' gInfo && msgSigned /= Just MSSVerified ->
+                  messageError ("x.msg.del: unverified moderation of message not yet received, " <> tshow e) $> Nothing
               | otherwise -> case scope_ of
                   Just (MSMember scopeMemberId) ->
                     withStore $ \db -> do
@@ -2353,7 +2381,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             messageError ("x.msg.del: channel message not found, " <> tshow e) $> Nothing
       where
         isOwner = maybe True (\m -> memberRole' m == GROwner) m_
-        RcvMessage {msgId} = rcvMsg
+        RcvMessage {msgId, msgSigned} = rcvMsg
         findItem = do
           let tryMemberLookup mId =
                 withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user gInfo mId sharedMsgId)
@@ -2383,6 +2411,23 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | senderRole < GRModerator || senderRole < memberRole =
               messageError "x.msg.del: message of another member with insufficient member permissions" $> Nothing
           | otherwise = a
+        -- a verified item requires a verified delete (fail-closed): unsigned is a forgery (bad-signature item); signed-but-no-key is unverifiable (drop with a log)
+        requireVerifiedDelete :: CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+        requireVerifiedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgVerified = itemVerified}}) action
+          | itemVerified == Just (MVSigned MSSVerified) =
+              case msgSigned of
+                Just MSSVerified -> action
+                Just MSSSignedNoKey -> logWarn "x.msg.del: unverified delete of a signed item (no key to verify), dropped" $> Nothing
+                Nothing -> do
+                  scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
+                  let cd :: ChatDirection 'CTGroup 'MDRcv
+                      cd = case chatDir of
+                        CIGroupRcv mem -> CDGroupRcv gInfo scopeInfo mem
+                        CIChannelRcv -> CDChannelRcv gInfo scopeInfo
+                        CIGroupSnd -> CDGroupRcv gInfo scopeInfo membership
+                  createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
+                  pure Nothing
+          | otherwise = action
         delete :: CChatItem 'CTGroup -> Bool -> Maybe GroupMember -> CM (Maybe DeliveryTaskContext)
         delete cci asGroup byGroupMember = do
           scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
@@ -2788,7 +2833,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           when contentChanged $ updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
-              m' <- withStore $ \db -> updateMemberProfile db cxt user m p'
+              m' <- withStore $ \db -> updateMemberProfile db cxt user m p''
               unless (muteEventInChannel gInfo m') $ do
                 when contentChanged $ forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2813,7 +2858,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise =
           pure m
       where
-        contentChanged = not (sameProfileContent (redactedMemberProfile gInfo m (fromLocalProfile p)) (redactedMemberProfile gInfo m p'))
+        p'' = redactedMemberProfile gInfo m p'
+        contentChanged = not (sameProfileContent (redactedMemberProfile gInfo m (fromLocalProfile p)) p'')
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -4419,7 +4465,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   sigKeys <- liftIO $ atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
-                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData)
+                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData) Nothing
                   ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
                   sLnk <- case connShortLink' ccLink' of
                     Just sl -> pure sl

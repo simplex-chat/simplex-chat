@@ -2648,7 +2648,6 @@
     <string name="relay_conn_status_connecting">соединяется</string>
     <string name="create_channel_title">Создать публичный канал</string>
     <string name="create_channel_button">Создать публичный канал</string>
-    <string name="create_channel_beta_button">Создать публичный канал (БЕТА)</string>
     <string name="creating_channel">Создание канала</string>
     <string name="rcv_channel_events_count">%d событий канала</string>
     <string name="button_delete_channel">Удалить канал</string>
@@ -2771,7 +2770,6 @@
     <string name="chat_banner_your_channel">Ваш канал</string>
     <string name="chat_link_group">Ссылка группы</string>
     <string name="chat_link_from_owner">(от владельца)</string>
-    <string name="chat_link_signed">(с подписью)</string>
     <string name="error_sharing_channel">Ошибка при публикации канала</string>
     <string name="you_are_subscriber">Вы подписчик</string>
     <string name="new_1_time_link">Новая одноразовая ссылка</string>

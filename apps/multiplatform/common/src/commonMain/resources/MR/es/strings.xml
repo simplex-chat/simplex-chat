@@ -2600,7 +2600,6 @@
     <string name="info_row_connection_failed">Conexión fallida</string>
     <string name="create_channel_title">Crear canal público</string>
     <string name="create_channel_button">Crear canal público</string>
-    <string name="create_channel_beta_button">Crear canal público (BETA)</string>
     <string name="creating_channel">Creando canal</string>
     <string name="rcv_channel_events_count">%d eventos del canal</string>
     <string name="button_delete_channel">Eliminar canal</string>
@@ -2777,7 +2776,6 @@
     <string name="share_channel">Compartir canal…</string>
     <string name="share_via_chat">Compartir en chat</string>
     <string name="owner_verification_failed">⚠️ Verificación de firma fallida: %s.</string>
-    <string name="chat_link_signed">(firmado)</string>
     <string name="members_can_chat_with_admins_channel">Los suscriptores pueden chatear con los administradores.</string>
     <string name="talk_to_someone">Para comunicarte</string>
     <string name="tap_to_open">Pulsa para abrir</string>

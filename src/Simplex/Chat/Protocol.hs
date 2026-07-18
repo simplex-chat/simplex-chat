@@ -1350,6 +1350,14 @@ requiresSignature = \case
   XInfo_ -> True
   _ -> False
 
+-- | Content events a member may sign (XMsgNew opt-in; XMsgUpdate/XMsgDel when the target was signed).
+signableContent :: CMEventTag e -> Bool
+signableContent = \case
+  XMsgNew_ -> True
+  XMsgUpdate_ -> True
+  XMsgDel_ -> True
+  _ -> False
+
 -- TODO [relays] can be tightened — sender keys are now disseminated via
 -- TODO   prepended XGrpMemNew before forwarded XInfo/XGrpLeave reach the recipient.
 -- Allow signed but unverified XGrpLeave/XInfo between subscribers when sender's key is unknown.

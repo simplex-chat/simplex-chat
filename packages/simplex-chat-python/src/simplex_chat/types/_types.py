@@ -204,6 +204,7 @@ class BusinessChatInfo(TypedDict):
     chatType: "BusinessChatType"
     businessId: str
     customerId: str
+    businessDomain: NotRequired["SimplexDomainClaim"]
 
 BusinessChatType = Literal["business", "customer"]
 
@@ -587,7 +588,7 @@ class CIMeta(TypedDict):
     editable: bool
     forwardedByMember: NotRequired[int]  # int64
     showGroupAsSender: bool
-    msgSigned: NotRequired["MsgSigStatus"]
+    msgVerified: NotRequired["MsgVerified"]
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
@@ -1775,6 +1776,7 @@ class FullGroupPreferences(TypedDict):
     support: "SupportGroupPreference"
     sessions: "RoleGroupPreference"
     comments: "CommentsGroupPreference"
+    signMessages: "GroupPreference"
     commands: list["ChatBotCommand"]
 
 class FullPreferences(TypedDict):
@@ -1818,7 +1820,7 @@ class GroupDirectInvitation(TypedDict):
     fromGroupMemberConnId_: NotRequired[int]  # int64
     groupDirectInvStartedConnection: bool
 
-GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments"]
+GroupFeature = Literal["timedMessages", "directMessages", "fullDelete", "reactions", "voice", "files", "simplexLinks", "reports", "history", "support", "sessions", "comments", "signMessages"]
 
 GroupFeatureEnabled = Literal["on", "off"]
 
@@ -1933,6 +1935,7 @@ class GroupMember(TypedDict):
     supportChat: NotRequired["GroupSupportChat"]
     memberPubKey: NotRequired[str]
     relayLink: NotRequired[str]
+    memberVerifiedCode: NotRequired["SecurityCode"]
 
 class GroupMemberAdmission(TypedDict):
     review: NotRequired["MemberCriteria"]
@@ -1966,6 +1969,7 @@ class GroupPreferences(TypedDict):
     support: NotRequired["SupportGroupPreference"]
     sessions: NotRequired["RoleGroupPreference"]
     comments: NotRequired["CommentsGroupPreference"]
+    signMessages: NotRequired["GroupPreference"]
     commands: NotRequired[list["ChatBotCommand"]]
 
 class GroupProfile(TypedDict):
@@ -2103,6 +2107,7 @@ class LocalProfile(TypedDict):
     displayName: str
     fullName: str
     shortDescr: NotRequired[str]
+    description: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
@@ -2243,6 +2248,17 @@ MsgReceiptStatus = Literal["ok", "badMsgHash"]
 
 MsgSigStatus = Literal["verified", "signedNoKey"]
 
+class MsgVerified_signed(TypedDict):
+    type: Literal["signed"]
+    sigStatus: "MsgSigStatus"
+
+class MsgVerified_sigMissing(TypedDict):
+    type: Literal["sigMissing"]
+
+MsgVerified = MsgVerified_signed | MsgVerified_sigMissing
+
+MsgVerified_Tag = Literal["signed", "sigMissing"]
+
 class NameErrorType_NO_RESOLVER(TypedDict):
     type: Literal["NO_RESOLVER"]
 
@@ -2373,6 +2389,7 @@ class Profile(TypedDict):
     displayName: str
     fullName: str
     shortDescr: NotRequired[str]
+    description: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]

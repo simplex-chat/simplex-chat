@@ -24,6 +24,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), mkStoreCxt)
+import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -88,7 +89,7 @@ serviceProfile :: Profile
 serviceProfile = mkProfile "service_user" "Service user" Nothing
 
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
-mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, description = Nothing, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
 
 it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
@@ -241,7 +242,9 @@ genProfileImg = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
+    -- raw bytes that base64-encode to fit maxProfileImageSize when prefixed with "data:image/png;base64,"
+    lrgLen = (maxProfileImageSize - imagePrefixLen) * 3 `div` 4 - 1
+    imagePrefixLen = 22
 
 -- PQ combinators /
 
@@ -312,17 +315,17 @@ groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNo
 
 groupFeatures_ :: Int -> Bool -> [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures_ dir isChannel =
-  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
-    ((dir, "Direct messages: on"), Nothing, Nothing),
-    ((dir, "Full deletion: off"), Nothing, Nothing),
-    ((dir, "Message reactions: on"), Nothing, Nothing),
-    ((dir, "Voice messages: on"), Nothing, Nothing),
-    ((dir, "Files and media: on"), Nothing, Nothing),
-    ((dir, "SimpleX links: on"), Nothing, Nothing),
-    ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing),
-    ((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)
-  ]
+  [((dir, "Disappearing messages: off"), Nothing, Nothing)]
+    <> [((dir, "Direct messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Full deletion: off"), Nothing, Nothing)]
+    <> [((dir, "Message reactions: on"), Nothing, Nothing)]
+    <> [((dir, "Voice messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Files and media: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "SimpleX links: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Member reports: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Recent history: on"), Nothing, Nothing)]
+    <> [((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)]
+    <> [((dir, "Sign messages: off"), Nothing, Nothing) | isChannel]
 
 businessGroupFeatures :: [(Int, String)]
 businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0

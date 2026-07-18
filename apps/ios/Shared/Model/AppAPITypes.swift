@@ -45,7 +45,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag?, pagination: ChatPagination, search: String)
     case apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?)
     case apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64)
-    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, sign: Bool, composedMessages: [ComposedMessage])
     case apiCreateChatTag(tag: ChatTagData)
     case apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64])
     case apiDeleteChatTag(tagId: Int64)
@@ -63,6 +63,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiPlanForwardChatItems(fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64])
     case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
     case apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool)
+    case apiShareMyAddress(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -240,11 +241,11 @@ enum ChatCommand: ChatCmdProtocol {
                 return "/_get chat \(chatId)\(scopeRef(scope))\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
             case let .apiGetChatContentTypes(chatId, scope): return "/_get content types \(chatId)\(scopeRef(scope))"
             case let .apiGetChatItemInfo(type, id, scope, itemId): return "/_get item info \(ref(type, id, scope: scope)) \(itemId)"
-            case let .apiSendMessages(type, id, scope, sendAsGroup, live, ttl, composedMessages):
+            case let .apiSendMessages(type, id, scope, sendAsGroup, live, ttl, sign, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
                 let asGroup = sendAsGroup ? "(as_group=on)" : ""
-                return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+                return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) sign=\(onOff(sign)) json \(msgs)"
             case let .apiCreateChatTag(tag): return "/_create tag \(encodeJSON(tag))"
             case let .apiSetChatTags(type, id, tagIds): return "/_tags \(ref(type, id, scope: nil)) \(tagIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiDeleteChatTag(tagId): return "/_delete tag \(tagId)"
@@ -270,6 +271,9 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiShareChatMsgContent(shareChatType, shareChatId, toChatType, toChatId, toScope, sendAsGroup):
                 let asGroup = sendAsGroup ? "(as_group=on)" : ""
                 return "/_share chat content \(ref(shareChatType, shareChatId, scope: nil)) \(ref(toChatType, toChatId, scope: toScope))\(asGroup)"
+            case let .apiShareMyAddress(toChatType, toChatId, toScope, sendAsGroup):
+                let asGroup = sendAsGroup ? "(as_group=on)" : ""
+                return "/_share address \(ref(toChatType, toChatId, scope: toScope))\(asGroup)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -469,6 +473,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiPlanForwardChatItems: return "apiPlanForwardChatItems"
             case .apiForwardChatItems: return "apiForwardChatItems"
             case .apiShareChatMsgContent: return "apiShareChatMsgContent"
+            case .apiShareMyAddress: return "apiShareMyAddress"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"

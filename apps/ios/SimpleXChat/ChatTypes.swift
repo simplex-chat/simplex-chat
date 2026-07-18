@@ -34,6 +34,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var shortDescr: String? { profile.shortDescr }
+    public var profileDescription: String? { profile.description }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
@@ -116,6 +117,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         displayName: String,
         fullName: String,
         shortDescr: String? = nil,
+        description: String? = nil,
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
@@ -125,6 +127,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.displayName = displayName
         self.fullName = fullName
         self.shortDescr = shortDescr
+        self.description = description
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
@@ -134,6 +137,7 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var displayName: String
     public var fullName: String
     public var shortDescr: String?
+    public var description: String?
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
@@ -142,6 +146,8 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var badge: BadgeProof?
     public var localAlias: String { get { "" } }
     public var contactDomain: SimplexDomainClaim?
+
+    public var profileDescription: String? { description }
 
     var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
@@ -159,6 +165,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         displayName: String,
         fullName: String,
         shortDescr: String? = nil,
+        description: String? = nil,
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
@@ -172,6 +179,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.displayName = displayName
         self.fullName = fullName
         self.shortDescr = shortDescr
+        self.description = description
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
@@ -186,6 +194,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var displayName: String
     public var fullName: String
     public var shortDescr: String?
+    public var description: String?
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
@@ -194,6 +203,8 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localAlias: String
     public var contactDomain: SimplexDomainClaim?
     public var contactDomainVerified: Bool?
+
+    public var profileDescription: String? { description }
 
     var profileViewName: String {
         localAlias == ""
@@ -285,6 +296,7 @@ public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias
         displayName: profile.displayName,
         fullName: profile.fullName,
         shortDescr: profile.shortDescr,
+        description: profile.description,
         image: profile.image,
         contactLink: profile.contactLink,
         preferences: profile.preferences,
@@ -298,6 +310,7 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
         displayName: profile.displayName,
         fullName: profile.fullName,
         shortDescr: profile.shortDescr,
+        description: profile.description,
         image: profile.image,
         contactLink: profile.contactLink,
         preferences: profile.preferences,
@@ -323,11 +336,14 @@ public protocol NamedChat {
     var displayName: String { get }
     var fullName: String { get }
     var shortDescr: String? { get }
+    var profileDescription: String? { get }
     var image: String? { get }
     var localAlias: String { get }
 }
 
 extension NamedChat {
+    public var profileDescription: String? { nil }
+
     public var chatViewName: String {
         localAlias == ""
         ? displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)")
@@ -946,6 +962,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
     case reports
     case history
     case support
+    case signMessages
 
     public var id: Self { self }
 
@@ -968,6 +985,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: false
         case .history: false
         case .support: false
+        case .signMessages: false
         }
     }
 
@@ -987,6 +1005,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
             : NSLocalizedString("Member reports", comment: "chat feature")
         case .history: return NSLocalizedString("Visible history", comment: "chat feature")
         case .support: return NSLocalizedString("Chat with admins", comment: "chat feature")
+        case .signMessages: return NSLocalizedString("Sign messages", comment: "chat feature")
         }
     }
 
@@ -1002,6 +1021,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: return "flag"
         case .history: return "clock"
         case .support: return "questionmark.circle"
+        case .signMessages: return "checkmark.seal"
         }
     }
 
@@ -1017,6 +1037,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .reports: return "flag.fill"
         case .history: return "clock.fill"
         case .support: return "questionmark.circle.fill"
+        case .signMessages: return "checkmark.seal.fill"
         }
     }
 
@@ -1089,6 +1110,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                     ? "Allow subscribers to chat with admins."
                     : "Allow members to chat with admins."
                 case .off: return "Prohibit chats with admins."
+                }
+            case .signMessages:
+                switch enabled {
+                case .on: return "Require signing messages."
+                case .off: return "Do not require signing messages."
                 }
             }
         } else {
@@ -1166,6 +1192,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                     ? "Subscribers can chat with admins."
                     : "Members can chat with admins."
                 case .off: return "Chats with admins are prohibited."
+                }
+            case .signMessages:
+                switch enabled {
+                case .on: return "Message signing is required."
+                case .off: return "Message signing is not required."
                 }
             }
         }
@@ -1322,6 +1353,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var reports: GroupPreference
     public var history: GroupPreference
     public var support: GroupPreference
+    public var signMessages: GroupPreference
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1335,6 +1367,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         reports: GroupPreference,
         history: GroupPreference,
         support: GroupPreference,
+        signMessages: GroupPreference,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1347,6 +1380,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.reports = reports
         self.history = history
         self.support = support
+        self.signMessages = signMessages
         self.commands = commands
     }
 
@@ -1361,6 +1395,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         reports: GroupPreference(enable: .on),
         history: GroupPreference(enable: .on),
         support: GroupPreference(enable: .on),
+        signMessages: GroupPreference(enable: .off),
         commands: []
     )
 }
@@ -1376,6 +1411,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var reports: GroupPreference?
     public var history: GroupPreference?
     public var support: GroupPreference?
+    public var signMessages: GroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1389,6 +1425,7 @@ public struct GroupPreferences: Codable, Hashable {
         reports: GroupPreference? = nil,
         history: GroupPreference? = nil,
         support: GroupPreference? = nil,
+        signMessages: GroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1401,6 +1438,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.reports = reports
         self.history = history
         self.support = support
+        self.signMessages = signMessages
         self.commands = commands
     }
 
@@ -1430,6 +1468,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
         history: fullPreferences.history,
+        signMessages: fullPreferences.signMessages,
         commands: fullPreferences.commands
     )
 }
@@ -1581,6 +1620,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         case .local: nil
         case let .contactRequest(contactRequest): contactRequest.profile.shortDescr
         case let .contactConnection(contactConnection): nil
+        case .invalidJSON: nil
+        }
+    }
+
+    public var profileDescription: String? {
+        switch self {
+        case let .direct(contact): contact.profile.description
+        case let .group(groupInfo, _): groupInfo.profileDescription
+        case .local: nil
+        case let .contactRequest(contactRequest): contactRequest.profile.description
+        case .contactConnection: nil
         case .invalidJSON: nil
         }
     }
@@ -2145,6 +2195,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var shortDescr: String? { profile.shortDescr }
+    public var profileDescription: String? { profile.description }
     public var image: String? { get { profile.image } }
     public var contactLink: String? { get { profile.contactLink } }
     public var localAlias: String { profile.localAlias }
@@ -2363,6 +2414,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var ready: Bool { get { true } }
     public var displayName: String { get { profile.displayName } }
     public var shortDescr: String? { profile.shortDescr }
+    public var profileDescription: String? { profile.description }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { "" }
@@ -2539,6 +2591,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var shortDescr: String? { groupProfile.shortDescr }
+    public var profileDescription: String? { businessChat != nil ? groupProfile.description : nil }
     public var image: String? { get { groupProfile.image } }
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
@@ -2765,6 +2818,31 @@ public struct GroupShortLinkData: Codable, Hashable {
     public var publicGroupData: PublicGroupData?
 }
 
+public enum MsgSigStatus: String, Decodable, Equatable, Hashable {
+    case verified
+    case signedNoKey
+}
+
+public enum MsgVerified: Decodable, Equatable, Hashable {
+    case signed(sigStatus: MsgSigStatus)
+    case sigMissing
+
+    public var verified: Bool {
+        if case let .signed(sigStatus) = self { return sigStatus == .verified }
+        return false
+    }
+
+    public var sigMissingInfo: (String, String)? {
+        switch self {
+        case .sigMissing: return (
+                NSLocalizedString("Signature missing", comment: "alert title"),
+                NSLocalizedString("The channel required this message to be signed, but the signature is missing.", comment: "alert message")
+            )
+        default: return nil
+        }
+    }
+}
+
 public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case new
     case invited
@@ -2857,6 +2935,7 @@ public struct BusinessChatInfo: Decodable, Hashable {
     public var chatType: BusinessChatType
     public var businessId: String
     public var customerId: String
+    public var businessDomain: SimplexDomainClaim?
 }
 
 public enum BusinessChatType: String, Codable, Hashable {
@@ -2882,6 +2961,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var supportChat: GroupSupportChat?
     public var memberChatVRange: VersionRange
     public var relayLink: String?
+    public var memberVerifiedCode: SecurityCode?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -2903,7 +2983,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
     public var nameBadge: LocalBadge? { memberProfile.localBadge }
-    public var verified: Bool { activeConn?.connectionCode != nil }
+    public var verified: Bool { memberVerifiedCode != nil || activeConn?.connectionCode != nil }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
     var directChatId: ChatId? {
@@ -3740,7 +3820,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 userMention: false,
                 deletable: false,
                 editable: false,
-                showGroupAsSender: false
+                showGroupAsSender: false,
+                msgVerified: nil
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
             quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
@@ -3764,7 +3845,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 userMention: false,
                 deletable: false,
                 editable: false,
-                showGroupAsSender: false
+                showGroupAsSender: false,
+                msgVerified: nil
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
@@ -3788,7 +3870,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 userMention: false,
                 deletable: false,
                 editable: false,
-                showGroupAsSender: false
+                showGroupAsSender: false,
+                msgVerified: nil
             ),
             content: .sndMsgContent(msgContent: .text("")),
             quotedItem: nil,
@@ -3867,6 +3950,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
     public var showGroupAsSender: Bool
+    public var msgVerified: MsgVerified?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
@@ -3892,7 +3976,8 @@ public struct CIMeta: Decodable, Hashable {
             userMention: false,
             deletable: deletable,
             editable: editable,
-            showGroupAsSender: false
+            showGroupAsSender: false,
+            msgVerified: nil
         )
     }
 
@@ -3910,7 +3995,8 @@ public struct CIMeta: Decodable, Hashable {
             userMention: false,
             deletable: false,
             editable: false,
-            showGroupAsSender: false
+            showGroupAsSender: false,
+            msgVerified: nil
         )
     }
 }
@@ -5147,11 +5233,7 @@ public enum MsgChatLink: Equatable, Hashable {
             NSLocalizedString("One-time link", comment: "chat link info line")
         }
         if signed {
-            s += " " + (
-                self.isPublicGroup
-                    ? NSLocalizedString("(from owner)", comment: "chat link info line")
-                    : NSLocalizedString("(signed)", comment: "chat link info line")
-            )
+            s += " " + NSLocalizedString("(from owner)", comment: "chat link info line")
         }
         return s
     }
@@ -5254,9 +5336,13 @@ public enum Format: Decodable, Equatable, Hashable {
     case simplexName(nameInfo: SimplexNameInfo)
     case command(commandStr: String)
     case mention(memberName: String)
+    case modal(modalName: String, text: String)
     case email
     case phone
     case unknown
+
+    // client-only format that opens a modal when tapped, see openMarkdownModal
+    public static let modalDescription = "description"
 
     public var isSimplexLink: Bool {
         get {

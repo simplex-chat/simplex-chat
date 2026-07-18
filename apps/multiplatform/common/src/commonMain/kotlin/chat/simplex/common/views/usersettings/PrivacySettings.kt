@@ -139,6 +139,12 @@ fun MorePrivacyView(chatModel: ChatModel) {
         stringResource(MR.strings.verify_simplex_names),
         chatModel.controller.appPrefs.privacyVerifySimplexNames
       )
+      // hidden until message signing is user-facing (recipient-only stage)
+//      SettingsPreferenceItem(
+//        painterResource(MR.images.ic_verified),
+//        stringResource(MR.strings.show_signature),
+//        chatModel.controller.appPrefs.privacyShowSignature
+//      )
     }
     SectionDividerSpaced()
 
@@ -147,6 +153,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.show_encryption), chatModel.controller.appPrefs.privacyShowEncryption)
     }
     SectionTextFooter(
       if (chatModel.controller.appPrefs.privacyAskToApproveRelays.state.value) {

@@ -1005,7 +1005,6 @@ struct ChatView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
         @Binding @ObservedObject var chat: Chat
-        @State private var showSecrets: Set<Int> = []
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -1028,13 +1027,16 @@ struct ChatView: View {
                         .frame(maxWidth: 260)
                 }
 
-                if let shortDescr = chat.chatInfo.shortDescr {
-                    let r = markdownText(shortDescr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
-                    msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(4)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal)
+                ProfileDescriptionView(shortDescr: chat.chatInfo.shortDescr, description: chat.chatInfo.profileDescription)
+                    .padding(.horizontal)
+
+                switch chat.chatInfo {
+                case let .direct(contact):
+                    contactSimplexNameView(contact, verifiable: false)
+                case let .group(groupInfo, _):
+                    groupSimplexNameView(groupInfo, verifiable: false)
+                default:
+                    EmptyView()
                 }
 
                 if let chatContext {

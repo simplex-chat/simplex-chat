@@ -283,20 +283,21 @@ Send messages.
 - sendRef: [ChatRef](./TYPES.md#chatref)
 - liveMessage: bool
 - ttl: int?
+- signMessages: bool
 - composedMessages: [[ComposedMessage](./TYPES.md#composedmessage)]
 
 **Syntax**:
 
 ```
-/_send <str(sendRef)>[ live=on][ ttl=<ttl>] json <json(composedMessages)>
+/_send <str(sendRef)>[ live=on][ ttl=<ttl>][ sign=on] json <json(composedMessages)>
 ```
 
 ```javascript
-'/_send ' + ChatRef.cmdString(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
+'/_send ' + ChatRef.cmdString(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + (signMessages ? ' sign=on' : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
 ```
 
 ```python
-'/_send ' + ChatRef_cmd_string(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
+'/_send ' + ChatRef_cmd_string(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + (' sign=on' if signMessages else '') + ' json ' + json.dumps(composedMessages) # Python
 ```
 
 **Responses**:

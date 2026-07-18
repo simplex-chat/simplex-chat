@@ -694,6 +694,7 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     shortDescr :: Maybe Text, -- short description limited to 160 characters
+    description :: Maybe Text, -- long description (businesses/bots); redacted per group policy in member profiles
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
@@ -732,14 +733,14 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
-  LocalProfile {displayName = n1, fullName = fn1, image = i1, shortDescr = d1}
-  LocalProfile {displayName = n2, fullName = fn2, image = i2, shortDescr = d2} =
-    n1 == n2 && fn1 == fn2 && i1 == i2 && d1 == d2
+  LocalProfile {displayName = n1, fullName = fn1, image = i1, shortDescr = d1, description = desc1}
+  LocalProfile {displayName = n2, fullName = fn2, image = i2, shortDescr = d2, description = desc2} =
+    n1 == n2 && fn1 == fn2 && i1 == i2 && d1 == d2 && desc1 == desc2
 
 -- equal for profile-update detection: badge proofs are re-generated for every presentation,
 -- so compare badges by disclosed info (not proof bytes) - a re-presentation of the same badge is a no-op
@@ -778,6 +779,7 @@ data LocalProfile = LocalProfile
     displayName :: ContactName,
     fullName :: Text,
     shortDescr :: Maybe Text,
+    description :: Maybe Text,
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
@@ -793,15 +795,15 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
+  LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, contactDomain} =
   -- the name proof is re-signed on each send
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
+  Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
   where
     wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case
@@ -1050,7 +1052,9 @@ data MemberInfo = MemberInfo
 data BusinessChatInfo = BusinessChatInfo
   { chatType :: BusinessChatType,
     businessId :: MemberId,
-    customerId :: MemberId
+    customerId :: MemberId,
+    -- TODO [names] sent in protocol in GroupInvitation
+    businessDomain :: Maybe SimplexDomainClaim
   }
   deriving (Eq, Show)
 
@@ -1137,7 +1141,10 @@ data GroupMember = GroupMember
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
     memberPubKey :: Maybe C.PublicKeyEd25519,
-    relayLink :: Maybe ShortLinkContact
+    relayLink :: Maybe ShortLinkContact,
+    -- out-of-band verified security code for connectionless (channel) members;
+    -- regular members carry it in activeConn instead (see memberSecurityCode)
+    memberVerifiedCode :: Maybe SecurityCode
   }
   deriving (Eq, Show)
 
@@ -1217,7 +1224,7 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
   | otherwise = Nothing
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
-memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
+memberSecurityCode GroupMember {activeConn, memberVerifiedCode} = memberVerifiedCode <|> (connectionCode =<< activeConn)
 
 memberBlocked :: GroupMember -> Bool
 memberBlocked m = blockedByAdmin m || not (showMessages $ memberSettings m)
@@ -1901,6 +1908,15 @@ sameVerificationCode :: Text -> Text -> Bool
 sameVerificationCode c1 c2 = noSpaces c1 == noSpaces c2
   where
     noSpaces = T.filter (/= ' ')
+
+-- keys are ordered so both members derive the same code regardless of who computes it
+channelMemberCode :: C.PublicKeyEd25519 -> C.PublicKeyEd25519 -> Text
+channelMemberCode k1 k2 =
+  let (lo, hi) = if b1 <= b2 then (b1, b2) else (b2, b1)
+   in verificationCode $ C.sha256Hash (lo <> hi)
+  where
+    b1 = C.pubKeyBytes k1
+    b2 = C.pubKeyBytes k2
 
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId

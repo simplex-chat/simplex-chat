@@ -112,7 +112,6 @@ struct ChatInfoView: View {
     @State private var sendReceiptsUserDefault = true
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State private var showSecrets: Set<Int> = []
 
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
@@ -393,33 +392,8 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
-            if let domain = contact.profile.contactDomain,
-               contact.profile.contactDomainVerified != nil || domain.proof != nil {
-                SimplexNameView(
-                    simplexName: "@\(domain.shortName)",
-                    verified: contact.profile.contactDomainVerified,
-                    verify: {
-                        do {
-                            let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
-                            await MainActor.run {
-                                chatModel.updateContact(ct)
-                                contact = ct
-                            }
-                            return (ct.profile.contactDomainVerified, reason)
-                        } catch {
-                            logger.error("apiVerifyContactDomain: \(responseError(error))")
-                            return nil
-                        }
-                    }
-                )
-            }
-            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
-                let r = markdownText(descr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
-                msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(4)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            contactSimplexNameView(contact) { contact = $0 }
+            ProfileDescriptionView(shortDescr: cInfo.shortDescr, description: cInfo.profileDescription)
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -1374,38 +1348,124 @@ private func deleteNotReadyContact(
     ))
 }
 
+@ViewBuilder func contactSimplexNameView(_ contact: Contact, verifiable: Bool = true, onUpdate: ((Contact) -> Void)? = nil) -> some View {
+    if let domain = contact.profile.contactDomain,
+       contact.profile.contactDomainVerified != nil || domain.proof != nil {
+        SimplexNameView(
+            simplexName: "@\(domain.domain)",
+            verified: contact.profile.contactDomainVerified,
+            verify: {
+                do {
+                    let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
+                    await MainActor.run {
+                        ChatModel.shared.updateContact(ct)
+                        onUpdate?(ct)
+                    }
+                    return (ct.profile.contactDomainVerified, reason)
+                } catch {
+                    logger.error("apiVerifyContactDomain: \(responseError(error))")
+                    return nil
+                }
+            },
+            verifiable: verifiable
+        )
+    }
+}
+
+@ViewBuilder func groupSimplexNameView(_ groupInfo: GroupInfo, verifiable: Bool = true, onUpdate: ((GroupInfo) -> Void)? = nil) -> some View {
+    if groupInfo.businessChat == nil {
+        if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
+           let domain = access.groupDomainClaim?.shortName,
+           groupInfo.groupDomainVerified != nil || access.groupDomainClaim?.proof != nil {
+            SimplexNameView(
+                simplexName: "#\(domain)",
+                verified: groupInfo.groupDomainVerified,
+                verify: {
+                    do {
+                        let (gInfo, reason) = try await apiVerifyGroupDomain(groupInfo.groupId)
+                        await MainActor.run {
+                            ChatModel.shared.updateGroup(gInfo)
+                            onUpdate?(gInfo)
+                        }
+                        return (gInfo.groupDomainVerified, reason)
+                    } catch {
+                        logger.error("apiVerifyGroupDomain: \(responseError(error))")
+                        return nil
+                    }
+                },
+                verifiable: verifiable
+            )
+        }
+    } else if let claim = groupInfo.businessChat?.businessDomain,
+              groupInfo.groupDomainVerified != nil || claim.proof != nil {
+        // A business presents as a contact, so the name retains its .simplex suffix; it cannot be re-verified.
+        SimplexNameView(
+            simplexName: "@\(claim.domain)",
+            verified: groupInfo.groupDomainVerified,
+            verify: { nil },
+            verifiable: false
+        )
+    }
+}
+
 struct SimplexNameView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) var autoVerify = false
     let simplexName: String
     let verified: Bool?
     let verify: () async -> (Bool?, String?)?
+    var verifiable: Bool = true
     @State private var inFlight = false
     @State private var showSpinner = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text(simplexName)
-                .font(verified == true ? .subheadline : .system(.subheadline, design: .monospaced))
-                .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
-            indicator()
-        }
-        .padding(.bottom, 2)
-        .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
+        content
+            .padding(.bottom, 2)
+            .onAppear { if verifiable && autoVerify && verified == nil { runVerify(manual: false) } }
     }
 
-    @ViewBuilder private func indicator() -> some View {
+    private var nameText: Text {
+        Text(simplexName)
+            .font(.subheadline)
+            .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
+    }
+
+    // Size the inline check/cross to the name's cap height so it reads like a capital letter, not an oversized glyph.
+    private var iconFont: Font { .system(size: UIFont.preferredFont(forTextStyle: .subheadline).capHeight) }
+
+    @ViewBuilder private var content: some View {
         if showSpinner {
-            ProgressView()
+            HStack(spacing: 6) {
+                nameText
+                ProgressView()
+            }
         } else if verified == true {
-            Image(systemName: "checkmark")
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                nameText
+                Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIPasteboard.general.string = simplexName
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            }
+        } else if !verifiable {
+            nameText
         } else if verified == false {
-            Image(systemName: "xmark")
-                .foregroundColor(.red)
-                .onTapGesture { runVerify(manual: true) }
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                nameText
+                Image(systemName: "xmark").font(iconFont).foregroundColor(.red)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { runVerify(manual: true) }
         } else {
-            Button { runVerify(manual: true) } label: {
-                Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+            HStack(spacing: 6) {
+                nameText
+                Button { runVerify(manual: true) } label: {
+                    Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+                }
             }
         }
     }

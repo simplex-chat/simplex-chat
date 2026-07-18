@@ -2535,7 +2535,6 @@
     <string name="relay_conn_status_connecting">kapcsolódás</string>
     <string name="create_channel_title">Nyilvános csatorna létrehozása</string>
     <string name="create_channel_button">Nyilvános csatorna létrehozása</string>
-    <string name="create_channel_beta_button">Nyilvános csatorna létrehozása (BÉTA)</string>
     <string name="creating_channel">Csatorna létrehozása</string>
     <string name="relay_conn_status_deleted">törölve</string>
     <string name="relay_conn_status_failed">sikertelen</string>
@@ -2671,7 +2670,6 @@
     <string name="share_channel">Csatorna megosztása…</string>
     <string name="share_via_chat">Megosztás egy csevegésen keresztül</string>
     <string name="owner_verification_failed">⚠️ Nem sikerült ellenőrizni az aláírást: %s.</string>
-    <string name="chat_link_signed">(aláírva)</string>
     <string name="tap_to_open">Koppintson ide a megnyitáshoz</string>
     <string name="link_previews_alert_disable">Letiltás</string>
     <string name="link_previews_alert_enable">Engedélyezés</string>

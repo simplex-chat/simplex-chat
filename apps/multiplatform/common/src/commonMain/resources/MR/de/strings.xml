@@ -2663,7 +2663,6 @@
     <string name="relay_conn_status_connecting">Verbinde</string>
     <string name="create_channel_title">Öffentlichen Kanal erstellen</string>
     <string name="create_channel_button">Öffentlichen Kanal erstellen</string>
-    <string name="create_channel_beta_button">Öffentlichen Kanal erstellen (BETA)</string>
     <string name="creating_channel">Kanal wird erstellt</string>
     <string name="relay_test_step_decode_link">Link dekodieren</string>
     <string name="button_delete_channel">Kanal löschen</string>
@@ -2783,7 +2782,6 @@
     <string name="share_channel">Kanal teilen…</string>
     <string name="share_via_chat">Per Chat teilen</string>
     <string name="owner_verification_failed">⚠️ Signaturüberprüfung fehlgeschlagen: %s.</string>
-    <string name="chat_link_signed">(signiert)</string>
     <string name="tap_to_open">Zum Öffnen tippen</string>
     <string name="connection_reached_limit_of_undelivered_messages">Die Verbindung hat das Limit für nicht zugestellte Nachrichten erreicht</string>
     <string name="channel_preferences">Kanal-Präferenzen</string>

@@ -2579,7 +2579,6 @@
     <string name="relay_conn_status_connecting">正在连接</string>
     <string name="create_channel_title">创建公开频道</string>
     <string name="create_channel_button">创建公开频道</string>
-    <string name="create_channel_beta_button">创建公开频道（测试版）</string>
     <string name="creating_channel">正在创建频道</string>
     <string name="relay_test_step_decode_link">解码链接</string>
     <string name="button_delete_channel">删除频道</string>
@@ -2691,7 +2690,6 @@
     <string name="share_channel">分享频道…</string>
     <string name="share_via_chat">经聊天分享</string>
     <string name="owner_verification_failed">⚠️ 签名验证失败：%s。</string>
-    <string name="chat_link_signed">（已签名）</string>
     <string name="tap_to_open">轻触打开</string>
     <string name="link_previews_alert_desc">发送链接预览可能会将你的 IP 地址暴露给网站。你可以稍后在“隐私”设置中更改此设置。</string>
     <string name="connection_reached_limit_of_undelivered_messages">连接达到了未送达消息的上限</string>

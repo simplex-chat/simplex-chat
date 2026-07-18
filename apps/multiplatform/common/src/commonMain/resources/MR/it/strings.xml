@@ -2593,7 +2593,6 @@
     <string name="relay_conn_status_connecting">in connessione</string>
     <string name="create_channel_title">Crea canale pubblico</string>
     <string name="create_channel_button">Crea canale pubblico</string>
-    <string name="create_channel_beta_button">Crea canale pubblico (BETA)</string>
     <string name="creating_channel">Creazione canale</string>
     <string name="relay_test_step_decode_link">Decodifica il link</string>
     <string name="button_delete_channel">Elimina canale</string>
@@ -2706,7 +2705,6 @@
     <string name="share_channel">Condividi canale…</string>
     <string name="share_via_chat">Condividi via chat</string>
     <string name="owner_verification_failed">⚠️ Verifica della firma fallita: %s.</string>
-    <string name="chat_link_signed">(firmato)</string>
     <string name="tap_to_open">Tocca per aprire</string>
     <string name="chat_link_one_time">Link una tantum</string>
     <string name="link_previews_alert_disable">Disattiva</string>

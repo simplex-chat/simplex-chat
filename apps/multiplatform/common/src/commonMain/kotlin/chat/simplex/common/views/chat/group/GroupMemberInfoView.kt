@@ -214,11 +214,12 @@ fun GroupMemberInfoView(
               verify = { code ->
                 chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
                   val (verified, existingCode) = r
-                  val copy = mem.copy(
-                    activeConn = mem.activeConn?.copy(
-                      connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
-                    )
-                  )
+                  val code = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+                  val copy = if (groupInfo.useRelays) {
+                    mem.copy(memberVerifiedCode = code)
+                  } else {
+                    mem.copy(activeConn = mem.activeConn?.copy(connectionCode = code))
+                  }
                   withContext(Dispatchers.Main) {
                     chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, copy)
                   }
@@ -229,6 +230,7 @@ fun GroupMemberInfoView(
                 }
               },
               close,
+              verifyDescription = if (groupInfo.useRelays) MR.strings.to_verify_channel_member_key else MR.strings.to_verify_compare,
             )
           }
         }
@@ -541,26 +543,24 @@ fun GroupMemberInfoLayout(
       member.memberRole != GroupMemberRole.Relay &&
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
+    val canVerifyCode = connectionCode != null && member.memberRole != GroupMemberRole.Relay
+    val canSyncConn = cStats != null && cStats.ratchetSyncAllowed
 
-    if (member.memberActive) {
+    if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent))
+        && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
       SectionView {
         if (showMemberSupportChat) {
           SupportChatButton()
         }
-        if (connectionCode != null && !(groupInfo.useRelays && member.memberRole == GroupMemberRole.Relay)) {
+        if (canVerifyCode) {
           VerifyCodeButton(member.verified, verifyClicked)
         }
-        if (cStats != null && cStats.ratchetSyncAllowed) {
+        if (canSyncConn) {
           SynchronizeConnectionButton(syncMemberConnection)
         }
 //        } else if (developerTools) {
 //          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
 //        }
-      }
-      SectionDividerSpaced()
-    } else if (groupInfo.useRelays && member.memberCurrent && showMemberSupportChat) {
-      SectionView {
-        SupportChatButton()
       }
       SectionDividerSpaced()
     }

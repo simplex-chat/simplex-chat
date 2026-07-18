@@ -129,6 +129,8 @@ class AppPreferences {
   val privacyChatListOpenLinks = mkEnumPreference(SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS, PrivacyChatListOpenLinksMode.ASK) { PrivacyChatListOpenLinksMode.values().firstOrNull { it.name == this } }
   val simplexLinkMode: SharedPreference<SimplexLinkMode> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default)
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
+  val privacyShowSignature = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_SIGNATURE, true)
+  val privacyShowEncryption = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
@@ -186,6 +188,7 @@ class AppPreferences {
   val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
   val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
   val liveMessageAlertShown = mkBoolPreference(SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN, false)
+  val signMessageAlertShown = mkBoolPreference(SHARED_PREFS_SIGN_MESSAGE_ALERT_SHOWN, false)
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
@@ -271,6 +274,7 @@ class AppPreferences {
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
     hintPref(liveMessageAlertShown, false),
+    hintPref(signMessageAlertShown, false),
     hintPref(showHiddenProfilesNotice, true),
     hintPref(showMuteProfileAlert, true),
     hintPref(showReportsInSupportChatAlert, true),
@@ -404,6 +408,8 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS = "ChatListOpenLinks" // TODO remove
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
+    private const val SHARED_PREFS_PRIVACY_SHOW_SIGNATURE = "PrivacyShowSignature"
+    private const val SHARED_PREFS_PRIVACY_SHOW_FILE_ENCRYPTION = "PrivacyShowEncryption"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
@@ -454,6 +460,7 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_CNT = "NetworkTCPKeepCnt"
     private const val SHARED_PREFS_INCOGNITO = "Incognito"
     private const val SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN = "LiveMessageAlertShown"
+    private const val SHARED_PREFS_SIGN_MESSAGE_ALERT_SHOWN = "SignMessageAlertShown"
     private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
@@ -1096,8 +1103,8 @@ object ChatController {
 
   suspend fun apiReorderChatTags(rh: Long?, tagIds: List<Long>) = sendCommandOkResp(rh, CC.ApiReorderChatTags(tagIds))
 
-  suspend fun apiSendMessages(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, sendAsGroup: Boolean = false, live: Boolean = false, ttl: Int? = null, composedMessages: List<ComposedMessage>): List<AChatItem>? {
-    val cmd = CC.ApiSendMessages(type, id, scope, sendAsGroup, live, ttl, composedMessages)
+  suspend fun apiSendMessages(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, sendAsGroup: Boolean = false, live: Boolean = false, ttl: Int? = null, sign: Boolean = false, composedMessages: List<ComposedMessage>): List<AChatItem>? {
+    val cmd = CC.ApiSendMessages(type, id, scope, sendAsGroup, live, ttl, sign, composedMessages)
     return processSendMessageCmd(rh, cmd)
   }
 
@@ -1164,6 +1171,13 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiShareChatMsgContent(shareChatType, shareChatId, toChatType, toChatId, toScope, sendAsGroup))
     if (r is API.Result && r.res is CR.ChatMsgContent) return r.res.msgContent
     apiErrorAlert("apiShareChatMsgContent", generalGetString(MR.strings.error_sharing_channel), r)
+    return null
+  }
+
+  suspend fun apiShareMyAddress(rh: Long?, toChatType: ChatType, toChatId: Long, toScope: GroupChatScope?, sendAsGroup: Boolean): MsgContent? {
+    val r = sendCmd(rh, CC.ApiShareMyAddress(toChatType, toChatId, toScope, sendAsGroup))
+    if (r is API.Result && r.res is CR.ChatMsgContent) return r.res.msgContent
+    apiErrorAlert("apiShareMyAddress", generalGetString(MR.strings.error_sharing_address), r)
     return null
   }
 
@@ -3784,7 +3798,7 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long, val scope: GroupChatScope?, val contentTag: MsgContentTag?, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatContentTypes(val type: ChatType, val id: Long, val scope: GroupChatScope?): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val scope: GroupChatScope?, val itemId: Long): CC()
-  class ApiSendMessages(val type: ChatType, val id: Long, val scope: GroupChatScope?, val sendAsGroup: Boolean, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
+  class ApiSendMessages(val type: ChatType, val id: Long, val scope: GroupChatScope?, val sendAsGroup: Boolean, val live: Boolean, val ttl: Int?, val sign: Boolean, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatTag(val tag: ChatTagData): CC()
   class ApiSetChatTags(val type: ChatType, val id: Long, val tagIds: List<Long>): CC()
   class ApiDeleteChatTag(val tagId: Long): CC()
@@ -3802,6 +3816,7 @@ sealed class CC {
   class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean, val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val itemIds: List<Long>, val ttl: Int?): CC()
   class ApiShareChatMsgContent(val shareChatType: ChatType, val shareChatId: Long, val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
+  class ApiShareMyAddress(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiNewPublicGroup(val userId: Long, val incognito: Boolean, val relayIds: List<Long>, val groupProfile: GroupProfile): CC()
   class ApiGetGroupRelays(val groupId: Long): CC()
@@ -3982,7 +3997,7 @@ sealed class CC {
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
       val ttlStr = if (ttl != null) "$ttl" else "default"
-      "/_send ${chatRef(type, id, scope)}${if (sendAsGroup) "(as_group=on)" else ""} live=${onOff(live)} ttl=${ttlStr} json $msgs"
+      "/_send ${chatRef(type, id, scope)}${if (sendAsGroup) "(as_group=on)" else ""} live=${onOff(live)} ttl=${ttlStr} sign=${onOff(sign)} json $msgs"
     }
     is ApiCreateChatTag -> "/_create tag ${json.encodeToString(tag)}"
     is ApiSetChatTags -> "/_tags ${chatRef(type, id, scope = null)} ${tagIds.joinToString(",")}"
@@ -4008,6 +4023,7 @@ sealed class CC {
     is ApiShareChatMsgContent -> {
       "/_share chat content ${chatRef(shareChatType, shareChatId, null)} ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) "(as_group=on)" else ""}"
     }
+    is ApiShareMyAddress -> "/_share address ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) "(as_group=on)" else ""}"
     is ApiPlanForwardChatItems -> {
       "/_forward plan ${chatRef(fromChatType, fromChatId, fromScope)} ${chatItemIds.joinToString(",")}"
     }
@@ -4199,6 +4215,7 @@ sealed class CC {
     is ApiGetReactionMembers -> "apiGetReactionMembers"
     is ApiForwardChatItems -> "apiForwardChatItems"
     is ApiShareChatMsgContent -> "apiShareChatMsgContent"
+    is ApiShareMyAddress -> "apiShareMyAddress"
     is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
     is ApiNewPublicGroup -> "apiNewPublicGroup"
@@ -5857,7 +5874,8 @@ enum class GroupFeature: Feature {
   @SerialName("simplexLinks") SimplexLinks,
   @SerialName("reports") Reports,
   @SerialName("history") History,
-  @SerialName("support") Support;
+  @SerialName("support") Support,
+  @SerialName("signMessages") SignMessages;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -5876,6 +5894,7 @@ enum class GroupFeature: Feature {
       Reports -> false
       History -> false
       Support -> false
+      SignMessages -> false
     }
 
   override val text: String get() = text(isChannel = false)
@@ -5891,6 +5910,7 @@ enum class GroupFeature: Feature {
       Reports -> generalGetString(if (isChannel) MR.strings.group_reports_subscriber_reports else MR.strings.group_reports_member_reports)
       History -> generalGetString(MR.strings.recent_history)
       Support -> generalGetString(MR.strings.chat_with_admins)
+      SignMessages -> generalGetString(MR.strings.sign_messages)
     }
 
   val icon: Painter
@@ -5905,6 +5925,7 @@ enum class GroupFeature: Feature {
       Reports -> painterResource(MR.images.ic_flag)
       History -> painterResource(MR.images.ic_schedule)
       Support -> painterResource(MR.images.ic_help)
+      SignMessages -> painterResource(MR.images.ic_verified)
     }
 
   @Composable
@@ -5919,6 +5940,7 @@ enum class GroupFeature: Feature {
     Reports -> painterResource(MR.images.ic_flag_filled)
     History -> painterResource(MR.images.ic_schedule_filled)
     Support -> painterResource(MR.images.ic_help_filled)
+    SignMessages -> painterResource(MR.images.ic_verified_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean, isChannel: Boolean = false): String =
@@ -5964,6 +5986,10 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.allow_chat_with_admins_channel else MR.strings.allow_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_chat_with_admins)
         }
+        SignMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.require_message_signatures)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.do_not_require_message_signatures)
+        }
       }
     } else {
       when(this) {
@@ -6006,6 +6032,10 @@ enum class GroupFeature: Feature {
         Support -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.members_can_chat_with_admins_channel else MR.strings.members_can_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.chat_with_admins_is_prohibited)
+        }
+        SignMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.message_signatures_are_required)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_signatures_are_not_required)
         }
       }
     }
@@ -6133,6 +6163,7 @@ data class FullGroupPreferences(
   val reports: GroupPreference,
   val history: GroupPreference,
   val support: GroupPreference,
+  val signMessages: GroupPreference,
   val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -6147,6 +6178,7 @@ data class FullGroupPreferences(
       reports = reports,
       history = history,
       support = support,
+      signMessages = signMessages,
       commands = commands,
     )
 
@@ -6162,6 +6194,7 @@ data class FullGroupPreferences(
       reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
       support = GroupPreference(GroupFeatureEnabled.ON),
+      signMessages = GroupPreference(GroupFeatureEnabled.OFF),
       commands = listOf()
     )
   }
@@ -6179,6 +6212,7 @@ data class GroupPreferences(
   val reports: GroupPreference? = null,
   val history: GroupPreference? = null,
   val support: GroupPreference? = null,
+  val signMessages: GroupPreference? = null,
   val commands: List<ChatBotCommand>? = null
 ) {
   companion object {
@@ -6896,7 +6930,7 @@ sealed class CR {
     is Invitation -> withUser(user, "connLinkInvitation: ${json.encodeToString(connLinkInvitation)}\nconnection: $connection")
     is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
     is ConnectionUserChanged -> withUser(user, "fromConnection: ${json.encodeToString(fromConnection)}\ntoConnection: ${json.encodeToString(toConnection)}\nnewUser: ${json.encodeToString(newUser)}" )
-    is CRConnectionPlan -> withUser(user, "connLink: ${json.encodeToString(connLink)}\nconnectionPlan: ${json.encodeToString(connectionPlan)}")
+    is CRConnectionPlan -> withUser(user, "connLink: ${json.encodeToString(connLink)}\nplanSimplexName: $planSimplexName\notherSimplexName: $otherSimplexName\nconnectionPlan: ${json.encodeToString(connectionPlan)}")
     is NewPreparedChat -> withUser(user, json.encodeToString(chat))
     is ContactUserChanged -> withUser(user, "fromContact: ${json.encodeToString(fromContact)}\nnewUserId: ${json.encodeToString(newUser.userId)}\ntoContact: ${json.encodeToString(toContact)}")
     is GroupUserChanged -> withUser(user, "fromGroup: ${json.encodeToString(fromGroup)}\nnewUserId: ${json.encodeToString(newUser.userId)}\ntoGroup: ${json.encodeToString(toGroup)}")

@@ -2608,7 +2608,6 @@
     <string name="connect_via_link_or_qr_code">Připojení přes odkaz nebo QR kód</string>
     <string name="create_channel_title">Vytvořit veřejný kanál</string>
     <string name="create_channel_button">Vytvořit veřejný kanál</string>
-    <string name="create_channel_beta_button">Vytvořit veřejný kanál (BETA)</string>
     <string name="connect_with_someone">Vytvořte odkaz</string>
     <string name="create_your_public_address">Vytvořte si veřejnou adresu</string>
     <string name="creating_channel">Vytvářím kanál</string>
@@ -2745,7 +2744,6 @@
     <string name="share_via_chat">Sdílet pomocí chatu</string>
     <string name="tray_show">Zobrazit SimpleX</string>
     <string name="owner_verification_failed">⚠️ Ověření podpisu selhalo: %s.</string>
-    <string name="chat_link_signed">(podepsán)</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX - %d nepřečteno</string>
     <string name="member_info_section_title_subscriber">ODBĚRATEL</string>

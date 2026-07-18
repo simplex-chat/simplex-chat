@@ -28,7 +28,7 @@ chatCommandsDocs = map toCategory chatCommandsDocsData
       CCCategory {categoryName, categoryDescr, commands = map toCmd commandsData}
     toCmd (consName, hideParams, commandDescr, respNames, errors, network, syntax) = case find ((consName ==) . consName') chatCommandsTypeInfo of
       Just RecordTypeInfo {fieldInfos} ->
-        let fields = filter ((`notElem` hideParams) . fieldName') $ map (toAPIField consName) fieldInfos
+        let fields = map (toAPIField consName) $ filter ((`notElem` hideParams) . fieldName) fieldInfos
             commandType = ATUnionMember (fstToLower consName) fields
             findResp name = case find ((name ==) . consName') chatResponsesDocs of
               Just resp -> resp
@@ -77,7 +77,7 @@ chatCommandsDocsData :: [(String, String, [(ConsName, [String], Text, [ConsName]
 chatCommandsDocsData =
   [ ( "Address commands",
       "Bots can use these commands to automatically check and create address when initialized",
-      [ ("APICreateMyAddress", [], "Create bot address.", ["CRUserContactLinkCreated", "CRChatCmdError"], [], Just UNInteractive, "/_address " <> Param "userId"),
+      [ ("APICreateMyAddress", ["server_"], "Create bot address.", ["CRUserContactLinkCreated", "CRChatCmdError"], [], Just UNInteractive, "/_address " <> Param "userId"),
         ("APIDeleteMyAddress", [], "Delete bot address.", ["CRUserContactLinkDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete_address " <> Param "userId"),
         ("APIShowMyAddress", [], "Get bot address and settings.", ["CRUserContactLink", "CRChatCmdError"], [], Nothing, "/_show_address " <> Param "userId"),
         ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"),
@@ -86,7 +86,7 @@ chatCommandsDocsData =
     ),
     ( "Message commands",
       "Commands to send, update, delete, moderate messages and set message reactions",
-      [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems", "CRChatCmdError"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"),
+      [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems", "CRChatCmdError"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> OnOffParam "sign" "signMessages" (Just False) <> " json " <> Json "composedMessages"),
         ( "APIUpdateChatItem",
           [],
           "Update message.",
@@ -290,6 +290,7 @@ cliCommands =
     "SetUserGroupReceipts",
     "SetUserAutoAcceptMemberContacts",
     "SetUserTimedMessages",
+    "ShareMyAddress",
     "SharePublicGroup",
     "ShowChatItem",
     "ShowChatItemInfo",
@@ -313,6 +314,7 @@ cliCommands =
     "UpdateLiveMessage",
     "UpdateProfile",
     "UpdateProfileImage",
+    "UpdateProfileImageFromFile",
     "UserRead",
     "VerifyContact",
     "VerifyGroupMember",
@@ -418,6 +420,7 @@ undocumentedCommands =
     "APISetUserServers",
     "APISetUserUIThemes",
     "APIShareChatMsgContent",
+    "APIShareMyAddress",
     "APIStandaloneFileInfo",
     "APIStorageEncryption",
     "APISuspendChat",

@@ -354,6 +354,14 @@ private fun UserAddressLayout(
                 share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value))
               }
             }
+            ShareViaChatButton {
+              val shareViaChat = {
+                chatModel.sharedContent.value = SharedContent.MyAddress
+                chatModel.chatId.value = null
+                ModalManager.closeAllModalsEverywhere()
+              }
+              if (userAddress.shouldBeUpgraded) showAddShortLinkAlert { shareViaChat() } else shareViaChat()
+            }
             // ShareViaEmailButton { sendEmail(userAddress) }
             BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
             AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
@@ -363,18 +371,20 @@ private fun UserAddressLayout(
           }
 
           SectionDividerSpaced()
-          SectionView {
+          val domain = user?.profile?.contactDomain?.domain
+          SectionView(title = if (domain != null) generalGetString(MR.strings.your_simplex_name) else null) {
             SettingsActionItem(
               painterResource(MR.images.ic_at),
-              stringResource(MR.strings.your_simplex_name),
+              if (domain != null) "$domain" else generalGetString(MR.strings.get_simplex_name_beta),
               click = {
                 ModalManager.start.showCustomModal { close ->
-                  val domain = user?.profile?.contactDomain?.shortName
                   SetSimplexDomainView(
                     title = generalGetString(MR.strings.set_simplex_name),
                     footer = generalGetString(MR.strings.set_user_simplex_name_footer),
                     placeholder = "@yourname.testing",
                     simplexName = if (domain == null) "" else "@$domain",
+                    registerBackgroundClose = true,
+                    broadcastWarning = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),
                     save = { simplexDomain ->
                       try {
                         val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
@@ -430,6 +440,17 @@ private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_arrow_upward),
     text,
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
+private fun ShareViaChatButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_forward),
+    stringResource(MR.strings.share_via_chat),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,

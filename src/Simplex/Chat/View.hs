@@ -375,9 +375,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
               Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
-    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText, msgSigned}}) membership_ =
+    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText, msgVerified}}) membership_ =
       let deleted_ = maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci membership_)
-       in itemText <> sigStatusStr msgSigned <> deleted_
+       in itemText <> msgVerifiedStr msgVerified <> deleted_
     unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
     unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isUserMention ci
     unmutedReaction :: User -> ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
@@ -393,6 +393,12 @@ sigStatusStr :: IsString a => Maybe MsgSigStatus -> a
 sigStatusStr = \case
   Just MSSVerified -> " (signed)"
   Just MSSSignedNoKey -> " (signed, no key to verify)"
+  Nothing -> ""
+
+msgVerifiedStr :: IsString a => Maybe MsgVerified -> a
+msgVerifiedStr = \case
+  Just (MVSigned s) -> sigStatusStr (Just s)
+  Just MVSigMissing -> " (signature missing)"
   Nothing -> ""
 
 signedStr :: IsString a => Bool -> a
@@ -677,7 +683,7 @@ viewChatItems ttyUser unmuted u chatItems ts tz testView
   | otherwise = ttyUser u [sShow (length chatItems) <> " new messages created"]
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention, msgSigned}, content, quotedItem, file} doShow ts tz =
+viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention, msgVerified}, content, quotedItem, file} doShow ts tz =
   withGroupMsgForwarded . withItemDeleted <$> viewCI
   where
     viewCI = case chat of
@@ -763,8 +769,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir context (MCText $ T.pack fileName) ts tz meta
       _ -> view dir context mc ts tz meta
-    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> sigStatusStr msgSigned] meta
-    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> sigStatusStr msgSigned] False
+    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> msgVerifiedStr msgVerified] meta
+    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> msgVerifiedStr msgVerified] False
     showSndItemProhibited to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> " " <> prohibited] meta
     showRcvItemProhibited from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> " " <> prohibited] False
     showItem ss = if doShow then ss else []
@@ -1809,9 +1815,10 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> plain (strEncode (simplexChatContact' l))]) contactLink
     <> simplexDomainLine NTContact contactDomain contactDomainVerified
@@ -1827,13 +1834,18 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
-viewGroupInfo gInfo@GroupInfo {groupId, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
+viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, groupProfile = GroupProfile {publicGroup}, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
   [ "group ID: " <> sShow groupId,
     memberCountLine
   ]
+    <> domainLine
     <> viewUITheme uiThemes
     <> viewCustomData customData
   where
+    -- a business presents as a contact (@-name); a public group/channel shows its #-name
+    domainLine = case businessChat of
+      Just bc -> simplexDomainLine NTContact (businessDomain bc) groupDomainVerified
+      Nothing -> simplexDomainLine NTPublicGroup (publicGroup >>= publicGroupAccess >>= groupDomainClaim) groupDomainVerified
     memberCountLine
       | useRelays' gInfo, Just count <- publicMemberCount = "subscribers: " <> sShow count
       | otherwise = "current members: " <> sShow currentMembers
@@ -1845,16 +1857,19 @@ viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink, localBadge}, activeConn} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink, localBadge, description}, activeConn} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> viewContactBadge localBadge
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> maybe ["member not connected"] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
     <> ["alias: " <> plain localAlias | localAlias /= ""]
-    <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
+    <> [viewConnectionVerified mSecurityCode | isJust stats || isJust mSecurityCode]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
+  where
+    mSecurityCode = memberSecurityCode m
 
 viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
@@ -1946,14 +1961,15 @@ viewSwitchPhase = \case
   SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> UserProfileUpdateSummary -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', image = image', contactLink = contactLink', preferences = prefs'} summary =
+viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, description, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', description = description', image = image', contactLink = contactLink', preferences = prefs'} summary =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     UserProfileUpdateSummary {updateSuccesses = s, updateFailures = f} = summary
     profileUpdated
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' && image == image' && contactLink == contactLink' = []
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' && contactLink == contactLink' = []
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' = ["user description " <> (if maybe True T.null description' then "removed" else "changed to " <> maybe "" plain description') <> notified]
       | n == n' && fullName == fullName' = ["user bio " <> (if maybe True T.null shortDescr' then "removed" else "changed to " <> maybe "" plain shortDescr') <> notified]
       | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' shortDescr' <> notified]
@@ -2033,7 +2049,7 @@ viewGroupUpdated
         | null prefs = []
         | otherwise = bold' "updated group preferences:" : prefs
         where
-          prefs = mapMaybe viewPref allGroupFeatures
+          prefs = mapMaybe viewPref (if useRelays' g' then channelGroupFeatures else regularGroupFeatures)
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
             | otherwise = Just . plain $ groupPreferenceText (pref gps')
@@ -2061,7 +2077,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, descripti
     <> maybe [] (\sd -> ["description: " <> plain sd]) shortDescr
     <> maybe [] (const ["has profile image"]) image
     <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
-    <> (bold' "group preferences:" : map viewPref allGroupFeatures)
+    <> (bold' "group preferences:" : map viewPref (if useRelays' g then channelGroupFeatures else regularGroupFeatures))
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
       where
@@ -2244,13 +2260,17 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, contactLink}}
-  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', shortDescr = shortDescr', contactLink = contactLink'}}
-    | n == n' && fullName == fullName' && shortDescr == shortDescr' && contactLink == contactLink' = []
-    | n == n' && fullName == fullName' && shortDescr == shortDescr' =
+  Contact {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, description, contactLink}}
+  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', shortDescr = shortDescr', description = description', contactLink = contactLink'}}
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && contactLink == contactLink' = []
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' =
         if isNothing contactLink'
           then [ttyContact n <> " removed contact address"]
           else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' =
+        if maybe True T.null description'
+          then ["contact " <> ttyContact n <> " removed description"]
+          else ["contact " <> ttyContact n <> " updated description: " <> maybe "" plain description']
     | n == n' && fullName == fullName' =
         if maybe True T.null shortDescr'
           then ["contact " <> ttyContact n <> " removed bio"]
@@ -2270,7 +2290,7 @@ viewReceivedUpdatedMessage :: StyledString -> [StyledString] -> MsgContent -> Cu
 viewReceivedUpdatedMessage = viewReceivedMessage_ True
 
 viewReceivedMessage_ :: Bool -> StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewReceivedMessage_ updated from context mc ts tz meta = receivedWithTime_ ts tz from context meta (ttyMsgContent mc) updated
+viewReceivedMessage_ updated from context mc ts tz meta@CIMeta {msgVerified} = receivedWithTime_ ts tz from context meta (appendLast (msgVerifiedStr msgVerified) $ ttyMsgContent mc) updated
 
 viewReceivedReaction :: StyledString -> [StyledString] -> StyledString -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
 viewReceivedReaction from styledMsg reactionText ts tz reactionTs =
@@ -2308,7 +2328,7 @@ recent now tz time = do
     || (localNow < currentDay12 && localTime >= previousDay18 && localTimeDay < localNowDay)
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewSentMessage to context mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts tz (prependFirst to $ context <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
+viewSentMessage to context mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive, msgVerified} = sentWithTime_ ts tz (prependFirst to $ context <> prependFirst (indent <> live) (appendLast (msgVerifiedStr msgVerified) $ ttyMsgContent mc)) meta
   where
     indent = if null context then "" else "      "
     live
@@ -2364,6 +2384,10 @@ ttyMsgContent = \case
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
 prependFirst s (s' : ss) = (s <> s') : ss
+
+appendLast :: StyledString -> [StyledString] -> [StyledString]
+appendLast _ [] = []
+appendLast s ss = init ss <> [last ss <> s]
 
 msgPlain :: Text -> [StyledString]
 msgPlain = map (styleMarkdownList . parseMarkdownList) . T.lines

@@ -2606,7 +2606,6 @@
     <string name="webpage_info">Buat halaman web untuk menampilkan pratinjau saluran Anda kepada pengunjung sebelum mereka berlangganan. Anda dapat menghostingnya sendiri atau menggunakan layanan hosting statis apa pun.</string>
     <string name="create_channel_title">Buat saluran publik</string>
     <string name="create_channel_button">Buat saluran publik</string>
-    <string name="create_channel_beta_button">Buat saluran publik (BETA)</string>
     <string name="connect_with_someone">Buat tautan Anda</string>
     <string name="create_your_public_address">Buat alamat publik Anda</string>
     <string name="creating_channel">Sedang membuat saluran</string>
@@ -2719,7 +2718,6 @@
     <string name="share_via_chat">Bagikan via obrolan</string>
     <string name="tap_to_open">Ketuk untuk buka</string>
     <string name="chat_link_one_time">Tautan 1-kali</string>
-    <string name="chat_link_signed">(ditandatangani)</string>
     <string name="owner_verification_failed">⚠️ Verifikasi tanda tangan gagal: %s.</string>
     <string name="you_are_subscriber">anda adalah pelanggan</string>
     <string name="onboarding_send_1_time_link">Kirim tautannya via aplikasi pesan apa pun - aman. Minta untuk tempel ke SimpleX.</string>

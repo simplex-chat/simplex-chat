@@ -25,6 +25,7 @@ struct UserAddressView: View {
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
     @State private var alert: UserAddressAlert?
     @State private var progressIndicator = false
+    @State private var showShareViaChat = false
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
@@ -156,6 +157,7 @@ struct UserAddressView: View {
                 upgradeAddressButton()
             }
             shareAddressButton(userAddress)
+            shareViaChatButton(userAddress)
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
             // }
@@ -193,12 +195,13 @@ struct UserAddressView: View {
 
         Section {
             NavigationLink {
-                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.shortName { "@\(d)" } else { "" }
+                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.domain { "@\(d)" } else { "" }
                 SetSimplexDomainView(
                     title: "Your SimpleX name",
                     footer: "Let people connect to you via name registered with your SimpleX address.",
                     prompt: "@yourname.testing",
                     simplexName: simplexName,
+                    broadcastWarning: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert title"),
                     save: { simplexDomain in
                         do {
                             let u = try await apiSetUserDomain(simplexDomain)
@@ -210,7 +213,15 @@ struct UserAddressView: View {
                     }
                 )
             } label: {
-                Label("Your SimpleX name", systemImage: "at")
+                if let d = chatModel.currentUser?.profile.contactDomain?.domain {
+                    Label("\(d)", systemImage: "at")
+                } else {
+                    Label("Get SimpleX name (BETA)", systemImage: "at")
+                }
+            }
+        } header: {
+            if chatModel.currentUser?.profile.contactDomain?.domain != nil {
+                Text("Your SimpleX name").foregroundColor(theme.colors.secondary)
             }
         }
 
@@ -369,6 +380,32 @@ struct UserAddressView: View {
         }
     }
 
+    private func shareViaChatButton(_ userAddress: UserContactLink) -> some View {
+        Button {
+            if userAddress.shouldBeUpgraded {
+                showAlert(
+                    NSLocalizedString("Upgrade address?", comment: "alert title"),
+                    message: NSLocalizedString("The address will be short, and your profile will be shared via the address.", comment: "alert message"),
+                    actions: {[
+                        UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
+                            addShortLink(progressIndicator: $progressIndicator, onComplete: { showShareViaChat = true })
+                        },
+                        cancelAlertAction
+                    ]}
+                )
+            } else {
+                showShareViaChat = true
+            }
+        } label: {
+            settingsRow("arrowshape.turn.up.forward", color: theme.colors.primary) {
+                Text("Share via chat").foregroundColor(theme.colors.primary)
+            }
+        }
+        .sheet(isPresented: $showShareViaChat) {
+            shareAddressPicker()
+        }
+    }
+
     private func shareViaEmailButton(_ userAddress: UserContactLink) -> some View {
         Button {
             showMailView = true
@@ -442,7 +479,60 @@ func upgradeAndShareAddressAlert(progressIndicator: Binding<Bool>, shareAddress:
     )
 }
 
-private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: Bool = false) {
+@ViewBuilder
+func shareAddressPicker(composeState: Binding<ComposeState>? = nil) -> some View {
+    let v = ChatItemForwardingView(
+        title: "Share address",
+        isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+        onSelectChat: { chat in shareMyAddress(chat, composeState: composeState) },
+        includeLocal: false
+    )
+    if #available(iOS 16.0, *) {
+        v.presentationDetents([.fraction(0.8)])
+    } else {
+        v
+    }
+}
+
+func shareMyAddress(_ destChat: Chat, composeState: Binding<ComposeState>? = nil) {
+    let sendAsGroup = if let gInfo = destChat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
+    Task {
+        do {
+            let mc = try await apiShareMyAddress(
+                toChatType: destChat.chatInfo.chatType, toChatId: destChat.chatInfo.apiId,
+                toScope: destChat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
+            )
+            if case let .chat(_, chatLink, ownerSig) = mc {
+                await MainActor.run {
+                    dismissAllSheets {
+                        let cs = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        if let composeState {
+                            composeState.wrappedValue = cs
+                        } else {
+                            ChatModel.shared.draft = cs
+                            ChatModel.shared.draftChatId = destChat.id
+                        }
+                        if destChat.id != ChatModel.shared.chatId {
+                            ItemsModel.shared.loadOpenChat(destChat.id)
+                        }
+                    }
+                }
+            } else {
+                logger.error("shareMyAddress: unexpected MsgContent: \(String(describing: mc))")
+                await MainActor.run {
+                    showAlert(NSLocalizedString("Error sharing address", comment: "alert title"), message: String(describing: mc))
+                }
+            }
+        } catch {
+            logger.error("shareMyAddress error: \(error.localizedDescription)")
+            await MainActor.run {
+                showAlert(NSLocalizedString("Error sharing address", comment: "alert title"), message: error.localizedDescription)
+            }
+        }
+    }
+}
+
+private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: Bool = false, onComplete: (() -> Void)? = nil) {
     progressIndicator.wrappedValue = true
     Task {
         do {
@@ -453,6 +543,7 @@ private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: B
                 if shareOnCompletion, let userAddress {
                     userAddress.shareAddress(short: true)
                 }
+                onComplete?()
             }
         } catch let error {
             logger.error("apiAddMyAddressShortLink: \(responseError(error))")
@@ -716,51 +807,161 @@ struct SetSimplexDomainView: View {
     let footer: LocalizedStringKey
     let prompt: String
     @State var simplexName: String
+    let broadcastWarning: String?
     let save: (String?) async -> Bool
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var saving = false
+    @State private var original = ""
+    @State private var didSave = false
+    @State private var editing = false
+    @FocusState private var nameFocused: Bool
+
+    init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, broadcastWarning: String? = nil, save: @escaping (String?) async -> Bool) {
+        self.title = title
+        self.footer = footer
+        self.prompt = prompt
+        self._simplexName = State(initialValue: simplexName)
+        self.broadcastWarning = broadcastWarning
+        self.save = save
+        self._original = State(initialValue: simplexName)
+        self._editing = State(initialValue: simplexName.isEmpty)
+    }
+
+    private var changed: Bool {
+        normalized(simplexName) != normalized(original)
+    }
+
+    private var isValid: Bool {
+        guard let d = normalized(simplexName) else { return true }
+        return isValidSimplexDomain(d)
+    }
 
     var body: some View {
         List {
             Section {
-                TextField(prompt, text: $simplexName)
-                    .autocorrectionDisabled(true)
-                    .textInputAutocapitalization(.never)
+                if editing {
+                    ZStack(alignment: .trailing) {
+                        TextField(prompt, text: $simplexName)
+                            .focused($nameFocused)
+                            .autocorrectionDisabled(true)
+                            .textInputAutocapitalization(.never)
+                            .padding(.trailing, isValid ? 0 : 20)
+                        if !isValid {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    Button {
+                        UIPasteboard.general.string = simplexName
+                    } label: {
+                        HStack {
+                            Text(simplexName)
+                                .foregroundColor(theme.colors.onBackground)
+                            Spacer()
+                            Image(systemName: "doc.on.doc")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+                }
             } header: {
                 Text(verbatim: "")
             } footer: {
                 Text(footer).foregroundColor(theme.colors.secondary)
             }
             Section {
-                Button {
-                    saving = true
-                    Task {
-                        let ok = await save(normalized())
-                        await MainActor.run {
-                            saving = false
-                            if ok { dismiss() }
-                        }
+                if editing {
+                    Button {
+                        openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
+                    } label: {
+                        Text("Register a test name")
                     }
-                } label: {
-                    Text("Save")
+                    Button {
+                        if let w = broadcastWarning, changed {
+                            showAlert(w, actions: {[
+                                UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in saveAndDismiss() },
+                                UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel)
+                            ]})
+                        } else {
+                            saveAndDismiss()
+                        }
+                    } label: {
+                        Text("Save")
+                    }
+                    .disabled(saving || !isValid || !changed)
+                } else {
+                    Button("Remove name") {
+                        simplexName = ""
+                        editing = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { nameFocused = true }
+                    }
                 }
-                .disabled(saving)
             }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            if editing {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { nameFocused = true }
+            }
+        }
+        .onDisappear {
+            if !didSave, !saving, changed, isValid {
+                let domain = normalized(simplexName)
+                let saveName = save
+                showAlert(
+                    NSLocalizedString("Save SimpleX name?", comment: "alert title"),
+                    message: broadcastWarning,
+                    actions: {[
+                        UIAlertAction(title: NSLocalizedString("Save", comment: "alert action"), style: .default) { _ in
+                            Task { _ = await saveName(domain) }
+                        },
+                        UIAlertAction(title: NSLocalizedString("Don't save", comment: "alert action"), style: .cancel)
+                    ]}
+                )
+            }
+        }
     }
 
-    private func normalized() -> String? {
-        let s = simplexName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return s.isEmpty
+    private func saveAndDismiss() {
+        saving = true
+        Task {
+            let ok = await save(normalized(simplexName))
+            await MainActor.run {
+                saving = false
+                if ok {
+                    didSave = true
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private func normalized(_ s: String) -> String? {
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty
                 ? nil
-                : addSimplexTLD(s.hasPrefix("@") || s.hasPrefix("#") ? String(s.dropFirst()) : s)
+                : addSimplexTLD((t.hasPrefix("@") || t.hasPrefix("#") ? String(t.dropFirst()) : t).lowercased())
     }
 
     private func addSimplexTLD(_ d: String) -> String {
         if d.contains(".") { d } else { "\(d).simplex" }
+    }
+
+    private func isValidSimplexDomain(_ s: String) -> Bool {
+        if s.utf8.count > 253 { return false }
+        let labels = s.split(separator: ".", omittingEmptySubsequences: false)
+        if labels.count < 2 { return false }
+        for label in labels {
+            if !isValidNameLabel(label) { return false }
+        }
+        return true
+    }
+
+    private func isValidNameLabel(_ label: Substring) -> Bool {
+        if label.isEmpty || label.utf8.count > 63 { return false }
+        return label.range(of: "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$", options: .regularExpression) != nil
     }
 }
 
