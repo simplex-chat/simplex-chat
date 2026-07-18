@@ -64,7 +64,7 @@
     <string name="contact_already_exists">Il contatto esiste già</string>
     <string name="invalid_connection_link">Link di connessione non valido</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controlla di aver usato il link giusto o chiedi al tuo contatto di inviartene un altro.</string>
-    <string name="connection_error_auth">Errore di connessione (AUTH)</string>
+    <string name="connection_error_auth">Errore di connessione</string>
     <string name="error_accepting_contact_request">Errore di accettazione della richiesta del contatto</string>
     <string name="sender_may_have_deleted_the_connection_request">Il mittente potrebbe aver eliminato la richiesta di connessione.</string>
     <string name="error_deleting_contact">Errore di eliminazione del contatto</string>

@@ -201,7 +201,7 @@
     <string name="contacts_can_mark_messages_for_deletion">A partnerei törlésre jelölhetnek üzeneteket; Ön majd meg tudja nézni azokat.</string>
     <string name="connect_via_invitation_link">Kapcsolódik az egyszer használható meghívón keresztül?</string>
     <string name="connect_via_link_or_qr">Kapcsolódás egy hivatkozáson vagy QR-kódon keresztül</string>
-    <string name="connection_error_auth">Kapcsolódási hiba (AUTH)</string>
+    <string name="connection_error_auth">Kapcsolódási hiba</string>
     <string name="notification_preview_mode_contact">Csak név</string>
     <string name="connect_via_contact_link">Kapcsolódik a kapcsolattartási címen keresztül?</string>
     <string name="create_address">Cím létrehozása</string>

@@ -66,6 +66,7 @@ enum ActiveFilter: Identifiable, Equatable {
 
 class SaveableSettings: ObservableObject {
     @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [], serverWarnings: [])
+    var profileSave: (() -> Void)? = nil
 }
 
 struct ServerSettings {
@@ -132,6 +133,15 @@ struct UserPickerSheetView: View {
                     title: NSLocalizedString("Save servers?", comment: "alert title"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
                     buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
+                    cancelButton: true
+                )
+            }
+            if let saveProfile = ss.profileSave {
+                showAlert(
+                    title: NSLocalizedString("Save your profile?", comment: "alert title"),
+                    message: NSLocalizedString("Your profile was changed. If you save it, the updated profile will be sent to all your contacts.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save (and notify contacts)", comment: "alert button"),
+                    buttonAction: saveProfile,
                     cancelButton: true
                 )
             }

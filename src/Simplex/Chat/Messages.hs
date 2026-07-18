@@ -421,6 +421,7 @@ signMessagesRequired :: ChatDirection c d -> Bool
 signMessagesRequired = \case
   CDChannelRcv g _ -> groupFeatureAllowed SGFSignMessages g
   CDGroupRcv g _ _ -> groupFeatureAllowed SGFSignMessages g
+  CDGroupSnd g _ -> groupFeatureAllowed SGFSignMessages g
   _ -> False
 
 contactChatDeleted :: ChatDirection c d -> Bool
@@ -1178,6 +1179,8 @@ data RcvMessage = RcvMessage
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgSigned :: Maybe MsgSigStatus,
+    signedMsg_ :: Maybe SignedMsg,
+    signedByGMId_ :: Maybe GroupMemberId,
     forwardedByMember :: Maybe GroupMemberId
   }
 

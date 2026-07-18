@@ -28,9 +28,6 @@
 /* No comment provided by engineer. */
 "(new)" = "(новий)";
 
-/* chat link info line */
-"(signed)" = "(підписано)";
-
 /* No comment provided by engineer. */
 "(this device v%@)" = "(цей пристрій v%@)";
 
@@ -1435,14 +1432,14 @@ server test step */
 /* alert title */
 "Connection error" = "Помилка підключення";
 
-/* conn error description */
-"Connection error (AUTH)" = "Помилка підключення (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "з'єднання встановлене";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Підключення заблоковано оператором сервера:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Помилка підключення";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Підключення не готове.";
@@ -3352,15 +3349,6 @@ servers warning */
 /* chat feature */
 "Member reports" = "Повідомлення учасників";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "Роль учасника буде змінено на \"%@\". Усі учасники чату отримають сповіщення.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Роль учасника буде змінено на \"%@\". Всі учасники групи будуть повідомлені про це.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "Роль учасника буде змінено на \"%@\". Учасник отримає нове запрошення.";
-
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Учасника буде видалено з чату – це неможливо скасувати!";
 
@@ -4270,7 +4258,7 @@ alert button */
 /* swipe action */
 "Read" = "Читати";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Читати далі";
 
 /* No comment provided by engineer. */
@@ -4576,6 +4564,15 @@ swipe action */
 "Role" = "Роль";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "Роль учасника буде змінено на \"%@\". Усі учасники чату отримають сповіщення.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Роль учасника буде змінено на \"%@\". Всі учасники групи будуть повідомлені про це.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Роль учасника буде змінено на \"%@\". Учасник отримає нове запрошення.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Запустити чат";
 
 /* No comment provided by engineer. */
@@ -4584,7 +4581,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Безпечніші групи";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Зберегти";
 
@@ -4812,9 +4810,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Відправник скасував передачу файлу.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Можливо, відправник видалив запит на підключення.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Надсилання підтверджень доставки буде ввімкнено для всіх контактів у всіх видимих профілях чату.";
@@ -5413,6 +5408,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Другу галочку ми пропустили! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "Можливо, відправник видалив запит на підключення.";
+
 /* alert message */
 "The sender will NOT be notified" = "Відправник НЕ буде повідомлений";
 
@@ -5642,9 +5640,6 @@ server test failure */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Якщо ви не користуєтеся інтерфейсом виклику iOS, увімкніть режим \"Не турбувати\", щоб уникнути переривань.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Якщо ваш контакт не видалив з'єднання або якщо це посилання вже використовувалося, це може бути помилкою - будь ласка, повідомте про це.\nЩоб підключитися, попросіть вашого контакта створити інше посилання і перевірте, чи маєте ви стабільне з'єднання з мережею.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Роз'єднати зв'язок";
 
 /* No comment provided by engineer. */
@@ -5701,7 +5696,8 @@ server test failure */
 /* No comment provided by engineer. */
 "Upgrade address" = "Адреса оновлення";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "Змінити адресу?";
 
 /* No comment provided by engineer. */
@@ -6258,6 +6254,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact" = "Ваш контакт";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Якщо ваш контакт не видалив з'єднання або якщо це посилання вже використовувалося, це може бути помилкою - будь ласка, повідомте про це.\nЩоб підключитися, попросіть вашого контакта створити інше посилання і перевірте, чи маєте ви стабільне з'єднання з мережею.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт надіслав файл, розмір якого перевищує підтримуваний на цей момент максимальний розмір (%@).";

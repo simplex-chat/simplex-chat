@@ -66,7 +66,7 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit %1$s verbunden.</string>
     <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben, oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
-    <string name="connection_error_auth">Verbindungsfehler (AUTH)</string>
+    <string name="connection_error_auth">Verbindungsfehler</string>
     <string name="connection_error_auth_desc">Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln – bitte melden Sie ihn uns.
 \nBitten Sie Ihren Kontakt darum, einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können, und stellen Sie sicher, dass Sie eine stabile Netzwerkverbindung haben.</string>
     <string name="error_accepting_contact_request">Fehler beim Annehmen der Kontaktanfrage</string>

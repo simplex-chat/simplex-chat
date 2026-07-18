@@ -1354,14 +1354,14 @@ server test step */
 /* alert title */
 "Connection error" = "Bağlantı hatası";
 
-/* conn error description */
-"Connection error (AUTH)" = "Bağlantı hatası (DOĞRULAMA)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "bağlantı kuruldu";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Bağlantı sunucu operatörü tarafından engellendi:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Bağlantı hatası";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Bağlantı hazır değil.";
@@ -3286,15 +3286,6 @@ servers warning */
 /* chat feature */
 "Member reports" = "Üye raporları";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "Üye rolü \"%@\" olarak değiştirilecektir. Tüm sohbet üyeleri bilgilendirilecektir.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Üye rolü \"%@\" olarak değiştirilecektir. Ve tüm grup üyeleri bilgilendirilecektir.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "Üye rolü \"%@\" olarak değiştirilecektir. Ve üye yeni bir davetiye alacaktır.";
-
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Üye sohbetten kaldırılacak - bu geri alınamaz!";
 
@@ -4219,7 +4210,7 @@ alert button */
 /* swipe action */
 "Read" = "Oku";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Dahasını oku";
 
 /* No comment provided by engineer. */
@@ -4534,6 +4525,15 @@ swipe action */
 "Role" = "Rol";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "Üye rolü \"%@\" olarak değiştirilecektir. Tüm sohbet üyeleri bilgilendirilecektir.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Üye rolü \"%@\" olarak değiştirilecektir. Ve tüm grup üyeleri bilgilendirilecektir.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Üye rolü \"%@\" olarak değiştirilecektir. Ve üye yeni bir davetiye alacaktır.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Sohbeti çalıştır";
 
 /* No comment provided by engineer. */
@@ -4542,7 +4542,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Daha güvenli gruplar";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Kaydet";
 
@@ -4770,9 +4771,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Gönderici dosya gönderimini iptal etti.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Gönderici bağlantı isteğini silmiş olabilir.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Görüldü bilgisi, tüm görünür sohbet profillerindeki tüm kişiler için etkinleştirilecektir.";
@@ -5374,6 +5372,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Özlediğimiz ikinci tik! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "Gönderici bağlantı isteğini silmiş olabilir.";
+
 /* alert message */
 "The sender will NOT be notified" = "Gönderene BİLDİRİLMEYECEKTİR";
 
@@ -5609,9 +5610,6 @@ server test failure */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "iOS arama arayüzünü kullanmadığınız sürece, kesintileri önlemek için Rahatsız Etmeyin modunu etkinleştirin.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Kişiniz bağlantıyı silmediyse veya bu bağlantı kullanılmadıysa, bu bir hata olabilir - lütfen bildirin.\nBağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını isteyin ve sabit bir ağ bağlantınız olduğunu kontrol edin.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Bağlantıyı Kaldır";
 
 /* No comment provided by engineer. */
@@ -5668,7 +5666,8 @@ server test failure */
 /* No comment provided by engineer. */
 "Upgrade address" = "Adres güncelleme";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "Adres güncellensin mi?";
 
 /* No comment provided by engineer. */
@@ -6225,6 +6224,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact" = "İrtibat kişiniz";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Kişiniz bağlantıyı silmediyse veya bu bağlantı kullanılmadıysa, bu bir hata olabilir - lütfen bildirin.\nBağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını isteyin ve sabit bir ağ bağlantınız olduğunu kontrol edin.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kişiniz şu anda desteklenen maksimum boyuttan (%@) daha büyük bir dosya gönderdi.";

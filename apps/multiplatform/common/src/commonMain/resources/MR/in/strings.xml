@@ -1239,7 +1239,7 @@
     <string name="la_could_not_be_verified">Anda tidak dapat diverifikasi; silakan coba lagi.</string>
     <string name="smp_proxy_error_broker_version">Versi server penerusan tidak kompatibel dengan pengaturan jaringan: %1$s.</string>
     <string name="proxy_destination_error_broker_version">Versi server tujuan %1$s tidak kompatibel dengan server penerusan %2$s.</string>
-    <string name="connection_error_auth">Kesalahan koneksi (AUTH)</string>
+    <string name="connection_error_auth">Kesalahan koneksi</string>
     <string name="smp_proxy_error_connecting">Gagal menghubungkan ke server penerusan %1$s. Coba lagi nanti.</string>
     <string name="smp_proxy_error_broker_host">Alamat server penerusan tidak kompatibel dengan pengaturan jaringan: %1$s.</string>
     <string name="smp_server_test_upload_file">Unggah berkas</string>

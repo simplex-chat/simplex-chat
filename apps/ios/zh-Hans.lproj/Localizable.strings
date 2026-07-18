@@ -28,9 +28,6 @@
 /* No comment provided by engineer. */
 "(new)" = "(新)";
 
-/* chat link info line */
-"(signed)" = "（已签名）";
-
 /* No comment provided by engineer. */
 "(this device v%@)" = "(此设备 v%@)";
 
@@ -1574,9 +1571,6 @@ server test step */
 /* alert title */
 "Connection error" = "连接错误";
 
-/* conn error description */
-"Connection error (AUTH)" = "连接错误（AUTH）";
-
 /* chat list item title (it should not be shown */
 "connection established" = "连接已建立";
 
@@ -1585,6 +1579,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "连接被运营方 %@ 阻止";
+
+/* conn error description */
+"Connection link removed" = "连接错误";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "连接未就绪。";
@@ -1741,9 +1738,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create public channel" = "创建公开频道";
-
-/* No comment provided by engineer. */
-"Create public channel (BETA)" = "创建公开频道（BETA）";
 
 /* server test step */
 "Create queue" = "创建队列";
@@ -3705,15 +3699,6 @@ servers warning */
 /* chat feature */
 "Member reports" = "成员举报";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "将变更成员角色为“%@”。所有成员都会收到通知。";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "成员角色将更改为 \"%@\"。所有群成员将收到通知。";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "成员角色将更改为 \"%@\"。该成员将收到一份新的邀请。";
-
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "将从聊天中删除成员 - 此操作无法撤销！";
 
@@ -4677,7 +4662,8 @@ alert button */
 /* No comment provided by engineer. */
 "Profile theme" = "个人资料主题";
 
-/* alert message */
+/* alert message
+alert title */
 "Profile update will be sent to your SimpleX contacts." = "个人资料更新将发送给你的 SimpleX 联系人。";
 
 /* No comment provided by engineer. */
@@ -4773,7 +4759,7 @@ alert button */
 /* swipe action */
 "Read" = "已读";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "阅读更多";
 
 /* No comment provided by engineer. */
@@ -5136,6 +5122,15 @@ swipe action */
 "Role" = "角色";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "将变更成员角色为“%@”。所有成员都会收到通知。";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "成员角色将更改为 \"%@\"。所有群成员将收到通知。";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "成员角色将更改为 \"%@\"。该成员将收到一份新的邀请。";
+
+/* No comment provided by engineer. */
 "Run chat" = "运行聊天";
 
 /* No comment provided by engineer. */
@@ -5147,7 +5142,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "更安全的群组";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "保存";
 
@@ -5417,9 +5413,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "发送人已取消文件传输。";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "发送人可能已删除连接请求。";
 
 /* alert message */
 "Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "发送链接预览可能会向该网站透露你的 IP 地址。你稍后可以在隐私设置中更改此设置。";
@@ -6126,6 +6119,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "我们错过的第二个\"√\"！✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "发送人可能已删除连接请求。";
+
 /* alert message */
 "The sender will NOT be notified" = "发送者将不会收到通知";
 
@@ -6395,9 +6391,6 @@ alert subtitle */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "除非您使用 iOS 通话界面，否则请启用请勿打扰模式以避免打扰。";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。\n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。";
-
-/* No comment provided by engineer. */
 "Unlink" = "取消链接";
 
 /* No comment provided by engineer. */
@@ -6463,7 +6456,8 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Upgrade address" = "升级地址";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "升级地址？";
 
 /* No comment provided by engineer. */
@@ -7095,6 +7089,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Your contact" = "你的联系人";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。\n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "您的联系人发送的文件大于当前支持的最大大小 (%@)。";

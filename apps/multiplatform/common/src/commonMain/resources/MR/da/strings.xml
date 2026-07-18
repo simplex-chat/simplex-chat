@@ -305,7 +305,7 @@
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Kontroller venligst, at du har brugt det korrekte link, eller bed din kontaktperson om at sende dig et nyt.</string>
     <string name="unsupported_connection_link">Ikke-understøttet forbindelseslink</string>
     <string name="link_requires_newer_app_version_please_upgrade">Dette link kræver en nyere appversion. Opgrader appen, eller bed din kontaktperson om at sende et kompatibelt link.</string>
-    <string name="connection_error_auth">Forbindelsesfejl (AUTH)</string>
+    <string name="connection_error_auth">Forbindelsesfejl</string>
     <string name="connection_error_auth_desc">Medmindre din kontaktperson har slettet forbindelsen, eller dette link allerede er i brug, kan det være en fejl - rapporter det.\nFor at oprette forbindelse skal du bede din kontaktperson om at oprette et nyt forbindelseslink og kontrollere, at du har en stabil netværksforbindelse.</string>
     <string name="connection_error_blocked">Forbindelse blokeret</string>
     <string name="connection_error_blocked_desc">Forbindelsen er blokeret af serveroperatøren:\n%1$s.</string>

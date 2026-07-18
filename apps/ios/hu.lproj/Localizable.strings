@@ -28,9 +28,6 @@
 /* No comment provided by engineer. */
 "(new)" = "(új)";
 
-/* chat link info line */
-"(signed)" = "(aláírva)";
-
 /* No comment provided by engineer. */
 "(this device v%@)" = "(ez az eszköz: v%@)";
 
@@ -1574,9 +1571,6 @@ server test step */
 /* alert title */
 "Connection error" = "Kapcsolódási hiba";
 
-/* conn error description */
-"Connection error (AUTH)" = "Kapcsolódási hiba (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "kapcsolat létrehozva";
 
@@ -1585,6 +1579,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "A kiszolgáló üzemeltetője letiltotta a kapcsolatot:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Kapcsolódási hiba";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "A kapcsolat nem áll készen.";
@@ -1741,9 +1738,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create public channel" = "Nyilvános csatorna létrehozása";
-
-/* No comment provided by engineer. */
-"Create public channel (BETA)" = "Nyilvános csatorna létrehozása (BÉTA)";
 
 /* server test step */
 "Create queue" = "Várólista létrehozása";
@@ -3705,15 +3699,6 @@ servers warning */
 /* chat feature */
 "Member reports" = "Tagok jelentései";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csevegés összes tagja értesítést fog kapni.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csoport az összes tagja értesítést fog kapni.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "A tag szerepköre a következőre fog módosulni: „%@”. A tag új meghívást fog kapni.";
-
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "A tag el lesz távolítva a csevegésből – ez a művelet nem vonható vissza!";
 
@@ -4674,7 +4659,8 @@ alert button */
 /* No comment provided by engineer. */
 "Profile theme" = "Profiltéma";
 
-/* alert message */
+/* alert message
+alert title */
 "Profile update will be sent to your SimpleX contacts." = "A profilfrissítés el lesz küldve a SimpleX partnerei számára.";
 
 /* No comment provided by engineer. */
@@ -4770,7 +4756,7 @@ alert button */
 /* swipe action */
 "Read" = "Olvasott";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Tudjon meg többet";
 
 /* No comment provided by engineer. */
@@ -5133,6 +5119,15 @@ swipe action */
 "Role" = "Szerepkör";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csevegés összes tagja értesítést fog kapni.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csoport az összes tagja értesítést fog kapni.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "A tag szerepköre a következőre fog módosulni: „%@”. A tag új meghívást fog kapni.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Csevegési szolgáltatás indítása";
 
 /* No comment provided by engineer. */
@@ -5144,7 +5139,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Biztonságosabb csoportok";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Mentés";
 
@@ -5414,9 +5410,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "A fájl küldője visszavonta az átvitelt.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "A kérés küldője törölhette a kapcsolódási kérést.";
 
 /* alert message */
 "Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "A hivatkozáselőnézet küldése felfedheti az Ön IP-címét a weboldal számára. Ezt később módosíthatja az adatvédelmi beállításokban.";
@@ -6123,6 +6116,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "A második pipa, ami már nagyon hiányzott! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "A kérés küldője törölhette a kapcsolódási kérést.";
+
 /* alert message */
 "The sender will NOT be notified" = "A kérés küldője NEM lesz értesítve";
 
@@ -6392,9 +6388,6 @@ alert subtitle */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Hacsak nem az iOS hívási felületét használja, engedélyezze a Ne zavarjanak módot a megszakadások elkerülése érdekében.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Leválasztás";
 
 /* No comment provided by engineer. */
@@ -6460,7 +6453,8 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Upgrade address" = "Cím frissítése";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "Frissíti a címet?";
 
 /* No comment provided by engineer. */
@@ -7092,6 +7086,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Your contact" = "Partner";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "A partnere a jelenleg támogatott legnagyobb (%@) fájlméretnél nagyobbat küldött.";

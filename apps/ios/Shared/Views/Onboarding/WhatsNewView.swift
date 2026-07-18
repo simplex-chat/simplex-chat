@@ -665,7 +665,7 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "7.0-beta.4",
+        version: "v7.0-beta.4",
         post: nil,
         features: [
             .feature(Description(

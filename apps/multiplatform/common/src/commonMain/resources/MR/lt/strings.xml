@@ -608,7 +608,7 @@
     <string name="connect_via_invitation_link">Prisijungti per vienkartinę nuorodą?</string>
     <string name="icon_descr_close_button">Užvėrimo mygtukas</string>
     <string name="devices">Įrenginiai</string>
-    <string name="connection_error_auth">Ryšio klaida (AUTH)</string>
+    <string name="connection_error_auth">Ryšio klaida</string>
     <string name="disable_notifications_button">Išjungti pranešimus</string>
     <string name="continue_to_next_step">Tęsti</string>
     <string name="chat_database_deleted">Pokalbio duomenų bazė ištrinta</string>

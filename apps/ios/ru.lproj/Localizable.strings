@@ -28,9 +28,6 @@
 /* No comment provided by engineer. */
 "(new)" = "(новое)";
 
-/* chat link info line */
-"(signed)" = "(с подписью)";
-
 /* No comment provided by engineer. */
 "(this device v%@)" = "(это устройство v%@)";
 
@@ -1520,9 +1517,6 @@ server test step */
 /* alert title */
 "Connection error" = "Ошибка соединения";
 
-/* conn error description */
-"Connection error (AUTH)" = "Ошибка соединения (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "соединение установлено";
 
@@ -1531,6 +1525,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Соединение заблокировано сервером оператора:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Ошибка соединения";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Соединение не готово.";
@@ -1681,9 +1678,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create public channel" = "Создать публичный канал";
-
-/* No comment provided by engineer. */
-"Create public channel (BETA)" = "Создать публичный канал (БЕТА)";
 
 /* server test step */
 "Create queue" = "Создание очереди";
@@ -3621,15 +3615,6 @@ servers warning */
 /* chat feature */
 "Member reports" = "Сообщения о нарушениях";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "Роль участника будет изменена на \"%@\". Все участники разговора получат уведомление.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Роль члена будет изменена на \"%@\". Все члены группы получат уведомление.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена будет изменена на \"%@\". Будет отправлено новое приглашение.";
-
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Член будет удалён из разговора - это действие нельзя отменить!";
 
@@ -4578,7 +4563,8 @@ alert button */
 /* No comment provided by engineer. */
 "Profile theme" = "Тема профиля";
 
-/* alert message */
+/* alert message
+alert title */
 "Profile update will be sent to your SimpleX contacts." = "Обновление профиля будет отправлено Вашим SimpleX контактам.";
 
 /* No comment provided by engineer. */
@@ -4674,7 +4660,7 @@ alert button */
 /* swipe action */
 "Read" = "Прочитано";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Узнать больше";
 
 /* No comment provided by engineer. */
@@ -5025,6 +5011,15 @@ swipe action */
 "Role" = "Роль";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "Роль участника будет изменена на \"%@\". Все участники разговора получат уведомление.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Роль члена будет изменена на \"%@\". Все члены группы получат уведомление.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена будет изменена на \"%@\". Будет отправлено новое приглашение.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
 
 /* No comment provided by engineer. */
@@ -5036,7 +5031,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Более безопасные группы";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Сохранить";
 
@@ -5300,9 +5296,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Отправитель отменил передачу файла.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Отправитель мог удалить запрос на соединение.";
 
 /* alert message */
 "Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "Отправка картинки ссылки может раскрыть Ваш IP-адрес веб-сайту. Вы можете изменить это в настройках безопасности позже.";
@@ -6000,6 +5993,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Вторая галочка - знать, что доставлено! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "Отправитель мог удалить запрос на соединение.";
+
 /* alert message */
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
 
@@ -6259,9 +6255,6 @@ server test failure */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Если Вы не используете интерфейс iOS, включите режим Не отвлекать, чтобы звонок не прерывался.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Забыть";
 
 /* No comment provided by engineer. */
@@ -6324,7 +6317,8 @@ server test failure */
 /* No comment provided by engineer. */
 "Upgrade address" = "Обновить адрес";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "Обновить адрес?";
 
 /* No comment provided by engineer. */
@@ -6941,6 +6935,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact" = "Ваш контакт";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";
