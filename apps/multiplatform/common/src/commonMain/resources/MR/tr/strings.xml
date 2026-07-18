@@ -1471,8 +1471,7 @@
     <string name="send_receipts">Alıcılara gönder</string>
     <string name="loading_chats">Sohbetler yükleniyor…</string>
     <string name="chat_help_tap_button">Butona bas</string>
-    <string name="connection_error_auth_desc">Kişinin bağlantısını silmesi veya bağlantının çoktan kullanılması gibi bir durum yoksa, bu bir hata olabilir - lütfen bize bildirin.
-\nBağlanmak için, lütfen kişiye başka bir bağlanma bağlantısı göndermesini isteyin ve stabil bir internet bağlantınız olduğunu kontrol edin.</string>
+    <string name="connection_error_auth_desc">Kişinin bağlantısını silmesi veya bağlantının çoktan kullanılması gibi bir durum yoksa, bu bir hata olabilir - lütfen bize bildirin. \nBağlanmak için, lütfen kişiye başka bir bağlanma bağlantısı göndermesini isteyin ve stabil bir internet bağlantınız olduğunu kontrol edin.</string>
     <string name="image_decoding_exception_desc">Bu fotoğraf deşifre edilemedi. Lütfen,başka bir fotoğraf deneyin veya geliştiricilerle iletişime geçin.</string>
     <string name="disconnect_remote_hosts">Telefonların bağlantısını kes</string>
     <string name="receiving_via">Aracılığıyla alınıyor</string>
