@@ -7857,7 +7857,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All subscribers will be notified.</source>
-        <target>Il ruolo verrò cambiato in "%@". Verranno avvisati tutti gli iscritti.</target>
+        <target>Il ruolo verrà cambiato in "%@". Verranno avvisati tutti gli iscritti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">

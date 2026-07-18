@@ -2725,8 +2725,8 @@
     <string name="onboarding_post_address">Gunakan alamat ini di profil media sosial, situs web, atau tanda tangan email Anda.</string>
     <string name="connect_plan_join_name">Gabung saluran %s</string>
     <string name="connect_plan_connect_to_name">Hubungkan ke %s</string>
-    <string name="no_names_servers_enabled">Tidak ada server sesuai nama.</string>
+    <string name="no_names_servers_enabled">Tidak ada server untuk meresolusi nama.</string>
     <string name="simplex_name_error">Nama SimpleX bermasalah</string>
-    <string name="simplex_name_no_servers_desc">Tidak ada server Anda yang diatur sesuai nama SimpleX. Konfigurasis server, atau gunakan tautan koneksi.</string>
+    <string name="simplex_name_no_servers_desc">Tidak ada server Anda yang diatur untuk meresolusi nama SimpleX. Konfigurasikan server, atau gunakan tautan koneksi.</string>
     <string name="simplex_name_unconfirmed">Nama belum dikonfirmasi</string>
 </resources>

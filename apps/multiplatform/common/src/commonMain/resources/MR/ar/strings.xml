@@ -2874,7 +2874,7 @@
     <string name="verify_simplex_name_action">تحقق من الاسم</string>
     <string name="verify_simplex_names">تحقق من أسماء SimpleX</string>
     <string name="your_simplex_name">اسم SimpleX الخاص بك</string>
-    <string name="channel_simplex_name">اسم قناة SimpleX</string>
+    <string name="channel_simplex_name">اسم SimpleX للقناة</string>
     <string name="connect_plan_connect_to_name">اتصل بـ %s</string>
     <string name="do_not_require_message_signatures">لا تشترط التوقيع على الرسائل.</string>
     <string name="get_simplex_name_beta">احصل على اسم SimpleX (تجريبي)</string>

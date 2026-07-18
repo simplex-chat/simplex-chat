@@ -880,7 +880,7 @@
     <string name="you_can_share_your_address">Adresinizi bir bağlantı veya QR kodu olarak paylaşabilirsiniz - herkes size bağlanabilir.</string>
     <string name="snd_conn_event_switch_queue_phase_completed">bağlantı değiştirdiniz</string>
     <string name="you_can_enable_delivery_receipts_later">Daha sonra Ayarlardan etkinleştirebilirsin</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">"Bunları daha sonra uygulamanın Gizlilik  ayarlarından etkinleştirebilirsiniz."</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Bunları daha sonra uygulamanın Gizlilik ayarlarından etkinleştirebilirsiniz.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Bağlantının tamamlanması için kişinizin çevrimiçi olması gerekir.
 \nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).</string>
     <string name="contact_sent_large_file">Kişiniz desteklenen maksimum boyuttan (%1$s) daha büyük bir dosya gönderdi.</string>
@@ -2874,7 +2874,7 @@
     <string name="v6_5_invite_friends_descr">Yeni kullanıcılar için bağlantı kurmayı kolaylaştırdık.</string>
     <string name="why_simplex_is_built">SimpleX\'in yapılış amacı.</string>
     <string name="channel_member_you">sen</string>
-    <string name="you_are_subscriber">Abonisiniz</string>
+    <string name="you_are_subscriber">Abonesiniz</string>
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Bir bağlantı veya QR kodu paylaşabilirsiniz; böylece kanala herkes katılabilir.</string>
     <string name="badge_support_from_v7">Uygulamanın v7 sürümünden itibaren SimpleX\'i destekleyebilirsiniz.</string>
     <string name="relay_section_footer_subscriber">Bu aktarım bağlantısı (relay link) üzerinden kanala bağlandınız.</string>

@@ -2884,7 +2884,7 @@
     <string name="your_simplex_name">你的 SimpleX 名称</string>
     <string name="connect_plan_connect_to_name">连接到 %s</string>
     <string name="connect_plan_join_name">加入 %s 频道</string>
-    <string name="channel_simplex_name">SimpleX 频道名</string>
+    <string name="channel_simplex_name">频道的 SimpleX 名称</string>
     <string name="do_not_require_message_signatures">不要求消息签名。</string>
     <string name="get_simplex_name_beta">获得 SimpleX 名称 (测试)</string>
     <string name="message_signatures_are_not_required">不要求消息签名。</string>

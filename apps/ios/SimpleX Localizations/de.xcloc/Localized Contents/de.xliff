@@ -8888,7 +8888,7 @@ copied message info</note>
       </trans-unit>
       <trans-unit id="SimpleX name error" xml:space="preserve">
         <source>SimpleX name error</source>
-        <target>Fehler beim SimpleX-Name</target>
+        <target>Fehler beim SimpleX-Namen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX name not verified" xml:space="preserve">

@@ -5800,7 +5800,7 @@ chat item action */
 "SimpleX name" = "SimpleX-Name";
 
 /* No comment provided by engineer. */
-"SimpleX name error" = "Fehler beim SimpleX-Name";
+"SimpleX name error" = "Fehler beim SimpleX-Namen";
 
 /* alert title */
 "SimpleX name not verified" = "SimpleX-Name nicht verifiziert";

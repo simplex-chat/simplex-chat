@@ -2957,7 +2957,7 @@
     <string name="simplex_name_server_no_resolver_desc">Der Server %1$s unterstützt keine Namensauflösung. Konfigurieren Sie Server oder verwenden Sie einen Verbindungslink.</string>
     <string name="set_simplex_name">SimpleX-Name einrichten</string>
     <string name="simplex_name">SimpleX-Name</string>
-    <string name="simplex_name_error">Fehler beim SimpleX-Name</string>
+    <string name="simplex_name_error">Fehler beim SimpleX-Namen</string>
     <string name="simplex_name_not_verified">SimpleX-Name nicht verifiziert</string>
     <string name="simplex_name_no_valid_link_desc">Der SimpleX-Name %1$s wurde registriert, aber er hat keinen gültigen Link.</string>
     <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.</string>
@@ -2980,7 +2980,7 @@
     <string name="signature_missing_alert_title">Signatur fehlt</string>
     <string name="info_row_signed">Signiert</string>
     <string name="info_row_signed_verified">Signiert und verifiziert</string>
-    <string name="sign_message_desc">Die Signatur bestätigt, dass Sie diese Nachricht verfasst haben und sie später nicht abtreiten können.</string>
+    <string name="sign_message_desc">Die Signatur bestätigt, dass Sie diese Nachricht verfasst haben und sie später nicht abstreiten können.</string>
     <string name="sign_message">Nachricht signieren</string>
     <string name="sign_messages">Nachrichten signieren</string>
     <string name="signature_missing_alert_desc">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</string>
@@ -2994,5 +2994,5 @@
     <string name="edit_description">Beschreibung bearbeiten</string>
     <string name="enter_description_optional">Beschreibung eingeben (optional)</string>
     <string name="error_sharing_address">Fehler beim Teilen der Adresse</string>
-    <string name="to_verify_channel_member_key">Für die Überprüfung der Schlüssel mit diesem Abonnent vergleichen oder scannen Sie den Code auf Ihren Geräten.</string>
+    <string name="to_verify_channel_member_key">Für die Überprüfung der Schlüssel mit diesem Abonnenten vergleichen oder scannen Sie den Code auf Ihren Geräten.</string>
 </resources>

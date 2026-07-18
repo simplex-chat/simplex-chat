@@ -5176,7 +5176,7 @@ swipe action */
 "Role will be changed to \"%@\". All group members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Verranno avvisati tutti i membri del gruppo.";
 
 /* No comment provided by engineer. */
-"Role will be changed to \"%@\". All subscribers will be notified." = "Il ruolo verrò cambiato in \"%@\". Verranno avvisati tutti gli iscritti.";
+"Role will be changed to \"%@\". All subscribers will be notified." = "Il ruolo verrà cambiato in \"%@\". Verranno avvisati tutti gli iscritti.";
 
 /* No comment provided by engineer. */
 "Role will be changed to \"%@\". The member will receive a new invitation." = "Il ruolo del membro verrà cambiato in \"%@\". Il membro riceverà un invito nuovo.";

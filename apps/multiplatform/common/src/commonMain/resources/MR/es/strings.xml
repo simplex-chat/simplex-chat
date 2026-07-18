@@ -2902,10 +2902,10 @@
     <string name="get_simplex_name_beta">Obtener nombre SimpleX (BETA)</string>
     <string name="remove_name">Eliminar nombre</string>
     <string name="sign_message">Firmar mensaje</string>
-    <string name="sign_message_desc">La firma prueba que has autorizado el mensaje sin posibilidad de repudio.</string>
+    <string name="sign_message_desc">La firma prueba que eres el autor del mensaje sin posibilidad de repudio.</string>
     <string name="info_row_signed">Firmado</string>
     <string name="info_row_signed_verified">Firmado y verificado</string>
-    <string name="sign_messages">Firmar mensaje</string>
+    <string name="sign_messages">Firmar mensajes</string>
     <string name="require_message_signatures">Se requieren mensajes firmados.</string>
     <string name="do_not_require_message_signatures">No se requieren mensajes firmados.</string>
     <string name="message_signatures_are_required">Los mensajes firmados son obligatorios.</string>

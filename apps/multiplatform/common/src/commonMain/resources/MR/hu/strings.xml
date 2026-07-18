@@ -2883,7 +2883,7 @@
     <string name="get_simplex_name_beta">SimpleX-név beszerzése (béta)</string>
     <string name="register_test_name">Egy név regisztrálása tesztelési céllal</string>
     <string name="remove_name">Név eltávolítása</string>
-    <string name="save_simplex_name_question">Menti a Simplex-nevet?</string>
+    <string name="save_simplex_name_question">Menti a SimpleX-nevet?</string>
     <string name="to_verify_channel_member_key">A kulcsok ellenőrzéséhez ezzel a feliratkozóval hasonlítsa össze (vagy olvassa be) az eszközökön található kódot.</string>
     <string name="error_sharing_address">Hiba történt a cím megosztásakor</string>
     <string name="profile_description__field">Leírás</string>
