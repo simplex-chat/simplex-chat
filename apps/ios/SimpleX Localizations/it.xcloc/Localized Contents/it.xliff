@@ -3195,7 +3195,7 @@ alert button</note>
         <target>Dispositivi desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+      <trans-unit id="Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." xml:space="preserve">
         <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
         <target>L'indirizzo del server di destinazione di %1$@ è incompatibile con le impostazioni del server di inoltro %2$@.</target>
         <note>No comment provided by engineer.</note>
@@ -3205,7 +3205,7 @@ alert button</note>
         <target>Errore del server di destinazione: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+      <trans-unit id="Destination server version of %1$@ is incompatible with forwarding server %2$@." xml:space="preserve">
         <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
         <target>La versione del server di destinazione di %1$@ è incompatibile con il server di inoltro %2$@.</target>
         <note>No comment provided by engineer.</note>

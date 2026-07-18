@@ -3195,7 +3195,7 @@ alert button</note>
         <target>Ordenadores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+      <trans-unit id="Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." xml:space="preserve">
         <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
         <target>La dirección del servidor de destino de %1$@ es incompatible con la configuración del servidor de reenvío %2$@.</target>
         <note>No comment provided by engineer.</note>
@@ -3205,7 +3205,7 @@ alert button</note>
         <target>Error del servidor de destino: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+      <trans-unit id="Destination server version of %1$@ is incompatible with forwarding server %2$@." xml:space="preserve">
         <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
         <target>La versión del servidor de destino de %1$@ es incompatible con el servidor de reenvío %2$@.</target>
         <note>No comment provided by engineer.</note>

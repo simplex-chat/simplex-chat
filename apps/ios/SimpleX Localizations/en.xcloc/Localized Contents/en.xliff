@@ -3200,7 +3200,7 @@ alert button</note>
         <target>Desktop devices</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+      <trans-unit id="Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." xml:space="preserve">
         <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
         <target>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</target>
         <note>No comment provided by engineer.</note>
@@ -3210,7 +3210,7 @@ alert button</note>
         <target>Destination server error: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+      <trans-unit id="Destination server version of %1$@ is incompatible with forwarding server %2$@." xml:space="preserve">
         <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
         <target>Destination server version of %1$@ is incompatible with forwarding server %2$@.</target>
         <note>No comment provided by engineer.</note>
