@@ -388,8 +388,12 @@ private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset>
     // No need to show download options for Flatpak users
     emptyList()
   } else if (desktopPlatform.isLinux() && !isRunningFromAppImage() && Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
-    // Show all available .deb packages and user will choose the one that works on his system (for Debian derivatives)
-    release.assets.filter { it.name.lowercase().endsWith(".deb") }
+    // Show desktop .deb packages for the current architecture and user will choose the one that works on his system (for Debian derivatives)
+    val arch = if (desktopPlatform == DesktopPlatform.LINUX_AARCH64) "aarch64" else "x86_64"
+    release.assets.filter { asset ->
+      val name = asset.name.lowercase()
+      name.startsWith("simplex-desktop-") && name.endsWith("$arch.deb")
+    }
   } else {
     release.assets.filter { it.name == desktopPlatform.githubAssetName }
   }
