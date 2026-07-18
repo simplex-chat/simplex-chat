@@ -2313,11 +2313,6 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbindingsfout</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>Verbindingsfout (AUTH)</target>
-        <note>conn error description</note>
-      </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
         <note>No comment provided by engineer.</note>
@@ -2328,6 +2323,11 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbinding is geblokkeerd door serveroperator:
 %@</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>Verbindingsfout</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -8032,11 +8032,6 @@ chat item action</note>
         <target>Afzender heeft bestandsoverdracht geannuleerd.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>De afzender heeft mogelijk het verbindingsverzoek verwijderd.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <note>alert message</note>
@@ -9197,6 +9192,11 @@ your contacts and groups.</source>
         <target>De tweede vink die we gemist hebben! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>De afzender heeft mogelijk het verbindingsverzoek verwijderd.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>De afzender wordt NIET op de hoogte gebracht</target>
@@ -9619,13 +9619,6 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <target>Schakel de modus Niet storen in om onderbrekingen te voorkomen, tenzij u de iOS-oproepinterface gebruikt.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
-Om verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
@@ -10618,6 +10611,13 @@ Verbindingsverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
+Om verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

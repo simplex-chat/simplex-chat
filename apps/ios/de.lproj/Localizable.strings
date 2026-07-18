@@ -28,9 +28,6 @@
 /* No comment provided by engineer. */
 "(new)" = "(Neu)";
 
-/* chat link info line */
-"(signed)" = "(signiert)";
-
 /* No comment provided by engineer. */
 "(this device v%@)" = "(Dieses Gerät hat v%@)";
 
@@ -1574,9 +1571,6 @@ server test step */
 /* alert title */
 "Connection error" = "Verbindungsfehler";
 
-/* conn error description */
-"Connection error (AUTH)" = "Verbindungsfehler (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "Verbindung hergestellt";
 
@@ -1585,6 +1579,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Die Verbindung wurde vom Serverbetreiber blockiert:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Verbindungsfehler";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Verbindung noch nicht bereit.";
@@ -1741,9 +1738,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create public channel" = "Öffentlichen Kanal erstellen";
-
-/* No comment provided by engineer. */
-"Create public channel (BETA)" = "Öffentlichen Kanal erstellen (BETA)";
 
 /* server test step */
 "Create queue" = "Warteschlange erstellen";
@@ -3705,15 +3699,6 @@ servers warning */
 /* chat feature */
 "Member reports" = "Mitglieder-Meldungen";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "Die Rolle des Mitglieds wird auf \"%@\" geändert. Alle Chat-Mitglieder werden darüber informiert.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Die Mitgliederrolle wird auf \"%@\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "Die Mitgliederrolle wird auf \"%@\" geändert. Das Mitglied wird eine neue Einladung erhalten.";
-
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Das Mitglied wird aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!";
 
@@ -4674,7 +4659,8 @@ alert button */
 /* No comment provided by engineer. */
 "Profile theme" = "Profil-Design";
 
-/* alert message */
+/* alert message
+alert title */
 "Profile update will be sent to your SimpleX contacts." = "Profil-Aktualisierung wird an Ihre SimpleX-Kontakte gesendet.";
 
 /* No comment provided by engineer. */
@@ -4770,7 +4756,7 @@ alert button */
 /* swipe action */
 "Read" = "Gelesen";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Mehr erfahren";
 
 /* No comment provided by engineer. */
@@ -5133,6 +5119,15 @@ swipe action */
 "Role" = "Rolle";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "Die Rolle des Mitglieds wird auf \"%@\" geändert. Alle Chat-Mitglieder werden darüber informiert.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Die Mitgliederrolle wird auf \"%@\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Die Mitgliederrolle wird auf \"%@\" geändert. Das Mitglied wird eine neue Einladung erhalten.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Chat starten";
 
 /* No comment provided by engineer. */
@@ -5144,7 +5139,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Sicherere Gruppen";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Speichern";
 
@@ -5414,9 +5410,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Der Absender hat die Dateiübertragung abgebrochen.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.";
 
 /* alert message */
 "Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "Das Senden einer Link-Vorschau kann Ihre IP‑Adresse an die Website übermitteln. Sie können dies später in den Datenschutzeinstellungen ändern.";
@@ -6123,6 +6116,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Wir haben das zweite Häkchen vermisst! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.";
+
 /* alert message */
 "The sender will NOT be notified" = "Der Absender wird NICHT benachrichtigt";
 
@@ -6392,9 +6388,6 @@ alert subtitle */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Aktivieren Sie den Modus \"Bitte nicht stören\", um Unterbrechungen zu vermeiden, es sei denn, Sie verwenden die iOS Anrufschnittstelle.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Entkoppeln";
 
 /* No comment provided by engineer. */
@@ -6460,7 +6453,8 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Upgrade address" = "Adresse aktualisieren";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "Adresse aktualisieren?";
 
 /* No comment provided by engineer. */
@@ -7092,6 +7086,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Your contact" = "Ihr Kontakt";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%@).";

@@ -2403,11 +2403,6 @@ This is your own one-time link!</source>
         <target>连接错误</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>连接错误（AUTH）</target>
-        <note>conn error description</note>
-      </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
         <target>连接失败</target>
@@ -2418,6 +2413,11 @@ This is your own one-time link!</source>
 %@</source>
         <target>连接被运营方 %@ 阻止</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>连接错误</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -8299,11 +8299,6 @@ chat item action</note>
         <target>发送人已取消文件传输。</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>发送人可能已删除连接请求。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <target>发送链接预览可能会向该网站透露你的 IP 地址。你稍后可以在隐私设置中更改此设置。</target>
@@ -9514,6 +9509,11 @@ your contacts and groups.</source>
         <target>我们错过的第二个"√"！✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>发送人可能已删除连接请求。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>发送者将不会收到通知</target>
@@ -9951,13 +9951,6 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <target>除非您使用 iOS 通话界面，否则请启用请勿打扰模式以避免打扰。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。
-如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
@@ -10989,6 +10982,13 @@ Repeat connection request?</source>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
         <target>你的联系人</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。
+如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

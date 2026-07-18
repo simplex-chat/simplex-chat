@@ -182,7 +182,7 @@
     <string name="icon_descr_call_connecting">Oproep verbinden</string>
     <string name="button_create_group_link">Maak link</string>
     <string name="smp_server_test_connect">Verbind</string>
-    <string name="connection_error_auth">Verbindingsfout (AUTH)</string>
+    <string name="connection_error_auth">Verbindingsfout</string>
     <string name="smp_server_test_create_queue">Maak een wachtrij</string>
     <string name="auth_confirm_credential">Bevestig uw inloggegevens</string>
     <string name="contact_connection_pending">Verbinden…</string>

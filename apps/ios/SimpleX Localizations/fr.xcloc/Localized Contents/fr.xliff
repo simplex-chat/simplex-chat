@@ -2391,11 +2391,6 @@ Il s'agit de votre propre lien unique !</target>
         <target>Erreur de connexion</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>Erreur de connexion (AUTH)</target>
-        <note>conn error description</note>
-      </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
         <target>La connexion a échoué</target>
@@ -2407,6 +2402,11 @@ Il s'agit de votre propre lien unique !</target>
         <target>La connexion est bloquée par l'opérateur du serveur :
 %@</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>Erreur de connexion</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -8273,11 +8273,6 @@ chat item action</note>
         <target>L'expéditeur a annulé le transfert de fichiers.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>L'expéditeur a peut-être supprimé la demande de connexion.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <target>L'envoi d'un aperçu de lien peut révéler votre adresse IP au site Web. Vous pouvez modifier ceci dans les paramètres de confidentialité plus tard.</target>
@@ -9455,6 +9450,11 @@ your contacts and groups.</source>
         <target>Le deuxième coche que nous avons manqué ! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>L'expéditeur a peut-être supprimé la demande de connexion.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>L'expéditeur N'en sera PAS informé</target>
@@ -9876,13 +9876,6 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
         <target>À moins que vous utilisiez l'interface d'appel d'iOS, activez le mode "Ne pas déranger" pour éviter les interruptions.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s'agir d'un bug - veuillez le signaler.
-Pour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d'une connexion réseau stable.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
@@ -10877,6 +10870,13 @@ Répéter la demande de connexion ?</target>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
         <target>Votre contact</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s'agir d'un bug - veuillez le signaler.
+Pour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d'une connexion réseau stable.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
