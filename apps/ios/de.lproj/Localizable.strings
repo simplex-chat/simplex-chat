@@ -2121,13 +2121,13 @@ alert button */
 "Desktop devices" = "Desktop-Geräte";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Die Adresse des Zielservers von %1$@ ist nicht kompatibel mit den Einstellungen des Weiterleitungsservers %2$@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Die Adresse des Zielservers von %1$@ ist nicht kompatibel mit den Einstellungen des Weiterleitungsservers %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Zielserver-Fehler: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Die Version des Zielservers %1$@ ist nicht kompatibel mit dem Weiterleitungsserver %2$@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "Die Version des Zielservers %1$@ ist nicht kompatibel mit dem Weiterleitungsserver %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Detaillierte Statistiken";

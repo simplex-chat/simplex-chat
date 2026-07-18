@@ -2121,13 +2121,13 @@ alert button */
 "Desktop devices" = "Számítógépek";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "A(z) %1$@ célkiszolgáló címe nem kompatibilis a(z) %2$@ továbbító kiszolgáló beállításaival.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "A(z) %1$@ célkiszolgáló címe nem kompatibilis a(z) %2$@ továbbító kiszolgáló beállításaival.";
 
 /* snd error text */
 "Destination server error: %@" = "Célkiszolgáló-hiba: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "A(z) %1$@ célkiszolgáló verziója nem kompatibilis a(z) %2$@ továbbító kiszolgálóval.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "A(z) %1$@ célkiszolgáló verziója nem kompatibilis a(z) %2$@ továbbító kiszolgálóval.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Részletes statisztikák";

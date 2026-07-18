@@ -2118,13 +2118,13 @@ alert button */
 "Desktop devices" = "桌面设备";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "目标服务器地址 %1$@ 与转发服务器 %2$@ 设置不兼容。";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "目标服务器地址 %1$@ 与转发服务器 %2$@ 设置不兼容。";
 
 /* snd error text */
 "Destination server error: %@" = "目标服务器错误：%@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "目标服务器版本 %1$@ 与转发服务器 %2$@ 不兼容。";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "目标服务器版本 %1$@ 与转发服务器 %2$@ 不兼容。";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "详细的统计数据";

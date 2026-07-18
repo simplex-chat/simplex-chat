@@ -2045,8 +2045,14 @@ alert button */
 /* No comment provided by engineer. */
 "Desktop devices" = "Компьютеры";
 
+/* No comment provided by engineer. */
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Адрес сервера назначения %1$@ несовместим с настройками пересылающего сервера %2$@.";
+
 /* snd error text */
 "Destination server error: %@" = "Ошибка сервера получателя: %@";
+
+/* No comment provided by engineer. */
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "Версия сервера назначения %1$@ несовместима с пересылающим сервером %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Подробная статистика";

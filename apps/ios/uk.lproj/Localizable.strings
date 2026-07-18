@@ -1903,8 +1903,14 @@ alert button */
 /* No comment provided by engineer. */
 "Desktop devices" = "Настільні пристрої";
 
+/* No comment provided by engineer. */
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Адреса сервера призначення %1$@ несумісна з налаштуваннями сервера пересилання %2$@.";
+
 /* snd error text */
 "Destination server error: %@" = "Помилка сервера призначення: %@";
+
+/* No comment provided by engineer. */
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "Версія сервера призначення %1$@ несумісна з версією сервера переадресації %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Детальна статистика";

@@ -1849,8 +1849,14 @@ alert button */
 /* No comment provided by engineer. */
 "Desktop devices" = "Bilgisayar cihazları";
 
+/* No comment provided by engineer. */
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Hedef sunucu adresi %1$@, yönlendirme sunucusu %2$@ ayarlarıyla uyumlu değil.";
+
 /* snd error text */
 "Destination server error: %@" = "Hedef sunucu hatası: %@";
+
+/* No comment provided by engineer. */
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "Hedef sunucu %1$@ sürümü, yönlendirme sunucusu %2$@ ile uyumlu değil.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Detaylı istatistikler";
