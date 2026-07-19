@@ -67,10 +67,9 @@
     <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben, oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
     <string name="connection_error_auth">Verbindungsfehler</string>
-    <string name="connection_error_auth_desc">Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln – bitte melden Sie ihn uns.
-\nBitten Sie Ihren Kontakt darum, einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können, und stellen Sie sicher, dass Sie eine stabile Netzwerkverbindung haben.</string>
+    <string name="connection_error_auth_desc">Ihr Kontakt hat diesen Link entfernt oder es war ein Einmal‑Link, welcher bereits verwendet wurde.\nUm Sie zu verbinden, bitten Sie Ihren Kontakt, einen neuen Link zu erstellen.</string>
     <string name="error_accepting_contact_request">Fehler beim Annehmen der Kontaktanfrage</string>
-    <string name="sender_may_have_deleted_the_connection_request">Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.</string>
+    <string name="sender_may_have_deleted_the_connection_request">Der Absender hat die Verbindungsanfrage gelöscht.</string>
     <string name="error_deleting_contact">Fehler beim Löschen des Kontakts</string>
     <string name="error_deleting_group">Fehler beim Löschen der Gruppe</string>
     <string name="error_deleting_contact_request">Fehler beim Löschen der Kontaktanfrage</string>
@@ -2957,8 +2956,8 @@
     <string name="simplex_name_server_no_resolver_desc">Der Server %1$s unterstützt keine Namensauflösung. Konfigurieren Sie Server oder verwenden Sie einen Verbindungslink.</string>
     <string name="set_simplex_name">SimpleX-Name einrichten</string>
     <string name="simplex_name">SimpleX-Name</string>
-    <string name="simplex_name_error">Fehler beim SimpleX-Namen</string>
-    <string name="simplex_name_not_verified">SimpleX-Name nicht verifiziert</string>
+    <string name="simplex_name_error">Fehler beim SimpleX-Name</string>
+    <string name="simplex_name_not_verified">SimpleX-Name ist nicht verifiziert</string>
     <string name="simplex_name_no_valid_link_desc">Der SimpleX-Name %1$s wurde registriert, aber er hat keinen gültigen Link.</string>
     <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.</string>
     <string name="simplex_name_owner_no_channel_link">Der SimpleX‑Name %1$s wurde ohne Kanal‑Link registriert. Fügen Sie den Kanal‑Link über die Registrierungsseite hinzu.</string>
@@ -2986,7 +2985,7 @@
     <string name="signature_missing_alert_desc">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</string>
     <string name="channel_simplex_name">Im Kanal genutzter SimpleX-Name</string>
     <string name="get_simplex_name_beta">SimpleX-Name erhalten (BETA)</string>
-    <string name="register_test_name">Einen Test-Name registrieren</string>
+    <string name="register_test_name">Einen Test-Namen registrieren</string>
     <string name="remove_name">Name entfernen</string>
     <string name="save_simplex_name_question">SimpleX-Name speichern?</string>
     <string name="add_description">Beschreibung hinzufügen</string>
@@ -2995,4 +2994,11 @@
     <string name="enter_description_optional">Beschreibung eingeben (optional)</string>
     <string name="error_sharing_address">Fehler beim Teilen der Adresse</string>
     <string name="to_verify_channel_member_key">Für die Überprüfung der Schlüssel mit diesem Abonnenten vergleichen oder scannen Sie den Code auf Ihren Geräten.</string>
+    <string name="v7_0_channels_contributors">Mitwirkende hinzufügen.</string>
+    <string name="v7_0_channels">Verbesserte Kanäle 📢</string>
+    <string name="v7_0_channels_previews">Eine Web-Vorschau erstellen.</string>
+    <string name="v7_0_channels_wider_messages">Einfacher zu lesen.</string>
+    <string name="v7_0_channels_relays">Ihre Relais verwalten.</string>
+    <string name="v7_0_simplex_names_descr">Namen für Ihren Kanal oder Ihr Unternehmen.</string>
+    <string name="v7_0_simplex_names">SimpleX-Namen (BETA)</string>
 </resources>
