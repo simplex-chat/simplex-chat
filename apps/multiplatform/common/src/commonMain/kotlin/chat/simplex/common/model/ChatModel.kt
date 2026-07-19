@@ -2101,8 +2101,6 @@ data class LocalProfile(
   }
 }
 
-// Unknown types keep their string and the decoder never throws, so a profile with a future peerType
-// still parses (old apps decode a strict enum and would fail). Mirrors BadgeType.
 @Serializable(with = ChatPeerTypeSerializer::class)
 sealed class ChatPeerType {
   @Serializable @SerialName("human") object Human: ChatPeerType()

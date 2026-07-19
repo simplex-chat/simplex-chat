@@ -221,8 +221,6 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     )
 }
 
-// Unknown types keep their string and decoding never throws, so a profile with a future peerType
-// still parses (a strict String enum would fail). Mirrors BadgeType.
 public enum ChatPeerType: Hashable {
     case human
     case bot
