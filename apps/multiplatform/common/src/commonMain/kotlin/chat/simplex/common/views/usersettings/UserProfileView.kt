@@ -90,17 +90,35 @@ fun UserProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      val dataUnchanged =
+      fun dataUnchanged(): Boolean =
         displayName.value.trim() == profile.displayName &&
             fullName.value.trim() == profile.fullName &&
             shortDescr.value.trim() == (profile.shortDescr ?: "") &&
             description.value.trim() == (profile.description ?: "") &&
             profile.image == profileImage.value
-      val closeWithAlert = {
-        if (dataUnchanged || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
-          close()
-        } else {
-          showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }, close)
+      fun onClose(close: () -> Unit): Boolean = if (dataUnchanged() || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
+        chatModel.centerPanelBackgroundClickHandler = null
+        close()
+        false
+      } else {
+        showUnsavedChangesAlert(
+          {
+            chatModel.centerPanelBackgroundClickHandler = null
+            saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value)
+          },
+          {
+            chatModel.centerPanelBackgroundClickHandler = null
+            close()
+          }
+        )
+        true
+      }
+      DisposableEffect(Unit) {
+        onDispose { chatModel.centerPanelBackgroundClickHandler = null }
+      }
+      LaunchedEffect(Unit) {
+        chatModel.centerPanelBackgroundClickHandler = {
+          onClose(close = { ModalManager.start.closeModals() })
         }
       }
       LaunchedEffect(editingDescription) {
@@ -109,18 +127,35 @@ fun UserProfileLayout(
           descrFocusRequester.requestFocus()
         }
       }
-      ModalView(close = if (editingDescription) ({ editingDescription = false }) else closeWithAlert) {
+      ModalView(close = if (editingDescription) ({ editingDescription = false }) else ({ onClose(close) })) {
         if (editingDescription) {
-          ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          // app bar is top (default) or bottom (one-handed) — mirror ColumnWithScrollBar's spacers
+          // so the entry area never runs under the app bar, keyboard, or system bars
+          val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
+          Column(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING)) {
+            if (oneHandUI.value) {
+              Spacer(Modifier.padding(top = DEFAULT_PADDING + 5.dp).windowInsetsTopHeight(WindowInsets.statusBars))
+            } else {
+              Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+            }
             AppBarTitle(stringResource(MR.strings.profile_description__field), withPadding = false)
-            TextEditor(
-              description,
-              Modifier.heightIn(min = 100.dp),
-              placeholder = stringResource(MR.strings.enter_description_optional),
-              contentPadding = PaddingValues(),
-              focusRequester = descrFocusRequester,
-            )
-            SectionBottomSpacer()
+            // weight goes on the Box (a direct Column child); TextEditor forwards its modifier
+            // to the inner BasicTextField, where weight would be ignored
+            Box(Modifier.weight(1f, fill = false).padding(bottom = DEFAULT_PADDING)) {
+              TextEditor(
+                description,
+                Modifier.heightIn(min = 140.dp),
+                placeholder = stringResource(MR.strings.enter_description_optional),
+                contentPadding = PaddingValues(),
+                focusRequester = descrFocusRequester,
+                maxLines = Int.MAX_VALUE
+              )
+            }
+            if (oneHandUI.value) {
+              Spacer(Modifier.navigationBarsPadding().padding(bottom = AppBarHeight * fontSizeSqrtMultiplier))
+            } else {
+              Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+            }
           }
           return@ModalView
         }
@@ -200,7 +235,7 @@ fun UserProfileLayout(
             )
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canSaveProfile(displayName.value, shortDescr.value, profile)
+            val enabled = !dataUnchanged() && canSaveProfile(displayName.value, shortDescr.value, profile)
             val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(

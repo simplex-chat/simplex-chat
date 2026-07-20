@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        7.0.0.8
+version:        7.0.0.9
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -150,6 +150,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
           Simplex.Chat.Store.Postgres.Migrations.M20260714_member_security_code
           Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
+          Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
           Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
   else
       exposed-modules:
@@ -318,6 +319,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260707_file_digest
           Simplex.Chat.Store.SQLite.Migrations.M20260714_member_security_code
           Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
+          Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
           Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
   other-modules:
       Paths_simplex_chat

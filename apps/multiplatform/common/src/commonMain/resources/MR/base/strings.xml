@@ -216,15 +216,15 @@
   <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="app_update_required">App update required</string>
   <string name="group_link_requires_newer_version">This group requires a newer version of the app. Please update the app to join.</string>
-  <string name="connection_error_auth">Connection error (AUTH)</string>
-  <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
+  <string name="connection_error_auth">Connection link removed</string>
+  <string name="connection_error_auth_desc">Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.</string>
   <string name="connection_error_blocked">Connection blocked</string>
   <string name="connection_error_blocked_desc">Connection is blocked by server operator:\n%1$s.</string>
   <string name="connection_error_quota">Undelivered messages</string>
   <string name="connection_error_quota_desc">The connection reached the limit of undelivered messages, your contact may be offline.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
   <string name="error_rejecting_contact_request">Error rejecting contact request</string>
-  <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
+  <string name="sender_may_have_deleted_the_connection_request">The sender deleted the connection request.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_note_folder">Error deleting private notes</string>
@@ -2734,6 +2734,13 @@
   <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
+  <string name="v7_0_simplex_names">SimpleX names (BETA)</string>
+  <string name="v7_0_simplex_names_descr">Names for your channel or business.</string>
+  <string name="v7_0_channels">Better channels 📢</string>
+  <string name="v7_0_channels_previews">Create web preview.</string>
+  <string name="v7_0_channels_relays">Manage your relays.</string>
+  <string name="v7_0_channels_contributors">Add contributors.</string>
+  <string name="v7_0_channels_wider_messages">Easier to read.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->

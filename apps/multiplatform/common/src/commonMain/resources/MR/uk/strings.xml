@@ -171,7 +171,7 @@
     <string name="connection_error">Помилка підключення</string>
     <string name="network_error_desc">Будь ласка, перевірте ваше мережеве підключення з %1$s та спробуйте ще раз.</string>
     <string name="contact_already_exists">Контакт вже існує</string>
-    <string name="connection_error_auth">Помилка підключення (AUTH)</string>
+    <string name="connection_error_auth">Помилка підключення</string>
     <string name="sender_may_have_deleted_the_connection_request">Відправник, можливо, видалив запит на з\'єднання.</string>
     <string name="error_deleting_contact_request">Помилка видалення запиту на контакт</string>
     <string name="error_changing_address">Помилка зміни адреси</string>

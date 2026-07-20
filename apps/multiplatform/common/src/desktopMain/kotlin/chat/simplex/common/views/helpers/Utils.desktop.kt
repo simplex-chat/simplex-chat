@@ -26,12 +26,15 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
 private val uStyle = SpanStyle(textDecoration = TextDecoration.Underline)
-// Full-screen view downsamples to fit within this on each side
+// Full-screen view target: the smaller side is kept at or above this (the larger side may stay bigger), matching Android
 private const val MAX_IMAGE_DIMENSION = 4320
-// Chat render (getLoadedImage) downsamples to this, matching Android's getLoadedImage target
+// Chat render (getLoadedImage) target, matching Android's getLoadedImage target
 private const val MAX_THUMBNAIL_DIMENSION = 1000
 // Source images larger than this on either side are rejected (bounds the decoder's per-scanline buffer)
 private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
+// Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
+// source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
+private const val MAX_DECODED_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
 private fun fontStyle(color: String) =
   SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
 
@@ -157,7 +160,7 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
       val bitmap = decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION)
       (bitmap to data).also { loadedImageCache[filePath] = it }
     } catch (e: Exception) {
-      Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+      Log.e(TAG, "Unable to load image: " + e.stackTraceToString())
       null
     }
   } else {
@@ -227,10 +230,19 @@ internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): Buf
 internal fun sourceDimensionsWithinLimits(width: Int, height: Int): Boolean =
   width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION
 
-// Smallest power-of-two subsampling factor so both dimensions fit within maxDimension (mirrors Android inSampleSize)
+// Power-of-two subsampling factor for bounded decoding. First keeps the smaller side at or above maxDimension
+// (mirroring Android's calculateInSampleSize) so portrait images stay sharp instead of being over-subsampled by a
+// larger-side cap; then bounds the total decoded pixels so an extreme aspect ratio can't exceed the memory ceiling.
 internal fun imageSampleSize(width: Int, height: Int, maxDimension: Int): Int {
   var sampleSize = 1
-  while (width / sampleSize > maxDimension || height / sampleSize > maxDimension) {
+  if (height > maxDimension || width > maxDimension) {
+    val halfHeight = height / 2
+    val halfWidth = width / 2
+    while (halfHeight / sampleSize >= maxDimension && halfWidth / sampleSize >= maxDimension) {
+      sampleSize *= 2
+    }
+  }
+  while ((width / sampleSize) * (height / sampleSize) > MAX_DECODED_PIXELS) {
     sampleSize *= 2
   }
   return sampleSize

@@ -171,12 +171,12 @@ private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: S
     case .BROKER(brokerErr: .HOST):
         (
             title: NSLocalizedString("Private routing error", comment: ""),
-            message: String.localizedStringWithFormat(NSLocalizedString("Destination server address of %@ is incompatible with forwarding server %@ settings.", comment: ""), serverHostname(relayServer), serverHostname(proxyServer))
+            message: String.localizedStringWithFormat(NSLocalizedString("Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.", comment: ""), serverHostname(relayServer), serverHostname(proxyServer))
         )
     case .BROKER(brokerErr: .TRANSPORT(.version)):
         (
             title: NSLocalizedString("Private routing error", comment: ""),
-            message: String.localizedStringWithFormat(NSLocalizedString("Destination server version of %@ is incompatible with forwarding server %@.", comment: ""), serverHostname(relayServer), serverHostname(proxyServer))
+            message: String.localizedStringWithFormat(NSLocalizedString("Destination server version of %1$@ is incompatible with forwarding server %2$@.", comment: ""), serverHostname(relayServer), serverHostname(proxyServer))
         )
     default:
         nil

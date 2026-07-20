@@ -1179,7 +1179,7 @@
 \n用 SimpleX Chat 与我联系：%s</string>
     <string name="email_invite_subject">让我们一起在 SimpleX Chat 里聊天</string>
     <string name="you_can_create_it_later">你可以以后创建它</string>
-    <string name="share_address">分享地址</string>
+    <string name="share_address">分享地址…</string>
     <string name="you_can_share_this_address_with_your_contacts">你可以与你的联系人分享该地址，让他们与 %s 联系。</string>
     <string name="group_welcome_preview">预览</string>
     <string name="import_theme">导入主题</string>
@@ -2882,4 +2882,30 @@
     <string name="verify_simplex_name_action">验证名称</string>
     <string name="verify_simplex_names">验证 SimpleX 名称</string>
     <string name="your_simplex_name">你的 SimpleX 名称</string>
+    <string name="connect_plan_connect_to_name">连接到 %s</string>
+    <string name="connect_plan_join_name">加入 %s 频道</string>
+    <string name="channel_simplex_name">频道的 SimpleX 名称</string>
+    <string name="do_not_require_message_signatures">不要求消息签名。</string>
+    <string name="get_simplex_name_beta">获得 SimpleX 名称 (测试)</string>
+    <string name="message_signatures_are_not_required">不要求消息签名。</string>
+    <string name="message_signatures_are_required">要求消息签名。</string>
+    <string name="register_test_name">注册测试名</string>
+    <string name="remove_name">删除名称</string>
+    <string name="require_message_signatures">要求消息签名。</string>
+    <string name="save_simplex_name_question">保存 SimpleX 名称?</string>
+    <string name="show_encryption">显示加密</string>
+    <string name="show_signature">显示签名</string>
+    <string name="signature_missing_alert_title">签名缺失</string>
+    <string name="info_row_signed">已签名</string>
+    <string name="info_row_signed_verified">已签名及验证</string>
+    <string name="sign_message_desc">签名证明你写了这则消息，之后无法否认。</string>
+    <string name="sign_message">签署消息</string>
+    <string name="sign_messages">签署消息</string>
+    <string name="signature_missing_alert_desc">频道要求签署此消息，但签名缺失。</string>
+    <string name="to_verify_channel_member_key">要验证此订阅者的密钥，比较（或扫描）设备上的代码。</string>
+    <string name="add_description">添加描述</string>
+    <string name="profile_description__field">描述</string>
+    <string name="edit_description">编辑描述</string>
+    <string name="enter_description_optional">输入描述（可选）</string>
+    <string name="error_sharing_address">分享地址出错</string>
 </resources>
