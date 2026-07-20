@@ -133,12 +133,7 @@ private fun ProtocolServerLayout(
     if (server.value.preset) {
       PresetServer(server, testing, testServer)
     } else {
-      CustomServer(server, testing, testServer, onDelete)
-    }
-    val op = remember(server.value.server) { serverProtocolAndOperator(server.value, userServers.value)?.second }
-    if (serverProtocol == ServerProtocol.SMP && (!server.value.preset || server.value.roles != ServerRolesOverride())) {
-      SectionDividerSpaced()
-      ServerRolesSection(server, op?.smpRoles ?: ServerRoles.noOperatorDefault)
+      CustomServer(server, testing, testServer, onDelete, serverProtocol, userServers)
     }
     SectionBottomSpacer()
   }
@@ -172,6 +167,8 @@ fun CustomServer(
   testing: Boolean,
   testServer: () -> Unit,
   onDelete: (() -> Unit)?,
+  serverProtocol: ServerProtocol? = null,
+  userServers: MutableState<List<UserOperatorServers>>? = null
 ) {
   val serverAddress = remember { mutableStateOf(server.value.server) }
   val valid = remember { derivedStateOf { parseServerAddress(serverAddress.value)?.valid == true } }
@@ -197,6 +194,12 @@ fun CustomServer(
   SectionDividerSpaced()
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
+
+  val op = remember(server.value.server) { serverProtocolAndOperator(server.value, userServers?.value ?: listOf())?.second }
+  if (serverProtocol == ServerProtocol.SMP && server.value.enabled && (!server.value.preset || server.value.roles != ServerRolesOverride())) {
+    SectionDividerSpaced()
+    ServerRolesSection(server, op?.smpRoles ?: ServerRoles.noOperatorDefault)
+  }
 
   if (valid.value) {
     SectionDividerSpaced()

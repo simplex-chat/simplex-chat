@@ -129,7 +129,7 @@ struct ProtocolServerView: View {
     // inherited SMP roles for the per-server roles section, nil when the section should not be shown
     private var serverRolesInherited: ServerRoles? {
         guard let (serverProtocol, serverOperator) = serverProtocolAndOperator(serverToEdit, userServers),
-              serverProtocol == .smp, !serverToEdit.preset || serverToEdit.roles != ServerRolesOverride()
+              serverProtocol == .smp && serverToEdit.enabled, !serverToEdit.preset || serverToEdit.roles != ServerRolesOverride()
         else { return nil }
         return serverOperator?.smpRoles ?? ServerRoles.noOperatorDefault
     }
