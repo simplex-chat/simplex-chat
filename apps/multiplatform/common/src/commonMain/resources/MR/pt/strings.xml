@@ -263,7 +263,7 @@
     <string name="clear_contacts_selection_button">Limpar</string>
     <string name="error_creating_link_for_group">Erro ao criar ligação de grupo</string>
     <string name="change_role">Alterar função</string>
-    <string name="change_member_role_question">Alterar a função no grupo\?</string>
+    <string name="change_member_role_question">Alterar a função no grupo?</string>
     <string name="error_changing_role">Erro ao alterar função</string>
     <string name="chat_preferences_contact_allows">O contacto permite</string>
     <string name="chat_preferences">Preferências de conversa</string>
@@ -333,7 +333,7 @@
     <string name="group_link">Ligação de grupo</string>
     <string name="display_name_connecting">conectando…</string>
     <string name="display_name_connection_established">conexão estabelecida</string>
-    <string name="connection_error_auth">Erro de conexão (AUTH)</string>
+    <string name="connection_error_auth">Erro de conexão</string>
     <string name="smp_server_test_create_file">Criar ficheiro</string>
     <string name="group_connection_pending">conectando…</string>
     <string name="icon_descr_context">Ícone de contexto</string>
@@ -501,7 +501,7 @@
     <string name="leave_group_button">Sair</string>
     <string name="leave_group_question">Deixar o grupo\?</string>
     <string name="rcv_group_event_member_left">esquerda</string>
-    <string name="group_info_section_title_num_members"> %1$s  MEMBROS</string>
+    <string name="group_info_section_title_num_members">%1$s MEMBROS</string>
     <string name="button_leave_group">Deixar o grupo</string>
     <string name="chat_preferences_yes">sim</string>
     <string name="description_via_group_link">via ligação de grupo</string>

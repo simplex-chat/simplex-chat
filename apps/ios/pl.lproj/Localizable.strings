@@ -989,9 +989,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Zmień tryb blokady";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Zmienić rolę członka?";
-
 /* authentication reason */
 "Change passcode" = "Zmień pin";
 
@@ -1334,9 +1331,6 @@ server test step */
 /* alert title */
 "Connection error" = "Błąd połączenia";
 
-/* conn error description */
-"Connection error (AUTH)" = "Błąd połączenia (UWIERZYTELNIANIE)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "połączenie ustanowione";
 
@@ -1345,6 +1339,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Połączenie zostało zablokowane przez operatora serwera:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Błąd połączenia";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Połączenie nie jest gotowe.";
@@ -1821,13 +1818,13 @@ alert button */
 "Desktop devices" = "Urządzenia komputerowe";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Adres serwera docelowego %@ jest niekompatybilny z ustawieniami serwera przekazującego %@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Adres serwera docelowego %1$@ jest niekompatybilny z ustawieniami serwera przekazującego %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Błąd docelowego serwera: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Wersja serwera docelowego %@ jest niekompatybilna z serwerem przekierowującym %@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "Wersja serwera docelowego %1$@ jest niekompatybilna z serwerem przekierowującym %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Szczegółowe statystyki";
@@ -2184,7 +2181,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "błąd";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Błąd";
 
 /* No comment provided by engineer. */
@@ -2428,6 +2425,7 @@ chat item action */
 "Error: " = "Błąd: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Błąd: %@";
@@ -3310,15 +3308,6 @@ servers warning */
 
 /* chat feature */
 "Member reports" = "Raporty członków";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "Rola członka zostanie zmieniona na \"%@\". Wszyscy członkowie czatu zostaną o tym poinformowani.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Rola członka grupy zostanie zmieniona na \"%@\". Wszyscy członkowie grupy zostaną powiadomieni.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Rola członka zostanie zmieniona na \"%@\". Członek otrzyma nowe zaproszenie.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Członek zostanie usunięty z czatu – nie można tego cofnąć!";
@@ -4253,7 +4242,7 @@ alert button */
 /* swipe action */
 "Read" = "Czytaj";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Przeczytaj więcej";
 
 /* No comment provided by engineer. */
@@ -4571,6 +4560,15 @@ swipe action */
 "Role" = "Rola";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "Rola członka zostanie zmieniona na \"%@\". Wszyscy członkowie czatu zostaną o tym poinformowani.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Rola członka grupy zostanie zmieniona na \"%@\". Wszyscy członkowie grupy zostaną powiadomieni.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Rola członka zostanie zmieniona na \"%@\". Członek otrzyma nowe zaproszenie.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Uruchom czat";
 
 /* No comment provided by engineer. */
@@ -4579,7 +4577,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Bezpieczniejsze grupy";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Zapisz";
 
@@ -4822,9 +4821,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Nadawca anulował transfer pliku.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Nadawca mógł usunąć prośbę o połączenie.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Wysyłanie potwierdzeń dostawy zostanie włączone dla wszystkich kontaktów we wszystkich widocznych profilach czatu.";
@@ -5429,6 +5425,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Drugi tik, który przegapiliśmy! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "Nadawca mógł usunąć prośbę o połączenie.";
+
 /* alert message */
 "The sender will NOT be notified" = "Nadawca NIE zostanie powiadomiony";
 
@@ -5673,9 +5672,6 @@ server test failure */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "O ile nie korzystasz z interfejsu połączeń systemu iOS, włącz tryb Nie przeszkadzać, aby uniknąć przerywania.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go.\nAby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Odłącz";
 
 /* No comment provided by engineer. */
@@ -5732,7 +5728,8 @@ server test failure */
 /* No comment provided by engineer. */
 "Upgrade address" = "Uaktualnij adres";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "Uaktualnić adres?";
 
 /* No comment provided by engineer. */
@@ -6301,6 +6298,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact" = "Twój kontakt";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go.\nAby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (%@).";

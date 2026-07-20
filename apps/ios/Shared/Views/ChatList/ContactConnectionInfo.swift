@@ -103,11 +103,7 @@ struct ContactConnectionInfo: View {
         .alert(item: $alert) { _alert in
             switch _alert {
             case .deleteInvitationAlert:
-                return deleteContactConnectionAlert(contactConnection) { a in
-                    alert = .error(title: a.title, error: a.message)
-                } success: {
-                    dismiss()
-                }
+                return deleteContactConnectionAlert(contactConnection, success: { dismiss() })
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }

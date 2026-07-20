@@ -14,6 +14,8 @@ struct ChannelMembersView: View {
     var groupInfo: GroupInfo
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @State private var searchText: String = ""
+    @FocusState private var searchFocussed
 
     var body: some View {
         let members = chatModel.groupMembers
@@ -21,22 +23,36 @@ struct ChannelMembersView: View {
                 let s = m.wrapped.memberStatus
                 return s != .memLeft && s != .memRemoved && m.wrapped.memberRole != .relay
             }
+            .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
+        let subscriberCount = groupInfo.groupSummary.publicMemberCount ?? Int64(members.count + 1)
+        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
         if groupInfo.isOwner {
-            let subscriberCount = groupInfo.groupSummary.publicMemberCount ?? Int64(members.count + 1)
             List {
                 Section(header: Text(subscriberCountStr(subscriberCount)).foregroundColor(theme.colors.secondary)) {
+                    searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
+                        .padding(.leading, 8)
                     memberRow(GMember(groupInfo.membership), user: true, showRole: true)
-                    ForEach(members) { member in
-                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .owner)
+                    let filteredMembers = s == "" ? members : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
+                    ForEach(filteredMembers) { member in
+                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .member)
                     }
                 }
             }
         } else {
-            let owners = members.filter { $0.wrapped.memberRole >= .owner }
+            let contributors = members.filter { $0.wrapped.memberRole >= .member && $0.wrapped.memberStatus != .memUnknown }
+            let contributorCount = contributors.count + (groupInfo.membership.memberRole >= .member ? 1 : 0)
+            let withContributors = contributors.contains { $0.wrapped.memberRole < .owner }
+                || groupInfo.membership.memberRole >= .member
             List {
-                Section(header: Text("Owners").foregroundColor(theme.colors.secondary)) {
-                    ForEach(owners) { member in
-                        memberRow(member, user: false, showRole: false)
+                Section(header: Text(ownersContributorsCountStr(contributorCount, withContributors: withContributors)).foregroundColor(theme.colors.secondary)) {
+                    searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
+                        .padding(.leading, 8)
+                    if groupInfo.membership.memberRole >= .member {
+                        memberRow(GMember(groupInfo.membership), user: true, showRole: true)
+                    }
+                    let filteredContributors = s == "" ? contributors : contributors.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
+                    ForEach(filteredContributors) { member in
+                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .moderator)
                     }
                 }
             }

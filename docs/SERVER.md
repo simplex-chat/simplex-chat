@@ -28,6 +28,7 @@ revision: 12.10.2024
    - [Installation for onion address](#installation-for-onion-address)
    - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
 - [Server information page](#server-information-page)
+- [Name resolution](#name-resolution)
 - [Documentation](#documentation)
    - [SMP server address](#smp-server-address)
    - [Systemd commands](#systemd-commands)
@@ -1216,6 +1217,80 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
    - If you're running below `v6.1.0-beta.2`, [upgrade the server](#updating-your-smp-server).
 
 10. Access the webpage you've deployed from your browser (`https://smp.example.org`). You should see the smp-server information that you've provided in your ini file.
+
+## Name resolution
+
+SimpleX public names (like `alice.simplex`) resolve to contact and channel addresses. These records are stored in the SimpleX Namespace registry contracts on Ethereum, so resolving a name means reading from an Ethereum node. Read more about [SimpleX Public Names](./protocol/names-overview.md).
+
+With the `[NAMES]` section enabled, your smp-server resolves names for the clients connected to it: it forwards their lookups to a local REST resolver and returns the addresses. Resolution is off by default and requires running a resolver stack (an Ethereum node plus the resolver service), which needs:
+
+- 300 GB or more of NVMe SSD (TLC, not QLC, which stalls during sync)
+- 32 GB RAM and a fast multi-core CPU
+- about one day for the initial Ethereum sync
+
+### 1. Deploy the resolver stack
+
+The resolver stack (a reth + nimbus Ethereum node plus the resolver service) ships in [`scripts/resolver`](https://github.com/simplex-chat/simplexmq/tree/master/scripts/resolver) and starts with one command. See its [README](https://github.com/simplex-chat/simplexmq/blob/master/scripts/resolver/README.md) for details.
+
+```sh
+git clone https://github.com/simplex-chat/simplexmq
+cd simplexmq/scripts/resolver
+docker compose up -d
+```
+
+The shipped `.env` targets Ethereum mainnet and needs no changes. Open the peer-to-peer ports so the node can sync:
+
+```sh
+ufw allow 30303 &&\
+ufw allow 9000
+```
+
+The resolver returns errors until the node finishes syncing, which takes about a day.
+
+### 2. Check the resolver
+
+Once synced, confirm the resolver is healthy and resolves a name:
+
+```sh
+curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:8000/resolve/foobar.testing
+```
+
+The first should report `"ok": true`. The second should return the records for the test name `foobar.testing`.
+
+### 3. Point smp-server at the resolver
+
+In `/etc/opt/simplex/smp-server.ini`, set the `[NAMES]` section:
+
+```ini
+[NAMES]
+enable: on
+resolver_endpoint: http://127.0.0.1:8000
+```
+
+No authentication is needed while smp-server and the resolver share a host over loopback. Behind a TLS reverse proxy on another host, use its HTTPS address and add credentials (`resolver_auth` over plain `http` is only allowed for loopback):
+
+```ini
+[NAMES]
+enable: on
+resolver_endpoint: https://names.example.com:443
+resolver_auth: basic <username>:<password>
+```
+
+### 4. Restart smp-server
+
+```sh
+systemctl restart smp-server
+```
+
+The server logs the resolver status on start:
+
+```
+[NAMES] resolver enabled, endpoint=http://127.0.0.1:8000
+[NAMES] endpoint probe ok
+```
+
+If the node is still syncing the server starts anyway, and name lookups fail until the resolver is ready.
 
 ## Documentation
 

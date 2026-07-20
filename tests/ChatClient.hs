@@ -57,15 +57,16 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (sndAuthKeySMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
+import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
+import System.FilePath ((</>))
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -79,7 +80,6 @@ import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
-import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
@@ -121,7 +121,9 @@ testOpts =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
-      createBot = Nothing
+      createBot = Nothing,
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }
 
 testCoreOpts :: CoreChatOpts
@@ -155,6 +157,8 @@ testCoreOpts =
       deviceName = Nothing,
       chatRelay = False,
       webPreviewConfig = Nothing,
+      chatRelayServer = Nothing,
+      headless = False,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
@@ -202,13 +206,6 @@ testAgentCfg =
   where
     RetryInterval2 {riFast, riSlow} = messageRetryInterval aCfg
 
-testAgentCfgNoShortLinks :: AgentConfig
-testAgentCfgNoShortLinks =
-  testAgentCfg
-    { smpClientVRange = mkVersionRange (Version 1) sndAuthKeySMPClientVersion, -- v3
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion (Version 14)} -- before shortLinksSMPVersion
-    }
-
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -220,9 +217,6 @@ testCfg =
       channelSubscriberRole = GRObserver,
       confirmMigrations = MCYesUp
     }
-
-testCfgNoShortLinks :: ChatConfig
-testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
@@ -293,13 +287,13 @@ createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {cha
   insertUser agentStore
   ts <- getCurrentTime
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecordAt db' (AgentUserId 1) chatRelay clientService profile True ts
-  startTestChat_ ps db cfg opts user
+  startTestChat_ ps db cfg opts dbPrefix user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
   Right db@ChatDatabase {chatStore} <- createDatabase ps coreOptions dbPrefix
   Just user <- find activeUser <$> withTransaction chatStore getUsers
-  startTestChat_ ps db cfg opts user
+  startTestChat_ ps db cfg opts dbPrefix user
 
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
@@ -316,12 +310,12 @@ insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) VALUES (1)")
 #endif
 
-startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
-startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} user = do
+startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> String -> User -> IO TestCC
+startTestChat_ TestParams {tmpPath, printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} dbPrefix user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   Right cc <- newChatController db (Just user) cfg opts False
-  void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
+  void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
@@ -586,6 +580,8 @@ smpServerCfg =
       smpAgentCfg = defaultSMPClientAgentConfig,
       allowSMPProxy = True,
       serverClientConcurrency = 16,
+      serverResolverConcurrency = 1000,
+      namesConfig = Nothing,
       information = Nothing,
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }
@@ -598,6 +594,13 @@ withSmpServer = withSmpServer' smpServerCfg
 
 withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
+
+-- | SMP server with a local names resolver attached; the action gets the resolver
+-- registry to map names to the addresses it creates.
+withSmpServerAndNames :: (NameRegistry -> IO a) -> IO a
+withSmpServerAndNames action =
+  withNameResolver $ \port reg ->
+    withSmpServer' smpServerCfg {namesConfig = Just (resolverNamesConfig port)} (action reg)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"

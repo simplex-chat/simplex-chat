@@ -162,7 +162,28 @@ struct ChatItemInfoView: View {
             if let deleteAt = meta.itemTimed?.deleteAt {
                 infoRow("Disappears at", localTimestamp(deleteAt))
             }
+            if meta.msgVerified?.verified == true {
+                let signedText: LocalizedStringKey = ci.chatDir.sent ? "Signed" : "Signed & verified"
+                HStack {
+                    Label {
+                        Text(signedText)
+                    } icon: {
+                        Text(Image(systemName: "checkmark.seal")).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+            } else if meta.msgVerified == .sigMissing {
+                HStack {
+                    Label {
+                        Text("Signature missing")
+                    } icon: {
+                        Text(Image(systemName: "xmark.seal")).foregroundColor(.red)
+                    }
+                    Spacer()
+                }
+            }
             if developerTools {
+                Divider().padding(.vertical)
                 infoRow("Database ID", "\(meta.itemId)")
                 infoRow("Record updated at", localTimestamp(meta.updatedAt))
                 let msv = infoRow("Message status", ci.meta.itemStatus.id)
@@ -506,6 +527,13 @@ struct ChatItemInfoView: View {
         }
         if let deleteAt = meta.itemTimed?.deleteAt {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Disappears at: %@", comment: "copied message info"), localTimestamp(deleteAt))]
+        }
+        if meta.msgVerified?.verified == true {
+            shareText += [ci.chatDir.sent
+                ? NSLocalizedString("Signed", comment: "copied message info")
+                : NSLocalizedString("Signed & verified", comment: "copied message info")]
+        } else if meta.msgVerified == .sigMissing {
+            shareText += [NSLocalizedString("Signature missing", comment: "copied message info")]
         }
         if developerTools {
             shareText += [

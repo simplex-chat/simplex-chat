@@ -59,7 +59,7 @@
     <string name="connection_error">Yhteysvirhe</string>
     <string name="cannot_receive_file">Tiedostoa ei voi vastaanottaa</string>
     <string name="contact_already_exists">Kontakti on jo olemassa</string>
-    <string name="connection_error_auth">Yhteysvirhe (AUTH)</string>
+    <string name="connection_error_auth">Yhteysvirhe</string>
     <string name="smp_server_test_create_file">Luo tiedosto</string>
     <string name="smp_server_test_create_queue">Luo jono</string>
     <string name="smp_server_test_delete_queue">Poista jono</string>
@@ -124,7 +124,7 @@
     <string name="database_passphrase_is_required">Keskustelun avaamiseen tarvitaan tietokannan tunnuslause.</string>
     <string name="invite_prohibited">Kontaktia ei voi kutsua!</string>
     <string name="clear_contacts_selection_button">Tyhjennä</string>
-    <string name="change_member_role_question">Vaihdetaanko ryhmäroolia\?</string>
+    <string name="change_member_role_question">Vaihdetaanko ryhmäroolia?</string>
     <string name="color_secondary_variant">Toissijainen lisäsävy</string>
     <string name="color_background">Tausta</string>
     <string name="v4_4_verify_connection_security_desc">Vertaa turvakoodeja kontaktiesi kanssa.</string>
@@ -1095,7 +1095,7 @@
     <string name="your_contacts_will_remain_connected">Kontaktisi pysyvät yhdistettyinä.</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Viestintä- ja sovellusalusta, joka suojaa yksityisyyttäsi ja tietoturvaasi.</string>
     <string name="icon_descr_video_call">videopuhelu</string>
-    <string name="group_info_section_title_num_members"> %1$s  JÄSENET</string>
+    <string name="group_info_section_title_num_members">%1$s JÄSENET</string>
     <string name="member_role_will_be_changed_with_notification">Rooli muuttuu muotoon "%s". Kaikille ryhmän jäsenille ilmoitetaan asiasta.</string>
     <string name="member_role_will_be_changed_with_invitation">Rooli muuttuu muotoon "%s". Jäsen saa uuden kutsun.</string>
     <string name="voice_prohibited_in_this_chat">Ääniviestit ovat kiellettyjä tässä keskustelussa.</string>

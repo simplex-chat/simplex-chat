@@ -148,7 +148,6 @@ private fun ConnectingDesktop(session: RemoteCtrlSession, rc: RemoteCtrlInfo?) {
   AppBarTitle(stringResource(MR.strings.connecting_to_desktop))
   SectionView(stringResource(MR.strings.connecting_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
-    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
   }
 
@@ -257,7 +256,6 @@ private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessC
   AppBarTitle(stringResource(MR.strings.verify_connection))
   SectionView(stringResource(MR.strings.connected_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
-    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
   }
 
@@ -265,15 +263,14 @@ private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessC
 
   SectionView(stringResource(MR.strings.verify_code_with_desktop)) {
     SessionCodeText(sessCode)
+    SectionItemView({ verifyDesktopSessionCode(remoteCtrls, sessCode) }) {
+      Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.confirm_verb), tint = MaterialTheme.colors.secondary)
+      TextIconSpaced(false)
+      Text(generalGetString(MR.strings.confirm_verb))
+    }
   }
 
   SectionDividerSpaced()
-
-  SectionItemView({ verifyDesktopSessionCode(remoteCtrls, sessCode) }) {
-    Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.confirm_verb), tint = MaterialTheme.colors.secondary)
-    TextIconSpaced(false)
-    Text(generalGetString(MR.strings.confirm_verb))
-  }
 
   SectionView {
     DisconnectButton(onClick = ::disconnectDesktop)
@@ -312,7 +309,6 @@ private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo, close:
   AppBarTitle(stringResource(MR.strings.connected_to_desktop))
   SectionView(stringResource(MR.strings.connected_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Text(rc.deviceViewName)
-    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
   }
 

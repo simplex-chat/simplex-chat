@@ -214,13 +214,14 @@ private fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, req
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
-    BitmapFactory.decodeByteArray(data, 0, data.size)
+    BitmapFactory.decodeByteArray(data, 0, data.size, this)
     // Calculate inSampleSize
     inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
     // Decode bitmap with inSampleSize set
     inJustDecodeBounds = false
 
-    BitmapFactory.decodeByteArray(data, 0, data.size)
+    BitmapFactory.decodeByteArray(data, 0, data.size, this)
+      ?: throw IOException("Unable to decode image")
   }
 }
 

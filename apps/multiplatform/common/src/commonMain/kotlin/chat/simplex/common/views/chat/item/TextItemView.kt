@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import SectionItemView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.MaterialTheme
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.SelectionHighlightColor
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -36,6 +38,29 @@ fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolea
     if (senderBold) b.withStyle(boldFont) { append(sender) }
     else b.append(sender)
     b.append(": ")
+  }
+}
+
+private fun openMarkdownModal(modal: Format.Modal) {
+  when (modal.modalName) {
+    Format.Modal.Description -> showFullProfileDescription(modal.text)
+  }
+}
+
+private fun showFullProfileDescription(description: String) {
+  ModalManager.end.showModalCloseable { _ ->
+    ColumnWithScrollBar {
+      AppBarTitle(generalGetString(MR.strings.profile_description__field))
+      MarkdownText(
+        description,
+        parseToMarkdown(description),
+        toggleSecrets = true,
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+        uriHandler = LocalUriHandler.current,
+        linkMode = chatModel.simplexLinkMode.value,
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
+      )
+    }
   }
 }
 
@@ -193,6 +218,7 @@ fun MarkdownText (
       var hasLinks = false
       var hasSecrets = false
       var hasCommands = false
+      var hasModals = false
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
@@ -302,6 +328,13 @@ fun MarkdownText (
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
+            is Format.Modal -> {
+              hasModals = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "MODAL", annotation = i.toString()) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
             is Format.Unknown -> append(ft.text)
           }
         }
@@ -315,7 +348,7 @@ fun MarkdownText (
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
-      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
+      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
@@ -338,13 +371,10 @@ fun MarkdownText (
               withAnnotation("SIMPLEX_URL") { a -> uriHandler.openVerifiedSimplexUri(a.item) }
               withAnnotation("SIMPLEX_NAME") { a ->
                 val idx = a.item.toIntOrNull()
-                val nameInfo = (idx?.let { formattedText.getOrNull(it) }?.format as? Format.SimplexName)?.nameInfo
-                val (title, msg) = if (nameInfo?.nameType == SimplexNameType.contact) {
-                  generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
-                } else {
-                  generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
-                }
-                AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
+                val nameText = idx?.let { formattedText.getOrNull(it) }?.text
+                // The name string is routed through the same connect path as a
+                // link; planAndConnect resolves it on the core (name target).
+                if (nameText != null) uriHandler.openVerifiedSimplexUri(nameText)
               }
             }
             if (hasSecrets) {
@@ -356,11 +386,16 @@ fun MarkdownText (
             if (hasCommands && sendCommandMsg != null) {
               withAnnotation("COMMAND") { a -> sendCommandMsg("/${a.item}") }
             }
+            if (hasModals) {
+              withAnnotation("MODAL") { a ->
+                (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.Modal)?.let { openMarkdownModal(it) }
+              }
+            }
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
             icon.value =
-              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
+              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")) {
                 PointerIcon.Hand
               } else {
                 PointerIcon.Text
@@ -370,6 +405,7 @@ fun MarkdownText (
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
+                || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
           },
           onTextLayout = { onTextLayoutResult?.invoke(it) }
         )

@@ -134,6 +134,17 @@ fun MorePrivacyView(chatModel: ChatModel) {
             chatModel.draftChatId.value = null
           }
         })
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_tag),
+        stringResource(MR.strings.verify_simplex_names),
+        chatModel.controller.appPrefs.privacyVerifySimplexNames
+      )
+      // hidden until message signing is user-facing (recipient-only stage)
+//      SettingsPreferenceItem(
+//        painterResource(MR.images.ic_verified),
+//        stringResource(MR.strings.show_signature),
+//        chatModel.controller.appPrefs.privacyShowSignature
+//      )
     }
     SectionDividerSpaced()
 
@@ -142,6 +153,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.show_encryption), chatModel.controller.appPrefs.privacyShowEncryption)
     }
     SectionTextFooter(
       if (chatModel.controller.appPrefs.privacyAskToApproveRelays.state.value) {
@@ -665,46 +677,46 @@ fun SimplexLockView(
           }
         }
       }
-      if (performLA.value && laMode.value == LAMode.PASSCODE) {
-        SectionDividerSpaced()
-        SectionView(stringResource(MR.strings.self_destruct_passcode)) {
-          val openInfo = {
-            ModalManager.start.showModal {
-              SelfDestructInfoView()
-            }
+    }
+    if (performLA.value && laMode.value == LAMode.PASSCODE) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.self_destruct_passcode)) {
+        val openInfo = {
+          ModalManager.start.showModal {
+            SelfDestructInfoView()
           }
-          SettingsActionItemWithContent(null, null, click = openInfo) {
-            SharedPreferenceToggleWithIcon(
-              stringResource(MR.strings.enable_self_destruct),
-              painterResource(MR.images.ic_info),
-              openInfo,
-              remember { selfDestructPref.state }.value
-            ) {
-              toggleSelfDestruct(selfDestructPref)
-            }
+        }
+        SettingsActionItemWithContent(null, null, click = openInfo) {
+          SharedPreferenceToggleWithIcon(
+            stringResource(MR.strings.enable_self_destruct),
+            painterResource(MR.images.ic_info),
+            openInfo,
+            remember { selfDestructPref.state }.value
+          ) {
+            toggleSelfDestruct(selfDestructPref)
           }
+        }
 
-          if (remember { selfDestructPref.state }.value) {
-            Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
-              Text(
-                stringResource(MR.strings.self_destruct_new_display_name),
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-              )
-              ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
-              LaunchedEffect(selfDestructDisplayName.value) {
-                val new = selfDestructDisplayName.value
-                if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
-                  selfDestructDisplayNamePref.set(new)
-                }
+        if (remember { selfDestructPref.state }.value) {
+          Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
+            Text(
+              stringResource(MR.strings.self_destruct_new_display_name),
+              fontSize = 16.sp,
+              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+            )
+            ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
+            LaunchedEffect(selfDestructDisplayName.value) {
+              val new = selfDestructDisplayName.value
+              if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
+                selfDestructDisplayNamePref.set(new)
               }
             }
-            SectionItemView({ changeSelfDestructPassword() }) {
-              Text(
-                stringResource(MR.strings.change_self_destruct_passcode),
-                color = MaterialTheme.colors.primary
-              )
-            }
+          }
+          SectionItemView({ changeSelfDestructPassword() }) {
+            Text(
+              stringResource(MR.strings.change_self_destruct_passcode),
+              color = MaterialTheme.colors.primary
+            )
           }
         }
       }

@@ -44,6 +44,9 @@ data DirectoryOpts = DirectoryOpts
     searchResults :: Int,
     webFolder :: Maybe FilePath,
     linkCheckInterval :: Int,
+    prohibitedToObserver :: Bool,
+    alwaysCaptcha :: Bool,
+    knocking :: Bool,
     testing :: Bool
   }
 
@@ -177,6 +180,21 @@ directoryOpts appDir defaultDbName = do
           <> help "Interval in seconds to check public group link data (default: 1800)"
           <> value 1800
       )
+  prohibitedToObserver <-
+    switch
+      ( long "prohibited-to-observer"
+          <> help "Set a member to observer (and delete the message) when they post content prohibited by the group's settings"
+      )
+  alwaysCaptcha <-
+    switch
+      ( long "always-captcha"
+          <> help "Require a captcha from joining members in all groups, regardless of per-group filter settings"
+      )
+  knocking <-
+    switch
+      ( long "knocking"
+          <> help "Require admin review (knocking) before joining members are admitted in all groups, regardless of group preference"
+      )
   pure
     DirectoryOpts
       { coreOptions,
@@ -199,6 +217,9 @@ directoryOpts appDir defaultDbName = do
         searchResults = 10,
         webFolder,
         linkCheckInterval,
+        prohibitedToObserver,
+        alwaysCaptcha,
+        knocking,
         testing = False
       }
 
@@ -228,7 +249,9 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False, clientService}
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False, clientService},
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }
 
 parseMigrateLog :: ReadM MigrateLog

@@ -61,7 +61,7 @@
     <string name="connection_timeout">Délai de connexion</string>
     <string name="error_sending_message">Erreur lors de l\'envoi du message</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Vous êtes déjà connecté à %1$s.</string>
-    <string name="connection_error_auth">Erreur de connexion (AUTH)</string>
+    <string name="connection_error_auth">Erreur de connexion</string>
     <string name="connection_error_auth_desc">A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s\'agir d\'un bug - veuillez le signaler.
 \nPour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d\'une connexion réseau stable.</string>
     <string name="error_accepting_contact_request">Erreur de validation de la demande de contact</string>
@@ -523,7 +523,7 @@
     <string name="status_e2e_encrypted">chiffré de bout en bout</string>
     <string name="settings_experimental_features">Fonctionnalités expérimentales</string>
     <string name="settings_section_title_socks">SOCKS proxy</string>
-    <string name="settings_section_title_themes">Themes</string>
+    <string name="settings_section_title_themes">Thèmes</string>
     <string name="settings_section_title_messages">Messages et fichiers</string>
     <string name="settings_section_title_calls">Appels</string>
     <string name="import_database">Importer la base de données</string>
@@ -709,7 +709,7 @@
     <string name="error_creating_link_for_group">Erreur lors de la création du lien du groupe</string>
     <string name="only_group_owners_can_change_prefs">Seuls les propriétaires du groupe peuvent modifier les préférences du groupe.</string>
     <string name="section_title_for_console">Pour terminal</string>
-    <string name="change_member_role_question">Changer le rôle du groupe \?</string>
+    <string name="change_member_role_question">Changer le rôle du groupe ?</string>
     <string name="member_role_will_be_changed_with_notification">Son rôle est désormais %s. Tous les membres du groupe en seront informés.</string>
     <string name="icon_descr_contact_checked">Contact vérifié⸱e</string>
     <string name="clear_contacts_selection_button">Effacer</string>
@@ -2348,7 +2348,7 @@
     <string name="connect_plan_open_new_group">Ouvrir un nouveau groupe</string>
     <string name="simplex_link_channel">Lien pour la voie SimpleX</string>
     <string name="private_routing_no_session">Pas de session de routage privé</string>
-    <string name="error_accepting_member">Membre acceptant des erreurs</string>
+    <string name="error_accepting_member">Erreur lors de l\'acceptation du membre</string>
     <string name="error_deleting_member_support_chat">Erreur effaçant le chat avec le membre</string>
     <string name="unsupported_connection_link">Lien de connexion pas soutenu</string>
     <string name="link_requires_newer_app_version_please_upgrade">Ce lien requiert une version de l\'application plus récente. Veuillez s\'il-vous-plait actualiser l\'application ou demander à votre contact de vous envoyer un lien compatible.</string>

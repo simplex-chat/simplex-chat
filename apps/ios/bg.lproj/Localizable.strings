@@ -953,9 +953,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Промяна на режима на заключване";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Промяна на ролята на члена?";
-
 /* authentication reason */
 "Change passcode" = "Промени kодa за достъп";
 
@@ -1298,14 +1295,14 @@ server test step */
 /* alert title */
 "Connection error" = "Грешка при свързване";
 
-/* conn error description */
-"Connection error (AUTH)" = "Грешка при свързване (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "установена е връзка";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Връзката е блокирана от оператора на сървъра:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Грешка при свързване";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Връзката не е готова.";
@@ -1935,7 +1932,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "грешка";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Грешка при свързване със сървъра";
 
 /* No comment provided by engineer. */
@@ -2095,6 +2092,7 @@ chat item action */
 "Error: " = "Грешка: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Грешка: %@";
@@ -2715,12 +2713,6 @@ server test error */
 /* rcv group event chat item */
 "member connected" = "свързан";
 
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
-
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";
 
@@ -3288,7 +3280,7 @@ alert button */
 /* swipe action */
 "Read" = "Прочетено";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Прочетете още";
 
 /* No comment provided by engineer. */
@@ -3465,12 +3457,19 @@ swipe action */
 "Role" = "Роля";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Ролята на члена ще бъде променена на \"%@\". Всички членове на групата ще бъдат уведомени.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Стартиране на чат";
 
 /* No comment provided by engineer. */
 "Safer groups" = "По-безопасни групи";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Запази";
 
@@ -3626,9 +3625,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Подателят отмени прехвърлянето на файла.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Подателят може да е изтрил заявката за връзка.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Изпращането на потвърждениe за доставка ще бъде активирано за всички контакти във всички видими чат профили.";
@@ -3980,6 +3976,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Втората отметка, която пропуснахме! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "Подателят може да е изтрил заявката за връзка.";
+
 /* alert message */
 "The sender will NOT be notified" = "Подателят НЯМА да бъде уведомен";
 
@@ -4132,9 +4131,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Освен ако не използвате интерфейса за повикване на iOS, активирайте режима \"Не безпокой\", за да избегнете прекъсвания.";
-
-/* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Освен ако вашият контакт не е изтрил връзката или този линк вече е бил използван, това може да е грешка - моля, докладвайте.\nЗа да се свържете, моля, помолете вашия контакт да създаде друг линк за връзка и проверете дали имате стабилна мрежова връзка.";
 
 /* No comment provided by engineer. */
 "Unlink" = "Забрави";
@@ -4570,6 +4566,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Вашите чат профили";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Освен ако вашият контакт не е изтрил връзката или този линк вече е бил използван, това може да е грешка - моля, докладвайте.\nЗа да се свържете, моля, помолете вашия контакт да създаде друг линк за връзка и проверете дали имате стабилна мрежова връзка.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%@).";
