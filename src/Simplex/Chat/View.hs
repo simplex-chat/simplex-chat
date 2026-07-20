@@ -1127,11 +1127,11 @@ connReqContact_ intro (CCLink cReq shortLink) =
     cReqStr = strEncode $ simplexChatContact cReq
 
 simplexChatContact :: ConnReqContact -> ConnReqContact
-simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simplexChat}
+simplexChatContact (CRContactUri crData e2e) = CRContactUri crData {crScheme = simplexChat} e2e
 
 simplexChatContact' :: ConnLinkContact -> ConnLinkContact
 simplexChatContact' = \case
-  CLFull (CRContactUri crData) -> CLFull $ CRContactUri crData {crScheme = simplexChat}
+  CLFull (CRContactUri crData e2e) -> CLFull $ CRContactUri crData {crScheme = simplexChat} e2e
   l@(CLShort _) -> l
 
 groupSimplexDomain :: GroupInfo -> Maybe SimplexDomain

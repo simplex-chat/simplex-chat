@@ -96,7 +96,7 @@ import Simplex.Messaging.Compression (compressionLevel, limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
@@ -1462,7 +1462,7 @@ setGroupLinkData nm user gInfo gLink = do
     (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
       linkType = if useRelays' gInfo then CCTChannel else CCTGroup
-  sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
+  sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData) False Nothing)
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
 
 setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
@@ -1550,28 +1550,26 @@ groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {public
               authOwnerSig = C.sign' rootPrivKey (ownerId <> C.encodePubKey ownerKey)
            in [OwnerAuth {ownerId, ownerKey, authOwnerSig}]
         _ -> []
-      userLinkData = UserContactLinkData UserContactData {direct, owners, relays, userData}
+      userLinkData = UserContactLinkData UserContactData {direct, owners, relays, userData, ratchetKeys = Nothing}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
    in (userLinkData, crClientData)
 
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
-getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
+getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
 getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
   withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
 
-getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m, ConnectionRequestUri m)
 getShortLinkConnReq nm user l = do
-  (fd, cData) <- getShortLinkConnReq' nm user l
+  r@(_, cData, _) <- getShortLinkConnReq' nm user l
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
-      | not supported -> throwChatError CEUnsupportedConnReq
-      where
-        supported = direct || not (null relays)
+      | not direct && null relays -> throwChatError CEUnsupportedConnReq
     _ -> pure ()
-  pure (fd, cData)
+  pure r
 
 encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
 encodeShortLinkData d =
@@ -2822,7 +2820,7 @@ msgContentHasLink mc ft_ = case msgContentTag mc of
   MCLink_ -> True
   _ -> maybe False hasLinks ft_
 
-prepareAgentCreation :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> CM (CommandId, ConnId)
+prepareAgentCreation :: User -> CommandFunction -> Bool -> SConnectionMode c -> CM (CommandId, ConnId)
 prepareAgentCreation user cmdFunction enableNtfs cMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
   connId <- withAgent $ \a -> prepareConnectionToCreate a (aUserId user) enableNtfs cMode PQSupportOff
@@ -2836,7 +2834,7 @@ prepareAgentJoin user conn_ enableNtfs cReqUri = do
     Nothing -> withAgent $ \a -> prepareConnectionToJoin a (aUserId user) enableNtfs cReqUri PQSupportOff
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: ConnectionModeI c => CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
+joinAgentConnectionAsync :: CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
 joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
   withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
@@ -2940,9 +2938,11 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
 
 connRequestPQEncryption :: ConnectionRequestUri c -> Maybe PQEncryption
 connRequestPQEncryption = \case
-  CRContactUri _ -> Nothing
-  CRInvitationUri _ (CR.E2ERatchetParamsUri vr' _ _ pq) ->
-    Just $ PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
+  CRContactUri _ rks -> pqEnc . snd <$> rks
+  CRInvitationUri _ e2e -> Just $ pqEnc e2e
+  where
+    pqEnc (CR.E2ERatchetParamsUri vr' _ _ pq) =
+      PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
 
 createRcvFeatureItems :: User -> Contact -> Contact -> CM' ()
 createRcvFeatureItems user ct ct' =
