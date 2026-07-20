@@ -22,6 +22,9 @@ import java.io.File
 fun main() {
   try {
     if (!acquireSingleInstance()) return
+    // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
+    // initializer, which a transient second instance would also run). Early: before settings writes.
+    preferencesTmpDir.deleteRecursively()
     // Disable hardware acceleration
     //System.setProperty("skiko.renderApi", "SOFTWARE")
     initHaskell()
@@ -30,6 +33,8 @@ fun main() {
     initApp()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
+    // Only the owning instance cleans tmpDir on exit (see preferencesTmpDir above).
+    tmpDir.deleteOnExit()
     // showApp is inside the try: its first statements (SystemTray probe, Compose setup) are the
     // process's first AWT init, which is itself a known startup failure cause (#4146). Crashes
     // after the window appears are handled by the WindowExceptionHandler in showApp instead.
