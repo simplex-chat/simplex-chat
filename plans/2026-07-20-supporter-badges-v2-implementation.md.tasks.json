@@ -1,0 +1,15 @@
+{
+  "planPath": "plans/2026-07-20-supporter-badges-v2-implementation.md",
+  "productPlan": "plans/2026-07-20-supporter-badges-v2-product.md",
+  "tasks": [
+    {"id": 0, "subject": "P1 — Bot protocol additions (badge-service): echo req nonce; add /portal; confirm Apple/Google re-verify renewal", "status": "pending"},
+    {"id": 1, "subject": "P1b — Stripe renewal persistence: webhook/sweep + re-issue-against-existing-subscription (Impl Decision #5)", "status": "pending", "blockedBy": [0]},
+    {"id": 2, "subject": "P2 — Client purchase + credential-install path (new ChatCommand/FFI; StoreKit2 + Play Billing; idempotent install)", "status": "pending", "blockedBy": [0]},
+    {"id": 3, "subject": "P3 — Badge management UI: render S0-S8 + CTAs (reuse NameBadge glyphs); client-local lifecycle store", "status": "pending", "blockedBy": [2]},
+    {"id": 4, "subject": "P4 — Reconciliation loop (Apple/Google pull; one-time restore-only; Stripe bot-push); @on_message credential handler", "status": "pending", "blockedBy": [2]},
+    {"id": 5, "subject": "P5 — Stripe desktop: Payment Link (S6) + Customer Portal (/portal); two-message handler", "status": "pending", "blockedBy": [1, 2]},
+    {"id": 6, "subject": "Android build flavors: isolate Play Billing to the google-flavor source set (FOSS APK stays GMS-free)", "status": "pending", "blockedBy": [2]}
+  ],
+  "note": "Design split into Product Plan (UX/rules/decisions) + Implementation Plan (this). Resolve Open Decisions before coding each phase.",
+  "lastUpdated": "2026-07-20"
+}

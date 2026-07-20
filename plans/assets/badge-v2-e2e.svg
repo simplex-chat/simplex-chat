@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1020" height="470" viewBox="0 0 1020 470" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ep" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9333ea"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1020" height="470" fill="#ffffff"/>
+  <text x="510" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">End-to-End Badge Lifecycle</text>
+  <text x="510" y="53" text-anchor="middle" font-size="12.5" fill="#64748b">connect → buy → verify → issue → show → (renew / expiry check) → cancel · request↔response "ping-pong" between client, bot &amp; provider</text>
+
+  <!-- phase cards -->
+  <!-- helper geometry: 7 cards, x0=18, w=124, gap=16 => pitch 140 -->
+  <g font-size="13" font-weight="700" fill="#0f172a" text-anchor="middle">
+    <!-- 0 Connect (client-bot) -->
+    <rect x="18" y="120" width="124" height="92" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+    <text x="80" y="150">0 · Connect</text>
+    <text x="80" y="172" font-size="10.5" font-weight="400" fill="#475569">add bot address</text>
+    <text x="80" y="188" font-size="10.5" font-weight="400" fill="#475569">→ welcome</text>
+    <text x="80" y="205" font-size="10" font-weight="700" fill="#1d4ed8">client ↔ bot</text>
+    <!-- 1 Buy (client-store) -->
+    <rect x="158" y="120" width="124" height="92" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="2"/>
+    <text x="220" y="150">1 · Buy</text>
+    <text x="220" y="172" font-size="10.5" font-weight="400" fill="#475569">StoreKit / Play /</text>
+    <text x="220" y="188" font-size="10.5" font-weight="400" fill="#475569">Stripe checkout</text>
+    <text x="220" y="205" font-size="10" font-weight="700" fill="#7e22ce">client ↔ store</text>
+    <!-- 2 Verify (bot-provider) -->
+    <rect x="298" y="120" width="124" height="92" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+    <text x="360" y="150">2 · Verify</text>
+    <text x="360" y="172" font-size="10.5" font-weight="400" fill="#475569">receipt / token</text>
+    <text x="360" y="188" font-size="10.5" font-weight="400" fill="#475569">server-side</text>
+    <text x="360" y="205" font-size="10" font-weight="700" fill="#15803d">bot ↔ provider</text>
+    <!-- 3 Issue (bot-client) -->
+    <rect x="438" y="120" width="124" height="92" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+    <text x="500" y="150">3 · Issue</text>
+    <text x="500" y="172" font-size="10.5" font-weight="400" fill="#475569">sign credential</text>
+    <text x="500" y="188" font-size="10.5" font-weight="400" fill="#475569">(issuer key)</text>
+    <text x="500" y="205" font-size="10" font-weight="700" fill="#15803d">bot → client</text>
+    <!-- 4 Show (client) -->
+    <rect x="578" y="120" width="124" height="92" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+    <text x="640" y="150">4 · Show</text>
+    <text x="640" y="172" font-size="10.5" font-weight="400" fill="#475569">verify + install;</text>
+    <text x="640" y="188" font-size="10.5" font-weight="400" fill="#475569">present proofs</text>
+    <text x="640" y="205" font-size="10" font-weight="700" fill="#1d4ed8">client (BSActive)</text>
+    <!-- 5 Renew/Check (loop) -->
+    <rect x="718" y="120" width="124" height="92" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.5"/>
+    <text x="780" y="148">5 · Renew /</text>
+    <text x="780" y="164">expiry check</text>
+    <text x="780" y="184" font-size="10.5" font-weight="400" fill="#475569">launch / ~6h timer</text>
+    <text x="780" y="205" font-size="10" font-weight="700" fill="#854d0e">client-driven (all rails)</text>
+    <!-- 6 Cancel (client-store) -->
+    <rect x="858" y="120" width="144" height="92" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="2"/>
+    <text x="930" y="150">6 · Cancel</text>
+    <text x="930" y="172" font-size="10.5" font-weight="400" fill="#475569">store UI / portal</text>
+    <text x="930" y="188" font-size="10.5" font-weight="400" fill="#475569">(no bot)</text>
+    <text x="930" y="205" font-size="10" font-weight="700" fill="#7e22ce">client ↔ store</text>
+  </g>
+
+  <!-- forward arrows between cards -->
+  <g stroke="#475569" stroke-width="2">
+    <line x1="142" y1="166" x2="158" y2="166" marker-end="url(#e)"/>
+    <line x1="282" y1="166" x2="298" y2="166" marker-end="url(#e)"/>
+    <line x1="422" y1="166" x2="438" y2="166" marker-end="url(#e)"/>
+    <line x1="562" y1="166" x2="578" y2="166" marker-end="url(#e)"/>
+    <line x1="702" y1="166" x2="718" y2="166" marker-end="url(#e)"/>
+    <line x1="842" y1="166" x2="858" y2="166" marker-end="url(#e)"/>
+  </g>
+
+  <!-- renewal loop: from phase 5 back to phase 2 (re-verify → re-issue) -->
+  <path d="M 780 212 C 780 300, 360 300, 360 212" fill="none" stroke="#9333ea" stroke-width="2.2" marker-end="url(#ep)"/>
+  <rect x="470" y="286" width="200" height="20" fill="#ffffff" opacity="0.9"/>
+  <text x="570" y="301" text-anchor="middle" font-size="11.5" fill="#7e22ce">renewal: re-verify → re-issue fresh badge</text>
+
+  <!-- lapse / expire path from phase 5 down -->
+  <path d="M 810 212 C 900 250, 930 250, 930 214" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#e)"/>
+
+  <!-- notes row -->
+  <g font-size="12" fill="#334155">
+    <rect x="18" y="330" width="984" height="118" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="34" y="354" font-weight="700" fill="#0f172a">Key facts</text>
+    <text x="34" y="378">• Client holds the master secret <tspan font-weight="700">ms</tspan> and a per-request nonce <tspan font-weight="700">req</tspan> (echoed in every reply — transport has no correlation id).</text>
+    <text x="34" y="398">• Bot verifies server-side, signs, and is the only issuer. Delivery is store-and-forward (21-day retention) → client trusts delivery + dedupes.</text>
+    <text x="34" y="418">• Renewal is client-driven on every rail: the app re-checks on startup + each billing period; the bot verifies payment and issues. One-time badges never auto-renew.</text>
+    <text x="34" y="438">• <tspan font-weight="700">Status &amp; Cancel are client-side</tspan> (native store UI / Stripe portal). The bot never reports status and never executes a cancel.</text>
+  </g>
+</svg>
