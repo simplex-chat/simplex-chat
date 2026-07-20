@@ -158,11 +158,14 @@ Sent items win only because their `itemTs` is the same device's local clock.
 
 **Fix (two parts):** for a pending invitee, (1) **bypass the cross-clock comparison** so the
 support message surfaces, and (2) **prefer a message over a no-content event** so an event can't
-re-cover an already-shown message (Kotlin + iOS):
+re-cover an already-shown message (Kotlin + iOS). Expressed as a single *keep the current
+preview* predicate — the new item wins by default, and only the criterion for keeping the old
+one changes with `memberPending` (no extra branches per outcome):
 ```
-if (memberPending)
-  if (cItem.content.msgContent != null || currentPreviewItem.content.msgContent == null) cItem else currentPreviewItem
-else if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) cItem else currentPreviewItem
+newPreviewItem = currentPreviewItem?.takeIf {
+  if (memberPending) cItem.content.msgContent == null && it.content.msgContent != null
+  else cItem.meta.itemTs < it.meta.itemTs
+} ?: cItem
 ```
 Part (2) (`5b37cf881`) fixes a follow-up symptom — **"reviewed by admins" reappearing after the
 first message**: a pending invitee's member-support no-content events arrive as new chat items in

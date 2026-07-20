@@ -541,26 +541,15 @@ object ChatModel {
         chat = chats[i]
         // update preview (for chat from main scope to show new items for invitee in pending status)
         if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
-          val newPreviewItem = when (cInfo) {
-            is ChatInfo.Group -> {
-              val currentPreviewItem = chat.chatItems.firstOrNull()
-              if (currentPreviewItem != null) {
-                // Pending invitee: surface the latest support message (broker vs local itemTs aren't
-                // comparable); don't let a no-content event re-cover an already-shown message.
-                if (cInfo.groupInfo_?.membership?.memberPending == true) {
-                  if (cItem.content.msgContent != null || currentPreviewItem.content.msgContent == null) cItem else currentPreviewItem
-                } else if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
-                  cItem
-                } else {
-                  currentPreviewItem
-                }
-              } else {
-                cItem
-              }
-            }
-
-            else -> cItem
-          }
+          val memberPending = cInfo.groupInfo_?.membership?.memberPending == true
+          val currentPreviewItem = if (cInfo is ChatInfo.Group) chat.chatItems.firstOrNull() else null
+          // the new item becomes the preview unless it is older - or, for a pending invitee, unless it is
+          // a no-content event that would re-cover an already shown support message (broker vs local
+          // itemTs aren't comparable there, so content presence is the criterion instead)
+          val newPreviewItem = currentPreviewItem?.takeIf {
+            if (memberPending) cItem.content.msgContent == null && it.content.msgContent != null
+            else cItem.meta.itemTs < it.meta.itemTs
+          } ?: cItem
           val wasUnread = chat.unreadTag
           chats[i] = chat.copy(
             chatItems = arrayListOf(newPreviewItem),

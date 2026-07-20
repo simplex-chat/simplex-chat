@@ -658,24 +658,17 @@ final class ChatModel: ObservableObject {
         if let i = getChatIndex(cInfo.id) {
             // update preview
             if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
-                chats[i].chatItems = switch cInfo {
-                case .group:
-                    if let currentPreviewItem = chats[i].chatItems.first {
-                        // Pending invitee: surface the latest support message (broker vs local itemTs
-                        // aren't comparable); don't let a no-content event re-cover an already-shown message.
-                        if cInfo.groupInfo?.membership.memberPending ?? false {
-                            (cItem.content.msgContent != nil || currentPreviewItem.content.msgContent == nil) ? [cItem] : [currentPreviewItem]
-                        } else if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
-                            [cItem]
-                        } else {
-                            [currentPreviewItem]
-                        }
-                    } else {
-                        [cItem]
-                    }
-                default:
-                    [cItem]
+                let memberPending = cInfo.groupInfo?.membership.memberPending ?? false
+                let currentPreviewItem: ChatItem? = if case .group = cInfo { chats[i].chatItems.first } else { nil }
+                // the new item becomes the preview unless it is older - or, for a pending invitee, unless it is
+                // a no-content event that would re-cover an already shown support message (broker vs local
+                // itemTs aren't comparable there, so content presence is the criterion instead)
+                let keptPreviewItem = currentPreviewItem.flatMap { current in
+                    (memberPending
+                     ? cItem.content.msgContent == nil && current.content.msgContent != nil
+                     : cItem.meta.itemTs < current.meta.itemTs) ? current : nil
                 }
+                chats[i].chatItems = [keptPreviewItem ?? cItem]
                 if case .rcvNew = cItem.meta.itemStatus {
                     unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
                 }
