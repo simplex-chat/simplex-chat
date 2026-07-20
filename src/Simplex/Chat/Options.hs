@@ -422,7 +422,7 @@ chatOptsP appDir defaultDbName = do
   showFullLinks <-
     switch
       ( long "show-full-links"
-          <> help "Log full connection links and addresses (by default only short links are logged)"
+          <> help "Show full connection links and addresses"
       )
   allowInstantFiles <-
     switch
