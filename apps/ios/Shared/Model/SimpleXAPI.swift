@@ -1104,8 +1104,8 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
             )
         case .errorAgent(.SMP(_, .AUTH)):
             showAlert(
-                NSLocalizedString("Connection error (AUTH)", comment: ""),
-                message: NSLocalizedString("Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.", comment: "")
+                NSLocalizedString("Connection link removed", comment: ""),
+                message: NSLocalizedString("Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.", comment: "")
             )
         case let .errorAgent(.SMP(_, .BLOCKED(info))):
             showAlert(
@@ -1164,7 +1164,7 @@ func connErrorText(_ e: ChatError) -> String {
     case .error(.unsupportedConnReq):
         NSLocalizedString("Unsupported connection link", comment: "conn error description")
     case .errorAgent(.SMP(_, .AUTH)):
-        NSLocalizedString("Connection error (AUTH)", comment: "conn error description")
+        NSLocalizedString("Connection link removed", comment: "conn error description")
     case let .errorAgent(.SMP(_, .BLOCKED(info))):
         String.localizedStringWithFormat(NSLocalizedString("Connection blocked: %@", comment: "conn error description"), info.reason.text)
     case .errorAgent(.SMP(_, .QUOTA)):
@@ -1507,8 +1507,8 @@ func apiAcceptContactRequest(incognito: Bool, contactReqId: Int64) async -> Cont
     if case let .result(.acceptingContactRequest(_, contact)) = r { return contact }
     if case .error(.errorAgent(.SMP(_, .AUTH))) = r {
         await MainActor.run { showAlert(
-            NSLocalizedString("Connection error (AUTH)", comment: ""),
-            message: NSLocalizedString("Sender may have deleted the connection request.", comment: "")
+            NSLocalizedString("Connection link removed", comment: ""),
+            message: NSLocalizedString("The sender deleted the connection request.", comment: "")
         ) }
     } else if let r {
         if let networkErrorAlert = networkErrorAlert(r) {

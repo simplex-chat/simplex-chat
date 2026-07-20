@@ -304,28 +304,26 @@ private struct ModalText: Identifiable {
 }
 
 private struct FullProfileDescriptionView: View {
-    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var theme: AppTheme
     let description: String
     @State private var showSecrets: Set<Int> = []
 
     var body: some View {
-        NavigationView {
-            ScrollView {
+        List {
+            Text("Description")
+                .font(.title)
+                .bold()
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .listRowBackground(Color.clear)
+
+            Section {
                 let r = markdownText(description, showSecrets: showSecrets, backgroundColor: theme.colors.background)
                 msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding()
-            }
-            .navigationTitle("Description")
-            .modifier(ThemedBackground())
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }
-                }
             }
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 

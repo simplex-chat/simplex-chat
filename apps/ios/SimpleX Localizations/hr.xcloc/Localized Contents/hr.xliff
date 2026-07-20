@@ -2355,8 +2355,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Sender cancelled file transfer.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">

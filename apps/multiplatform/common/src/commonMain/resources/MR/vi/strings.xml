@@ -322,7 +322,7 @@
     <string name="connection_local_display_name">kết nối %1$d</string>
     <string name="display_name_connection_established">kết nối đã được tạo lập</string>
     <string name="connect_with_contact_name_question">Kết nối với %1$s?</string>
-    <string name="connection_error_auth">Lỗi kết nối (AUTH)</string>
+    <string name="connection_error_auth">Lỗi kết nối</string>
     <string name="network_session_mode_entity">Kết nối</string>
     <string name="callstatus_connecting">đang kết nối cuộc gọi…</string>
     <string name="connect_via_contact_link">Kết nối qua địa chỉ liên lạc?</string>

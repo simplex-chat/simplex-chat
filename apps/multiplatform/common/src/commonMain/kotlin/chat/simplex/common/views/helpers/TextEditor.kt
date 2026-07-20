@@ -34,7 +34,8 @@ fun TextEditor(
   shape: Shape = RoundedCornerShape(14.dp),
   isValid: (String) -> Boolean = { true },
   focusRequester: FocusRequester? = null,
-  enabled: Boolean = true
+  enabled: Boolean = true,
+  maxLines: Int = 5
 ) {
   var valid by rememberSaveable { mutableStateOf(true) }
   var focused by rememberSaveable { mutableStateOf(false) }
@@ -73,7 +74,7 @@ fun TextEditor(
         autoCorrect = false
       ),
       singleLine = false,
-      maxLines = 5,
+      maxLines = maxLines,
       cursorBrush = SolidColor(MaterialTheme.colors.secondary),
       decorationBox = @Composable { innerTextField ->
         TextFieldDefaults.TextFieldDecorationBox(

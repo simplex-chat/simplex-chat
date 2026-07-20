@@ -1239,7 +1239,7 @@
     <string name="la_could_not_be_verified">Anda tidak dapat diverifikasi; silakan coba lagi.</string>
     <string name="smp_proxy_error_broker_version">Versi server penerusan tidak kompatibel dengan pengaturan jaringan: %1$s.</string>
     <string name="proxy_destination_error_broker_version">Versi server tujuan %1$s tidak kompatibel dengan server penerusan %2$s.</string>
-    <string name="connection_error_auth">Kesalahan koneksi (AUTH)</string>
+    <string name="connection_error_auth">Kesalahan koneksi</string>
     <string name="smp_proxy_error_connecting">Gagal menghubungkan ke server penerusan %1$s. Coba lagi nanti.</string>
     <string name="smp_proxy_error_broker_host">Alamat server penerusan tidak kompatibel dengan pengaturan jaringan: %1$s.</string>
     <string name="smp_server_test_upload_file">Unggah berkas</string>
@@ -1997,7 +1997,7 @@
     <string name="remote_ctrl_connection_stopped_desc">Harap periksa apakah perangkat seluler dan desktop terhubung ke jaringan lokal yang sama, dan firewall desktop mengizinkan koneksi.\nHarap sampaikan masalah lain kepada pengembang.</string>
     <string name="sync_connection_desc">Koneksi memerlukan negosiasi ulang enkripsi.</string>
     <string name="encryption_renegotiation_in_progress">Negosiasi ulang enkripsi sedang berlangsung.</string>
-    <string name="connection_error_quota">Pesan yang tidak terkirim</string>
+    <string name="connection_error_quota">Pesan belum terkirim</string>
     <string name="message_deleted_or_not_received_error_desc">Pesan ini telah dihapus atau belum diterima.</string>
     <string name="to_connect_via_link_title">Untuk terhubung via tautan</string>
     <string name="app_check_for_updates_notice_desc">Untuk mendapatkan pemberitahuan tentang rilis baru, aktifkan pemeriksaan berkala untuk versi Stabil atau Beta.</string>
@@ -2723,4 +2723,10 @@
     <string name="onboarding_send_1_time_link">Kirim tautannya via aplikasi pesan apa pun - aman. Minta untuk tempel ke SimpleX.</string>
     <string name="onboarding_or_show_qr_code">Atau perlihatkan kode QR secara langsung atau melalui panggilan video.</string>
     <string name="onboarding_post_address">Gunakan alamat ini di profil media sosial, situs web, atau tanda tangan email Anda.</string>
+    <string name="connect_plan_join_name">Gabung saluran %s</string>
+    <string name="connect_plan_connect_to_name">Hubungkan ke %s</string>
+    <string name="no_names_servers_enabled">Tidak ada server untuk meresolusi nama.</string>
+    <string name="simplex_name_error">Nama SimpleX bermasalah</string>
+    <string name="simplex_name_no_servers_desc">Tidak ada server Anda yang diatur untuk meresolusi nama SimpleX. Konfigurasikan server, atau gunakan tautan koneksi.</string>
+    <string name="simplex_name_unconfirmed">Nama belum dikonfirmasi</string>
 </resources>
