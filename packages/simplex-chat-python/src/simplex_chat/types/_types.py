@@ -2107,6 +2107,7 @@ class LocalProfile(TypedDict):
     displayName: str
     fullName: str
     shortDescr: NotRequired[str]
+    description: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
@@ -2388,6 +2389,7 @@ class Profile(TypedDict):
     displayName: str
     fullName: str
     shortDescr: NotRequired[str]
+    description: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]

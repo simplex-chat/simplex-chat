@@ -2708,8 +2708,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">O remetente cancelou a transferência de arquivos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
-        <source>Sender may have deleted the connection request.</source>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve" approved="no">
+        <source>The sender deleted the connection request.</source>
         <target state="translated">O remetente pode ter excluído a solicitação de conexão.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

@@ -49,7 +49,7 @@
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Az összes partnerével továbbra is kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
-    <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
+    <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (béta).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új, véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
     <string name="app_version_code">Alkalmazás összeállítási száma: %s</string>
@@ -201,7 +201,7 @@
     <string name="contacts_can_mark_messages_for_deletion">A partnerei törlésre jelölhetnek üzeneteket; Ön majd meg tudja nézni azokat.</string>
     <string name="connect_via_invitation_link">Kapcsolódik az egyszer használható meghívón keresztül?</string>
     <string name="connect_via_link_or_qr">Kapcsolódás egy hivatkozáson vagy QR-kódon keresztül</string>
-    <string name="connection_error_auth">Kapcsolódási hiba (AUTH)</string>
+    <string name="connection_error_auth">Kapcsolódási hiba</string>
     <string name="notification_preview_mode_contact">Csak név</string>
     <string name="connect_via_contact_link">Kapcsolódik a kapcsolattartási címen keresztül?</string>
     <string name="create_address">Cím létrehozása</string>
@@ -233,7 +233,7 @@
     <string name="receipts_section_contacts">Partnerek</string>
     <string name="connection_error">Kapcsolódási hiba</string>
     <string name="alert_title_contact_connection_pending">A partnere még nem kapcsolódott!</string>
-    <string name="v5_3_discover_join_groups_descr">- kapcsolódás a könyvtárszolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
+    <string name="v5_3_discover_join_groups_descr">- kapcsolódás a könyvtárszolgáltatáshoz (béta)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
     <string name="contribute">Közreműködés</string>
     <string name="group_member_status_intro_invitation">kapcsolódás (bemutatkozó meghívó)</string>
     <string name="create_simplex_address">SimpleX-cím létrehozása</string>
@@ -455,7 +455,7 @@
     <string name="ttl_d">%dnap</string>
     <string name="receipts_contacts_enable_for_all">Engedélyezés az összes tag számára</string>
     <string name="delivery_receipts_are_disabled">A kézbesítési jelentések le vannak tiltva!</string>
-    <string name="expand_verb">Kibontás</string>
+    <string name="expand_verb">Felfedés</string>
     <string name="error_sending_message">Hiba történt az üzenet elküldésekor</string>
     <string name="la_enter_app_passcode">Adja meg a jelkódot</string>
     <string name="for_everybody">Mindenkinél</string>
@@ -631,7 +631,7 @@
     <string name="onboarding_notifications_mode_service">Azonnali</string>
     <string name="v5_4_incognito_groups">Inkognitócsoportok</string>
     <string name="how_to">Útmutató</string>
-    <string name="hide_verb">Összecsukás</string>
+    <string name="hide_verb">Elrejtés</string>
     <string name="gallery_image_button">Kép</string>
     <string name="v4_3_improved_privacy_and_security">Továbbfejlesztett adatvédelem és biztonság</string>
     <string name="ignore">Mellőzés</string>
@@ -677,7 +677,7 @@
     <string name="disconnect_remote_hosts">Hordozható eszközök leválasztása</string>
     <string name="v4_5_multiple_chat_profiles_descr">Különböző nevek, profilképek és átvitelelkülönítés.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Elutasítás esetén a kérés küldője NEM kap értesítést.</string>
-    <string name="icon_descr_expand_role">Szerepkörválasztó kibontása</string>
+    <string name="icon_descr_expand_role">Szerepkörválasztó felfedése</string>
     <string name="image_will_be_received_when_contact_is_online">A kép akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
     <string name="group_member_status_invited">meghíva</string>
     <string name="invalid_connection_link">Érvénytelen kapcsolattartási hivatkozás</string>
@@ -1109,7 +1109,7 @@
     <string name="settings_section_title_you">Profil</string>
     <string name="network_proxy_port">%d-s port</string>
     <string name="to_connect_via_link_title">Kapcsolódás egy hivatkozáson keresztül</string>
-    <string name="share_address">Cím megosztása</string>
+    <string name="share_address">Cím megosztása…</string>
     <string name="smp_servers_scan_qr">Kiszolgáló QR-kódjának beolvasása</string>
     <string name="stop_chat_confirmation">Megállítás</string>
     <string name="stop_sharing_address">Megállítja a címmegosztást?</string>
@@ -1607,7 +1607,7 @@
     <string name="migrate_to_device_download_failed">Sikertelen letöltés</string>
     <string name="migrate_to_device_downloading_archive">Archívum letöltése</string>
     <string name="migrate_to_device_downloading_details">Letöltési hivatkozás részletei</string>
-    <string name="v5_6_quantum_resistant_encryption_descr">Engedélyezés a közvetlen csevegésekben (BÉTA)!</string>
+    <string name="v5_6_quantum_resistant_encryption_descr">Engedélyezés a közvetlen csevegésekben (béta)!</string>
     <string name="migrate_to_device_enter_passphrase">Adja meg a jelmondatot</string>
     <string name="migrate_from_device_error_saving_settings">Hiba történt a beállítások mentésekor</string>
     <string name="migrate_to_device_error_downloading_archive">Hiba történt az archívum letöltésekor</string>
@@ -2139,11 +2139,11 @@
     <string name="operator_conditions_of_use">Használati feltételek</string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[A(z) <b>%s</b> kiszolgálóinak használatához fogadja el a használati feltételeket.]]></string>
     <string name="operator_use_for_messages">Használat az üzenetekhez</string>
-    <string name="operator_use_for_messages_receiving">A fogadáshoz</string>
-    <string name="operator_use_for_messages_private_routing">A privát útválasztáshoz</string>
+    <string name="operator_use_for_messages_receiving">Üzenetek fogadásához</string>
+    <string name="operator_use_for_messages_private_routing">Privát útválasztáshoz</string>
     <string name="operator_added_message_servers">Hozzáadott üzenetkiszolgálók</string>
     <string name="operator_use_for_files">Használat a fájlokhoz</string>
-    <string name="operator_use_for_sending">A küldéshez</string>
+    <string name="operator_use_for_sending">Üzenetek küldéséhez</string>
     <string name="operator_added_xftp_servers">Hozzáadott fájl- és médiakiszolgálók</string>
     <string name="operator_open_conditions">Feltételek megnyitása</string>
     <string name="operator_open_changes">Módosítások megtekintése</string>
@@ -2167,7 +2167,7 @@
     <string name="chat_archive">Vagy archívumfájl importálása</string>
     <string name="remote_hosts_section">Távoli hordozható eszközök</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi eszközök</b>: engedélyezze az automatikus indítást a rendszerbeállításokban, hogy az értesítések működjenek.]]></string>
-    <string name="maximum_message_size_reached_forwarding">A küldéshez másolhatja és csökkentheti az üzenet méretét.</string>
+    <string name="maximum_message_size_reached_forwarding">Másolhatja és csökkentheti az üzenet méretét a küldéshez.</string>
     <string name="add_your_team_members_to_conversations">Adja hozzá a munkatársait a beszélgetésekhez.</string>
     <string name="business_address">Üzleti cím</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Az összes üzenet és fájl <b>végpontok közötti titkosítással</b>, a közvetlen üzenetek továbbá kvantumbiztos titkosítással is rendelkeznek.]]></string>
@@ -2670,7 +2670,6 @@
     <string name="share_channel">Csatorna megosztása…</string>
     <string name="share_via_chat">Megosztás egy csevegésen keresztül</string>
     <string name="owner_verification_failed">⚠️ Nem sikerült ellenőrizni az aláírást: %s.</string>
-    <string name="chat_link_signed">(aláírva)</string>
     <string name="tap_to_open">Koppintson ide a megnyitáshoz</string>
     <string name="link_previews_alert_disable">Letiltás</string>
     <string name="link_previews_alert_enable">Engedélyezés</string>
@@ -2843,10 +2842,10 @@
     <string name="badge_unknown_key_title">Nem lehetett ellenőrizni a kitűzőt</string>
     <string name="badge_unknown_key_desc">A kitűző egy olyan kulccsal van aláírva, amelyet az alkalmazás ezen verziója nem ismer fel. Frissítse az alkalmazást a kitűző ellenőrzéséhez.</string>
     <string name="no_names_servers_enabled">Nincsenek kiszolgálók a nevek feloldásához.</string>
-    <string name="simplex_name_error">SimpleX-névhiba</string>
-    <string name="simplex_name_no_servers_desc">Egyik kiszolgáló sincs beállítva a SimpleX-nevek feloldásához. Állítsa be a kiszolgálókat, vagy használjon egy kapcsolattartási hivatkozást.</string>
+    <string name="simplex_name_error">Hibás SimpleX-név</string>
+    <string name="simplex_name_no_servers_desc">Egyik saját kiszolgálója sincs beállítva a SimpleX-nevek feloldásához. Állítsa be a kiszolgálókat, vagy használjon egy kapcsolattartási hivatkozást.</string>
     <string name="simplex_name_server_no_resolver_desc">A(z) %1$s kiszolgáló nem támogatja a névfeloldást. Állítsa be a kiszolgálókat, vagy használjon egy kapcsolattartási hivatkozást.</string>
-    <string name="simplex_name_not_found">A név nem található</string>
+    <string name="simplex_name_not_found">Nem található a név</string>
     <string name="simplex_name_not_found_desc">Ez a SimpleX-név nincs regisztrálva. Ellenőrizze a nevet.</string>
     <string name="simplex_name_resolver_error_desc">Feloldási hiba: %1$s</string>
     <string name="simplex_name_no_valid_link">Nincs érvényes hivatkozás</string>
@@ -2855,7 +2854,7 @@
     <string name="simplex_name_unconfirmed_desc">A(z) %1$s SimpleX-név regisztrálva van, de nincs hozzáadva a profilhoz. Adja hozzá a címéhez vagy a csatornaprofiljához, amennyiben Ön a tulajdonosa.</string>
     <string name="verify_simplex_name_action">Név ellenőrzése</string>
     <string name="verify_simplex_names">SimpleX-nevek ellenőrzése</string>
-    <string name="simplex_name_not_verified">A SimpleX-név nincs ellenőrizve</string>
+    <string name="simplex_name_not_verified">Nincs ellenőrizve a SimpleX-név</string>
     <string name="simplex_name">SimpleX-név</string>
     <string name="your_simplex_name">Saját SimpleX-név</string>
     <string name="set_simplex_name">SimpleX-név beállítása</string>
@@ -2865,4 +2864,30 @@
     <string name="set_user_simplex_name_footer">Tegye lehetővé mások számára a kapcsolódást a saját SimpleX-címével regisztrált néven keresztül.</string>
     <string name="set_channel_simplex_name_footer">Tegye lehetővé mások számára a csatlakozást az ezzel a csatornahivatkozással regisztrált néven keresztül.</string>
     <string name="operator_use_for_names">Nevek feloldásához</string>
+    <string name="connect_plan_connect_to_name">Kapcsolódás hozzá: %s</string>
+    <string name="connect_plan_join_name">Csatlakozás a(z) %s nevű csatornához</string>
+    <string name="sign_message">Üzenet aláírása</string>
+    <string name="sign_message_desc">Az aláírás igazolja, hogy Ön írta ezt az üzenetet, és azt később nem lehet letagadni.</string>
+    <string name="info_row_signed">Aláírva</string>
+    <string name="info_row_signed_verified">Aláírva és ellenőrizve</string>
+    <string name="sign_messages">Üzenetek aláírása</string>
+    <string name="require_message_signatures">Üzenetek aláírásának kötelezővé tétele.</string>
+    <string name="do_not_require_message_signatures">Üzenetek aláírásának mellőzése.</string>
+    <string name="message_signatures_are_required">Kötelező aláírni az üzeneteket.</string>
+    <string name="message_signatures_are_not_required">Nem kötelező aláírni az üzeneteket.</string>
+    <string name="show_signature">Aláírás megjelenítése</string>
+    <string name="show_encryption">Titkosítás megjelenítése</string>
+    <string name="signature_missing_alert_title">Hiányzik az aláírás</string>
+    <string name="signature_missing_alert_desc">A csatorna megköveteli az üzenet aláírását, de az hiányzik.</string>
+    <string name="channel_simplex_name">Csatorna SimpleX-neve</string>
+    <string name="get_simplex_name_beta">SimpleX-név beszerzése (béta)</string>
+    <string name="register_test_name">Egy név regisztrálása tesztelési céllal</string>
+    <string name="remove_name">Név eltávolítása</string>
+    <string name="save_simplex_name_question">Menti a SimpleX-nevet?</string>
+    <string name="to_verify_channel_member_key">A kulcsok ellenőrzéséhez ezzel a feliratkozóval hasonlítsa össze (vagy olvassa be) az eszközökön található kódot.</string>
+    <string name="error_sharing_address">Hiba történt a cím megosztásakor</string>
+    <string name="profile_description__field">Leírás</string>
+    <string name="add_description">Leírás hozzáadása</string>
+    <string name="edit_description">Leírás szerkesztése</string>
+    <string name="enter_description_optional">Adja meg a leírást (nem kötelező)</string>
 </resources>

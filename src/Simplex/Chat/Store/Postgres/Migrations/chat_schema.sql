@@ -345,7 +345,11 @@ CREATE TABLE test_chat_schema.chat_items (
     show_group_as_sender smallint DEFAULT 0 NOT NULL,
     has_link smallint DEFAULT 0 NOT NULL,
     msg_signed text,
-    item_viewed smallint DEFAULT 0 NOT NULL
+    item_viewed smallint DEFAULT 0 NOT NULL,
+    item_msg_body bytea,
+    item_chat_binding text,
+    item_signatures bytea,
+    item_signed_by_group_member_id bigint
 );
 
 
@@ -543,7 +547,8 @@ CREATE TABLE test_chat_schema.contact_profiles (
     badge_key_idx bigint,
     contact_domain text,
     contact_domain_proof text,
-    contact_domain_verified smallint
+    contact_domain_verified smallint,
+    description text
 );
 
 
@@ -2080,6 +2085,10 @@ CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON test_chat_schema.
 
 
 
+CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON test_chat_schema.chat_items USING btree (item_signed_by_group_member_id);
+
+
+
 CREATE INDEX idx_chat_items_item_status ON test_chat_schema.chat_items USING btree (item_status);
 
 
@@ -2762,6 +2771,11 @@ ALTER TABLE ONLY test_chat_schema.chat_items
 
 ALTER TABLE ONLY test_chat_schema.chat_items
     ADD CONSTRAINT chat_items_item_deleted_by_group_member_id_fkey FOREIGN KEY (item_deleted_by_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_items
+    ADD CONSTRAINT chat_items_item_signed_by_group_member_id_fkey FOREIGN KEY (item_signed_by_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
 
 
 

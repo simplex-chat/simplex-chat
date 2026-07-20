@@ -66,7 +66,7 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с контактом %1$s.</string>
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что Вы использовали правильную ссылку, или попросите Ваш контакт отправить Вам новую.</string>
-    <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
+    <string name="connection_error_auth">Ошибка соединения</string>
     <string name="connection_error_auth_desc">Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</string>
     <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
     <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
@@ -2770,7 +2770,6 @@
     <string name="chat_banner_your_channel">Ваш канал</string>
     <string name="chat_link_group">Ссылка группы</string>
     <string name="chat_link_from_owner">(от владельца)</string>
-    <string name="chat_link_signed">(с подписью)</string>
     <string name="error_sharing_channel">Ошибка при публикации канала</string>
     <string name="you_are_subscriber">Вы подписчик</string>
     <string name="new_1_time_link">Новая одноразовая ссылка</string>

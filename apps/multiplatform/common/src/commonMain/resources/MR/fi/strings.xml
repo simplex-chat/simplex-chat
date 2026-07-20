@@ -59,7 +59,7 @@
     <string name="connection_error">Yhteysvirhe</string>
     <string name="cannot_receive_file">Tiedostoa ei voi vastaanottaa</string>
     <string name="contact_already_exists">Kontakti on jo olemassa</string>
-    <string name="connection_error_auth">Yhteysvirhe (AUTH)</string>
+    <string name="connection_error_auth">Yhteysvirhe</string>
     <string name="smp_server_test_create_file">Luo tiedosto</string>
     <string name="smp_server_test_create_queue">Luo jono</string>
     <string name="smp_server_test_delete_queue">Poista jono</string>

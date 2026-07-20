@@ -984,11 +984,11 @@ server test step */
 /* alert title */
 "Connection error" = "接続エラー";
 
-/* conn error description */
-"Connection error (AUTH)" = "接続エラー (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "接続済み";
+
+/* conn error description */
+"Connection link removed" = "接続エラー";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "接続リクエストを送信しました！";
@@ -2182,12 +2182,6 @@ server test error */
 /* rcv group event chat item */
 "member connected" = "接続中";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "メンバーの役割が \"%@\" に変更されます。 グループメンバー全員に通知されます。";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "メンバーの役割が \"%@\" に変更されます。 メンバーは新たな招待を受け取ります。";
-
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "メンバーをグループから除名する (※元に戻せません※)！";
 
@@ -2641,7 +2635,7 @@ alert button */
 /* swipe action */
 "Read" = "読む";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "続きを読む";
 
 /* No comment provided by engineer. */
@@ -2791,9 +2785,16 @@ swipe action */
 "Role" = "役割";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "メンバーの役割が \"%@\" に変更されます。 グループメンバー全員に通知されます。";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "メンバーの役割が \"%@\" に変更されます。 メンバーは新たな招待を受け取ります。";
+
+/* No comment provided by engineer. */
 "Run chat" = "チャット起動";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "保存";
 
@@ -2916,9 +2917,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "送信者がファイル転送をキャンセルしました。";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "送信元が繋がりリクエストを削除したかもしれません。";
 
 /* No comment provided by engineer. */
 "Sending file will be stopped." = "ファイルの送信を停止します。";
@@ -3195,6 +3193,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "長らくお待たせしました！ ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "送信元が繋がりリクエストを削除したかもしれません。";
+
 /* alert message */
 "The sender will NOT be notified" = "送信者には通知されません";
 
@@ -3299,9 +3300,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "iOS 通話インターフェイスを使用しない場合は、中断を避けるために「おやすみモード」を有効にしてください。";
-
-/* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "連絡先が接続を削除したか、このリンクがすでに使用されている場合を除き、バグである可能性がありますので、報告してください。\n接続するには、連絡先に別の接続リンクを作成するよう依頼し、ネットワーク接続が安定していることを確認してください。";
 
 /* No comment provided by engineer. */
 "Unlock" = "ロック解除";
@@ -3614,6 +3612,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "あなたのチャットプロフィール";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "連絡先が接続を削除したか、このリンクがすでに使用されている場合を除き、バグである可能性がありますので、報告してください。\n接続するには、連絡先に別の接続リンクを作成するよう依頼し、ネットワーク接続が安定していることを確認してください。";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "連絡先が現在サポートされている最大サイズ (%@) より大きいファイルを送信しました。";

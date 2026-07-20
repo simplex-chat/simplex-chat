@@ -354,6 +354,14 @@ private fun UserAddressLayout(
                 share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value))
               }
             }
+            ShareViaChatButton {
+              val shareViaChat = {
+                chatModel.sharedContent.value = SharedContent.MyAddress
+                chatModel.chatId.value = null
+                ModalManager.closeAllModalsEverywhere()
+              }
+              if (userAddress.shouldBeUpgraded) showAddShortLinkAlert { shareViaChat() } else shareViaChat()
+            }
             // ShareViaEmailButton { sendEmail(userAddress) }
             BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
             AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
@@ -432,6 +440,17 @@ private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_arrow_upward),
     text,
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
+private fun ShareViaChatButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_forward),
+    stringResource(MR.strings.share_via_chat),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
