@@ -539,6 +539,17 @@ SEARCH n USING INDEX idx_client_notices_entity (protocol=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
+        SELECT ratchet_key_id, x3dh_priv_key_1, x3dh_priv_key_2, pq_priv_kem
+        FROM address_ratchet_keys
+        WHERE conn_id = ?
+        ORDER BY address_ratchet_key_id DESC
+        LIMIT 1
+      
+Plan:
+SEARCH address_ratchet_keys USING INDEX idx_address_ratchet_keys (conn_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
         SELECT s.internal_id, m.msg_type, s.internal_hash, s.rcpt_internal_id, s.rcpt_status
         FROM snd_messages s
         JOIN messages m ON s.conn_id = m.conn_id AND s.internal_id = m.internal_id
@@ -549,11 +560,43 @@ SEARCH s USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
 
 Query: 
+        SELECT x3dh_priv_key_1, x3dh_priv_key_2, pq_priv_kem
+        FROM address_ratchet_keys
+        WHERE conn_id = ? AND ratchet_key_id = ?
+      
+Plan:
+SEARCH address_ratchet_keys USING INDEX idx_address_ratchet_keys (conn_id=? AND ratchet_key_id=?)
+
+Query: 
+      DELETE FROM address_ratchet_keys
+      WHERE conn_id = ?
+        AND address_ratchet_key_id NOT IN (
+          SELECT address_ratchet_key_id
+          FROM address_ratchet_keys
+          WHERE conn_id = ?
+          ORDER BY address_ratchet_key_id DESC
+          LIMIT ?
+        )
+    
+Plan:
+SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
+LIST SUBQUERY 1
+SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
       DELETE FROM conn_confirmations
       WHERE conn_id = ?
     
 Plan:
 SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (conn_id=?)
+
+Query: 
+      INSERT INTO address_ratchet_keys
+        (conn_id, ratchet_key_id, x3dh_priv_key_1, x3dh_priv_key_2, pq_priv_kem)
+      VALUES (?, ?, ?, ?, ?)
+    
+Plan:
 
 Query: 
       INSERT INTO connections
@@ -994,6 +1037,7 @@ SEARCH conn_invitations USING PRIMARY KEY (invitation_id=?)
 Query: DELETE FROM connections WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
+SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
 SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_hash (conn_id=?)
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=?)
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=?)
@@ -1008,6 +1052,7 @@ SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
 Query: DELETE FROM connections WHERE user_id = 2
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
+SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
 SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_hash (conn_id=?)
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=?)
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=?)
