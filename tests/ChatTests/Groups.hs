@@ -279,6 +279,7 @@ chatGroupTests = do
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
+      it "should not change relay role" testChannelRelayRoleNotChangeable
       it "should block member for all (signed)" testChannelBlockMemberSigned
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should verify member security code via membership keys" testChannelMemberSecurityCode
@@ -9687,6 +9688,35 @@ testChannelChangeRoleSigned ps =
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of dan to admin (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(0, "changed your role to admin (signed)")])
+
+testChannelRelayRoleNotChangeable :: HasCallStack => TestParams -> IO ()
+testChannelRelayRoleNotChangeable ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- the owner can neither revoke nor grant the relay forwarding credential
+            alice ##> "/mr #team bob observer"
+            alice <## "bad chat command: relay role can't be changed"
+            alice ##> "/mr #team cath relay"
+            alice <## "bad chat command: relay role can't be changed"
+
+            -- nor can an admin
+            promoteChannelMember "team" alice bob cath [dan, eve]
+            threadDelay 1000000
+            alice ##> "/mr #team cath admin"
+            alice <## "#team: you changed the role of cath to admin (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of cath from member to admin (signed)",
+                cath <## "#team: alice changed your role from member to admin (signed)",
+                dan <### [EndsWith "from member to admin (signed)"],
+                eve <### [EndsWith "from member to admin (signed)"]
+              ]
+            cath ##> "/mr #team bob observer"
+            cath <## "bad chat command: relay role can't be changed"
 
 testChannelBlockMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelBlockMemberSigned ps =

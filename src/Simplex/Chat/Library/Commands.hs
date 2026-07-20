@@ -2884,6 +2884,8 @@ processChatCommand cxt nm = \case
       when (length memberIds > 1 && (anyAdmin || newRole >= GRAdmin)) $
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
+      when (any (\m -> isNothing $ roleRequiredToChange (memberRole' m) newRole) (invitedMems <> currentMems <> unchangedMems)) $
+        throwCmdError "relay role can't be changed"
       -- TODO allow moderators (recipients already accept it; needs UI too): the observer..member limit is an
       -- TODO   `all` over targets - maxRole can't express it, a max hides targets below GRObserver (relay,
       -- TODO   unknown) that receivers reject. Fold roleRequiredToChange per target, or add allModeratable.

@@ -1292,10 +1292,13 @@ isPrivilegedRole :: GroupMemberRole -> Bool
 isPrivilegedRole r = r >= GRMember
 
 -- Minimum role allowed to change a member's role from `from` to `to` (moderators only within observer..member).
-roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> GroupMemberRole
+-- Nothing when no role may: relay is established from the relay link when the member is created, and in channels
+-- it alone gates forwarding (isMemberGrpFwdRelay) while sorting below GRObserver, so `maximum` would not guard it.
+roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> Maybe GroupMemberRole
 roleRequiredToChange from to
-  | moderatable from && moderatable to = GRModerator
-  | otherwise = maximum ([GRAdmin, from, to] :: [GroupMemberRole])
+  | from == GRRelay || to == GRRelay = Nothing
+  | moderatable from && moderatable to = Just GRModerator
+  | otherwise = Just $ maximum ([GRAdmin, from, to] :: [GroupMemberRole])
   where
     moderatable r = GRObserver <= r && r <= GRMember
 
