@@ -4305,7 +4305,7 @@ processChatCommand cxt nm = \case
       CLShort l -> do
         let l' = serverShortLink l
         knownLinkPlans l' >>= \case
-          Just (l, p) -> pure (l, Nothing, Nothing, p)
+          Just (createdLink, p) -> pure (createdLink, Nothing, Nothing, p)
           Nothing -> do
             (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
             contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
@@ -4489,15 +4489,15 @@ processChatCommand cxt nm = \case
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
-            CPContactAddress (CAPOk (Just sld) _) | isJust vName -> connectContactViaName sld vName
+            CPContactAddress (CAPOk (Just sld) _) | isJust vName -> connectContactViaName sld
             CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _)
-              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld vName
+              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
       where
         vName = nameDomain <$> planSimplexName
-        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
-        joinChannelViaRelays ccl gld vName = do
+        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
+        joinChannelViaRelays ccl gld = do
           GroupInfo {groupId} <- prepareChannelGroup
           processChatCommand cxt nm APIConnectPreparedGroup {groupId, incognito, ownerContact = Nothing, msgContent_ = Nothing}
             `catchAllErrors` \e -> do
@@ -4512,8 +4512,8 @@ processChatCommand cxt nm = \case
               gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
               deleteGroupConnections user gInfo False
               withFastStore' $ \db -> deleteGroup db user gInfo
-        connectContactViaName :: ContactShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
-        connectContactViaName sld vName =
+        connectContactViaName :: ContactShortLinkData -> CM ChatResponse
+        connectContactViaName sld =
           processChatCommand cxt nm (APIPrepareContact userId ccLink vName sld) >>= \case
             CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
               processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)
