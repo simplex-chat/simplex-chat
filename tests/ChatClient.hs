@@ -180,7 +180,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 6000},
+      virtualWindowSize = pure C.Size {height = 24, width = 7500},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
