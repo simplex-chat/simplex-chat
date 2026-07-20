@@ -1291,6 +1291,14 @@ isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
 isPrivilegedRole :: GroupMemberRole -> Bool
 isPrivilegedRole r = r >= GRMember
 
+-- Minimum role allowed to change a member's role from `from` to `to` (moderators only within observer..member).
+roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> GroupMemberRole
+roleRequiredToChange from to
+  | moderatable from && moderatable to = GRModerator
+  | otherwise = maximum ([GRAdmin, from, to] :: [GroupMemberRole])
+  where
+    moderatable r = GRObserver <= r && r <= GRMember
+
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
 -- Runs on the parsed roster blob.
 validateGroupRoster :: [RosterMember] -> [RosterMember]
@@ -1355,12 +1363,12 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
             fInvDescr_ <- join <$> forM file getRcvFileInvDescr
             -- channel items carry no from-member; a signed one falls back to the stored author (verified attribution)
             member_ <- maybe (resolveAuthor signedByGMId_) (pure . Just) (chatItemRcvFromMember ci)
-            processContentItem member_ ci mc fInvDescr_ signedMsg_
+            processContentItem member_ ci mc fInvDescr_
         | otherwise -> pure []
       (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file, meta = CIMeta {showGroupAsSender}}) -> do
         fInvDescr_ <- join <$> forM file getSndFileInvDescr
         let member_ = if showGroupAsSender && isNothing signedMsg_ then Nothing else Just membership
-        processContentItem member_ ci mc fInvDescr_ signedMsg_
+        processContentItem member_ ci mc fInvDescr_
       _ -> pure []
       where
         resolveAuthor :: Maybe GroupMemberId -> CM (Maybe GroupMember)
@@ -1398,8 +1406,8 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   fInv = xftpFileInvitation fileName fileSize fInvDescr
                in Just (fInv, fileDescrText)
           | otherwise = Nothing
-        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> Maybe SignedMsg -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
-        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ signedMsg_ =
+        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
