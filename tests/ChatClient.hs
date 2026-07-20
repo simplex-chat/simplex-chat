@@ -117,6 +117,7 @@ testOpts =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = True,
+      showFullLinks = True,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
@@ -167,6 +168,12 @@ testCoreOpts =
 
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
+
+testOptsNoFullLinks :: ChatOpts
+testOptsNoFullLinks = testOpts {showFullLinks = False}
+
+relayTestOptsNoFullLinks :: ChatOpts
+relayTestOptsNoFullLinks = relayTestOpts {showFullLinks = False}
 
 relayWebTestOpts :: Text -> FilePath -> Maybe FilePath -> ChatOpts
 relayWebTestOpts webDomain webDir webCorsFile = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {webDomain, webJsonDir = webDir, webCorsFile, webUpdateInterval = 300, webPreviewItemCount = 50}}}

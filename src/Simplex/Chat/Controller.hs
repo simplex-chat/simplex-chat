@@ -152,6 +152,7 @@ data ChatConfig = ChatConfig
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
     showReactions :: Bool,
+    showFullLinks :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
@@ -554,6 +555,7 @@ data ChatCommand
   | APIShowMyAddress {userId :: UserId}
   | ShowMyAddress
   | APIAddMyAddressShortLink UserId
+  | APIRotateAddressRatchetKeys UserId
   | APISetProfileAddress {userId :: UserId, enable :: Bool}
   | SetProfileAddress Bool
   | APISetAddressSettings {userId :: UserId, settings :: AddressSettings}

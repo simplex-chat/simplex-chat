@@ -2440,7 +2440,9 @@ processChatCommand cxt nm = \case
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand cxt nm $ APIShowMyAddress userId
   APIAddMyAddressShortLink userId -> withUserId' userId $ \user ->
-    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData user)
+    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData False user)
+  APIRotateAddressRatchetKeys userId -> withUserId' userId $ \user ->
+    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData True user)
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
@@ -2460,7 +2462,7 @@ processChatCommand cxt nm = \case
       then pure $ CRUserContactLinkUpdated user ucl
       else do
         let ucl' = ucl {addressSettings = settings}
-        ucl'' <- if shortLinkDataSet then setMyAddressData user ucl' else pure ucl'
+        ucl'' <- if shortLinkDataSet then setMyAddressData False user ucl' else pure ucl'
         withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
         pure $ CRUserContactLinkUpdated user ucl''
   SetAddressSettings settings -> withUser $ \User {userId} ->
@@ -3826,7 +3828,7 @@ processChatCommand cxt nm = \case
             -- [incognito] generate profile to send
             incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
             subMode <- chatReadVar subscriptionMode
-            let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+            let cReqHash = contactCReqHash cReq
             conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq cReqHash shortLink newXContactId (NewIncognito <$> incognitoProfile) Nothing subMode chatV pqSup
             void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing Nothing pqSup
             ct' <- withStore $ \db -> getContact db cxt user contactId
@@ -3939,7 +3941,7 @@ processChatCommand cxt nm = \case
         setMyAddressData' user' =
           withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
             Right ucl@UserContactLink {shortLinkDataSet}
-              | shortLinkDataSet -> void $ setMyAddressData user' ucl
+              | shortLinkDataSet -> void $ setMyAddressData False user' ucl
             _ -> pure ()
         sendUpdateToContacts :: User -> [Contact] -> CM UserProfileUpdateSummary
         sendUpdateToContacts user' contacts = do
@@ -3980,8 +3982,8 @@ processChatCommand cxt nm = \case
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
-    setMyAddressData :: User -> UserContactLink -> CM UserContactLink
-    setMyAddressData user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _, addressSettings} = do
+    setMyAddressData :: Bool -> User -> UserContactLink -> CM UserContactLink
+    setMyAddressData rotateKeys user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
       shortLinkProfile <- presentUserBadge user Nothing (userProfileDirect user Nothing Nothing True)
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
@@ -3989,7 +3991,7 @@ processChatCommand cxt nm = \case
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
             | otherwise = contactShortLinkData shortLinkProfile $ Just addressSettings
           userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
-      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing False (Just IKUsePQ))
+      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys (Just IKUsePQ))
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
           ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
@@ -5698,6 +5700,7 @@ chatCommandP =
       "/_show_address " *> (APIShowMyAddress <$> A.decimal),
       ("/show_address" <|> "/sa") $> ShowMyAddress,
       "/_short_link_address " *> (APIAddMyAddressShortLink <$> A.decimal),
+      "/_rotate_address_keys " *> (APIRotateAddressRatchetKeys <$> A.decimal),
       "/_profile_address " *> (APISetProfileAddress <$> A.decimal <* A.space <*> onOffP),
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
       "/_address_settings " *> (APISetAddressSettings <$> A.decimal <* A.space <*> jsonP),
