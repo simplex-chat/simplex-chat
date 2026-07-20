@@ -1659,12 +1659,12 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
             testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
         viewRoles op@ServerOperator {enabled}
           | not enabled = "disabled"
-          | storage rs && proxy rs = "enabled"
-          | storage rs = "enabled storage"
-          | proxy rs = "enabled proxy"
+          | rStorage && rProxy = "enabled"
+          | rStorage = "enabled storage"
+          | rProxy = "enabled proxy"
           | otherwise = "disabled (servers known)"
           where
-            rs = operatorRoles p op
+            ServerRoles {storage = rStorage, proxy = rProxy} = operatorRoles p op
     viewChatRelays :: [UserChatRelay] -> [StyledString]
     viewChatRelays [] = []
     viewChatRelays cRelays
@@ -1752,12 +1752,12 @@ viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
   | both smpRoles && both xftpRoles = "enabled"
   | otherwise = "SMP " <> viewRoles smpRoles <> ", XFTP " <> viewRoles xftpRoles
   where
-    no rs = not $ storage rs || proxy rs
-    both rs = storage rs && proxy rs
-    viewRoles rs
+    no ServerRoles {storage, proxy} = not $ storage || proxy
+    both ServerRoles {storage, proxy} = storage && proxy
+    viewRoles rs@ServerRoles {storage, proxy}
       | both rs = "enabled"
-      | storage rs = "enabled storage"
-      | proxy rs = "enabled proxy"
+      | storage = "enabled storage"
+      | proxy = "enabled proxy"
       | otherwise = "disabled (servers known)"
 
 viewConditionsAction :: UsageConditionsAction -> [StyledString]
