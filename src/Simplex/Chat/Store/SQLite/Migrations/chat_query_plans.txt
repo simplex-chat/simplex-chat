@@ -1586,10 +1586,11 @@ Query:
           SELECT chat_item_id, timed_ttl
           FROM chat_items
           WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
             AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: 
           SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at
@@ -5040,10 +5041,11 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND group_id = ?
+        AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
         AND item_status = ?
     
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
