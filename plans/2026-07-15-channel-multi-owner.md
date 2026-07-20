@@ -32,24 +32,26 @@ Only the creator can do 2, 4, 5 today; 3 works for one owner at a time. Each is 
 
 The invitee must already be a channel member — its key is then known, and its relay connections exist (a subscriber creates `GRRelay`/`GCHostMember` rows, so `getGroupRelayMembers` returns them for a promoted subscriber unchanged). **Its key must also be verified out of band (§8).**
 
-Three events, all `requiresSignature`, over the existing relay connections, delivered in M's support scope (the owner→member private channel, `MSMember`). Named for promotion, not ownership: a later release promoting to any role reuses them; only the link fields are owner-specific.
+Four events, all `requiresSignature`, over the existing relay connections, delivered in M's support scope (the owner→member private channel, `MSMember`). The events are **role-generic**: they promote to a named role, and role-specific data rides in an optional block. Only `GROwner` is implemented, but the packet is shaped to extend to other roles without a wire break.
 
 ```
-x.grp.promote.inv       { invitationId, memberRole, linkRcvId? }   -- O1 -> M
-x.grp.promote.acpt      { invitationId, memberKey, linkRcvKey? }   -- M  -> O1
-x.grp.promote.reject    { invitationId }                           -- M  -> O1
+x.grp.promote.inv     { invitationId, memberRole, roleData? }   -- O1 -> M
+x.grp.promote.acpt    { invitationId, memberKey, roleData? }    -- M  -> O1
+x.grp.promote.reject  { invitationId }                          -- M  -> O1
+x.grp.promote.cancel  { invitationId }                          -- O1 -> M
 ```
 
-- `memberRole` — the role M is offered, shown in M's confirmation prompt.
-- `invitationId` — binds the acceptance/rejection to one invitation; blocks relay replay.
-- `memberKey` — M's existing member key. O1 already holds it and **must** check they match and abort otherwise, so a promotion can never introduce a key.
-- `linkRcvId` / `linkRcvKey` — the link queue's recipient ID, and a fresh recipient auth **public** key M generates. Owner promotions only.
+- `memberRole` — the role offered; the generic discriminator. Shown in M's prompt.
+- `roleData` — an optional role-scoped block, present iff the role needs one; validated as required-for-`GROwner`, absent otherwise. For owner: `{ linkRcvId }` in the invitation, `{ linkRcvKey }` in the acceptance. A new role adds a new variant of this block; older clients ignore an unknown one (the codebase's optional-field forward-compat, `omittedField`). Concretely a sum tagged by role — `PromotionRoleData = PRDOwner OwnerPromoteData | …` — carried optionally, so "no block" and "owner block" are both representable and a future role extends the sum.
+- `invitationId` — binds accept/reject/cancel to one invitation; blocks relay replay.
+- `memberKey` — M's existing member key, restated on acceptance so O1 binds the verified key. Generic across roles: O1 already holds it and **must** check they match and abort otherwise, so a promotion can never introduce a key.
+- `linkRcvId` / `linkRcvKey` — owner-only, inside `roleData`: the link queue's recipient ID, and a fresh recipient auth **public** key M generates.
 
 Everything else M needs to write link data is public or derivable: `shortLinkKey`/`shortLinkId` from the channel link; fixed-data plaintext (hence `rootPubKey`) via `LGET`, re-encrypted under a fresh nonce — readers check `sha3_256(fd) == linkKey` and the root signature over the *plaintext*.
 
 `linkRcvId` authorises nothing on its own (`Server.hs:1249` verifies every recipient command against `recipientKeys`), which is equally why the relay carrying these learns nothing.
 
-**Acceptance is not automatic.** On `x.grp.promote.inv`, M stores a pending promotion and surfaces it (§7); it does not act. Only when the user confirms does M generate `linkRcvKey`, send `x.grp.promote.acpt`, and move the record to accepted-pending-completion. Decline sends `x.grp.promote.reject` and clears it; O1 marks the invitation rejected and notifies its UI, mirroring the relay-rejection path (`x.grp.relay.reject`). An ignored invitation stays pending until it expires on the `relayRequestExpiry` pattern, or is superseded by a fresh invitation.
+**Acceptance is not automatic, and either side can withdraw.** On `x.grp.promote.inv`, M stores a pending promotion and surfaces it (§7); it does not act. Only when the user confirms does M generate `linkRcvKey`, send `x.grp.promote.acpt`, and move the record to accepted-pending-completion. Decline sends `x.grp.promote.reject` and clears it; O1 marks the invitation rejected and notifies its UI, mirroring the relay-rejection path (`x.grp.relay.reject`). O1 can withdraw a still-pending invitation with `x.grp.promote.cancel`, which clears M's pending record and its banner. An ignored invitation stays pending until it expires on the `relayRequestExpiry` pattern, or is superseded by a fresh invitation. Cancel racing acceptance is benign: if it arrives before the role event, O1 simply does not complete the worker; if after, the owner is already committed and cancel is a no-op (removal is §11).
 
 This is consent, and — combined with §8 — a second lock. §8 gives O1 M's out-of-band-verified key; the acceptance is signed by M's real key, which O1 checks equals the verified one, so a relay that never delivered the invitation cannot forge an acceptance. It does **not** by itself stop the §8 relay-substitution attack (a malicious relay short-circuits M entirely) — that remains the verified key's job.
 
@@ -199,10 +201,12 @@ Two owners genuinely disagreeing — one adding a relay, the other removing the 
 - `Internal.hs:1458`, `Commands.hs:4011` `runUpdateGroupProfile`, `Commands.hs:2713` `APIAddGroupRelays` — gate on `memberRole' membership == GROwner` but need "can write link data" (an owner mid-handover cannot). One predicate, all three.
 - `Commands.hs:3268` `APIAddGroupShortLink` — asserts no role at all; same gate.
 - `Commands.hs:2872` `APIMembersRole` — route `newRole == GROwner` into §3 (send `x.grp.promote.inv`, do not change the role); require `memberVerifiedCode` on the invitee (§8). The invitation carries the verified key; the acceptance's `memberKey` must equal it or abort, or verification is worthless.
-- Pending-promotion record on each side, stored on the member row (columns, mirroring `relay_request_*`): offered role, `invitationId`, status (invited / accepted-pending / rejected), and `linkRcvId`/`linkRcvKey`. On O1 the invitee's row; on M its own membership row. A `promotionPending`-style predicate mirroring `memberPending`/`gmRequiresAttention`, to drive the affordance and its badge.
-- New commands: `APIAcceptOwnerPromotion groupId` (M generates `linkRcvKey`, sends `x.grp.promote.acpt`, marks accepted-pending), `APIRejectOwnerPromotion groupId` (sends `x.grp.promote.reject`, clears). Handlers in `Commands.hs`; wrappers + strings in both apps.
-- New events `x.grp.promote.inv` / `.acpt` / `.reject` (`Protocol.hs`, all `requiresSignature`). `x.grp.promote.reject` mirrors `XGrpRelayReject`.
-- Inbound handlers in `Subscriber.hs`: `x.grp.promote.inv` on M creates the pending record and emits a UI event; `.acpt` on O1 starts the durable worker; `.reject` on O1 marks and notifies.
+- Pending-promotion record on each side, on the member row (columns, mirroring `relay_request_*`): offered role, `invitationId`, worker status (invited / accepted-pending / rejected), and `linkRcvId`/`linkRcvKey`. On O1 the invitee's row; on M its own membership row.
+- A role-generic proposal type surfaced on `GroupMember`, `Maybe MemberRoleProposal` with `MRProposed GroupMemberRole | MRRejected GroupMemberRole` (the "proposed role" the promoter UI shows, §7). Derived from the record: invited/accepted-pending → `MRProposed`, rejected → `MRRejected`; cleared on commit or cancel. Plus a `promotionPending`-style predicate mirroring `memberPending`/`gmRequiresAttention` to drive M's banner and unread badge.
+- New service chat item on M — a `RcvGroupEvent` constructor (e.g. `RGEMemberPromotionInvited {role}`) created in M's support scope, so the invitation shows as unread exactly as `RGENewMemberPendingReview` does for knocking. Cleared/replaced on accept, reject, cancel, or commit.
+- New commands: `APIAcceptRolePromotion groupId` (M generates owner `roleData`, sends `x.grp.promote.acpt`, marks accepted-pending), `APIRejectRolePromotion groupId` (sends `x.grp.promote.reject`, clears), `APICancelRolePromotion groupId groupMemberId` (O1 sends `x.grp.promote.cancel`, clears the proposal). Role-generic names, owner-only behaviour today. Handlers in `Commands.hs`; wrappers + strings in both apps.
+- New events `x.grp.promote.inv`/`.acpt`/`.reject`/`.cancel` (`Protocol.hs`, all `requiresSignature`; role-generic packet per §3). `.reject`/`.cancel` mirror `XGrpRelayReject`.
+- Inbound handlers in `Subscriber.hs`: `.inv` on M creates the record + service item + UI event; `.acpt` on O1 starts the durable worker; `.reject`/`.cancel` clear the record and proposal on the respective side.
 - `Commands.hs:4016` — reorder: write link, then commit and broadcast (§4.2).
 - `Subscriber.hs:3345` `allowCreate` — widen so an owner-signed `x.grp.mem.role` with a key can TOFU-create a `GROwner`; `isRosterRole GROwner == False` blocks it today, so subscribers can never materialise a new owner.
 - `Commands.hs:2936` `mKey` — send the key on owner promotion, not only when a roster version is present.
@@ -236,18 +240,11 @@ Already ahead in places: owners are pluralised (`ownersContributorsCountStr`, `C
 
 Replace both with a backend-supplied `canManageLink` on `GroupInfo` — not equivalent to `isOwner`: an owner mid-handover cannot write. Gate link, relay and domain-claim UI on it.
 
-**Promoter side (O1):**
-- `canChangeRoleTo` (`ChatTypes.swift:3060`, `ChatModel.kt:2652`) hard-codes `[.observer, .member]`. Add `.owner`; selecting it sends an invitation and shows an "owner invitation sent — pending" state, not an immediate role change.
-- Warn prominently when the invitee's key is unverified and route to the existing verification screen. Unlike contact verification the consequence is not one conversation but the channel's trust chain (§8).
+**Promoter side (O1), in `GroupMemberInfoView`.** Keep the role picker (`canChangeRoleTo`, `ChatTypes.swift:3060` / `ChatModel.kt:2652`) — add `.owner` to it for channels. Selecting owner does **not** change the role inline; it sends the invitation and the member enters the `MemberRoleProposal` state. A new **conditional row below the picker** reflects it: `MRProposed .owner` → "Owner — invitation sent" with a **Cancel** action (`APICancelRolePromotion`); `MRRejected .owner` → "Owner promotion declined", with the option to re-invite. The row is absent when there is no proposal. Warn prominently when the invitee's key is unverified and route to the existing verification screen before the invitation can be sent — unlike contact verification the consequence is not one conversation but the channel's trust chain (§8).
 
-**Invitee side (M): surfacing the pending promotion.** The invitation lands in M's support scope, so that is its native home; the question is the entry point, since a subscriber rarely opens support chat. Variants (not exclusive — an entry point plus a consent surface):
-
-- **A — accept/reject bar in M's support chat.** Directly mirrors `ContextPendingMemberActionsView` (`ComposeView.swift:432`) / `ComposeContextPendingMemberActionsView.kt` (`ComposeView.kt:1594`): an above-compose bar gated on `scope == memberSupport(self) && promotionPending`. Reuses the exact mechanism; native to where the message arrives. Weak discovery alone — needs a badge to pull M in.
-- **B — bar above compose in the main channel**, like the relay bar (`ComposeView.swift:399` / `ComposeView.kt:1563`), driven by `promotionPending`. Most visible — M sees it on opening the channel. Note an observer's composer is replaced by "you can't send messages" (`userCantSendReason`), so this bar must take precedence over that.
-- **C — chat-list row affordance**, like a contact request or group invitation (`ChatListNavLink.swift:495/320`, `ChatListNavLinkView.kt:125/198`): the channel row shows an "Owner invitation" badge/CTA that deep-links to the consent surface. Visible without opening; pairs with A.
-- **D — a consent screen** reached from any of the above, stating who invited (with verify option), the role, and that ownership grants publishing, moderation, link management, **and that any owner can delete the channel** (§8). Accept/Decline live here; the bars/rows are entry points, not one-tap commits — ownership is heavier than member admission, which does one-tap with a confirmation alert.
-
-Recommendation: **B as the primary entry (a channel bar, since that is where M's attention is) + C for discovery when the channel is unopened, both opening D.** A is a low-cost addition if support chat is kept as the private owner↔M record. Decline is one tap plus a confirm; accept always goes through D.
+**Invitee side (M).** The invitation is surfaced two ways, mirroring knocking:
+- A **service chat item** in M's support scope (`RGEMemberPromotionInvited`, §5), so it shows as unread and pulls M into the support chat — the same mechanism as `RGENewMemberPendingReview`.
+- An **accept/reject banner** in that support chat: an above-compose bar mirroring `ContextPendingMemberActionsView` (`ComposeView.swift:432`) / `ComposeContextPendingMemberActionsView.kt` (`ComposeView.kt:1594`), gated on `scope == memberSupport(self) && promotionPending`. Decline is one tap plus confirm. Accept opens a confirmation stating who invited, the role, and that any owner can delete the channel (§8) — heavier than member admission's one-tap, because it is an identity-level grant.
 
 - Owners section in channel info; pending-owner and pending-invitation state.
 - A role change can revert when it loses a tie-break (§4.1) — surface it.
