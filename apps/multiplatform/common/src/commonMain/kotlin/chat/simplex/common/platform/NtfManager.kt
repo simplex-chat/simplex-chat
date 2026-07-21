@@ -44,7 +44,13 @@ abstract class NtfManager {
               chatModel.chatId.value != cInfo.id ||
               chatModel.remoteHostId() != rhId)
     ) {
-      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, cInfo.isChannel))
+      val replyAllowed = ntfReplyAllowed(
+        quickReplyEnabled = appPreferences.ntfQuickReply.get(),
+        appLockEnabled = appPreferences.performLA.get(),
+        allowWhenLocked = appPreferences.ntfQuickReplyWhenLocked.get()
+      )
+      val canReply = rhId == null && shouldOfferReply(replyAllowed, appPreferences.notificationPreviewMode.get(), cInfo)
+      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, cInfo.isChannel), canReply = canReply)
     }
   }
 
@@ -99,14 +105,14 @@ abstract class NtfManager {
   abstract fun hasNotificationsForChat(chatId: String): Boolean
   abstract fun cancelNotificationsForChat(chatId: String)
   abstract fun cancelNotificationsForUser(userId: Long)
-  abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
+  abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList(), canReply: Boolean = false)
   abstract fun cancelCallNotification()
   abstract fun cancelAllNotifications()
   abstract fun showMessage(title: String, text: String)
   // Android only
   abstract fun androidCreateNtfChannelsMaybeShowAlert()
 
-  private suspend fun awaitChatStartedIfNeeded(chatModel: ChatModel, timeout: Long = 30_000) {
+  internal suspend fun awaitChatStartedIfNeeded(chatModel: ChatModel, timeout: Long = 30_000) {
     // Still decrypting database
     if (chatModel.chatRunning.value == null) {
       val step = 50L

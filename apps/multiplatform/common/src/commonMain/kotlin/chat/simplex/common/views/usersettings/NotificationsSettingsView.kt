@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import SectionViewSelectable
@@ -40,6 +41,9 @@ fun NotificationsSettingsLayout(
   showNotificationsMode: () -> Unit,
 ) {
   val modes = remember { notificationModes() }
+  val appPrefs = ChatController.appPrefs
+  val performLA = remember { appPrefs.performLA.state }
+  val quickReply = remember { appPrefs.ntfQuickReply.state }
 
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.notifications))
@@ -58,6 +62,14 @@ fun NotificationsSettingsLayout(
     if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
       SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
     }
+    SectionDividerSpaced()
+    SectionView(null) {
+      SettingsPreferenceItem(null, stringResource(MR.strings.ntf_quick_reply), appPrefs.ntfQuickReply)
+      if (performLA.value && quickReply.value) {
+        SettingsPreferenceItem(null, stringResource(MR.strings.ntf_quick_reply_when_locked), appPrefs.ntfQuickReplyWhenLocked)
+      }
+    }
+    SectionTextFooter(stringResource(MR.strings.ntf_quick_reply_desc))
     SectionBottomSpacer()
   }
 }

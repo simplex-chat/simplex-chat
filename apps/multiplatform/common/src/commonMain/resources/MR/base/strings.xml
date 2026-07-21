@@ -316,6 +316,14 @@
   <string name="notification_display_mode_hidden_desc">Hide contact and message</string>
   <string name="notification_preview_somebody">Contact hidden:</string>
   <string name="notification_preview_new_message">new message</string>
+  <string name="notification_reply_action">Reply</string>
+  <string name="notification_reply_hint">Message</string>
+  <string name="notification_reply_you">you</string>
+  <string name="notification_reply_failed_title">Could not send reply</string>
+  <string name="notification_reply_failed_desc">Open the app to try again.</string>
+  <string name="ntf_quick_reply">Reply from notifications</string>
+  <string name="ntf_quick_reply_when_locked">Allow when locked</string>
+  <string name="ntf_quick_reply_desc">Reply to messages directly from the notification without opening the app.</string>
   <string name="notification_new_contact_request">New contact request</string>
   <string name="notification_contact_connected">Connected</string>
   <string name="error_showing_desktop_notification">Error showing notification, contact developers.</string>
