@@ -60,6 +60,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
            userId != chatModel.currentUser?.userId {
             logger.debug("NtfManager.processNotificationResponse changeActiveUser")
             changeActiveUser(userId, viewPwd: nil)
+            // the currently open chat belongs to the previous profile and is absent from the
+            // switched profile's chats, so drop it to land on the chat list instead of a blank chat view
+            chatModel.chatId = nil
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
            let chatId = content.userInfo["chatId"] as? String {
