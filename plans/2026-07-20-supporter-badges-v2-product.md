@@ -51,7 +51,8 @@ Show **Badge valid until** separately from **Renews on** or **Subscription ends 
 - Bot/provider verification decides payment status and credit eligibility.
 - Store state and Stripe redirects are hints only.
 - Client asks through RPC; bot returns one final response and never pushes.
-- Payment capability authorizes bot requests; secrets and provider proofs are redacted.
+- Before payment, the client generates one 32-byte BBS `BadgeMasterKey`. The payment and every badge issued from it are bound to that key; renewals reuse it.
+- Payment capability authorizes bot requests. The raw BBS key, capability, and provider proofs are redacted.
 
 ## 2. UX states
 

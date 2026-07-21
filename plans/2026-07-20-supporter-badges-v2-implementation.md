@@ -20,6 +20,7 @@ Payment verification creates a provider-neutral `PaymentCredit`. Badge issuance 
 - [8. Security and concurrency](#8-security-and-concurrency)
 - [9. Delivery and tests](#9-delivery-and-tests)
 - [10. API references](#10-api-references)
+- [11. Open question](#11-open-question)
 
 ## 1. Architecture
 
@@ -40,9 +41,9 @@ flowchart LR
 
 | Component | Owns | Must not own |
 |---|---|---|
-| Client payment | capability, purchase UI, cached status, retry schedule | bot/provider truth |
+| Client payment | BBS master key, capability, purchase UI, cached status, retry schedule | bot/provider truth |
 | Client badge | credential receipt and installation | billing state |
-| Payment service | proof verification, billing state, credit schedule | master key, credential |
+| Payment service | BBS owner commitment, proof verification, billing state, credit schedule | raw master key, credential |
 | Payment credit | product and eligible monthly slot | provider proof, credential |
 | Badge service | signing and idempotent credential cache | provider/billing logic |
 | Core | signature verification and installed badge | payment status |
@@ -52,13 +53,14 @@ Treat these as separate programs with typed interfaces.
 ### Invariants
 
 1. Provider verification changes payment state only.
-2. Only verified entitlement creates a credit.
-3. Only `CreditAvailable` plus a master key enters badge signing.
-4. Credit consumption and cached issuance result are atomic/idempotent.
-5. Payment never activates perks; verified credential does.
-6. RPC has no caller identity or bot push. Capability authorizes each payment request.
-7. Duplicate RPCs/events return the same result. Unknown states preserve prior state.
-8. Provider dates create eligibility; retry/request time never changes badge expiry.
+2. Before `Prepare`, client generates one `BadgeMasterKey` with `generateMasterKey`; it is 32 random bytes and BBS message 0.
+3. Payment stores `BadgeOwnerId = SHA-256("SimpleX badge payment owner v1" || BadgeMasterKey)` and every later issue must match it.
+4. Only `CreditAvailable` plus the matching raw master key enters badge signing.
+5. Credit consumption and cached issuance result are atomic/idempotent.
+6. Payment never activates perks; verified credential does.
+7. RPC has no caller identity or bot push. Capability authorizes each payment request.
+8. Duplicate RPCs/events return the same result. Unknown states preserve prior state.
+9. Provider dates create eligibility; retry/request time never changes badge expiry.
 
 ### Time and credit
 
@@ -74,7 +76,7 @@ data PaymentCredit = PaymentCredit
   }
 ```
 
-- One-time: one credit at verified purchase time. Reject another one-time prepare while its badge is active.
+- One-time: one credit at verified purchase time. Reject another one-time prepare while its prior one-time service period is active.
 - Subscription: `slotStart(n) = addCalendarMonths n verifiedAnchor` when `slotStart <= now < paidThrough`.
 - Monthly and yearly plans both expose one credit per eligible month.
 - Badge service computes expiry as the start of the month two months after `slotStart`.
@@ -170,14 +172,14 @@ data ServiceCall = ServiceCall
   }
 
 data PaymentInput
-  = Prepare Provider ServiceProductId PurchaseKind
+  = Prepare Provider ServiceProductId PurchaseKind BadgeOwnerId
   | AppleEvidence PaymentId Capability SignedTransactionJWS
   | GoogleEvidence PaymentId Capability PurchaseToken
   | ExistingPayment PaymentId Capability
   | CancelSubscription PaymentId Capability
   | CreatePortal PaymentId Capability
 
-data ServiceRequest = IssueBadge MasterKey (Maybe CreditId)
+data ServiceRequest = IssueBadge BadgeMasterKey (Maybe CreditId)
 
 data ServiceResponse = ServiceResponse
   { requestId :: RequestId
@@ -190,13 +192,14 @@ data ServiceResponse = ServiceResponse
 
 Rules:
 
-- `Prepare` cannot issue a badge.
+- Client calls `generateMasterKey` once before `Prepare`, persists it encrypted, computes `BadgeOwnerId`, and reuses the key for all renewal badges.
+- `Prepare` stores `BadgeOwnerId` but cannot issue a badge.
 - Apple/Google evidence may include `IssueBadge`.
 - Stripe prepare returns Checkout data; a later `ExistingPayment + IssueBadge` issues.
 - Pending response has no credit/result and includes `retryAfter`.
-- Capability never enters Stripe metadata or a return URL.
-- Store capability in the encrypted profile database and include it in supported profile transfer/backup. If it is lost, RPC identity cannot recover it; require explicit provider-bound restore/support and never silently reassign payment.
-- `creditId` selects only; bot rechecks ownership/product/eligibility.
+- Capability and `BadgeOwnerId` never enter Stripe metadata or a return URL.
+- `creditId` selects only; bot rechecks payment, owner, product, and eligibility.
+- Before signing, orchestrator recomputes `BadgeOwnerId` from `BadgeMasterKey`; mismatch returns `ownership_conflict` without consuming credit.
 
 ### Internal interface
 
@@ -210,9 +213,10 @@ Order:
 1. authorize capability;
 2. resolve/verify payment;
 3. commit payment and create/load due credit;
-4. pass only credit + request to badge service;
-5. cache issuance and consume credit atomically;
-6. return one final response.
+4. verify the request key matches the payment `BadgeOwnerId`;
+5. pass only credit + request to badge service;
+6. cache issuance and consume credit atomically;
+7. return one final response.
 
 ### Idempotency and audit
 
@@ -237,22 +241,29 @@ sequenceDiagram
   participant X as Credit
   participant B as Badge service
   participant K as Core
+  Note over C: CPVerifying + CBRequesting
   C->>RPC: ServiceCall(payment, IssueBadge)
   RPC->>O: Authorized request
   O->>P: Resolve payment
-  Note over P: Paid / active
+  Note over P: BPPaidOneTime / BPActive / BPGrace / BPCancelAtEnd
   P->>X: Create or load slot
-  Note over X: Available
+  Note over X: CreditAvailable
+  O->>O: Verify BadgeMasterKey matches BadgeOwnerId
   O->>B: Create request
-  Note over B: Requested
-  O->>B: Claim and sign
-  Note over B: Issued
+  Note over B: BBRequested
+  O->>B: Claim signing
+  Note over B: BBSigning
+  B->>B: Sign and cache
+  Note over B: BBIssued
   B->>X: Commit result
-  Note over X: Consumed
+  Note over X: CreditConsumed
   O-->>RPC: Final status + credential
   RPC-->>C: Final response
+  Note over C: CPEntitled / CPCancelAtEnd / CPProblem(BPGrace)<br/>+ CBReceived
   C->>K: Verify and install
-  Note over C: Installed
+  Note over C: CBInstalling
+  K-->>C: Installed
+  Note over C: CBInstalled
 ```
 
 ### Apple initial verification
@@ -264,13 +275,16 @@ sequenceDiagram
   participant O as Orchestrator
   participant A as Apple adapter
   participant P as Payment store
+  Note over C: CPVerifying
   C->>RPC: Apple evidence
   RPC->>O: Authorized request
+  O->>P: Claim verification lease
+  Note over P: BPVerifying
   O->>A: Verify signed transaction
   A->>A: Verify signature, app, product,<br/>binding, dates, revocation
   A-->>O: Normalized result
   O->>P: Apply result
-  Note over P: Paid / active
+  Note over P: BPPaidOneTime or BPActive
 ```
 
 This path is offline. Status/restore uses App Store Server API; Notifications V2 only trigger reconciliation.
@@ -285,14 +299,17 @@ sequenceDiagram
   participant G as Google adapter
   participant API as Publisher API
   participant P as Payment store
+  Note over C: CPVerifying
   C->>RPC: Google evidence
   RPC->>O: Authorized request
+  O->>P: Claim verification lease
+  Note over P: BPVerifying
   O->>G: Verify token
   G->>API: productsv2.get / subscriptionsv2.get
   API-->>G: Canonical purchase
   G-->>O: Normalized result
   O->>P: Apply result
-  Note over P: Paid / active
+  Note over P: BPPaidOneTime or BPActive
 ```
 
 Commit entitlement before outbox acknowledgement/consume. RTDN triggers provider GET; never grant from notification payload.
@@ -304,24 +321,31 @@ sequenceDiagram
   participant C as Client
   participant RPC as RPC
   participant P as Payment service
+  participant X as Credit
   participant S as Stripe
   participant W as Webhook endpoint
+  Note over C: CPPreparing
   C->>RPC: Prepare Stripe
   RPC->>P: Authorized request
-  Note over P: Prepared
+  Note over P: BPPrepared
   P->>S: Create Checkout Session
   S-->>P: Session ID + URL
-  Note over P: Checkout open
+  Note over P: BPCheckoutOpen
   P-->>RPC: payment ID + capability + URL
   RPC-->>C: Final response
-  Note over C: Checkout ready, start polling
+  Note over C: CPCheckoutReady
+  C->>C: Open Checkout and start polling
+  Note over C: CPProviderPending
   S-->>W: Signed webhook
   W->>W: Verify and persist event
   W-->>S: 2xx
   W->>P: Reconcile event
+  Note over P: BPVerifying
   P->>S: Retrieve current objects
   S-->>P: Canonical payment
-  Note over P: Paid / active, credit available
+  Note over P: BPPaidOneTime or BPActive
+  P->>X: Create or load due slot
+  Note over X: CreditAvailable
 ```
 
 Webhook handler verifies the raw body, persists/deduplicates event ID, returns `2xx`, then workers reconcile. Client remains pending until its next RPC.
@@ -334,15 +358,16 @@ sequenceDiagram
   participant RPC as RPC
   participant P as Payment service
   participant S as Stripe
+  Note over C: CPVerifying
   C->>RPC: ExistingPayment
   RPC->>P: Authorized request
-  Note over P: Verifying
+  Note over P: BPVerifying
   P->>S: Retrieve Checkout
   S-->>P: Pending / unpaid
-  Note over P: Pending provider
+  Note over P: BPPendingProvider
   P-->>RPC: Pending + retryAfter
   RPC-->>C: Final response
-  Note over C: Poll later
+  Note over C: CPProviderPending
 ```
 
 Poll from Checkout open and on return/foreground at 5, 15, 30, 60, 120 seconds. Then use normal reconciliation. Deep links are optional; no localhost listener.
@@ -376,7 +401,7 @@ Define five separate sums: client payment, client badge, bot payment, credit, bo
 
 ### Client tables
 
-`badge_payments`: provider/product/plan, payment state payload, encrypted capability/master key, binding/proof reference, `paidThrough`, `willRenew`, checked/retry time, version.
+`badge_payments`: provider/product/plan, payment state payload, encrypted capability and `BadgeMasterKey`, `BadgeOwnerId`, binding/proof reference, `paidThrough`, `willRenew`, checked/retry time, version.
 
 `badges`: payment/credit/slot/key hash, badge state payload, cached credential, expiry, attempt/error, version.
 
@@ -386,7 +411,7 @@ Join by payment/credit ID only. Update active profile only after core installati
 
 | Table | Unique key / purpose |
 |---|---|
-| `payments` | provider-object ownership; canonical payment sum |
+| `payments` | provider-object ownership + `BadgeOwnerId`; canonical payment sum |
 | `payment_credits` | payment + product + slot |
 | `badge_issuances` | credit + master-key hash; cached credential |
 | `rpc_requests` | request ID; request hash + final response |
@@ -407,8 +432,8 @@ reconcile(paymentId):
   render cached payment + installed badge
   submit unseen Apple/Google evidence
   request status for nonterminal payment
-  if current credit exists and badge is absent: request IssueBadge
-  if credential returned: cache -> verify -> install
+  if CreditAvailable and no badge covers its slot: CBNeeded -> request IssueBadge
+  if credential returned: CBReceived -> CBInstalling -> CBInstalled
   schedule next check
 ```
 
@@ -425,25 +450,25 @@ Every input is one of:
 
 | Input/result | Class | Client | Bot |
 |---|---|---|---|
-| payment pending | retry | pending; schedule | keep pending; no credit |
-| timeout/429/5xx | retry | prior snapshot; backoff | retain state; `retryAfter` |
-| lost response | retry | repeat same ID/body | return cached result |
-| duplicate event/request | idempotent | accept same result | dedupe/re-fetch |
-| ID reused with new body | reject | new ID only for new action | preserve; telemetry |
-| invalid capability/binding | reject | restore/support | preserve; rate-limit |
-| invalid proof/product | reject | no blind retry | quarantine/alert |
-| unknown provider state | quarantine | stale + retry later | re-fetch; do not guess |
-| credit available | apply | request issuance | fulfill if requested |
-| credit consumed | idempotent | install cached credential | return same issuance |
-| signing unavailable | retry | keep old badge | retryable badge state |
-| invalid key/credential/protocol | reject | update/support | final badge failure |
-| install crash | local retry | resume cached response | no bot change |
-| cancel timeout | retry | still show Renews | preserve canonical state |
-| already canceled | idempotent | show end date | return cancel-at-end |
-| user cancels store | exit | prior state | expire prepared row later |
-| Stripe Checkout expired | final attempt | new checkout on user action | close attempt; no credit |
-| refund/revocation | apply | payment ended; signed badge survives to expiry | void unused credits |
-| webhook DB failure | retry delivery | no change | non-2xx; provider retries |
+| payment pending | retry | `CPProviderPending`; schedule | `BPPendingProvider`; no credit |
+| timeout/429/5xx | retry | `CPProblem` with prior snapshot | preserve current `BP…`; return `retryAfter` |
+| lost response | retry | preserve state; repeat same ID/body | return cached result/state |
+| duplicate event/request | idempotent | accept same state/result | preserve state; dedupe/re-fetch |
+| ID reused with new body | reject | preserve state; new ID only for new action | preserve state; telemetry |
+| invalid capability/binding | reject | preserve state; restore/support | preserve state; rate-limit |
+| invalid proof/product | reject | `CPProblem`; no blind retry | preserve `BP…`; quarantine/alert |
+| unknown provider state | quarantine | `CPProblem`; retry later | preserve `BP…`; re-fetch, never guess |
+| `CreditAvailable` | apply | `CBNeeded` → `CBRequesting` | `BBRequested` when requested |
+| `CreditConsumed` | idempotent | `CBReceived` → install | return cached `BBIssued` |
+| signing unavailable | retry | `CBRetryableFailure`; keep old badge | `BBRetryableFailure`; credit stays available |
+| invalid key/credential/protocol | reject | `CBFinalFailure` | `BBFinalFailure`; do not consume credit |
+| install crash | local retry | resume `CBReceived` → `CBInstalling` | no bot transition |
+| cancel timeout | retry | `CPProblem`; still show Renews | preserve `BPActive`/`BPCancelAtEnd` |
+| already canceled | idempotent | `CPCancelAtEnd` | return `BPCancelAtEnd` |
+| user cancels store | exit | restore prior `CP…`/`CB…` | `BPPrepared` expires later |
+| Stripe Checkout expired | final attempt | `CPExpired`; new checkout on user action | `BPExpired`; no credit |
+| refund/revocation | apply | `CPExpired`; signed badge survives to expiry | `BPRefunded`/`BPRevoked`; void unused credits |
+| webhook DB failure | retry delivery | no transition | no transition; non-2xx |
 
 Stable codes: `bad_request`, `unsupported_version`, `payment_pending`, `payment_not_entitled`, `ownership_conflict`, `proof_invalid`, `provider_rate_limited`, `provider_unavailable`, `idempotency_mismatch`, `badge_already_issued`, `signing_failed`, `internal_error`.
 
@@ -451,7 +476,7 @@ Stable codes: `bad_request`, `unsupported_version`, `payment_pending`, `payment_
 
 - Before provider call: repeat request.
 - Provider succeeds before commit: retrieve by idempotency key/object binding.
-- Payment committed before issuance: credit remains available.
+- Payment committed before issuance: `CreditAvailable` remains unchanged.
 - Credential cached before response loss: repeat returns it.
 - Response cached before install: resume local installation.
 - Duplicate/out-of-order event: dedupe, re-fetch, monotonic transition.
@@ -464,11 +489,24 @@ Stable codes: `bad_request`, `unsupported_version`, `payment_pending`, `payment_
 | Google | products v2 / subscriptions v2 GET | linked token chain + order/period | RTDN → re-fetch | Play UI |
 | Stripe | retrieve Session/Intent/Invoice/Subscription | one-time intent/session; subscription paid invoice | signed webhook → re-fetch | bot RPC |
 
-Required mappings:
+Provider-state mapping:
 
-- Apple: active, grace, billing retry, cancel-at-end, expired, refunded/revoked.
-- Google: pending, active, grace, on-hold, paused, canceled, expired, linked-token replacement.
-- Stripe: Checkout open/expired, async pending/success/failure, invoice paid/failed, subscription active/past-due/unpaid/paused/cancel-at-end/deleted, refund/dispute.
+| Provider state | Canonical bot state |
+|---|---|
+| Apple active | `BPActive` |
+| Apple grace | `BPGrace` while Apple reports entitlement |
+| Apple billing retry without entitlement | `BPOnHold` |
+| Apple renewal off / expired / refund / revoke | `BPCancelAtEnd` / `BPExpired` / `BPRefunded` / `BPRevoked` |
+| Google pending / active / grace | `BPPendingProvider` / `BPActive` / `BPGrace` |
+| Google on-hold / paused | `BPOnHold` / `BPPaused` |
+| Google canceled with time remaining / expired | `BPCancelAtEnd` / `BPExpired` |
+| Stripe Checkout open or async pending | `BPCheckoutOpen` / `BPPendingProvider` |
+| Stripe paid one-time / paid subscription invoice | `BPPaidOneTime` / `BPActive` |
+| Stripe past-due, unpaid, or paused | `BPOnHold` / `BPPaused` according to retrieved status |
+| Stripe cancel-at-end / deleted | `BPCancelAtEnd` / `BPExpired` |
+| Stripe refund / dispute | `BPRefunded` / `BPRevoked` |
+
+Google linked-token replacement changes subscription identity/period data, then maps the retrieved state using this table.
 
 Rules:
 
@@ -482,7 +520,7 @@ Rules:
 
 - Verify provider signatures/objects server-side; never trust decoded client/redirect fields.
 - Hash capabilities; encrypt retained proofs/provider IDs; rotate keys.
-- Keep raw master key client-encrypted and bot-memory-only during signing; persist its hash.
+- Keep raw `BadgeMasterKey` client-encrypted and bot-memory-only during ownership verification/signing; persist only domain-separated `BadgeOwnerId`.
 - Allowlist product, app/package, environment, currency/price, and account binding.
 - Rate-limit operation/payment and cap payload sizes.
 - Serialize payment mutations with lock/version; events and RPC use the same transitions.
@@ -494,7 +532,7 @@ Rules:
 1. **Schema/protocol:** five sums/codecs, migrations, credit boundary, request ledger, Chat Console audit, core install API.
 2. **Apple/Google:** bindings, verification/status, Notifications V2/RTDN, acknowledge/consume, native UI.
 3. **Stripe:** Checkout, completion page, webhook, reconciliation, cancel RPC, restricted Portal.
-4. **UX/hardening:** scheduler, all Product states, migration, telemetry, cleanup.
+4. **UX/hardening:** scheduler, all Product states, rollout compatibility, telemetry, cleanup.
 
 Tests:
 
@@ -505,7 +543,7 @@ Tests:
 - Stripe async payment, invoice renewal, cancellation, closed app/browser, delayed/duplicate/reordered webhook;
 - monthly/yearly slots and 21 July → 31 August expiry;
 - crash/replay at every side-effect boundary;
-- capability/credit/master-key isolation;
+- capability/credit/BBS-owner isolation and wrong-`BadgeMasterKey` rejection;
 - Chat Console coverage and redaction snapshots.
 
 Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, store-policy review, complete error handling, operational dashboards.
@@ -514,7 +552,7 @@ Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, 
 
 | Location | Change |
 |---|---|
-| new `Simplex.Chat.Badges.Lifecycle` | client sums/transitions/reconciliation |
+| new `Simplex.Chat.Badges.Lifecycle` | client sums/transitions/reconciliation; call `generateMasterKey` before prepare |
 | `Library.Commands.addUserBadge` | non-CLI verified install API |
 | RPC/controller/console | calls, response handling, redacted audit |
 | client store/migrations | separate payment and badge stores |
@@ -524,7 +562,7 @@ Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, 
 | `badge-service/apple.py` | proof + subscription status |
 | `badge-service/google.py` | full mapping + acknowledge/consume |
 | `badge-service/stripe_api.py` | Checkout/webhook/status/cancel/Portal |
-| `badge-service/wire.py` | versioned call/response; retain v1 migration path |
+| `badge-service/wire.py` | versioned call/response; keep existing badge request compatibility during rollout |
 
 ## 10. API references
 
@@ -534,3 +572,7 @@ Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, 
 | Google | [Play Billing](https://developer.android.com/google/play/billing/integrate), [`productsv2.getproductpurchasev2`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.productsv2/getproductpurchasev2), [`subscriptionsv2.get`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2/get), RTDN |
 | Stripe | [Checkout](https://docs.stripe.com/api/checkout/sessions/create), [fulfillment](https://docs.stripe.com/checkout/fulfillment), [webhooks](https://docs.stripe.com/webhooks), [subscription events](https://docs.stripe.com/billing/subscriptions/webhooks), [cancel](https://docs.stripe.com/billing/subscriptions/cancel), [Portal](https://docs.stripe.com/customer-management/integrate-customer-portal) |
 | RPC | [`simplexmq` service RPC RFC](https://github.com/simplex-chat/simplexmq/blob/rpc/rfcs/2026-07-11-service-rpc.md) |
+
+## 11. Open question
+
+**Capability recovery:** if the client still has its BBS `BadgeMasterKey` but loses the payment capability after reinstall or device transfer, should key possession recover/rotate that capability? Define the recovery RPC, provider re-verification, rate limits, and user confirmation before implementation. Until then, do not automatically reassign a payment.
