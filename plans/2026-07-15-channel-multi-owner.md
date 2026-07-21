@@ -13,7 +13,7 @@ The whole problem is ordering concurrent writes, and the answer is fixed by **wh
 | **Link data** (profile, relay list, owners chain) | one blob on the SMP link queue | the **SMP server** | version-CAS: write-with-expected-version, rejection returns current state, re-merge |
 | **Owner queue keys** (`recipientKeys`) | one set on the SMP link queue | the **SMP server** | version-CAS, same shape; + an owner-held key→owner map |
 | **Roster** (member/mod/admin roles) | a signed copy on every relay; no trusted central copy | **none** | deterministic tie-break + owner-side auto-retry |
-| **Subscriber count** | derived, cosmetic | a **leading owner** (for efficiency, not correctness) | relay-sourced; staleness handover |
+| **Subscriber count** | derived, cosmetic | a **leading owner** (for efficiency, not correctness) | relay-sourced; chain-order handover |
 
 Link data and keys already *have* a sequencer — the server — so they need only optimistic concurrency, no consensus. The roster is the only state with no sequencer, which is exactly why it is the hard part. The count needs a soft leader only to avoid write contention.
 
