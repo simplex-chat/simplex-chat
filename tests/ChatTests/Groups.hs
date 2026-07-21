@@ -8470,7 +8470,16 @@ testScopedSupportUnreadStatsGroupReadNoScope =
 
     bob #> "#team (support) 1"
     alice <# "#team (support: bob) bob> 1"
-    bobItemId <- lastItemId alice
+    -- capture the support item id directly: lastItemId returns the latest item by
+    -- item_ts, which right after createGroup2 can be a group event ("connected")
+    -- rather than the support message, making the per-item read below target the
+    -- wrong item.
+    bobItemId <-
+      withCCTransaction alice $ \db -> do
+        rows <- DB.query_ db "SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only Int]
+        case rows of
+          Only itemId : _ -> pure $ show itemId
+          _ -> error "testScopedSupportUnreadStatsGroupReadNoScope: no member_support item"
 
     alice ##> "/member support chats #team"
     alice <## "members require attention: 1"
