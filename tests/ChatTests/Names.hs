@@ -33,6 +33,7 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
     test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
       alice ##> "/ad"
       (shortLink, _) <- getContactLinks alice True
       registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
@@ -67,6 +68,7 @@ testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
     test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
       alice ##> "/ad"
       (shortLink, _) <- getContactLinks alice True
       registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
@@ -79,6 +81,7 @@ testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
     test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
       alice ##> "/ad"
       (shortLink, _) <- getContactLinks alice True
       bob ##> ("/c " <> shortLink)
@@ -100,6 +103,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
   testChat2 aliceProfile bobProfile test ps
   where
     test _alice bob = do
+      enableNamesRole bob
       bob ##> "/c @nobody.simplex"
       bob .<## "smpErr = NAME {nameErr = NOT_FOUND}}"
 
@@ -109,6 +113,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
     test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
       bob ##> "/ad"
       (bobShortLink, _) <- getContactLinks bob True
       registerName reg aliceName (contactNameRecord "alice" (T.pack bobShortLink))
@@ -123,6 +128,7 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
+        mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
         registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
         alice ##> "/public group access #team domain=team.simplex"
@@ -142,6 +148,7 @@ testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
+        mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
         registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
         alice ##> "/public group access #team domain=team.simplex"
@@ -171,6 +178,7 @@ testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
+        mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, _) <- prepareChannel1Relay "team" alice cath
         registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
         alice ##> "/public group access #team domain=team.simplex"
@@ -204,6 +212,7 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
+        mapM_ enableNamesRole [alice, cath, bob]
         (channelLink, _) <- prepareChannel1Relay "team" alice cath
         alice ##> "/ad"
         (contactLink, _) <- getContactLinks alice True
@@ -242,6 +251,7 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
+        mapM_ enableNamesRole [alice, cath, bob]
         (channelLink, _) <- prepareChannel1Relay "acme" alice cath
         alice ##> "/ad"
         (contactLink, _) <- getContactLinks alice True
@@ -260,6 +270,7 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
+        mapM_ enableNamesRole [alice, cath, bob]
         (channelLink, _) <- prepareChannel1Relay "biz" alice cath
         alice ##> "/ad"
         (contactLink, fullLink) <- getContactLinks alice True

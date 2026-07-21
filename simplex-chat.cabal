@@ -151,6 +151,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260714_member_security_code
           Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
           Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
+          Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -319,6 +320,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260714_member_security_code
           Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
           Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
+          Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

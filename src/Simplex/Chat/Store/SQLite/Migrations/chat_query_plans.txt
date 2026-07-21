@@ -4064,7 +4064,8 @@ SCAN s
 SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
 
 Query: 
-        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled
+        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled,
+               role_storage, role_proxy, role_names
         FROM protocol_servers
         WHERE user_id = ? AND protocol = ?
       
@@ -4901,8 +4902,9 @@ Plan:
 
 Query: 
       INSERT INTO protocol_servers
-        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled,
+         role_storage, role_proxy, role_names, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -5433,7 +5435,8 @@ SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id
 Query: 
       UPDATE protocol_servers
       SET protocol = ?, host = ?, port = ?, key_hash = ?, basic_auth = ?,
-          preset = ?, tested = ?, enabled = ?, updated_at = ?
+          preset = ?, tested = ?, enabled = ?,
+          role_storage = ?, role_proxy = ?, role_names = ?, updated_at = ?
       WHERE smp_server_id = ?
     
 Plan:
