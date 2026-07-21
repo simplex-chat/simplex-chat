@@ -156,7 +156,7 @@ createActiveUser cc CoreChatOpts {chatRelay, headless} createBot_ userDisplayNam
               \It is only stored on your device and you can change it later."
   where
     loop = do
-      displayName <- T.pack <$> withPrompt "display name" getLine
+      displayName <- T.pack <$> withPrompt "display name: " getLine
       createUser loop False $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
     createUser onError clientService p =
