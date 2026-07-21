@@ -59,7 +59,7 @@ Link data and keys already *have* a sequencer — the server — so they need on
 
 **Source:** each relay states its current subscriber count in the `XGrpMemNew` (join) and leave/removal events it already sends to owners (an optional field, forward-compatible). An owner keeps a scalar + the last-reporting-relay id: follow that relay up or down, take the max when a *different* relay reports higher, decrease on leave. (Subscribers connect to all relays, so relays report ~the same number; this just avoids flapping.)
 
-**Sequencer — a leading owner** (lowest active index) publishes the count to link data. Not for correctness (relay-sourcing already fixed the promoted-owner-undercount) but for **efficiency**: the count shares `link_data_version`, so N owners publishing per join would bump it constantly and starve human writes; one publisher is one stream. **Handover on staleness:** if the published count stops tracking joins (leader offline), the next owner takes over. A leader is safe *here* precisely because the count is cosmetic — offline means brief staleness, not a stall. A new owner seeds from the published value and does not publish until it has its own relay reports.
+**Sequencer — a leading owner** (the lowest `owner_auth_index` among current owners) publishes the count to link data. Not for correctness (relay-sourcing already fixed the promoted-owner-undercount) but for **efficiency**: the count shares `link_data_version`, so N owners publishing per join would bump it constantly and starve human writes; one publisher is one stream. **Handover follows chain order on a membership change** (tentative): when the leader is removed or leaves, the next owner in `owner_auth_index` order automatically becomes the publisher — no liveness detection. A leader that is merely *offline* is not handed over; the count just goes stale until it returns, which is fine because the count is cosmetic. A new owner seeds from the published value and does not publish until it has its own relay reports.
 
 ## 6. Owner promotion (adding an owner)
 
@@ -101,12 +101,12 @@ Drop the leaver's key from `recipientKeys` (`RKEY`, targeting it via the owner-h
 - **Promoter:** keep the role picker, add `.owner`; selecting it sends the invitation and shows a proposed-role row (proposed → invitation-sent + Cancel; rejected → declined + re-invite). Warn if the invitee's key is unverified and route to the verification screen — the consequence is the channel's trust chain, not one conversation.
 - **Invitee:** a service chat item (unread) plus an accept/reject banner in M's support chat; accept goes through a confirmation stating any owner can delete the channel. (The banner is new code, not a reuse — the existing pending-member bar is gated on a non-null scope member, and M's own support scope has none.)
 - **`canManageLink`** gates link/relay *management* (an owner mid-handover cannot write yet); relay *status display* stays on `isOwner`.
-- **Conflict surfaces** (both rare): "profile edit superseded" (link-data same-field conflict) and "your role change to X was overridden" (roster same-member conflict).
+- **Conflict surfaces** (both rare): the losing owner is told "profile edit superseded" (link-data same-field conflict) or "your role change to X was overridden" (roster same-member conflict). No special affordance — the owner re-applies through the normal picker/edit if they still want to.
 
 ## 11. Open decisions
 
-- **Roster:** approach confirmed (tie-break + auto-retry, no leader). Remaining: exact wording/format of the conflict surface, and whether a same-member conflict offers one-tap re-apply.
-- **Count-leader handover threshold:** how stale before the next owner takes over. Low stakes (worst case: two owners briefly publish the same number, one CAS-rejected).
-- **v19 gating UX:** confirm hard-blocking multi-owner on a pre-v19 link server (recommended) versus a degraded single-owner mode.
+- **Count-leader handover** is tentative: chain-order takeover on a membership change (§5). The alternative — staleness-triggered takeover so a merely-offline leader is also replaced — is more available but needs liveness inference; deferred unless cosmetic staleness during a leader's absence proves unacceptable.
+
+Settled this round: multi-owner hard-blocks on a pre-v19 link server (§9, no degraded mode); the roster approach is tie-break + auto-retry with no leader (§4); a same-member conflict is surfaced and re-applied through normal UI (§10).
 
 A detailed change-list (per-file edits, migrations, test cases) follows once this design is locked — deliberately omitted here to keep the design reviewable in one pass.
