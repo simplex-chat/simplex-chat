@@ -50,7 +50,7 @@ Show **Badge valid until** separately from **Renews on** or **Subscription ends 
 - Core signature and expiry decide badge validity.
 - Bot/provider verification decides payment status and grant eligibility.
 - Store state and Stripe redirects are hints only.
-- Client asks through RPC; bot returns one final response and never pushes.
+- Each client RPC call receives exactly one bot response; the bot never initiates a call.
 - Before payment, the client generates one 32-byte BBS `BadgeMasterKey`. The payment and every badge issued from it are bound to that key; renewals reuse it.
 - Payment capability authorizes bot requests. The raw BBS key, capability, and provider proofs are redacted.
 
@@ -208,48 +208,56 @@ sequenceDiagram
   participant C as Client
   participant B as Bot
   participant S as Stripe
-  C->>B: Prepare Stripe payment
+  C->>B: RPC Prepare Stripe
   B->>S: Create Checkout Session
-  B-->>C: Checkout URL + capability
+  B-->>C: RPC Checkout URL + capability
   C->>S: Open Checkout
-  Note over C: Payment pending, start polling
+  Note over C: CPAwaitingPayment
+  C->>B: RPC IssueBadge
+  Note over B: Hold call, no response yet
   S-->>B: Signed webhook
-  Note over B: Payment entitled, grant available
-  C->>B: Status + badge request
-  B-->>C: Status + badge
-  Note over C: Entitled, badge installed
+  B->>S: Retrieve and verify payment
+  S-->>B: Paid
+  Note over B: GrantReady → badge issued
+  B-->>C: RPC badge credential
+  Note over C: CPEntitled + CBReceived
+  C->>C: Verify and install
+  Note over C: CBInstalled
 ```
 
-#### Still pending
+#### RPC ends before payment
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant B as Bot
+  C->>B: RPC IssueBadge
+  B->>B: Persisted payment is still pending
+  Note over B: Hold call, no response
+  Note over C: RPC deadline / app closes
+  C-xB: Cancel waiting call
+  Note over C: CPAwaitingPayment + CBRetryableFailure
+  C->>B: Repeat same IssueBadge on foreground
+  Note over C: CPAwaitingPayment + CBRequesting
+  Note over B: Respond immediately if webhook already completed<br/>otherwise wait again
+```
+
+#### Checkout expired
 
 ```mermaid
 sequenceDiagram
   participant C as Client
   participant B as Bot
   participant S as Stripe
-  C->>B: Status request
-  B->>S: Retrieve Checkout
-  S-->>B: Pending
-  Note over B: Pending, no grant
-  B-->>C: Pending + retry time
-  Note over C: Poll later, badge unchanged
+  C->>B: RPC IssueBadge
+  Note over B: Hold call
+  S-->>B: Signed Checkout expired event
+  Note over B: BPExpired, no grant
+  B-->>C: RPC checkout expired
+  Note over C: CPExpired, new Checkout requires user action
 ```
 
-#### Expired
-
-```mermaid
-sequenceDiagram
-  participant C as Client
-  participant B as Bot
-  participant S as Stripe
-  S-->>B: Checkout expired
-  Note over B: Expired, no grant
-  C->>B: Status request
-  B-->>C: Checkout expired
-  Note over C: New checkout requires user action
-```
-
-Start polling when Checkout opens and on return/foreground: 5, 15, 30, 60, 120 seconds, then normal refresh. The return link is optional routing, never proof.
+There is no payment polling. The pending `IssueBadge` call is the completion signal. A deep link may return the user to the app but is not required and is never payment proof.
 
 ### Cancel subscription
 
@@ -312,7 +320,7 @@ If `GrantReady` exists without the current badge, request issuance. Cache the re
 | Condition | Client action |
 |---|---|
 | Store canceled | restore previous screen |
-| Payment pending | show pending; poll/schedule |
+| Payment pending | keep `IssueBadge` waiting; retry the same call after deadline/restart |
 | Network/provider failure | keep cached state and active badge; retry |
 | Paid, issuance failed | show “Payment confirmed. Badge is being prepared”; retry |
 | Cancel failed | keep **Renews on**; retry |

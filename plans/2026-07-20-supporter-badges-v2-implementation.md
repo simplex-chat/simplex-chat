@@ -188,8 +188,8 @@ Rules:
 - Client calls `generateMasterKey` once before `Prepare`, persists it encrypted, computes `BadgeKeyCommitment`, and reuses the key for all renewal badges.
 - `Prepare` stores `BadgeKeyCommitment` but cannot issue a badge.
 - Apple/Google evidence may include `IssueBadge`.
-- Stripe prepare returns Checkout data; a later `ExistingPayment + IssueBadge` issues.
-- Pending response has no grant/result and includes `retryAfter`.
+- Stripe prepare returns Checkout data. The client then sends `IssueBadge`; while payment is pending the bot holds that call and sends no response.
+- The waiting call responds once after verified payment and issuance, or with a terminal payment error. Other retryable operations may still return `retryAfter`.
 - Capability and `BadgeKeyCommitment` never enter Stripe metadata or a return URL.
 - `grantId` selects only; bot rechecks payment, owner, product, and eligibility.
 - Before signing, orchestrator recomputes `BadgeKeyCommitment` from `BadgeMasterKey`; mismatch returns `ownership_conflict` without fulfilling grant.
@@ -209,7 +209,7 @@ Order:
 4. verify the request key matches the payment `BadgeKeyCommitment`;
 5. pass only grant + request to badge service;
 6. cache issuance and mark grant fulfilled atomically;
-7. return one final response.
+7. return the single response.
 
 ### Idempotency and audit
 
@@ -289,7 +289,7 @@ sequenceDiagram
 
 Commit entitlement before outbox acknowledgement/consume. RTDN triggers provider GET; never create a service grant from the notification payload.
 
-### Stripe Checkout and webhook
+### Stripe Checkout and waiting `IssueBadge`
 
 ```mermaid
 sequenceDiagram
@@ -298,44 +298,60 @@ sequenceDiagram
   participant S as Stripe
   Note over C: CPPreparing
   C->>B: RPC Prepare Stripe
-  Note over B: Payment: BPPrepared
+  Note over B: BPPrepared
   B->>S: Create Checkout Session
   S-->>B: Session ID + URL
-  Note over B: Payment: BPCheckoutOpen
+  Note over B: BPCheckoutOpen
   B-->>C: RPC payment ID + capability + URL
   Note over C: CPCheckoutReady
   C->>S: Open Checkout
   Note over C: CPAwaitingPayment
+  C->>B: RPC IssueBadge(requestId, paymentId, key)
+  Note over C: CPAwaitingPayment + CBRequesting
+  B->>B: Register waiter and recheck payment under lock
+  Note over B: BPAwaitingPayment<br/>No response yet
   S-->>B: Signed webhook
-  Note over B: Payment: BPVerifying
+  Note over B: BPVerifying
   B->>S: Retrieve current payment
-  S-->>B: Canonical payment
-  Note over B: Payment: BPPaidOneTime or BPSubscriptionActive
-  B->>B: Create or load due grant period
-  Note over B: Grant: GrantReady
-  Note over C: Still CPAwaitingPayment, no bot push
+  S-->>B: Canonical paid payment
+  Note over B: BPPaidOneTime or BPSubscriptionActive
+  B->>B: Create GrantReady and wake waiter
+  B->>B: Verify key, sign badge, mark GrantFulfilled
+  B-->>C: RPC credential
+  Note over C: CPEntitled + CBReceived
+  C->>C: Verify and install
+  Note over C: CBInstalled
 ```
 
-Webhook handler verifies the raw body, persists/deduplicates event ID, returns `2xx`, then workers reconcile. Client remains pending until its next RPC.
+The second RPC has exactly one response. The bot sends it only after verified payment allows issuance, or after a terminal event such as Checkout expiry. Register-and-recheck under the payment lock prevents a webhook/request race. If the webhook completed first, `IssueBadge` responds immediately.
 
-### Stripe status while pending
+If Stripe retrieval fails transiently after the webhook, the bot keeps the call open and retries internally. It does not send an intermediate response; only the RPC deadline or a terminal payment result ends the wait.
+
+Persist request ID, hash, and result state; keep the live waiter and raw `BadgeMasterKey` only in memory. Webhook commit wakes live waiters after `GrantReady` is durable. After bot restart, the repeated request rechecks persisted payment/grant state and either returns immediately or installs a new waiter.
+
+### Stripe wait interruption
 
 ```mermaid
 sequenceDiagram
   participant C as Client
   participant B as Bot
   participant S as Stripe
-  Note over C: CPVerifying
-  C->>B: RPC ExistingPayment
-  Note over B: Payment: BPVerifying
-  B->>S: Retrieve Checkout
-  S-->>B: Pending / unpaid
-  Note over B: Payment: BPAwaitingPayment
-  B-->>C: RPC pending + retryAfter
-  Note over C: CPAwaitingPayment
+  Note over C: CPAwaitingPayment + CBRequesting
+  C->>B: RPC IssueBadge with stable requestId
+  B->>B: Register waiter, payment still pending
+  Note over B: Hold call, no response
+  Note over C: RPC deadline / app restart
+  C-xB: Exchange removed
+  Note over C: CPAwaitingPayment + CBRetryableFailure
+  Note over B: Remove waiter, preserve payment state
+  S-->>B: Webhook may complete payment later
+  Note over B: Persist payment + GrantReady
+  C->>B: Repeat same IssueBadge on foreground
+  Note over C: CPAwaitingPayment + CBRequesting
+  B-->>C: Credential immediately if ready<br/>otherwise hold this call
 ```
 
-Poll from Checkout open and on return/foreground at 5, 15, 30, 60, 120 seconds. Then use normal reconciliation. Deep links are optional; no localhost listener.
+The client persists `requestId`, payment capability, and `BadgeMasterKey` before opening Checkout. It retries only after an interrupted exchange, foreground, or explicit user action—never on a polling timer. A deep link is optional UX; no localhost listener is used.
 
 ### Cancellation
 
@@ -379,7 +395,7 @@ Join by payment/grant ID only. Update active profile only after core installatio
 | `payments` | provider-object ownership + `BadgeKeyCommitment`; canonical payment sum |
 | `service_grants` | payment + product + grant period |
 | `badge_issuances` | grant + master-key hash; cached credential |
-| `rpc_requests` | request ID; request hash + final response |
+| `rpc_requests` | request ID; pending waiter/result + request hash + response |
 | `provider_events` | provider event ID; dedupe/result |
 | `outbox` | acknowledge, consume, reconciliation, cleanup |
 
@@ -396,7 +412,8 @@ reconcile(paymentId):
   coalesce to one worker
   render cached payment + installed badge
   submit unseen Apple/Google evidence
-  request status for nonterminal payment
+  for pending Stripe Checkout: ensure one IssueBadge call is waiting
+  otherwise request status for nonterminal payment
   if GrantReady and no badge covers its grant period: CBNeeded -> request IssueBadge
   if credential returned: CBReceived -> CBInstalling -> CBInstalled
   schedule next check
@@ -415,9 +432,10 @@ Every input is one of:
 
 | Input/result | Class | Client | Bot |
 |---|---|---|---|
-| payment pending | retry | `CPAwaitingPayment`; schedule | `BPAwaitingPayment`; no grant |
-| timeout/429/5xx | retry | `CPPaymentProblem` with prior snapshot | preserve current `BP…`; return `retryAfter` |
-| lost response | retry | preserve state; repeat same ID/body | return cached result/state |
+| Stripe awaiting webhook | wait | `CPAwaitingPayment` + `CBRequesting` | hold `IssueBadge`; no response |
+| timeout/429/5xx in a non-waiting operation | retry | `CPPaymentProblem` with prior snapshot | preserve current `BP…`; return `retryAfter` |
+| Stripe verification timeout/429/5xx while `IssueBadge` waits | wait; retry internally | `CPAwaitingPayment` + `CBRequesting` | preserve canonical payment state; retry Stripe; send no response |
+| deadline/restart/lost response | retry on foreground | preserve state; repeat same ID/body | remove waiter; return cached result or wait again |
 | duplicate event/request | idempotent | accept same state/result | preserve state; dedupe/re-fetch |
 | ID reused with new body | reject | preserve state; new ID only for new action | preserve state; telemetry |
 | invalid capability/binding | reject | preserve state; restore/support | preserve state; rate-limit |
@@ -440,6 +458,7 @@ Stable codes: `bad_request`, `unsupported_version`, `payment_pending`, `payment_
 ### Crash recovery
 
 - Before provider call: repeat request.
+- Waiting `IssueBadge` lost on deadline/restart: remove waiter; repeat the same logical request on foreground.
 - Provider succeeds before commit: retrieve by idempotency key/object binding.
 - Payment committed before issuance: `GrantReady` remains unchanged.
 - Credential cached before response loss: repeat returns it.
@@ -496,7 +515,7 @@ Rules:
 
 1. **Schema/protocol:** five sums/codecs, migrations, grant boundary, request ledger, Chat Console audit, core install API.
 2. **Apple/Google:** bindings, verification/status, Notifications V2/RTDN, acknowledge/consume, native UI.
-3. **Stripe:** Checkout, completion page, webhook, reconciliation, cancel RPC, restricted Portal.
+3. **Stripe:** Checkout, waiting `IssueBadge`, webhook wake-up, reconciliation, cancel RPC, restricted Portal.
 4. **UX/hardening:** scheduler, all Product states, rollout compatibility, telemetry, cleanup.
 
 Tests:
