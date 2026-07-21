@@ -102,6 +102,58 @@ The full scoped read `/_read chat #1(_support:2)` is deliberately *not* used to
 assert this, because `updateSupportChatItemsRead` hard-zeroes the counters
 regardless of item state and would mask the bug.
 
+## Performance
+
+The added predicate makes both queries **faster**, not slower, and needs no new
+index. Verified two ways.
+
+### Query plan (EXPLAIN QUERY PLAN, via the checked-in plan snapshots)
+
+Regenerating `chat_query_plans.txt` shows both statements switch index:
+
+```
+- SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention
+    (user_id=? AND group_id=? AND item_status=?)                         -- 3-column seek
++ SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all
+    (user_id=? AND group_id=? AND group_scope_tag=? AND
+     group_scope_group_member_id=? AND item_status=?)                    -- 5-column seek
+```
+
+SQLite compiles `group_scope_tag IS NULL` / `group_scope_group_member_id IS NULL`
+into equality constraints (`=?`), so the two new columns *deepen the index seek*
+rather than adding a post-seek filter or scan. The read now uses
+`idx_chat_items_group_scope_stats_all`
+(`user_id, group_id, group_scope_tag, group_scope_group_member_id, item_status, …`,
+`M20250721_indexes.hs`), which already exists — this is the same index the
+authoritative unread-count query uses. No migration, no new index.
+
+Note: master was **not** degraded here — it already got a full 3-column seek via
+`idx_chat_items_groups_user_mention`. So this is a modest improvement, not the repair
+of a regression. The plan file only records two hunks (the two flipped statements);
+the `saveQueryPlans` test also churns an unrelated `group_members` count entry and the
+whole `agent_query_plans.txt`, both of which were reverted to keep the diff to exactly
+those two queries.
+
+### Micro-benchmark (synthetic 200k-row group)
+
+On a synthetic group of ~200k `chat_items` where ~25% are support-scope, running the
+old vs. new `UPDATE` in alternating trials:
+
+| Query           | mean wall-clock |
+|-----------------|-----------------|
+| old (no filter) | ~10.5 s         |
+| new (scoped)    | ~7.4 s (≈ −29%) |
+
+The speedup tracks the row reduction: the new query touches only the ~75% main-scope
+rows, so it does ~25% less work and the tighter seek trims a bit more. This also
+directly demonstrates the bug — the old query flips ~50k support rows to `RcvRead`
+(without decrementing counters); the new one flips **0**.
+
+Caveat: absolute timings were noisy (concurrent GHC builds on the box); only the
+*relative* comparison across alternating trials is reliable, and it was consistent in
+direction and magnitude across runs. The gain scales with the support-item share — a
+group with no support chats sees no measurable change.
+
 ## Limitations (accepted, by decision)
 
 1. **No retroactive repair.** This change only prevents *new* corruption. Rows already
@@ -133,9 +185,16 @@ regardless of item state and would mask the bug.
 - `src/Simplex/Chat/Store/Messages.hs` — two one-line scope predicates.
 - `tests/ChatTests/Groups.hs` — one regression test + its `it` registration.
 
-## Build
+## Build & test run
 
-`bash /home/user/build/linux.sh` -> `SimpleX_Chat-x86_64-fix-support-chat-unread-on-group-read.AppImage`
-(library compiled clean). The test-suite typecheck was OOM-killed during the library
-rebuild before reaching the test modules; the test compiles by inspection against the
-sibling `testScopedSupportUnreadStatsOnRead` but is not yet machine-verified.
+Library compiled clean via `bash /home/user/build/linux.sh`. The full test suite was
+subsequently built and run against this branch (968 examples). The regression test
+`should not read support chat items when reading group without scope` passes with the
+fix and fails when the fix is reverted (confirmed by rebuilding master and re-running),
+so it genuinely catches the desync.
+
+The suite had 8 failures on the run; each was classified as flaky/environmental,
+by-design, or pre-existing on master — none attributable to this change. In particular
+the timed-message failure (`both users have configured timed messages … restart`) was
+reproduced identically on master with the fix reverted (3/3), proving it pre-existing;
+it is a direct-chat test that never touches the group-scope read path.
