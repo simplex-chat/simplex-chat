@@ -12,19 +12,18 @@
   <line x1="36" y1="204" x2="284" y2="204" stroke="#e2e8f0"/>
   <text x="36" y="232" font-size="13" fill="#64748b">Badge valid to</text>
   <text x="284" y="232" text-anchor="end" font-size="13" font-weight="700" fill="#0f172a">31 Aug 2026</text>
-  <text x="36" y="240" font-size="10" fill="#94a3b8">month-aligned cohort</text>
+  <text x="36" y="240" font-size="10" fill="#94a3b8">monthly badge slot</text>
 
   <text x="36" y="272" font-size="13" fill="#64748b">Renews</text>
   <text x="284" y="272" text-anchor="end" font-size="13" font-weight="700" fill="#0f172a">20 Aug 2026</text>
   <text x="36" y="280" font-size="10" fill="#94a3b8">provider billing date</text>
 
-  <text x="36" y="312" font-size="13" fill="#64748b">Auto-renew</text>
-  <circle cx="256" cy="308" r="6" fill="#16a34a"/>
-  <text x="284" y="312" text-anchor="end" font-size="13" font-weight="700" fill="#15803d">ON</text>
+  <text x="36" y="312" font-size="13" fill="#64748b">Plan</text>
+  <text x="284" y="312" text-anchor="end" font-size="13" font-weight="700" fill="#0f172a">Monthly</text>
   <line x1="36" y1="332" x2="284" y2="332" stroke="#e2e8f0"/>
 
   <!-- button -->
   <rect x="36" y="372" width="248" height="44" rx="10" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
   <text x="160" y="399" text-anchor="middle" font-size="14" font-weight="700" fill="#dc2626">Cancel subscription</text>
-  <text x="160" y="436" text-anchor="middle" font-size="10" fill="#94a3b8">opens App Store / Play / Stripe portal (user cancels there)</text>
+  <text x="160" y="436" text-anchor="middle" font-size="10" fill="#94a3b8">Apple/Google: store · Stripe: bot RPC</text>
 </svg>

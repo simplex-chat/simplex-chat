@@ -1,784 +1,839 @@
 # Supporter Badges v2 — Implementation Plan
 
-> Engineering plan: how the client, bot, and provider APIs implement the badge commercial lifecycle. Companion to the [Product Plan](2026-07-20-supporter-badges-v2-product.md) — go there for UX states, screens, product rules, and rationale. **v2 of** [`2026-06-01-supporter-badges-v1.md`](2026-06-01-supporter-badges-v1.md) (verification only).
+**Date:** 2026-07-21
+**Status:** implementation-ready design
+**Companion:** [Product and UX plan](2026-07-20-supporter-badges-v2-product.md)
 
-**Date:** 2026-07-20 · **Status:** draft for review
+This is the normative architecture for client, badge bot, persistence, and Apple/Google/Stripe integrations. It follows the `data CallState` pattern: closed algebraic states with state-specific fields, explicit transition functions, JSON/DB encoding, and invalid-transition errors. Payment and badge are separate state machines joined by stable IDs.
 
-> **Greenfield.** The client is display-only today: issuance is terminal-only (`/badge add <json>`, `Commands.hs:5717`) and unexposed in mobile/desktop. Everything below — purchase, install, reconciliation, provider integration — is new.
-
-> Diagrams use Mermaid + SVG (a deliberate deviation from the ASCII-only house style, per request). SVG sources live in [`assets/`](assets/).
-
----
+![Architecture](assets/badge-v2-roles.svg)
 
 ## Contents
 
-- [1. Architecture & Roles](#1-architecture--roles)
-- [2. Client ↔ Bot Protocol](#2-client--bot-protocol)
-- [3. Client State Model](#3-client-state-model)
-- [4. Provider Integration](#4-provider-integration)
-- [5. Client Runtime & Reconciliation](#5-client-runtime--reconciliation)
-- [6. Error Catalog & Handling](#6-error-catalog--handling)
-- [7. Implementation Roadmap](#7-implementation-roadmap)
-- [8. Open Technical Decisions](#8-open-technical-decisions)
+- [1. Audit of current code](#1-audit-of-current-code)
+- [2. Industry comparison](#2-industry-comparison)
+- [3. Architecture and invariants](#3-architecture-and-invariants)
+- [4. Persistence and Haskell types](#4-persistence-and-haskell-types)
+- [5. Service RPC application protocol](#5-service-rpc-application-protocol)
+- [6. Provider flows](#6-provider-flows)
+- [7. Client reconciliation](#7-client-reconciliation)
+- [8. Errors and retries](#8-errors-and-retries)
+- [9. Security, privacy, and concurrency](#9-security-privacy-and-concurrency)
+- [10. Delivery plan and tests](#10-delivery-plan-and-tests)
+- [11. Code integration checklist](#11-code-integration-checklist)
+- [12. Concrete API references](#12-concrete-api-references)
 
----
+## 1. Audit of current code
 
-## 1. Architecture & Roles
+The current `badge-service` is a useful issuance prototype, not the required lifecycle service.
 
-Technical companion to Product Plan §2 (How Badges Work). Subscription lifecycle is fully client-side; the core `BadgeStatus` enum is unchanged (see §3).
-
-### 1.1 Trust boundary
-
-Three parties, one hard trust line. The **client** is untrusted for issuance: it can neither pick its tier/expiry nor forge a badge. The **bot** (badge-service) is the sole issuer and the only party that talks to provider server APIs. **Providers** (Apple, Google, Stripe) are the payment authorities the bot verifies against.
-
-Key split:
-- **Status & Cancel are client-side.** The client reads subscription status locally (StoreKit2 / Play Billing / cached Stripe) and initiates cancel locally (App Store / Play UI, or a Stripe portal URL). The bot is never asked for status and never executes a cancel.
-- **Issue & Renew are bot-side.** Only the bot holds issuer secret keys, verifies receipts/tokens server-side, and signs credentials. For Stripe it also mints checkout + customer-portal URLs (client has no Stripe key).
-
-```mermaid
-flowchart LR
- subgraph CLIENT["CLIENT (untrusted for issuance)"]
- ms["ms master secret (32B, local)"]
- store["local lifecycle store"]
- ob["OwnBadge credential"]
- stk["StoreKit2 / Play Billing (status, cancel)"]
- end
- subgraph BOT["BOT badge-service (issuer)"]
- keys["issuer secret keys"]
- verify["provider server verify"]
- cd["per-contact customData (bot-local)"]
- end
- subgraph PROV["PROVIDERS"]
- apple["Apple"]
- google["Google"]
- stripe["Stripe"]
- end
- CLIENT -->|"/badge ms + receipt + req nonce"| BOT
- BOT -->|"credential / stripeLink / portalLink / error"| CLIENT
- BOT -->|"verify receipt/token"| PROV
- stk -->|"status / cancel (local)"| PROV
- CLIENT -.->|"anchor: verifyCredential vs 8 pubkeys"| CLIENT
-```
-<sub>See also `assets/badge-v2-roles.svg`.</sub>
-
-### 1.2 Capability matrix
-
-| Capability | Client | Bot | Provider |
-|---|---|---|---|
-| Hold BBS master secret `ms` | ✅ owns (local) | ✖ sees per request, never persists | ✖ |
-| Choose tier / expiry | ✖ | ✅ derives from verified productId | ✖ authority |
-| Verify receipt / token | ✖ | ✅ server API | ✅ source |
-| Hold issuer secret keys / sign credential | ✖ | ✅ | ✖ |
-| Read subscription **status** | ✅ local | ✖ | ✅ source |
-| Execute **cancel** | ✅ (store UI / portal) | ✖ (only mints Stripe URL) | ✅ executes |
-| Drive **renewal** | ✅ client re-checks each period (all rails) | ✅ verifies payment for the period → issues (reactive; no push/webhook) | ✅ |
-| Verify credential vs trust anchor | ✅ `verifyCredential` | n/a | ✖ |
-| Present proof to peers | ✅ | ✖ | ✖ |
-
-The bot is **reactive** and near-stateless — its per-contact `customData` (incl. the Stripe subscription id) is **bot-local and invisible to the client** (§1.4).
-
-### 1.3 Trust anchor
-
-The client's only issuance-trust input is a hardcoded set of **8 issuer BBS public keys** (idx 1–8) in `defaultChatConfig.badgePublicKeys` at `src/Simplex/Chat.hs:69-79`. Every credential carries `badgeKeyIdx`; the core verifies via `verifyCredential badgePublicKeys[idx]` (`src/Simplex/Chat/Badges.hs:306`). An unknown index → `BSUnknownKey` → "update app". Key rotation is an app release, not a runtime negotiation.
-
-### 1.4 customData is bot-local → client keeps its own store
-
-`Contact.customData` is JSON local to **each** side; the bot's record about a customer (issued badges, pending Stripe, subscription id) is **not synced** to the client, and vice versa. Consequences:
-
-- The client **cannot** read the bot's issuance history — so subscription lifecycle **cannot** live on the bot for the client's benefit.
-- The client keeps its **own** client-local lifecycle store (`lastIssued`, `pendingReq`, `entitlementCache`; see §3), populated from provider APIs + installed credentials, never from the bot's customData.
-- Transport has no request/response correlation id, so the client embeds a `req` nonce echoed in every bot reply for matching/dedupe.
-
-This asymmetry is the reason status/cancel/renewal reconciliation is client-driven: the client is the only party that can see both its provider entitlement and its installed badge.
-
-*Provider capability summary (what's local vs. what needs the bot) lives in Product Plan §6; API detail is in §4.*
-
----
-
-## 2. Client ↔ Bot Protocol
-
-The bot's entire wire surface is the single `/badge` command plus `/issuer_pubkey` (badge-service `models.py:3`); v2 adds `/portal` and a `req` correlation nonce. Replies are bare, `type`-tagged YAML documents (`wire.py:84-99`) — no slash prefix.
-
-### 2.1 End-to-end sequence
-
-The complete lifecycle in one view: connect to the bot → buy on Apple/Google/Stripe → the bot verifies and issues → the client installs and shows the badge → on every launch/timer the client checks its own expiry + subscription and renews or notifies → cancel is client-side. `ms` = the client's 32-byte BBS master secret; `req` = a per-request correlation nonce. Message-level detail follows in §2.2–§2.7; the reconciliation loop is in §5.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as User
-    participant C as Client app
-    participant S as Store / Checkout<br/>(Apple · Google · Stripe)
-    participant B as Badge bot
-    participant P as Provider server API<br/>(App Store · Play · Stripe)
-
-    Note over C,B: Phase 0 — Establish connection (once)
-    C->>B: connect to hardcoded bot address
-    B-->>C: welcome (auto-accept)
-
-    Note over U,P: Phase 1 — Buy
-    U->>C: tap Get badge / plan
-    alt Apple / Google (on-device)
-        C->>S: purchase(product)
-        S-->>C: signed receipt (JWS) / purchaseToken
-    else Stripe (browser)
-        C->>B: /badge channel=stripe ms= plan= req=
-        B->>P: create Payment Link
-        B-->>C: type: stripeLink url= req=
-        U->>S: pay in browser
-    end
-
-    Note over C,P: Phase 2-4 — Request → Verify → Issue
-    C->>B: /badge channel= ms= receipt req=
-    B->>P: verify receipt / check subscription invoice
-    P-->>B: productId, period, state = paid/active
-    B->>B: resolve tier + expiry (end-of-next-month), sign (issuer key)
-    B-->>C: type: credential {badgeKeyIdx, masterKey, signature, badgeInfo} req=
-
-    Note over C: Phase 5 — Install
-    C->>C: verifyCredential, dedupe, store OwnBadge
-    C-->>C: present unlinkable proofs to peers (BSActive unlocks perks)
-
-    Note over C,P: Phase 6 — Ongoing (each launch / ~6h timer / foreground)
-    loop expiry + subscription check
-        C->>S: read entitlement (StoreKit status / queryPurchases / cached)
-        alt Apple/Google subscription & (badge missing/expired OR new period)
-            C->>B: /badge channel= ms= current-receipt req= (silent renewal)
-            B->>P: re-verify (new period / new expiryTime)
-            B-->>C: type: credential (fresh) req=
-        else not entitled
-            C->>U: notify — expired / resubscribe
-        end
-    end
-
-    Note over U,S: Phase 7 — Cancel (client-side, no bot)
-    U->>C: tap Cancel subscription
-    C->>S: open native manage-subscriptions / Stripe portal URL
-    Note over C,S: badge stays active until its coarse expiry, then lapses
-```
-
-### 2.2 Request grammar
-
-```
-/badge channel=ios|android|stripe ms=<32B b64url>
- req=<nonce> # v2: client correlation nonce, echoed in reply
- [plan=<sku>] [store=<cc>] [idem=<key>] [receipt=<...>]
-/portal channel=stripe req=<nonce> # v2: mint Customer Portal URL (no ms — bot IDs the customer)
-/issuer_pubkey # → issuerKeys {defaultKey, keys[]}
-```
-
-| channel | `receipt` payload | issue path |
+| Current code | Keep | Required change |
 |---|---|---|
-| `ios` | StoreKit2 JWS signed transaction | verify via App Store Server API → credential |
-| `android` | Play `purchaseToken` (stable across renewals) | verify via Play Developer API → credential |
-| `stripe` | none | mint Payment Link → later push credential |
+| Apple JWS verification in `apple.py` | certificate/JWS verification | validate bundle/environment/product; persist original transaction and full status; support server status refresh |
+| Google `subscriptionsv2.get` in `google.py` | token-only server verification; SKU from verified line item | represent all states, acknowledgement, auto-renew, period, linked-token replacement, and management-link status refresh |
+| Stripe Payment Links + session/invoice scanning | price IDs and server-side Stripe key | replace with per-attempt Checkout Sessions, webhook endpoint, subscription/customer persistence, status/cancel/portal operations |
+| `customData` maps in `state.py` | request hashing concept | migrate to transactional SQL `payments` and `badges`; RPC has no persistent contact identity, so authorization uses an opaque payment capability |
+| `issued_badges` keyed by Apple transaction / Google token | idempotent response cache | key subscription issuance by verified provider period/order; the stable Google token currently blocks renewal badges |
+| wire replies in `wire.py` | discriminated union | serialize one application request and one final application response inside SimpleX service RPC |
+| `/badge` only; SimpleX install is CLI `/badge add` | keep v1 during migration | add create/attach/status/issue/cancel/portal plus a non-CLI core command that verifies, stores, and returns the updated user |
+| no Stripe webhooks | — | mandatory: signed, deduplicated event ingestion; redirects never fulfill |
+| no `req` in current models/wire | — | add client-generated application request ID echoed in every response |
 
-Each client uses **only the channel for its platform**: iOS → `ios`, Android → `android`, desktop → `stripe`. `stripe` (and `/portal`) are used by desktop and the F-Droid/no-GMS Android build; the Play Android and iOS builds never send them. `idem` is an optional purchase-level idempotency key, distinct from `req` (reply correlation, §2.4 / §8, Decision #4).
+## 2. Industry comparison
 
-Server-authoritative: tier from verified productId, expiry = end-of-next-month cohort. Client-supplied `badgeType`/`badgeExpiry` are ignored (`models.py:62-66`).
+Provider guidance and official sample integrations lead to these decisions:
 
-> **Trust note.** `/issuer_pubkey` is an **operator diagnostic only**, never a client trust source. The client verifies every credential against the **8 issuer public keys hardcoded in `Chat.hs`** (§1.3) and must never trust a key fetched from the bot. There is no client-side verify/status FFI (§5.6).
+| Common production pattern | Before review | Final decision |
+|---|---|---|
+| Pre-bind purchase to internal state | attach proof after purchase only | `payment.prepare` returns an opaque capability and provider binding; use Apple `appAccountToken`, Google obfuscated IDs, and Stripe `client_reference_id` |
+| Verify and own entitlement on a secure backend | partly present | required for every rail; client state is cache/scheduler only |
+| Acknowledge/consume Google purchases from backend | client-led | bot performs durable server-side action via retry outbox |
+| Provider webhook/notification plus API re-fetch | optional/partial | provider events update server state only; clients discover it exclusively through later RPC status calls |
+| Stripe Checkout Session + webhook fulfillment | Payment Links/poller in current bot | Checkout Sessions, signed raw-body webhook, async queue, object re-fetch, event dedupe |
+| Redirect is not fulfillment | already corrected | hosted HTTPS completion + app link is UX only |
+| Webhooks may duplicate/reorder | covered | dedupe event and object/type; pin API version; monotonic transitions; re-fetch current object |
+| Restore/authorization binding | ambiguous | prepared payment capability, explicit recovery policy, no silent cross-payment claim |
+| Product choices | repeat purchase was ambiguous | exactly one-time or subscription, with monthly/yearly subscription intervals; one-time does not stack |
+| Secrets retained minimally | covered | master key encrypted only client-side; bot hashes after synchronous signing |
 
-### 2.3 Reply variants (all echo `req`)
+## 3. Architecture and invariants
 
-`req` is added to every variant so the client can match a (possibly delayed) reply back to the request that started it.
+### 3.1 Responsibilities
 
-```yaml
-type: credential # Apple/Google now, or Stripe after payment
-req: <nonce>
-badgeKeyIdx: 1 # which of the 8 hardcoded issuer keys signed it
-masterKey: <b64url 32B>
-signature: <b64url>        # 80-byte BBS+ signature
-badgeInfo: { badgeType: supporter, badgeExpiry: '2026-08-01T00:00:00Z', badgeExtra: '' }
-```
-```yaml
-type: stripeLink # first Stripe message: open in browser to pay
-req: <nonce>
-url: https://checkout.stripe.com/c/pay/...
-```
-```yaml
-type: portalLink # v2: hosted portal for status + user-driven cancel
-req: <nonce>
-url: https://billing.stripe.com/p/session/...
-```
-```yaml
-type: error
-req: <nonce>
-code: purchase_unpaid # stable, machine-switchable; see error catalog
-message: purchase is not paid
-```
-
-### 2.4 Correlation, delivery & idempotency
-
-- **No transport correlation id.** SimpleX has no request/response id; the Python side matches only on sender `contact_id` + FIFO. Every credential is a **reply to a client request** (issuance, a pending-checkout poll, or a renewal re-check), but the reply can arrive late/out of order → the client matches on echoed **`req`**.
-- **At-least-once delivery.** The agent de-dupes at the crypto layer, but a duplicate chat item can still surface. The client installs credentials **idempotently**, keyed on `(badgeKeyIdx, signature)`; a second copy is dropped.
-- **Delayed replies.** Server message TTL = **21 days** (`simplexmq` STM.hs:223), so a bot reply survives weeks of client downtime; push-wake (APNS/WorkManager) TTL is only **24h** but the message is re-delivered on next foreground/resubscribe. The client re-checks on startup and each billing period (and polls while a Stripe checkout is pending); it dedupes replies on `(badgeKeyIdx, signature)` / `req`.
-
-### 2.5 Apple / Google issuance
-
-```mermaid
-sequenceDiagram
- participant C as Client
- participant P as Provider (Apple/Google)
- participant B as Bot
- C->>P: purchase() / launchBillingFlow()
- P-->>C: JWS transaction / purchaseToken
- C->>B: /badge channel=ios receipt=JWS ms=32B req=n1
- B->>P: verify (App Store / Play Developer API)
- P-->>B: paid, productId, period
- B-->>C: type: credential req=n1 badgeKeyIdx …
- Note over C: verifyCredential → install OwnBadge (dedupe on signature)
-```
-
-### 2.6 Stripe purchase (client-polled)
-
-Checkout completes asynchronously in a browser, so the **client polls the bot** for issuance (the bot checks Stripe on each poll and issues once paid). No bot background poller, no push.
-
-```mermaid
-sequenceDiagram
- participant C as Client
- participant B as Bot
- participant W as Browser
- participant S as Stripe
- C->>B: /badge channel=stripe ms=32B plan=sku req=n2
- B->>S: create Payment Link
- B-->>C: type: stripeLink req=n2 url=…
- C->>W: open url, user pays
- loop poll ~10s until paid or timeout
-  C->>B: /badge channel=stripe req=nK (check)
-  B->>S: check checkout/subscription invoice
-  alt paid
-   B-->>C: type: credential req=nK
-  else not yet
-   B-->>C: type: error purchase_unpaid req=nK
-  end
- end
- Note over C: match on req → install (dedupe)
-```
-
-### 2.7 Renewal re-request
-
-Client-driven on every rail. On startup and each billing period the client asks the bot to re-issue for the current period. **Apple/Google:** the client reads its current receipt/token and sends it (below). **Stripe:** the client sends a re-check for its stored subscription — no receipt (§4.3). Idempotency is keyed to the **period**, not the delivery.
-
-```mermaid
-sequenceDiagram
- participant C as Client
- participant P as Provider
- participant B as Bot
- Note over C: entitlement active & badge missing/near-expiry & new periodKey
- C->>P: read current receipt (Transaction.updates / queryPurchasesAsync)
- P-->>C: renewed transaction / same purchaseToken
- C->>B: /badge channel=… receipt=current ms=32B req=n3
- B->>P: verify → new expiryTime/period
- P-->>B: paid, new period
- B-->>C: type: credential req=n3 (new badgeExpiry)
- Note over C: replace OwnBadge, dedupe if same period already issued
-```
-
----
-
-## 3. Client State Model
-
-Subscription lifecycle (purchase kind, auto-renew, grace, pending issuance) has **no representation in the core** — `BadgeStatus` is a fixed, crypto-derived, fieldless enum. All of it lives in a **new client-local store** layered on top. The nine user-facing states **S0–S8** and their UX are defined in the Product Plan (§2 How Badges Work); this section is the technical model behind them. This is the technical companion to that section.
-
-### 3.1 Why lifecycle can't live in `BadgeStatus`
-
-| Constraint | Consequence |
+| Component | Owns |
 |---|---|
-| `BadgeStatus = BSActive \| BSExpired \| BSExpiredOld \| BSFailed \| BSUnknownKey` — no fields, no pending/renewing/grace (`Badges.hs:112`) | Lifecycle needs richer, mutable state → keep it out of core. |
-| Status is **recomputed** from the signed credential on every load via `mkBadgeStatus now verified {badgeExpiry}` (`Badges.hs:130`); never persisted as display state | Client cannot "write" a status; it can only hold a credential + its own side state. |
-| Issuer sets tier + coarse expiry (end-of-next-month cohort); client cannot influence them | "Auto-renew", "canceled-but-active", "period end" are **provider** facts, not badge facts → read from StoreKit2 / Play / Stripe, not the credential. |
-| 31-day window = visibility only (dim→hidden), not extra validity | UI must distinguish "entitled" (provider) from "shown/valid" (badge) independently. |
-
-So each client state = **(core badge status) × (locally-read entitlement) × (pending request)**. The badge answers *"do I have a valid proof to show peers?"*; the entitlement answers *"am I still paying / covered?"*. They can disagree (e.g. paid but credential not yet delivered → S7).
-
-Entitlement kinds (read locally from provider): `none | onetime(expiry) | subActive | subCanceledActive | graceOrRetry | lapsed`.
-
-### 3.2 Client-local state store
-
-New per-user store (app-local; see §8, Decision #2). Drives S0–S8; never trusted for crypto (the credential is the source of truth for proof).
-
-| Field | Shape | Purpose |
-|---|---|---|
-| `lastIssued` | `{provider, periodKey, badgeExpiry, badgeKeyIdx}` | Detect renewal: `periodKey` = Apple `transactionId` / Google purchase period / Stripe invoice-or-period id. Re-request iff `ent.periodKey != lastIssued.periodKey`. |
-| `pendingReq` | `{req, channel, startedAt} \| null` | In-flight `/badge` request; `req` nonce echoed by bot for reply correlation (transport has no correlation id, at-least-once). Drives S6/S7; cleared on install/timeout. |
-| `entitlementCache` | `{kind, autoRenew, currentPeriodEnd, providerState}` | Last provider read (StoreKit2 `currentEntitlements` / Play `queryPurchasesAsync` / Stripe portal-cached), so UI renders offline. |
-
-State is computed each render as `reconcile(coreBadge, entitlement, pendingReq)`; nothing here overrides `mkBadgeStatus`. Credential installs are **idempotent**, keyed on `(badgeKeyIdx, signature)` and the echoed `req`, so a duplicate or delayed push resolves the same state without double-issuing. The bot's own `customData` is invisible to the client (§1.4).
-
-### 3.3 State → (BadgeStatus × entitlement) mapping
-
-The technical composition behind the UX states (Product Plan §2.2):
-
-| State | Core `BadgeStatus` | Entitlement |
-|---|---|---|
-| S0 NoBadge | none / `BSExpiredOld` | none |
-| S1 ActiveOneTime | `BSActive` | onetime |
-| S2 ActiveSubscription | `BSActive` | subActive |
-| S3 SubCanceledActive | `BSActive` | subCanceledActive (period future) |
-| S4 GraceOrBillingRetry | `BSActive` (grace) or `BSExpired` (on-hold) | graceOrRetry |
-| S5 Expired | `BSExpired`→`BSExpiredOld` / none | lapsed / none |
-| S6 PendingPayment | prior | none yet |
-| S7 PendingIssuance | prior | active |
-| S8 RecoverNeeded | none / `BSExpired` / `BSFailed` / `BSUnknownKey` | active |
-
-Perks: only `BSActive` unlocks the larger XFTP file cap (`maxXFTPFileSize`, `Badges.hs:190` — 2 GB, or 5 GB for `legend`); a lapsed badge loses it (Product Plan §5.4).
-
----
-
-## 4. Provider Integration
-
-One rail per platform/flavor (iOS → Apple; Android Play → Google; Android F-Droid + desktop → Stripe); the user never picks a provider. UX meaning of each state referenced below is in Product Plan §5 (Product Rules).
-
-### 4.1 Apple (StoreKit 2)
-
-iOS uses **StoreKit 2** (`import StoreKit`). All purchases yield a signed, on-device-verified `Transaction` (JWS); the client forwards its `jwsRepresentation` to the bot as `channel=ios`. Status and cancel are read/performed locally — the bot is never queried for either.
-
-**Purchase**
-
-| Step | API | Notes |
-|---|---|---|
-| 1. Load product | `Product.products(for:)` | subscription SKU, or one-time as a **consumable** (so Extend can re-buy; a consumable is not in `currentEntitlements`, so the loop won't re-mint it) |
-| 2. Buy | `try await product.purchase()` | returns `Product.PurchaseResult`; handle `.success`, `.userCancelled`, `.pending` (Ask to Buy / SCA) |
-| 3. Verify | `case.success(let verificationResult)` | `VerificationResult<Transaction>` — StoreKit verified the Apple signature on-device |
-| 4. Unwrap | `let transaction = try checkVerified(verificationResult)` | reject `.unverified(_, error)` |
-| 5. Send to bot | `POST /badge channel=ios ms=<b64url> receipt=<transaction.jwsRepresentation> req=<nonce>` | bot re-verifies via **App Store Server API** and signs the BBS credential → S7 PendingIssuance |
-| 6. Finish | `await transaction.finish()` | only after credential installed (or verify failure), so unfinished transactions replay on next launch |
-
-The JWS is the receipt; there is no separate `appAccountToken` requirement, but one MAY be set at purchase to bind the transaction to the user.
-
-**Status on device (client-local)**
-
-Read from `Product.SubscriptionInfo.Status` (via `product.subscription?.status`), pick the entry for the user's `subscriptionGroupID`, then inspect `renewalInfo` and `transaction`.
-
-| Signal | API | Entitled? |
-|---|---|---|
-| `.subscribed` | `Product.SubscriptionInfo.RenewalState` | yes |
-| `.inGracePeriod` | same | yes (badge stays BSActive) → S4 overlay |
-| `.inBillingRetryPeriod` | same | no (may still resolve) → S4 |
-| `.expired` / `.revoked` | same | no → S5 / refunded |
-| Auto-renew flag | `renewalInfo.willAutoRenew` | true→S2, false→S3 SubCanceledActive |
-| Period end | `transaction.expirationDate` | drives `nextRenewal`; badgeExpiry is issuer-coarse (Product Plan §5.1) |
-
-Maps to lifecycle states S1–S5.
-
-**Cancel (client-side, no programmatic API)**
-
-StoreKit 2 has **no** cancel API. The client only opens Apple's UI:
-
-- In-app sheet: `try await AppStore.showManageSubscriptions(in: scene)` (needs a `UIWindowScene`), or SwiftUI `.manageSubscriptionsSheet(isPresented:)`.
-- Fallback deep link: `https://apps.apple.com/account/subscriptions`.
-
-The user cancels there; the app detects the result via `willAutoRenew=false` on next status read (→ S3).
-
-**Renewal → bot (client-driven pull)**
-
-Renewals produce a **new** `Transaction` each period with a new `id`. Detect and re-send at launch/foreground:
-
-- On launch, drain `Transaction.updates` (background stream) and read `Transaction.currentEntitlements`.
-- For each current entitlement, if `transaction.id != lastIssued.periodKey` **or** badge missing/expired → re-send that transaction's `jwsRepresentation` (Purchase, step 5) → S7.
-- **Idempotency:** key on `transactionId`/`expirationDate`, not delivery; dedupe per §2.4.
-
-```mermaid
-sequenceDiagram
- participant U as User
- participant App as iOS client
- participant SK as StoreKit 2 / App Store
- participant Bot as badge-service
- U->>App: Buy / renew
- SK-->>App: VerificationResult of Transaction (JWS)
- App->>App: checkVerified → Transaction
- App->>Bot: /badge channel=ios receipt=JWS req=nonce
- Bot->>Bot: verify via App Store Server API
- Bot-->>App: type: credential (req echoed)
- App->>App: verifyCredential → install OwnBadge (dedupe)
- App->>SK: transaction.finish()
- Note over App,SK: next period: Transaction.updates emits<br/>new transaction.id → re-send
-```
-
-**Refund, conversion, server path**
-
-- **Refund:** `try await transaction.beginRefundRequest(in: scene)` opens Apple's refund UI. No revocation list on the badge — a granted badge stands until its coarse expiry; refunded/`.revoked` state just stops renewal (policy, §6.3).
-- **One-time → subscription:** no conversion API — it is a **new** `Product.purchase()` of the subscription SKU (full flow). Overlapping coverage is allowed; coarse expiry dedupes (S1 "Subscribe" button).
-- **Optional server path (not required):** **App Store Server Notifications v2** (`DID_RENEW`, `EXPIRED`, `DID_CHANGE_RENEWAL_STATUS`) could push renewals to the bot, but the bot is stateless/anonymous per user, so the **primary** signal is client pull (Renewal → bot, above). Server notifications are an optimization only.
-
-### 4.2 Google (Play Billing)
-
-Play Billing Library (client) sends only a `purchaseToken`; the bot verifies it server-side via the Play Developer API (`purchases.subscriptionsv2.get`). Status and cancel are client-side; issuance is periodic and keyed on `expiryTime`, not the token.
-
-**Purchase**
-
-| Step | Call | Result |
-|---|---|---|
-| Launch flow | `BillingClient.launchBillingFlow(activity, params)` with the product/offer | user pays in Play sheet |
-| Read result | `PurchasesUpdatedListener` → `Purchase.getPurchaseToken()` | opaque token |
-| Send to bot | `/badge channel=android ms=<32B> plan=<productId> receipt=<purchaseToken> req=<nonce>` | `type: credential` |
-
-- `Purchase.getPurchaseState()`: `PURCHASED` → send to bot. `PENDING` (slow/cash/ask-to-buy) → **do NOT** send; wait for the state to flip to `PURCHASED` (re-check on launch, Status on device below), then send. Never grant entitlement on `PENDING`.
-
-**Acknowledgement (MUST ack ≤ 3 days)**
-
-Google auto-refunds any purchase not acknowledged within **3 days**.
-
-- **Recommendation: the bot acknowledges** (`purchases.subscriptions.acknowledge` / `subscriptionsv2` ack) *after* it verifies the token and signs the credential — one authority, no double-ack, and the badge is guaranteed issued before ack.
-- **Alternative:** client `BillingClient.acknowledgePurchase(...)` on `credential` receipt. Riskier — if the bot never issues, the purchase is still acknowledged (no auto-refund) and the user is out of pocket. Use only as a fallback if the bot ack path is unavailable.
-- Idempotent: acking an already-acked purchase is a no-op; check `Purchase.isAcknowledged()` before re-acking.
-
-**Status on device**
-
-- `BillingClient.queryPurchasesAsync(SUBS)` → active `Purchase` list. Fields available client-side: `purchaseState`, `isAcknowledged`, `isAutoRenewing()`.
-- **Limitation — call out:** Play Billing gives **no exact renewal/expiry date and no fine-grained subscription state on-device**. `isAutoRenewing()` is the only renewal signal. The precise `expiryTime`, `subscriptionState`, and grace/hold detail come from the **Play Developer API (server-side only)** — i.e. the bot. So exact `nextRenewal`/`periodEnd` for UI state S2 must come from the bot's verify response, or the UI shows coarse text ("renews via Google Play"). Do not attempt to compute expiry on-device.
-
-**Cancel**
-
-- **No client cancel API.** Deep-link to Play's subscription center:
- `https://play.google.com/store/account/subscriptions?sku=<productId>&package=<packageName>`
-- The user cancels in Play. On return, re-run `queryPurchasesAsync` — `isAutoRenewing()` flips to `false` while the sub stays entitled until `expiryTime` (UI state S3, "active until period end").
-
-**Renewal → bot**
-
-The `purchaseToken` is **stable across auto-renewals** — a renewal does not mint a new token.
-
-- Reconciliation loop re-sends the **same token** when badge is missing/near-expiry and entitlement is active.
-- Bot `subscriptionsv2.get` sees the new `expiryTime`/`lineItems[].expiryTime` and issues a fresh credential.
-- **Key issuance is on `expiryTime`/billing period, NOT the token.** Re-sending an unchanged token whose period has not advanced ⇒ bot returns the same period's credential (dedupe by `periodKey` = period end); no double issuance.
-
-```mermaid
-sequenceDiagram
- participant C as Client (Play Billing)
- participant P as Play
- participant B as Bot
- C->>P: launchBillingFlow → purchaseToken
- C->>B: /badge channel=android receipt=token req=n
- B->>P: subscriptionsv2.get(token)
- P-->>B: PURCHASED, expiryTime E1
- B->>P: acknowledge(token)
- B-->>C: credential (period E1, req=n)
- Note over P: auto-renew → expiryTime E2 (token unchanged)
- C->>B: /badge... same token req=n2 (launch loop)
- B->>P: subscriptionsv2.get(token) → E2
- B-->>C: credential (period E2)
-```
-
-**subscriptionState → entitlement**
-
-Bot maps Play Developer API `subscriptionState` (client cannot see this directly):
-
-| subscriptionState | Entitled? | UI state |
-|---|---|---|
-| `SUBSCRIPTION_STATE_ACTIVE` | yes | S2 ActiveSubscription |
-| `SUBSCRIPTION_STATE_IN_GRACE_PERIOD` | yes (grace) | S4 GraceOrBillingRetry |
-| `SUBSCRIPTION_STATE_ON_HOLD` | no | S4 → S5 |
-| `SUBSCRIPTION_STATE_PAUSED` | no | S5 Expired |
-| `SUBSCRIPTION_STATE_EXPIRED` | no | S5 Expired |
-| `SUBSCRIPTION_STATE_CANCELED` (auto-renew off, still in period) | yes until `expiryTime` | S3 SubCanceledActive |
-
-Only `ACTIVE`/`IN_GRACE_PERIOD` justify (re-)issuing a badge; the coarse core `BadgeStatus` stays `BSActive` through grace because expiry is end-of-next-month cohort, not the Play period.
-
-**RTDN (optional)**
-
-Real-time Developer Notifications (Pub/Sub `SubscriptionNotification`: renewed, canceled, on-hold, grace, revoked) are a **server-side optimization only**. They would let the bot pre-issue on renewal, but the bot is stateless/anonymous per user, so **primary flow stays client-pull** (re-present token at launch, Renewal → bot above). RTDN is not required for v2; if added, use only to prompt re-verify, never as the sole entitlement source.
-
-**Android build flavors (Play vs F-Droid / no-GMS)**
-
-SimpleX Android is built in two flavors, and badge purchase **must** be gated on the flavor:
-
-| Flavor | Google Mobile Services | Play Billing | Badge purchase |
-|---|---|---|---|
-| **Play** (Play Store) | yes | yes → `channel=android` | Play Billing. Google policy *requires* Play Billing for digital goods sold in the Play build. |
-| **F-Droid / no-GMS** (reproducible / direct APK) | **no** | **unavailable** | **Stripe** browser checkout (`channel=stripe`) — same rail as desktop; keeps the FOSS APK free of proprietary Play Billing (see §4.3) |
-
-**Build requirement:** Play Billing must live in a **`google`-flavor-only source set / dependency**, so the FOSS APK compiles without any Google Play blob. The core badge display/verification (v1) is flavor-independent — only *purchase/renew* is gated.
-
-**Consequence — the no-GMS flavor uses Stripe** (`channel=stripe`), the same browser-checkout rail as desktop (see §4.3), since it can't bundle Play Billing. Play Billing stays in the `google`-flavor source set; the Stripe/browser path is flavor-independent, so the FOSS APK carries no Google blob. (Stripe renewal here is client-driven like every rail — see §4.3.)
-
-### 4.3 Stripe (Desktop/Web)
-
-Stripe is the rail for **desktop and the F-Droid / no-GMS Android build** (neither can use StoreKit/Play Billing); the Play Android and iOS builds never use it. The client has **no Stripe key**: all Stripe API calls run on the bot. The client only opens hosted URLs (Checkout, Customer Portal) in a browser, and polls the bot for issuance; it installs the credential the bot returns.
-
-**Purchase (client-polled)**
-
-Checkout completes asynchronously in a browser, so the client opens the link and then **polls the bot** until the invoice is paid and the badge is returned. The bot does no background polling and never pushes.
-
-```mermaid
-sequenceDiagram
- participant C as Client (desktop / F-Droid)
- participant B as Bot
- participant S as Stripe
- C->>B: /badge channel=stripe ms=32B plan=sku req=n1
- B->>S: create Payment Link / Checkout (mode=subscription|payment)
- B-->>C: type: stripeLink, url, req (→ S6 PendingPayment)
- C->>S: open url in browser, user pays
- loop client polls ~10s until paid or timeout
-  C->>B: /badge channel=stripe req=nK (check)
-  B->>S: check the checkout/subscription invoice
-  B-->>C: credential (paid) or error purchase_unpaid (not yet)
- end
-```
-
-| Step | Detail |
-|------|--------|
-| Mode | `mode=subscription` for auto-renew; `mode=payment` for one-time (Extend). Tier derived server-side from `plan` sku, not client. |
-| Confirm | The **client polls** the bot; the bot checks Stripe on each poll and returns the credential once paid — no bot background poller, no push. |
-| Correlation | `req` nonce echoed in every reply; each is a reply to the client's poll. |
-| Stable `ms` | Client MUST reuse the **same `ms` for the whole pending checkout** (persist `pendingReq.ms`); the credential is signed over that master secret, so a regenerated `ms` would not match. Clear only after install or timeout. |
-| Timeout | If not paid within the client's poll window, S6 → prior state; the `pending_stripe` link persists (bot-side) so a re-open reuses it (no duplicate subscription). |
-
-**Status + Cancel via hosted Customer Portal**
-
-Stripe has no on-device entitlement API, so status/cancel go through Stripe's **hosted Customer Portal**. The bot mints the URL (it holds the Stripe key); the **user** self-cancels in the portal — the bot never executes the cancel.
-
-- Client sends `/portal channel=stripe req=<nonce>` → bot creates `billing_portal/sessions` → replies `type: portalLink, url, req`.
-- Client opens the URL; user views invoices, updates payment method, or cancels.
-- Cancel sets **`cancel_at_period_end=true`** (reversible until period end) — badge stays `BSActive` through `current_period_end`, then lapses. This maps to UI **S3 SubCanceledActive** (Resubscribe = reopen portal or new Checkout).
-
-`subscription.status` → client entitlement:
-
-| Stripe status | Entitlement | UI |
-|---------------|-------------|-----|
-| `incomplete` | none yet (first payment pending) | S6 PendingPayment |
-| `incomplete_expired` | none (checkout abandoned) | S0 / S5 |
-| `active` | subActive (autoRenew on) | S2 |
-| `active` + `cancel_at_period_end` | subCanceledActive | S3 |
-| `trialing` | subActive | S2 |
-| `past_due` | graceOrRetry (badge may still be active) | S4 |
-| `unpaid` | lapsed | S5 |
-| `canceled` | lapsed / none | S5 / S0 |
-| `paused` | lapsed | S5 |
-
-> **FLAG — API Basil (2025-03-31):** `current_period_end` was **removed from the subscription object** and now lives per-item at **`subscription.items.data[].current_period_end`**. The bot must read the item, not `subscription.current_period_end` (null on Basil). This is the period-end / next-renewal date shown in S2/S3. Verify the bot's pinned Stripe API version and read the field accordingly.
-
-**Renewal (client-driven)**
-
-Like every rail, the client drives it — on startup and each billing period it sends a **re-check** request; the bot uses the stored subscription id to look up Stripe.
-
-- The client can't read Stripe status locally, so it re-checks on a schedule (startup + each billing period); the bot compares the subscription's current invoice/period (`billing_reason=subscription_cycle`). If a new period is paid it issues a fresh credential (next coarse expiry) as the reply; otherwise it returns the current one.
-- The re-check **must not** open a new checkout — it targets the **existing** subscription (the bot holds its id per contact), a distinct request from the initial purchase.
-- Idempotency: key the badge to the **period** (`invoice`/period id), not delivery; dedupe per §2.4. A mid-period re-check returns the current badge unchanged.
-- Failed renewal → `past_due`/`unpaid`: portal deep-link to fix payment method (S4). No revocation list — a refunded/canceled sub simply lapses at period end.
-
----
-
-## 5. Client Runtime & Reconciliation
-
-The client is display-only today: it mirrors `BadgeInfo`/`BadgeStatus` (crypto-free) and can only present proofs. v2 adds a **reconciliation loop** that reads local entitlement + `OwnBadge`, and a **request-issuance + install-credential** path. Subscription lifecycle lives entirely client-local (§3).
-
-### 5.1 The loop (launch / foreground / ~6h timer)
-
-Runs on `onLaunch`, `onForeground`, a coarse `~6h` timer, and once per billing period. For every rail the client asks the bot to re-issue for the current period; while a Stripe checkout is pending it polls the bot until issued.
-
-```
-onStartup / onForeground / timer(~6h) / new-billing-period:
- badge = core.ownBadge()                          # {info, status} or None
- sub   = knownSubscription()                      # rail + how to re-check; or one-time / none
- if sub is subscription:
-   if sub.rail in {apple, google}:                # local status available
-     ent = readEntitlement()                      # currentEntitlements / queryPurchasesAsync
-     if ent.active and (badge is None or badge.status != BSActive
-                        or ent.periodKey != state.lastIssued.periodKey):
-       reCheck(sub.rail, currentReceipt(ent))     # bot verifies the receipt for the period
-   else:                                          # stripe — no local status
-     if badge is None or badge.status != BSActive or duePeriodCheck(state.lastIssued):
-       reCheck(stripe)                            # bot re-checks the stored subscription
- elif sub is one-time:
-   pass                                           # never auto-renews; expiry → S5 → Extend
- else:                                            # nothing active
-   if badge missing/expired: notifyUser(S5 Expired / S0 NoBadge)
- reconcileUI(badge, sub, state.pendingReq)        # -> S0..S8
-
- # reCheck: req = newNonce(); guarded by pendingReq (no overlapping in-flight).
- #          Bot replies credential (cached if same period, fresh if new) or purchase_unpaid.
-```
-
-**Renewal detection.** Apple = new JWS `transactionId`; Google = same stable `purchaseToken`, bot sees new `expiryTime`; **Stripe** has no local `periodKey`, so the client re-checks on a schedule and the **bot** decides (returns cached-or-fresh for the period). Key badges to the **period, not the delivery**.
-
-- **One-time badges never auto-renew:** an expired one-time badge → S5, and **Extend** is a fresh *consumable* purchase. This prevents re-minting a new coarse-expiry badge forever from a single purchase. A one-time credential lost locally (reinstall) is not restorable — the user re-buys.
-- **Stripe status** for the UI comes from the hosted portal + `entitlementCache` (no local API).
-
-### 5.2 Flowchart
-
-```mermaid
-flowchart TD
- A([launch / foreground / 6h timer]) --> B[read entitlement locally]
- B --> C[read OwnBadge from core]
- C --> D{subscription active?}
- D -- no --> E[notify: S5 Expired / S0 NoBadge]
- D -- yes --> F{badge None / not BSActive / new period or due-check?}
- F -- no --> G[S1/S2/S3 steady: reconcile UI]
- F -- yes --> H{pendingReq fresh?}
- H -- yes --> I[S7 wait for reply]
- H -- no --> J[req=nonce, re-check via bot: receipt or Stripe]
- J --> I
- I --> K[reconcile UI]
- E --> K
- G --> K
-```
-
-### 5.3 Credential install (idempotent)
-
-Credential replies arrive as (possibly delayed) replies to the client's requests, handled by one `@on_message`-style handler:
-
-1. Match reply to request via echoed `req` nonce (transport has no correlation id; at-least-once → dedupe).
-2. `verifyCredential badgePublicKeys[badgeKeyIdx]` — the 8 issuer pubkeys are hardcoded in `src/Simplex/Chat.hs:69` (`badgePublicKeys`). Unknown idx → `BSUnknownKey` → prompt "update app" (S8).
-3. Install via `addUserBadge` (`Library/Commands.hs:5078`, which calls `setUserBadge` in `Store/Profiles.hs`) as `OwnBadge {master_key, signature, key_idx}`.
-4. **Dedupe** per §2.4 (`(badgeKeyIdx, signature)`): re-applying an installed credential is a no-op, safe against duplicate chat items.
-
-Status is recomputed by `mkBadgeStatus` on every load, never stored.
-
-### 5.4 Delivery reliance
-
-Bot replies rely on store-and-forward: messages persist **21 days** (`STM.hs:223`); push-wake TTL is 24h but the message is re-delivered on next foreground/resubscribe. The client sends re-checks on its schedule (startup + each billing period) and polls only while a Stripe checkout is pending — never a spin timer; `pendingReq` guards against overlapping in-flight requests, and duplicate replies dedupe (§2.4).
-
-### 5.5 Client-local state
-
-Fields defined in §3.2 (`lastIssued`, `pendingReq`, `entitlementCache`) — app-local storage; the bot's own customData is invisible to the client (§1.4).
-
-### 5.6 New client APIs / FFIs
-
-Client is display-only today (only terminal `/badge add <json>` at `Commands.hs:5717` → `AddBadge` reaches `addUserBadge`; not exposed in mobile).
-
-| Need | Today | v2 addition |
-|---|---|---|
-| Request issuance | none | Send `/badge … req=<nonce>` via existing `APISendMessages`; provider receipt gathered in Swift/Kotlin |
-| Install credential | terminal `/badge add` only | Mobile-facing API wrapping `verifyCredential` + `addUserBadge` (reuse core path; expose over the chat FFI) |
-| Read own badge | `JSONBadge` on load | reuse (unchanged) |
-| Persist lifecycle state | none writable | app-local store, or `APISetContactCustomData` (`/_set custom`) on bot-contact |
-| Receive delayed credential | `CRNewChatItems` stream | route to install handler (§5.3) |
-
-No new verify/status FFI on the client: verification stays inside core (`verifyCredential`); the client only supplies `req` + receipt and consumes `JSONBadge {badge, status}`.
-
----
-
-## 6. Error Catalog & Handling
-
-Every failure the client can surface, grouped by origin. Retryable = safe to auto-retry (backoff); "no-op" = success masquerading as error. Idempotency rule throughout: key the badge to the **period**, not the delivery, and dedupe credentials on `(badgeKeyIdx, signature)` / echoed `req` nonce.
-
-### 6.1 Bot domain errors (`type: error` reply)
-
-Codes are the fixed bot set. Reply always echoes `req` so the client matches it to the in-flight request.
-
-| Error | Origin | Meaning | Client UX handling | Retryable? |
-|---|---|---|---|---|
-| `bad_request` | bot parse | Malformed `/badge` args | Client bug: log, fix request, no toast | No |
-| `purchase_not_found` | bot ↔ provider verify | No purchase/token matches receipt (stale, wrong channel, or provider propagation lag) | Retry w/ backoff; if persists → "couldn't verify purchase, retry / contact support" | Yes (limited) |
-| `purchase_unpaid` | bot ↔ provider | Payment pending/unpaid (Google PENDING, unpaid invoice) | S6/S7 "waiting for payment"; do not re-issue; resolve when entitlement flips PURCHASED | No (auto on pay) |
-| `already_issued` | bot idempotency | Badge already signed for this period | Treat as success; ensure local badge present, else re-request same `idem` | No-op |
-| `idempotency_mismatch` | bot idempotency | Same `idem`/`req` reused with different content | Client bug/nonce collision: regenerate nonce, resubmit | No (fix first) |
-| `bad_master_secret` | bot input | `ms` not valid 32B b64url | Client bug: regenerate `ms`, retry | Yes (after fix) |
-| `unknown_badge_type` | bot config | Verified productId maps to no `badge_types` row | Server misconfig: "temporarily unavailable", contact support; no re-purchase | No |
-| `invalid_badge_type` | bot config | Badge type present but invalid/misconfigured | Same as above → support | No |
-| `stripe_config` | bot config | Stripe not configured on bot | Desktop/web only: "payments unavailable, try later" | Yes (later) |
-| `stripe_upstream` | bot ↔ Stripe | Stripe API error/5xx | Retry w/ backoff | Yes |
-| `issuer_key_missing` | bot signing | Issuer secret for `badgeKeyIdx` unavailable | "Couldn't finalize, retry"; ops issue → retry later | Yes (later) |
-| `issuer_key_invalid` | bot signing | Issuer key present but invalid | Ops issue: "temporarily unavailable", support; no client retry | No |
-| `temporarily_unavailable` | bot backpressure | Maintenance / rate limit | Retry w/ backoff, honor delay | Yes |
-| `internal_error` | bot unhandled | Unexpected bot exception | Retry once w/ backoff → then support | Yes (limited) |
-
-### 6.2 Transport (simplexmq, at-least-once)
-
-Correlation is the echoed `req` nonce (§2.4).
-
-| Error | Origin | Meaning | Client UX handling | Retryable? |
-|---|---|---|---|---|
-| Bot offline | SMP queue | Request queued; sender retries 2d (7d if recipient quota-full), msg TTL 21d | Stay in S7 "finalizing"; no user action; reply arrives when bot returns | Auto |
-| Client offline | SMP queue | Credential reply queued for offline client | Delivered on reopen/resubscribe; reconciliation installs it | Auto |
-| Duplicate delivery | at-least-once | Same credential/chat item surfaces twice | Dedupe per §2.4; ignore dup | N/A |
-| No reply / timeout | no correlation id | Reply lost or not yet arrived | Keep `pendingReq`, show "finalizing"; re-request **only** via reconciliation loop, never spam | Auto (loop) |
-| Push wake TTL | APNS/WorkManager | Push wake TTL 24h < msg TTL 21d | Credential still delivered on next foreground even if push expired; do not treat as lost | Auto |
-
-### 6.3 Provider client-side (StoreKit2 / Play Billing / Stripe)
-
-| Error | Origin | Meaning | Client UX handling | Retryable? |
-|---|---|---|---|---|
-| User-cancelled purchase | StoreKit `userCancelled` / Play `USER_CANCELED` | User dismissed the purchase sheet | Silent: return to prior state, no error toast | N/A |
-| Deferred / pending | Apple ask-to-buy / Google `PENDING` | Awaiting family approval or slow payment | "Pending approval"; do **not** send receipt yet; proceed on `Transaction.updates` / `queryPurchasesAsync` → PURCHASED | Auto on resolve |
-| Network failure | provider / SMP | Purchase or receipt-send failed on network | Retry w/ backoff; keep local purchase for re-send | Yes |
-| Store unavailable | StoreKit/Billing init | Billing service down / not signed in | "Store unavailable, try later" | Yes (later) |
-| Already-owned | StoreKit/Billing | Item already owned (reinstall, prior buy) | Not an error: fetch existing transaction/token, (re)send to bot → S7 | Yes (recover) |
-| Refunded / revoked | `Transaction.revoked` / Play refund | Entitlement revoked after issue | No revocation list; badge stays valid until its signed expiry, then lapses; client may hide on detecting revoked entitlement | N/A (policy) |
-| Grace / billing-retry | Apple `.inGracePeriod`/`.inBillingRetryPeriod`, Google `IN_GRACE_PERIOD`/`ON_HOLD` | Renewal payment failing | S4 overlay "payment issue — fix payment method" → deep link store/Stripe portal | Auto on fix |
-| `BSUnknownKey` (app too old) | core verify | Credential `badgeKeyIdx` not in client's hardcoded keys | Hold credential; "Update app to display your badge"; re-verify after update | No (update) |
-| `BSFailed` (bad signature) | core verify | Credential fails `verifyCredential` (corrupt/tampered, not unknown key) | Drop it, log; re-request issuance via the loop (§5.1) | Yes (re-request) |
-
-### 6.4 Edge cases & policy
-
-| Case | Origin | Meaning | Client UX handling | Retryable? |
-|---|---|---|---|---|
-| One-time + sub overlap | client flow | User subscribes while one-time still active (double coverage) | Allow; coarse end-of-next-month expiry dedupes; badge just gains later expiry (S1→S2) | N/A |
-| Cancel then resubscribe | client flow | `subCanceledActive` then user resubscribes | S3 "Resubscribe" = new subscription purchase; no gap if within period | N/A |
-| Multi-device (unlinkable) | client model | Each device has own `ms` + credential, badges unlinkable | Issuance on one device does NOT propagate; each device must re-purchase/restore + re-request independently | N/A |
-| Refund after issuance | policy | Badge already signed for the period; no revocation list | Irrevocable: badge expires naturally at period end; accepted financial-loss policy | No (policy) |
-
-**Cross-cutting rules:** (1) A success-shaped error (`already_issued`) must never block the UI — reconcile against the local badge. (2) All retries go through the launch/timer reconciliation loop, not per-error retry storms. (3) Server/config errors (`unknown_badge_type`, `invalid_badge_type`, `issuer_key_invalid`, `stripe_config`) are **not** the user's fault — never prompt re-purchase, route to support.
-
----
-
-## 7. Implementation Roadmap
-
-Phased so each phase ships independently and unblocks the next. "Greenfield" = no code exists today.
-
-### 7.1 Phasing overview
+| Client | payment capability, master secret, installed credential, cached snapshots, native purchase UI, reconciliation schedule |
+| SimpleX service RPC | short-lived authenticated request/reply ratchet, transport correlation, bounded replay cache, teardown |
+| Bot/API | capability authorization, provider verification, canonical payment state, cancellation, application idempotency, synchronous signing |
+| Provider | charge, refund, renewal, subscription truth |
+| Core chat | cryptographic badge verification/storage/presentation |
 
 ```mermaid
 flowchart LR
- P1[P1 Bot protocol] --> P2[P2 Client purchase + install]
- P2 --> P3[P3 Management UI S0-S8]
- P3 --> P4[P4 Reconciliation loop]
- P2 --> P5[P5 Stripe: desktop + F-Droid]
+  C[Client] -->|one-off service RPC request| B[Badge bot/API]
+  B -->|one final RPC response| C
+  B -->|status / verify / cancel| A[Apple]
+  B -->|status / verify| G[Google]
+  B -->|Checkout / status / cancel| S[Stripe]
+  S -->|signed webhooks| H[Webhook endpoint]
+  H --> D[(payments + badges)]
+  B --> D
+  C -->|verify + install| K[SimpleX core]
 ```
 
-### 7.2 Phase 1 — Bot protocol additions (badge-service)
+### 3.2 Invariants
 
-| Item | Repo / file | Status |
+1. Only a provider-verified, entitled payment period plus a client-supplied master key can enter badge `Signing`. Provider events create/refresh payment state and mark issuance needed; they cannot sign alone.
+2. At most one client and bot badge row exists for `(payment_id, issuance_period_id, master_key_hash)`. Subscription issuance periods are monthly even when provider billing is yearly.
+3. A request ID is bound to one canonical request hash. Reuse with another body is rejected.
+4. RPC has no stable transport identity. `payment.prepare` returns a random high-entropy capability and provider-signed opaque account binding. Every later request supplies the capability; each provider object binds to exactly one payment. Invalid capabilities return a generic ownership error.
+5. Provider event ordering cannot move a payment backward: compare provider event time/version and re-fetch current provider state when ambiguous.
+6. Bot payment-period discovery and “issuance needed” state are committed transactionally; a later `badge.issue` RPC supplies the master key and receives the credential in its final response. The credential is cached for idempotent repeats. Client snapshot and installation are independently crash-safe and converge by later RPC calls.
+7. Badge validity is calculated only by core from credential signature, trusted key index, and expiry. One-time uses `endOfNextMonth(verified purchase time)`. Subscriptions use monthly issuance slots and `endOfNextMonth(slotStart)`, whether provider billing is monthly or yearly. Never derive expiry from request/retry time.
+8. Installing a new credential never replaces an active credential with an earlier expiry for the same tier. If multiple purchasable tiers are enabled, resolve deterministically by configured tier rank, then expiry; otherwise v2 exposes one purchasable tier.
+9. Secrets/proofs are encrypted at rest where they must be retained; logs contain hashes/IDs only after redaction.
+
+Subscription slot rule:
+
+- Let `anchor` be the verified subscription start and `paidThrough` the provider billing-period end.
+- Slot `n` starts at `addCalendarMonths n anchor`; it is eligible only when `slotStart <= now < paidThrough` and the provider still reports paid entitlement for that interval.
+- `issuancePeriodId = hash(subscriptionIdentity, slotStart)`. Its credential expires at `endOfNextMonth(slotStart)`.
+- Monthly billing normally adds one slot per paid invoice. Yearly billing pays through a year, but slots become eligible monthly rather than all at once.
+- Cancellation permits slots only through the already-paid `paidThrough`; refund/revocation prevents later slots.
+
+### 3.3 Two machines, one join key
+
+The tables are independent state machines living alongside each other:
+
+```mermaid
+flowchart LR
+  P[badge_payments\ncommercial state] -->|entitled period discovered| N[create/find BadgeIssueNeeded]
+  N --> B[badges\ncredential workflow]
+  B -->|installed credential only| C[contact_profiles\nactive profile projection]
+  B -. never mutates .-> P
+  P -. never activates .-> C
+```
+
+Rules:
+
+- `paymentId` joins them. Payment state keeps the provider billing period; each badge row uses a distinct monthly `issuancePeriodId`.
+- A payment state never contains credential delivery state.
+- A badge state never contains subscription status, renewal intent, or billing errors.
+- Payment becoming entitled creates/finds `BadgeIssueNeeded`; it does not activate perks.
+- Payment expiring/canceling does not delete or shorten an installed credential. The signed badge remains active until its month-aligned expiry, but no later period is issued.
+- Badge failure does not roll back a successful payment. It remains retryable independently.
+- UI state is derived from `(paymentState, current BadgeStatus, badgeIssueState, operationError)`; it is not persisted as a third state machine.
+
+## 4. Persistence and Haskell types
+
+There are two related stores:
+
+- **Haskell/client DB (required by this feature):** exactly two lifecycle tables, `badge_payments` and `badges`. They survive restart and drive reconciliation/UI.
+- **Bot DB (required for verification and Stripe webhooks):** server-side payment/issuance mirrors plus a request/event ledger. Bot state is authoritative for issuance; client state is authoritative only for scheduling and display.
+
+The current credential columns on `contact_profiles` remain the core’s active-credential projection during migration. The new client `badges` table keeps lifecycle/history; installing its newest verified credential calls the existing `setUserBadge` path. Do not make chat `customData` the lifecycle database.
+
+### 4.1 Exact `CallState` pattern to reuse
+
+`CallState` uses the following machinery; badges should copy it directly:
+
+| `CallState` machinery | Badge equivalent |
+|---|---|
+| `Call` record holds identity/common fields; `CallState` holds variant fields | `BadgePayment` / `BadgeIssuance` records plus their state sums |
+| closed sum with record constructors | closed `BadgePaymentState` / `BadgeIssueState` constructors |
+| `CallStateTag` + `callStateTag` | separate tag enums + total projection functions |
+| `deriveJSON (singleFieldJSON fstToLower)` | same DB JSON encoding |
+| `ToField` via `encodeJSON`; `FromField` via `fromTextField_ decodeJSON` | identical typed SQL instances |
+| `call_state TEXT NOT NULL` | `payment_state TEXT NOT NULL`, `badge_state TEXT NOT NULL` |
+| typed `createCall`, `getCalls`, `deleteCalls` | typed create/get/update/delete functions for both tables |
+| startup `restoreCalls` into `TMap` | `restoreBadgePayments` / `restoreBadgeIssuances` |
+| `withCurrentCall` + per-contact lock | transition wrappers + per-payment lock |
+| `CECallState CallStateTag` | structured payment/badge state errors |
+| invalid remote call event is logged and ignored | stale RPC response is logged and followed by status reconciliation |
+
+Do not copy one call-specific optimization: `calls` persists only incoming invitations needed across NSE/app handoff, and deletes that DB row after the invitation state. Badge lifecycles are long-lived, so **every badge/payment transition is persisted**; the `TMap` is a cache restored from DB, never the sole state.
+
+Code evidence:
+
+- [`Simplex.Chat.Call`](../src/Simplex/Chat/Call.hs) — sum, tag projection, JSON derivation, SQL field instances.
+- [`Store.Profiles`](../src/Simplex/Chat/Store/Profiles.hs) — typed create/get/delete functions.
+- [`Library.Commands`](../src/Simplex/Chat/Library/Commands.hs) — `withCurrentCall`, locking, local guards, map mutation.
+- [`Library.Subscriber`](../src/Simplex/Chat/Library/Subscriber.hs) — remote transition validation and log/ignore behavior.
+- [`Controller`](../src/Simplex/Chat/Controller.hs) — `TMap` and `CECallState`.
+- [`M20220702_calls`](../src/Simplex/Chat/Store/SQLite/Migrations/M20220702_calls.hs) — persisted state column and foreign keys.
+
+
+### 4.2 Haskell records and state sums
+
+Keep stable identity/common query fields outside the sum and state-specific fields inside it:
+
+```haskell
+data BadgePurchaseKind = BadgePurchaseOneTime | BadgePurchaseSubscription
+data SubscriptionInterval = SubscriptionMonthly | SubscriptionYearly
+
+data BadgePayment = BadgePayment
+  { paymentId :: PaymentId,
+    userId :: UserId,
+    provider :: BadgePaymentProvider,
+    purchaseKind :: BadgePurchaseKind,
+    billingInterval :: Maybe SubscriptionInterval, -- Nothing for one-time
+    productId :: Text,
+    badgeType :: BadgeType,
+    providerBinding :: Text,
+    providerPurchaseRef :: Maybe Text,
+    masterKey :: BadgeMasterKey,
+    paymentState :: BadgePaymentState,
+    lastVerifiedAt :: Maybe UTCTime,
+    nextCheckAt :: Maybe UTCTime,
+    lastErrorCode :: Maybe BadgePaymentErrorCode,
+    stateVersion :: Int,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
+  }
+
+data BadgePaymentState
+  = BadgePaymentPrepared {prepareExpiresAt :: UTCTime}
+  | BadgePaymentPending {pendingReason :: BadgePaymentPendingReason}
+  | BadgePaymentPaidOneTime
+      { purchasedAt :: UTCTime,
+        paymentPeriodEnd :: UTCTime
+      }
+  | BadgePaymentSubscriptionActive
+      { providerPeriodId :: Text,
+        periodStart :: UTCTime,
+        periodEnd :: UTCTime
+      }
+  | BadgePaymentSubscriptionGrace
+      { providerPeriodId :: Text,
+        periodStart :: UTCTime,
+        periodEnd :: UTCTime,
+        graceEnd :: Maybe UTCTime
+      }
+  | BadgePaymentSubscriptionOnHold {periodEnd :: UTCTime}
+  | BadgePaymentSubscriptionPaused {resumeAt :: Maybe UTCTime}
+  | BadgePaymentSubscriptionCanceled {periodEnd :: UTCTime}
+  | BadgePaymentExpired {expiredAt :: UTCTime}
+  | BadgePaymentRefunded {refundedAt :: UTCTime}
+  | BadgePaymentRevoked {revokedAt :: UTCTime}
+
+data BadgeIssuance = BadgeIssuance
+  { badgeId :: BadgeId,
+    paymentId :: PaymentId,
+    userId :: UserId,
+    issuancePeriodId :: Text, -- one-time purchase ID or monthly subscription slot
+    badgeState :: BadgeIssueState,
+    stateVersion :: Int,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
+  }
+
+data BadgeIssueState
+  = BadgeIssueNeeded
+  | BadgeIssueRequested
+      { requestId :: RequestId,
+        requestedAt :: UTCTime,
+        attempt :: Int
+      }
+  | BadgeIssueReceived
+      { credential :: BadgeCredential,
+        receivedAt :: UTCTime
+      }
+  | BadgeIssueInstalled
+      { credential :: BadgeCredential,
+        installedAt :: UTCTime
+      }
+  | BadgeIssueFailedRetryable
+      { retryAt :: UTCTime,
+        errorCode :: BadgeIssueErrorCode
+      }
+  | BadgeIssueFailedFinal {errorCode :: BadgeIssueErrorCode}
+```
+
+`willRenew` is derived from the constructor: active/grace are renewal states; canceled is not. A transient refresh failure lives in common `lastError`/`nextCheckAt` fields and does not erase the last canonical state. Do not persist a derived UI state. Use a real year/month type for `Month`, not free text.
+
+### 4.3 Tags, JSON, and SQL instances
+
+Mirror `CallStateTag` exactly:
+
+```haskell
+data BadgePaymentStateTag
+  = BPSTPrepared | BPSTPending | BPSTPaidOneTime
+  | BPSTSubscriptionActive | BPSTSubscriptionGrace
+  | BPSTSubscriptionOnHold | BPSTSubscriptionPaused
+  | BPSTSubscriptionCanceled | BPSTExpired | BPSTRefunded
+  | BPSTRevoked
+  deriving (Eq, Show)
+
+badgePaymentStateTag :: BadgePaymentState -> BadgePaymentStateTag
+badgePaymentStateTag = \case
+  BadgePaymentPrepared {} -> BPSTPrepared
+  BadgePaymentPending {} -> BPSTPending
+  BadgePaymentPaidOneTime {} -> BPSTPaidOneTime
+  BadgePaymentSubscriptionActive {} -> BPSTSubscriptionActive
+  BadgePaymentSubscriptionGrace {} -> BPSTSubscriptionGrace
+  BadgePaymentSubscriptionOnHold {} -> BPSTSubscriptionOnHold
+  BadgePaymentSubscriptionPaused {} -> BPSTSubscriptionPaused
+  BadgePaymentSubscriptionCanceled {} -> BPSTSubscriptionCanceled
+  BadgePaymentExpired {} -> BPSTExpired
+  BadgePaymentRefunded {} -> BPSTRefunded
+  BadgePaymentRevoked {} -> BPSTRevoked
+
+data BadgeIssueStateTag
+  = BISTNeeded | BISTRequested | BISTReceived | BISTInstalled
+  | BISTFailedRetryable | BISTFailedFinal
+  deriving (Eq, Show)
+
+badgeIssueStateTag :: BadgeIssueState -> BadgeIssueStateTag
+badgeIssueStateTag = \case
+  BadgeIssueNeeded -> BISTNeeded
+  BadgeIssueRequested {} -> BISTRequested
+  BadgeIssueReceived {} -> BISTReceived
+  BadgeIssueInstalled {} -> BISTInstalled
+  BadgeIssueFailedRetryable {} -> BISTFailedRetryable
+  BadgeIssueFailedFinal {} -> BISTFailedFinal
+
+$(J.deriveJSON (enumJSON $ dropPrefix "BPST") ''BadgePaymentStateTag)
+$(J.deriveJSON (enumJSON $ dropPrefix "BIST") ''BadgeIssueStateTag)
+$(J.deriveJSON (singleFieldJSON fstToLower) ''BadgePaymentState)
+$(J.deriveJSON (singleFieldJSON fstToLower) ''BadgeIssueState)
+
+instance ToField BadgePaymentState where toField = toField . encodeJSON
+instance FromField BadgePaymentState where fromField = fromTextField_ decodeJSON
+instance ToField BadgeIssueState where toField = toField . encodeJSON
+instance FromField BadgeIssueState where fromField = fromTextField_ decodeJSON
+```
+
+This produces the same single-field shape as calls, for example:
+
+```json
+{"badgePaymentSubscriptionActive":{"providerPeriodId":"...","periodStart":"...","periodEnd":"..."}}
+```
+
+Treat persisted constructor/field names as a migration-sensitive format. Renaming them requires a DB migration or backward-compatible parser.
+
+### 4.4 Client tables
+
+```sql
+CREATE TABLE badge_payments (
+  payment_id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  provider TEXT NOT NULL,
+  purchase_kind TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  badge_type TEXT NOT NULL,
+  provider_binding TEXT NOT NULL,
+  provider_purchase_ref TEXT,
+  master_key BLOB NOT NULL,
+  payment_state TEXT NOT NULL,
+  state_version INTEGER NOT NULL DEFAULT 0,
+  last_verified_at TEXT,
+  next_check_at TEXT,
+  last_error_code TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE badges (
+  badge_id TEXT PRIMARY KEY,
+  payment_id TEXT NOT NULL REFERENCES badge_payments ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  issuance_period_id TEXT NOT NULL,
+  badge_state TEXT NOT NULL,
+  state_version INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE (payment_id, issuance_period_id)
+);
+```
+
+Store provider references and master keys using the project’s protected binary/DB-encryption conventions. Add indexes on `(user_id, next_check_at)` and `(payment_id, issuance_period_id)`. Peer badges remain in contact/profile storage and never enter `badges`. The current own credential columns on `contact_profiles` remain the active-profile projection during migration; the newest resolved `BadgeIssueInstalled` credential is installed through `setUserBadge`.
+
+### 4.5 Store and controller machinery
+
+Add typed store functions beside the existing profile/badge store code:
+
+```haskell
+createBadgePayment :: DB.Connection -> BadgePayment -> IO ()
+updateBadgePayment :: DB.Connection -> BadgePayment -> IO ()
+getBadgePayments :: DB.Connection -> UserId -> IO [BadgePayment]
+deleteBadgePayment :: DB.Connection -> UserId -> PaymentId -> IO ()
+
+createBadgeIssuance :: DB.Connection -> BadgeIssuance -> IO ()
+updateBadgeIssuance :: DB.Connection -> BadgeIssuance -> IO ()
+getBadgeIssuances :: DB.Connection -> UserId -> IO [BadgeIssuance]
+deleteBadgeIssuance :: DB.Connection -> UserId -> BadgeId -> IO ()
+```
+
+Controller state mirrors `currentCalls`:
+
+```haskell
+currentBadgePayments :: TMap PaymentId BadgePayment
+currentBadgeIssuances :: TMap BadgeId BadgeIssuance -- nonterminal/current only
+```
+
+At controller startup, load active/nonterminal rows into both maps; terminal history stays in DB. All mutation goes through `withBadgePayment` / `withBadgeIssuance`:
+
+1. resolve and verify `userId`/record ownership;
+2. acquire a per-payment lock;
+3. read current record from the `TMap` (DB is recovery source);
+4. pattern-match the current constructor;
+5. perform the provider/bot action outside a DB transaction;
+6. persist the returned record first;
+7. update the `TMap` after DB success;
+8. on restart, restore from DB and resume any pending retry.
+
+Unlike calls, local timers and RPC responses may race. Keep the per-payment lock and use `state_version` compare-and-swap if mutations can arrive from more than one controller process.
+
+### 4.6 Transition errors and RPC responses
+
+Local API commands reject illegal transitions exactly like `CECallState`:
+
+```haskell
+data ChatError
+  = ...
+  | CEBadgePaymentState {currentBadgePaymentState :: BadgePaymentStateTag}
+  | CEBadgeIssueState {currentBadgeIssueState :: BadgeIssueStateTag}
+```
+
+A local handler pattern-matches allowed constructors and otherwise throws the current tag. A stale RPC response must not roll state backward: log the current tag, keep the existing row, and make a fresh `payment.status` RPC. Unknown future constructors fail DB decoding visibly; unknown future response variants follow protocol-version handling.
+
+### 4.7 Bot persistence
+
+The Python bot uses the same transition discipline but its own server states (`Needed → Signing → Issued`); it does **not** deserialize Haskell DB JSON. Use server-side `payment_entitlements` and `badge_issuances`, plus `request_dedup`, `provider_events`, and provider-action outboxes. Stripe webhooks require this durable store; `Contact.customData` is not sufficient. Store only a hash of the payment capability and compare it in constant time.
+
+Bot uniqueness: provider ownership identity → one payment; `(payment_id, issuance_period_id, master_key_hash)` → one cached credential. Haskell and Python share IDs, wire events, and legal lifecycle semantics—not identical local constructors or DB serialization.
+
+### 4.8 Transition table
+
+| From | Event | To | Side effect |
+|---|---|---|---|
+| none | checkout created | PendingCheckout | return URL |
+| PendingCheckout/PendingProvider | provider paid | PaidOneTime/SubscriptionActive | mark current period issuance-needed; no signing yet |
+| Active/Grace | next monthly issuance slot is due and paid entitlement covers it | SubscriptionActive | mark slot issuance-needed; await client |
+| Active | renewal disabled | SubscriptionCanceled | retain access |
+| Active | payment failure | Grace/OnHold | no new issuance unless provider says entitled |
+| Grace/OnHold | recovered + paid | Active | mark new paid period issuance-needed |
+| any entitled, no row | reconcile | BadgeIssueNeeded | create client issuance row |
+| Needed/FailedRetryable | send `badge.issue` | BadgeIssueRequested | persist request ID before send |
+| Requested | matching credential | BadgeIssueReceived | verify correlation and credential |
+| Received | core install commits | BadgeIssueInstalled | local commit only; no bot acknowledgement |
+| Requested | timeout/retryable error | FailedRetryable | schedule retry |
+| active/canceled/grace | period ends without entitlement | Expired | notify; no issue |
+| any | verified refund/revoke | Refunded/Revoked | no further issue |
+
+### 4.9 Cross-machine reaction matrix
+
+This table is the total reconciliation rule. “Current badge” means the core-verified profile credential, not merely a `badges` row.
+
+| Payment machine | Badge machine / core | Client reaction | Bot reaction |
+|---|---|---|---|
+| Prepared/Pending | no badge | show pending; repeat status RPC on schedule | verify only; never issue before entitlement |
+| Prepared/Pending | active old badge | keep showing old badge; show pending overlay | leave prior issuance unchanged |
+| PaidOneTime/SubscriptionActive/Grace and entitled | no current-period row | create `BadgeIssueNeeded` | return canonical period on status |
+| entitled | Needed/FailedRetryable and retry due | persist Requested, send `badge.issue` | verify entitlement and sign or return typed error |
+| entitled | Requested | wait; retry only after deadline | idempotently return same credential for same period/key |
+| entitled | Received | verify/install in core | return the same cached credential on an identical repeat |
+| entitled | Installed + same period | no action | return same snapshot/credential if requested |
+| new monthly issuance slot under entitled payment | prior Installed badge still active | create new Needed; keep old badge visible until replacement installs | permit one issuance for the slot |
+| Canceled with future paid period end | active badge | show “ends on”; do not remove badge | allow monthly slots through prepaid monthly/yearly period; none afterward |
+| OnHold/Paused/PastDue | active badge | show payment action; badge remains until signed expiry | no new unpaid-period issuance |
+| Expired/Refunded/Revoked | active badge | keep badge until its signed expiry; notify/payment CTA as applicable | no future issuance; never revoke v2 credential remotely |
+| any payment state | FailedFinal issuance | keep payment state; show support/update action | preserve payment and operator diagnostics |
+| transient refresh/transport error | any | retain last canonical payment + valid badge; schedule retry | do not mutate canonical state |
+| unknown/malformed state | any | quarantine response, keep existing state, request status/update app | log safely; return versioned `bad_request`/`unsupported_version` |
+
+### 4.10 Total event-handling rule
+
+Every handler must end in exactly one of four outcomes:
+
+1. **Apply:** legal event; persist state, then update cache/UI.
+2. **Idempotent success:** duplicate/already-applied event; return current snapshot or cached credential.
+3. **Retry:** transient failure; preserve canonical state and record `lastErrorCode`, attempt, and `nextCheckAt`.
+4. **Reject/quarantine:** invalid ownership, proof, signature, version, or illegal transition; preserve state, expose a stable error, and never guess.
+
+There is no default branch that silently changes state. Haskell pattern matches use an explicit fallback returning the current state tag; Python matches have an explicit unknown-event error. New provider states map to `provider_state_unknown`, preserve the last state, and trigger provider-object re-fetch/operator telemetry until a release adds a mapping.
+
+## 5. Service RPC application protocol
+
+Use the `simplexmq` `rpc` branch service-address API. Each operation is one opaque versioned payload passed to `sendServiceRequest`; the bot receives `SREQ` and calls `sendServiceReply final=True` exactly once. The per-request reply queue and ratchet are then removed. There is no persistent client/bot connection, unsolicited bot message, or bot push event.
+
+RPC transport provides a fresh ratchet/reply queue per call, correlation by that queue, and replay of the exact decrypted request payload for its configured 1–24 hour retention. The application must still persist business idempotency beyond that window.
+
+### 5.1 Requests
+
+All payloads are canonical JSON/YAML with `v`, `type`, and a UUID `requestId`. Persist the exact serialized bytes before sending so a transport retry has the same payload hash.
+
+| Request | Required fields | Purpose |
 |---|---|---|
-| Echo `req=<nonce>` in every reply (credential/stripeLink/error) | badge-service wire handler | Greenfield (add field to existing replies) |
-| `/portal channel=stripe` → `type: portalLink, url` (billing_portal/sessions) | badge-service | Greenfield |
-| Renewal via existing `/badge` re-verify (no new command) | badge-service | Exists; confirm Apple/Google server re-verify path |
+| `payment.prepare` | provider, allowlisted plan, kind, monthly/yearly interval when subscribed | create a prepared payment; returns `paymentId`, `paymentCapability`, and Apple/Google account binding |
+| `payment.attach` | paymentId, paymentCapability, provider proof | attach and verify an Apple/Google purchase; never includes the badge master key |
+| `checkout.create` | allowlisted one-time/monthly/yearly plan, one-time returnToken | create/reuse the Stripe Customer and Checkout Session; never includes the badge master key |
+| `payment.status` | paymentId, paymentCapability | return canonical state; for Stripe, reconcile the provider object when pending or stale |
+| `badge.issue` | paymentId, paymentCapability, masterKey | synchronously sign or return the cached credential for the current monthly issuance slot |
+| `subscription.cancel` | paymentId, paymentCapability | Stripe only: stop renewal at period end and return the refreshed snapshot |
+| `subscription.portal` | paymentId, paymentCapability | create a short-lived Stripe Customer Portal URL |
 
-No `/status`, no `/cancel` — those stay client-side.
+`paymentCapability` is random, at least 256 bits, stored only on the client; the bot stores its hash. It supplies application continuity because RPC deliberately has no stable caller identity. `paymentId` is an identifier, not authorization. Apple/Google account bindings and Stripe `client_reference_id` are separate opaque provider bindings and contain no SimpleX identity.
 
-### 7.3 Phase 2 — Client purchase + credential install
+### 5.2 One final response
 
-| Item | Repo / file | Status |
+Every response echoes `requestId`, includes `serverTime`, and sets exactly one variant:
+
+- `paymentPrepared`: payment ID, capability, provider binding, plan/kind, expiry.
+- `checkout`: payment snapshot, capability, Checkout Session ID, hosted URL, expiry.
+- `paymentSnapshot`: provider/kind/state, product/tier, paid period, `willRenew`, last verification time, optional `retryAfter`.
+- `credential`: payment/period/badge IDs, issuer key index, master key, signature, and badge info.
+- `portal`: short-lived HTTPS URL.
+- `error`: stable code, retryable flag, and optional retry-after.
+
+There is no `accepted` followed by a later message and no acknowledgement protocol. Long provider work either completes before the RPC deadline or returns `pending`/retryable error; the client makes another RPC later. Do not echo provider proofs or capabilities after preparation/Checkout creation.
+
+### 5.3 Response → client action
+
+| RPC response | Required client reaction |
+|---|---|
+| `paymentPrepared` / `checkout` | validate request/plan; persist payment ID, capability, binding/session, and master key before opening provider UI |
+| `paymentSnapshot: Prepared/Pending` | persist; show pending; schedule a new status RPC |
+| `paymentSnapshot: PaidOneTime/Active/Grace` | persist; if this paid period lacks Installed badge, make `badge.issue` RPC |
+| `paymentSnapshot: Canceled` | show paid-through end; retain current badge |
+| `paymentSnapshot: OnHold/Paused` | show Fix payment/manage action; do not issue for an unpaid period |
+| `paymentSnapshot: Expired/Refunded/Revoked` | stop issuance; retain an installed credential until its signed expiry |
+| matching `credential` | verify IDs, key, signature, tier, and expiry; persist Received; install atomically; mark Installed locally |
+| duplicate `credential` | verify/dedupe and install idempotently; no profile churn |
+| retryable `error` / RPC timeout | preserve both machines and exact request bytes; retry on schedule |
+| final or malformed response | preserve both machines; quarantine/log redacted; show mapped recovery/update action |
+
+### 5.4 Correlation and idempotency
+
+- The RPC reply queue correlates transport responses. `requestId` identifies the business operation and is echoed for application validation.
+- RPC deduplication hashes the exact payload but expires after 1–24 hours. Persist `(requestId, requestHash, finalResponse)` in the bot DB for the business retention period.
+- Same request ID and body returns the stored response; same ID with a different body returns `idempotency_mismatch`.
+- Stripe POST idempotency keys derive from the business operation/request ID; never generate a new Checkout Session on an uncertain retry.
+- Credential issuance dedupes by `(paymentId, issuancePeriodId, masterKeyHash)` and returns the cached credential.
+- Status is read-only. Repeated cancel returns the canonical already-canceled snapshot.
+
+### 5.5 Client audit in Chat Console
+
+Every badge service RPC must be visible in **Developer Tools → Chat Console** on all client platforms. Emit one structured console record when an attempt starts and one when it ends as response, rejection, timeout, or cancellation.
+
+Each record includes timestamp, direction, service/operation, `requestId`, non-secret `paymentId`, attempt number, elapsed time, final outcome/error code, and any applied payment/badge state transition. Retries are separate attempts with the same `requestId`, making the entire reconciliation sequence auditable.
+
+Never print raw RPC payloads. Redact `paymentCapability`, master key, Apple JWS, Google purchase token, provider/customer/subscription identifiers, Stripe Checkout and Portal Session URLs, return token, signatures, and personal/payment data. Where correlation is necessary, show only a short keyed hash. Console export and diagnostic reports use the same redaction. Audit output follows normal Chat Console retention and must not create a second secret-bearing history.
+
+## 6. Provider flows
+
+### 6.1 Apple
+
+Client:
+
+1. Call `payment.prepare`; load products and call `Product.purchase(options: [.appAccountToken(bindingUUID)])`. Reject a reply whose prepared plan/kind does not match the selected product.
+2. Accept only verified `Transaction`; confirm its product and `appAccountToken`, then send `jwsRepresentation` with the prepared `paymentId`.
+3. Observe `Transaction.updates` and query `Transaction.currentEntitlements`/subscription status on launch.
+4. Finish only after the bot durably accepts the proof.
+5. Cancel/manage using `showManageSubscriptions(in:)`; refresh after return/foreground.
+
+Bot:
+
+1. Verify JWS certificate chain, signature, environment, bundle ID, app Apple ID, product ID, transaction ID, original transaction ID, purchase date, expiry, revocation, and app-account token.
+2. Require the signed `appAccountToken` to match the prepared payment. Disable Family Sharing or reject `FAMILY_SHARED`, because the payment capability cannot authorize another purchaser’s entitlement. Map verified product IDs to one-time, monthly, or yearly. A one-time SKU is consumable so it can be bought again after expiry, but `payment.prepare` rejects another one-time purchase while one is active; periods never stack. Finish only after durable attachment. The bot stores the transaction permanently, so recovery queries the bot rather than relying on consumable restoration. A non-consumable must not be used because it implies lifetime ownership.
+3. For auto-renewing subscriptions, call App Store Server API `GET /inApps/v1/subscriptions/{transactionId}` to obtain active/expired/billing-retry/grace and renewal intent. Follow Apple’s production/sandbox error routing.
+4. Subscription identity is `originalTransactionId`; period identity is the latest verified renewal `transactionId`. One-time identity and period identity are its transaction ID.
+5. Compute one-time expiry from verified purchase time. For subscriptions, compute it from the eligible monthly issuance slot, not bot receipt time or billing interval.
+6. In production, enable App Store Server Notifications V2, verify signed payloads, dedupe notification UUIDs, and re-fetch current status/history before transitioning. Client polling remains recovery.
+
+Apple cancellation cannot be executed by StoreKit/bot on behalf of the user; use Apple’s management UI. Restore first queries the bot by prepared/account binding and current transaction history. A transaction lacking the expected binding enters an explicit recovery flow; it is never silently assigned to the current contact.
+
+### 6.2 Google
+
+Client:
+
+1. Call `payment.prepare`; query products and launch Play Billing with the returned opaque binding in `setObfuscatedAccountId` (and profile ID if used).
+2. Handle `PENDING` without issuance; on `PURCHASED`, send `purchaseToken` with prepared `paymentId`. Do not acknowledge or consume yet.
+3. Re-query with `queryPurchasesAsync()` on launch/foreground and listen for purchase updates.
+4. The bot normally acknowledges/consumes server-side. The client does not race it; it uses client acknowledgement only as an explicit compatibility fallback instructed by the bot.
+5. Provide Play subscription-center fallback.
+
+Bot:
+
+1. For subscriptions call `purchases.subscriptionsv2.get(packageName, token)`. For a **one-time consumable**, use `purchases.productsv2.getproductpurchasev2` (fall back to `purchases.products.get` only if required), verify it, then consume only after durable attachment. `payment.prepare` rejects another one-time purchase while one is active; after expiry, Buy once can be used again.
+2. Verify package, product/offer, purchase state, acknowledgement/consumption state, expiry, auto-renew plan, canceled context, linked token, test purchase, and that returned obfuscated account/profile identifiers match the prepared payment.
+3. Map `PENDING`, `ACTIVE`, `IN_GRACE_PERIOD`, `ON_HOLD`, `PAUSED`, `CANCELED`, `EXPIRED`, and `PENDING_PURCHASE_CANCELED` without collapsing them to valid/invalid/expired.
+4. Use the linked purchase-token chain as subscription identity. Use the current line item’s latest successful order ID plus verified period start/end as period identity. The current bot’s token-only issuance key is incorrect because a token can remain stable across renewals. One-time identity is its purchase token/order.
+5. After committing entitlement, enqueue server-side `purchases.products.consume` for a consumable or initial-subscription `purchases.subscriptions.acknowledge`; retry until success and alert before Google’s three-day deadline. Renewals require no acknowledgement.
+6. Compute one-time expiry from verified purchase time; compute subscription expiry from the eligible monthly issuance slot, not bot request time.
+7. For normal user cancellation, open `https://play.google.com/store/account/subscriptions?sku={productId}&package={packageName}` and call `payment.status` RPC after return/foreground. Keep `purchases.subscriptionsv2.cancel` only as an explicit operator/recovery capability, not the client UX.
+8. In production, Real-time Developer Notifications are required: dedupe Pub/Sub `messageId`, use the token only to trigger a fresh provider GET, and reconcile Voided Purchases for refunds/chargebacks. Never grant from the notification payload alone.
+
+### 6.3 Stripe — F-Droid and desktop
+
+Both builds use hosted Stripe Checkout in the system browser. They differ only in the return link: verified Android App Link for F-Droid; universal/custom-scheme link for desktop. No localhost listener is required.
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant R as Badge RPC service
+  participant S as Stripe
+  participant H as HTTPS webhook/return site
+  C->>R: checkout.create RPC
+  R->>S: Checkout Session.create
+  R-->>C: final URL + payment capability
+  C->>S: open hosted Checkout
+  S->>H: signed webhook
+  H->>H: persist event, return 2xx, reconcile asynchronously
+  S-->>H: success_url with session_id
+  H->>S: retrieve Session and reconcile
+  H-->>C: Return to SimpleX link (routing only)
+  C->>R: payment.status RPC
+  R-->>C: final pending/paid snapshot
+  C->>R: badge.issue RPC when paid
+  R-->>C: final credential
+```
+
+#### Create and return
+
+1. `checkout.create` first inserts `Prepared` payment state and a hashed 256-bit capability, then creates one Checkout Session using a Stripe idempotency key derived from `requestId`.
+2. The bot selects an allowlisted Price and sets `mode=payment|subscription`, a reused/created Customer, opaque `client_reference_id=paymentId`, minimal internal metadata, `success_url=https://…/badge/complete?session_id={CHECKOUT_SESSION_ID}&return_token=…`, and a cancel URL. Never accept amount, currency, Price, Customer, or redirect URL from the client.
+3. Persist the Session ID/expiry before returning its hosted URL. An uncertain repeat returns the same live Session; an expired/failed attempt requires an explicit new user action and a new request ID.
+4. The HTTPS completion page retrieves the Session and invokes the same idempotent reconciliation function as the webhook before rendering, as Stripe recommends. It shows only safe state and a **Return to SimpleX** link. The one-time return token routes to the local payment; it is not payment authorization and never contains the capability.
+5. On app return or foreground, the client immediately calls `payment.status`. If pending, use elapsed polling at 5, 15, 30, 60, and 120 seconds, respecting `retryAfter`, then stop. Later foreground and the normal reconciliation timer try again. The bot cannot push completion.
+
+#### Authoritative payment transition
+
+1. Verify `Stripe-Signature` against the raw body and endpoint secret. Persist/dedupe the Event ID, enqueue it, and return 2xx quickly; invalid signatures return 4xx.
+2. Do not depend on event order. The worker retrieves the referenced Checkout Session, PaymentIntent, Invoice, and Subscription as required and applies one monotonic transition. Webhook, completion page, and `payment.status` all call this same reconciliation function.
+3. One-time issuance requires Checkout `payment_status=paid`; identify the paid period by PaymentIntent/Session.
+4. Subscription issuance requires a paid invoice (`invoice.paid`, or a retrieved Invoice with `paid=true`), not merely Subscription `status=active`. Identify each issuance period by invoice ID and its billed line period. Initial Checkout and `invoice.paid` therefore converge without double issuance.
+5. `checkout.session.completed` with `payment_status=unpaid` remains Pending. Delayed methods transition only after `checkout.session.async_payment_succeeded` or provider retrieval shows paid; async failure/Session expiry closes only that attempt.
+6. A paid period transactionally updates the payment machine. Reconciliation creates/finds `Needed` for the currently due monthly issuance slot covered by that payment. It cannot mint or send a badge: only a later `badge.issue` RPC supplies the master key.
+7. Monthly `invoice.paid` advances paid-through and enables the next slot. A yearly invoice advances paid-through by a year; monthly slots inside it become eligible one at a time. The client discovers a due slot on its next status RPC and requests its month-aligned badge. `invoice.payment_failed`, `payment_action_required`, subscription update/delete, refund, dispute, and chargeback update only server state until queried.
+
+#### Status, cancellation, and portal
+
+- `payment.status` normally returns the stored canonical snapshot; while Checkout is pending, after browser return, or when the snapshot is stale, it first retrieves Stripe state. A Stripe timeout returns the last snapshot plus retry metadata rather than guessing.
+- `subscription.cancel` verifies the capability, updates the Subscription with `cancel_at_period_end=true` using a Stripe idempotency key, retrieves it, and returns `willRenew=false` plus the provider billing-period end. It does not shorten an issued badge.
+- `subscription.portal` verifies the capability and creates a short-lived Customer Portal Session for payment-method changes and invoices only. Disable Portal subscription cancellation. Returning from the Portal triggers `payment.status` RPC.
+- Stripe cancellation is only `subscription.cancel` RPC. If RPC or Stripe is unavailable, retain the canonical snapshot and retry later. Never report cancellation until the RPC returns a refreshed Stripe object with renewal disabled.
+- Webhook retries, duplicate events, and separate events for the same object are deduped by Event ID and `(event.type, data.object.id)`. Pin the request and event-destination API versions.
+
+```mermaid
+stateDiagram-v2
+  [*] --> CheckoutOpen
+  CheckoutOpen --> Pending: completed but unpaid
+  CheckoutOpen --> Paid: paid Session
+  CheckoutOpen --> Failed: expired/canceled
+  Pending --> Paid: async payment succeeds
+  Pending --> Failed: async payment fails
+  Paid --> Active: subscription paid invoice
+  Active --> CancelAtEnd: cancel RPC
+  Active --> PastDue: invoice payment fails
+  PastDue --> Active: later invoice paid
+  PastDue --> Unpaid: retries exhausted
+  CancelAtEnd --> Canceled: billing period ends
+```
+
+### 6.4 Provider event → bot action
+
+| Provider input | Bot action | Client-visible result |
 |---|---|---|
-| New `ChatCommand` + FFI to submit receipt/token and install credential | core `Library/Commands.hs` (today only terminal `AddBadge`, Commands.hs:5717), `Mobile/Badges.hs` | Greenfield (mobile-exposed path) |
-| StoreKit2 purchase → JWS → `channel=ios` | apps/ios | Greenfield |
-| Play Billing `launchBillingFlow` → token → `channel=android` | apps/multiplatform (android) | Greenfield |
-| Idempotent install: dedupe on `(badgeKeyIdx, signature)` / echoed `req` | core `addUserBadge` reuse | Extend existing |
-| Isolate Play Billing to the **`google`-flavor source set**; the F-Droid/no-GMS flavor uses Stripe browser checkout instead (§4.2/§4.3) | apps/multiplatform android `build.gradle` + flavor source sets | Greenfield |
+| Apple verified initial/renewal transaction | bind/check ownership; upsert paid period | Active snapshot; issuance needed |
+| Apple `DID_RENEW` / status active | re-fetch status/history; upsert unseen transaction | new period available |
+| Apple grace / billing retry | re-fetch; map without guessing | Grace or OnHold + payment action |
+| Apple auto-renew disabled | re-fetch renewal info | Canceled with period end |
+| Apple expired/refund/revocation | re-fetch signed transaction/status | Expired/Refunded/Revoked; no future issue |
+| Google one-time `PURCHASED` | verify, commit, enqueue consume | PaidOneTime; issuance needed |
+| Google initial subscription `ACTIVE` | verify, commit, enqueue acknowledge | Active; issuance needed |
+| Google renewal RTDN | dedupe message, GET `subscriptionsv2`, detect order/period | new period available |
+| Google grace/on-hold/paused/canceled/expired | GET canonical object and map exact state | corresponding snapshot/action |
+| Google pending purchase canceled | preserve any prior linked entitlement; close pending attempt | prior state or Expired |
+| Google voided purchase | verify Voided Purchases record | Refunded/Revoked; no future issue |
+| Stripe Checkout `open`/expired | persist pending/attempt failure | Continue or start-new-checkout action |
+| Stripe completed but unpaid | mark async pending | no issuance |
+| Stripe async success / paid one-time | re-fetch Session/PaymentIntent; commit paid period | PaidOneTime; issuance needed |
+| Stripe `invoice.paid` | re-fetch invoice/subscription; commit monthly/yearly paid-through period | Active; current monthly slot issuance needed |
+| Stripe payment failed / subscription past_due/unpaid/paused | re-fetch subscription | payment-action state; no unpaid issue |
+| Stripe subscription cancel-at-end/update/delete | re-fetch subscription | Canceled or Expired snapshot |
+| Stripe refund/dispute/chargeback | re-fetch Charge/PaymentIntent | Refunded/Revoked; no future issue |
+| duplicate/out-of-order provider event | dedupe, re-fetch current object, apply monotonic transition | no duplicate issuance |
+| provider 429/5xx/timeout | record retry only | last canonical snapshot remains |
+| unknown provider enum/event | quarantine + telemetry + object re-fetch | `provider_state_unknown`; no state guess |
 
-### 7.4 Phase 3 — Badge management UI (states S0-S8)
+## 7. Client reconciliation
 
-| Item | Repo / file | Status |
+Persist a small per-user cache: `paymentId`, provider, last snapshot, pending request/checkout, last issued period/badge ID, next check, notification markers. It is disposable and rebuildable.
+
+```text
+reconcile(trigger):
+  coalesce by paymentId
+  render cached snapshot + core badge immediately
+  load `badge_payments` and its locally encrypted master key; collect local Apple/Google purchase updates and attach unseen proofs
+  request bot `payment.status` for every nonterminal payment and surface pending provider-action failures even when core badge is missing; local expiry only schedules the request and never decides entitlement
+  if status is entitled and current period lacks an active badge:
+      request badge.issue
+  call a new core API built from `addUserBadge`: verify against configured key, insert/update client `badges`, project the resolved active credential with `setUserBadge`, return updated user; no bot acknowledgement
+  schedule next check at min(6h, periodEnd-24h, badgeExpiry-24h)
+```
+
+Triggers: launch, profile switch, foreground, network restored, store listener, return/deep-link, manual retry, 6-hour jittered timer, and date boundaries. There is no bot-event trigger.
+
+Retry schedule for transient work: 5 s, 30 s, 2 min, 15 min, then 6 h with jitter. Respect provider/bot retry-after. One worker per payment; no parallel issue/cancel/status mutation. Background execution is opportunistic—foreground reconciliation is mandatory.
+
+Derived UX precedence:
+
+1. unknown issuer/protocol → Needs update;
+2. active core badge remains visible regardless of refresh error;
+3. in-flight payment/issue overlays the prior state;
+4. canonical payment snapshot supplies renewal/cancellation/problem labels;
+5. entitled + missing/expired badge triggers issue;
+6. no entitlement + inactive badge is Expired/No badge.
+
+## 8. Errors and retries
+
+### 8.1 Stable bot errors
+
+| Code | Retry | Client action |
+|---|---:|---|
+| `bad_request`, `unsupported_version` | no | update/fix client |
+| `idempotency_mismatch` | no | generate new ID only for a genuinely new operation |
+| `payment_pending` | yes | show pending; poll at supplied interval |
+| `payment_not_found` | after restore | resubmit local proof once |
+| `payment_not_entitled` | no until provider change | show expired/fix payment |
+| `payment_ownership_conflict` | no | generic restore/support message |
+| `unknown_product` | no | hide product; operator alert |
+| `proof_invalid` | no | restore once; support |
+| `provider_rate_limited` | yes | obey retry-after |
+| `provider_unavailable`, `temporarily_unavailable` | yes | backoff; keep cache; do not claim cancellation |
+| `provider_action_pending` | yes | entitlement is durable; bot retries acknowledge/consume/cancel |
+| `ownership_binding_mismatch` | no | do not attach; restore/support flow |
+| `cancel_not_supported` | no | open Apple/Google provider management |
+| `already_canceled` | success | render returned snapshot |
+| `badge_already_issued` | success/read | return cached credential |
+| `bad_master_secret` | no | regenerate only through explicit recovery policy |
+| `issuer_key_missing/invalid`, `signing_failed` | yes/operator | preserve payment; retry issue |
+| `response_lost` | yes | repeat the identical RPC; receive cached application response |
+| `internal_error` | yes | generic message + request ID |
+
+### 8.2 Client/provider operation errors
+
+| Signal | Classification | Handling |
 |---|---|---|
-| Management screen rendering S0-S8 + CTAs | apps/ios, apps/multiplatform | Greenfield |
-| Badge glyph display (dim/hide/warn) | `NameBadge.swift`, Kotlin `ChatInfoImage.kt`/`Utils.kt` | Exists — reuse |
-| Client-local lifecycle store (lastIssued/pendingReq/entitlementCache) | client-local — see §8, Decision #2 | Greenfield |
+| Apple `userCancelled` / Play `USER_CANCELED` | user exit | return silently to prior UI; expire unused prepared row later |
+| Apple `pending` / Play purchase `PENDING` | pending | persist pending; listen/query later; do not finish, consume, acknowledge, or issue |
+| Apple unverified transaction | security/final for that proof | never attach; allow App Store retry/restore; support after repeated failure |
+| Apple StoreKit network/system error | transient unless documented otherwise | keep prepared row; retry/backoff; show compact store-unavailable message |
+| Play `SERVICE_DISCONNECTED`, `SERVICE_UNAVAILABLE`, `NETWORK_ERROR`, `ERROR` | transient | reconnect/backoff, then query purchases before relaunching flow |
+| Play `ITEM_ALREADY_OWNED` | reconciliation signal | query purchases and submit existing token; do not start another charge |
+| Play `ITEM_NOT_OWNED` during consume/ack | reconciliation signal | provider GET; treat already-consumed as success, otherwise retry/finalize state |
+| Play `ITEM_UNAVAILABLE`, `FEATURE_NOT_SUPPORTED`, `DEVELOPER_ERROR` | final/configuration | hide/disable SKU; operator telemetry; no blind retry |
+| Stripe Session `open` | pending | Continue payment; status poll with backoff |
+| Stripe Session `complete` + `payment_status=unpaid` | asynchronous pending | await async success/failure webhook; do not issue |
+| Stripe Session `expired` / async payment failed | final attempt | mark attempt failed; offer new Checkout Session |
+| Browser/deep-link fails | UX-only failure | foreground/status polling discovers payment; never create a second session automatically |
+| Provider auth/config 4xx | operator failure | stop automatic rapid retries; alert; preserve payment/proof |
+| Provider 429/5xx/timeouts | transient | honor retry-after and exponential backoff with jitter |
 
-### 7.5 Phase 4 — Reconciliation loop
+### 8.3 Provider mapping
 
-| Item | Repo / file | Status |
+| Provider signal | Payment state | Issue? |
+|---|---|---:|
+| Apple active/subscribed | Active | yes for unseen transaction period |
+| Apple grace | Grace | yes only if Apple still reports entitlement/current transaction |
+| Apple billing retry/expired/revoked | OnHold/Expired/Revoked | no |
+| Google ACTIVE | Active | yes |
+| Google IN_GRACE_PERIOD | Grace | yes while entitled |
+| Google ON_HOLD/PAUSED/PENDING | OnHold/Paused/Pending | no |
+| Google CANCELED with future expiry | Canceled | monthly slots through the already-paid monthly/yearly period |
+| Stripe Checkout/Invoice paid | Paid/Active | yes |
+| Stripe incomplete/pending | Pending | no |
+| Stripe past_due/unpaid | Grace/OnHold | no new period until invoice paid |
+| Any verified refund/revoke | Refunded/Revoked | no future issue |
+
+HTTP/provider 429 and 5xx are retryable; malformed/unauthorized configuration is operator-actionable. Never send raw exception strings to clients.
+
+### 8.4 Crash points
+
+- Crash before provider call: replay request.
+- Charge succeeds before response: provider ID + request idempotency key prevents a second Checkout/purchase attach.
+- Payment committed before signing: badge remains `Needed`; client reconciliation supplies the master key and retries.
+- Credential signed but RPC response lost: cache it by payment/period/key hash; an identical `badge.issue` returns it.
+- Response received before client persistence: repeat the identical request and install the same credential.
+- Webhook duplicated/out of order: event ID dedupe + provider re-fetch + monotonic transition.
+- DB unavailable during webhook: return non-2xx so Stripe retries; do not acknowledge the event.
+
+## 9. Security, privacy, and concurrency
+
+- Verify all provider signatures server-side; never trust client-decoded fields or redirect parameters.
+- Use provider idempotency keys for Stripe mutations and DB uniqueness for all mutations.
+- Encrypt purchase tokens/JWS/subscription identifiers that must be retained; rotate encryption keys.
+- The client encrypts its master key in `badge_payments` so pending and renewal issuance survive restart. The bot stores only its hash after signing and never persists the raw key outside the short signing transaction.
+- Validate product allowlist, app/package, environment, currency/price, provider account binding, payment capability, and provider-object ownership. Never send SimpleX contact/user IDs to providers.
+- Rate-limit per contact and operation; cap proof/message sizes.
+- Serialize mutations per payment with a row lock or compare-and-swap version. Webhook and RPC handlers share the same transition function.
+- Use an outbox/worker for provider actions and webhook processing. Badge signing is synchronous within `badge.issue` but outside long DB transactions; cache before returning.
+- Retain minimal audit data and define deletion/retention periods. Removing a contact anonymizes or deletes provider linkage subject to financial retention requirements.
+- `/issuer_pubkey` is diagnostic only. Clients trust hardcoded issuer keys and prompt update for unknown indices.
+
+## 10. Delivery plan and tests
+
+### Phase 1 — schema and protocol
+
+- Add client migrations for `badge_payments`/`badges`, bot persistence migrations, Haskell state types/codecs/tags, transition functions, request ledger, and v2 union.
+- Add adapters around existing signing and a public non-CLI core credential-install command based on `addUserBadge`/`setUserBadge`.
+- Golden-test JSON/YAML and DB round trips; property-test legal/illegal transitions; test Chat Console audit records and secret redaction for every RPC variant.
+
+### Phase 2 — Apple and Google
+
+- Expand provider result model beyond `valid/invalid/expired`.
+- Implement `payment.prepare` bindings, server status refresh, Apple Notifications V2, Google RTDN/server acknowledgement-consumption and Play management deep link, client StoreKit/Play listeners, and reconciliation.
+- Test sandbox/license flows: pending, grace, cancel-active, expiry, restore, linked-token replacement, refund/revoke.
+
+### Phase 3 — Stripe
+
+- Add Checkout Session creation, HTTPS completion page/deep link, raw-body signed webhook endpoint, event ledger, customer/subscription fields, cancel, and portal.
+- Test with Stripe CLI/test clocks: async payment, renewal, failure/recovery, cancellation, duplicated/reordered events, closed browser/app, and webhook outage.
+
+### Phase 4 — UX and hardening
+
+- Implement every Product Plan state, notification dedupe, stale/offline UI, telemetry without secrets, migration from `customData`, operational alerts, and cleanup jobs.
+- Run crash/restart tests at every side-effect boundary and cross-device capability recovery and cross-payment authorization tests.
+
+Release gates:
+
+- no unresolved state transition or error-code TODOs;
+- provider sandbox end-to-end tests pass;
+- webhook signature/replay tests pass;
+- migration rollback tested;
+- store policy/legal review complete;
+- dashboards cover pending age, verification failures, signing failures, webhook lag, and RPC errors.
+
+## 11. Code integration checklist
+
+| Code location | Required work |
+|---|---|
+| new `Simplex.Chat.Badges.Lifecycle` | add records, state sums, tags, codecs, and transition helpers; keep crypto `BadgeStatus` unchanged |
+| `Simplex.Chat.Library.Commands.addUserBadge` | expose safe API command for installing the credential returned by RPC; keep verify-before-store behavior |
+| RPC client/controller + console output | emit redacted start/result audit records for every badge RPC attempt in Developer Tools → Chat Console |
+| new badge store module + SQLite/Postgres migrations | typed stores plus `badge_payments`/`badges`; migrate/project current own credential without touching peer badges |
+| Kotlin/Swift models | add payment snapshots and derived UX state; current `BadgeStatus` remains proof-only |
+| `badge-service/state.py` | replace contact `customData` aggregate with bot DB repository and transactional transition functions |
+| `badge-service/google.py` | add full subscription union, period identity and one-time verification; keep cancel API for operator/recovery use only |
+| `badge-service/apple.py` | add server subscription status/renewal identity and consumable one-time policy |
+| `badge-service/stripe_api.py` | replace reusable Payment Links/poller with Checkout Sessions, signed webhooks, subscription status/cancel/portal |
+| `badge-service/wire.py` | add the v2 RPC payload request/response union while retaining the v1 parser during migration |
+
+## 12. Concrete API references
+
+Normative provider surfaces to implement against current official documentation:
+
+| Provider | Client APIs | Server APIs/events |
 |---|---|---|
-| onLaunch/onForeground/timer(~6h): read entitlement, compare periodKey, re-request | apps/ios, apps/multiplatform | Greenfield |
-| Single `@on_message`-style credential handler (solicited + delayed push) | client receive path (`CRNewChatItems`) | Greenfield |
-| Status read: StoreKit2 `currentEntitlements`, Play `queryPurchasesAsync` | client | Greenfield |
+| Apple | [StoreKit 2](https://developer.apple.com/storekit/): `Product.purchase`, transaction updates/JWS, consumable or non-renewing product type, subscription status, `showManageSubscriptions` | [Get All Subscription Statuses](https://developer.apple.com/documentation/appstoreserverapi/get-all-subscription-statuses), Transaction History; App Store Server Notifications V2 |
+| Google | [Play Billing](https://developer.android.com/google/play/billing/integrate): product query, billing flow, purchase listener, `queryPurchasesAsync`, acknowledge/consume | [`productsv2.getproductpurchasev2`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.productsv2/getproductpurchasev2), [`subscriptionsv2.get`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2/get), [`.cancel`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2/cancel); RTDN |
+| Stripe | browser + universal/app link only | [Checkout Session creation](https://docs.stripe.com/api/checkout/sessions/create), [webhook fulfillment](https://docs.stripe.com/checkout/fulfillment), [webhook delivery rules](https://docs.stripe.com/webhooks), [subscription events](https://docs.stripe.com/billing/subscriptions/webhooks), [cancellation](https://docs.stripe.com/billing/subscriptions/cancel), [Customer Portal](https://docs.stripe.com/customer-management/integrate-customer-portal) |
 
-### 7.6 Phase 5 — Stripe (desktop + F-Droid Android)
+Important API facts verified during this audit:
 
-| Item | Repo / file | Status |
-|---|---|---|
-| Open Payment Link (S6) + Customer Portal (`/portal`) in a browser | apps desktop (Kotlin) + Android F-Droid flavor | Greenfield |
-| Client-polled purchase: link now, client polls the bot until the invoice is paid and the badge is returned; **re-check-existing-subscription** request for renewal (no new checkout) | badge-service + client handler | Greenfield (client poll; drop bot background poller/push) |
-
----
-
-## 8. Open Technical Decisions
-
-Product-facing decisions (catalog shape) live in Product Plan §7. The technical ones:
-
-| # | Question | Recommended default |
-|---|---|---|
-| 1 | Google renewal-date precision without the Play Developer server API? | Accept **client-coarse** expiry (badge expiry is already coarse end-of-next-month); do not block on exact `expiryTime`. Let the bot's `subscriptionsv2.get` set authoritative expiry at issue. |
-| 2 | Where does client-local lifecycle state live — app-local storage vs `customData` on bot-contact? | **App-local** (Keychain/DataStore). `customData` is per-side and not synced; no multi-device benefit and adds a write API dependency. |
-| 3 | Google purchase acknowledgement — client or bot? | **Bot acknowledges** after server verify (single authority, avoids 3-day-refund race if client is offline). |
-| 4 | Correlation: new `req` nonce per request vs reuse existing `idem`? | **New `req` nonce** per request for reply-matching; keep `idem` for purchase-level idempotency. They serve different purposes — do not overload one. |
+- SimpleX service RPC is a short-lived request/reply ratchet: the client sends one request, the bot may only respond on that request reply queue, and final response/deadline/cancel removes the exchange. It provides no persistent caller identity and no service-initiated messages. See [`simplexmq` RPC RFC](https://github.com/simplex-chat/simplexmq/blob/rpc/rfcs/2026-07-11-service-rpc.md).
+- Apple supports `appAccountToken` for all product types; current entitlements cover subscribed/in-grace subscriptions, and cancellation is managed in Apple UI.
+- Google recommends backend verification plus server-side consume/acknowledge and obfuscated account identifiers. `subscriptionsv2` exposes pending, active, grace, on-hold, paused, canceled, and expired states; cancellation supports `USER_REQUESTED_STOP_RENEWALS`.
+- Stripe states that webhooks are required for reliable fulfillment; the Checkout success page is not sufficient.
+- Stripe Portal Sessions are short-lived. In this design Portal cancellation is disabled; all cancellation uses authenticated bot RPC and changes are reconciled from Stripe subscription events/status.
