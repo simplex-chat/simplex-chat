@@ -183,7 +183,7 @@ processAgentMsgSndFile :: (Maybe ChatRef, FileTransferId) -> ACorrId -> SndFileI
 processAgentMsgSndFile (cRef_, fileId) _corrId aFileId msg =
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-      Just user -> process user fileId `catchAllErrors` eToView
+      Just user -> process user `catchAllErrors` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
         throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
@@ -193,8 +193,8 @@ processAgentMsgSndFile (cRef_, fileId) _corrId aFileId msg =
       Just (ChatRef CTDirect contactId _) -> withContactLock "processAgentMsgSndFile" contactId
       Just (ChatRef CTGroup groupId _scope) -> withGroupLock "processAgentMsgSndFile" groupId
       _ -> id
-    process :: User -> FileTransferId -> CM ()
-    process user fileId = do
+    process :: User -> CM ()
+    process user = do
       (ft@FileTransferMeta {xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
       cxt <- chatStoreCxt
       unless cancelled $ case msg of
@@ -322,7 +322,7 @@ processAgentMsgRcvFile :: (Maybe ChatRef, FileTransferId) -> ACorrId -> RcvFileI
 processAgentMsgRcvFile (cRef_, fileId) _corrId aFileId msg =
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-      Just user -> process user fileId `catchAllErrors` eToView
+      Just user -> process user `catchAllErrors` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
         throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
@@ -332,8 +332,8 @@ processAgentMsgRcvFile (cRef_, fileId) _corrId aFileId msg =
       Just (ChatRef CTDirect contactId _) -> withContactLock "processAgentMsgRcvFile" contactId
       Just (ChatRef CTGroup groupId _scope) -> withGroupLock "processAgentMsgRcvFile" groupId
       _ -> id
-    process :: User -> FileTransferId -> CM ()
-    process user fileId = do
+    process :: User -> CM ()
+    process user = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       cxt <- chatStoreCxt
       unless (rcvFileCompleteOrCancelled ft) $ case msg of
