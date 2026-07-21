@@ -4,307 +4,334 @@
 **Status:** implementation-ready
 **Companion:** [Implementation plan](2026-07-20-supporter-badges-v2-implementation.md)
 
-A payment grants a provider-neutral monthly service credit. That credit can issue one badge credential. Payment, badge issuance, and local badge installation remain separate states even when one RPC completes several steps.
+Payment and badge are separate: payment creates a service credit for an eligible monthly slot; the credit issues one badge; core verifies and installs it.
 
-![End-to-end lifecycle](assets/badge-v2-e2e.svg)
+![Lifecycle](assets/badge-v2-e2e.svg)
 
 ## Contents
 
-- [1. Product rules](#1-product-rules)
+- [1. Rules](#1-rules)
 - [2. UX states](#2-ux-states)
 - [3. Badge screen](#3-badge-screen)
-- [4. Message-driven flows](#4-message-driven-flows)
-- [5. Refresh and notification](#5-refresh-and-notification)
-- [6. Error UX](#6-error-ux)
-- [7. Acceptance criteria](#7-acceptance-criteria)
+- [4. Payment flows](#4-payment-flows)
+- [5. Refresh and errors](#5-refresh-and-errors)
+- [6. Acceptance criteria](#6-acceptance-criteria)
 
-## 1. Product rules
+## 1. Rules
 
-### 1.1 Payment rails
+### Plans and providers
 
-| Build | Purchase | Cancel/manage |
+| Build | Payment | Cancel/manage |
 |---|---|---|
-| iOS | Apple StoreKit UI | Apple subscription-management UI |
-| Android Play | Google Play Billing UI | Google Play subscription-management UI |
-| Android non-Play / desktop | Stripe hosted Checkout | cancellation through bot RPC; portal for invoices/payment methods |
+| iOS | StoreKit | Apple subscription UI |
+| Android Play | Play Billing | Google Play subscription UI |
+| F-Droid / desktop | Stripe Checkout | cancel RPC; Customer Portal for invoices/payment methods |
 
-The build selects the rail. There are exactly three choices: **One-time**, **Monthly subscription**, and **Yearly subscription**. There is no Extend action.
+Choices: **One-time**, **Monthly**, **Yearly**. There is no Extend action.
 
-- One-time buys one non-renewing badge period and does not stack. It becomes purchasable again after expiry.
-- Subscribing while a one-time badge is active starts a normal new payment flow; stores do not convert that purchase.
-- Monthly/yearly subscriptions renew until canceled and create a new badge credit each eligible month.
-- Cancellation stops future renewal but does not shorten an already-issued badge.
-- Stripe Checkout, Customer Portal, and app links use the system browser. No localhost HTTP service is used.
-- Store-policy approval for Stripe digital purchases is a release gate for every build/region where it is offered.
+- One-time does not stack and is available again after badge expiry.
+- Subscribing from one-time starts a new payment; there is no conversion API.
+- Monthly and yearly plans issue one badge credit per eligible month.
+- Cancellation stops renewal. It does not shorten an issued badge.
+- Stripe uses the system browser. No localhost service is required.
 
-### 1.2 Dates
+### Dates
 
-Billing and badge validity use separate clocks:
-
-| Event | Billing | Badge |
+| Payment event | Billing | Badge |
 |---|---|---|
-| Payment **21 July** | monthly renewal **21 August**; yearly renewal **21 July next year** | valid through **31 August**; expires `1 September 00:00 UTC` |
-| Monthly slot **21 August** | monthly renewal **21 September**; yearly billing date unchanged | new badge valid through **30 September** |
-| Cancel before the next bill | access remains through provider `paidThrough` | already-issued badge remains valid to its signed expiry |
+| Paid 21 July | monthly renews 21 August; yearly renews 21 July next year | valid through 31 August |
+| Eligible slot 21 August | monthly renews 21 September; yearly billing unchanged | new badge valid through 30 September |
+| Canceled before renewal | subscription remains paid to provider period end | issued badge remains valid to signed expiry |
 
-The UI labels these separately as **Badge valid until** and **Renews on**. After cancellation, use **Subscription ends on**.
+Show **Badge valid until** separately from **Renews on** or **Subscription ends on**.
 
-### 1.3 Truth and privacy
+### Sources of truth
 
-- Core signature verification + credential expiry decides whether the badge is active.
-- Bot/provider verification decides payment status and whether a service credit exists.
-- StoreKit/Play local state and Stripe redirects are UI hints, never payment proof.
-- The bot returns one final response to each client RPC and cannot initiate a client message.
-- Capabilities, receipts, tokens, provider IDs, master keys, and credentials are redacted from logs and Chat Console.
+- Core signature and expiry decide badge validity.
+- Bot/provider verification decides payment status and credit eligibility.
+- Store state and Stripe redirects are hints only.
+- Client asks through RPC; bot returns one final response and never pushes.
+- Payment capability authorizes bot requests; secrets and provider proofs are redacted.
 
 ## 2. UX states
 
-The screen derives its state from two independent sources: the last payment snapshot and the locally installed badge.
-
-| UX state | Payment / badge condition | Display | Actions |
+| State | Condition | Display | Actions |
 |---|---|---|---|
-| **No badge** | no entitlement; no active badge | prices and plan choices | Buy once; Subscribe monthly/yearly |
-| **Payment pending** | provider approval/payment pending | old badge if valid; pending message | Continue payment; Check again |
-| **Paid, issuing** | credit available; badge request/install in progress | old badge + progress | automatic retry; Retry |
-| **Active one-time** | one-time paid; badge active | tier; badge expiry | Subscribe monthly/yearly |
-| **Active subscription** | subscription paid and renewing; badge active | interval; badge expiry; renewal date | Cancel subscription; Manage payment |
-| **Canceled, active** | renewal off; paid period or badge still active | badge expiry; subscription end | Resubscribe |
-| **Payment issue** | grace/on-hold/paused/provider failure | active badge until its own expiry | Fix payment; Check again |
-| **Badge missing** | payment credit exists; no usable badge | issuance unavailable/retrying | Retry |
-| **Expired** | no entitlement; no active badge | prior badge per retention rules | Buy once; Subscribe monthly/yearly |
-| **Needs update** | unknown issuer/protocol | badge unavailable | Update app |
-| **Offline/stale** | refresh failed; cache exists | last known state + check time | Retry |
+| No badge | no entitlement or active badge | plans and prices | Buy once; Monthly; Yearly |
+| Payment pending | provider not complete | old badge if valid | Continue; Check again |
+| Issuing | paid; badge request/install running | old badge + progress | automatic retry; Retry |
+| Active one-time | one-time badge active | tier; badge expiry | Monthly; Yearly |
+| Active subscription | paid, renewing, badge active | interval; badge expiry; renewal | Cancel; Manage |
+| Canceled, active | renewal off; paid/badge time remains | badge expiry; subscription end | Resubscribe |
+| Payment issue | grace/on-hold/provider error | active badge until expiry | Fix payment; Check again |
+| Badge missing | credit exists; no usable badge | issuance error/progress | Retry |
+| Expired | no entitlement or active badge | expired state | Buy once; Monthly; Yearly |
+| Needs update | unknown issuer/protocol | unavailable | Update app |
+| Offline/stale | refresh failed | cached state + check time | Retry |
 
-An active installed badge remains visible during payment refresh, cancellation, or network failures. Payment state alone never activates perks.
+An active installed badge remains visible during payment and network errors.
 
 ![State ownership](assets/badge-v2-states.svg)
 
 ## 3. Badge screen
 
-Use one stable layout:
+Display, in order:
 
-1. badge artwork, tier, and proof status;
+1. badge, tier, proof status;
 2. **Badge valid until**;
-3. One-time/Monthly/Yearly and **Renews on** or **Subscription ends on**;
-4. one primary action and one secondary manage/recovery action;
-5. compact error banner and **Last checked …** only when relevant.
+3. payment type and **Renews on** / **Subscription ends on**;
+4. primary action, then manage/recovery action;
+5. error and **Last checked** only when needed.
 
 ![No badge](assets/badge-v2-screen-s0.svg)
 ![One-time badge](assets/badge-v2-screen-s1.svg)
 ![Subscription badge](assets/badge-v2-screen-s2.svg)
 
-| Action | Behavior |
-|---|---|
-| Buy once | start the build’s one-time payment UI; disabled while one-time entitlement is active |
-| Subscribe / Resubscribe | choose Monthly or Yearly, then start a new subscription payment |
-| Cancel subscription | confirm → Apple/Google management UI or Stripe cancel RPC → refresh |
-| Manage / Fix payment | Apple/Google management UI or Stripe Customer Portal |
-| Check again | immediate coalesced status RPC; rate-limit repeated taps |
-
 Cancellation copy: **“Cancel renewal? Your subscription stays active until {date}. You won’t be charged again.”**
 
-## 4. Message-driven flows
+## 4. Payment flows
 
-Each state note names its owner. Detailed persisted state definitions are in the implementation plan.
+Every diagram is one outcome. Client and bot state are labeled separately.
 
-### 4.1 Apple purchase
+### Apple
+
+#### Success
 
 ```mermaid
 sequenceDiagram
-  actor U as User
-  participant CP as Client payment
-  participant CB as Client badge
-  participant B as Bot payment / badge services
-  participant Core as Client core
-
-  Note over CP: No payment
-  U->>CP: Buy / Subscribe
-  Note over CP: Preparing
-  CP->>B: Prepare Apple payment
-  Note over B: Payment prepared
-  B-->>CP: capability + appAccountToken
-  Note over CP: Store ready
-  CP->>CP: Open StoreKit purchase UI
-  alt Canceled or pending
-    Note over CP: Prior state or Provider pending
-  else Signed transaction returned
-    Note over CP: Verifying
-    Note over CB: Requesting
-    CP->>B: Apple proof + Issue badge request
-    Note over B: Verify JWS offline -> Payment entitled<br/>Create credit -> Sign badge -> Consume credit
-    B-->>CP: payment snapshot + credential
-    Note over CP: Entitled
-    Note over CB: Received
-    CB->>Core: Verify and install
-    Note over CB: Installed
-  end
+  participant C as Client
+  participant A as StoreKit
+  participant B as Bot
+  C->>B: Prepare Apple payment
+  B-->>C: Account binding
+  Note over C: Store ready
+  C->>A: Purchase
+  A-->>C: Signed transaction
+  Note over C: Verifying
+  C->>B: Transaction + badge request
+  Note over B: Payment entitled, badge issued
+  B-->>C: Status + badge
+  Note over C: Entitled, badge installed
 ```
 
-### 4.2 Google purchase
+#### Pending
 
 ```mermaid
 sequenceDiagram
-  actor U as User
-  participant CP as Client payment
-  participant CB as Client badge
-  participant B as Bot payment / badge services
-  participant G as Google Publisher API
-  participant Core as Client core
-
-  Note over CP: No payment
-  U->>CP: Buy / Subscribe
-  Note over CP: Preparing
-  CP->>B: Prepare Google payment
-  Note over B: Payment prepared
-  B-->>CP: capability + obfuscated account binding
-  Note over CP: Store ready
-  CP->>CP: Open Google Play Billing UI
-  alt Canceled or pending
-    Note over CP: Prior state or Provider pending
-  else purchaseToken returned
-    Note over CP: Verifying
-    Note over CB: Requesting
-    CP->>B: Google proof + Issue badge request
-    Note over B: Payment verifying
-    B->>G: Verify product/subscription
-    G-->>B: canonical purchase period
-    Note over B: Payment entitled<br/>Create credit -> Sign badge -> Consume credit
-    B-->>CP: payment snapshot + credential
-    Note over CP: Entitled
-    Note over CB: Received
-    CB->>Core: Verify and install
-    Note over CB: Installed
-  end
+  participant C as Client
+  participant A as StoreKit
+  participant B as Bot
+  C->>B: Prepare Apple payment
+  B-->>C: Account binding
+  C->>A: Purchase
+  A-->>C: Pending
+  Note over C: Payment pending, badge unchanged
+  Note over B: Prepared, no credit
 ```
 
-Apple and Google intentionally use separate flows: Apple verifies the initial signed transaction offline; Google asks the Publisher API.
-
-### 4.3 Stripe — F-Droid and desktop
+#### Canceled
 
 ```mermaid
 sequenceDiagram
-  actor U as User
-  participant CP as Client payment
-  participant CB as Client badge
-  participant B as Bot payment / badge services
+  participant C as Client
+  participant A as StoreKit
+  participant B as Bot
+  C->>B: Prepare Apple payment
+  B-->>C: Account binding
+  C->>A: Purchase
+  A-->>C: User canceled
+  Note over C: Previous state
+  Note over B: Prepared row expires later
+```
+
+Apple initial proof is verified offline. Later status uses App Store Server API.
+
+### Google
+
+#### Success
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant G as Google Play
+  participant B as Bot
+  C->>B: Prepare Google payment
+  B-->>C: Account binding
+  C->>G: Purchase
+  G-->>C: Purchase token
+  Note over C: Verifying
+  C->>B: Token + badge request
+  B->>G: Verify with Publisher API
+  G-->>B: Paid period
+  Note over B: Payment entitled, badge issued
+  B-->>C: Status + badge
+  Note over C: Entitled, badge installed
+```
+
+#### Pending
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant G as Google Play
+  participant B as Bot
+  C->>B: Prepare Google payment
+  B-->>C: Account binding
+  C->>G: Purchase
+  G-->>C: Pending
+  Note over C: Payment pending, badge unchanged
+  Note over B: Prepared, no credit
+```
+
+#### Canceled
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant G as Google Play
+  participant B as Bot
+  C->>B: Prepare Google payment
+  B-->>C: Account binding
+  C->>G: Purchase
+  G-->>C: User canceled
+  Note over C: Previous state
+  Note over B: Prepared row expires later
+```
+
+### Stripe
+
+#### Success
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant B as Bot
   participant S as Stripe
-  participant W as System browser
-  participant Core as Client core
-
-  Note over CP: No payment
-  U->>CP: Buy / Subscribe
-  Note over CP: Preparing
-  CP->>B: Prepare Stripe payment
+  C->>B: Prepare Stripe payment
   B->>S: Create Checkout Session
-  Note over B: Checkout open
-  B-->>CP: capability + checkout ID + URL
-  Note over CP: Checkout ready
-  CP->>W: Open hosted Checkout
-  Note over CP: Provider pending
-  W->>S: Pay
+  B-->>C: Checkout URL + capability
+  C->>S: Open Checkout
+  Note over C: Payment pending, start polling
   S-->>B: Signed webhook
-  Note over B: Verify with Stripe API<br/>Payment entitled + credit available
-  Note over CP: Still pending, bot cannot push
-  S-->>W: Hosted success page
-  W-->>CP: Return link (routing only)
-  Note over CP: Verifying
-  Note over CB: Requesting
-  CP->>B: Status + Issue badge request
-  alt Payment still pending
-    B-->>CP: pending + retry time
-    Note over CP: Provider pending
-  else Credit available
-    Note over B: Sign badge -> Consume credit
-    B-->>CP: payment snapshot + credential
-    Note over CP: Entitled
-    Note over CB: Received
-    CB->>Core: Verify and install
-    Note over CB: Installed
-  end
+  Note over B: Payment entitled, credit available
+  C->>B: Status + badge request
+  B-->>C: Status + badge
+  Note over C: Entitled, badge installed
 ```
 
-The return link is not proof. On return/foreground the app asks the bot; if still pending it polls at 5, 15, 30, 60, and 120 seconds, then waits for normal reconciliation. If the link fails, foreground refresh still recovers the purchase.
-
-### 4.4 Cancellation
+#### Still pending
 
 ```mermaid
 sequenceDiagram
-  actor U as User
-  participant CP as Client payment
-  participant B as Bot payment service
-  participant P as Apple / Google / Stripe
-
-  Note over CP: Active subscription
-  U->>CP: Cancel and confirm
-  Note over CP: Canceling
-  alt Apple / Google
-    CP->>P: Open store subscription management
-    P-->>CP: Return / foreground
-    CP->>B: Status request
-    B->>P: Read canonical subscription status
-  else Stripe
-    CP->>B: CancelSubscription RPC
-    B->>P: Set cancel at period end
-  end
-  P-->>B: renewal off + paid-through date
-  Note over B: Cancel at end
-  B-->>CP: canonical snapshot
-  Note over CP: Canceled, active until date
+  participant C as Client
+  participant B as Bot
+  participant S as Stripe
+  C->>B: Status request
+  B->>S: Retrieve Checkout
+  S-->>B: Pending
+  Note over B: Pending, no credit
+  B-->>C: Pending + retry time
+  Note over C: Poll later, badge unchanged
 ```
 
-A timeout keeps the previous state and shows Retry. The app never says canceled until the bot confirms renewal is off. Stripe cancellation is through bot RPC only.
+#### Expired
 
-## 5. Refresh and notification
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant B as Bot
+  participant S as Stripe
+  S-->>B: Checkout expired
+  Note over B: Expired, no credit
+  C->>B: Status request
+  B-->>C: Checkout expired
+  Note over C: New checkout requires user action
+```
 
-The client asks; the bot only responds. There are no bot events to the client.
+Start polling when Checkout opens and on return/foreground: 5, 15, 30, 60, 120 seconds, then normal refresh. The return link is optional routing, never proof.
 
-Refresh on:
+### Cancel subscription
 
-- launch, foreground, profile switch, network restored;
-- StoreKit/Play purchase update;
-- Stripe return link or browser return;
-- manual Check again;
-- six-hour jittered timer;
-- 24 hours before payment end or badge expiry.
+#### Apple
 
-After refresh:
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant UI as Apple UI
+  participant B as Bot
+  participant API as Apple API
+  C->>UI: Manage subscription
+  UI-->>C: Return
+  C->>B: Status request
+  B->>API: Read status
+  API-->>B: Renewal off + end date
+  B-->>C: Updated status
+  Note over C: Canceled, active until end date
+```
 
-- payment pending → keep pending and schedule retry;
-- credit available + badge absent for that slot → request issuance;
-- credential returned → cache, verify, install, then update UI;
-- no subscription and badge expired → show available purchase choices;
-- cancellation/refund → stop future issuance; keep a cryptographically active installed badge until its expiry.
+#### Google
 
-Notify once per payment/slot for: payment action required, badge expiring soon without renewal, subscription ending, and badge issuance repeatedly failing. Do not notify merely because the app was offline.
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant UI as Google UI
+  participant B as Bot
+  participant API as Google API
+  C->>UI: Manage subscription
+  UI-->>C: Return
+  C->>B: Status request
+  B->>API: Read status
+  API-->>B: Renewal off + end date
+  B-->>C: Updated status
+  Note over C: Canceled, active until end date
+```
 
-## 6. Error UX
+#### Stripe
 
-| Condition | User message/action |
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant B as Bot
+  participant S as Stripe API
+  C->>B: Cancel RPC
+  B->>S: Cancel at period end
+  S-->>B: Renewal off + end date
+  B-->>C: Updated status
+  Note over C: Canceled, active until end date
+```
+
+Never show canceled until the bot confirms renewal is off.
+
+## 5. Refresh and errors
+
+Refresh on launch, foreground, profile switch, network restore, store update, Stripe browser return, manual retry, six-hour jittered timer, and payment/badge date boundaries.
+
+If paid credit exists without the current badge, request issuance. Cache the response before core verification/install. There are no bot-initiated client events.
+
+| Condition | Client action |
 |---|---|
-| Store UI dismissed | return silently to prior screen |
-| Payment pending | “Payment pending”; Continue/Check again |
-| Network/provider unavailable | keep cached badge; “Couldn’t refresh”; Retry |
-| Stripe return link fails | no special failure; foreground polling/status recovers |
-| Payment confirmed, badge issue failed | “Payment confirmed. Badge is being prepared”; automatic retry |
-| Cancellation request failed | keep **Renews on**; “Couldn’t cancel”; Retry |
-| Payment method/grace/on-hold | keep badge while valid; Fix payment/Manage |
-| Invalid proof or ownership conflict | generic restore/support message; no sensitive details |
-| Unknown issuer/protocol | “Update SimpleX to use this badge” |
-| Invalid returned credential | do not install; retain old badge; retry/support |
-| Duplicate request/response loss | no duplicate charge/badge; repeat returns same result |
+| Store canceled | restore previous screen |
+| Payment pending | show pending; poll/schedule |
+| Network/provider failure | keep cached state and active badge; retry |
+| Paid, issuance failed | show “Payment confirmed. Badge is being prepared”; retry |
+| Cancel failed | keep **Renews on**; retry |
+| Payment issue | show Fix payment / Manage |
+| Ownership/proof failure | restore/support; no sensitive details |
+| Unknown issuer/protocol | require update |
+| Invalid credential | reject; retain old badge; retry/support |
+| Duplicate/lost response | repeat same request; no duplicate charge/badge |
 
-Every error preserves the last known payment snapshot and installed badge. Errors are classified as retryable, final user/configuration, or operator/security; raw provider messages are never shown.
+Errors preserve the last payment snapshot and installed badge. The implementation plan defines retry/final handling.
 
-## 7. Acceptance criteria
+## 6. Acceptance criteria
 
-- The three top-level badge states are clear: no badge, active one-time, active subscription.
-- Monthly and yearly subscription choices are explicit; no Extend subscription action exists.
-- A 21 July payment displays badge validity through 31 August while billing remains 21 August/monthly or 21 July next year/yearly.
-- Apple, Google, and Stripe flows show separate client and bot state markers and the message causing each transition.
-- Apple initial proof is offline; Google initial proof uses its server API; Stripe uses Checkout + webhook/API reconciliation.
-- Payment verification yields a provider-neutral credit; badge issuance does not import provider logic.
-- Payment and badge tables are separate state machines on both client and bot.
-- RPC is client-request/bot-response only; response loss is recovered idempotently.
-- Stripe works without localhost and cancellation is bot RPC only.
-- Every response/error has a client reaction, bot reaction, and retry/final classification in the implementation plan.
-- Every badge RPC attempt/result is auditable in Developer Tools → Chat Console with secrets redacted.
+- No badge, one-time badge, and subscription badge UX is complete.
+- Choices are One-time, Monthly, Yearly; no Extend.
+- Payment on 21 July shows badge through 31 August while billing keeps its provider date.
+- Apple, Google, and Stripe have separate linear outcomes.
+- Payment verification creates provider-neutral credit; badge service has no provider logic.
+- Client and bot payment/badge states are separate.
+- RPC is client-request/bot-response only and idempotent.
+- Stripe needs no localhost/deep-link success and cancels through bot RPC.
+- Every error category has an owner, state-preserving action, and retry/final result.
+- RPC attempts/results appear redacted in Developer Tools → Chat Console.
