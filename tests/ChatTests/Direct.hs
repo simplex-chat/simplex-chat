@@ -1555,11 +1555,12 @@ testConnSyncExtraAgentUsers ps = do
         DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
 
     withTestChat ps "alice" $ \alice -> do
-      alice <## "connections difference summary:"
-      alice <## "number of extra users in agent: 1"
-      alice <## "removed extra users in agent"
-
-      alice <## "subscribed 1 connections on server localhost"
+      alice <###
+        [ "connections difference summary:",
+          "number of extra users in agent: 1",
+          "removed extra users in agent",
+          "subscribed 1 connections on server localhost"
+        ]
 
       threadDelay 100000
       agentUserCount <- withCCAgentTransaction alice $ \db ->
@@ -2396,7 +2397,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2500000
+      threadDelay 3000000
 
       -- second user messages are deleted
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])

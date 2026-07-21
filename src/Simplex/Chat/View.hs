@@ -395,11 +395,11 @@ sigStatusStr = \case
   Just MSSSignedNoKey -> " (signed, no key to verify)"
   Nothing -> ""
 
-msgVerifiedStr :: IsString a => MsgVerified -> a
+msgVerifiedStr :: IsString a => Maybe MsgVerified -> a
 msgVerifiedStr = \case
-  MVSigned s -> sigStatusStr (Just s)
-  MVSigMissing -> " (signature missing)"
-  MVUnsigned -> ""
+  Just (MVSigned s) -> sigStatusStr (Just s)
+  Just MVSigMissing -> " (signature missing)"
+  Nothing -> ""
 
 signedStr :: IsString a => Bool -> a
 signedStr signed = if signed then " (signed)" else ""
@@ -1659,12 +1659,12 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
             testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
         viewRoles op@ServerOperator {enabled}
           | not enabled = "disabled"
-          | storage rs && proxy rs = "enabled"
-          | storage rs = "enabled storage"
-          | proxy rs = "enabled proxy"
+          | rStorage && rProxy = "enabled"
+          | rStorage = "enabled storage"
+          | rProxy = "enabled proxy"
           | otherwise = "disabled (servers known)"
           where
-            rs = operatorRoles p op
+            ServerRoles {storage = rStorage, proxy = rProxy} = operatorRoles p op
     viewChatRelays :: [UserChatRelay] -> [StyledString]
     viewChatRelays [] = []
     viewChatRelays cRelays
@@ -1752,12 +1752,12 @@ viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
   | both smpRoles && both xftpRoles = "enabled"
   | otherwise = "SMP " <> viewRoles smpRoles <> ", XFTP " <> viewRoles xftpRoles
   where
-    no rs = not $ storage rs || proxy rs
-    both rs = storage rs && proxy rs
-    viewRoles rs
+    no ServerRoles {storage, proxy} = not $ storage || proxy
+    both ServerRoles {storage, proxy} = storage && proxy
+    viewRoles rs@ServerRoles {storage, proxy}
       | both rs = "enabled"
-      | storage rs = "enabled storage"
-      | proxy rs = "enabled proxy"
+      | storage = "enabled storage"
+      | proxy = "enabled proxy"
       | otherwise = "disabled (servers known)"
 
 viewConditionsAction :: UsageConditionsAction -> [StyledString]
@@ -1815,9 +1815,10 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> plain (strEncode (simplexChatContact' l))]) contactLink
     <> simplexDomainLine NTContact contactDomain contactDomainVerified
@@ -1833,13 +1834,18 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
-viewGroupInfo gInfo@GroupInfo {groupId, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
+viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, groupProfile = GroupProfile {publicGroup}, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
   [ "group ID: " <> sShow groupId,
     memberCountLine
   ]
+    <> domainLine
     <> viewUITheme uiThemes
     <> viewCustomData customData
   where
+    -- a business presents as a contact (@-name); a public group/channel shows its #-name
+    domainLine = case businessChat of
+      Just bc -> simplexDomainLine NTContact (businessDomain bc) groupDomainVerified
+      Nothing -> simplexDomainLine NTPublicGroup (publicGroup >>= publicGroupAccess >>= groupDomainClaim) groupDomainVerified
     memberCountLine
       | useRelays' gInfo, Just count <- publicMemberCount = "subscribers: " <> sShow count
       | otherwise = "current members: " <> sShow currentMembers
@@ -1851,16 +1857,19 @@ viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink, localBadge}, activeConn} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink, localBadge, description}, activeConn} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> viewContactBadge localBadge
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> maybe ["member not connected"] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
     <> ["alias: " <> plain localAlias | localAlias /= ""]
-    <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
+    <> [viewConnectionVerified mSecurityCode | isJust stats || isJust mSecurityCode]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
+  where
+    mSecurityCode = memberSecurityCode m
 
 viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
@@ -1952,14 +1961,15 @@ viewSwitchPhase = \case
   SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> UserProfileUpdateSummary -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', image = image', contactLink = contactLink', preferences = prefs'} summary =
+viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, description, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', description = description', image = image', contactLink = contactLink', preferences = prefs'} summary =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     UserProfileUpdateSummary {updateSuccesses = s, updateFailures = f} = summary
     profileUpdated
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' && image == image' && contactLink == contactLink' = []
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' && contactLink == contactLink' = []
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' = ["user description " <> (if maybe True T.null description' then "removed" else "changed to " <> maybe "" plain description') <> notified]
       | n == n' && fullName == fullName' = ["user bio " <> (if maybe True T.null shortDescr' then "removed" else "changed to " <> maybe "" plain shortDescr') <> notified]
       | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' shortDescr' <> notified]
@@ -2250,13 +2260,17 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, contactLink}}
-  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', shortDescr = shortDescr', contactLink = contactLink'}}
-    | n == n' && fullName == fullName' && shortDescr == shortDescr' && contactLink == contactLink' = []
-    | n == n' && fullName == fullName' && shortDescr == shortDescr' =
+  Contact {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, description, contactLink}}
+  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', shortDescr = shortDescr', description = description', contactLink = contactLink'}}
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && contactLink == contactLink' = []
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' =
         if isNothing contactLink'
           then [ttyContact n <> " removed contact address"]
           else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' =
+        if maybe True T.null description'
+          then ["contact " <> ttyContact n <> " removed description"]
+          else ["contact " <> ttyContact n <> " updated description: " <> maybe "" plain description']
     | n == n' && fullName == fullName' =
         if maybe True T.null shortDescr'
           then ["contact " <> ttyContact n <> " removed bio"]

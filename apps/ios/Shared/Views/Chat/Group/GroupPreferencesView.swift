@@ -50,7 +50,8 @@ struct GroupPreferencesView: View {
                     featureSection(.history, $preferences.history.enable)
                     featureSection(.support, $preferences.support.enable, disabled: true)
                 } else {
-                    featureSection(.signMessages, $preferences.signMessages.enable)
+                    // hidden until message signing is user-facing (recipient-only stage)
+//                    featureSection(.signMessages, $preferences.signMessages.enable)
                     featureSection(.timedMessages, $preferences.timedMessages.enable)
                     featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.reactions, $preferences.reactions.enable)

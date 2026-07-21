@@ -216,15 +216,15 @@
   <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="app_update_required">App update required</string>
   <string name="group_link_requires_newer_version">This group requires a newer version of the app. Please update the app to join.</string>
-  <string name="connection_error_auth">Connection error (AUTH)</string>
-  <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
+  <string name="connection_error_auth">Connection link removed</string>
+  <string name="connection_error_auth_desc">Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.</string>
   <string name="connection_error_blocked">Connection blocked</string>
   <string name="connection_error_blocked_desc">Connection is blocked by server operator:\n%1$s.</string>
   <string name="connection_error_quota">Undelivered messages</string>
   <string name="connection_error_quota_desc">The connection reached the limit of undelivered messages, your contact may be offline.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
   <string name="error_rejecting_contact_request">Error rejecting contact request</string>
-  <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
+  <string name="sender_may_have_deleted_the_connection_request">The sender deleted the connection request.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_note_folder">Error deleting private notes</string>
@@ -393,6 +393,11 @@
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
   <string name="copy_verb">Copy</string>
+  <string name="save_simplex_name_question">Save SimpleX name?</string>
+  <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
+  <string name="channel_simplex_name">Channel SimpleX name</string>
+  <string name="register_test_name">Register a test name</string>
+  <string name="remove_name">Remove name</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
   <string name="info_menu">Info</string>
@@ -569,6 +574,7 @@
   <string name="forward_message">Forward message…</string>
   <string name="forward_multiple">Forward messages…</string>
   <string name="share_channel">Share channel…</string>
+  <string name="share_address">Share address…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
   <string name="share_via_chat">Share via chat</string>
@@ -579,8 +585,8 @@
   <string name="chat_link_contact_address">Contact address</string>
   <string name="chat_link_one_time">One-time link</string>
   <string name="chat_link_from_owner">(from owner)</string>
-  <string name="chat_link_signed">(signed)</string>
   <string name="error_sharing_channel">Error sharing channel</string>
+  <string name="error_sharing_address">Error sharing address</string>
   <string name="owner_verification_passed">Link signature verified.</string>
   <string name="owner_verification_failed">⚠️ Signature verification failed: %s.</string>
 
@@ -1008,6 +1014,7 @@
   <string name="mark_code_verified">Mark verified</string>
   <string name="clear_verification">Clear verification</string>
   <string name="to_verify_compare">To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</string>
+  <string name="to_verify_channel_member_key">To verify keys with this subscriber, compare (or scan) the code on your devices.</string>
   <string name="is_verified">%s is verified</string>
   <string name="is_not_verified">%s is not verified</string>
 
@@ -1242,6 +1249,10 @@
   <string name="full_name__field">Full name:</string>
   <string name="short_descr__field">Bio:</string>
   <string name="bio_too_large">Bio too large</string>
+  <string name="profile_description__field">Description</string>
+  <string name="add_description">Add description</string>
+  <string name="edit_description">Edit description</string>
+  <string name="enter_description_optional">Enter description (optional)</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
@@ -2723,6 +2734,13 @@
   <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
+  <string name="v7_0_simplex_names">SimpleX names (BETA)</string>
+  <string name="v7_0_simplex_names_descr">Names for your channel or business.</string>
+  <string name="v7_0_channels">Better channels 📢</string>
+  <string name="v7_0_channels_previews">Create web preview.</string>
+  <string name="v7_0_channels_relays">Manage your relays.</string>
+  <string name="v7_0_channels_contributors">Add contributors.</string>
+  <string name="v7_0_channels_wider_messages">Easier to read.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->

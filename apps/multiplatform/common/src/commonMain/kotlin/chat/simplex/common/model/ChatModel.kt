@@ -1294,6 +1294,7 @@ data class User(
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
   override val shortDescr: String? get() = profile.shortDescr
+  override val profileDescription: String? get() = profile.description
   override val image: String? get() = profile.image
   override val localAlias: String = ""
 
@@ -1366,6 +1367,7 @@ interface NamedChat {
   val displayName: String
   val fullName: String
   val shortDescr: String?
+  val profileDescription: String? get() = null
   val image: String?
   val localAlias: String
   val chatViewName: String
@@ -1491,6 +1493,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val displayName get() = contact.displayName
     override val fullName get() = contact.fullName
     override val shortDescr get() = contact.profile.shortDescr
+    override val profileDescription get() = contact.profile.description
     override val image get() = contact.image
     override val localAlias: String get() = contact.localAlias
     override fun anyNameContains(searchAnyCase: String): Boolean = contact.anyNameContains(searchAnyCase)
@@ -1519,6 +1522,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.fullName
     override val shortDescr get() = groupInfo.groupProfile.shortDescr
+    override val profileDescription get() = groupInfo.profileDescription
     override val image get() = groupInfo.image
     override val localAlias get() = groupInfo.localAlias
 
@@ -1573,6 +1577,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val displayName get() = contactRequest.displayName
     override val fullName get() = contactRequest.fullName
     override val shortDescr get() = contactRequest.profile.shortDescr
+    override val profileDescription get() = contactRequest.profile.description
     override val image get() = contactRequest.image
     override val localAlias get() = contactRequest.localAlias
 
@@ -1863,6 +1868,7 @@ data class Contact(
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
   override val shortDescr get() = profile.shortDescr
+  override val profileDescription get() = profile.description
   override val image get() = profile.image
   val contactLink: String? = profile.contactLink
   override val localAlias get() = profile.localAlias
@@ -2032,6 +2038,7 @@ data class Profile(
   override val displayName: String,
   override val fullName: String,
   override val shortDescr: String?,
+  val description: String? = null,
   override val image: String? = null,
   override val localAlias : String = "",
   val contactLink: String? = null,
@@ -2042,12 +2049,14 @@ data class Profile(
   val badge: BadgeProof? = null,
   val contactDomain: SimplexDomainClaim? = null
 ): NamedChat {
+  override val profileDescription: String? get() = description
+
   val profileViewName: String
     get() {
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
 
   companion object {
     val sampleData = Profile(
@@ -2064,6 +2073,7 @@ data class LocalProfile(
   override val displayName: String,
   override val fullName: String,
   override val shortDescr: String?,
+  val description: String? = null,
   override val image: String? = null,
   override val localAlias: String,
   val contactLink: String? = null,
@@ -2073,9 +2083,11 @@ data class LocalProfile(
   val contactDomain: SimplexDomainClaim? = null,
   val contactDomainVerified: Boolean? = null
 ): NamedChat {
+  override val profileDescription: String? get() = description
+
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
+  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
 
   companion object {
     val sampleData = LocalProfile(
@@ -2225,6 +2237,7 @@ data class GroupInfo (
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
   override val shortDescr get() = groupProfile.shortDescr
+  override val profileDescription get() = if (businessChat != null) groupProfile.description else null
   override val image get() = groupProfile.image
 
   val isOwner: Boolean
@@ -2433,7 +2446,6 @@ enum class MsgSigStatus {
 sealed class MsgVerified {
   @Serializable @SerialName("signed") data class Signed(val sigStatus: MsgSigStatus): MsgVerified()
   @Serializable @SerialName("sigMissing") object SigMissing: MsgVerified()
-  @Serializable @SerialName("unsigned") object Unsigned: MsgVerified()
 
   val verified: Boolean get() = this is Signed && sigStatus == MsgSigStatus.Verified
 
@@ -2536,7 +2548,8 @@ data class GroupMember (
   var activeConn: Connection? = null,
   val supportChat: GroupSupportChat? = null,
   val memberChatVRange: VersionRange,
-  val relayLink: String? = null
+  val relayLink: String? = null,
+  val memberVerifiedCode: SecurityCode? = null
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
   val ready get() = activeConn?.connStatus == ConnStatus.Ready
@@ -2554,9 +2567,10 @@ data class GroupMember (
     }
   override val fullName: String get() = memberProfile.fullName
   override val shortDescr: String? get() = memberProfile.shortDescr
+  override val profileDescription: String? get() = memberProfile.description
   override val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
-  val verified get() = activeConn?.connectionCode != null
+  val verified get() = memberVerifiedCode != null || activeConn?.connectionCode != null
   // the badge shown for a member's name; a badge that expired over a month ago (ExpiredOld) is not shown
   val nameBadge: LocalBadge? get() {
     val badge = memberProfile.localBadge
@@ -3577,7 +3591,7 @@ data class CIMeta (
   val deletable: Boolean,
   val editable: Boolean,
   val showGroupAsSender: Boolean,
-  val msgVerified: MsgVerified = MsgVerified.Unsigned
+  val msgVerified: MsgVerified? = null
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 
@@ -4812,7 +4826,7 @@ sealed class MsgChatLink {
       is Invitation -> generalGetString(MR.strings.chat_link_one_time)
     }
     if (signed) {
-      s += " " + if (isPublicGroup) generalGetString(MR.strings.chat_link_from_owner) else generalGetString(MR.strings.chat_link_signed)
+      s += " " + generalGetString(MR.strings.chat_link_from_owner)
     }
     return s
   }
@@ -4859,6 +4873,11 @@ sealed class Format {
   @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
+  @Serializable @SerialName("modal") class Modal(val modalName: String, val text: String): Format() {
+    companion object {
+      const val Description = "description"
+    }
+  }
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
   @Serializable @SerialName("unknown") class Unknown: Format()
@@ -4879,6 +4898,7 @@ sealed class Format {
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
     is Phone -> linkStyle
+    is Modal -> linkStyle
     is Unknown -> SpanStyle()
   }
 

@@ -2737,8 +2737,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">傳送者已取消傳送檔案。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
-        <source>Sender may have deleted the connection request.</source>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve" approved="no">
+        <source>The sender deleted the connection request.</source>
         <target state="translated">傳送者似乎已經刪除了連接的請求。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

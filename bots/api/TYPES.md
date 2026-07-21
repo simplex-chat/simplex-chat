@@ -874,7 +874,7 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
-- msgVerified: [MsgVerified](#msgverified)
+- msgVerified: [MsgVerified](#msgverified)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -2455,6 +2455,7 @@ UpdateRequired:
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - memberPubKey: string?
 - relayLink: string?
+- memberVerifiedCode: [SecurityCode](#securitycode)?
 
 
 ---
@@ -2773,6 +2774,7 @@ Unknown:
 - displayName: string
 - fullName: string
 - shortDescr: string?
+- description: string?
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
@@ -2969,9 +2971,6 @@ Signed:
 SigMissing:
 - type: "sigMissing"
 
-Unsigned:
-- type: "unsigned"
-
 
 ---
 
@@ -3165,6 +3164,7 @@ count=<count>
 - displayName: string
 - fullName: string
 - shortDescr: string?
+- description: string?
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?

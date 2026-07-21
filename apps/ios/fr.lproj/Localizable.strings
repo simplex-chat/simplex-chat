@@ -28,9 +28,6 @@
 /* No comment provided by engineer. */
 "(new)" = "(nouveau)";
 
-/* chat link info line */
-"(signed)" = "(signé)";
-
 /* No comment provided by engineer. */
 "(this device v%@)" = "(cet appareil v%@)";
 
@@ -1524,9 +1521,6 @@ server test step */
 /* alert title */
 "Connection error" = "Erreur de connexion";
 
-/* conn error description */
-"Connection error (AUTH)" = "Erreur de connexion (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "connexion établie";
 
@@ -1535,6 +1529,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "La connexion est bloquée par l'opérateur du serveur :\n%@";
+
+/* conn error description */
+"Connection link removed" = "Erreur de connexion";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "La connexion n'est pas prête.";
@@ -1685,9 +1682,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create public channel" = "Créer un canal public";
-
-/* No comment provided by engineer. */
-"Create public channel (BETA)" = "Créer un canal public (BÊTA)";
 
 /* server test step */
 "Create queue" = "Créer une file d'attente";
@@ -2047,13 +2041,13 @@ alert button */
 "Desktop devices" = "Appareils de bureau";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "L'adresse du serveur de destination %@ est incompatible avec les paramètres du serveur de redirection %@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "L'adresse du serveur de destination %1$@ est incompatible avec les paramètres du serveur de redirection %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Erreur du serveur de destination : %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "La version du serveur de destination %@ est incompatible avec le serveur de redirection %@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "La version du serveur de destination %1$@ est incompatible avec le serveur de redirection %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Statistiques détaillées";
@@ -3617,15 +3611,6 @@ servers warning */
 "Member inactive" = "Membre inactif";
 
 /* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "Le rôle du membre sera modifié pour « %@ ». Tous les membres du chat seront notifiés.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Le rôle du membre sera changé pour \"%@\". Tous les membres du groupe en seront informés.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "Le rôle du membre sera changé pour \"%@\". Ce membre recevra une nouvelle invitation.";
-
-/* No comment provided by engineer. */
 "Member is deleted - can't accept request" = "Le membre est supprimé ; impossible d'accepter la demande";
 
 /* alert message */
@@ -4591,7 +4576,8 @@ alert button */
 /* No comment provided by engineer. */
 "Profile theme" = "Thème de profil";
 
-/* alert message */
+/* alert message
+alert title */
 "Profile update will be sent to your SimpleX contacts." = "La mise à jour du profil sera envoyée à vos contacts SimpleX.";
 
 /* No comment provided by engineer. */
@@ -4687,7 +4673,7 @@ alert button */
 /* swipe action */
 "Read" = "Lire";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "En savoir plus";
 
 /* No comment provided by engineer. */
@@ -5023,6 +5009,15 @@ swipe action */
 "Role" = "Rôle";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "Le rôle du membre sera modifié pour « %@ ». Tous les membres du chat seront notifiés.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Le rôle du membre sera changé pour \"%@\". Tous les membres du groupe en seront informés.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Le rôle du membre sera changé pour \"%@\". Ce membre recevra une nouvelle invitation.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Exécuter le chat";
 
 /* No comment provided by engineer. */
@@ -5034,7 +5029,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Groupes plus sûrs";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Enregistrer";
 
@@ -5304,9 +5300,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "L'expéditeur a annulé le transfert de fichiers.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "L'expéditeur a peut-être supprimé la demande de connexion.";
 
 /* alert message */
 "Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "L'envoi d'un aperçu de lien peut révéler votre adresse IP au site Web. Vous pouvez modifier ceci dans les paramètres de confidentialité plus tard.";
@@ -5920,6 +5913,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Le deuxième coche que nous avons manqué ! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "L'expéditeur a peut-être supprimé la demande de connexion.";
+
 /* alert message */
 "The sender will NOT be notified" = "L'expéditeur N'en sera PAS informé";
 
@@ -6138,9 +6134,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "À moins que vous utilisiez l'interface d'appel d'iOS, activez le mode \"Ne pas déranger\" pour éviter les interruptions.";
-
-/* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s'agir d'un bug - veuillez le signaler.\nPour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d'une connexion réseau stable.";
 
 /* No comment provided by engineer. */
 "Unlink" = "Délier";
@@ -6735,6 +6728,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact" = "Votre contact";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s'agir d'un bug - veuillez le signaler.\nPour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d'une connexion réseau stable.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Votre contact a envoyé un fichier plus grand que la taille maximale supportée actuellement(%@).";

@@ -18,6 +18,7 @@ import Simplex.Chat.View (ChatResponseEvent, smpProxyModeStr)
 import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (..))
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
+import System.IO (BufferMode (..), hSetBuffering, stdout)
 import System.Terminal (withTerminal)
 
 simplexChatCLI :: ChatConfig -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
@@ -27,19 +28,29 @@ simplexChatCLI cfg server_ = do
   simplexChatCLI' cfg opts server_
 
 simplexChatCLI' :: ChatConfig -> ChatOpts -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
-simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort} server_ = do
+simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort, coreOptions = CoreChatOpts {headless}} server_ = do
   if null chatCmd
     then case chatServerPort of
       Just chatPort -> case server_ of
         Just server -> server chatPort cfg opts
         Nothing -> putStrLn "Not allowed to run as a WebSockets server" >> exitFailure
-      _ -> runCLI
+      _
+        | headless -> do
+            hSetBuffering stdout LineBuffering
+            welcome cfg opts
+            simplexChatCore cfg opts runHeadless
+        | otherwise -> runCLI
     else simplexChatCore cfg opts runCommand
   where
     runCLI = do
       welcome cfg opts
       t <- withTerminal pure
       simplexChatTerminal cfg opts t
+    runHeadless user cc = forever $ do
+      (rh, r) <- atomically $ readTBQueue $ outputQ cc
+      case r of
+        Left _ -> printResponseEvent (rh, Just user) cfg r
+        Right _ -> pure ()
     runCommand user cc = do
       when (chatCmdLog /= CCLNone) . void . forkIO . forever $ do
         (_, r) <- atomically . readTBQueue $ outputQ cc

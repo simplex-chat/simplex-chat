@@ -421,6 +421,7 @@ signMessagesRequired :: ChatDirection c d -> Bool
 signMessagesRequired = \case
   CDChannelRcv g _ -> groupFeatureAllowed SGFSignMessages g
   CDGroupRcv g _ _ -> groupFeatureAllowed SGFSignMessages g
+  CDGroupSnd g _ -> groupFeatureAllowed SGFSignMessages g
   _ -> False
 
 contactChatDeleted :: ChatDirection c d -> Bool
@@ -523,7 +524,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     showGroupAsSender :: ShowGroupAsSender,
-    msgVerified :: MsgVerified,
+    msgVerified :: Maybe MsgVerified,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -531,7 +532,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 type ShowGroupAsSender = Bool
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
@@ -567,7 +568,7 @@ dummyMeta itemId ts itemText =
       editable = False,
       forwardedByMember = Nothing,
       showGroupAsSender = False,
-      msgVerified = MVUnsigned,
+      msgVerified = Nothing,
       createdAt = ts,
       updatedAt = ts
     }
@@ -1178,6 +1179,8 @@ data RcvMessage = RcvMessage
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgSigned :: Maybe MsgSigStatus,
+    signedMsg_ :: Maybe SignedMsg,
+    signedByGMId_ :: Maybe GroupMemberId,
     forwardedByMember :: Maybe GroupMemberId
   }
 

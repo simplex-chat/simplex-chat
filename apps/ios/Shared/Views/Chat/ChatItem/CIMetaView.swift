@@ -158,7 +158,7 @@ func ciMetaText(
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
         space = textSpace
     }
-    if showSignature, meta.msgVerified.verified && signedFileVerified != false {
+    if showSignature, meta.msgVerified?.verified == true && signedFileVerified != false {
         appendSpace()
         r = r + colored(Text(Image(systemName: "checkmark.seal")), resolved)
         space = textSpace

@@ -310,7 +310,7 @@
     <string name="only_group_owners_can_enable_voice">只有群組的負責人才能啟用語音訊息。</string>
     <string name="send_verb">傳送</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">請你確認使用的是正確的連結，或者請你的聯絡人傳送一個新的連結給你。</string>
-    <string name="connection_error_auth">連接錯誤 (AUTH)</string>
+    <string name="connection_error_auth">連接錯誤</string>
     <string name="connection_error_auth_desc">除非你的聯絡人刪除了連結或此連結已經被使用，否則它可能是一個錯誤 - 請報告問題。
 \n要連接，請詢問你的聯絡人建立新的連結和確保你的網路是穩定的。</string>
     <string name="error_accepting_contact_request">接受聯絡人的連接請求時出錯</string>
@@ -2292,7 +2292,6 @@
     <string name="chat_link_contact_address">聯絡地址</string>
     <string name="chat_link_one_time">一次性連結</string>
     <string name="chat_link_from_owner">（來自擁有者）</string>
-    <string name="chat_link_signed">（已簽署）</string>
     <string name="error_sharing_channel">分享頻道時發生錯誤</string>
     <string name="owner_verification_passed">連結簽章已驗證。</string>
     <string name="owner_verification_failed">⚠️ 簽章驗證失敗：%s。</string>

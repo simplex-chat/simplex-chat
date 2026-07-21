@@ -832,7 +832,7 @@
     <string name="revoke_file__confirm">اسحب الوصول</string>
     <string name="reveal_verb">اكشف</string>
     <string name="stop_rcv_file__message">سيتم إيقاف استلام الملف.</string>
-    <string name="reject_contact_button">رفض</string>
+    <string name="reject_contact_button">ارفض</string>
     <string name="rate_the_app">قيم التطبيق</string>
     <string name="port_verb">منفذ</string>
     <string name="save_auto_accept_settings">احفظ إعدادات عنوان SimpleX</string>
@@ -851,7 +851,7 @@
     <string name="prohibit_sending_files">امنع إرسال الملفات والوسائط.</string>
     <string name="callstate_received_answer">استلمت إجابة…</string>
     <string name="read_more_in_github_with_link"><![CDATA[اقرأ المزيد في <font color="#0088ff">مستودع GitHub</font>.]]></string>
-    <string name="reject">رفض</string>
+    <string name="reject">ارفض</string>
     <string name="relay_server_protects_ip">يحمي خادم المُرحل عنوان IP الخاص بك، ولكن يمكنه مراقبة مُدّة المكالمة.</string>
     <string name="restore_database_alert_desc">الرجاء إدخال كلمة المرور السابقة بعد استعادة نسخة احتياطية لقاعدة البيانات. لا يمكن التراجع عن هذا الإجراء.</string>
     <string name="restore_database_alert_title">استعادة النسخة الاحتياطية لقاعدة البيانات؟</string>
@@ -972,7 +972,7 @@
     <string name="scan_code">مسح الرمز</string>
     <string name="chat_with_the_founder">أرسل أسئلة وأفكار</string>
     <string name="share_address_with_contacts_question">مشاركة العنوان مع جهات اتصال SimpleX؟</string>
-    <string name="share_address">شارك العنوان</string>
+    <string name="share_address">شارك العنوان…</string>
     <string name="save_welcome_message_question">حفظ رسالة الترحيب؟</string>
     <string name="smp_servers_save">احفظ الخوادم</string>
     <string name="settings_section_title_delivery_receipts">أرسل إيصالات التسليم إلى</string>
@@ -2745,7 +2745,6 @@
     <string name="share_channel">شارك القناة…</string>
     <string name="share_via_chat">شارك عبر الدردشة</string>
     <string name="owner_verification_failed">⚠️ فشل التحقق من التوقيع: %s.</string>
-    <string name="chat_link_signed">(موقّع)</string>
     <string name="group_reports_subscriber_reports">بلاغات المشترك</string>
     <string name="group_members_can_add_message_reactions_channel">يمكن للمشتركين إضافة ردود الفعل على الرسائل.</string>
     <string name="members_can_chat_with_admins_channel">يمكن للمشتركين الدردشة مع المُدراء.</string>
@@ -2875,4 +2874,30 @@
     <string name="verify_simplex_name_action">تحقق من الاسم</string>
     <string name="verify_simplex_names">تحقق من أسماء SimpleX</string>
     <string name="your_simplex_name">اسم SimpleX الخاص بك</string>
+    <string name="channel_simplex_name">اسم SimpleX للقناة</string>
+    <string name="connect_plan_connect_to_name">اتصل بـ %s</string>
+    <string name="do_not_require_message_signatures">لا تشترط التوقيع على الرسائل.</string>
+    <string name="get_simplex_name_beta">احصل على اسم SimpleX (تجريبي)</string>
+    <string name="connect_plan_join_name">انضم للقناة %s</string>
+    <string name="message_signatures_are_not_required">توقيع الرسالة ليس إلزاميًا.</string>
+    <string name="message_signatures_are_required">مطلوب توقيع الرسالة.</string>
+    <string name="register_test_name">سجِّل اسم اختبار</string>
+    <string name="remove_name">أزِل الاسم</string>
+    <string name="require_message_signatures">تطلب توقيع الرسائل.</string>
+    <string name="save_simplex_name_question">احفظ اسم SimpleX؟</string>
+    <string name="show_encryption">أظهر التعمية</string>
+    <string name="show_signature">أظهر التوقيع</string>
+    <string name="signature_missing_alert_title">التوقيع مفقود</string>
+    <string name="info_row_signed">موقَّع</string>
+    <string name="info_row_signed_verified">موقَّع ومتحقق منه</string>
+    <string name="sign_message_desc">التوقيع يثبت أنك مَن كاتب هذه الرسالة ولا يمكن إنكار ذلك لاحقًا.</string>
+    <string name="sign_message">وقِّع الرسالة</string>
+    <string name="sign_messages">وقِّع الرسائل</string>
+    <string name="signature_missing_alert_desc">طلبت القناة توقيع هذه الرسالة، لكن التوقيع غير موجود.</string>
+    <string name="add_description">أضف وصف</string>
+    <string name="profile_description__field">الوصف</string>
+    <string name="edit_description">حرّر الوصف</string>
+    <string name="enter_description_optional">أدِخل وصف (اختياري)</string>
+    <string name="error_sharing_address">خطأ في مشاركة العنوان</string>
+    <string name="to_verify_channel_member_key">للتحقق من المفاتيح مع هذا المشترك، قارن (أو امسح ضوئيًا) الرمز الموجود على أجهزتك.</string>
 </resources>

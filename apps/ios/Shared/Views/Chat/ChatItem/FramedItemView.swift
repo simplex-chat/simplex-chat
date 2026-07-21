@@ -99,7 +99,7 @@ struct FramedItemView: View {
             .background { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) }
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
-        if let (title, text) = chatItem.meta.itemStatus.statusInfo ?? chatItem.meta.msgVerified.sigMissingInfo {
+        if let (title, text) = chatItem.meta.itemStatus.statusInfo ?? chatItem.meta.msgVerified?.sigMissingInfo {
             v.simultaneousGesture(TapGesture().onEnded {
                 AlertManager.shared.showAlert(
                     Alert(

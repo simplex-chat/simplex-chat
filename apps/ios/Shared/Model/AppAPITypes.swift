@@ -63,6 +63,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiPlanForwardChatItems(fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64])
     case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
     case apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool)
+    case apiShareMyAddress(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -270,6 +271,9 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiShareChatMsgContent(shareChatType, shareChatId, toChatType, toChatId, toScope, sendAsGroup):
                 let asGroup = sendAsGroup ? "(as_group=on)" : ""
                 return "/_share chat content \(ref(shareChatType, shareChatId, scope: nil)) \(ref(toChatType, toChatId, scope: toScope))\(asGroup)"
+            case let .apiShareMyAddress(toChatType, toChatId, toScope, sendAsGroup):
+                let asGroup = sendAsGroup ? "(as_group=on)" : ""
+                return "/_share address \(ref(toChatType, toChatId, scope: toScope))\(asGroup)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -469,6 +473,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiPlanForwardChatItems: return "apiPlanForwardChatItems"
             case .apiForwardChatItems: return "apiForwardChatItems"
             case .apiShareChatMsgContent: return "apiShareChatMsgContent"
+            case .apiShareMyAddress: return "apiShareMyAddress"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -1808,6 +1813,15 @@ struct ServerRoles: Equatable, Codable {
     var storage: Bool
     var proxy: Bool
     var names: Bool
+
+    // roles applied when a server matches no operator, mirrors core resolveServerRoles (Operators.hs)
+    static let noOperatorDefault = ServerRoles(storage: true, proxy: true, names: false)
+}
+
+struct ServerRolesOverride: Equatable, Codable, Hashable {
+    var storage: Bool?
+    var proxy: Bool?
+    var names: Bool?
 }
 
 struct UserOperatorServers: Identifiable, Equatable, Codable {
@@ -1834,8 +1848,8 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
                 serverDomains: [],
                 conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
-                smpRoles: ServerRoles(storage: true, proxy: true, names: true),
-                xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
+                smpRoles: ServerRoles.noOperatorDefault,
+                xftpRoles: ServerRoles.noOperatorDefault
             )
         }
         set { `operator` = newValue }
@@ -1957,11 +1971,12 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
     var tested: Bool?
     var enabled: Bool
     var deleted: Bool
+    var roles: ServerRolesOverride = ServerRolesOverride()
     var createdAt = Date()
 
     static func == (l: UserServer, r: UserServer) -> Bool {
         l.serverId == r.serverId && l.server == r.server && l.preset == r.preset && l.tested == r.tested &&
-        l.enabled == r.enabled && l.deleted == r.deleted
+        l.enabled == r.enabled && l.deleted == r.deleted && l.roles == r.roles
     }
 
     var id: String { "\(server) \(createdAt)" }
@@ -2021,6 +2036,7 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
         case tested
         case enabled
         case deleted
+        case roles
     }
 }
 

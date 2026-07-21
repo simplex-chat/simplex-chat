@@ -210,30 +210,31 @@ fun SendMsgView(
                   )
                 }
               }
-              if (showSign && !cs.editing) {
-                menuItems.add {
-                  ItemAction(
-                    generalGetString(MR.strings.sign_message),
-                    painterResource(MR.images.ic_verified),
-                    onClick = {
-                      if (signMessageAlertShown.state.value) {
-                        sendSignedMessage()
-                      } else {
-                        AlertManager.shared.showAlertDialog(
-                          title = generalGetString(MR.strings.sign_message),
-                          text = generalGetString(MR.strings.sign_message_desc),
-                          confirmText = generalGetString(MR.strings.send_verb),
-                          onConfirm = {
-                            signMessageAlertShown.set(true)
-                            sendSignedMessage()
-                          }
-                        )
-                      }
-                      showDropdown.value = false
-                    }
-                  )
-                }
-              }
+              // hidden until message signing is user-facing (recipient-only stage)
+//              if (showSign && !cs.editing) {
+//                menuItems.add {
+//                  ItemAction(
+//                    generalGetString(MR.strings.sign_message),
+//                    painterResource(MR.images.ic_verified),
+//                    onClick = {
+//                      if (signMessageAlertShown.state.value) {
+//                        sendSignedMessage()
+//                      } else {
+//                        AlertManager.shared.showAlertDialog(
+//                          title = generalGetString(MR.strings.sign_message),
+//                          text = generalGetString(MR.strings.sign_message_desc),
+//                          confirmText = generalGetString(MR.strings.send_verb),
+//                          onConfirm = {
+//                            signMessageAlertShown.set(true)
+//                            sendSignedMessage()
+//                          }
+//                        )
+//                      }
+//                      showDropdown.value = false
+//                    }
+//                  )
+//                }
+//              }
             }
 
             return menuItems

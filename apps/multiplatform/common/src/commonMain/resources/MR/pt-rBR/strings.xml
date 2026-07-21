@@ -210,7 +210,7 @@
     <string name="callstate_connecting">conectando…</string>
     <string name="group_member_status_announced">conectando (anunciado)</string>
     <string name="network_session_mode_entity">Conexão</string>
-    <string name="connection_error_auth">Erro de conexão (AUTH)</string>
+    <string name="connection_error_auth">Erro de conexão</string>
     <string name="display_name_connection_established">conexão estabelecida</string>
     <string name="connection_local_display_name">conexão %1$d</string>
     <string name="maximum_supported_file_size">Atualmente, o tamanho máximo de arquivo suportado é %1$s.</string>

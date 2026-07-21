@@ -1447,7 +1447,7 @@
     <string name="save_and_update_group_profile">Sačuvati i ažurirati grupni profil</string>
     <string name="v5_8_message_delivery_descr">Uz smanjenu potrošnju baterije.</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(skenirati ili nalepiti iz memorije)</string>
-    <string name="connection_error_auth">Greška u vezi (AUTH)</string>
+    <string name="connection_error_auth">Greška u vezi</string>
     <string name="contact_developers">Ažurirajte aplikaciju i kontaktirajte programere.</string>
     <string name="non_fatal_errors_occured_during_import">Tokom uvoza došlo je do nekih nefatalnih grešaka:</string>
     <string name="save_passphrase_in_settings">Sačuvati pristupnu frazu u podešavanjima</string>

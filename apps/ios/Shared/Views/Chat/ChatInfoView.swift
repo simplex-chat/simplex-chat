@@ -112,7 +112,6 @@ struct ChatInfoView: View {
     @State private var sendReceiptsUserDefault = true
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State private var showSecrets: Set<Int> = []
 
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
@@ -393,33 +392,8 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
-            if let domain = contact.profile.contactDomain,
-               contact.profile.contactDomainVerified != nil || domain.proof != nil {
-                SimplexNameView(
-                    simplexName: "@\(domain.domain)",
-                    verified: contact.profile.contactDomainVerified,
-                    verify: {
-                        do {
-                            let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
-                            await MainActor.run {
-                                chatModel.updateContact(ct)
-                                contact = ct
-                            }
-                            return (ct.profile.contactDomainVerified, reason)
-                        } catch {
-                            logger.error("apiVerifyContactDomain: \(responseError(error))")
-                            return nil
-                        }
-                    }
-                )
-            }
-            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
-                let r = markdownText(descr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
-                msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(4)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            contactSimplexNameView(contact) { contact = $0 }
+            ProfileDescriptionView(shortDescr: cInfo.shortDescr, description: cInfo.profileDescription)
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -1374,19 +1348,80 @@ private func deleteNotReadyContact(
     ))
 }
 
+@ViewBuilder func contactSimplexNameView(_ contact: Contact, verifiable: Bool = true, onUpdate: ((Contact) -> Void)? = nil) -> some View {
+    if let domain = contact.profile.contactDomain,
+       contact.profile.contactDomainVerified != nil || domain.proof != nil {
+        SimplexNameView(
+            simplexName: "@\(domain.domain)",
+            verified: contact.profile.contactDomainVerified,
+            verify: {
+                do {
+                    let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
+                    await MainActor.run {
+                        ChatModel.shared.updateContact(ct)
+                        onUpdate?(ct)
+                    }
+                    return (ct.profile.contactDomainVerified, reason)
+                } catch {
+                    logger.error("apiVerifyContactDomain: \(responseError(error))")
+                    return nil
+                }
+            },
+            verifiable: verifiable
+        )
+    }
+}
+
+@ViewBuilder func groupSimplexNameView(_ groupInfo: GroupInfo, verifiable: Bool = true, onUpdate: ((GroupInfo) -> Void)? = nil) -> some View {
+    if groupInfo.businessChat == nil {
+        if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
+           let domain = access.groupDomainClaim?.shortName,
+           groupInfo.groupDomainVerified != nil || access.groupDomainClaim?.proof != nil {
+            SimplexNameView(
+                simplexName: "#\(domain)",
+                verified: groupInfo.groupDomainVerified,
+                verify: {
+                    do {
+                        let (gInfo, reason) = try await apiVerifyGroupDomain(groupInfo.groupId)
+                        await MainActor.run {
+                            ChatModel.shared.updateGroup(gInfo)
+                            onUpdate?(gInfo)
+                        }
+                        return (gInfo.groupDomainVerified, reason)
+                    } catch {
+                        logger.error("apiVerifyGroupDomain: \(responseError(error))")
+                        return nil
+                    }
+                },
+                verifiable: verifiable
+            )
+        }
+    } else if let claim = groupInfo.businessChat?.businessDomain,
+              groupInfo.groupDomainVerified != nil || claim.proof != nil {
+        // A business presents as a contact, so the name retains its .simplex suffix; it cannot be re-verified.
+        SimplexNameView(
+            simplexName: "@\(claim.domain)",
+            verified: groupInfo.groupDomainVerified,
+            verify: { nil },
+            verifiable: false
+        )
+    }
+}
+
 struct SimplexNameView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) var autoVerify = false
     let simplexName: String
     let verified: Bool?
     let verify: () async -> (Bool?, String?)?
+    var verifiable: Bool = true
     @State private var inFlight = false
     @State private var showSpinner = false
 
     var body: some View {
         content
             .padding(.bottom, 2)
-            .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
+            .onAppear { if verifiable && autoVerify && verified == nil { runVerify(manual: false) } }
     }
 
     private var nameText: Text {
@@ -1415,6 +1450,8 @@ struct SimplexNameView: View {
                 UIPasteboard.general.string = simplexName
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
             }
+        } else if !verifiable {
+            nameText
         } else if verified == false {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 nameText

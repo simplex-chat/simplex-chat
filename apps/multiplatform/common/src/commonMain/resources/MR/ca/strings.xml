@@ -575,7 +575,7 @@
     <string name="connection_error">Error de connexió</string>
     <string name="connection_timeout">Temps de connexió enhaurit</string>
     <string name="contact_already_exists">El contacte la existeix</string>
-    <string name="connection_error_auth">Error de connexió (AUTH)</string>
+    <string name="connection_error_auth">Error de connexió</string>
     <string name="notification_preview_mode_contact">Nom del contacte</string>
     <string name="contact_deleted">Contacte eliminat!</string>
     <string name="alert_title_contact_connection_pending">El contacte encara no s\'hi ha connectat!</string>

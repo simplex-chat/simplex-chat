@@ -246,13 +246,14 @@ struct SendMessageView: View {
                     Label("Disappearing message", systemImage: "stopwatch")
                 }
             }
-            if showSign {
-                Button {
-                    startSignedMessage()
-                } label: {
-                    Label("Sign message", systemImage: "checkmark.seal")
-                }
-            }
+            // hidden until message signing is user-facing (recipient-only stage)
+//            if showSign {
+//                Button {
+//                    startSignedMessage()
+//                } label: {
+//                    Label("Sign message", systemImage: "checkmark.seal")
+//                }
+//            }
         }
     }
 

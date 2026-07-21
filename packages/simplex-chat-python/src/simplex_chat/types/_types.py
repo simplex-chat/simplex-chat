@@ -588,7 +588,7 @@ class CIMeta(TypedDict):
     editable: bool
     forwardedByMember: NotRequired[int]  # int64
     showGroupAsSender: bool
-    msgVerified: "MsgVerified"
+    msgVerified: NotRequired["MsgVerified"]
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
@@ -1935,6 +1935,7 @@ class GroupMember(TypedDict):
     supportChat: NotRequired["GroupSupportChat"]
     memberPubKey: NotRequired[str]
     relayLink: NotRequired[str]
+    memberVerifiedCode: NotRequired["SecurityCode"]
 
 class GroupMemberAdmission(TypedDict):
     review: NotRequired["MemberCriteria"]
@@ -2106,6 +2107,7 @@ class LocalProfile(TypedDict):
     displayName: str
     fullName: str
     shortDescr: NotRequired[str]
+    description: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
@@ -2253,12 +2255,9 @@ class MsgVerified_signed(TypedDict):
 class MsgVerified_sigMissing(TypedDict):
     type: Literal["sigMissing"]
 
-class MsgVerified_unsigned(TypedDict):
-    type: Literal["unsigned"]
+MsgVerified = MsgVerified_signed | MsgVerified_sigMissing
 
-MsgVerified = MsgVerified_signed | MsgVerified_sigMissing | MsgVerified_unsigned
-
-MsgVerified_Tag = Literal["signed", "sigMissing", "unsigned"]
+MsgVerified_Tag = Literal["signed", "sigMissing"]
 
 class NameErrorType_NO_RESOLVER(TypedDict):
     type: Literal["NO_RESOLVER"]
@@ -2390,6 +2389,7 @@ class Profile(TypedDict):
     displayName: str
     fullName: str
     shortDescr: NotRequired[str]
+    description: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
