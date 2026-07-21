@@ -4,7 +4,7 @@
 **Status:** implementation-ready
 **Companion:** [Implementation plan](2026-07-20-supporter-badges-v2-implementation.md)
 
-Payment and badge are separate: payment creates a service credit for an eligible monthly slot; the credit issues one badge; core verifies and installs it.
+Payment and badge are separate: payment creates a service grant for an eligible monthly grant period; the grant authorizes one badge issuance; core verifies and installs it.
 
 ![Lifecycle](assets/badge-v2-e2e.svg)
 
@@ -31,7 +31,7 @@ Choices: **One-time**, **Monthly**, **Yearly**. There is no Extend action.
 
 - One-time does not stack and is available again after badge expiry.
 - Subscribing from one-time starts a new payment; there is no conversion API.
-- Monthly and yearly plans issue one badge credit per eligible month.
+- Monthly and yearly plans issue one service grant per eligible month.
 - Cancellation stops renewal. It does not shorten an issued badge.
 - Stripe uses the system browser. No localhost service is required.
 
@@ -40,7 +40,7 @@ Choices: **One-time**, **Monthly**, **Yearly**. There is no Extend action.
 | Payment event | Billing | Badge |
 |---|---|---|
 | Paid 21 July | monthly renews 21 August; yearly renews 21 July next year | valid through 31 August |
-| Eligible slot 21 August | monthly renews 21 September; yearly billing unchanged | new badge valid through 30 September |
+| Eligible grant period 21 August | monthly renews 21 September; yearly billing unchanged | new badge valid through 30 September |
 | Canceled before renewal | subscription remains paid to provider period end | issued badge remains valid to signed expiry |
 
 Show **Badge valid until** separately from **Renews on** or **Subscription ends on**.
@@ -48,7 +48,7 @@ Show **Badge valid until** separately from **Renews on** or **Subscription ends 
 ### Sources of truth
 
 - Core signature and expiry decide badge validity.
-- Bot/provider verification decides payment status and credit eligibility.
+- Bot/provider verification decides payment status and grant eligibility.
 - Store state and Stripe redirects are hints only.
 - Client asks through RPC; bot returns one final response and never pushes.
 - Before payment, the client generates one 32-byte BBS `BadgeMasterKey`. The payment and every badge issued from it are bound to that key; renewals reuse it.
@@ -65,7 +65,7 @@ Show **Badge valid until** separately from **Renews on** or **Subscription ends 
 | Active subscription | paid, renewing, badge active | interval; badge expiry; renewal | Cancel; Manage |
 | Canceled, active | renewal off; paid/badge time remains | badge expiry; subscription end | Resubscribe |
 | Payment issue | grace/on-hold/provider error | active badge until expiry | Fix payment; Check again |
-| Badge missing | credit exists; no usable badge | issuance error/progress | Retry |
+| Badge missing | grant exists; no usable badge | issuance error/progress | Retry |
 | Expired | no entitlement or active badge | expired state | Buy once; Monthly; Yearly |
 | Needs update | unknown issuer/protocol | unavailable | Update app |
 | Offline/stale | refresh failed | cached state + check time | Retry |
@@ -127,7 +127,7 @@ sequenceDiagram
   C->>A: Purchase
   A-->>C: Pending
   Note over C: Payment pending, badge unchanged
-  Note over B: Prepared, no credit
+  Note over B: Prepared, no grant
 ```
 
 #### Canceled
@@ -181,7 +181,7 @@ sequenceDiagram
   C->>G: Purchase
   G-->>C: Pending
   Note over C: Payment pending, badge unchanged
-  Note over B: Prepared, no credit
+  Note over B: Prepared, no grant
 ```
 
 #### Canceled
@@ -214,7 +214,7 @@ sequenceDiagram
   C->>S: Open Checkout
   Note over C: Payment pending, start polling
   S-->>B: Signed webhook
-  Note over B: Payment entitled, credit available
+  Note over B: Payment entitled, grant available
   C->>B: Status + badge request
   B-->>C: Status + badge
   Note over C: Entitled, badge installed
@@ -230,7 +230,7 @@ sequenceDiagram
   C->>B: Status request
   B->>S: Retrieve Checkout
   S-->>B: Pending
-  Note over B: Pending, no credit
+  Note over B: Pending, no grant
   B-->>C: Pending + retry time
   Note over C: Poll later, badge unchanged
 ```
@@ -243,7 +243,7 @@ sequenceDiagram
   participant B as Bot
   participant S as Stripe
   S-->>B: Checkout expired
-  Note over B: Expired, no credit
+  Note over B: Expired, no grant
   C->>B: Status request
   B-->>C: Checkout expired
   Note over C: New checkout requires user action
@@ -307,7 +307,7 @@ Never show canceled until the bot confirms renewal is off.
 
 Refresh on launch, foreground, profile switch, network restore, store update, Stripe browser return, manual retry, six-hour jittered timer, and payment/badge date boundaries.
 
-If paid credit exists without the current badge, request issuance. Cache the response before core verification/install. There are no bot-initiated client events.
+If `GrantReady` exists without the current badge, request issuance. Cache the response before core verification/install. There are no bot-initiated client events.
 
 | Condition | Client action |
 |---|---|
@@ -330,7 +330,7 @@ Errors preserve the last payment snapshot and installed badge. The implementatio
 - Choices are One-time, Monthly, Yearly; no Extend.
 - Payment on 21 July shows badge through 31 August while billing keeps its provider date.
 - Apple, Google, and Stripe have separate linear outcomes.
-- Payment verification creates provider-neutral credit; badge service has no provider logic.
+- Payment verification creates a provider-neutral service grant; badge service has no provider logic.
 - Client and bot payment/badge states are separate.
 - RPC is client-request/bot-response only and idempotent.
 - Stripe needs no localhost/deep-link success and cancels through bot RPC.
