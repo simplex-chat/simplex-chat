@@ -1,7 +1,5 @@
 package chat.simplex.common.views.helpers
 
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
@@ -14,7 +12,6 @@ import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
 import android.view.WindowManager
-import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
@@ -54,19 +51,6 @@ fun keepScreenOn(on: Boolean) {
       window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     } else {
       window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-  }
-}
-
-@Composable
-actual fun SetupClipboardListener() {
-  DisposableEffect(Unit) {
-    val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val listener = { chatModel.clipboardHasText.value = service.hasPrimaryClip() }
-    chatModel.clipboardHasText.value = service.hasPrimaryClip()
-    service.addPrimaryClipChangedListener(listener)
-    onDispose {
-      service.removePrimaryClipChangedListener(listener)
     }
   }
 }
@@ -214,13 +198,14 @@ private fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, req
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
-    BitmapFactory.decodeByteArray(data, 0, data.size)
+    BitmapFactory.decodeByteArray(data, 0, data.size, this)
     // Calculate inSampleSize
     inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
     // Decode bitmap with inSampleSize set
     inJustDecodeBounds = false
 
-    BitmapFactory.decodeByteArray(data, 0, data.size)
+    BitmapFactory.decodeByteArray(data, 0, data.size, this)
+      ?: throw IOException("Unable to decode image")
   }
 }
 

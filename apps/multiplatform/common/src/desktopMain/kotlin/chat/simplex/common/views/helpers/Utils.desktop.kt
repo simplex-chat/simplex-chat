@@ -1,8 +1,6 @@
 package chat.simplex.common.views.helpers
 
-import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -12,9 +10,10 @@ import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
-import kotlinx.coroutines.delay
+import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.IOException
 import java.net.URI
 import java.util.*
 import javax.imageio.ImageIO
@@ -24,6 +23,15 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
 private val uStyle = SpanStyle(textDecoration = TextDecoration.Underline)
+// Full-screen view target: the smaller side is kept at or above this (the larger side may stay bigger), matching Android
+private const val MAX_IMAGE_DIMENSION = 4320
+// Chat render (getLoadedImage) target, matching Android's getLoadedImage target
+private const val MAX_THUMBNAIL_DIMENSION = 1000
+// Source images larger than this on either side are rejected (bounds the decoder's per-scanline buffer)
+private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
+// Hard ceiling on the decoded raster in pixels, independent of aspect ratio, so an extreme-aspect image within the
+// source cap can't blow up memory. Sized to the full-screen target's area (~18.7 MP -> ~75 MB at 4 bytes/px).
+private const val MAX_DECODED_PIXELS = MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION
 private fun fontStyle(color: String) =
   SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
 
@@ -108,18 +116,6 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
   AnnotatedString(text)
 }
 
-@Composable
-actual fun SetupClipboardListener() {
-  val clipboard = LocalClipboardManager.current
-  chatModel.clipboardHasText.value = clipboard.hasText()
-  LaunchedEffect(Unit) {
-    while (true) {
-      delay(1000)
-      chatModel.clipboardHasText.value = clipboard.hasText()
-    }
-  }
-}
-
 actual fun getAppFileUri(fileName: String): URI {
   val rh = chatModel.currentRemoteHost.value
   return if (rh == null) {
@@ -146,10 +142,10 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
   return if (filePath != null) {
     loadedImageCache[filePath] ?: try {
       val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
-      val bitmap = getBitmapFromByteArray(data, false)
-      if (bitmap != null) (bitmap to data).also { loadedImageCache[filePath] = it } else null
+      val bitmap = decodeBoundedImage(data, MAX_THUMBNAIL_DIMENSION)
+      (bitmap to data).also { loadedImageCache[filePath] = it }
     } catch (e: Exception) {
-      Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+      Log.e(TAG, "Unable to load image: " + e.stackTraceToString())
       null
     }
   } else {
@@ -165,6 +161,8 @@ actual fun getFileSize(uri: URI): Long? = uri.toFile().length()
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? =
   try {
+    // No dimension cap here: this path decodes user-picked local files (image picker, compose, save),
+    // not untrusted received attachments. The cap is applied in getBitmapFromByteArray (auto-rendered content).
     uri.inputStream().use {
       ImageIO.read(it).toComposeImageBitmap()
     }
@@ -177,13 +175,63 @@ actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitma
 
 actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? =
   try {
-    ImageIO.read(ByteArrayInputStream(data)).toComposeImageBitmap()
+    decodeBoundedImage(data, MAX_IMAGE_DIMENSION)
   } catch (e: Exception) {
     Log.e(TAG, "Error while encoding bitmap from byte array: ${e.stackTraceToString()}")
     if (withAlertOnException) showImageDecodingException()
 
     null
   }
+
+private fun decodeBoundedImage(data: ByteArray, maxDimension: Int): ImageBitmap =
+  decodeBoundedBufferedImage(data, maxDimension).toComposeImageBitmap()
+
+// Decodes downloaded/auto-rendered image bytes with bounded memory: rejects absurd source dimensions,
+// then downsamples (like Android's inSampleSize) so even large legitimate images decode to a bounded raster.
+internal fun decodeBoundedBufferedImage(data: ByteArray, maxDimension: Int): BufferedImage {
+  val stream = ImageIO.createImageInputStream(ByteArrayInputStream(data))
+    ?: throw IOException("Unsupported image format")
+  stream.use {
+    val readers = ImageIO.getImageReaders(it)
+    if (!readers.hasNext()) throw IOException("Unsupported image format")
+
+    val reader = readers.next()
+    try {
+      reader.input = it
+      val width = reader.getWidth(0)
+      val height = reader.getHeight(0)
+      if (!sourceDimensionsWithinLimits(width, height)) throw IOException("Image dimensions exceed limit")
+      val sampleSize = imageSampleSize(width, height, maxDimension)
+      val param = reader.defaultReadParam.apply {
+        if (sampleSize > 1) setSourceSubsampling(sampleSize, sampleSize, 0, 0)
+      }
+      return reader.read(0, param) ?: throw IOException("Unable to decode image")
+    } finally {
+      reader.dispose()
+    }
+  }
+}
+
+internal fun sourceDimensionsWithinLimits(width: Int, height: Int): Boolean =
+  width in 1..MAX_SOURCE_IMAGE_DIMENSION && height in 1..MAX_SOURCE_IMAGE_DIMENSION
+
+// Power-of-two subsampling factor for bounded decoding. First keeps the smaller side at or above maxDimension
+// (mirroring Android's calculateInSampleSize) so portrait images stay sharp instead of being over-subsampled by a
+// larger-side cap; then bounds the total decoded pixels so an extreme aspect ratio can't exceed the memory ceiling.
+internal fun imageSampleSize(width: Int, height: Int, maxDimension: Int): Int {
+  var sampleSize = 1
+  if (height > maxDimension || width > maxDimension) {
+    val halfHeight = height / 2
+    val halfWidth = width / 2
+    while (halfHeight / sampleSize >= maxDimension && halfWidth / sampleSize >= maxDimension) {
+      sampleSize *= 2
+    }
+  }
+  while ((width / sampleSize) * (height / sampleSize) > MAX_DECODED_PIXELS) {
+    sampleSize *= 2
+  }
+  return sampleSize
+}
 
 // LALAL implement to support animated drawable
 actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? = null

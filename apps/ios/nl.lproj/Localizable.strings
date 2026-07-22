@@ -883,9 +883,6 @@ marked deleted chat item preview text */
 "calling…" = "bellen…";
 
 /* No comment provided by engineer. */
-"Calls" = "Oproepen";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Bellen niet toegestaan!";
 
 /* No comment provided by engineer. */
@@ -949,9 +946,6 @@ new chat action */
 
 /* authentication reason */
 "Change lock mode" = "Wijzig de vergrendelings modus";
-
-/* No comment provided by engineer. */
-"Change member role?" = "Rol van lid wijzigen?";
 
 /* authentication reason */
 "Change passcode" = "Toegangscode wijzigen";
@@ -1289,14 +1283,14 @@ server test step */
 /* alert title */
 "Connection error" = "Verbindingsfout";
 
-/* conn error description */
-"Connection error (AUTH)" = "Verbindingsfout (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "verbinding gemaakt";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Verbinding is geblokkeerd door serveroperator:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Verbindingsfout";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Verbinding nog niet klaar.";
@@ -1752,13 +1746,13 @@ alert button */
 "Desktop devices" = "Desktop apparaten";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Het bestemmingsserveradres van %@ is niet compatibel met de doorstuurserverinstellingen %@.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "Het bestemmingsserveradres van %1$@ is niet compatibel met de doorstuurserverinstellingen %2$@.";
 
 /* snd error text */
 "Destination server error: %@" = "Bestemmingsserverfout: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "De versie van de bestemmingsserver %@ is niet compatibel met de doorstuurserver %@.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "De versie van de bestemmingsserver %1$@ is niet compatibel met de doorstuurserver %2$@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Gedetailleerde statistieken";
@@ -1767,13 +1761,10 @@ alert button */
 "Details" = "Details";
 
 /* No comment provided by engineer. */
-"Develop" = "Ontwikkelen";
+"Developer" = "Ontwikkelaar";
 
 /* No comment provided by engineer. */
 "Developer options" = "Ontwikkelaars opties";
-
-/* No comment provided by engineer. */
-"Developer" = "Ontwikkel gereedschap";
 
 /* No comment provided by engineer. */
 "Device" = "Apparaat";
@@ -2112,7 +2103,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "fout";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Fout";
 
 /* No comment provided by engineer. */
@@ -2341,6 +2332,7 @@ chat item action */
 "Error: " = "Fout: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Fout: %@";
@@ -3040,7 +3032,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Groot bestand!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Kom meer te weten";
 
 /* swipe action */
@@ -3165,15 +3157,6 @@ servers warning */
 
 /* chat feature */
 "Member reports" = "Ledenrapporten";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "De rol van het lid wordt gewijzigd naar \"%@\". Alle chatleden worden op de hoogte gebracht.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "De rol van lid wordt gewijzigd in \"%@\". Alle groepsleden worden op de hoogte gebracht.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "De rol van lid wordt gewijzigd in \"%@\". Het lid ontvangt een nieuwe uitnodiging.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Lid wordt verwijderd uit de chat - dit kan niet ongedaan worden gemaakt!";
@@ -3929,9 +3912,6 @@ alert button */
 "Previously connected servers" = "Eerder verbonden servers";
 
 /* No comment provided by engineer. */
-"Your privacy" = "Privacy en beveiliging";
-
-/* No comment provided by engineer. */
 "Privacy for your customers." = "Privacy voor uw klanten.";
 
 /* No comment provided by engineer. */
@@ -4054,7 +4034,7 @@ alert button */
 /* swipe action */
 "Read" = "Lees";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Lees meer";
 
 /* No comment provided by engineer. */
@@ -4351,6 +4331,15 @@ swipe action */
 "Role" = "Rol";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "De rol van het lid wordt gewijzigd naar \"%@\". Alle chatleden worden op de hoogte gebracht.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "De rol van lid wordt gewijzigd in \"%@\". Alle groepsleden worden op de hoogte gebracht.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "De rol van lid wordt gewijzigd in \"%@\". Het lid ontvangt een nieuwe uitnodiging.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Chat uitvoeren";
 
 /* No comment provided by engineer. */
@@ -4359,7 +4348,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Veiligere groepen";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Opslaan";
 
@@ -4569,9 +4559,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Afzender heeft bestandsoverdracht geannuleerd.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "De afzender heeft mogelijk het verbindingsverzoek verwijderd.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.";
@@ -4990,9 +4977,6 @@ report reason */
 "Subscriptions ignored" = "Subscriptions genegeerd";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Ondersteuning van SimpleX Chat";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Wisselen tussen audio en video tijdens het gesprek.";
 
 /* No comment provided by engineer. */
@@ -5136,6 +5120,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "De tweede vink die we gemist hebben! ✅";
+
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "De afzender heeft mogelijk het verbindingsverzoek verwijderd.";
 
 /* alert message */
 "The sender will NOT be notified" = "De afzender wordt NIET op de hoogte gebracht";
@@ -5360,9 +5347,6 @@ server test failure */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Schakel de modus Niet storen in om onderbrekingen te voorkomen, tenzij u de iOS-oproepinterface gebruikt.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.\nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Ontkoppelen";
 
 /* No comment provided by engineer. */
@@ -5508,9 +5492,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
-
-/* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
 "Verify code with desktop" = "Code verifiëren met desktop";
@@ -5777,9 +5758,6 @@ server test failure */
 "You can enable later via Settings" = "U kunt later inschakelen via Instellingen";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Je kunt het nog een keer proberen.";
 
 /* No comment provided by engineer. */
@@ -5936,9 +5914,6 @@ server test failure */
 "Your calls" = "Uw oproepen";
 
 /* No comment provided by engineer. */
-"Your chat database" = "Uw chat database";
-
-/* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Uw chat database is niet versleuteld, stel een wachtwoord in om deze te versleutelen.";
 
 /* alert title */
@@ -5949,6 +5924,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your connection was moved to %@ but an error happened when switching profile." = "Uw verbinding is verplaatst naar %@, maar er is een onverwachte fout opgetreden tijdens het omleiden naar het profiel.";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.\nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Uw contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).";

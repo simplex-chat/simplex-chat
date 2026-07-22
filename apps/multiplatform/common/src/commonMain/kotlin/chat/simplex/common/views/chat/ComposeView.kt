@@ -133,15 +133,12 @@ data class ComposeState(
   )
 
   val memberMentions: Map<String, Long>
-    get() = this.mentions.mapNotNull {
-      val memberRef = it.value.memberRef
-
-      if (memberRef != null) {
-        it.key to memberRef.groupMemberId
-      } else {
-        null
-      }
-    }.toMap()
+    get() = parsedMessage
+      .mapNotNull { (it.format as? Format.Mention)?.memberName }
+      .distinct()
+      .mapNotNull { name -> mentions[name]?.memberRef?.groupMemberId?.let { name to it } }
+      .take(MAX_NUMBER_OF_MENTIONS)
+      .toMap()
 
   val editing: Boolean
     get() =
@@ -529,6 +526,7 @@ fun ComposeView(
         is SharedContent.Text -> emptyList()
         is SharedContent.Forward -> emptyList()
         is SharedContent.ChatLink -> emptyList()
+        is SharedContent.MyAddress -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -542,7 +540,7 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: Map<String, Long>): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: Map<String, Long>, sign: Boolean = false): ChatItem? {
     val cInfo = chat.chatInfo
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(
@@ -559,6 +557,7 @@ fun ComposeView(
         sendAsGroup = cInfo.sendAsGroup,
         live = live,
         ttl = ttl,
+        sign = sign,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
       )
     if (!chatItems.isNullOrEmpty()) {
@@ -675,7 +674,7 @@ fun ComposeView(
     }
   }
 
-  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
+  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false): List<ChatItem>? {
     val cs = composeState.value
     var sent: List<ChatItem>?
     var lastMessageFailedToSend: ComposeState? = null
@@ -800,7 +799,7 @@ fun ComposeView(
       if (cs.message.text.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
           } else {
             message
           }
@@ -840,7 +839,7 @@ fun ComposeView(
                 if (remoteHost == null) saveAnimImage(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, hiddenFileNamePrefix = "video")
+                if (remoteHost == null) saveFileFromUri(it.uri, cs.maxFileSize, hiddenFileNamePrefix = "video")
                 else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
@@ -889,7 +888,7 @@ fun ComposeView(
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
-            saveFileFromUri(preview.uri)
+            saveFileFromUri(preview.uri, cs.maxFileSize)
           } else {
             CryptoFile.desktopPlain(preview.uri)
           }
@@ -917,7 +916,8 @@ fun ComposeView(
         val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl,
-          mentions = cs.memberMentions
+          mentions = cs.memberMentions,
+          sign = sign
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {
@@ -944,9 +944,9 @@ fun ComposeView(
     return sent
   }
 
-  fun sendMessage(ttl: Int?) {
+  fun sendMessage(ttl: Int?, sign: Boolean = false) {
     withLongRunningApi(slow = 120_000) {
-      sendMessageAsync(null, false, ttl)
+      sendMessageAsync(null, false, ttl, sign)
     }
   }
 
@@ -1203,8 +1203,9 @@ fun ComposeView(
   }
 
   val ownerRelayState = ownerRelayState(chat, chatModel)
+  val subscriberRelayState = subscriberRelayState(chat, chatModel)
 
-  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason(ownerRelayState?.noActiveRelays == true))
+  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason((ownerRelayState?.noActiveRelays ?: subscriberRelayState?.noActiveRelays) == true))
   val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
@@ -1307,13 +1308,6 @@ fun ComposeView(
       }
   }
 
-  LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
-    if (!chat.chatInfo.sendMsgEnabled) {
-      clearCurrentDraft()
-      clearState()
-    }
-  }
-
   KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
     val cs = composeState.value
     if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
@@ -1343,6 +1337,14 @@ fun ComposeView(
     }
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
+  }
+  // Must be composed after KeyChangeEffect above (effects run in composition order),
+  // so that on chat switch the previous chat's draft is saved before it is cleared here.
+  LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
+    if (!chat.chatInfo.sendMsgEnabled) {
+      clearCurrentDraft()
+      clearState()
+    }
   }
   // keep the attach size limit in sync with the chat: the user's active badge raises it, but not in incognito chats where no badge is presented
   LaunchedEffect(chat.chatInfo) {
@@ -1389,10 +1391,16 @@ fun ComposeView(
       allowVoiceToContact = ::allowVoiceToContact,
       sendButtonColor = sendButtonColor,
       timedMessageAllowed = timedMessageAllowed,
+      showSign = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.useRelays == true,
+      signMessageAlertShown = chatModel.controller.appPrefs.signMessageAlertShown,
       customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
       placeholder = if (userCantSendReason.value != null) "" else placeholder ?: composeState.value.placeholder,
       sendMessage = { ttl ->
         sendMessage(ttl)
+        resetLinkPreview()
+      },
+      sendSignedMessage = {
+        sendMessage(null, sign = true)
         resetLinkPreview()
       },
       sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
@@ -1537,6 +1545,22 @@ fun ComposeView(
           }
         }
       }
+      is SharedContent.MyAddress -> {
+        val cInfo = chat.chatInfo
+        val sendAsGroup = cInfo.sendAsGroup
+        withBGApi {
+          val mc = chatModel.controller.apiShareMyAddress(
+            chat.remoteHostId,
+            cInfo.chatType, cInfo.apiId,
+            cInfo.groupChatScope(), sendAsGroup
+          )
+          if (mc is MsgContent.MCChat) {
+            composeState.value = composeState.value.copy(
+              preview = ComposePreview.ChatLinkPreview(mc.chatLink, mc.ownerSig)
+            )
+          }
+        }
+      }
       null -> {}
     }
     chatModel.sharedContent.value = null
@@ -1575,18 +1599,12 @@ fun ComposeView(
           }
         }
       } else {
-        val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
-        val relayMembers = chatModel.groupMembers.value
-          .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
-          .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
-        val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
-        val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
-        val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
-        val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
-        val resolvedCount = connectedCount + removedCount + failedCount
-        val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
-        if (total == 0 || removedCount + failedCount > 0 || resolvedCount < total) {
-          SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, showProgress, relayListExpanded)
+        subscriberRelayState?.let { s ->
+          val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
+          val resolvedCount = s.connectedCount + s.removedCount + s.failedCount
+          if (s.total == 0 || s.removedCount + s.failedCount > 0 || resolvedCount < s.total) {
+            SubscriberChannelRelayBar(s.hostnames, s.relayMembers, s.connectedCount, s.removedCount, s.failedCount, s.total, showProgress, relayListExpanded)
+          }
         }
       }
     }
@@ -2049,6 +2067,33 @@ private data class OwnerRelayState(
   val activeCount: Int,
   val failedCount: Int,
   val removedCount: Int,
+  val noActiveRelays: Boolean
+)
+
+private fun subscriberRelayState(chat: Chat, chatModel: ChatModel): SubscriberRelayState? {
+  val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo ?: return null
+  if (!gInfo.useRelays || gInfo.membership.memberRole == GroupMemberRole.Owner ||
+    gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemRejected, GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+  ) return null
+  val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
+  val relayMembers = chatModel.groupMembers.value
+    .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
+    .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
+  val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
+  val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
+  val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
+  val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
+  val noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
+  return SubscriberRelayState(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
+}
+
+private data class SubscriberRelayState(
+  val hostnames: List<String>,
+  val relayMembers: List<GroupMember>,
+  val connectedCount: Int,
+  val removedCount: Int,
+  val failedCount: Int,
+  val total: Int,
   val noActiveRelays: Boolean
 )
 

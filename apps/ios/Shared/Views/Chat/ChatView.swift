@@ -14,6 +14,29 @@ import Combine
 
 private let memberImageSize: CGFloat = 34
 
+private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
+    let oldIsGroupRcv = switch older?.chatDir {
+    case .groupRcv: true
+    case .channelRcv: true
+    default: false
+    }
+    let sameMember = switch (older?.chatDir, current.chatDir) {
+    case (.groupRcv(let oldMember), .groupRcv(let member)):
+        oldMember.memberId == member.memberId
+    case (.channelRcv, .channelRcv):
+        true
+    default:
+        false
+    }
+    if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+        return true
+    } else if case .channelRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+        return true
+    } else {
+        return false
+    }
+}
+
 // Spec: spec/client/chat-view.md#ChatView
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -896,8 +919,14 @@ struct ChatView: View {
                     } else {
                         let voiceNoFrame = voiceWithoutFrame(ci)
                         let channelReceived = !ci.chatDir.sent && cInfo.isChannel
+                        // consecutive (no-avatar) received messages in channels drop the avatar-sized
+                        // left padding (see .leading padding below), so they get the full row width here
+                        // too — otherwise the reserved avatar inset would leave a gap on the right
+                        let channelReceivedNoAvatar = channelReceived && !shouldShowAvatar(mergedItem.newest().item, mergedItem.oldest().nextItem)
                         let maxWidth = cInfo.chatType == .group
-                        ? voiceNoFrame || channelReceived
+                        ? channelReceivedNoAvatar
+                        ? g.size.width - 26
+                        : voiceNoFrame || channelReceived
                         ? (g.size.width - 28) - 42
                         : (g.size.width - 28) * 0.84 - 42
                         : voiceNoFrame
@@ -976,7 +1005,6 @@ struct ChatView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
         @Binding @ObservedObject var chat: Chat
-        @State private var showSecrets: Set<Int> = []
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -999,13 +1027,16 @@ struct ChatView: View {
                         .frame(maxWidth: 260)
                 }
 
-                if let shortDescr = chat.chatInfo.shortDescr {
-                    let r = markdownText(shortDescr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
-                    msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(4)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal)
+                ProfileDescriptionView(shortDescr: chat.chatInfo.shortDescr, description: chat.chatInfo.profileDescription)
+                    .padding(.horizontal)
+
+                switch chat.chatInfo {
+                case let .direct(contact):
+                    contactSimplexNameView(contact, verifiable: false)
+                case let .group(groupInfo, _):
+                    groupSimplexNameView(groupInfo, verifiable: false)
+                default:
+                    EmptyView()
                 }
 
                 if let chatContext {
@@ -1733,29 +1764,6 @@ struct ChatView: View {
             )
         }
 
-        func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
-            let oldIsGroupRcv = switch older?.chatDir {
-            case .groupRcv: true
-            case .channelRcv: true
-            default: false
-            }
-            let sameMember = switch (older?.chatDir, current.chatDir) {
-            case (.groupRcv(let oldMember), .groupRcv(let member)):
-                oldMember.memberId == member.memberId
-            case (.channelRcv, .channelRcv):
-                true
-            default:
-                false
-            }
-            if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
-                return true
-            } else if case .channelRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
-                return true
-            } else {
-                return false
-            }
-        }
-
         var body: some View {
             let last = isLastItem ? im.reversedChatItems.last : nil
             let listItem = merged.newest()
@@ -1979,7 +1987,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? nil : 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
@@ -2076,7 +2084,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? nil : 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }

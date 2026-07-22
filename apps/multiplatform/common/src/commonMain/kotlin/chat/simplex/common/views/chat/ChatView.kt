@@ -208,7 +208,7 @@ fun ChatView(
               withBGApi {
                 setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
                 if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
-                  val relays = chatModel.controller.apiGetGroupRelays(cInfo.groupInfo.groupId)
+                  val relays = chatModel.controller.apiGetGroupRelays(chatRh, cInfo.groupInfo.groupId)
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
@@ -1547,6 +1547,11 @@ fun subscriberCountStr(count: Long): String =
   if (count == 1L) String.format(generalGetString(MR.strings.channel_subscriber_count_singular), count)
   else String.format(generalGetString(MR.strings.channel_subscriber_count_plural), count)
 
+fun ownersContributorsCountStr(count: Int, withContributors: Boolean): String =
+  if (withContributors) String.format(generalGetString(MR.strings.channel_owners_contributors_count), count)
+  else if (count == 1) String.format(generalGetString(MR.strings.channel_owner_count_singular), count)
+  else String.format(generalGetString(MR.strings.channel_owner_count_plural), count)
+
 @Composable
 fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
@@ -1904,10 +1909,13 @@ fun BoxScope.ChatItemsList(
     reveal: (Boolean) -> Unit
   ) {
     val itemScope = rememberCoroutineScope()
+    val viewConfiguration = LocalViewConfiguration.current
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
-      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
-      LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view.
+      // remember: pointerInput handlers observe ViewConfiguration and reset on any change, so a new
+      // instance per recomposition kills in-flight presses/hover whenever a message is inserted
+      LocalViewConfiguration provides remember(viewConfiguration) { viewConfiguration.bigTouchSlop() }
     ) {
       val provider = {
         providerForGallery(reversedChatItems.value.asReversed(), cItem.id) { indexInReversed ->
@@ -2079,7 +2087,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -2162,7 +2170,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -2323,19 +2331,17 @@ fun BoxScope.ChatItemsList(
           )
         }
 
-        val descr = chatInfo.shortDescr?.trim()
-        if (descr != null && descr != "") {
-          MarkdownText(
-            descr,
-            parseToMarkdown(descr),
-            toggleSecrets = true,
-            style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
-            maxLines = 4,
-            overflow = TextOverflow.Ellipsis,
-            uriHandler = LocalUriHandler.current,
-            modifier = Modifier.padding(top = DEFAULT_PADDING_HALF),
-            linkMode = linkMode
-          )
+        ProfileDescriptionText(
+          shortDescr = chatInfo.shortDescr,
+          description = chatInfo.profileDescription,
+          style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
+          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+        )
+
+        when (chatInfo) {
+          is ChatInfo.Direct -> ContactSimplexNameView(chatInfo.contact, verifiable = false)
+          is ChatInfo.Group -> GroupSimplexNameView(chatInfo.groupInfo, verifiable = false)
+          else -> {}
         }
 
         val contextStr = chatContext()

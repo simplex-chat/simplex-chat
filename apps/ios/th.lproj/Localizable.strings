@@ -465,9 +465,6 @@ swipe action */
 "calling…" = "กำลังโทร…";
 
 /* No comment provided by engineer. */
-"Calls" = "โทร";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
 /* No comment provided by engineer. */
@@ -495,9 +492,6 @@ new chat action */
 
 /* authentication reason */
 "Change lock mode" = "เปลี่ยนโหมดล็อค";
-
-/* No comment provided by engineer. */
-"Change member role?" = "เปลี่ยนบทบาทของสมาชิก?";
 
 /* authentication reason */
 "Change passcode" = "เปลี่ยนรหัสผ่าน";
@@ -660,11 +654,11 @@ server test step */
 /* alert title */
 "Connection error" = "การเชื่อมต่อผิดพลาด";
 
-/* conn error description */
-"Connection error (AUTH)" = "การเชื่อมต่อผิดพลาด (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "สร้างการเชื่อมต่อแล้ว";
+
+/* conn error description */
+"Connection link removed" = "การเชื่อมต่อผิดพลาด";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "ส่งคําขอเชื่อมต่อแล้ว!";
@@ -943,9 +937,6 @@ alert button */
 "Description" = "คำอธิบาย";
 
 /* No comment provided by engineer. */
-"Develop" = "พัฒนา";
-
-/* No comment provided by engineer. */
 "Developer" = "เครื่องมือสำหรับนักพัฒนา";
 
 /* No comment provided by engineer. */
@@ -1164,7 +1155,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "ผิดพลาด";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "ผิดพลาด";
 
 /* No comment provided by engineer. */
@@ -1294,6 +1285,7 @@ alert button */
 "Error: " = "ผิดพลาด: ";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "ข้อผิดพลาด: % @";
@@ -1710,7 +1702,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "ไฟล์ขนาดใหญ่!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "ศึกษาเพิ่มเติม";
 
 /* swipe action */
@@ -1790,12 +1782,6 @@ server test error */
 
 /* rcv group event chat item */
 "member connected" = "เชื่อมต่อสำเร็จ";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกกลุ่มทั้งหมดจะได้รับแจ้ง";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกจะได้รับคำเชิญใหม่";
 
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!";
@@ -2172,9 +2158,6 @@ new chat action */
 "Preview" = "ดูตัวอย่าง";
 
 /* No comment provided by engineer. */
-"Your privacy" = "ความเป็นส่วนตัวและความปลอดภัย";
-
-/* No comment provided by engineer. */
 "Private filenames" = "ชื่อไฟล์ส่วนตัว";
 
 /* No comment provided by engineer. */
@@ -2234,7 +2217,7 @@ new chat action */
 /* swipe action */
 "Read" = "อ่าน";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "อ่านเพิ่มเติม";
 
 /* No comment provided by engineer. */
@@ -2383,7 +2366,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Run chat" = "เรียกใช้แชท";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "บันทึก";
 
@@ -2509,9 +2493,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "ผู้ส่งยกเลิกการโอนไฟล์";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "ผู้ส่งอาจลบคําขอการเชื่อมต่อแล้ว";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "การส่งใบเสร็จรับการจัดส่งข้อความจะถูกเปิดในโปรไฟล์แชทที่มองเห็นได้ทั้งหมด";
@@ -2701,9 +2682,6 @@ chat item action */
 "Submit" = "ส่ง";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "สนับสนุน SimpleX แชท";
-
-/* No comment provided by engineer. */
 "System" = "ระบบ";
 
 /* No comment provided by engineer. */
@@ -2793,6 +2771,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "ขีดที่สองที่เราพลาด! ✅";
+
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "ผู้ส่งอาจลบคําขอการเชื่อมต่อแล้ว";
 
 /* alert message */
 "The sender will NOT be notified" = "ผู้ส่งจะไม่ได้รับแจ้ง";
@@ -2897,9 +2878,6 @@ server test failure */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "ยกเว้นกรณีที่คุณใช้อินเทอร์เฟซการโทรของ iOS ให้เปิดใช้งานโหมดห้ามรบกวนเพื่อหลีกเลี่ยงการรบกวน";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน\nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร";
-
-/* No comment provided by engineer. */
 "Unlock" = "ปลดล็อค";
 
 /* authentication reason */
@@ -2949,9 +2927,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
-
-/* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
 "Verify connection security" = "ตรวจสอบความปลอดภัยในการเชื่อมต่อ";
@@ -3089,9 +3064,6 @@ server test failure */
 "You can enable later via Settings" = "คุณสามารถเปิดใช้งานในภายหลังผ่านการตั้งค่า";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - ปัดไปทางขวา";
 
 /* notification body */
@@ -3200,13 +3172,13 @@ server test failure */
 "Your calls" = "การโทรของคุณ";
 
 /* No comment provided by engineer. */
-"Your chat database" = "ฐานข้อมูลการแชทของคุณ";
-
-/* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "ฐานข้อมูลการแชทของคุณไม่ได้ถูก encrypt - ตั้งรหัสผ่านเพื่อ encrypt";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "โปรไฟล์แชทของคุณ";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน\nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (%@)";

@@ -342,7 +342,7 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCFile -> SmallContentPreviewFile {
-        CIFileView(ci.file, false, remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
+        CIFileView(ci.file, ci.meta, cInfo.timedMessagesTTL, showViaProxy = false, showTimestamp = true, showMenu = remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
           val user = chatModel.currentUser.value ?: return@CIFileView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }

@@ -271,15 +271,14 @@ private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessC
 
   SectionView(stringResource(MR.strings.verify_code_with_desktop)) {
     SessionCodeText(sessCode)
+    SectionItemView({ verifyDesktopSessionCode(remoteCtrls, sessCode) }) {
+      Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.confirm_verb), tint = MaterialTheme.colors.secondary)
+      TextIconSpaced(false)
+      Text(generalGetString(MR.strings.confirm_verb))
+    }
   }
 
   SectionDividerSpaced()
-
-  SectionItemView({ verifyDesktopSessionCode(remoteCtrls, sessCode) }) {
-    Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.confirm_verb), tint = MaterialTheme.colors.secondary)
-    TextIconSpaced(false)
-    Text(generalGetString(MR.strings.confirm_verb))
-  }
 
   SectionView {
     DisconnectButton(onClick = ::disconnectDesktop)

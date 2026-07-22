@@ -178,6 +178,12 @@ private fun GroupPreferencesLayout(
       }
     }
   }
+  @Composable fun SignMessagesPreference() {
+    val enableSignMessages = remember(preferences) { mutableStateOf(preferences.signMessages.enable) }
+    FeatureSection(GroupFeature.SignMessages, enableSignMessages, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(signMessages = GroupPreference(enable = enable)))
+    }
+  }
   ColumnWithScrollBar {
     val titleId = if (groupInfo.useRelays) MR.strings.channel_preferences
       else if (groupInfo.businessChat == null) MR.strings.group_preferences
@@ -210,6 +216,9 @@ private fun GroupPreferencesLayout(
       SectionDividerSpaced()
       SupportPreference(disabled = true)
     } else {
+      // hidden until message signing is user-facing (recipient-only stage)
+//      SignMessagesPreference()
+//      SectionDividerSpaced()
       TimedMessagesPreference()
       SectionDividerSpaced()
       FullDeletePreference()

@@ -174,8 +174,9 @@ struct AddGroupMembersViewCommon: View {
                 }
                 addedMembersCb(selectedContacts)
             } catch {
-                let a = getErrorAlert(error, "Error adding member(s)")
-                alert = .error(title: a.title, error: a.message)
+                await MainActor.run {
+                    showErrorAlert(error, NSLocalizedString("Error adding member(s)", comment: ""))
+                }
             }
         }
     }

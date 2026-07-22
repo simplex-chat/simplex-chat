@@ -90,7 +90,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SMPServerWithAuth, SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -379,7 +379,7 @@ data ChatCommand
   | APIGetChatContentTypes ChatRef
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}
-  | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, signMessages :: Bool, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
   | APIDeleteChatTag ChatTagId
@@ -398,6 +398,7 @@ data ChatCommand
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIForwardChatItems {toChatRef :: ChatRef, sendAsGroup :: ShowGroupAsSender, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIShareChatMsgContent {shareChatRef :: ChatRef, toSendRef :: SendRef}
+  | APIShareMyAddress {toSendRef :: SendRef}
   | APIUserRead UserId
   | UserRead
   | APIChatRead {chatRef :: ChatRef}
@@ -417,6 +418,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
+  | APISetUserDomain {userId :: UserId, simplexDomain :: Maybe SimplexDomain}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
   | APISetGroupAlias {groupId :: GroupId, localAlias :: LocalAlias}
@@ -442,6 +444,7 @@ data ChatCommand
   | APILeaveGroup {groupId :: GroupId}
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
+  | APISetPublicGroupAccess GroupId PublicGroupAccess
   | APICreateGroupLink {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIGroupLinkMemberRole {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIDeleteGroupLink {groupId :: GroupId}
@@ -527,22 +530,24 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, resolveKnown :: Bool, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectionLink is used to report link parsing failure as special error
-  | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
-  | APIPrepareGroup UserId CreatedLinkContact DirectLink GroupShortLinkData
+  | APIConnectPlan {userId :: UserId, connectTarget :: Maybe AConnectTarget, resolveMode :: PlanResolveMode, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectTarget is used to report parsing failure as special error
+  | APIPrepareContact UserId ACreatedConnLink (Maybe SimplexDomain) ContactShortLinkData
+  | APIPrepareGroup UserId CreatedLinkContact DirectLink (Maybe SimplexDomain) GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
-  | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
+  | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
+  | APIVerifyContactDomain {contactId :: ContactId}
+  | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts {userId :: UserId}
   | ListContacts
-  | APICreateMyAddress {userId :: UserId}
+  | APICreateMyAddress {userId :: UserId, server_ :: Maybe SMPServerWithAuth}
   | CreateMyAddress
   | APIDeleteMyAddress {userId :: UserId}
   | DeleteMyAddress
@@ -559,6 +564,7 @@ data ChatCommand
   | ForwardGroupMessage {toChatName :: ChatName, fromGroupName :: GroupName, fromMemberName_ :: Maybe ContactName, forwardedMsg :: Text}
   | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
   | SharePublicGroup {shareGroupName :: GroupName, toChatName :: ChatName}
+  | ShareMyAddress {toChatName :: ChatName}
   | SendMessage SendName Text
   | SendMemberContactMessage GroupName ContactName Text
   | AcceptMemberContact ContactName
@@ -621,6 +627,7 @@ data ChatCommand
   | SetBotCommands [ChatBotCommand]
   | UpdateProfile ContactName (Maybe Text) -- UserId (not used in UI)
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
+  | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
@@ -665,6 +672,22 @@ data ChatCommand
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
   deriving (Show)
+
+data PlanResolveMode
+  = PRMAllGroups -- resolve all known groups and all unknown chats
+  | PRMUnknown -- only resolve if chat is unknown (default)
+  | PRMNever -- do not resolve links and names, only do local search
+  deriving (Eq, Show)
+
+planResolveModeP :: A.Parser PlanResolveMode
+planResolveModeP =
+  A.takeTill (== ' ') >>= \case
+    "allGroups" -> pure PRMAllGroups
+    "on" -> pure PRMAllGroups
+    "unknown" -> pure PRMUnknown
+    "off" -> pure PRMUnknown
+    "never" -> pure PRMNever
+    _ -> fail "bad PlanResolveMode"
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
 allowRemoteCommand = \case
@@ -774,6 +797,8 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
+  | CRContactDomainVerified {user :: User, contact :: Contact, verificationFailure :: Maybe Text}
+  | CRGroupDomainVerified {user :: User, groupInfo :: GroupInfo, verificationFailure :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
@@ -814,7 +839,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
@@ -1103,7 +1128,7 @@ data GroupLinkPlan
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
-  | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: BoolDef, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
+  | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: Bool, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPUpdateRequired {groupSLinkData_ :: Maybe GroupShortLinkData}
   deriving (Show)
@@ -1399,6 +1424,12 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
+-- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+data SimplexDomainError
+  = SDENoValidLink -- the name's record has no usable contact/channel link
+  | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  deriving (Eq, Show)
+
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
@@ -1420,6 +1451,8 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
+  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
+  | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
@@ -1750,6 +1783,8 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkOwner)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 

@@ -126,7 +126,7 @@ fun ModalData.GroupChatInfoView(
         withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
-          val (_, code) = if (member.memberActive) {
+          val (_, code) = if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay) {
             val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, member.groupMemberId)
             member to memCode?.second
           } else {
@@ -177,6 +177,27 @@ fun ModalData.GroupChatInfoView(
       },
       manageWebPage = {
           ModalManager.end.showCustomModal { close -> ChannelWebPageView(rhId, groupInfo, chatModel, close) }
+      },
+      setSimplexName = {
+          ModalManager.end.showCustomModal { close ->
+            val domain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
+            SetSimplexDomainView(
+              title = generalGetString(MR.strings.set_simplex_name),
+              footer = generalGetString(MR.strings.set_channel_simplex_name_footer),
+              placeholder = "#channelname.testing",
+              simplexName = if (domain == null) "" else "#$domain",
+              save = { domain ->
+                val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?: PublicGroupAccess()
+                val newAccess = access.copy(groupDomainClaim = domain?.let { SimplexDomainClaim(it) })
+                val gInfo = chatModel.controller.apiSetPublicGroupAccess(rhId, groupInfo.groupId, newAccess)
+                if (gInfo != null) {
+                  withContext(Dispatchers.Main) { chatModel.chatsContext.updateGroup(rhId, gInfo) }
+                  true
+                } else false
+              },
+              close = close
+            )
+          }
       },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
@@ -510,6 +531,7 @@ fun ModalData.GroupChatInfoLayout(
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
   manageWebPage: () -> Unit,
+  setSimplexName: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit,
   deletingItems: State<Boolean>
@@ -640,6 +662,18 @@ fun ModalData.GroupChatInfoLayout(
         }
         if (!groupInfo.isOwner && channelLink != null) {
           SectionTextFooter(stringResource(MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect))
+        }
+        if (groupInfo.isOwner && groupLink != null) {
+          SectionDividerSpaced()
+          val channelDomain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
+          SectionView(title = if (channelDomain != null) generalGetString(MR.strings.channel_simplex_name) else null) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_tag),
+              channelDomain ?: generalGetString(MR.strings.get_simplex_name_beta),
+              setSimplexName,
+              iconColor = MaterialTheme.colors.secondary
+            )
+          }
         }
       } else {
         SectionView {
@@ -945,6 +979,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    GroupSimplexNameView(groupInfo)
     val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
     if (webPage != null) {
       val uriHandler = LocalUriHandler.current
@@ -1436,6 +1471,7 @@ fun PreviewGroupChatInfoLayout() {
       manageGroupLink = {},
       manageWebPage = {},
       onSearchClicked = {},
+      setSimplexName = {},
       deletingItems = remember { mutableStateOf(true) }
     )
   }

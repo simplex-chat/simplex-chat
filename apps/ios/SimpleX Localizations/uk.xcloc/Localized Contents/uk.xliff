@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="uk" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -34,6 +34,11 @@
         <source>#secret#</source>
         <target>#секрет#</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve">
+        <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
+        <target>%1$@ підтримував SimpleX Chat. Термін дії значка вичерпався %2$@.</target>
+        <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve">
         <source>%@</source>
@@ -85,6 +90,11 @@
         <target>%@ встановлено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ invested in SimpleX Chat crowdfunding." xml:space="preserve">
+        <source>%@ invested in SimpleX Chat crowdfunding.</source>
+        <target>%@ інвестував в SimpleX Chat краудфандінг.</target>
+        <note>badge alert</note>
+      </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
         <source>%@ is connected!</source>
         <target>%@ підключено!</target>
@@ -109,6 +119,11 @@
         <source>%@ servers</source>
         <target>%@ сервери</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve">
+        <source>%@ supports SimpleX Chat.</source>
+        <target>%@ підтримує SimpleX Chat.</target>
+        <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
         <source>%@ uploaded</source>
@@ -185,18 +200,33 @@
         <target>%d місяців</target>
         <note>time interval</note>
       </trans-unit>
+      <trans-unit id="%d owner" xml:space="preserve">
+        <source>%d owner</source>
+        <note>channel owners count</note>
+      </trans-unit>
+      <trans-unit id="%d owners" xml:space="preserve">
+        <source>%d owners</source>
+        <note>channel owners count</note>
+      </trans-unit>
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
+        <source>%d owners &amp; contributors</source>
+        <note>channel members count</note>
+      </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
         <source>%d relays failed</source>
+        <target>%d перемикач вийшов з ладу</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d relays not active" xml:space="preserve">
         <source>%d relays not active</source>
+        <target>%d перемикач не працює</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d relays removed" xml:space="preserve">
         <source>%d relays removed</source>
+        <target>%d перемикач видалений</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
@@ -217,10 +247,12 @@ channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d subscriber" xml:space="preserve">
         <source>%d subscriber</source>
+        <target>%d підписник</target>
         <note>channel subscriber count</note>
       </trans-unit>
       <trans-unit id="%d subscribers" xml:space="preserve">
         <source>%d subscribers</source>
+        <target>%d підписники</target>
         <note>channel subscriber count</note>
       </trans-unit>
       <trans-unit id="%d weeks" xml:space="preserve">
@@ -230,36 +262,44 @@ channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active" xml:space="preserve">
         <source>%1$d/%2$d relays active</source>
+        <target>%1$d/%2$d перемикач активний</target>
         <note>channel creation progress
 channel relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d errors" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d errors</source>
+        <target>%1$d/%2$d перемикач активний, %3$d помилки</target>
         <note>channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d failed</source>
+        <target>%1$d/%2$d перемикач активний, %3$d невдачно</target>
         <note>channel creation progress with errors
 channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d removed</source>
+        <target>%1$d/%2$d перемикач активний, %3$d видалено</target>
         <note>channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected" xml:space="preserve">
         <source>%1$d/%2$d relays connected</source>
+        <target>%1$d/%2$d перемикачі зʼєднані</target>
         <note>channel subscriber relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d errors</source>
+        <target>%1$d/%2$d перемикачі зʼєднані, %3$d помилки</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d failed" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d failed</source>
+        <target>%1$d/%2$d перемикачі зʼєднані, %3$d невдачно</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d removed" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d removed</source>
+        <target>%1$d/%2$d перемикачі зʼєднані, %3$d видалено</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
@@ -274,6 +314,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld channel events" xml:space="preserve">
         <source>%lld channel events</source>
+        <target>%lld події каналу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve">
@@ -378,16 +419,13 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="(from owner)" xml:space="preserve">
         <source>(from owner)</source>
+        <target>(від власника)</target>
         <note>chat link info line</note>
       </trans-unit>
       <trans-unit id="(new)" xml:space="preserve">
         <source>(new)</source>
         <target>(новий)</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="(signed)" xml:space="preserve">
-        <source>(signed)</source>
-        <note>chat link info line</note>
       </trans-unit>
       <trans-unit id="(this device v%@)" xml:space="preserve">
         <source>(this device v%@)</source>
@@ -436,6 +474,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="**Test relay** to retrieve its name." xml:space="preserve">
         <source>**Test relay** to retrieve its name.</source>
+        <target>**Тестування перемикача** щоб дізнатися його назву.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -485,6 +524,9 @@ channel relay bar</note>
         <source>- opt-in to send link previews.
 - prevent hyperlink phishing.
 - remove link tracking.</source>
+        <target>- увімкнути надсилання попереднього перегляду посилань.
+- запобігти фішингу за допомогою гіперпосилань.
+- вимкнути відстеження посилань.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
@@ -577,7 +619,7 @@ time interval</note>
         <source>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
         <target>&lt;p&gt;Привіт!&lt;/p&gt;
-&lt;p&gt;&lt;a href="%@"&gt; Зв'яжіться зі мною через SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
+&lt;p&gt;&lt;a href="%@"&gt;Зв'яжіться зі мною через SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
@@ -587,6 +629,7 @@ time interval</note>
       </trans-unit>
       <trans-unit id="A link for one person to connect" xml:space="preserve">
         <source>A link for one person to connect</source>
+        <target>Посилання для підключення однієї особи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -717,10 +760,20 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add" xml:space="preserve">
         <source>Add</source>
+        <target>Додати</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." xml:space="preserve">
         <source>Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</source>
+        <target>Додайте адресу до свого профілю, щоб ваші контакти в SimpleX могли поділитися нею з іншими людьми. Інформація про оновлення профілю буде надіслана вашим контактам у SimpleX.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add contributors." xml:space="preserve">
+        <source>Add contributors.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add description" xml:space="preserve">
+        <source>Add description</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add friends" xml:space="preserve">
@@ -743,12 +796,19 @@ swipe action</note>
         <target>Додати профіль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add relay" xml:space="preserve">
+        <source>Add relay</source>
+        <target>Додати перемикач</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add relays" xml:space="preserve">
         <source>Add relays</source>
+        <target>Додати перемикачі</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add relays to restore message delivery." xml:space="preserve">
         <source>Add relays to restore message delivery.</source>
+        <target>Додати перемикачі для відновлення доставки повідомлень.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add server" xml:space="preserve">
@@ -764,6 +824,11 @@ swipe action</note>
       <trans-unit id="Add team members" xml:space="preserve">
         <source>Add team members</source>
         <target>Додайте учасників команди</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add this code to your webpage. It will display the preview of your channel / group." xml:space="preserve">
+        <source>Add this code to your webpage. It will display the preview of your channel / group.</source>
+        <target>Додай цей код на твою сторінку. Це буде відображено для передперегляду твого каналу / групи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -846,6 +911,11 @@ swipe action</note>
         <target>Розширені налаштування мережі</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Advanced options" xml:space="preserve">
+        <source>Advanced options</source>
+        <target>Розширені параметри</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Advanced settings" xml:space="preserve">
         <source>Advanced settings</source>
         <target>Додаткові налаштування</target>
@@ -888,6 +958,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All messages" xml:space="preserve">
         <source>All messages</source>
+        <target>Усі повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
@@ -917,10 +988,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All relays failed" xml:space="preserve">
         <source>All relays failed</source>
+        <target>Усі перемикачі провалилися</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All relays removed" xml:space="preserve">
         <source>All relays removed</source>
+        <target>Усі перемикачі видалені</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All reports will be archived for you." xml:space="preserve">
@@ -953,9 +1026,14 @@ swipe action</note>
         <target>Дозволити</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow anyone to embed" xml:space="preserve">
+        <source>Allow anyone to embed</source>
+        <target>Дозволити будь-кому вбудовувати</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
         <source>Allow calls only if your contact allows them.</source>
-        <target>Дозволяйте дзвінки, тільки якщо ваш контакт дозволяє їх.</target>
+        <target>Дозволити дзвінки, тільки якщо ваш контакт дозволяє їх.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow calls?" xml:space="preserve">
@@ -975,6 +1053,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve">
         <source>Allow files and media only if your contact allows them.</source>
+        <target>Дозволяйте доступ до файлів та мультимедіа лише в тому випадку, якщо ваш контакт на це дав згоду.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -984,6 +1063,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow members to chat with admins." xml:space="preserve">
         <source>Allow members to chat with admins.</source>
+        <target>Дозволити учасникам спілкуватися в чаті з адміністраторами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
@@ -1003,6 +1083,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to subscribers." xml:space="preserve">
         <source>Allow sending direct messages to subscribers.</source>
+        <target>Дозволити надсилання прямих повідомлень підписникам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -1017,6 +1098,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve">
         <source>Allow subscribers to chat with admins.</source>
+        <target>Дозволяє абонентам спілкуватися з адміністраторами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -1076,6 +1158,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
         <source>Allow your contacts to send files and media.</source>
+        <target>Дозволяє вашим контактам надсилати файли та медіа.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
@@ -1123,6 +1206,11 @@ swipe action</note>
         <target>Відповісти на дзвінок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Any webpage can show the preview." xml:space="preserve">
+        <source>Any webpage can show the preview.</source>
+        <target>Будь-яка веб-сторінка може відображати попередній огляд.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>Збірка програми: %@</target>
@@ -1165,6 +1253,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="App update required" xml:space="preserve">
         <source>App update required</source>
+        <target>Потрібно оновити додаток</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -1259,6 +1348,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Audio call" xml:space="preserve">
         <source>Audio call</source>
+        <target>Аудіодзвінок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio/video calls" xml:space="preserve">
@@ -1331,6 +1421,10 @@ swipe action</note>
         <target>Поганий хеш повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Badge cannot be verified" xml:space="preserve">
+        <source>Badge cannot be verified</source>
+        <note>badge alert title</note>
+      </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
         <source>Be free
 in your network</source>
@@ -1347,6 +1441,10 @@ in your network</source>
       <trans-unit id="Better calls" xml:space="preserve">
         <source>Better calls</source>
         <target>Кращі дзвінки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better channels 📢" xml:space="preserve">
+        <source>Better channels 📢</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -1534,11 +1632,6 @@ in your network</source>
         <target>Дзвінок вже закінчився!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Calls" xml:space="preserve">
-        <source>Calls</source>
-        <target>Дзвінки</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Calls prohibited!" xml:space="preserve">
         <source>Calls prohibited!</source>
         <target>Дзвінки заборонені!</target>
@@ -1649,11 +1742,6 @@ new chat action</note>
         <target>Зміна режиму блокування</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve">
-        <source>Change member role?</source>
-        <target>Змінити роль учасника?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
         <source>Change passcode</source>
         <target>Змінити код доступу</target>
@@ -1674,6 +1762,10 @@ new chat action</note>
         <target>Змінити роль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change role?" xml:space="preserve">
+        <source>Change role?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Change self-destruct mode" xml:space="preserve">
         <source>Change self-destruct mode</source>
         <target>Змінити режим самознищення</target>
@@ -1687,6 +1779,10 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Channel" xml:space="preserve">
         <source>Channel</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Channel SimpleX name" xml:space="preserve">
+        <source>Channel SimpleX name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Channel display name" xml:space="preserve">
@@ -1730,6 +1826,10 @@ alert subtitle</note>
         <source>Channel temporarily unavailable</source>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Channel webpage" xml:space="preserve">
+        <source>Channel webpage</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Channel will be deleted for all subscribers - this cannot be undone!" xml:space="preserve">
         <source>Channel will be deleted for all subscribers - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
@@ -1769,6 +1869,10 @@ alert subtitle</note>
       <trans-unit id="Chat console" xml:space="preserve">
         <source>Chat console</source>
         <target>Консоль чату</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat data" xml:space="preserve">
+        <source>Chat data</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database" xml:space="preserve">
@@ -2138,6 +2242,10 @@ server test step</note>
         <target>Підключайтеся швидше! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect to %@" xml:space="preserve">
+        <source>Connect to %@</source>
+        <note>new chat action</note>
+      </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
         <source>Connect to desktop</source>
         <target>Підключення до комп'ютера</target>
@@ -2228,16 +2336,8 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connecting to desktop" xml:space="preserve">
         <source>Connecting to desktop</source>
-        <target>Підключення до ПК</target>
+        <target>Підключення до компʼютера</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Connecting via channel name requires a newer app version." xml:space="preserve">
-        <source>Connecting via channel name requires a newer app version.</source>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Connecting via contact name requires a newer app version." xml:space="preserve">
-        <source>Connecting via contact name requires a newer app version.</source>
-        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
         <source>Connection</source>
@@ -2254,15 +2354,14 @@ This is your own one-time link!</source>
         <target>Підключення заблоковано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection blocked: %@" xml:space="preserve">
+        <source>Connection blocked: %@</source>
+        <note>conn error description</note>
+      </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Помилка підключення</target>
         <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
-        <source>Connection error (AUTH)</source>
-        <target>Помилка підключення (AUTH)</target>
-        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
@@ -2274,6 +2373,11 @@ This is your own one-time link!</source>
         <target>Підключення заблоковано оператором сервера:
 %@</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection link removed" xml:space="preserve">
+        <source>Connection link removed</source>
+        <target>Помилка підключення</target>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
@@ -2318,6 +2422,10 @@ This is your own one-time link!</source>
       <trans-unit id="Connections" xml:space="preserve">
         <source>Connections</source>
         <target>З'єднання</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact" xml:space="preserve">
+        <source>Contact</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact address" xml:space="preserve">
@@ -2408,6 +2516,10 @@ This is your own one-time link!</source>
         <target>Копіювати</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Copy code" xml:space="preserve">
+        <source>Copy code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Copy error" xml:space="preserve">
         <source>Copy error</source>
         <target>Помилка копіювання</target>
@@ -2441,6 +2553,10 @@ This is your own one-time link!</source>
       <trans-unit id="Create a group using a random profile." xml:space="preserve">
         <source>Create a group using a random profile.</source>
         <target>Створіть групу, використовуючи випадковий профіль.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." xml:space="preserve">
+        <source>Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -2482,14 +2598,14 @@ This is your own one-time link!</source>
         <source>Create public channel</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create public channel (BETA)" xml:space="preserve">
-        <source>Create public channel (BETA)</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
         <source>Create queue</source>
         <target>Створити чергу</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Create web preview." xml:space="preserve">
+        <source>Create web preview.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
@@ -3015,9 +3131,9 @@ alert button</note>
         <target>Настільні пристрої</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
-        <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
-        <target>Адреса сервера призначення %@ несумісна з налаштуваннями сервера пересилання %@.</target>
+      <trans-unit id="Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." xml:space="preserve">
+        <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
+        <target>Адреса сервера призначення %1$@ несумісна з налаштуваннями сервера пересилання %2$@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -3025,9 +3141,9 @@ alert button</note>
         <target>Помилка сервера призначення: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
-        <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
-        <target>Версія сервера призначення %@ несумісна з версією сервера переадресації %@.</target>
+      <trans-unit id="Destination server version of %1$@ is incompatible with forwarding server %2$@." xml:space="preserve">
+        <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
+        <target>Версія сервера призначення %1$@ несумісна з версією сервера переадресації %2$@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
@@ -3040,19 +3156,14 @@ alert button</note>
         <target>Деталі</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Develop" xml:space="preserve">
-        <source>Develop</source>
-        <target>Розробник</target>
+      <trans-unit id="Developer" xml:space="preserve">
+        <source>Developer</source>
+        <target>Інструменти для розробників</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Developer options" xml:space="preserve">
         <source>Developer options</source>
         <target>Можливості для розробників</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Developer" xml:space="preserve">
-        <source>Developer</source>
-        <target>Інструменти для розробників</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Device" xml:space="preserve">
@@ -3198,6 +3309,10 @@ alert button</note>
         <target>Зробіть це пізніше</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Do not require signing messages." xml:space="preserve">
+        <source>Do not require signing messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Do not send history to new members." xml:space="preserve">
         <source>Do not send history to new members.</source>
         <target>Не надсилайте історію новим користувачам.</target>
@@ -3231,6 +3346,10 @@ alert button</note>
         <source>Don't miss important messages.</source>
         <target>Не пропускайте важливі повідомлення.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Don't save" xml:space="preserve">
+        <source>Don't save</source>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
@@ -3312,6 +3431,10 @@ chat item action</note>
         <source>Easier to invite your friends 👋</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Easier to read." xml:space="preserve">
+        <source>Easier to read.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
         <source>Edit</source>
         <target>Редагувати</target>
@@ -3319,6 +3442,10 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Edit channel profile" xml:space="preserve">
         <source>Edit channel profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Edit description" xml:space="preserve">
+        <source>Edit description</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit group profile" xml:space="preserve">
@@ -3517,6 +3644,10 @@ chat item action</note>
         <target>Введіть правильну парольну фразу.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enter description (optional)" xml:space="preserve">
+        <source>Enter description (optional)</source>
+        <note>placeholder</note>
+      </trans-unit>
       <trans-unit id="Enter group name…" xml:space="preserve">
         <source>Enter group name…</source>
         <target>Введіть назву групи…</target>
@@ -3555,6 +3686,10 @@ chat item action</note>
         <target>Введіть назву пристрою…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enter webpage URL" xml:space="preserve">
+        <source>Enter webpage URL</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter welcome message…" xml:space="preserve">
         <source>Enter welcome message…</source>
         <target>Введіть вітальне повідомлення…</target>
@@ -3573,7 +3708,7 @@ chat item action</note>
       <trans-unit id="Error" xml:space="preserve">
         <source>Error</source>
         <target>Помилка</target>
-        <note>conn error description</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error aborting address change" xml:space="preserve">
         <source>Error aborting address change</source>
@@ -3869,6 +4004,10 @@ chat item action</note>
         <target>Помилка збереження профілю групи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving name" xml:space="preserve">
+        <source>Error saving name</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error saving passcode" xml:space="preserve">
         <source>Error saving passcode</source>
         <target>Помилка збереження пароля</target>
@@ -3922,6 +4061,10 @@ chat item action</note>
         <source>Error setting delivery receipts!</source>
         <target>Помилка встановлення підтвердження доставлення!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error sharing address" xml:space="preserve">
+        <source>Error sharing address</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error sharing channel" xml:space="preserve">
         <source>Error sharing channel</source>
@@ -4001,6 +4144,7 @@ chat item action</note>
         <source>Error: %@</source>
         <target>Помилка: %@</target>
         <note>alert message
+conn error description
 file error text
 snd error text</note>
       </trans-unit>
@@ -4438,6 +4582,10 @@ Error: %2$@</source>
         <target>GIF-файли та наклейки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve">
+        <source>Get SimpleX name (BETA)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Get link" xml:space="preserve">
         <source>Get link</source>
         <note>relay test step</note>
@@ -4546,6 +4694,10 @@ Error: %2$@</source>
         <target>Профіль групи було змінено. Якщо ви збережете його, оновлений профіль буде надіслано учасникам групи.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Group webpage" xml:space="preserve">
+        <source>Group webpage</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
         <source>Group welcome message</source>
         <target>Привітальне повідомлення групи</target>
@@ -4569,6 +4721,10 @@ Error: %2$@</source>
       <trans-unit id="Help" xml:space="preserve">
         <source>Help</source>
         <target>Довідка</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Help &amp; support" xml:space="preserve">
+        <source>Help &amp; support</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help admins moderating their groups." xml:space="preserve">
@@ -5049,6 +5205,10 @@ More improvements are coming soon!</source>
         <target>Схоже, що ви вже підключені за цим посиланням. Якщо це не так, сталася помилка (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="It will be shown to subscribers and used to allow loading the preview." xml:space="preserve">
+        <source>It will be shown to subscribers and used to allow loading the preview.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Italian interface" xml:space="preserve">
         <source>Italian interface</source>
         <target>Італійський інтерфейс</target>
@@ -5072,6 +5232,10 @@ More improvements are coming soon!</source>
       <trans-unit id="Join channel" xml:space="preserve">
         <source>Join channel</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Join channel %@" xml:space="preserve">
+        <source>Join channel %@</source>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
@@ -5153,7 +5317,7 @@ This is your link for group %@!</source>
       <trans-unit id="Learn more" xml:space="preserve">
         <source>Learn more</source>
         <target>Дізнайтеся більше</target>
-        <note>No comment provided by engineer.</note>
+        <note>badge alert button</note>
       </trans-unit>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
@@ -5191,6 +5355,14 @@ This is your link for group %@!</source>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
         <source>Less traffic on mobile networks.</source>
         <target>Менше трафіку в мобільних мережах.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Let people connect to you via name registered with your SimpleX address." xml:space="preserve">
+        <source>Let people connect to you via name registered with your SimpleX address.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Let people join via name registered with this channel link." xml:space="preserve">
+        <source>Let people join via name registered with this channel link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
@@ -5300,6 +5472,10 @@ This is your link for group %@!</source>
         <target>Переконайтеся, що адреси серверів WebRTC ICE мають правильний формат, розділені рядками і не дублюються.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Manage your relays." xml:space="preserve">
+        <source>Manage your relays.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve">
         <source>Mark deleted for everyone</source>
         <target>Позначити видалено для всіх</target>
@@ -5366,21 +5542,6 @@ This is your link for group %@!</source>
         <source>Member reports</source>
         <target>Повідомлення учасників</target>
         <note>chat feature</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
-        <source>Member role will be changed to "%@". All chat members will be notified.</source>
-        <target>Роль учасника буде змінено на "%@". Усі учасники чату отримають сповіщення.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
-        <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target>Роль учасника буде змінено на "%@". Всі учасники групи будуть повідомлені про це.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
-        <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target>Роль учасника буде змінено на "%@". Учасник отримає нове запрошення.</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
@@ -5523,6 +5684,14 @@ This is your link for group %@!</source>
       <trans-unit id="Message shape" xml:space="preserve">
         <source>Message shape</source>
         <target>Форма повідомлення</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message signing is not required." xml:space="preserve">
+        <source>Message signing is not required.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message signing is required." xml:space="preserve">
+        <source>Message signing is required.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -5692,6 +5861,10 @@ This is your link for group %@!</source>
         <target>Незабаром буде ще більше покращень!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="More privacy" xml:space="preserve">
+        <source>More privacy</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="More reliable network connection." xml:space="preserve">
         <source>More reliable network connection.</source>
         <target>Більш надійне з'єднання з мережею.</target>
@@ -5731,6 +5904,14 @@ This is your link for group %@!</source>
         <source>Name</source>
         <target>Ім'я</target>
         <note>swipe action</note>
+      </trans-unit>
+      <trans-unit id="Name not found" xml:space="preserve">
+        <source>Name not found</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Names for your channel or business." xml:space="preserve">
+        <source>Names for your channel or business.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
@@ -6053,6 +6234,10 @@ The most secure encryption.</source>
         <target>Немає серверів для отримання повідомлень.</target>
         <note>servers error</note>
       </trans-unit>
+      <trans-unit id="No servers to resolve names." xml:space="preserve">
+        <source>No servers to resolve names.</source>
+        <note>servers warning</note>
+      </trans-unit>
       <trans-unit id="No servers to send files." xml:space="preserve">
         <source>No servers to send files.</source>
         <target>Немає серверів для надсилання файлів.</target>
@@ -6068,12 +6253,20 @@ The most secure encryption.</source>
         <target>Немає непрочитаних чатів</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No valid link" xml:space="preserve">
+        <source>No valid link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
         <source>Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Non-profit governance" xml:space="preserve">
         <source>Non-profit governance</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." xml:space="preserve">
+        <source>None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
@@ -6294,6 +6487,10 @@ Requires compatible VPN.</source>
         <target>Тільки ваш контакт може надсилати голосові повідомлення.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Only your page above can show the preview." xml:space="preserve">
+        <source>Only your page above can show the preview.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Відкрито</target>
@@ -6470,8 +6667,8 @@ alert button</note>
         <source>Owner</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Owners" xml:space="preserve">
-        <source>Owners</source>
+      <trans-unit id="Owners &amp; contributors" xml:space="preserve">
+        <source>Owners &amp; contributors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ownership: you can run your own relays." xml:space="preserve">
@@ -6661,10 +6858,6 @@ Error: %@</source>
         <target>Будь ласка, спробуйте вимкнути та знову увімкнути сповіщення.</target>
         <note>token info</note>
       </trans-unit>
-      <trans-unit id="Please upgrade the app." xml:space="preserve">
-        <source>Please upgrade the app.</source>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve">
         <source>Please wait for group moderators to review your request to join the group.</source>
         <target>Будь ласка, зачекайте, поки модератори групи розглянуть ваш запит на приєднання до групи.</target>
@@ -6721,11 +6914,6 @@ Error: %@</source>
       <trans-unit id="Previously connected servers" xml:space="preserve">
         <source>Previously connected servers</source>
         <target>Раніше підключені сервери</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Privacy &amp; security" xml:space="preserve">
-        <source>Privacy &amp; security</source>
-        <target>Конфіденційність і безпека</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy for your customers." xml:space="preserve">
@@ -6813,7 +7001,8 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Profile update will be sent to your SimpleX contacts." xml:space="preserve">
         <source>Profile update will be sent to your SimpleX contacts.</source>
-        <note>alert message</note>
+        <note>alert message
+alert title</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
@@ -6967,7 +7156,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Read more" xml:space="preserve">
         <source>Read more</source>
         <target>Читати далі</target>
-        <note>No comment provided by engineer.</note>
+        <note>profile description teaser</note>
       </trans-unit>
       <trans-unit id="Read more in User Guide." xml:space="preserve">
         <source>Read more in User Guide.</source>
@@ -7104,6 +7293,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Зареєструватися</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Register a test name" xml:space="preserve">
+        <source>Register a test name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">
         <source>Register notification token?</source>
         <target>Зареєструвати токен сповіщення?</target>
@@ -7215,9 +7408,17 @@ swipe action</note>
         <target>Видалити учасника?</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Remove name" xml:space="preserve">
+        <source>Remove name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
         <source>Remove passphrase from keychain?</source>
         <target>Видалити парольну фразу з брелока?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Remove relay" xml:space="preserve">
+        <source>Remove relay</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove relay?" xml:space="preserve">
@@ -7323,6 +7524,10 @@ swipe action</note>
         <target>Звіти</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Require signing messages." xml:space="preserve">
+        <source>Require signing messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Required" xml:space="preserve">
         <source>Required</source>
         <target>Потрібно</target>
@@ -7366,6 +7571,10 @@ swipe action</note>
       <trans-unit id="Reset to user theme" xml:space="preserve">
         <source>Reset to user theme</source>
         <target>Повернутися до теми користувача</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Resolver error: %@" xml:space="preserve">
+        <source>Resolver error: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
@@ -7448,6 +7657,25 @@ swipe action</note>
         <target>Роль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All chat members will be notified.</source>
+        <target>Роль учасника буде змінено на "%@". Усі учасники чату отримають сповіщення.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All group members will be notified.</source>
+        <target>Роль учасника буде змінено на "%@". Всі учасники групи будуть повідомлені про це.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All subscribers will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
+        <source>Role will be changed to "%@". The member will receive a new invitation.</source>
+        <target>Роль учасника буде змінено на "%@". Учасник отримає нове запрошення.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Запустити чат</target>
@@ -7480,7 +7708,8 @@ swipe action</note>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>Зберегти</target>
-        <note>alert button
+        <note>alert action
+alert button
 chat item action</note>
       </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
@@ -7497,6 +7726,10 @@ chat item action</note>
         <source>Save (and notify subscribers)</source>
         <note>alert button</note>
       </trans-unit>
+      <trans-unit id="Save SimpleX name?" xml:space="preserve">
+        <source>Save SimpleX name?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Save admission settings?" xml:space="preserve">
         <source>Save admission settings?</source>
         <target>Зберегти налаштування входу?</target>
@@ -7510,6 +7743,10 @@ chat item action</note>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
         <target>Зберегти та повідомити учасників групи</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save and notify members" xml:space="preserve">
+        <source>Save and notify members</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and notify subscribers" xml:space="preserve">
@@ -7577,6 +7814,10 @@ chat item action</note>
       <trans-unit id="Save servers?" xml:space="preserve">
         <source>Save servers?</source>
         <target>Зберегти сервери?</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Save webpage settings?" xml:space="preserve">
+        <source>Save webpage settings?</source>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save welcome message?" xml:space="preserve">
@@ -7871,11 +8112,6 @@ chat item action</note>
         <target>Відправник скасував передачу файлу.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
-        <source>Sender may have deleted the connection request.</source>
-        <target>Можливо, відправник видалив запит на підключення.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
         <note>alert message</note>
@@ -7968,6 +8204,10 @@ chat item action</note>
       <trans-unit id="Server" xml:space="preserve">
         <source>Server</source>
         <target>Сервер</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve">
+        <source>Server %@ does not support name resolution. Configure servers, or use a connection link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve">
@@ -8273,6 +8513,10 @@ chat item action</note>
         <target>Показати опції розробника</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Show encryption" xml:space="preserve">
+        <source>Show encryption</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show last messages" xml:space="preserve">
         <source>Show last messages</source>
         <target>Показати останні повідомлення</target>
@@ -8301,6 +8545,31 @@ chat item action</note>
       <trans-unit id="Show:" xml:space="preserve">
         <source>Show:</source>
         <target>Показати:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sign message" xml:space="preserve">
+        <source>Sign message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sign messages" xml:space="preserve">
+        <source>Sign messages</source>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Signature missing" xml:space="preserve">
+        <source>Signature missing</source>
+        <note>alert title
+copied message info</note>
+      </trans-unit>
+      <trans-unit id="Signed" xml:space="preserve">
+        <source>Signed</source>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Signed &amp; verified" xml:space="preserve">
+        <source>Signed &amp; verified</source>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Signing proves you authored this message and can't be denied later." xml:space="preserve">
+        <source>Signing proves you authored this message and can't be denied later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX" xml:space="preserve">
@@ -8396,6 +8665,22 @@ chat item action</note>
       <trans-unit id="SimpleX links not allowed" xml:space="preserve">
         <source>SimpleX links not allowed</source>
         <target>Посилання SimpleX заборонені</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name" xml:space="preserve">
+        <source>SimpleX name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name error" xml:space="preserve">
+        <source>SimpleX name error</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name not verified" xml:space="preserve">
+        <source>SimpleX name not verified</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
+        <source>SimpleX names (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
@@ -8661,9 +8946,8 @@ Relay address was used to set up this relay for the channel.</source>
         <target>Підписки ігноруються</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Support SimpleX Chat" xml:space="preserve">
-        <source>Support SimpleX Chat</source>
-        <target>Підтримка чату SimpleX</target>
+      <trans-unit id="Support the project" xml:space="preserve">
+        <source>Support the project</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Switch audio and video during the call." xml:space="preserve">
@@ -8854,6 +9138,22 @@ It can happen because of some bug or when the connection is compromised.</source
 Це може статися через помилку або коли з'єднання скомпрометовано.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve">
+        <source>The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve">
+        <source>The SimpleX name %@ is registered, but it has no valid link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve">
+        <source>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve">
+        <source>The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
         <source>The address will be short, and your profile will be shared via the address.</source>
         <target>Адреса буде короткою, і ваш профіль буде доступний за цією адресою.</target>
@@ -8882,6 +9182,14 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>The attempt to change database passphrase was not completed.</source>
         <target>Спроба змінити пароль до бази даних не була завершена.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." xml:space="preserve">
+        <source>The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</source>
+        <note>badge alert</note>
+      </trans-unit>
+      <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve">
+        <source>The channel required this message to be signed, but the signature is missing.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
         <source>The code you scanned is not a SimpleX link QR code.</source>
@@ -8976,6 +9284,11 @@ your contacts and groups.</source>
         <target>Другу галочку ми пропустили! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
+        <source>The sender deleted the connection request.</source>
+        <target>Можливо, відправник видалив запит на підключення.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>Відправник НЕ буде повідомлений</target>
@@ -9029,6 +9342,10 @@ your contacts and groups.</source>
         <target>Їх можна перевизначити в налаштуваннях контактів і груп.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve">
+        <source>This SimpleX name is not registered. Please check the name.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
         <target>Цю дію неможливо скасувати - всі отримані та надіслані файли і медіа будуть видалені. Зображення з низькою роздільною здатністю залишаться.</target>
@@ -9048,6 +9365,10 @@ your contacts and groups.</source>
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
         <target>Цю дію неможливо скасувати - ваш профіль, контакти, повідомлення та файли будуть безповоротно втрачені.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
+        <source>This badge could not be verified and may not be genuine.</source>
+        <note>badge alert</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
         <source>This chat is protected by end-to-end encryption.</source>
@@ -9201,6 +9522,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Щоб записати голосове повідомлення, будь ласка, надайте дозвіл на використання мікрофону.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To resolve names" xml:space="preserve">
+        <source>To resolve names</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
         <target>Щоб відкрити свій прихований профіль, введіть повний пароль у поле пошуку на сторінці **Ваші профілі чату**.</target>
@@ -9233,6 +9558,10 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
         <target>Щоб перевірити наскрізне шифрування з вашим контактом, порівняйте (або відскануйте) код на ваших пристроях.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To verify keys with this subscriber, compare (or scan) the code on your devices." xml:space="preserve">
+        <source>To verify keys with this subscriber, compare (or scan) the code on your devices.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -9322,6 +9651,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <source>Unblock subscriber for all?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unconfirmed name" xml:space="preserve">
+        <source>Unconfirmed name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Undelivered messages" xml:space="preserve">
         <source>Undelivered messages</source>
         <target>Недоставлені повідомлення</target>
@@ -9382,13 +9715,6 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Якщо ви не користуєтеся інтерфейсом виклику iOS, увімкніть режим "Не турбувати", щоб уникнути переривань.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
-        <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
-To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>Якщо ваш контакт не видалив з'єднання або якщо це посилання вже використовувалося, це може бути помилкою - будь ласка, повідомте про це.
-Щоб підключитися, попросіть вашого контакта створити інше посилання і перевірте, чи маєте ви стабільне з'єднання з мережею.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Unlink" xml:space="preserve">
         <source>Unlink</source>
         <target>Роз'єднати зв'язок</target>
@@ -9419,18 +9745,14 @@ To connect, please ask your contact to create another connection link and check 
         <target>Непрочитане</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Unsupported channel name" xml:space="preserve">
-        <source>Unsupported channel name</source>
-        <note>alert title</note>
-      </trans-unit>
       <trans-unit id="Unsupported connection link" xml:space="preserve">
         <source>Unsupported connection link</source>
         <target>Несумісне посилання для підключення</target>
         <note>conn error description</note>
       </trans-unit>
-      <trans-unit id="Unsupported contact name" xml:space="preserve">
-        <source>Unsupported contact name</source>
-        <note>alert title</note>
+      <trans-unit id="Unverified badge" xml:space="preserve">
+        <source>Unverified badge</source>
+        <note>badge alert title</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
@@ -9484,7 +9806,8 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Upgrade address?" xml:space="preserve">
         <source>Upgrade address?</source>
         <target>Змінити адресу?</target>
-        <note>alert message</note>
+        <note>alert message
+alert title</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
         <source>Upgrade and open chat</source>
@@ -9658,6 +9981,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Використовувати веб-порт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Used chat relays do not support webpages." xml:space="preserve">
+        <source>Used chat relays do not support webpages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
         <source>User selection</source>
         <target>Вибір користувача</target>
@@ -9676,6 +10003,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Verify" xml:space="preserve">
         <source>Verify</source>
         <note>relay test step</note>
+      </trans-unit>
+      <trans-unit id="Verify SimpleX names" xml:space="preserve">
+        <source>Verify SimpleX names</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
         <source>Verify code with desktop</source>
@@ -9700,6 +10031,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Verify database passphrase" xml:space="preserve">
         <source>Verify database passphrase</source>
         <target>Перевірте пароль до бази даних</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify name" xml:space="preserve">
+        <source>Verify name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify passphrase" xml:space="preserve">
@@ -9856,6 +10191,14 @@ To connect, please ask your contact to create another connection link and check 
         <source>WebRTC ICE servers</source>
         <target>Сервери WebRTC ICE</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Webpage code" xml:space="preserve">
+        <source>Webpage code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Webpage settings were changed. If you save, the updated settings will be sent to subscribers." xml:space="preserve">
+        <source>Webpage settings were changed. If you save, the updated settings will be sent to subscribers.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
         <source>Welcome %@!</source>
@@ -10076,9 +10419,8 @@ Repeat join request?</source>
         <target>Ви можете увімкнути пізніше в Налаштуваннях</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
-        <source>You can enable them later via app Privacy &amp; Security settings.</source>
-        <target>Ви можете увімкнути їх пізніше в налаштуваннях конфіденційності та безпеки програми.</target>
+      <trans-unit id="You can enable them later via app Your privacy settings." xml:space="preserve">
+        <source>You can enable them later via app Your privacy settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can give another try." xml:space="preserve">
@@ -10139,6 +10481,10 @@ Repeat join request?</source>
         <source>You can still view conversation with %@ in the list of chats.</source>
         <target>Ви все ще можете переглянути розмову з %@ у списку чатів.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can support SimpleX starting from v7 of the app." xml:space="preserve">
+        <source>You can support SimpleX starting from v7 of the app.</source>
+        <note>badge alert</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
         <source>You can turn on SimpleX Lock via Settings.</source>
@@ -10325,6 +10671,10 @@ Repeat connection request?</source>
         <target>Ваша адреса SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your SimpleX name" xml:space="preserve">
+        <source>Your SimpleX name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
         <target>Ваш діловий контакт</target>
@@ -10337,11 +10687,6 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="Your channel" xml:space="preserve">
         <source>Your channel</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chat database" xml:space="preserve">
-        <source>Your chat database</source>
-        <target>Ваша база даних чату</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
@@ -10372,6 +10717,13 @@ Repeat connection request?</source>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
         <target>Ваш контакт</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
+        <source>Your contact removed this link, or it was a one-time link that was already used.
+To connect, ask your contact to create a new link.</source>
+        <target>Якщо ваш контакт не видалив з'єднання або якщо це посилання вже використовувалося, це може бути помилкою - будь ласка, повідомте про це.
+Щоб підключитися, попросіть вашого контакта створити інше посилання і перевірте, чи маєте ви стабільне з'єднання з мережею.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
@@ -10537,6 +10889,10 @@ Relays can access channel messages.</source>
         <source>accepted you</source>
         <target>прийняв(ла) вас</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="acknowledged roster" xml:space="preserve">
+        <source>acknowledged roster</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="active" xml:space="preserve">
         <source>active</source>
@@ -10800,6 +11156,10 @@ marked deleted chat item preview text</note>
         <target>контакт повинен прийняти…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="contributor" xml:space="preserve">
+        <source>contributor</source>
+        <note>member role</note>
+      </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
         <source>creator</source>
         <target>творець</target>
@@ -11003,6 +11363,10 @@ pref value</note>
         <target>години</target>
         <note>time unit</note>
       </trans-unit>
+      <trans-unit id="https://" xml:space="preserve">
+        <source>https://</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve">
         <source>iOS Keychain is used to securely store passphrase - it allows receiving push notifications.</source>
         <target>iOS Keychain використовується для безпечного зберігання пароля - це дає змогу отримувати миттєві повідомлення.</target>
@@ -11095,6 +11459,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="link" xml:space="preserve">
         <source>link</source>
+        <target>посилання</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
@@ -11437,6 +11802,10 @@ last received msg: %2$@</source>
         <target>закреслено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="subscriber" xml:space="preserve">
+        <source>subscriber</source>
+        <note>member role</note>
+      </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
         <source>this contact</source>
         <target>цей контакт</target>
@@ -11484,11 +11853,6 @@ last received msg: %2$@</source>
       <trans-unit id="v%@" xml:space="preserve">
         <source>v%@</source>
         <target>v%@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="v%@ (%@)" xml:space="preserve">
-        <source>v%@ (%@)</source>
-        <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="via %@" xml:space="preserve">
@@ -11642,7 +12006,7 @@ last received msg: %2$@</source>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="uk" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -11677,9 +12041,24 @@ last received msg: %2$@</source>
       </trans-unit>
     </body>
   </file>
+  <file original="en.lproj/SimpleXChat-InfoPlist.strings" datatype="plaintext" source-language="en" target-language="uk">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
+    </header>
+    <body>
+      <trans-unit id="CFBundleName" translate="no" xml:space="preserve">
+        <source>SimpleXChat</source>
+        <note>Bundle name</note>
+      </trans-unit>
+      <trans-unit id="NSHumanReadableCopyright" translate="no" xml:space="preserve">
+        <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
+        <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="uk" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -11701,7 +12080,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="uk" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="%d new events" xml:space="preserve">
@@ -11733,7 +12112,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="uk" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -11755,7 +12134,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="uk" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="26.6" build-num="17F113"/>
     </header>
     <body>
       <trans-unit id="%@" xml:space="preserve">
@@ -11938,9 +12317,8 @@ last received msg: %2$@</source>
         <target>Неправильна ключова фраза до бази даних</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can allow sharing in Privacy &amp; Security / SimpleX Lock settings." xml:space="preserve">
-        <source>You can allow sharing in Privacy &amp; Security / SimpleX Lock settings.</source>
-        <target>Ви можете дозволити спільний доступ у налаштуваннях Конфіденційність і безпека / SimpleX Lock.</target>
+      <trans-unit id="You can allow sharing in Your privacy / SimpleX Lock settings." xml:space="preserve">
+        <source>You can allow sharing in Your privacy / SimpleX Lock settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>

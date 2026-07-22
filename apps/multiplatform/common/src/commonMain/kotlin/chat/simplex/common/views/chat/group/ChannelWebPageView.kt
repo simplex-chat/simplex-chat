@@ -49,7 +49,7 @@ fun ChannelWebPageView(
       val trimmedPage = webPage.value.trim()
       val newAccess = PublicGroupAccess(
         groupWebPage = trimmedPage.ifEmpty { null },
-        groupDomain = access?.groupDomain,
+        groupDomainClaim = access?.groupDomainClaim,
         domainWebPage = access?.domainWebPage ?: false,
         allowEmbedding = allowEmbedding.value
       )
@@ -81,7 +81,7 @@ fun ChannelWebPageView(
   }
 
   LaunchedEffect(Unit) {
-    val relays = chatModel.controller.apiGetGroupRelays(groupInfo.groupId)
+    val relays = chatModel.controller.apiGetGroupRelays(rhId, groupInfo.groupId)
     groupRelays.clear()
     groupRelays.addAll(relays)
   }

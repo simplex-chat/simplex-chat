@@ -5,7 +5,7 @@
 "_italic_" = "\\_dőlt_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- kapcsolódás a [könyvtárszolgáltatáshoz](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- kapcsolódás a [könyvtárszolgáltatáshoz](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (béta)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- stabilabb üzenetkézbesítés.\n- picit továbbfejlesztett csoportok.\n- és még sok más!";
@@ -27,9 +27,6 @@
 
 /* No comment provided by engineer. */
 "(new)" = "(új)";
-
-/* chat link info line */
-"(signed)" = "(aláírva)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(ez az eszköz: v%@)";
@@ -121,6 +118,9 @@
 /* No comment provided by engineer. */
 "%@ downloaded" = "%@ letöltve";
 
+/* badge alert */
+"%@ invested in SimpleX Chat crowdfunding." = "%@ befektetett a SimpleX Chat közösségi finanszírozásába.";
+
 /* notification title */
 "%@ is connected!" = "%@ kapcsolódott!";
 
@@ -135,6 +135,9 @@
 
 /* No comment provided by engineer. */
 "%@ servers" = "%@ kiszolgáló";
+
+/* badge alert */
+"%@ supports SimpleX Chat." = "%@ támogatja a SimpleX Chatet.";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ feltöltve";
@@ -153,6 +156,9 @@
 
 /* copied message info */
 "%@:" = "%@:";
+
+/* badge alert */
+"%1$@ supported SimpleX Chat. The badge expired on %2$@." = "%1$@ támogatta a SimpleX Chatet. A kitűző lejárt ekkor: %2$@.";
 
 /* time interval */
 "%d days" = "%d nap";
@@ -180,6 +186,15 @@
 
 /* time interval */
 "%d months" = "%d hónap";
+
+/* channel owners count */
+"%d owner" = "%d tulajdonos";
+
+/* channel owners count */
+"%d owners" = "%d tulajdonos";
+
+/* channel members count */
+"%d owners & contributors" = "%d tulajdonos és közreműködő";
 
 /* channel relay bar
 channel subscriber relay bar */
@@ -452,6 +467,9 @@ swipe action */
 "Acknowledged" = "Visszaigazolva";
 
 /* No comment provided by engineer. */
+"acknowledged roster" = "visszaigazolt névsor";
+
+/* No comment provided by engineer. */
 "Acknowledgement errors" = "Visszaigazolási hibák";
 
 /* No comment provided by engineer. */
@@ -462,6 +480,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Active connections" = "Aktív kapcsolatok száma";
+
+/* No comment provided by engineer. */
+"Add" = "Hozzáadás";
 
 /* No comment provided by engineer. */
 "Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." = "Cím hozzáadása a profilhoz, hogy a SimpleX partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve a SimpleX partnerei számára.";
@@ -479,6 +500,15 @@ swipe action */
 "Add profile" = "Profil hozzáadása";
 
 /* No comment provided by engineer. */
+"Add relay" = "Átjátszó hozzáadása";
+
+/* No comment provided by engineer. */
+"Add relays" = "Átjátszók hozzáadása";
+
+/* No comment provided by engineer. */
+"Add relays to restore message delivery." = "Átjátszók hozzáadása az üzenetküldés helyreállításához.";
+
+/* No comment provided by engineer. */
 "Add server" = "Kiszolgáló hozzáadása";
 
 /* No comment provided by engineer. */
@@ -486,6 +516,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Add team members" = "Munkatársak hozzáadása";
+
+/* No comment provided by engineer. */
+"Add this code to your webpage. It will display the preview of your channel / group." = "Adja hozzá ezt a kódot a weboldalához. Meg fogja jeleníteni a csatornája / csoportja előnézetét.";
 
 /* No comment provided by engineer. */
 "Add to another device" = "Hozzáadás egy másik eszközhöz";
@@ -540,6 +573,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Speciális hálózati beállítások";
+
+/* No comment provided by engineer. */
+"Advanced options" = "Speciális beállítások";
 
 /* No comment provided by engineer. */
 "Advanced settings" = "Speciális beállítások";
@@ -618,6 +654,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow" = "Engedélyezés";
+
+/* No comment provided by engineer. */
+"Allow anyone to embed" = "Beágyazás engedélyezése bárki számára";
 
 /* No comment provided by engineer. */
 "Allow calls only if your contact allows them." = "A hívások kezdeményezése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.";
@@ -731,6 +770,9 @@ swipe action */
 "Answer call" = "Hívás fogadása";
 
 /* No comment provided by engineer. */
+"Any webpage can show the preview." = "Bármelyik weboldal megjelenítheti az előnézetet.";
+
+/* No comment provided by engineer. */
 "App build: %@" = "Alkalmazás összeállítási száma: %@";
 
 /* No comment provided by engineer. */
@@ -753,6 +795,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "App session" = "Alkalmazás munkamenete";
+
+/* alert title */
+"App update required" = "Alkalmazásfrissítés szükséges";
 
 /* No comment provided by engineer. */
 "App version" = "Alkalmazás verziója";
@@ -870,6 +915,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Bad message ID" = "Hibás az üzenet azonosítója";
+
+/* badge alert title */
+"Badge cannot be verified" = "Nem lehetett ellenőrizni a kitűzőt";
 
 /* No comment provided by engineer. */
 "Be free\nin your network" = "Váljon szabaddá\na saját hálózatában";
@@ -1005,7 +1053,7 @@ marked deleted chat item preview text */
 "Businesses" = "Üzleti";
 
 /* No comment provided by engineer. */
-"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "A csevegési profillal (alapértelmezett), vagy a [kapcsolattal] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÉTA).";
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "A csevegési profillal (alapértelmezett), vagy a [kapcsolattal] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (béta).";
 
 /* No comment provided by engineer. */
 "call" = "hívás";
@@ -1021,9 +1069,6 @@ marked deleted chat item preview text */
 
 /* call status */
 "calling…" = "hívás…";
-
-/* No comment provided by engineer. */
-"Calls" = "Hívások";
 
 /* No comment provided by engineer. */
 "Calls prohibited!" = "A hívások le vannak tiltva!";
@@ -1061,6 +1106,12 @@ new chat action */
 "Cancel" = "Mégse";
 
 /* No comment provided by engineer. */
+"Cancel and delete channel" = "Visszavonás és a csatorna törlése";
+
+/* alert title */
+"Cancel creating channel?" = "Visszavonja a csatorna létrehozását?";
+
+/* No comment provided by engineer. */
 "Cancel migration" = "Átköltöztetés visszavonása";
 
 /* feature offered item */
@@ -1096,9 +1147,6 @@ new chat action */
 /* authentication reason */
 "Change lock mode" = "Zárolási mód módosítása";
 
-/* No comment provided by engineer. */
-"Change member role?" = "Módosítja a tag szerepkörét?";
-
 /* authentication reason */
 "Change passcode" = "Jelkód módosítása";
 
@@ -1110,6 +1158,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Change role" = "Szerepkör módosítása";
+
+/* No comment provided by engineer. */
+"Change role?" = "Módosítja a tag szerepkörét?";
 
 /* authentication reason */
 "Change self-destruct mode" = "Önmegsemmisítő-mód módosítása";
@@ -1174,10 +1225,16 @@ alert subtitle */
 "Channel temporarily unavailable" = "A csatorna ideiglenesen nem érhető el";
 
 /* No comment provided by engineer. */
+"Channel webpage" = "Csatorna weboldala";
+
+/* No comment provided by engineer. */
 "Channel will be deleted for all subscribers - this cannot be undone!" = "A csatorna az összes feliratkozó számára törölve lesz – ez a művelet nem vonható vissza!";
 
 /* No comment provided by engineer. */
 "Channel will be deleted for you - this cannot be undone!" = "A csatorna törölve lesz az Ön számára – ez a művelet nem vonható vissza!";
+
+/* alert message */
+"Channel will start working with %d of %d relays. Continue?" = "A csatorna %2$d átjátszóból %1$d használatával kezd el működni. Folytatja?";
 
 /* No comment provided by engineer. */
 "Channels" = "Csatornák";
@@ -1196,6 +1253,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Chat console" = "Csevegési konzol";
+
+/* No comment provided by engineer. */
+"Chat data" = "Csevegési adatok";
 
 /* No comment provided by engineer. */
 "Chat database" = "Csevegési adatbázis";
@@ -1430,6 +1490,9 @@ server test step */
 /* No comment provided by engineer. */
 "Connect faster! 🚀" = "Gyorsabb kapcsolódás! 🚀";
 
+/* new chat action */
+"Connect to %@" = "Kapcsolódás hozzá: %@";
+
 /* No comment provided by engineer. */
 "Connect to desktop" = "Társítás számítógéppel";
 
@@ -1520,11 +1583,11 @@ server test step */
 /* No comment provided by engineer. */
 "Connection blocked" = "A kapcsolat le van tiltva";
 
+/* conn error description */
+"Connection blocked: %@" = "A kapcsolat le van tiltva: %@";
+
 /* alert title */
 "Connection error" = "Kapcsolódási hiba";
-
-/* conn error description */
-"Connection error (AUTH)" = "Kapcsolódási hiba (AUTH)";
 
 /* chat list item title (it should not be shown */
 "connection established" = "kapcsolat létrehozva";
@@ -1534,6 +1597,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "A kiszolgáló üzemeltetője letiltotta a kapcsolatot:\n%@";
+
+/* conn error description */
+"Connection link removed" = "Kapcsolódási hiba";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "A kapcsolat nem áll készen.";
@@ -1564,6 +1630,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Connections" = "Kapcsolatok";
+
+/* No comment provided by engineer. */
+"Contact" = "Kapcsolat";
 
 /* profile update event chat item */
 "contact %@ changed to %@" = "%1$@ a következőre módosította a nevét: %2$@";
@@ -1634,11 +1703,17 @@ server test step */
 /* No comment provided by engineer. */
 "Contribute" = "Közreműködés";
 
+/* member role */
+"contributor" = "közreműködő";
+
 /* No comment provided by engineer. */
 "Conversation deleted!" = "Beszélgetés törölve!";
 
 /* No comment provided by engineer. */
 "Copy" = "Másolás";
+
+/* No comment provided by engineer. */
+"Copy code" = "Kód másolása";
 
 /* No comment provided by engineer. */
 "Copy error" = "Hiba másolása";
@@ -1657,6 +1732,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create a group using a random profile." = "Csoport létrehozása véletlenszerű profillal.";
+
+/* No comment provided by engineer. */
+"Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." = "Hozzon létre egy weboldalt a csatorna előnézetének megjelenítéséhez a látogatók számára, mielőtt feliratkoznának. Üzemeltesse saját maga, vagy használjon tetszőleges statikus tárhelyet.";
 
 /* server test step */
 "Create file" = "Fájl létrehozása";
@@ -1681,9 +1759,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create public channel" = "Nyilvános csatorna létrehozása";
-
-/* No comment provided by engineer. */
-"Create public channel (BETA)" = "Nyilvános csatorna létrehozása (BÉTA)";
 
 /* server test step */
 "Create queue" = "Várólista létrehozása";
@@ -1919,6 +1994,9 @@ swipe action */
 "Delete for me" = "Csak nálam";
 
 /* No comment provided by engineer. */
+"Delete from history" = "Törlés az előzményekből";
+
+/* No comment provided by engineer. */
 "Delete group" = "Csoport törlése";
 
 /* No comment provided by engineer. */
@@ -2043,13 +2121,13 @@ alert button */
 "Desktop devices" = "Számítógépek";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "A(z) %@ célkiszolgáló címe nem kompatibilis a(z) %@ továbbító kiszolgáló beállításaival.";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "A(z) %1$@ célkiszolgáló címe nem kompatibilis a(z) %2$@ továbbító kiszolgáló beállításaival.";
 
 /* snd error text */
 "Destination server error: %@" = "Célkiszolgáló-hiba: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "A(z) %@ célkiszolgáló verziója nem kompatibilis a(z) %@ továbbító kiszolgálóval.";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "A(z) %1$@ célkiszolgáló verziója nem kompatibilis a(z) %2$@ továbbító kiszolgálóval.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Részletes statisztikák";
@@ -2058,13 +2136,10 @@ alert button */
 "Details" = "További részletek";
 
 /* No comment provided by engineer. */
-"Develop" = "Fejlesztés";
+"Developer" = "Fejlesztői eszközök";
 
 /* No comment provided by engineer. */
 "Developer options" = "Fejlesztői beállítások";
-
-/* No comment provided by engineer. */
-"Developer" = "Fejlesztői eszközök";
 
 /* No comment provided by engineer. */
 "Device" = "Eszköz";
@@ -2281,7 +2356,7 @@ chat item action */
 "Enable for all" = "Engedélyezés az összes tag számára";
 
 /* No comment provided by engineer. */
-"Enable in direct chats (BETA)!" = "Engedélyezés a közvetlen csevegésekben (BÉTA)!";
+"Enable in direct chats (BETA)!" = "Engedélyezés a közvetlen csevegésekben (béta)!";
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Engedélyezi az azonnali értesítéseket?";
@@ -2430,6 +2505,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Enter this device name…" = "Adja meg ennek az eszköznek a nevét…";
 
+/* No comment provided by engineer. */
+"Enter webpage URL" = "Adja meg az oldal webcímét";
+
 /* placeholder */
 "Enter welcome message…" = "Adja meg az üdvözlőüzenetet…";
 
@@ -2442,7 +2520,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "hiba";
 
-/* conn error description */
+/* No comment provided by engineer. */
 "Error" = "Hiba";
 
 /* No comment provided by engineer. */
@@ -2462,6 +2540,9 @@ chat item action */
 
 /* alert title */
 "Error adding relay" = "Hiba történt az átjátszó hozzáadásakor";
+
+/* alert title */
+"Error adding relays" = "Hiba történt az átjátszók hozzáadásakor";
 
 /* alert title */
 "Error adding server" = "Hiba történt a kiszolgáló hozzáadásakor";
@@ -2542,6 +2623,9 @@ chat item action */
 "Error deleting database" = "Hiba történt az adatbázis törlésekor";
 
 /* alert title */
+"Error deleting message" = "Hiba történt az üzenet törlésekor";
+
+/* alert title */
 "Error deleting old database" = "Hiba történt a régi adatbázis törlésekor";
 
 /* No comment provided by engineer. */
@@ -2618,6 +2702,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Error saving ICE servers" = "Hiba történt az ICE-kiszolgálók mentésekor";
+
+/* alert title */
+"Error saving name" = "Hiba történt a név mentésekor";
 
 /* No comment provided by engineer. */
 "Error saving passcode" = "Hiba történt a jelkód mentésekor";
@@ -2701,6 +2788,7 @@ chat item action */
 "error: %@" = "hiba: %@";
 
 /* alert message
+conn error description
 file error text
 snd error text */
 "Error: %@" = "Hiba: %@";
@@ -2728,7 +2816,7 @@ server test error */
 "Exit without saving" = "Kilépés mentés nélkül";
 
 /* chat item action */
-"Expand" = "Kibontás";
+"Expand" = "Felfedés";
 
 /* No comment provided by engineer. */
 "expired" = "lejárt";
@@ -2901,7 +2989,7 @@ servers warning */
 "For me" = "Csak magamnak";
 
 /* No comment provided by engineer. */
-"For private routing" = "A privát útválasztáshoz";
+"For private routing" = "Privát útválasztáshoz";
 
 /* No comment provided by engineer. */
 "For social media" = "A közösségi médiához";
@@ -3054,6 +3142,9 @@ servers warning */
 "Group profile was changed. If you save it, the updated profile will be sent to group members." = "Csoportprofil módosítva. Ha menti, akkor a frissített profil el lesz küldve a csoport tagjainak.";
 
 /* No comment provided by engineer. */
+"Group webpage" = "Csoport weboldala";
+
+/* No comment provided by engineer. */
 "Group welcome message" = "A csoport üdvözlőüzenete";
 
 /* No comment provided by engineer. */
@@ -3069,6 +3160,9 @@ servers warning */
 "Help" = "Súgó";
 
 /* No comment provided by engineer. */
+"Help & support" = "Súgó és támogatás";
+
+/* No comment provided by engineer. */
 "Help admins moderating their groups." = "Segítsen az adminisztrátoroknak a csoportjaik moderálásában.";
 
 /* No comment provided by engineer. */
@@ -3081,7 +3175,7 @@ servers warning */
 "Hidden profile password" = "Rejtett profiljelszó";
 
 /* chat item action */
-"Hide" = "Összecsukás";
+"Hide" = "Elrejtés";
 
 /* No comment provided by engineer. */
 "Hide app screen in the recent apps." = "Alkalmazás képernyőjének elrejtése a gyakran használt alkalmazások között.";
@@ -3124,6 +3218,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "How to use your servers" = "Útmutató a saját kiszolgálók használatához";
+
+/* No comment provided by engineer. */
+"https://" = "https://";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Magyar kezelőfelület";
@@ -3405,6 +3502,9 @@ servers warning */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Úgy tűnik, már kapcsolódott ezen a hivatkozáson keresztül. Ha ez nem így van, akkor hiba történt (%@).";
 
 /* No comment provided by engineer. */
+"It will be shown to subscribers and used to allow loading the preview." = "Meg fog jelenni a feliratkozóknak, és az előnézet betöltésének engedélyezésére szolgál.";
+
+/* No comment provided by engineer. */
 "Italian interface" = "Olasz kezelőfelület";
 
 /* No comment provided by engineer. */
@@ -3421,6 +3521,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Join channel" = "Csatlakozás a csatornához";
+
+/* new chat action */
+"Join channel %@" = "Csatlakozás a(z) %@ nevű csatornához";
 
 /* new chat sheet title */
 "Join group" = "Csatlakozás a csoporthoz";
@@ -3464,7 +3567,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Nagy fájl!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Tudjon meg többet";
 
 /* swipe action */
@@ -3493,6 +3596,12 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Less traffic on mobile networks." = "Kevesebb adatforgalom a mobilhálózatokon.";
+
+/* No comment provided by engineer. */
+"Let people connect to you via name registered with your SimpleX address." = "Tegye lehetővé mások számára a kapcsolódást a saját SimpleX-címével regisztrált néven keresztül.";
+
+/* No comment provided by engineer. */
+"Let people join via name registered with this channel link." = "Tegye lehetővé mások számára a csatlakozást az ezzel a csatornahivatkozással regisztrált néven keresztül.";
 
 /* No comment provided by engineer. */
 "Let someone connect to you" = "Legyen elérhető mások számára";
@@ -3622,15 +3731,6 @@ servers warning */
 
 /* chat feature */
 "Member reports" = "Tagok jelentései";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csevegés összes tagja értesítést fog kapni.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All group members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csoport az összes tagja értesítést fog kapni.";
-
-/* No comment provided by engineer. */
-"Member role will be changed to \"%@\". The member will receive a new invitation." = "A tag szerepköre a következőre fog módosulni: „%@”. A tag új meghívást fog kapni.";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "A tag el lesz távolítva a csevegésből – ez a művelet nem vonható vissza!";
@@ -3846,6 +3946,9 @@ servers warning */
 "More improvements are coming soon!" = "Hamarosan további fejlesztések érkeznek!";
 
 /* No comment provided by engineer. */
+"More privacy" = "További adatvédelem";
+
+/* No comment provided by engineer. */
 "More reliable network connection." = "Megbízhatóbb hálózati kapcsolat.";
 
 /* No comment provided by engineer. */
@@ -3868,6 +3971,9 @@ servers warning */
 
 /* swipe action */
 "Name" = "Név";
+
+/* No comment provided by engineer. */
+"Name not found" = "Nem található a név";
 
 /* No comment provided by engineer. */
 "Network & servers" = "Hálózat és kiszolgálók";
@@ -3990,6 +4096,9 @@ servers warning */
 "No app password" = "Nincs alkalmazás jelszó";
 
 /* No comment provided by engineer. */
+"No available relays" = "Nincsenek elérhető átjátszók";
+
+/* No comment provided by engineer. */
 "No chat relays" = "Nincsenek csevegési átjátszók";
 
 /* servers warning */
@@ -4067,6 +4176,9 @@ servers warning */
 /* No comment provided by engineer. */
 "No received or sent files" = "Nincsenek fogadott vagy küldött fájlok";
 
+/* No comment provided by engineer. */
+"No relays" = "Nincsenek átjátszók";
+
 /* servers error */
 "No servers for private message routing." = "Nincsenek kiszolgálók a privát üzenet-útválasztáshoz.";
 
@@ -4075,6 +4187,9 @@ servers warning */
 
 /* servers error */
 "No servers to receive messages." = "Nincsenek üzenetfogadási kiszolgálók.";
+
+/* servers warning */
+"No servers to resolve names." = "Nincsenek kiszolgálók a nevek feloldásához.";
 
 /* servers error */
 "No servers to send files." = "Nincsenek fájlküldési kiszolgálók.";
@@ -4092,10 +4207,16 @@ servers warning */
 "No unread chats" = "Nincsenek olvasatlan csevegések";
 
 /* No comment provided by engineer. */
+"No valid link" = "Nincs érvényes hivatkozás";
+
+/* No comment provided by engineer. */
 "Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Senki sem követte nyomon a beszélgetéseinket. Senki sem készített térképet arról, hogy merre jártunk. A magánéletünk nem csak egy funkció volt, hanem az életmódunk.";
 
 /* No comment provided by engineer. */
 "Non-profit governance" = "Nonprofit irányítás";
+
+/* No comment provided by engineer. */
+"None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." = "Egyik saját kiszolgálója sincs beállítva a SimpleX-nevek feloldásához. Állítsa be a kiszolgálókat, vagy használjon egy kapcsolattartási hivatkozást.";
 
 /* No comment provided by engineer. */
 "Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nem egy jobb zár mások ajtaján. Nem egy kedvesebb házmester, aki tiszteletben tartja az Ön magánéletét, de mégis nyilvántartást vezet minden látogatójáról. Ön itt nem csak egy vendég. Ön itt otthon van. Nincs az a hatalom, amely beléphetne ide - Ön itt szuverén.";
@@ -4249,6 +4370,9 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Csak a partnere küldhet hangüzeneteket.";
 
+/* No comment provided by engineer. */
+"Only your page above can show the preview." = "Csak az Ön fenti oldala jelenítheti meg az előnézetet.";
+
 /* alert action
 alert button */
 "Open" = "Megnyitás";
@@ -4371,7 +4495,7 @@ alert button */
 "owners" = "tulajdonosok";
 
 /* No comment provided by engineer. */
-"Owners" = "Tulajdonosok";
+"Owners & contributors" = "Tulajdonosok és közreműködők";
 
 /* No comment provided by engineer. */
 "Ownership: you can run your own relays." = "Tulajdonjog: saját átjátszókat üzemeltethet.";
@@ -4533,9 +4657,6 @@ alert button */
 "Previously connected servers" = "Korábban kapcsolódott kiszolgálók";
 
 /* No comment provided by engineer. */
-"Your privacy" = "Adatvédelem és biztonság";
-
-/* No comment provided by engineer. */
 "Privacy for your customers." = "Saját ügyfeleinek adatvédelme.";
 
 /* No comment provided by engineer. */
@@ -4586,7 +4707,8 @@ alert button */
 /* No comment provided by engineer. */
 "Profile theme" = "Profiltéma";
 
-/* alert message */
+/* alert message
+alert title */
 "Profile update will be sent to your SimpleX contacts." = "A profilfrissítés el lesz küldve a SimpleX partnerei számára.";
 
 /* No comment provided by engineer. */
@@ -4682,7 +4804,7 @@ alert button */
 /* swipe action */
 "Read" = "Olvasott";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Tudjon meg többet";
 
 /* No comment provided by engineer. */
@@ -4825,6 +4947,12 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay test failed!" = "Nem sikerült tesztelni az átjátszót!";
 
+/* alert message */
+"Relay will be removed from channel - this cannot be undone!" = "Az átjátszó el lesz távolítva a csatornából – ez a művelet nem vonható vissza!";
+
+/* alert message */
+"Relays added: %@." = "Átjátszók hozzáadva: %@.";
+
 /* No comment provided by engineer. */
 "Reliability: many relays per channel." = "Megbízhatóság: több átjátszó is használható csatornánként.";
 
@@ -4851,6 +4979,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "Eltávolítja a jelmondatot a kulcstartóból?";
+
+/* No comment provided by engineer. */
+"Remove relay" = "Átjátszó eltávolítása";
+
+/* alert title */
+"Remove relay?" = "Eltávolítja az átjátszót?";
 
 /* alert title */
 "Remove subscriber?" = "Eltávolítja a feliratkozót?";
@@ -4979,6 +5113,9 @@ swipe action */
 "Reset to user theme" = "Felhasználó által létrehozott téma visszaállítása";
 
 /* No comment provided by engineer. */
+"Resolver error: %@" = "Feloldási hiba: %@";
+
+/* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "Új csevegési profil létrehozásához indítsa újra az alkalmazást";
 
 /* No comment provided by engineer. */
@@ -5033,6 +5170,18 @@ swipe action */
 "Role" = "Szerepkör";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csevegés összes tagja értesítést fog kapni.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "A tag szerepköre a következőre fog módosulni: „%@”. A csoport az összes tagja értesítést fog kapni.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All subscribers will be notified." = "A szerepkör a következőre fog módosulni: „%@”. A csatorna összes feliratkozója értesítést fog kapni.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "A tag szerepköre a következőre fog módosulni: „%@”. A tag új meghívást fog kapni.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Csevegési szolgáltatás indítása";
 
 /* No comment provided by engineer. */
@@ -5044,7 +5193,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "Biztonságosabb csoportok";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Mentés";
 
@@ -5065,6 +5215,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Save and notify group members" = "Mentés és a csoporttagok értesítése";
+
+/* No comment provided by engineer. */
+"Save and notify members" = "Mentés és a tagok értesítése";
 
 /* No comment provided by engineer. */
 "Save and notify subscribers" = "Mentés és a feliratkozók értesítése";
@@ -5107,6 +5260,9 @@ chat item action */
 
 /* alert title */
 "Save servers?" = "Menti a kiszolgálókat?";
+
+/* alert title */
+"Save webpage settings?" = "Menti a weboldal beállításait?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Menti az üdvözlőüzenetet?";
@@ -5309,9 +5465,6 @@ chat item action */
 /* alert message */
 "Sender cancelled file transfer." = "A fájl küldője visszavonta az átvitelt.";
 
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "A kérés küldője törölhette a kapcsolódási kérést.";
-
 /* alert message */
 "Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "A hivatkozáselőnézet küldése felfedheti az Ön IP-címét a weboldal számára. Ezt később módosíthatja az adatvédelmi beállításokban.";
 
@@ -5368,6 +5521,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Server" = "Kiszolgáló";
+
+/* No comment provided by engineer. */
+"Server %@ does not support name resolution. Configure servers, or use a connection link." = "A(z) %@ kiszolgáló nem támogatja a névfeloldást. Állítsa be a kiszolgálókat, vagy használjon kapcsolattartási hivatkozást.";
 
 /* alert message */
 "Server added to operator %@." = "Kiszolgáló hozzáadva a következő üzemeltetőhöz: %@.";
@@ -5640,6 +5796,15 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "SimpleX-zár bekapcsolva";
 
+/* No comment provided by engineer. */
+"SimpleX name" = "SimpleX-név";
+
+/* No comment provided by engineer. */
+"SimpleX name error" = "Hibás SimpleX-név";
+
+/* alert title */
+"SimpleX name not verified" = "Nincs ellenőrizve a SimpleX-név";
+
 /* simplex link type */
 "SimpleX one-time invitation" = "Egyszer használható SimpleX meghívó";
 
@@ -5723,6 +5888,9 @@ report reason */
 "Statistics" = "Statisztikák";
 
 /* No comment provided by engineer. */
+"Status" = "Állapot";
+
+/* No comment provided by engineer. */
 "Stop" = "Megállítás";
 
 /* No comment provided by engineer. */
@@ -5769,6 +5937,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Subscribed" = "Feliratkozva";
+
+/* member role */
+"subscriber" = "feliratkozó";
 
 /* No comment provided by engineer. */
 "Subscriber" = "Feliratkozó";
@@ -5819,7 +5990,7 @@ report reason */
 "Subscriptions ignored" = "Mellőzött feliratkozások";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "SimpleX Chat támogatása";
+"Support the project" = "A projekt támogatása";
 
 /* No comment provided by engineer. */
 "Switch audio and video during the call." = "Hang/Videó váltása hívás közben.";
@@ -5951,6 +6122,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "Az adatbázis jelmondatának módosítására tett kísérlet nem fejeződött be.";
 
+/* badge alert */
+"The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." = "A kitűző egy olyan kulccsal van aláírva, amelyet az alkalmazás ezen verziója nem ismer fel. Frissítse az alkalmazást a kitűző ellenőrzéséhez.";
+
 /* No comment provided by engineer. */
 "The code you scanned is not a SimpleX link QR code." = "A beolvasott QR-kód nem egy SimpleX-hivatkozás.";
 
@@ -6011,6 +6185,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "A második pipa, ami már nagyon hiányzott! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "A kérés küldője törölhette a kapcsolódási kérést.";
+
 /* alert message */
 "The sender will NOT be notified" = "A kérés küldője NEM lesz értesítve";
 
@@ -6019,6 +6196,18 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The servers for new files of your current chat profile **%@**." = "A jelenlegi **%@** nevű csevegési profiljához tartozó új fájlok kiszolgálói.";
+
+/* alert message */
+"The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." = "A(z) @%@ SimpleX-név SimpleX-cím nélkül lett regisztrálva. A regisztrációs oldalon adja hozzá a névhez a saját SimpleX-címét.";
+
+/* alert message */
+"The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." = "A(z) #%@ SimpleX-név csatornahivatkozás nélkül lett regisztrálva. A regisztrációs oldalon adjon hozzá a névhez egy csatornahivatkozást.";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but it has no valid link." = "A(z) %@ SimpleX-név regisztrálva van, de nem rendelkezik érvényes hivatkozással.";
+
+/* No comment provided by engineer. */
+"The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." = "A(z) %@ SimpleX-név regisztrálva van, de nincs hozzáadva a profilhoz. Adja hozzá a címéhez vagy a csatornaprofiljához, amennyiben Ön a tulajdonosa.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "A beillesztett szöveg nem egy SimpleX-hivatkozás.";
@@ -6056,6 +6245,9 @@ server test failure */
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Ez a művelet nem vonható vissza – profiljai, partnerei, üzenetei és fájljai véglegesen törölve lesznek.";
 
+/* badge alert */
+"This badge could not be verified and may not be genuine." = "Nem sikerült ellenőrizni ezt a kitűzőt, és lehet, hogy nem eredeti.";
+
 /* E2EE info chat item */
 "This chat is protected by end-to-end encryption." = "Ez a csevegés végpontok közötti titkosítással védett.";
 
@@ -6077,8 +6269,15 @@ server test failure */
 /* No comment provided by engineer. */
 "This group no longer exists." = "Ez a csoport már nem létezik.";
 
+/* alert message
+alert subtitle */
+"This group requires a newer version of the app. Please update the app to join." = "Ehhez a csoporthoz az alkalmazás újabb verziója szükséges. A csatlakozáshoz frissítse az alkalmazást.";
+
 /* alert message */
 "This is a chat relay address, it cannot be used to connect." = "Ez egy csevegési átjátszó címe, nem használható kapcsolódásra.";
+
+/* alert message */
+"This is the last active relay. Removing it will prevent message delivery to subscribers." = "Ez az utolsó aktív átjátszó. Ha eltávolítja, akkor azzal megakadályozza az üzenetek eljuttatását a feliratkozóknak.";
 
 /* new chat action */
 "This is your link for channel %@!" = "Ez a saját hivatkozása a(z) %@ nevű csatornához!";
@@ -6097,6 +6296,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "This setting is for your current profile **%@**." = "Ez a beállítás csak a jelenlegi **%@** nevű csevegési profiljára vonatkozik.";
+
+/* No comment provided by engineer. */
+"This SimpleX name is not registered. Please check the name." = "Ez a SimpleX-név nincs regisztrálva. Ellenőrizze a nevet.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Az üzeneteltűnési idő csak az új partnerekre vonatkozik.";
@@ -6135,7 +6337,7 @@ server test failure */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Adatainak védelme érdekében a SimpleX külön azonosítókat használ minden egyes kapcsolatához.";
 
 /* No comment provided by engineer. */
-"To receive" = "A fogadáshoz";
+"To receive" = "Üzenetek fogadásához";
 
 /* No comment provided by engineer. */
 "To record speech please grant permission to use Microphone." = "A beszéd rögzítéséhez adjon engedélyt a Mikrofon használatára.";
@@ -6147,10 +6349,13 @@ server test failure */
 "To record voice message please grant permission to use Microphone." = "Hangüzenet rögzítéséhez adjon engedélyt a mikrofon használathoz.";
 
 /* No comment provided by engineer. */
+"To resolve names" = "Nevek feloldásához";
+
+/* No comment provided by engineer. */
 "To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Rejtett profilja felfedéséhez adja meg a teljes jelszót a keresőmezőben, a **Csevegési profilok** menüben.";
 
 /* No comment provided by engineer. */
-"To send" = "A küldéshez";
+"To send" = "Üzenetek küldéséhez";
 
 /* alert message */
 "To send commands you must be connected." = "A parancsok küldéséhez kapcsolódva kell lennie.";
@@ -6225,6 +6430,9 @@ server test failure */
 "unblocked %@" = "feloldotta %@ letiltását";
 
 /* No comment provided by engineer. */
+"Unconfirmed name" = "Megerősítetlen név";
+
+/* No comment provided by engineer. */
 "Undelivered messages" = "Kézbesítetlen üzenetek";
 
 /* No comment provided by engineer. */
@@ -6270,9 +6478,6 @@ server test failure */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Hacsak nem az iOS hívási felületét használja, engedélyezze a Ne zavarjanak módot a megszakadások elkerülése érdekében.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.";
-
-/* No comment provided by engineer. */
 "Unlink" = "Leválasztás";
 
 /* No comment provided by engineer. */
@@ -6295,6 +6500,9 @@ server test failure */
 
 /* conn error description */
 "Unsupported connection link" = "Nem támogatott kapcsolattartási hivatkozás";
+
+/* badge alert title */
+"Unverified badge" = "Ellenőrizetlen kitűző";
 
 /* No comment provided by engineer. */
 "Up to 100 last messages are sent to new members." = "Legfeljebb az utolsó 100 üzenet lesz elküldve az új tagok számára.";
@@ -6335,7 +6543,8 @@ server test failure */
 /* No comment provided by engineer. */
 "Upgrade address" = "Cím frissítése";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "Frissíti a címet?";
 
 /* No comment provided by engineer. */
@@ -6444,6 +6653,9 @@ server test failure */
 "Use web port" = "Webport használata";
 
 /* No comment provided by engineer. */
+"Used chat relays do not support webpages." = "Az Ön által használt csevegési átjátszók nem támogatják a weboldalakat.";
+
+/* No comment provided by engineer. */
 "User selection" = "Felhasználó kiválasztása";
 
 /* No comment provided by engineer. */
@@ -6454,9 +6666,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
-
-/* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
 
 /* relay test step */
 "Verify" = "Ellenőrzés";
@@ -6477,10 +6686,16 @@ server test failure */
 "Verify database passphrase" = "Adatbázis jelmondatának ellenőrzése";
 
 /* No comment provided by engineer. */
+"Verify name" = "Név ellenőrzése";
+
+/* No comment provided by engineer. */
 "Verify passphrase" = "Jelmondat ellenőrzése";
 
 /* No comment provided by engineer. */
 "Verify security code" = "Biztonsági kód ellenőrzése";
+
+/* No comment provided by engineer. */
+"Verify SimpleX names" = "SimpleX-nevek ellenőrzése";
 
 /* relay hostname */
 "via %@" = "a következőn keresztül: %@";
@@ -6598,6 +6813,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "We made connecting simpler for new users." = "Az új felhasználók számára egyszerűbbé tettük a kapcsolatok létrehozását.";
+
+/* No comment provided by engineer. */
+"Webpage code" = "Weboldalba ágyazható kód";
+
+/* alert message */
+"Webpage settings were changed. If you save, the updated settings will be sent to subscribers." = "A weboldal beállításai módosultak. Ha menti a módosításokat, a frissített beállítások el lesznek küldve a feliratkozóknak.";
 
 /* No comment provided by engineer. */
 "WebRTC ICE servers" = "WebRTC ICE-kiszolgálók";
@@ -6759,7 +6980,7 @@ server test failure */
 "You can enable later via Settings" = "Később engedélyezheti a beállításokban";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Később engedélyezheti őket az „Adatvédelem és biztonság” menüben.";
+"You can enable them later via app Your privacy settings." = "Később is engedélyezheti őket az „Adatvédelem” menüben.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Megpróbálhatja még egyszer.";
@@ -6796,6 +7017,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You can still view conversation with %@ in the list of chats." = "A(z) %@ nevű partnerével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.";
+
+/* badge alert */
+"You can support SimpleX starting from v7 of the app." = "A SimpleXet az alkalmazás v7-es verziójától kezdve támogathatja.";
 
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be.";
@@ -6942,9 +7166,6 @@ server test failure */
 "Your channel" = "Saját csatorna";
 
 /* No comment provided by engineer. */
-"Your chat database" = "Csevegési adatbázis";
-
-/* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "A csevegési adatbázis nincs titkosítva – adjon meg egy jelmondatot a titkosításhoz.";
 
 /* alert title */
@@ -6961,6 +7182,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact" = "Partner";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "A partnere a jelenleg támogatott legnagyobb (%@) fájlméretnél nagyobbat küldött.";
@@ -6991,6 +7215,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your network" = "Saját hálózat";
+
+/* alert message */
+"Your new channel %@ is connected to %d of %d relays.\nIf you cancel, the channel will be deleted - you can create it again." = "Az új %1$@ nevű csatornája %3$d átjátszóból %2$d átjátszóhoz kapcsolódott.\nHa visszavonja, akkor a csatorna törlődni fog – de később újra létrehozhatja.";
 
 /* No comment provided by engineer. */
 "Your preferences" = "Beállítások";
@@ -7039,4 +7266,7 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
+
+/* No comment provided by engineer. */
+"Your SimpleX name" = "Saját SimpleX-név";
 
