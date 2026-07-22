@@ -1909,10 +1909,13 @@ fun BoxScope.ChatItemsList(
     reveal: (Boolean) -> Unit
   ) {
     val itemScope = rememberCoroutineScope()
+    val viewConfiguration = LocalViewConfiguration.current
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
-      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
-      LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view.
+      // remember: pointerInput handlers observe ViewConfiguration and reset on any change, so a new
+      // instance per recomposition kills in-flight presses/hover whenever a message is inserted
+      LocalViewConfiguration provides remember(viewConfiguration) { viewConfiguration.bigTouchSlop() }
     ) {
       val provider = {
         providerForGallery(reversedChatItems.value.asReversed(), cItem.id) { indexInReversed ->
