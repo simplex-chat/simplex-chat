@@ -25,6 +25,7 @@ import chat.simplex.common.views.chat.chatViewScrollState
 import dev.icerock.moko.resources.StringResource
 import java.io.File
 import java.net.URI
+import kotlin.math.roundToInt
 
 @Composable
 fun CIVideoView(
@@ -38,12 +39,25 @@ fun CIVideoView(
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+  val preview = remember(image) { base64ToBitmap(image) }
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+      .then(
+        if (!smallView) {
+          val w = if (preview.width * 0.97 <= preview.height) videoViewFullWidth(LocalWindowWidth()) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+          // Size the media box from the preview aspect ratio (as CIImageView does), else the unprepared player surface
+          // expands to PriorityLayout's max height and shows as a black strip; height tracks the clamped width (#7223).
+          Modifier.width(w).layout { measurable, constraints ->
+            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
+            val height = (width * (preview.height.toFloat() / preview.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
+            val placeable = measurable.measure(Constraints.fixed(width, height))
+            layout(width, height) { placeable.place(0, 0) }
+          }
+        } else Modifier
+      )
       .desktopModifyBlurredState(!smallView, blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
-    val preview = remember(image) { base64ToBitmap(image) }
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
     val sizeMultiplier = if (smallView) 0.38f else 1f
     if (chatModel.connectedToRemote()) {
