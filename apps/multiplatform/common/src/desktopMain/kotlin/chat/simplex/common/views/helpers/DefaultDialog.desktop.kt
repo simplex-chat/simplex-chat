@@ -13,11 +13,9 @@ import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.awt.Container
 import java.awt.FileDialog
 import java.awt.event.ActionListener
 import java.io.File
-import javax.swing.JButton
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -138,7 +136,7 @@ fun FrameWindowScope.FileDialogChooserMultiple(
 private fun installUnixSaveGlobBypass(fc: JFileChooser) {
   val ui = fc.ui as? BasicFileChooserUI ?: return
   val original: ActionListener = ui.approveSelectionAction
-  val btn = findButtonWithListener(fc, original) ?: return
+  val btn = ui.getDefaultButton(fc) ?: return
   btn.removeActionListener(original)
   btn.addActionListener {
     val name = ui.fileName?.takeIf { it.isNotEmpty() } ?: return@addActionListener
@@ -151,14 +149,6 @@ private fun installUnixSaveGlobBypass(fc: JFileChooser) {
       fc.approveSelection()
     }
   }
-}
-
-private fun findButtonWithListener(c: Container, listener: ActionListener): JButton? {
-  for (comp in c.components) {
-    if (comp is JButton && comp.actionListeners.any { it === listener }) return comp
-    if (comp is Container) findButtonWithListener(comp, listener)?.let { return it }
-  }
-  return null
 }
 
 /*
