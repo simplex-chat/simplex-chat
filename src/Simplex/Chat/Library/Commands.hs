@@ -2880,14 +2880,14 @@ processChatCommand cxt nm = \case
       -- TODO [relays] possible optimization is to read only required members + relays
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db cxt user groupId
       when (selfSelected gInfo) $ throwCmdError "can't change role for self"
-      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending, anyPrivilegedTarget, anyRosterChange, finalPrivilegedCount) = selectMembers members
+      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending, anyPrivilegedTarget, anyRelay, anyRosterChange, finalPrivilegedCount) = selectMembers members
       when (length invitedMems + length currentMems + length unchangedMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && (anyAdmin || newRole >= GRAdmin)) $
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
-      -- TODO allow moderators (recipients already accept it; needs UI too): the observer..member limit is an
-      -- TODO   `all` over targets - maxRole can't express it, a max hides targets below GRObserver (relay,
-      -- TODO   unknown) that receivers reject. Fold roleRequiredToChange per target, or add allModeratable.
+      when (anyRelay || newRole == GRRelay) $ throwCmdError "relay role can't be changed"
+      -- TODO allow moderators (needs UI) - relay is rejected above (anyRelay), so drop the GRAdmin floor:
+      -- TODO   assertUserGroupRole gInfo (roleRequiredToChange maxRole newRole)
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
       -- in relay groups the roster has a single signer, so only the owner may change member/moderator/admin roles
       when (useRelays' gInfo && (isRosterRole newRole || anyPrivilegedTarget) && memberRole' (membership gInfo) /= GROwner) $
@@ -2908,22 +2908,23 @@ processChatCommand cxt nm = \case
       -- anyPrivilegedTarget: a target currently member/moderator/admin (gates the owner-only check); anyRosterChange:
       -- a current member's role change that alters the roster blob - the only case that bumps the version, since a
       -- bump with no delta reads as a gap to subscribers; finalPrivilegedCount: moderators + admins after the change.
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool, Bool, Int)
-      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False, False, False, 0)
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool, Bool, Bool, Int)
+      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False, False, False, False, 0)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRosterChange, privCount)
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRelay, anyRosterChange, privCount)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
                     anyPending' = anyPending || memberPending m
                     anyPrivTarget' = anyPrivTarget || isRosterRole memberRole
+                    anyRelay' = anyRelay || memberRole == GRRelay
                     privCount' = if isRosterRole newRole then privCount + 1 else privCount
                  in if
-                      | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRosterChange, privCount')
-                      | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRosterChange, privCount')
+                      | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange, privCount')
+                      | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange, privCount')
                       -- a current member's role actually changes here; it alters the roster iff the old or new role is on it
-                      | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRosterChange || isRosterRole newRole || isRosterRole memberRole, privCount')
-            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRosterChange, if isRosterRole memberRole then privCount + 1 else privCount)
+                      | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange || isRosterRole newRole || isRosterRole memberRole, privCount')
+            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRelay, anyRosterChange, if isRosterRole memberRole then privCount + 1 else privCount)
       changeRoleInvitedMems :: User -> GroupInfo -> [GroupMember] -> CM ([ChatError], [GroupMember])
       changeRoleInvitedMems user gInfo memsToChange = do
         -- not batched, as we need to send different invitations to different connections anyway

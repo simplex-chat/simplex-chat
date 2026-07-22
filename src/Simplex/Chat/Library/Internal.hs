@@ -1288,13 +1288,11 @@ isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
 isPrivilegedRole :: GroupMemberRole -> Bool
 isPrivilegedRole r = r >= GRMember
 
--- Minimum role allowed to change a member's role from `from` to `to` (moderators only within observer..member).
+-- Minimum role allowed to change a member's role from `from` to `to` (moderators only up to member; relay checked separately).
 roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> GroupMemberRole
 roleRequiredToChange from to
-  | moderatable from && moderatable to = GRModerator
+  | from <= GRMember && to <= GRMember = GRModerator
   | otherwise = maximum ([GRAdmin, from, to] :: [GroupMemberRole])
-  where
-    moderatable r = GRObserver <= r && r <= GRMember
 
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
 -- Runs on the parsed roster blob.
