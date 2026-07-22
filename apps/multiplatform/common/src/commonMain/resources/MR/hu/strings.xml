@@ -2897,4 +2897,6 @@
     <string name="v7_0_channels_relays">Saját átjátszók kezelése.</string>
     <string name="v7_0_simplex_names_descr">Nevek a csatornákhoz vagy az üzleti profilokhoz.</string>
     <string name="v7_0_simplex_names">SimpleX-nevek (béta)</string>
+    <string name="info_row_file_servers">Fájlkiszolgálók</string>
+    <string name="share_text_file_servers">Fájlkiszolgálók: %s</string>
 </resources>
