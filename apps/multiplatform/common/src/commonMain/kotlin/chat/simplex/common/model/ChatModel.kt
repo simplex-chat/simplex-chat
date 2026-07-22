@@ -5383,7 +5383,8 @@ data class ChatTag(
 class ChatItemInfo(
   val itemVersions: List<ChatItemVersion>,
   val memberDeliveryStatuses: List<MemberDeliveryStatus>?,
-  val forwardedFromChatItem: AChatItem?
+  val forwardedFromChatItem: AChatItem?,
+  val fileXftpServers: List<String> = emptyList()
 )
 
 @Serializable
