@@ -650,10 +650,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               groupInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
               subMode <- chatReadVar subscriptionMode
-              groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
+              groupConnIds@(cmdId, grpConnId) <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
               gVar <- asks random
               withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
-              withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId True SCMInvitation CR.IKPQOff subMode
+              withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) grpConnId True SCMInvitation CR.IKPQOff subMode
         -- TODO REMOVE LEGACY ^^^
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
@@ -3363,7 +3363,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent createItem
-          | senderRole < maximum ([GRAdmin, fromRole, memRole] :: [GroupMemberRole]) =
+          | senderRole < roleRequiredToChange fromRole memRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
               messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing

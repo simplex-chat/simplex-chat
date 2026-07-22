@@ -4647,6 +4647,18 @@ data class ServerRoles(
   val storage: Boolean,
   val proxy: Boolean,
   val names: Boolean
+) {
+  companion object {
+    // roles applied when a server matches no operator, mirrors core resolveServerRoles (Operators.hs)
+    val noOperatorDefault = ServerRoles(storage = true, proxy = true, names = false)
+  }
+}
+
+@Serializable
+data class ServerRolesOverride(
+  val storage: Boolean? = null,
+  val proxy: Boolean? = null,
+  val names: Boolean? = null
 )
 
 @Serializable
@@ -4668,8 +4680,8 @@ data class UserOperatorServers(
       serverDomains = emptyList(),
       conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
-      smpRoles = ServerRoles(storage = true, proxy = true, names = true),
-      xftpRoles = ServerRoles(storage = true, proxy = true, names = false)
+      smpRoles = ServerRoles.noOperatorDefault,
+      xftpRoles = ServerRoles.noOperatorDefault
     )
 
   companion object {
@@ -4801,7 +4813,8 @@ data class UserServer(
   val preset: Boolean,
   val tested: Boolean? = null,
   val enabled: Boolean,
-  val deleted: Boolean
+  val deleted: Boolean,
+  val roles: ServerRolesOverride = ServerRolesOverride(),
 ) {
   @Transient
   private val createdAt: Date = Date()

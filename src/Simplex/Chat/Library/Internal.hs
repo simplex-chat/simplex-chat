@@ -764,7 +764,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     if userApprovedRelays
       then receive' rd True
       else do
-        let srvs = fileServers rd
+        let srvs = fileDescrServers rd
         unknownSrvs <- getUnknownSrvs srvs
         let approved = null unknownSrvs
         ifM
@@ -777,9 +777,6 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approved
       startReceivingFile user fileId
       withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
-    fileServers :: ValidFileDescription 'FRecipient -> [XFTPServer]
-    fileServers (FD.ValidFileDescription FD.FileDescription {chunks}) =
-      S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
       knownSrvs <- L.map protoServer' <$> getKnownAgentServers SPXFTP user
@@ -1291,6 +1288,14 @@ isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
 isPrivilegedRole :: GroupMemberRole -> Bool
 isPrivilegedRole r = r >= GRMember
 
+-- Minimum role allowed to change a member's role from `from` to `to` (moderators only within observer..member).
+roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> GroupMemberRole
+roleRequiredToChange from to
+  | moderatable from && moderatable to = GRModerator
+  | otherwise = maximum ([GRAdmin, from, to] :: [GroupMemberRole])
+  where
+    moderatable r = GRObserver <= r && r <= GRMember
+
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
 -- Runs on the parsed roster blob.
 validateGroupRoster :: [RosterMember] -> [RosterMember]
@@ -1355,12 +1360,12 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
             fInvDescr_ <- join <$> forM file getRcvFileInvDescr
             -- channel items carry no from-member; a signed one falls back to the stored author (verified attribution)
             member_ <- maybe (resolveAuthor signedByGMId_) (pure . Just) (chatItemRcvFromMember ci)
-            processContentItem member_ ci mc fInvDescr_ signedMsg_
+            processContentItem member_ ci mc fInvDescr_
         | otherwise -> pure []
       (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file, meta = CIMeta {showGroupAsSender}}) -> do
         fInvDescr_ <- join <$> forM file getSndFileInvDescr
         let member_ = if showGroupAsSender && isNothing signedMsg_ then Nothing else Just membership
-        processContentItem member_ ci mc fInvDescr_ signedMsg_
+        processContentItem member_ ci mc fInvDescr_
       _ -> pure []
       where
         resolveAuthor :: Maybe GroupMemberId -> CM (Maybe GroupMember)
@@ -1398,8 +1403,8 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   fInv = xftpFileInvitation fileName fileSize fInvDescr
                in Just (fInv, fileDescrText)
           | otherwise = Nothing
-        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> Maybe SignedMsg -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
-        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ signedMsg_ =
+        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
@@ -1738,6 +1743,30 @@ upgradedConnVersion v peerVR = do
 parseFileDescription :: FilePartyI p => Text -> CM (ValidFileDescription p)
 parseFileDescription =
   liftEither . first (ChatError . CEInvalidFileDescription) . (strDecode . encodeUtf8)
+
+-- | Unique XFTP servers hosting the file's chunks, parsed from a stored file description.
+fileDescrServers :: ValidFileDescription p -> [XFTPServer]
+fileDescrServers (FD.ValidFileDescription FD.FileDescription {chunks}) =
+  S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
+
+-- | XFTP servers the file's data chunks were uploaded to (sender's servers for sent items,
+-- the same servers via the recipient description for received items).
+-- Returns [] for non-XFTP/inline files or when no description is available; never fails the caller.
+getChatItemFileServers :: User -> SMsgDirection d -> ChatItem c d -> CM [XFTPServer]
+getChatItemFileServers user dir ci = case ci of
+  ChatItem {file = Just CIFile {fileId, fileProtocol = FPXFTP}} ->
+    itemFileServers fileId `catchAllErrors` \_ -> pure []
+  _ -> pure []
+  where
+    itemFileServers fileId = case dir of
+      SMDSnd -> do
+        sfd_ <- withStore' $ \db -> getSndFTPrivateSndDescr db user fileId
+        case sfd_ of
+          Just sfdText -> fileDescrServers <$> (parseFileDescription sfdText :: CM (ValidFileDescription 'FSender))
+          Nothing -> pure []
+      SMDRcv -> do
+        RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
 
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()
 sendDirectFileInline user ct ft sharedMsgId = do
