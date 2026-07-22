@@ -105,8 +105,7 @@ fun MainScreen()
 When onboarding is complete:
 
 1. Shows "advertise lock" alert if conditions met (not shown before, LA not enabled, >3 chats, no active call).
-2. Sets up clipboard listener.
-3. Routes to `AndroidScreen` or `DesktopScreen` based on platform.
+2. Routes to `AndroidScreen` or `DesktopScreen` based on platform.
 
 ### Overlay Layers (bottom of MainScreen)
 

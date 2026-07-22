@@ -5,5 +5,5 @@ Bump both together for normal releases. For wrapper-only fixes use a PEP 440
 post-release: __version__ = "6.5.2.post1", LIBS_VERSION unchanged.
 """
 
-__version__ = "7.0.0b4"  # PEP 440 — read by hatchling for wheel metadata
-LIBS_VERSION = "7.0.0-beta.4"  # simplex-chat-libs release tag (no 'v' prefix)
+__version__ = "7.0.0b5"  # PEP 440 — read by hatchling for wheel metadata
+LIBS_VERSION = "7.0.0-beta.5"  # simplex-chat-libs release tag (no 'v' prefix)
