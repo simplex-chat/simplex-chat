@@ -64,4 +64,4 @@ _Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. 
 
 [^testing]: Test names are free to register; you only need to pay the blockchain fee. The `.testing` namespace is temporary &mdash; test names will stop working in the app one month after `.simplex` name sales launch.
 
-[^ens]: SimpleX Name Service (SNS) is a fork of Ethereum Name Service (ENS), but without its centralized dependencies. ENS depends on an off-chain indexer and a hosted metadata service. SNS is fully decentralized &mdash; names are indexed and hosted on blockchain. See [Differences from ENS](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/names-overview.md#differences-from-ens).
+[^ens]: SimpleX Name Service (SNS) is a fork of Ethereum Name Service (ENS), but without its centralized dependencies. ENS depends on an off-chain indexer and a hosted metadata service. SNS is fully decentralized &mdash; names are indexed and hosted on the blockchain. See [Differences from ENS](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/names-overview.md#differences-from-ens).
