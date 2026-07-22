@@ -25,7 +25,7 @@ Payment and badge are separate: payment creates a service grant for an eligible 
 |---|---|---|
 | iOS | StoreKit | Apple subscription UI |
 | Android Play | Play Billing | Google Play subscription UI |
-| F-Droid / desktop | Stripe Checkout | cancel RPC; Customer Portal for invoices/payment methods |
+| F-Droid / desktop | Stripe Checkout | browser Customer Portal — authenticated session, or login page (email code) after app removal |
 
 Choices: **One-time**, **Monthly**, **Yearly**. There is no Extend action.
 
@@ -52,7 +52,7 @@ Show **Badge valid until** separately from **Renews on** or **Subscription ends 
 - Store state and Stripe redirects are hints only.
 - Each client RPC call receives exactly one bot response; the bot never initiates a call.
 - Before payment, the client generates one 32-byte BBS `BadgeMasterKey`. The payment and every badge issued from it are bound to that key; renewals reuse it.
-- Payment capability authorizes bot requests. The raw BBS key, capability, and provider proofs are redacted.
+- There is no bot-issued token. Each request carries its own credential — a fresh store proof (Apple/Google) or a `BadgeMasterKey` possession proof (Stripe). The raw BBS key and provider proofs are redacted.
 
 ## 2. UX states
 
@@ -210,7 +210,7 @@ sequenceDiagram
   participant S as Stripe
   C->>B: RPC Prepare Stripe
   B->>S: Create Checkout Session
-  B-->>C: RPC Checkout URL + capability
+  B-->>C: RPC Checkout URL
   C->>S: Open Checkout
   Note over C: CPAwaitingPayment
   C->>B: RPC IssueBadge
@@ -301,15 +301,27 @@ sequenceDiagram
 sequenceDiagram
   participant C as Client
   participant B as Bot
+  participant P as Stripe Portal
   participant S as Stripe API
-  C->>B: Cancel RPC
-  B->>S: Cancel at period end
-  S-->>B: Renewal off + end date
-  B-->>C: Updated status
+  C->>B: Request cancel link
+  B-->>C: Portal URL (session or login page)
+  C->>P: Open portal, confirm cancel
+  P->>S: Cancel at period end
+  S-->>B: Signed webhook (renewal off + end date)
+  B-->>C: Updated status on next check
   Note over C: Canceled, active until end date
 ```
 
 Never show canceled until the bot confirms renewal is off.
+
+Cancellation also works after the app is removed: Apple/Google via the store subscription UI; Stripe via the hosted Customer Portal login page (`billing.stripe.com/p/login/…`), where the user signs in with the email they paid with. The bot reconciles the resulting cancellation from the provider webhook/status.
+
+Stripe cancellation always happens in the browser Customer Portal (the portal cancels; the bot reconciles from the webhook). The bot only chooses which link it sends, based on what the client can still prove:
+
+| Client still holds | Cancel link the bot sends |
+|---|---|
+| the master key (proves ownership) | authenticated portal session — opens straight to the cancel flow, no email code |
+| nothing (key lost with the app) | generic hosted portal login page — user signs in with the email they paid with (email code) |
 
 ## 5. Refresh and errors
 
@@ -341,6 +353,6 @@ Errors preserve the last payment snapshot and installed badge. The implementatio
 - Payment verification creates a provider-neutral service grant; badge service has no provider logic.
 - Client and bot payment/badge states are separate.
 - RPC is client-request/bot-response only and idempotent.
-- Stripe needs no localhost/deep-link success and cancels through bot RPC.
+- Stripe needs no localhost/deep-link success; cancellation is always via the browser Customer Portal — an authenticated session, or the login page when the client cannot identify the payment.
 - Every error category has an owner, state-preserving action, and retry/final result.
 - RPC attempts/results appear redacted in Developer Tools → Chat Console.

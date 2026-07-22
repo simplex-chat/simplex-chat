@@ -25,5 +25,5 @@
   <!-- button -->
   <rect x="36" y="372" width="248" height="44" rx="10" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
   <text x="160" y="399" text-anchor="middle" font-size="14" font-weight="700" fill="#dc2626">Cancel subscription</text>
-  <text x="160" y="436" text-anchor="middle" font-size="10" fill="#94a3b8">Apple/Google: store · Stripe: bot RPC</text>
+  <text x="160" y="436" text-anchor="middle" font-size="10" fill="#94a3b8">Apple/Google: store · Stripe: browser portal</text>
 </svg>
