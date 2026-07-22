@@ -8478,7 +8478,7 @@ testScopedSupportUnreadStatsGroupReadNoScope =
       withCCTransaction alice $ \db -> do
         rows <- DB.query_ db "SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only Int]
         case rows of
-          Only itemId : _ -> pure $ show itemId
+          Only iId : _ -> pure $ show iId
           _ -> error "testScopedSupportUnreadStatsGroupReadNoScope: no member_support item"
 
     alice ##> "/member support chats #team"
