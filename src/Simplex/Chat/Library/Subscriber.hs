@@ -3873,6 +3873,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Just (author, unknown)
               | memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
+              | not (useRelays' gInfo) && not (expectedForwarder author) ->
+                  logInfo $ "x.grp.msg.forward: ignoring content from unexpected forwarder, group " <> tshow (groupId' gInfo) <> ", forwarder " <> tshow (groupMemberId' m) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | otherwise -> do
                   when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
                   void $ withVerifiedMsg gInfo scopeInfo author parsedMsg msgTs $
@@ -3880,6 +3882,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Nothing -> pure ()
         FwdChannel -> processForwardedMsg (VMUnsigned chatMsg) Nothing
       where
+        -- Forwards are only expected from the member that introduced us to the author: our host, or
+        -- the author's inviter. Unknown members have no such record, so any admin may forward theirs.
+        expectedForwarder :: GroupMember -> Bool
+        expectedForwarder author =
+          memberCategory m == GCHostMember
+            || invitedByGroupMemberId author == Just (groupMemberId' m)
+            || memberStatus author == GSMemUnknown
         -- ! see isForwardedGroupMsg: forwarded group events should include msgId to be deduplicated
         processForwardedMsg :: VerifiedMsg 'Json -> Maybe GroupMember -> CM ()
         processForwardedMsg verifiedMsg author_ = do
