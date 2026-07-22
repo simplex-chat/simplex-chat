@@ -1291,16 +1291,11 @@ isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
 isPrivilegedRole :: GroupMemberRole -> Bool
 isPrivilegedRole r = r >= GRMember
 
--- Minimum role allowed to change a member's role from `from` to `to` (moderators only within observer..member).
--- Nothing when no role may: relay is established from the relay link when the member is created, and in channels
--- it alone gates forwarding (isMemberGrpFwdRelay) while sorting below GRObserver, so `maximum` would not guard it.
-roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> Maybe GroupMemberRole
+-- Minimum role allowed to change a member's role from `from` to `to` (moderators only up to member; relay checked separately).
+roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> GroupMemberRole
 roleRequiredToChange from to
-  | from == GRRelay || to == GRRelay = Nothing
-  | moderatable from && moderatable to = Just GRModerator
-  | otherwise = Just $ maximum ([GRAdmin, from, to] :: [GroupMemberRole])
-  where
-    moderatable r = GRObserver <= r && r <= GRMember
+  | from <= GRMember && to <= GRMember = GRModerator
+  | otherwise = maximum ([GRAdmin, from, to] :: [GroupMemberRole])
 
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
 -- Runs on the parsed roster blob.

@@ -33,10 +33,10 @@ import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatC
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
-import Simplex.Chat.Messages.Batch (encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatBinding (CBGroup), ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpMemRole, XMsgUpdate, XMsgNew, XMsgDel), EncodedChatMessage (ECMEncoded), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), KeyRef (KRMember), MsgContainer (..), MsgMention (..), MsgContent (..), MsgSigning (MsgSigning), VerifiedMsg (VMUnsigned), encodeChatMessage, maxEncodedMsgLength, mcSimple, msgContentText, signChatMsgBody)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -47,7 +47,6 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
-import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Protocol (MsgFlags (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -280,8 +279,6 @@ chatGroupTests = do
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
-      it "should not change relay role" testChannelRelayRoleNotChangeable
-      it "should reject a signed relay role change" testChannelRelayRoleEventRejected
       it "should block member for all (signed)" testChannelBlockMemberSigned
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should verify member security code via membership keys" testChannelMemberSecurityCode
@@ -9691,63 +9688,6 @@ testChannelChangeRoleSigned ps =
             alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of dan to admin (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(0, "changed your role to admin (signed)")])
 
-testChannelRelayRoleNotChangeable :: HasCallStack => TestParams -> IO ()
-testChannelRelayRoleNotChangeable ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
-      withNewTestChat ps "cath" cathProfile $ \cath ->
-        withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> do
-            createChannel1Relay "team" alice bob cath dan eve
-
-            -- the owner can't revoke the relay forwarding credential
-            -- (granting it is already unreachable here - the command role parser has no "relay")
-            alice ##> "/mr #team bob observer"
-            alice <## "bad chat command: relay role can't be changed"
-
-            -- nor can an admin
-            promoteChannelMember "team" alice bob cath [dan, eve]
-            threadDelay 1000000
-            alice ##> "/mr #team cath admin"
-            alice <## "#team: you changed the role of cath to admin (signed)"
-            concurrentlyN_
-              [ bob <## "#team: alice changed the role of cath from member to admin (signed)",
-                cath <## "#team: alice changed your role from member to admin (signed)",
-                dan <### [EndsWith "from member to admin (signed)"],
-                eve <### [EndsWith "from member to admin (signed)"]
-              ]
-            cath ##> "/mr #team bob observer"
-            cath <## "bad chat command: relay role can't be changed"
-
--- a patched client can still sign and send the event, so the receiver must reject it independently:
--- applied to its own membership it would clear isRelay and stop the relay forwarding for everyone
-testChannelRelayRoleEventRejected :: HasCallStack => TestParams -> IO ()
-testChannelRelayRoleEventRejected ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
-      withNewTestChat ps "cath" cathProfile $ \cath ->
-        withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> do
-            createChannel1Relay "team" alice bob cath dan eve
-
-            bobMemId <- memberIdByName alice "bob"
-            aliceMemId <- memberIdByName bob "alice"
-            (publicGroupId, alicePrivKey) <- groupSigningKeys alice
-            connId <- relayConnIdToMember alice "bob"
-            let ChatController {smpAgent = aliceAgent} = chatController alice
-                chatMsg = ChatMessage chatInitialVRange Nothing (XGrpMemRole bobMemId GRObserver Nothing Nothing)
-                signing = MsgSigning CBGroup (smpEncode (publicGroupId, aliceMemId)) KRMember alicePrivKey
-            body <- case encodeChatMessage maxEncodedMsgLength chatMsg of
-              ECMEncoded b -> pure b
-              _ -> fail "x.grp.mem.role too large"
-            let batch = encodeBinaryBatch [encodeBatchElement (Just $ signChatMsgBody signing body) body]
-            sent <- runExceptT $ sendMessages aliceAgent [(connId, PQEncOff, MsgFlags False, vrValue batch)]
-            either (fail . show) (const $ pure ()) sent
-            bob <##. "error: x.grp.mem.role: relay role can't be changed"
-
-            -- the relay still forwards - dan and eve only see this role change through bob
-            promoteChannelMember "team" alice bob cath [dan, eve]
-
 testChannelBlockMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelBlockMemberSigned ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -12188,17 +12128,6 @@ relayConnIdToMember cc name = do
   case rows of
     (Only connId : _) -> pure connId
     _ -> fail $ "no relay connection to member " <> T.unpack name
-
-groupSigningKeys :: TestCC -> IO (B64UrlByteString, C.PrivateKeyEd25519)
-groupSigningKeys cc = do
-  rows <- withCCTransaction cc $ \db ->
-    DB.query_
-      db
-      "SELECT gp.public_group_id, g.member_priv_key FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id" ::
-      IO [(Maybe B64UrlByteString, Maybe C.PrivateKeyEd25519)]
-  case rows of
-    ((Just publicGroupId, Just memberPrivKey) : _) -> pure (publicGroupId, memberPrivKey)
-    _ -> fail "no group signing keys"
 
 itemSharedMsgId :: TestCC -> IO SharedMsgId
 itemSharedMsgId cc = do

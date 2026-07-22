@@ -3337,6 +3337,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     xGrpMemRole :: GroupInfo -> Maybe GroupMember -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemRole gInfo@GroupInfo {membership} fwdRelay_ m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
+      | memRole == GRRelay = messageError "x.grp.mem.role: relay role can't be assigned" $> Nothing
       | membershipMemId == memId =
           applyAtRosterVersion gInfo fwdRelay_ m rosterVer_ $
             let gInfo' = gInfo {membership = membership {memberRole = memRole}}
@@ -3363,9 +3364,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent createItem
-          | isNothing requiredRole =
+          | fromRole == GRRelay =
               messageError "x.grp.mem.role: relay role can't be changed" $> Nothing
-          | maybe False (senderRole <) requiredRole =
+          | senderRole < roleRequiredToChange fromRole memRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
               messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
@@ -3384,8 +3385,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   else pure (gInfo', m)
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole, msgSigned}
               pure $ memberEventDeliveryScope member
-          where
-            requiredRole = roleRequiredToChange fromRole memRole
 
     -- The header only starts the transfer; the roster is applied and the version bumped only at
     -- blob completion, so a withheld or corrupted blob leaves the last good roster intact.
