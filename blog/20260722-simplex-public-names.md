@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Public Names &mdash; a Name Nobody Can Take From You"
 date: 2026-07-22
-preview: "You can now give your channel or business a test SimpleX name that people can remember. Test names are free in v7-beta."
+preview: "You can now give your channel or business a test SimpleX name &mdash; from v7-beta."
 image: images/20260722-register-name.png
 imageWide: true
 permalink: "/blog/20260722-simplex-public-names.html"
@@ -12,7 +12,7 @@ permalink: "/blog/20260722-simplex-public-names.html"
 
 **Published:** Jul 22, 2026
 
-You can now give your channel or business a test SimpleX name that people can remember. Test names are free in v7-beta[^testing].
+You can now give your channel or business a test SimpleX name that people can remember. Test names are available from v7-beta[^testing].
 
 ## Public names for channels and businesses &mdash; without user IDs
 
