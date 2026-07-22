@@ -820,6 +820,7 @@ window.addEventListener('click',(e)=>{
 <li><a href="#why-cannot-i-delete-messages-i-sent-from-my-contacts-device">Why cannot I delete messages I sent from my contact's device?</a></li>
 <li><a href="#what-do-group-roles-mean">What do group roles mean?</a></li>
 <li><a href="#i-dont-want-to-share-a-web-link-or-a-qr-code-how-can-i-connect">I don't want to share a web link or a QR code. How can I connect?</a></li>
+<li><a href="#how-to-change-servers-to-my-own">How to change servers to my own</a></li>
 </ul>
 <p><a href="#troubleshooting">Troubleshooting</a></p>
 <ul>
@@ -941,6 +942,12 @@ If interested, please read more: <a href="/docs/guide/making-connections.html">A
 <p>You can replace the server part of the link (e.g., <code>https://smp18.simplex.im/</code>) with <code>simplex:/</code> and add <code>?h=smp18.simplex.im</code> (replace it with server of your link) to the end of the link. Then it will not be possible to use it in a web browser, but it will be recognized by SimpleX Chat app.</p>
 <p>For example, this link: <code>https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ</code></p>
 <p>becomes: <code>simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im</code></p>
+<h3 id="how-to-change-servers-to-my-own" tabindex="-1">How to change servers to my own?</h3>
+<p>Add your server in Settings -&gt; Network &amp; servers -&gt; Your servers. If you have multiple profiles, you need to add your server in every profile.<br>
+After that, disable all preset servers. If you have multiple profiles, you must first add your server to all profiles for this option to be available.</p>
+<p>To resolve SimpleX public names, if your server does not support it, you may leave preset servers enabled only for resolving the public names.</p>
+<p>Please note: configured servers only determine which servers will be used for the new connections (members/contacts). Previously created connections don't switch automatically. You can manually switch all existing contacts and small/important groups (each member needs to be switched), and then leave and re-join all large groups.<br>
+You can switch contacts/members manually to another server by going to their profile and clicking on &quot;Change receiving address&quot;, note that the current server must be online for the address change to work.</p>
 <h2 id="troubleshooting" tabindex="-1">Troubleshooting</h2>
 <h3 id="i-do-not-receive-messages-or-message-notifications" tabindex="-1">I do not receive messages or message notifications</h3>
 <p>There may be several reasons messages are not delivered to you from your contact:</p>
