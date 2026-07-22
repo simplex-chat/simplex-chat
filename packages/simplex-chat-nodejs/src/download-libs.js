@@ -4,7 +4,7 @@ const path = require('path');
 const extract = require('extract-zip');
 
 const GITHUB_REPO = 'simplex-chat/simplex-chat-libs';
-const RELEASE_TAG = 'v7.0.0-beta.4';
+const RELEASE_TAG = 'v7.0.0-beta.5';
 const BACKEND = (process.env.SIMPLEX_BACKEND || process.env.npm_config_simplex_backend || 'sqlite').toLowerCase();
 
 if (BACKEND !== 'sqlite' && BACKEND !== 'postgres') {
