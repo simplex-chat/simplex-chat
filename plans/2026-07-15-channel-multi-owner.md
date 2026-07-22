@@ -114,3 +114,46 @@ Drop the leaver's key from `recipientKeys` (`RKEY`, targeting it via the owner-h
 Settled this round: multi-owner hard-blocks on a pre-v19 link server (§9, no degraded mode); the roster approach is tie-break + auto-retry with no leader (§4); a same-member conflict is surfaced and re-applied through normal UI (§10).
 
 A detailed change-list (per-file edits, migrations, test cases) follows once this design is locked — deliberately omitted here to keep the design reviewable in one pass.
+
+---
+
+## Appendix A — Why not a consensus protocol between owners
+
+§1 fixes the answer before any protocol is chosen: the coordination a state needs is set by where it physically lives, and a quorum consensus (any Paxos/Raft/PBFT/Simplex-style propose → majority-vote → commit) fits none of the four states.
+
+- **Three of the four states already have a sequencer, so a quorum would be redundant and worse.** Link data and owner keys are single encrypted blobs on one SMP server; a server-side compare-and-swap is "consensus with one acceptor" — the cheapest sequencer there is (§2, §3). The count is cosmetic (§5). Only the roster has no sequencer (§4), and there the writers are offline and the replicas are untrusted — exactly the setting where a quorum cannot run.
+- **CAP forces the choice.** Multi-owner exists to survive losing an owner, i.e. to stay available when owners are absent. Under a partition a store is either consistent or available, not both; a real consensus protocol chooses consistency by *blocking* until a majority is reachable. Blocking governance whenever a majority of phones is offline — the normal case — is unacceptable, so this design takes the available side and converges.
+- **A timer that "applies if owners are offline" is not consensus.** A consensus protocol never commits without a quorum; the moment a change is applied on timeout it becomes optimistic replication — which is what this design already is — so the timer needs the same convergence layer underneath and adds latency plus a relay round-trip on every action. The cases collapse: a lone writer never conflicts; concurrent edits to *different* members both converge with or without the timer; a concurrent edit to the *same* member still resolves by a deterministic tie-break (competing proposers need a ballot order, which is the same tie-break); a partitioned timeout applies on both sides and diverges, then reconciles by the same tie-break. Nothing is removed.
+- **Relays cannot rescue a quorum.** As witnesses that store and serve a copy they are already used that way (§4) — that adds durability, not agreement. As sequencers or voters they would need Byzantine consensus among ≥ 3f+1 relays (channels run 1–3), or a single designated relay that can equivocate (fork the roster view) and censor — powers the untrusted-relay model forbids, and owner signatures stop forgery but not reordering. The deterministic tie-break already yields one order without trusting any relay.
+- **A quorum inverts the feature and lands on its hardest part.** Majority-quorum needs a majority *present* to act, the opposite of surviving a lost owner; and reconfiguration (changing the participant set) is the most error-prone part of every consensus protocol, while "add an owner" — the headline feature — *is* reconfiguration.
+- **Asynchrony removes the liveness escape.** Owners have no direct connections (every message crosses relays) and are offline for unbounded time, so there is no partial-synchrony bound; by FLP a deterministic quorum cannot both stay safe and terminate here except during windows the network cannot guarantee.
+
+The right-sized coordination is already in the design: single-acceptor CAS for the server-backed states, and a two-party propose → accept → commit handshake for owner promotion (§6), used exactly where an action is inherently bilateral (consent) rather than a quorum. A future M-of-N multisig (governance roadmap) is an *authorization* threshold — who must approve — a different axis that still rides this same convergence substrate and does not need a classical consensus protocol for race resolution.
+
+---
+
+## Appendix B — Roster as a per-member LWW-Map (alternative to §4's global version + auto-retry)
+
+**What an LWW-Map is.** A Last-Writer-Wins Map is a CRDT: a dictionary in which each key holds its own LWW-register — a value tagged with an ordering key. Two replicas merge by taking the union of keys and, for any key held by both, keeping the value with the higher ordering key, ties broken by a deterministic id. Concurrent writes to *different* keys both survive; concurrent writes to the *same* key resolve last-writer-wins. Convergence needs no coordination because "take the max per key" is commutative, associative, and idempotent — replicas that have received the same writes reach the same map regardless of arrival order or duplication.
+
+**For the roster:** key = `memberId`, value = `role`, ordering key = a per-member counter plus the authoring owner's `memberId` as the deterministic tie-break — accept member m's role iff `(counter, authorId)` exceeds the stored pair for m.
+
+**Signing is unchanged — there is no per-key signature.** Two carriers move the roster and both keep today's model: the snapshot *blob* keeps its single owner signature over the blob digest (the per-member fields — role, counter, author — live inside that one-signature blob), and the individual `x.grp.mem.role` events are already individually owner-signed (the map adds the counter and author fields inside the already-signed payload). "Per-member" is the merge granularity and the metadata, not the number of signatures. Per-entry signatures are not needed for the threat model: any owner may already set any member's role (owners are mutually trusted for governance, §8), so one owner's signature vouching for a merged snapshot suffices, and the author-id in the tie-break is a *determinism* field — it must be identical on every device, which `memberId` already is — not a security boundary. The individual signature that already exists on each role event remains the proof a member verifies without trusting the relay.
+
+**Head-to-head with the three current version gates:**
+
+| Gate | Global-version + auto-retry (§4) | Per-member LWW-Map |
+|---|---|---|
+| `:3302` `applyAtRosterVersion` (signed event) | drop the event if its single global version < stored global version | apply member m iff `(counter, authorId)` > stored(m); edits to different members never gate each other |
+| `:3430` `notBelowRoster` (blob header) | accept-or-reject the whole blob by one version ≥ applied/pending | always merge the snapshot per member; no whole-blob reject (an optional snapshot-generation number may remain, as transport dedupe only, not a correctness gate) |
+| `:3461` `rosterCompletion` (apply txn) | re-check the global pending version, reject a stale completion | merge is idempotent/commutative; an older snapshot applied after a newer one is a no-op — no stale-completion race to guard |
+
+**What it removes:** the whole-value over-loss — two owners editing *different* members no longer drop each other, so the durable pending-deltas and the auto-retry-to-union loop become unnecessary (their sole job was to restore the dropped concurrent edit); `roster_version_owner_id` *as a single global gate* (the author id moves inside each entry as its per-member tie-break); and the three coupled version gates collapse into one per-member merge applied identically to a single event or a full snapshot.
+
+**What it costs / open points:**
+- one new small wire field — a per-member counter inside each role entry/event — replacing the single global `roster_version` as the ordering key (the author stays the signer, so no extra author field on the wire); in storage, a per-member counter (on the member row, like the per-relay count in §5) replaces the single `roster_version` column as the merge key;
+- demotion to plain subscriber needs a tombstone or an explicit `role = observer` entry with its own counter, so a re-add cannot resurrect an old role and a concurrent remove-vs-promote resolves by LWW (a standard LWW-Map concern the whole-value blob hid);
+- prefer a per-member *logical* counter (max-seen-for-m + 1) over a wall-clock timestamp — clock skew and deliberate future-dating make physical time an unsafe ordering key;
+- the snapshot blob becomes a checkpoint of the fold for joiners, relays, and catch-up; log growth is bounded by snapshot + a recent tail of signed events; eventual delivery is still required for convergence (the map is loss- and reorder-tolerant, not delivery-free), which the existing reconcile-on-open and relay-served blobs already provide.
+
+**What stays from §4:** already-joined members still heal via the re-emitted individually-signed `x.grp.mem.role` events (the map changes the merge rule, not that fan-out); a bulk change is one call producing N per-member entries, each with its own counter; a genuine same-member conflict is still surfaced to the losing owner and re-applied through the normal picker (§10) — but the re-apply is now the owner's choice at a higher counter, not an automatic union retry, because the LWW winner is already globally consistent on every device.
