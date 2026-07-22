@@ -2737,8 +2737,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">傳送者已取消傳送檔案。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
-        <source>Sender may have deleted the connection request.</source>
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve" approved="no">
+        <source>The sender deleted the connection request.</source>
         <target state="translated">傳送者似乎已經刪除了連接的請求。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -10653,8 +10653,8 @@ More improvements are coming soon!</source>
         <source>Owner</source>
         <target state="translated">擁有者</target>
       </trans-unit>
-      <trans-unit id="Owners< &amp; contributors" xml:space="preserve" approved="no">
-        <source>Owners< &amp; contributors</source>
+      <trans-unit id="Owners &amp; contributors" xml:space="preserve" approved="no">
+        <source>Owners &amp; contributors</source>
         <target state="translated">擁有者</target>
       </trans-unit>
       <trans-unit id="Preset relay address" xml:space="preserve" approved="no">

@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import SectionItemView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.MaterialTheme
@@ -11,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.AnnotatedString.Range
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.SelectionHighlightColor
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -36,6 +40,29 @@ fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolea
     if (senderBold) b.withStyle(boldFont) { append(sender) }
     else b.append(sender)
     b.append(": ")
+  }
+}
+
+private fun openMarkdownModal(modal: Format.Modal) {
+  when (modal.modalName) {
+    Format.Modal.Description -> showFullProfileDescription(modal.text)
+  }
+}
+
+private fun showFullProfileDescription(description: String) {
+  ModalManager.end.showModalCloseable { _ ->
+    ColumnWithScrollBar {
+      AppBarTitle(generalGetString(MR.strings.profile_description__field))
+      MarkdownText(
+        description,
+        parseToMarkdown(description),
+        toggleSecrets = true,
+        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+        uriHandler = LocalUriHandler.current,
+        linkMode = chatModel.simplexLinkMode.value,
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
+      )
+    }
   }
 }
 
@@ -193,6 +220,7 @@ fun MarkdownText (
       var hasLinks = false
       var hasSecrets = false
       var hasCommands = false
+      var hasModals = false
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
@@ -302,6 +330,13 @@ fun MarkdownText (
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
+            is Format.Modal -> {
+              hasModals = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "MODAL", annotation = i.toString()) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
             is Format.Unknown -> append(ft.text)
           }
         }
@@ -315,7 +350,7 @@ fun MarkdownText (
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
-      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
+      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
@@ -353,20 +388,26 @@ fun MarkdownText (
             if (hasCommands && sendCommandMsg != null) {
               withAnnotation("COMMAND") { a -> sendCommandMsg("/${a.item}") }
             }
+            if (hasModals) {
+              withAnnotation("MODAL") { a ->
+                (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.Modal)?.let { openMarkdownModal(it) }
+              }
+            }
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
-            icon.value =
-              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
-                PointerIcon.Hand
-              } else {
-                PointerIcon.Text
-              }
+            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
+            icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
+          },
+          onHoverExit = {
+            // reset icon.value too, or pointerHoverIcon re-displays a stale Hand on the next Enter
+            icon.value = PointerIcon.Text
           },
           shouldConsumeEvent = { offset ->
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
+                || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
           },
           onTextLayout = { onTextLayoutResult?.invoke(it) }
         )
@@ -394,34 +435,45 @@ fun ClickableText(
   onClick: (Int) -> Unit,
   onLongClick: (Int) -> Unit = {},
   onHover: (Int) -> Unit = {},
+  onHoverExit: () -> Unit = {},
   shouldConsumeEvent: (Int) -> Boolean
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val pressIndicator = Modifier.pointerInput(onClick, onLongClick) {
+  // pointerInput keyed on these lambdas restarts on every recomposition (they are new
+  // instances each time), and a restart mid-gesture swallows the click/hover in flight;
+  // key on Unit and read the latest handlers via rememberUpdatedState instead
+  val currentOnClick = rememberUpdatedState(onClick)
+  val currentOnLongClick = rememberUpdatedState(onLongClick)
+  val currentOnHover = rememberUpdatedState(onHover)
+  val currentOnHoverExit = rememberUpdatedState(onHoverExit)
+  val currentShouldConsumeEvent = rememberUpdatedState(shouldConsumeEvent)
+  // to tell a moved pointer from text that shifted under a stationary pointer (see waitForUpOrCancellation)
+  val textCoordinates = remember { mutableStateOf<LayoutCoordinates?>(null) }
+  val pressIndicator = Modifier.pointerInput(Unit) {
     detectGesture(onLongPress = { pos ->
       layoutResult.value?.let { layoutResult ->
-        onLongClick(layoutResult.getOffsetForPosition(pos))
+        currentOnLongClick.value(layoutResult.getOffsetForPosition(pos))
       }
     }, onPress = { pos ->
       layoutResult.value?.let { layoutResult ->
         val res  = tryAwaitRelease()
         if (res) {
-          onClick(layoutResult.getOffsetForPosition(pos))
+          currentOnClick.value(layoutResult.getOffsetForPosition(pos))
         }
       }
-    }, shouldConsumeEvent = { pos ->
+    }, positionInWindow = { textCoordinates.value?.positionInWindow() ?: Offset.Zero }, shouldConsumeEvent = { pos ->
       var consume = false
       layoutResult.value?.let { layoutResult ->
-        consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
+        consume = currentShouldConsumeEvent.value(layoutResult.getOffsetForPosition(pos))
       }
       consume
     }
     )
-  }.pointerInput(onHover) {
+  }.pointerInput(Unit) {
     if (appPlatform.isDesktop) {
-      detectCursorMove { pos ->
+      detectCursorMove(onExit = { currentOnHoverExit.value() }) { pos ->
         layoutResult.value?.let { layoutResult ->
-          onHover(layoutResult.getOffsetForPosition(pos))
+          currentOnHover.value(layoutResult.getOffsetForPosition(pos))
         }
       }
     }
@@ -429,7 +481,8 @@ fun ClickableText(
 
   BasicText(
     text = text,
-    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator),
+    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator)
+      .onGloballyPositioned { textCoordinates.value = it },
     style = style,
     softWrap = softWrap,
     overflow = overflow,

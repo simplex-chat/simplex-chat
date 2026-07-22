@@ -526,6 +526,7 @@ fun ComposeView(
         is SharedContent.Text -> emptyList()
         is SharedContent.Forward -> emptyList()
         is SharedContent.ChatLink -> emptyList()
+        is SharedContent.MyAddress -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -1307,13 +1308,6 @@ fun ComposeView(
       }
   }
 
-  LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
-    if (!chat.chatInfo.sendMsgEnabled) {
-      clearCurrentDraft()
-      clearState()
-    }
-  }
-
   KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
     val cs = composeState.value
     if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
@@ -1343,6 +1337,14 @@ fun ComposeView(
     }
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
+  }
+  // Must be composed after KeyChangeEffect above (effects run in composition order),
+  // so that on chat switch the previous chat's draft is saved before it is cleared here.
+  LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
+    if (!chat.chatInfo.sendMsgEnabled) {
+      clearCurrentDraft()
+      clearState()
+    }
   }
   // keep the attach size limit in sync with the chat: the user's active badge raises it, but not in incognito chats where no badge is presented
   LaunchedEffect(chat.chatInfo) {
@@ -1533,6 +1535,22 @@ fun ComposeView(
         withBGApi {
           val mc = chatModel.controller.apiShareChatMsgContent(
             chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
+            cInfo.chatType, cInfo.apiId,
+            cInfo.groupChatScope(), sendAsGroup
+          )
+          if (mc is MsgContent.MCChat) {
+            composeState.value = composeState.value.copy(
+              preview = ComposePreview.ChatLinkPreview(mc.chatLink, mc.ownerSig)
+            )
+          }
+        }
+      }
+      is SharedContent.MyAddress -> {
+        val cInfo = chat.chatInfo
+        val sendAsGroup = cInfo.sendAsGroup
+        withBGApi {
+          val mc = chatModel.controller.apiShareMyAddress(
+            chat.remoteHostId,
             cInfo.chatType, cInfo.apiId,
             cInfo.groupChatScope(), sendAsGroup
           )

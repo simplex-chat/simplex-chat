@@ -109,7 +109,7 @@ directoryNameTests = do
   it "should mark an inconsistent SimpleX name as not verified" testDirectoryChannelNameNotVerified
 
 directoryProfile :: Profile
-directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe FilePath -> DirectoryOpts
 mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
@@ -1760,6 +1760,7 @@ withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
     withNewTestChatCfg ps cfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg ps cfg "super_user" aliceProfile $ \superUser -> do
         connectUsers ds superUser
+        enableNamesRole ds
         when createOwnersGroup $ do
           superUser ##> "/g owners"
           superUser <## "group #owners is created"
@@ -2131,6 +2132,7 @@ testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
+        enableNamesRole bob
         bob `connectVia` dsLink
         (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
         registerName reg newsName (channelNameRecord "news" (T.pack shortLink))
@@ -2171,6 +2173,7 @@ testDirectoryChannelNameNotVerified ps = withSmpServerAndNames $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
+        enableNamesRole bob
         bob `connectVia` dsLink
         (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
         registerName reg newsName (channelNameRecord "news" (T.pack shortLink))

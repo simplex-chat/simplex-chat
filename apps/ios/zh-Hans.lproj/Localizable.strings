@@ -28,9 +28,6 @@
 /* No comment provided by engineer. */
 "(new)" = "(新)";
 
-/* chat link info line */
-"(signed)" = "（已签名）";
-
 /* No comment provided by engineer. */
 "(this device v%@)" = "(此设备 v%@)";
 
@@ -189,6 +186,15 @@
 
 /* time interval */
 "%d months" = "%d 月";
+
+/* channel owners count */
+"%d owner" = "%d位所有者";
+
+/* channel owners count */
+"%d owners" = "%d位所有者";
+
+/* channel members count */
+"%d owners & contributors" = "%d位所有者和贡献者";
 
 /* channel relay bar
 channel subscriber relay bar */
@@ -1153,6 +1159,9 @@ new chat action */
 /* No comment provided by engineer. */
 "Change role" = "改变角色";
 
+/* No comment provided by engineer. */
+"Change role?" = "改变角色？";
+
 /* authentication reason */
 "Change self-destruct mode" = "更改自毁模式";
 
@@ -1481,6 +1490,9 @@ server test step */
 /* No comment provided by engineer. */
 "Connect faster! 🚀" = "更快地连接！🚀";
 
+/* new chat action */
+"Connect to %@" = "连接到%@";
+
 /* No comment provided by engineer. */
 "Connect to desktop" = "连接到桌面";
 
@@ -1571,11 +1583,11 @@ server test step */
 /* No comment provided by engineer. */
 "Connection blocked" = "连接被阻止";
 
+/* conn error description */
+"Connection blocked: %@" = "连接被阻止：%@";
+
 /* alert title */
 "Connection error" = "连接错误";
-
-/* conn error description */
-"Connection error (AUTH)" = "连接错误（AUTH）";
 
 /* chat list item title (it should not be shown */
 "connection established" = "连接已建立";
@@ -1584,7 +1596,10 @@ server test step */
 "Connection failed" = "连接失败";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "连接被运营方 %@ 阻止";
+"Connection is blocked by server operator:\n%@" = "连接已被运营方阻止：\n%@";
+
+/* conn error description */
+"Connection link removed" = "连接错误";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "连接未就绪。";
@@ -1741,9 +1756,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create public channel" = "创建公开频道";
-
-/* No comment provided by engineer. */
-"Create public channel (BETA)" = "创建公开频道（BETA）";
 
 /* server test step */
 "Create queue" = "创建队列";
@@ -2106,13 +2118,13 @@ alert button */
 "Desktop devices" = "桌面设备";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "目标服务器地址 %@ 与转发服务器 %@ 设置不兼容。";
+"Destination server address of %1$@ is incompatible with forwarding server %2$@ settings." = "目标服务器地址 %1$@ 与转发服务器 %2$@ 设置不兼容。";
 
 /* snd error text */
 "Destination server error: %@" = "目标服务器错误：%@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "目标服务器版本 %@ 与转发服务器 %@ 不兼容。";
+"Destination server version of %1$@ is incompatible with forwarding server %2$@." = "目标服务器版本 %1$@ 与转发服务器 %2$@ 不兼容。";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "详细的统计数据";
@@ -3504,6 +3516,9 @@ servers warning */
 /* No comment provided by engineer. */
 "Join channel" = "加入频道";
 
+/* new chat action */
+"Join channel %@" = "加入频道%@";
+
 /* new chat sheet title */
 "Join group" = "加入群组";
 
@@ -3575,6 +3590,12 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Less traffic on mobile networks." = "消耗更少的移动网络数据。";
+
+/* No comment provided by engineer. */
+"Let people connect to you via name registered with your SimpleX address." = "让别人通过用你的 SimpleX 地址注册的名称和你建立联系。";
+
+/* No comment provided by engineer. */
+"Let people join via name registered with this channel link." = "让别人通过用这个频道链接注册的名称加入。";
 
 /* No comment provided by engineer. */
 "Let someone connect to you" = "让某人连接到你";
@@ -3704,15 +3725,6 @@ servers warning */
 
 /* chat feature */
 "Member reports" = "成员举报";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "将变更成员角色为“%@”。所有成员都会收到通知。";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "成员角色将更改为 \"%@\"。所有群成员将收到通知。";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "成员角色将更改为 \"%@\"。该成员将收到一份新的邀请。";
 
 /* alert message */
 "Member will be removed from chat - this cannot be undone!" = "将从聊天中删除成员 - 此操作无法撤销！";
@@ -3955,6 +3967,9 @@ servers warning */
 "Name" = "名称";
 
 /* No comment provided by engineer. */
+"Name not found" = "未找到名称";
+
+/* No comment provided by engineer. */
 "Network & servers" = "网络和服务器";
 
 /* No comment provided by engineer. */
@@ -4167,6 +4182,9 @@ servers warning */
 /* servers error */
 "No servers to receive messages." = "无消息接收服务器。";
 
+/* servers warning */
+"No servers to resolve names." = "没有解析名称的服务器。";
+
 /* servers error */
 "No servers to send files." = "无文件发送服务器。";
 
@@ -4183,10 +4201,16 @@ servers warning */
 "No unread chats" = "没有未读聊天";
 
 /* No comment provided by engineer. */
+"No valid link" = "无有效链接";
+
+/* No comment provided by engineer. */
 "Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "没有人追踪你的谈话内容。没有人绘制你去过的地方的地图。隐私从来都不是一项功能--而是一种生活方式。";
 
 /* No comment provided by engineer. */
 "Non-profit governance" = "非营利治理";
+
+/* No comment provided by engineer. */
+"None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." = "你的服务器没有一台被设定为解析 SimpleX 名称。配置服务器或使用连接链接。";
 
 /* No comment provided by engineer. */
 "Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "别人家的门锁再好也比不上这里。房东再好也比不上这里，他既尊重你的隐私，又保留着所有访客的记录。你不是客人，你是家。没有国王能闯入--你是主人。";
@@ -4677,7 +4701,8 @@ alert button */
 /* No comment provided by engineer. */
 "Profile theme" = "个人资料主题";
 
-/* alert message */
+/* alert message
+alert title */
 "Profile update will be sent to your SimpleX contacts." = "个人资料更新将发送给你的 SimpleX 联系人。";
 
 /* No comment provided by engineer. */
@@ -4773,7 +4798,7 @@ alert button */
 /* swipe action */
 "Read" = "已读";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "阅读更多";
 
 /* No comment provided by engineer. */
@@ -5136,6 +5161,18 @@ swipe action */
 "Role" = "角色";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All chat members will be notified." = "将变更成员角色为“%@”。所有成员都会收到通知。";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "成员角色将更改为 \"%@\"。所有群成员将收到通知。";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". All subscribers will be notified." = "角色将被变更为“%@”。所有订阅者将会收到通知。";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "成员角色将更改为 \"%@\"。该成员将收到一份新的邀请。";
+
+/* No comment provided by engineer. */
 "Run chat" = "运行聊天";
 
 /* No comment provided by engineer. */
@@ -5147,7 +5184,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Safer groups" = "更安全的群组";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "保存";
 
@@ -5417,9 +5455,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "发送人已取消文件传输。";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "发送人可能已删除连接请求。";
 
 /* alert message */
 "Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "发送链接预览可能会向该网站透露你的 IP 地址。你稍后可以在隐私设置中更改此设置。";
@@ -5748,6 +5783,15 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "已开启 SimpleX 锁定";
+
+/* No comment provided by engineer. */
+"SimpleX name" = "SimpleX 名称";
+
+/* No comment provided by engineer. */
+"SimpleX name error" = "SimpleX 名称错误";
+
+/* alert title */
+"SimpleX name not verified" = "SimpleX 名称未验证";
 
 /* simplex link type */
 "SimpleX one-time invitation" = "SimpleX 一次性邀请";
@@ -6126,6 +6170,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "我们错过的第二个\"√\"！✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "发送人可能已删除连接请求。";
+
 /* alert message */
 "The sender will NOT be notified" = "发送者将不会收到通知";
 
@@ -6395,9 +6442,6 @@ alert subtitle */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "除非您使用 iOS 通话界面，否则请启用请勿打扰模式以避免打扰。";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。\n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。";
-
-/* No comment provided by engineer. */
 "Unlink" = "取消链接";
 
 /* No comment provided by engineer. */
@@ -6463,7 +6507,8 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Upgrade address" = "升级地址";
 
-/* alert message */
+/* alert message
+alert title */
 "Upgrade address?" = "升级地址？";
 
 /* No comment provided by engineer. */
@@ -7095,6 +7140,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Your contact" = "你的联系人";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。\n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "您的联系人发送的文件大于当前支持的最大大小 (%@)。";

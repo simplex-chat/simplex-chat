@@ -133,7 +133,7 @@ import Database.SQLite.Simple.QQ (sql)
 #endif
 
 createUserRecordAt :: DB.Connection -> AgentUserId -> Bool -> Bool -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
-createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} activeUser currentTs =
+createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {displayName, fullName, shortDescr, description, image, peerType, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
@@ -154,8 +154,8 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (displayName, displayName, userId, currentTs, currentTs)
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, chat_peer_type, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (displayName, fullName, shortDescr, image, peerType, userId, userPreferences, currentTs, currentTs)
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, chat_peer_type, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+      (displayName, fullName, shortDescr, description, image, peerType, userId, userPreferences, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -163,7 +163,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -353,22 +353,22 @@ updateUserProfile db user p'
           DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
           pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
-    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || img' /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
-    Profile {displayName = newName, fullName = fn', shortDescr = d', image = img', preferences} = p'
+    userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || desc' /= description || img' /= image
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
+    Profile {displayName = newName, fullName = fn', shortDescr = d', description = desc', image = img', preferences} = p'
     fullPreferences = fullPreferences' preferences
 
 -- own profile field update; leaves the badge columns alone (the credential is owned by setUserBadge/addUserBadge)
 updateUserProfileFields_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateUserProfileFields_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} updatedAt =
+updateUserProfileFields_' db userId profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType} updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, updatedAt) :. (userId, profileId))
 
 -- store the user's own badge credential; touches only the badge columns.
 -- bumps user_member_profile_updated_at so groups receive the updated profile (with the badge) on the next message.
@@ -417,14 +417,14 @@ getUserContactProfiles db User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT display_name, full_name, short_descr, image, contact_link, chat_peer_type, contact_domain, preferences
+        SELECT display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, contact_domain, preferences
         FROM contact_profiles
         WHERE user_id = ?
       |]
       (Only userId)
   where
-    toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe SimplexDomain, Maybe Preferences) -> Profile
-    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, domain_, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain = mkDomainClaim <$> domain_, peerType, preferences, badge = Nothing}
+    toContactProfile :: (ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe SimplexDomain, Maybe Preferences) -> Profile
+    toContactProfile (displayName, fullName, shortDescr, description, image, contactLink, peerType, domain_, preferences) = Profile {displayName, fullName, shortDescr, description, image, contactLink, contactDomain = mkDomainClaim <$> domain_, peerType, preferences, badge = Nothing}
 
 createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> C.PrivateKeyEd25519 -> ExceptT StoreError IO ()
 createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode linkPrivSigKey =
@@ -642,47 +642,54 @@ getProtocolServers db p User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled
+        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled,
+               role_storage, role_proxy, role_names
         FROM protocol_servers
         WHERE user_id = ? AND protocol = ?
       |]
       (userId, decodeLatin1 $ strEncode p)
   where
-    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, BoolInt, Maybe BoolInt, BoolInt) -> UserServer p
-    toUserServer (serverId, host, port, keyHash, auth_, BI preset, tested, BI enabled) =
+    toUserServer :: ((DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, BoolInt, Maybe BoolInt, BoolInt) :. (Maybe BoolInt, Maybe BoolInt, Maybe BoolInt)) -> UserServer p
+    toUserServer ((serverId, host, port, keyHash, auth_, BI preset, tested, BI enabled) :. (rStorage, rProxy, rNames)) =
       let server = ProtoServerWithAuth (ProtocolServer p host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-       in UserServer {serverId, server, preset, tested = unBI <$> tested, enabled, deleted = False}
+          roles = ServerRolesOverride (unBI <$> rStorage) (unBI <$> rProxy) (unBI <$> rNames)
+       in UserServer {serverId, server, preset, tested = unBI <$> tested, enabled, roles, deleted = False}
 
 insertProtocolServer :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> UTCTime -> NewUserServer p -> IO (UserServer p)
-insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, tested, enabled} = do
+insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, tested, enabled, roles} = do
   DB.execute
     db
     [sql|
       INSERT INTO protocol_servers
-        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled,
+         role_storage, role_proxy, role_names, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, userId, ts, ts))
+    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled) :. roleColumns roles :. (userId, ts, ts))
   sId <- insertedRowId db
   pure (srv :: NewUserServer p) {serverId = DBEntityId sId}
 
 updateProtocolServer :: ProtocolTypeI p => DB.Connection -> SProtocolType p -> UTCTime -> UserServer p -> IO ()
-updateProtocolServer db p ts UserServer {serverId, server, preset, tested, enabled} =
+updateProtocolServer db p ts UserServer {serverId, server, preset, tested, enabled, roles} =
   DB.execute
     db
     [sql|
       UPDATE protocol_servers
       SET protocol = ?, host = ?, port = ?, key_hash = ?, basic_auth = ?,
-          preset = ?, tested = ?, enabled = ?, updated_at = ?
+          preset = ?, tested = ?, enabled = ?,
+          role_storage = ?, role_proxy = ?, role_names = ?, updated_at = ?
       WHERE smp_server_id = ?
     |]
-    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, ts, serverId))
+    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled) :. roleColumns roles :. (ts, serverId))
 
 serverColumns :: ProtocolTypeI p => SProtocolType p -> ProtoServerWithAuth p -> (Text, NonEmpty TransportHost, String, C.KeyHash, Maybe Text)
 serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_) =
   let protocol = decodeLatin1 $ strEncode p
       auth = safeDecodeUtf8 . unBasicAuth <$> auth_
    in (protocol, host, port, keyHash, auth)
+
+roleColumns :: ServerRolesOverride -> (Maybe BoolInt, Maybe BoolInt, Maybe BoolInt)
+roleColumns ServerRolesOverride {storage, proxy, names} = (BI <$> storage, BI <$> proxy, BI <$> names)
 
 getChatRelays :: DB.Connection -> User -> IO [UserChatRelay]
 getChatRelays db User {userId} =
@@ -772,7 +779,10 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
       SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, smp_role_names = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
       WHERE server_operator_id = ?
     |]
-    (BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (names smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), currentTs, operatorId)
+    (BI enabled, BI smpStorage, BI smpProxy, BI smpNames, BI xftpStorage, BI xftpProxy, currentTs, operatorId)
+  where
+    ServerRoles {storage = smpStorage, proxy = smpProxy, names = smpNames} = smpRoles
+    ServerRoles {storage = xftpStorage, proxy = xftpProxy} = xftpRoles
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, Maybe ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
@@ -810,7 +820,10 @@ getUpdateServerOperators db presetOps newUser = do
           SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, smp_role_names = ?, xftp_role_storage = ?, xftp_role_proxy = ?
           WHERE server_operator_id = ?
         |]
-        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (names smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), operatorId)
+        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI smpStorage, BI smpProxy, BI smpNames, BI xftpStorage, BI xftpProxy, operatorId)
+      where
+        ServerRoles {storage = smpStorage, proxy = smpProxy, names = smpNames} = smpRoles
+        ServerRoles {storage = xftpStorage, proxy = xftpProxy} = xftpRoles
     insertOperator :: NewServerOperator -> IO ServerOperator
     insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, smpRoles, xftpRoles} = do
       DB.execute
@@ -820,9 +833,12 @@ getUpdateServerOperators db presetOps newUser = do
             (server_operator_tag, trade_name, legal_name, server_domains, enabled, smp_role_storage, smp_role_proxy, smp_role_names, xftp_role_storage, xftp_role_proxy)
           VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (names smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles))
+        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI smpStorage, BI smpProxy, BI smpNames, BI xftpStorage, BI xftpProxy)
       opId <- insertedRowId db
       pure op {operatorId = DBEntityId opId}
+      where
+        ServerRoles {storage = smpStorage, proxy = smpProxy, names = smpNames} = smpRoles
+        ServerRoles {storage = xftpStorage, proxy = xftpProxy} = xftpRoles
     autoAcceptConditions op UsageConditions {conditionsCommit} now =
       acceptConditions_ db op conditionsCommit now True
         $> op {conditionsAcceptance = CAAccepted (Just now) True}

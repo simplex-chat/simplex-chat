@@ -73,7 +73,7 @@ createOrUpdateContactRequest
   isSimplexTeam
   invId
   cReqChatVRange@(VersionRange minV maxV)
-  profile@Profile {displayName, fullName, shortDescr, image, contactLink, badge, preferences}
+  profile@Profile {displayName, fullName, shortDescr, description, image, contactLink, badge, preferences}
   xContactId_
   welcomeMsgId_
   requestMsg_
@@ -112,7 +112,7 @@ createOrUpdateContactRequest
               [sql|
                 SELECT
                   -- Contact
-                  ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+                  ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
                   cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
                   ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
                   ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
@@ -148,7 +148,7 @@ createOrUpdateContactRequest
               SELECT
                 cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
                 cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-                cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
+                cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
                 cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
                 cr.created_at, cr.updated_at,
                 cr.peer_chat_min_version, cr.peer_chat_max_version,
@@ -168,8 +168,8 @@ createOrUpdateContactRequest
           liftIO $
             DB.execute
               db
-              "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-              ((displayName, fullName, shortDescr, image, contactLink, userId) :. ("" :: LocalAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
+              "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+              ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. ("" :: LocalAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
           profileId <- liftIO $ insertedRowId db
           liftIO $
             DB.execute
@@ -238,6 +238,7 @@ createOrUpdateContactRequest
               SET display_name = ?,
                   full_name = ?,
                   short_descr = ?,
+                  description = ?,
                   image = ?,
                   contact_link = ?,
                   updated_at = ?,
@@ -257,7 +258,7 @@ createOrUpdateContactRequest
                   AND contact_request_id = ?
               )
             |]
-              ((displayName, fullName, shortDescr, image, contactLink, currentTs) :. badgeToRow badge badgeVerified :. (userId, contactRequestId))
+              ((displayName, fullName, shortDescr, description, image, contactLink, currentTs) :. badgeToRow badge badgeVerified :. (userId, contactRequestId))
           updateRequest currentTs =
             if displayName == oldDisplayName
               then

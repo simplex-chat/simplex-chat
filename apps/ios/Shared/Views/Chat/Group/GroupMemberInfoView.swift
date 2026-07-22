@@ -126,27 +126,24 @@ struct GroupMemberInfoView: View {
                         && member.memberRole != .relay
                         && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
                             || member.supportChat != nil)
+                    let canVerifyCode = connectionCode != nil && member.memberRole != .relay
+                    let canSyncConn = connectionStats?.ratchetSyncAllowed ?? false
 
-                    if member.memberActive {
+                    if (member.memberActive || (groupInfo.useRelays && member.memberCurrent))
+                        && (showMemberSupportChat || canVerifyCode || canSyncConn) {
                         Section {
                             if showMemberSupportChat {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
-                            if let code = connectionCode,
-                               !(groupInfo.useRelays && member.memberRole == .relay) {
+                            if canVerifyCode, let code = connectionCode {
                                 verifyCodeButton(code)
                             }
-                            if let connStats = connectionStats,
-                               connStats.ratchetSyncAllowed {
+                            if canSyncConn {
                                 synchronizeConnectionButton()
                             }
                             // } else if developerTools {
                             //     synchronizeConnectionButtonForce()
                             // }
-                        }
-                    } else if groupInfo.useRelays && member.memberCurrent && showMemberSupportChat {
-                        Section {
-                            MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                         }
                     }
 
@@ -300,7 +297,8 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
+                    let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
                         connectionStats = stats
@@ -585,12 +583,17 @@ struct GroupMemberInfoView: View {
                         let (verified, existingCode) = r
                         let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
-                        member.activeConn?.connectionCode = connCode
+                        if groupInfo.useRelays {
+                            member.memberVerifiedCode = connCode
+                        } else {
+                            member.activeConn?.connectionCode = connCode
+                        }
                         _ = chatModel.upsertGroupMember(groupInfo, member)
                         return r
                     }
                     return nil
-                }
+                },
+                verificationText: groupInfo.useRelays ? "To verify keys with this subscriber, compare (or scan) the code on your devices." : nil
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")

@@ -20,7 +20,7 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var placeholder: String?
     @Binding var selectedRange: NSRange
     let onImagesAdded: ([UploadContent]) -> Void
-    
+
     static let minHeight: CGFloat = 39
 
     func makeUIView(context: Context) -> CustomUITextField {

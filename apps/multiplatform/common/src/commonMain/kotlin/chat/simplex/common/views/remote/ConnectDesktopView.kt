@@ -147,8 +147,11 @@ private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<Re
 private fun ConnectingDesktop(session: RemoteCtrlSession, rc: RemoteCtrlInfo?) {
   AppBarTitle(stringResource(MR.strings.connecting_to_desktop))
   SectionView(stringResource(MR.strings.connecting_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    CtrlDeviceNameText(session, rc)
-    CtrlDeviceVersionText(session)
+    Column {
+      CtrlDeviceNameText(session, rc)
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      CtrlDeviceVersionText(session)
+    }
   }
 
   if (session.sessionCode != null) {
@@ -223,10 +226,12 @@ private fun FoundDesktop(
   }
   SectionDividerSpaced()
   SectionView(stringResource(MR.strings.found_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    CtrlDeviceNameText(session, rc)
-    CtrlDeviceVersionText(session)
-    if (!compatible) {
-      Text(stringResource(MR.strings.not_compatible), color = MaterialTheme.colors.error)
+    Column {
+      CtrlDeviceNameText(session, rc)
+      CtrlDeviceVersionText(session)
+      if (!compatible) {
+        Text(stringResource(MR.strings.not_compatible), color = MaterialTheme.colors.error)
+      }
     }
   }
 
@@ -255,8 +260,11 @@ private fun FoundDesktop(
 private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessCode: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
   AppBarTitle(stringResource(MR.strings.verify_connection))
   SectionView(stringResource(MR.strings.connected_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    CtrlDeviceNameText(session, rc)
-    CtrlDeviceVersionText(session)
+    Column {
+      CtrlDeviceNameText(session, rc)
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      CtrlDeviceVersionText(session)
+    }
   }
 
   SectionDividerSpaced()
@@ -308,8 +316,11 @@ private fun CtrlDeviceVersionText(session: RemoteCtrlSession) {
 private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo, close: () -> Unit) {
   AppBarTitle(stringResource(MR.strings.connected_to_desktop))
   SectionView(stringResource(MR.strings.connected_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    Text(rc.deviceViewName)
-    CtrlDeviceVersionText(session)
+    Column {
+      Text(rc.deviceViewName)
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      CtrlDeviceVersionText(session)
+    }
   }
 
   if (session.sessionCode != null) {

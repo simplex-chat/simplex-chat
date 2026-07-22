@@ -141,11 +141,12 @@ func msgTextResultView(
     _ t: Text,
     showSecrets: Binding<Set<Int>>? = nil,
     sendCommand: ((String) -> Void)? = nil,
+    openModal: ((Format) -> Void)? = nil,
     centered: Bool = false,
     smallFont: Bool = false
 ) -> some View {
     t.if(r.hasSecrets, transform: hiddenSecretsView)
-        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, sendCommand: sendCommand, centered: centered, smallFont: smallFont)) }
+        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, sendCommand: sendCommand, openModal: openModal, centered: centered, smallFont: smallFont)) }
 }
 
 // smallFont parameter is used to pad height, otherwise CTFrameGetLines fails to see them as lines - it's needed if font is not .body
@@ -154,6 +155,7 @@ private func handleTextTaps(
     _ s: NSAttributedString,
     showSecrets: Binding<Set<Int>>? = nil,
     sendCommand: ((String) -> Void)? = nil,
+    openModal: ((Format) -> Void)? = nil,
     centered: Bool,
     smallFont: Bool
 ) -> some View {
@@ -229,6 +231,8 @@ private func handleTextTaps(
                     }
                 } else if let sendCommand, let cmd = attrs[commandAttrKey] as? String {
                     sendCommand(cmd)
+                } else if let openModal, let fmt = attrs[modalAttrKey] as? Format {
+                    openModal(fmt)
                 }
                 stop.pointee = true
             }
@@ -264,8 +268,64 @@ private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
 private let commandAttrKey = NSAttributedString.Key("chat.simplex.app.command")
 private let nameAttrKey = NSAttributedString.Key("chat.simplex.app.name")
+private let modalAttrKey = NSAttributedString.Key("chat.simplex.app.modal")
 
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
+
+// Reusable profile bio/description header: renders the teaser and opens the full
+// description in a sheet when the "Read more" (Format.modal) link is tapped.
+struct ProfileDescriptionView: View {
+    @EnvironmentObject var theme: AppTheme
+    let shortDescr: String?
+    let description: String?
+    @State private var showSecrets: Set<Int> = []
+    @State private var modal: ModalText? = nil
+
+    var body: some View {
+        if let r = markdownProfileDescription(shortDescr: shortDescr, description: description, showSecrets: showSecrets, backgroundColor: theme.colors.background) {
+            msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, openModal: openModal, centered: true, smallFont: true)
+                .multilineTextAlignment(.center)
+                .lineLimit(4)
+                .fixedSize(horizontal: false, vertical: true)
+                .appSheet(item: $modal) { m in
+                    FullProfileDescriptionView(description: m.text).environmentObject(theme)
+                }
+        }
+    }
+
+    private func openModal(_ format: Format) {
+        if case let .modal(_, text) = format { modal = ModalText(text: text) }
+    }
+}
+
+private struct ModalText: Identifiable {
+    let id = UUID()
+    let text: String
+}
+
+private struct FullProfileDescriptionView: View {
+    @EnvironmentObject var theme: AppTheme
+    let description: String
+    @State private var showSecrets: Set<Int> = []
+
+    var body: some View {
+        List {
+            Text("Description")
+                .font(.title)
+                .bold()
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .listRowBackground(Color.clear)
+
+            Section {
+                let r = markdownText(description, showSecrets: showSecrets, backgroundColor: theme.colors.background)
+                msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .modifier(ThemedBackground(grouped: true))
+    }
+}
 
 @inline(__always)
 func markdownText(
@@ -288,6 +348,46 @@ func markdownText(
         userMemberId: userMemberId,
         showSecrets: showSecrets,
         commands: false,
+        backgroundColor: UIColor(backgroundColor)
+    )
+}
+
+// Renders a profile bio/description: the bio, a short single-line description, or a
+// truncated teaser followed by a "Read more" link that opens the full description (Format.modal).
+func markdownProfileDescription(
+    shortDescr: String?,
+    description: String?,
+    showSecrets: Set<Int>? = nil,
+    backgroundColor: Color
+) -> MsgTextResult? {
+    func trimmed(_ s: String?) -> String? {
+        guard let t = s?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return nil }
+        return t
+    }
+    let short = trimmed(shortDescr)
+    let descr = trimmed(description)
+    guard let descr else {
+        return short.map { markdownText($0, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: backgroundColor) }
+    }
+    let firstLine = String(descr.prefix(while: { $0 != "\n" }))
+    let truncated = firstLine.count > 100
+    let multiline = descr.count > firstLine.count
+    if short == nil && !truncated && !multiline {
+        return markdownText(descr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: backgroundColor)
+    }
+    let teaser = short ?? (truncated ? String(firstLine.prefix(100)).trimmingCharacters(in: .whitespaces) + "…" : firstLine + "…")
+    let readMore = NSLocalizedString("Read more", comment: "profile description teaser")
+    var formatted = parseSimpleXMarkdown(teaser) ?? [FormattedText(text: teaser)]
+    formatted.append(FormattedText(text: " "))
+    formatted.append(FormattedText(text: readMore, format: .modal(modalName: Format.modalDescription, text: descr)))
+    return messageText(
+        "\(teaser) \(readMore)",
+        formatted,
+        textStyle: .subheadline,
+        sender: nil,
+        mentions: nil,
+        userMemberId: nil,
+        showSecrets: showSecrets,
         backgroundColor: UIColor(backgroundColor)
     )
 }
@@ -454,6 +554,12 @@ func messageText(
                 attrs = linkAttrs()
                 if !preview {
                     attrs[linkAttrKey] = "tel:" + t.replacingOccurrences(of: " ", with: "")
+                    handleTaps = true
+                }
+            case let .modal(modalName, text):
+                attrs = linkAttrs()
+                if !preview {
+                    attrs[modalAttrKey] = Format.modal(modalName: modalName, text: text)
                     handleTaps = true
                 }
             case .unknown: ()

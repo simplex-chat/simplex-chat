@@ -10,15 +10,18 @@ import java.io.*
 import java.net.URI
 
 actual val dataDir: File = File(desktopPlatform.dataPath)
-actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex").also { it.deleteOnExit() }
+// No deleteOnExit() here: a transient second instance also inits this val, and its exit
+// would delete the shared folder while the primary runs. Registered in Main instead.
+actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex")
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
 actual val appFilesDir: File = filesDir
 actual val wallpapersDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_assets" + File.separator + "wallpapers").also { it.mkdirs() }
 actual val coreTmpDir: File = File(dataDir.absolutePath + File.separator + "tmp")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "simplex_v1"
 actual val preferencesDir = File(desktopPlatform.configPath).also { it.parentFile.mkdirs() }
+// No deleteRecursively() here (see tmpDir): a second instance would wipe this shared
+// folder while the primary runs. Cleaned in Main instead.
 actual val preferencesTmpDir = File(desktopPlatform.configPath, "tmp")
-  .also { it.deleteRecursively() }
 
 actual val chatDatabaseFileName: String = "simplex_v1_chat.db"
 actual val agentDatabaseFileName: String = "simplex_v1_agent.db"

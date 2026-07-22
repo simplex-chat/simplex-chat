@@ -55,7 +55,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, sumTypeJSON)
-import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
+import Simplex.Messaging.Protocol (BlockingInfo, MsgBody, XFTPServer)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
@@ -421,6 +421,7 @@ signMessagesRequired :: ChatDirection c d -> Bool
 signMessagesRequired = \case
   CDChannelRcv g _ -> groupFeatureAllowed SGFSignMessages g
   CDGroupRcv g _ _ -> groupFeatureAllowed SGFSignMessages g
+  CDGroupSnd g _ -> groupFeatureAllowed SGFSignMessages g
   _ -> False
 
 contactChatDeleted :: ChatDirection c d -> Bool
@@ -1178,6 +1179,8 @@ data RcvMessage = RcvMessage
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgSigned :: Maybe MsgSigStatus,
+    signedMsg_ :: Maybe SignedMsg,
+    signedByGMId_ :: Maybe GroupMemberId,
     forwardedByMember :: Maybe GroupMemberId
   }
 
@@ -1342,7 +1345,8 @@ instance TextEncoding CIForwardedFromTag where
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
     memberDeliveryStatuses :: Maybe (NonEmpty MemberDeliveryStatus),
-    forwardedFromChatItem :: Maybe AChatItem
+    forwardedFromChatItem :: Maybe AChatItem,
+    fileXftpServers :: [XFTPServer]
   }
   deriving (Show)
 

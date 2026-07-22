@@ -1174,6 +1174,13 @@ object ChatController {
     return null
   }
 
+  suspend fun apiShareMyAddress(rh: Long?, toChatType: ChatType, toChatId: Long, toScope: GroupChatScope?, sendAsGroup: Boolean): MsgContent? {
+    val r = sendCmd(rh, CC.ApiShareMyAddress(toChatType, toChatId, toScope, sendAsGroup))
+    if (r is API.Result && r.res is CR.ChatMsgContent) return r.res.msgContent
+    apiErrorAlert("apiShareMyAddress", generalGetString(MR.strings.error_sharing_address), r)
+    return null
+  }
+
   suspend fun apiPlanForwardChatItems(rh: Long?, fromChatType: ChatType, fromChatId: Long, fromScope: GroupChatScope?, chatItemIds: List<Long>): CR.ForwardPlan? {
     val r = sendCmd(rh, CC.ApiPlanForwardChatItems(fromChatType, fromChatId, fromScope, chatItemIds))
     if (r is API.Result && r.res is CR.ForwardPlan) return r.res
@@ -3809,6 +3816,7 @@ sealed class CC {
   class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean, val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val itemIds: List<Long>, val ttl: Int?): CC()
   class ApiShareChatMsgContent(val shareChatType: ChatType, val shareChatId: Long, val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
+  class ApiShareMyAddress(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiNewPublicGroup(val userId: Long, val incognito: Boolean, val relayIds: List<Long>, val groupProfile: GroupProfile): CC()
   class ApiGetGroupRelays(val groupId: Long): CC()
@@ -4015,6 +4023,7 @@ sealed class CC {
     is ApiShareChatMsgContent -> {
       "/_share chat content ${chatRef(shareChatType, shareChatId, null)} ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) "(as_group=on)" else ""}"
     }
+    is ApiShareMyAddress -> "/_share address ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) "(as_group=on)" else ""}"
     is ApiPlanForwardChatItems -> {
       "/_forward plan ${chatRef(fromChatType, fromChatId, fromScope)} ${chatItemIds.joinToString(",")}"
     }
@@ -4206,6 +4215,7 @@ sealed class CC {
     is ApiGetReactionMembers -> "apiGetReactionMembers"
     is ApiForwardChatItems -> "apiForwardChatItems"
     is ApiShareChatMsgContent -> "apiShareChatMsgContent"
+    is ApiShareMyAddress -> "apiShareMyAddress"
     is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
     is ApiNewPublicGroup -> "apiNewPublicGroup"
@@ -4637,6 +4647,18 @@ data class ServerRoles(
   val storage: Boolean,
   val proxy: Boolean,
   val names: Boolean
+) {
+  companion object {
+    // roles applied when a server matches no operator, mirrors core resolveServerRoles (Operators.hs)
+    val noOperatorDefault = ServerRoles(storage = true, proxy = true, names = false)
+  }
+}
+
+@Serializable
+data class ServerRolesOverride(
+  val storage: Boolean? = null,
+  val proxy: Boolean? = null,
+  val names: Boolean? = null
 )
 
 @Serializable
@@ -4658,8 +4680,8 @@ data class UserOperatorServers(
       serverDomains = emptyList(),
       conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
-      smpRoles = ServerRoles(storage = true, proxy = true, names = true),
-      xftpRoles = ServerRoles(storage = true, proxy = true, names = false)
+      smpRoles = ServerRoles.noOperatorDefault,
+      xftpRoles = ServerRoles.noOperatorDefault
     )
 
   companion object {
@@ -4791,7 +4813,8 @@ data class UserServer(
   val preset: Boolean,
   val tested: Boolean? = null,
   val enabled: Boolean,
-  val deleted: Boolean
+  val deleted: Boolean,
+  val roles: ServerRolesOverride = ServerRolesOverride(),
 ) {
   @Transient
   private val createdAt: Date = Date()

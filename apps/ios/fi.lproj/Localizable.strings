@@ -681,11 +681,11 @@ server test step */
 /* alert title */
 "Connection error" = "Yhteysvirhe";
 
-/* conn error description */
-"Connection error (AUTH)" = "Yhteysvirhe (AUTH)";
-
 /* chat list item title (it should not be shown */
 "connection established" = "yhteys luotu";
+
+/* conn error description */
+"Connection link removed" = "Yhteysvirhe";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "Yhteyspyyntö lähetetty!";
@@ -1837,12 +1837,6 @@ server test error */
 /* rcv group event chat item */
 "member connected" = "yhdistetty";
 
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
-
-/* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
-
 /* alert message */
 "Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
 
@@ -2283,7 +2277,7 @@ new chat action */
 /* swipe action */
 "Read" = "Lue";
 
-/* No comment provided by engineer. */
+/* profile description teaser */
 "Read more" = "Lue lisää";
 
 /* No comment provided by engineer. */
@@ -2436,9 +2430,16 @@ swipe action */
 "Role" = "Rooli";
 
 /* No comment provided by engineer. */
+"Role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
+
+/* No comment provided by engineer. */
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
+
+/* No comment provided by engineer. */
 "Run chat" = "Käynnistä chat";
 
-/* alert button
+/* alert action
+alert button
 chat item action */
 "Save" = "Tallenna";
 
@@ -2564,9 +2565,6 @@ chat item action */
 
 /* alert message */
 "Sender cancelled file transfer." = "Lähettäjä peruutti tiedoston siirron.";
-
-/* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "Lähettäjä on saattanut poistaa yhteyspyynnön.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Toimituskuittauksien lähettäminen otetaan käyttöön kaikille kontakteille näkyvissä keskusteluprofiileissa.";
@@ -2858,6 +2856,9 @@ server test failure */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Toinen kuittaus, joka uupui! ✅";
 
+/* No comment provided by engineer. */
+"The sender deleted the connection request." = "Lähettäjä on saattanut poistaa yhteyspyynnön.";
+
 /* alert message */
 "The sender will NOT be notified" = "Lähettäjälle EI ilmoiteta";
 
@@ -2965,9 +2966,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Ellet käytä iOS:n puhelinkäyttöliittymää, ota Älä häiritse -tila käyttöön keskeytysten välttämiseksi.";
-
-/* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Ellei yhteyshenkilösi poistanut yhteyttä tai tämä linkki oli jo käytössä, se voi olla virhe - ilmoita siitä.\nJos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.";
 
 /* No comment provided by engineer. */
 "Unlock" = "Avaa";
@@ -3277,6 +3275,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Keskusteluprofiilisi";
+
+/* No comment provided by engineer. */
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Ellei yhteyshenkilösi poistanut yhteyttä tai tämä linkki oli jo käytössä, se voi olla virhe - ilmoita siitä.\nJos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Yhteyshenkilösi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (%@).";

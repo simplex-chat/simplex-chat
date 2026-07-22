@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -23,15 +24,17 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), WebPreviewConfig (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), ChatResponse (..), WebPreviewConfig (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
+import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
@@ -50,6 +53,7 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Agent.Store.Entity (SDBStored (..))
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -57,6 +61,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Protocol (ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
@@ -121,7 +126,9 @@ testOpts =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
-      createBot = Nothing
+      createBot = Nothing,
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }
 
 testCoreOpts :: CoreChatOpts
@@ -155,6 +162,8 @@ testCoreOpts =
       deviceName = Nothing,
       chatRelay = False,
       webPreviewConfig = Nothing,
+      chatRelayServer = Nothing,
+      headless = False,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
@@ -389,6 +398,26 @@ withTestChatCfgOpts ps cfg opts dbPrefix = bracket (startTestChat ps cfg opts db
 -- usage: withTestOutput $ testChat2 aliceProfile bobProfile $ \alice bob -> do ...
 withTestOutput :: HasCallStack => (HasCallStack => TestParams -> IO ()) -> TestParams -> IO ()
 withTestOutput test ps = test ps {printOutput = True}
+
+-- Opt the client's SMP servers into name resolution (self-hosted servers default names off).
+enableNamesRole :: HasCallStack => TestCC -> IO ()
+enableNamesRole TestCC {chatController = cc} = do
+  r <- execChatCommand' (APIGetUserServers 1) 0 `runReaderT` cc
+  case r of
+    Right (CRUserServers _ uoss) -> do
+      r' <- execChatCommand' (APISetUserServers 1 (L.fromList (map toUpdated uoss))) 0 `runReaderT` cc
+      either (fail . show) (const $ pure ()) r'
+    Right other -> fail $ "enableNamesRole: unexpected response " <> show other
+    Left e -> fail $ "enableNamesRole: APIGetUserServers failed " <> show e
+  where
+    toUpdated UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
+      UpdatedUserOperatorServers
+        { operator,
+          smpServers = map (AUS SDBStored . enableNames) smpServers,
+          xftpServers = map (AUS SDBStored) xftpServers,
+          chatRelays = map (AUCR SDBStored) chatRelays
+        }
+    enableNames srv@UserServer {roles} = (srv :: UserServer 'PSMP) {roles = (roles :: ServerRolesOverride) {names = Just True}}
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
