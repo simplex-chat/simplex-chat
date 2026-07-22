@@ -81,7 +81,11 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       fileChooser.dialogTitle = title
       fileChooser.isMultiSelectionEnabled = allowMultiple && isLoad
       fileChooser.isAcceptAllFileFilterUsed = fileFilter == null
-      if (!isLoad && desktopPlatform.isLinux()) {
+      // Only install the glob bypass for the real file-save case (filename != null). When filename
+      // is null the dialog runs in DIRECTORIES_ONLY mode (e.g. "Save QR code as image"), where the
+      // Save button must approve the selected directory — the literal-filename handler would instead
+      // traverse into it (or no-op on an empty field), making directory selection impossible.
+      if (!isLoad && filename != null && desktopPlatform.isLinux()) {
         installUnixSaveGlobBypass(fileChooser)
       }
       if (fileFilter != null && fileFilterDescription != null) {
