@@ -1,5 +1,19 @@
 # Blog
 
+Jul 22, 2026 [SimpleX Public Names - for Channels and Businesses](./20260722-simplex-public-names.md)
+
+Test public names are released in v7-beta - register a name for your channel or contact address, so anyone can connect to it by typing the name in the app.
+
+---
+
+Apr 30, 2026 [SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech](./20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md)
+
+Freedom of speech needs infrastructure that protects it by design - protocols, governance and funding.
+
+v6.5 release brings SimpleX Channels: a new model for online publishing built for participation privacy.
+
+---
+
 Jul 29, 2025 [SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
 
 What's new in v6.4.1:
