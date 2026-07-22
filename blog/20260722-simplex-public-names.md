@@ -1,29 +1,33 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Public Names - for Channels and Businesses"
+title: "SimpleX Public Names &mdash; a Name Nobody Can Take From You"
 date: 2026-07-22
-preview: "Test public names are released in v7-beta &mdash; register a name for your channel or contact address, so anyone can connect to it by typing the name in the app."
+preview: "You can now give your channel or business a test SimpleX name that people can remember. Test names are free in v7-beta."
 image: images/20260722-register-name.png
 imageWide: true
 permalink: "/blog/20260722-simplex-public-names.html"
 ---
 
-# SimpleX Public Names &mdash; for Channels and Businesses
+# SimpleX Public Names &mdash; a Name Nobody Can Take From You
 
 **Published:** Jul 22, 2026
 
-Test public names are released in v7-beta &mdash; register a name for your channel or contact address, so anyone can connect to it by typing the name in the app.
+You can now give your channel or business a test SimpleX name that people can remember. Test names are free in v7-beta[^testing].
 
-## Public names &mdash; without user identifiers
+## Public names for channels and businesses &mdash; without user IDs
 
 <img src="./images/20260722-phone-name.webp" width="19%" class="float-to-right dark:hidden">
 <img src="./images/20260722-phone-name-light.webp" width="19%" class="float-to-right hidden dark:block">
 
-If you own the name `example.simplex`, other users will be able to type `#example` to join your channel, or `@example.simplex` to connect to your profile. The test namespace `.testing` is available now &mdash; temporary test names are free to register[^testing]. The main `.simplex` namespace will be launched later this year, and the first names will be provided as perks to [SimpleX Chat crowdfunding investors](#community-crowdfunding).
+Before names, the only way to bring people to your channel or business on SimpleX network was a link &mdash; but you cannot use a link in a podcast or a poster &mdash; nobody would remember it.
 
-SimpleX Network still has no user IDs. Public names are opt-in and only useful for public entities &mdash; businesses, channels, and communities. Even when you use SimpleX name, network servers cannot see who connects via this name: all connections remain private.
+Every place where you could get a name so far belongs to someone else: Telegram can revoke your username, a registrar can suspend your domain.
 
-A SimpleX name cannot be taken away. Names are registered on the Ethereum blockchain, and even if the channel link or address are deleted by the server operator, the name owner can point it to a new link, and they would remain reachable via the same name. The name registry is SimpleX Name Service (SNS) &mdash; it's a fork of ENS, but without its centralized dependencies[^ens].
+So we designed SimpleX names for no one to own the registry &mdash; on the Ethereum blockchain. If you register `example.simplex`, people type `#example` to join your channel, or `@example.simplex` to message you. If a server operator deletes your link, you can point the name to a new one. Only you control the name with the key in your wallet[^ens].
+
+And we did not add user identifiers to do it. Names are only for those who want to be found &mdash; channels, businesses, communities &mdash; and servers still cannot see who joined your channel or wrote to you.
+
+We plan to launch `.simplex` names later this year, and to provide [crowdfunding investors](#community-crowdfunding) the first names as perks.
 
 ## How to register a name
 
@@ -33,7 +37,7 @@ To register a test name you need an Ethereum wallet, such as MetaMask, and your 
 
 Setting up a name takes two steps. On the SimpleX Name Service [test webpage](https://testing-names.simplex.chat), search for the name you want &mdash; currently 6 characters or more &mdash; paste your address or channel link into the page, and complete the registration.
 
-In the app, you need to claim the name for your channel or user profile &mdash; it prevents your channel or profile being opened via any other name. Open your SimpleX address or channel page, tap **Get Your SimpleX name**, enter the name, and tap Save.
+In the app, you need to claim the name for your channel or contact address &mdash; it prevents connecting to your channel or address via any other name. Open your SimpleX address or channel page, tap **Get Your SimpleX name**, enter the name, and tap Save.
 
 See [this guide](https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md) for more details.
 
@@ -41,9 +45,9 @@ See [this guide](https://github.com/simplex-chat/simplex-chat/blob/master/docs/g
 
 <img src="./images/20260722-connect-name.png" width="288" class="float-to-right">
 
-Type the name into the search bar &mdash; `#example.testing` to join the channel, `@example.testing` to connect to the user. You can send names in messages &mdash; they work as links.
+Type the name into the search bar &mdash; `#example.testing` to join the channel, `@example.testing` to send direct messages. You can also send names in messages &mdash; they work as links.
 
-Connecting via a name is private. Unlike most blockchain applications accessing the chain through centralized RPC providers, SimpleX Chat app resolves names via two independent servers of SimpleX Network, so that no server can see both the name and the user's IP address.
+Connecting via a name is private. Unlike most applications accessing the chain through a centralized RPC service, SimpleX Chat app resolves names via two independent servers of SimpleX Network, so that no server can see both the name and the user's IP address.
 
 Read more about names in the [whitepaper](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/names-overview.md): their purpose, architecture, security model and planned future work.
 
@@ -51,13 +55,13 @@ Read more about names in the [whitepaper](https://github.com/simplex-chat/simple
 
 To ensure the long term success of SimpleX Network we established [SimpleX Network Consortium](https://simplexnetwork.org/consortium.html) &mdash; an agreement between a non-profit foundation created for protocol licensing and governance and SimpleX Chat, Inc..
 
-The commercial model for the network that we are building aims to make both our and other businesses on the network profitable. We recently [presented the design of this commercial model](https://www.youtube.com/watch?v=UhW8AuoRgxg&t=2s) at Web3 Summit.
+The commercial model for the network that we are building aims to make both our and other businesses on the network profitable. We recently [presented the technology design](https://www.youtube.com/watch?v=UhW8AuoRgxg) for this commercial model at Web3 Summit.
 
-The crowdfunding we plan will fund this development. You can [register your interest](https://simplexchat.typeform.com/crowdfunding) to participate in crowdfunding, and join the [SimpleX Crowdfunding News channel](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) for updates.
+The planned crowdfunding will fund this development. You can [register your interest](https://simplexchat.typeform.com/crowdfunding), and join the [SimpleX Crowdfunding News channel](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) for updates.
 
 _Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
 
 
 [^testing]: Test names are free to register, you only need to pay blockchain fee. The `.testing` namespace is temporary &mdash; test names will stop working in the app one month after `.simplex` name sales launch.
 
-[^ens]: Ethereum Name Service depends on an off-chain indexer and a hosted metadata service to render name tokens. SNS removes both &mdash; names, subnames, and records are indexed and rendered on-chain &mdash; and subnames follow the DNS ownership model: owned and transferred together with the name. See [Differences from ENS](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/names-overview.md#differences-from-ens).
+[^ens]: SimpleX Name Service (SNS) is a fork of Ethereum Name Service (ENS), but without its centralized dependencies. ENS depends on an off-chain indexer and a hosted metadata service. SNS is fully decentralizes - names are indexed and hosted on blockchain. See [Differences from ENS](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/names-overview.md#differences-from-ens).

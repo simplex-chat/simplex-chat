@@ -220,7 +220,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
-[Jul 22, 2026. SimpleX Public Names - for Channels and Businesses](./blog/20260722-simplex-public-names.md)
+[Jul 22, 2026. SimpleX Public Names — a Name Nobody Can Take From You](./blog/20260722-simplex-public-names.md)
 
 [Apr 30, 2026. SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech](./blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md)
 

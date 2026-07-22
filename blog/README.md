@@ -1,8 +1,8 @@
 # Blog
 
-Jul 22, 2026 [SimpleX Public Names - for Channels and Businesses](./20260722-simplex-public-names.md)
+Jul 22, 2026 [SimpleX Public Names — a Name Nobody Can Take From You](./20260722-simplex-public-names.md)
 
-Test public names are released in v7-beta - register a name for your channel or contact address, so anyone can connect to it by typing the name in the app.
+You can now give your channel or business a test SimpleX name that people can remember and nobody can take from you. Test names are free in v7-beta.
 
 ---
 

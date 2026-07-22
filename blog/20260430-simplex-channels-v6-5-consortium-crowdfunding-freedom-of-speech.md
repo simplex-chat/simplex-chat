@@ -1,6 +1,6 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech"
+title: "SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding &mdash; to Preserve Freedom of Speech"
 date: 2026-04-30
 previewBody: blog_previews/20260430.html
 image: images/20260430-home.png
