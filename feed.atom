@@ -5,7 +5,7 @@
     <link type="application/atom+xml" rel="self" href="https://simplex.chat/feed.atom"/>
     <title>SimpleX Chat Blog</title>
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
-    <updated>2026-04-30T00:00:00Z</updated>
+    <updated>2026-07-22T00:00:00Z</updated>
     <author>
         <name>SimpleX Chat</name>
         <email>chat@simplex.chat</email>
@@ -3741,7 +3741,7 @@ A few bugs and UX issues but great foundation. Love that it’s public domain.&l
             <!-- <updated>30 Apr 2026</updated> -->
             <updated>2026-04-30T00:00:00Z</updated>
             <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"/>
-            <title>SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech</title>
+            <title>SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding &amp;mdash; to Preserve Freedom of Speech</title>
             <content type="html">&lt;h1 id=&quot;simplex-channels-simplex-network-consortium-and-community-crowdfunding-to-preserve-freedom-of-speech&quot; tabindex=&quot;-1&quot;&gt;SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding — to Preserve Freedom of Speech&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Apr 30, 2026&lt;/p&gt;
 &lt;p&gt;Freedom of speech needs infrastructure that protects it by design — not only the protocols and servers, but the governance and funding to support them.&lt;/p&gt;
@@ -3784,6 +3784,54 @@ A few bugs and UX issues but great foundation. Love that it’s public domain.&l
 &lt;li id=&quot;note-public&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;From whitepaper: any channel joinable via a public link, whether encrypted or not, must be considered completely public — the cost of joining through automated means has collapsed with large language models. End-to-end encrypting such content provides no privacy; it only undermines users&#39; security by creating false expectations and increases infrastructure operators&#39; risks by making them unable to see what they deliver. &lt;a href=&quot;https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html#ref-public&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;li id=&quot;note-ulysses&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;Ulysses pact — adding constraints to reduce future options. Sé Reed used this analogy for the WordPress Foundation: tying the project to the mast before the siren songs of commercial capture (&lt;a href=&quot;https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/&quot;&gt;https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/&lt;/a&gt;). &lt;a href=&quot;https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html#ref-ulysses&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/section&gt;
+</content>
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
+        </entry>
+        <entry>
+            <id>https://simplex.chat/blog/20260722-simplex-public-names.html</id>
+            <!-- <updated>22 Jul 2026</updated> -->
+            <updated>2026-07-22T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20260722-simplex-public-names.html"/>
+            <title>SimpleX Public Names &amp;mdash; a Name Nobody Can Take From You</title>
+            <content type="html">&lt;h1 id=&quot;simplex-public-names-a-name-nobody-can-take-from-you&quot; tabindex=&quot;-1&quot;&gt;SimpleX Public Names — a Name Nobody Can Take From You&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jul 22, 2026&lt;/p&gt;
+&lt;p&gt;You can now give your channel or business a test SimpleX name that people can remember. Test names are free in v7-beta&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260722-simplex-public-names.html#note-testing&quot; id=&quot;ref-testing&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;public-names-for-channels-and-businesses-without-user-ids&quot; tabindex=&quot;-1&quot;&gt;Public names for channels and businesses — without user IDs&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260722-phone-name.webp&quot; width=&quot;19%&quot; class=&quot;float-to-right dark:hidden&quot; /&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260722-phone-name-light.webp&quot; width=&quot;19%&quot; class=&quot;float-to-right hidden dark:block&quot; /&gt;
+&lt;p&gt;Before names, the only way to bring people to your channel or business on SimpleX Network was a link — but you cannot use a link in a podcast or a poster: nobody would remember it.&lt;/p&gt;
+&lt;p&gt;Every place where you could get a name so far belongs to someone else: Telegram can revoke your username, a registrar can suspend your domain.&lt;/p&gt;
+&lt;p&gt;So we designed SimpleX names for no one to own the registry — on the Ethereum blockchain. If you register &lt;code&gt;example.simplex&lt;/code&gt;, people type &lt;code&gt;#example&lt;/code&gt; to join your channel, or &lt;code&gt;@example.simplex&lt;/code&gt; to message you. If a server operator deletes your link, you can point the name to a new one. Only you control the name with the key in your wallet&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260722-simplex-public-names.html#note-ens&quot; id=&quot;ref-ens&quot;&gt;2&lt;/a&gt;&lt;/sup&gt;.&lt;/p&gt;
+&lt;p&gt;And we did not add user identifiers to do it. Names are only for those who want to be found — channels, businesses, communities — and servers still cannot see who joined your channel or wrote to you.&lt;/p&gt;
+&lt;p&gt;We plan to launch &lt;code&gt;.simplex&lt;/code&gt; names later this year, and to provide the first names to &lt;a href=&quot;https://simplex.chat/blog/20260722-simplex-public-names.html#community-crowdfunding&quot;&gt;crowdfunding investors&lt;/a&gt; as perks.&lt;/p&gt;
+&lt;h2 id=&quot;how-to-register-a-name&quot; tabindex=&quot;-1&quot;&gt;How to register a name&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260722-register-name.png&quot; width=&quot;38%&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;To register a test name you need an Ethereum wallet, such as MetaMask, and your SimpleX address or channel link from the app.&lt;/p&gt;
+&lt;p&gt;Setting up a name takes two steps. On the SimpleX Name Service &lt;a href=&quot;https://testing-names.simplex.chat/&quot;&gt;test webpage&lt;/a&gt;, search for the name you want — currently 6 characters or more — paste your address or channel link into the page, and complete the registration.&lt;/p&gt;
+&lt;p&gt;In the app, you need to claim the name for your channel or contact address — it prevents connecting to your channel or address via any other name. Open your SimpleX address or channel page, tap &lt;strong&gt;Get SimpleX name&lt;/strong&gt;, enter the name, and tap Save.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://simplex.chat/docs/guide/register-simplex-name.html&quot;&gt;this guide&lt;/a&gt; for more details.&lt;/p&gt;
+&lt;h2 id=&quot;how-to-connect-via-names&quot; tabindex=&quot;-1&quot;&gt;How to connect via names&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260722-connect-name.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;Type the name into the search bar — &lt;code&gt;#example.testing&lt;/code&gt; to join the channel, &lt;code&gt;@example.testing&lt;/code&gt; to send direct messages. You can also send names in messages — they work as links.&lt;/p&gt;
+&lt;p&gt;Connecting via a name is private. Unlike most applications accessing the chain through a centralized RPC service, SimpleX Chat app resolves names via two independent servers of SimpleX Network, so that no server can see both the name and the user&#39;s IP address.&lt;/p&gt;
+&lt;p&gt;Read more about names in the &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/names-overview.md&quot;&gt;whitepaper&lt;/a&gt;: their purpose, architecture, security model and planned future work.&lt;/p&gt;
+&lt;h2 id=&quot;community-crowdfunding&quot; tabindex=&quot;-1&quot;&gt;Community Crowdfunding&lt;/h2&gt;
+&lt;p&gt;To ensure the long term success of SimpleX Network we established &lt;a href=&quot;https://simplexnetwork.org/consortium.html&quot;&gt;SimpleX Network Consortium&lt;/a&gt; — an agreement between a non-profit foundation created for protocol licensing and governance and SimpleX Chat, Inc.&lt;/p&gt;
+&lt;p&gt;The commercial model for the network that we are building aims to make both our and other businesses on the network profitable. We recently &lt;a href=&quot;https://www.youtube.com/watch?v=UhW8AuoRgxg&quot;&gt;presented the technology design&lt;/a&gt; for this commercial model at Web3 Summit.&lt;/p&gt;
+&lt;p&gt;The planned crowdfunding will fund this development. You can &lt;a href=&quot;https://simplexchat.typeform.com/crowdfunding&quot;&gt;register your interest&lt;/a&gt;, and join the &lt;a href=&quot;https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg&quot;&gt;SimpleX Crowdfunding News channel&lt;/a&gt; for updates.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind.&lt;/em&gt;&lt;/p&gt;
+&lt;hr class=&quot;footnotes-sep&quot; /&gt;
+&lt;section class=&quot;footnotes&quot;&gt;
+&lt;ol class=&quot;footnotes-list&quot;&gt;
+&lt;li id=&quot;note-testing&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;Test names are free to register; you only need to pay the blockchain fee. The &lt;code&gt;.testing&lt;/code&gt; namespace is temporary — test names will stop working in the app one month after &lt;code&gt;.simplex&lt;/code&gt; name sales launch. &lt;a href=&quot;https://simplex.chat/blog/20260722-simplex-public-names.html#ref-testing&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id=&quot;note-ens&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;SimpleX Name Service (SNS) is a fork of Ethereum Name Service (ENS), but without its centralized dependencies. ENS depends on an off-chain indexer and a hosted metadata service. SNS is fully decentralized — names are indexed and hosted on the blockchain. See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/names-overview.md#differences-from-ens&quot;&gt;Differences from ENS&lt;/a&gt;. &lt;a href=&quot;https://simplex.chat/blog/20260722-simplex-public-names.html#ref-ens&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;/section&gt;
