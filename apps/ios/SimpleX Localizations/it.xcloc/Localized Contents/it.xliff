@@ -11492,9 +11492,9 @@ marked deleted chat item preview text</note>
         <target>contatto non pronto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact should accept…" xml:space="preserve">
+      <trans-unit id="contact should accept…" xml:space="preserve" approved="no">
         <source>contact should accept…</source>
-        <target>il contatto dovrebbe accettare…</target>
+        <target state="translated">il contatto deve accettare…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="contributor" xml:space="preserve">
