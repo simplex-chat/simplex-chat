@@ -724,7 +724,9 @@ final class ChatModel: ObservableObject {
                 } else {
                     chat.chatItems = [cItem]
                 }
-            } else {
+            } else if cInfo.groupChatScope() == nil {
+                // an upsert of a support item must not create the main list entry (addChatItem doesn't either),
+                // and itemAdded here would notify it as a new message
                 addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
                 itemAdded = true
             }
@@ -1102,10 +1104,15 @@ final class ChatModel: ObservableObject {
     func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
         let stats = chats[chatIndex].chatStats
-        chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
-        chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
+        // clamp at 0 (Android does the same in decreaseCounterInPrimaryContext): a decrement can arrive
+        // for an item this counter never included - member support items are counted in-session but
+        // excluded from the chat list query the count is loaded from - and the badge must not go negative
+        let unreadCount = max(stats.unreadCount + count, 0)
+        chats[chatIndex].chatStats.unreadCount = unreadCount
+        chats[chatIndex].chatStats.unreadMentions = max(stats.unreadMentions + unreadMentions, 0)
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: count)
+        // feed the badge the delta actually applied, not the requested one
+        changeUnreadCounter(user: currentUser!, by: unreadCount - stats.unreadCount)
     }
 
     func increaseUnreadCounter(user: any UserLike) {

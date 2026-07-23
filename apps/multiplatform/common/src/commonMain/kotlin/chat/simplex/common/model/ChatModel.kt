@@ -521,8 +521,11 @@ object ChatModel {
 
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
       // A member-support send reaches only the active (secondary) context; mirror it to the primary
-      // so the main-list preview updates (e.g. a pending invitee's own message) - #5909.
-      if (secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext && cItem.chatDir.sent) {
+      // so the main-list preview updates for a pending invitee's own message - #5909.
+      // Only a pending invitee's preview reads support items, so nothing else needs the primary touched:
+      // without the scope/memberPending checks this also re-ran the primary for items it had already handled.
+      if (secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext && cItem.chatDir.sent &&
+        chatInfo.groupChatScope() != null && chatInfo.groupInfo_?.membership?.memberPending == true) {
         chatsContext.addChatItem(rhId, chatInfo, cItem)
       }
       // updates membersRequireAttention
@@ -623,7 +626,9 @@ object ChatModel {
               decreaseCounterInPrimaryContext(rhId, cInfo.id)
             }
           }
-        } else {
+        } else if (cInfo.groupChatScope() == null) {
+          // an upsert of a support item must not create the chat entry (addChatItem doesn't either) -
+          // it would seed the main list with a support item as preview, from a scoped ChatInfo
           addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
           itemAdded = true
         }

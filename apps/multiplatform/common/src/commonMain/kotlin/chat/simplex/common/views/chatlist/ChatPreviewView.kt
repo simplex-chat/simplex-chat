@@ -227,8 +227,10 @@ fun ChatPreviewView(
     val previewText = chatPreviewInfoText()
     val ci = chat.chatItems.lastOrNull()
     // pending invitee only: a member-support message (incl. caption-less media) renders its content, not
-    // the "reviewed by admins" status; other chats keep the original no-text behaviour
-    val previewHasNoContent = if (cInfo.groupInfo_?.membership?.memberPending == true) ci?.content?.msgContent == null else ci?.content?.hasMsgContent != true
+    // the "reviewed by admins" status; other chats keep the original no-text behaviour.
+    // Requires showChatPreviews - with previews off the content is not rendered at all, so falling through
+    // would leave the row empty instead of showing the status.
+    val previewHasNoContent = if (cInfo.groupInfo_?.membership?.memberPending == true && showChatPreviews) ci?.content?.msgContent == null else ci?.content?.hasMsgContent != true
     if (chatModelDraftChatId == chat.id && chatModelDraft != null) {
       val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
       val (text: CharSequence, inlineTextContent) = remember(chatModelDraft) { chatModelDraft.message.text to messageDraft(chatModelDraft, sp20) }
