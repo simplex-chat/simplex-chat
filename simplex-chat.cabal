@@ -321,6 +321,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
           Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
           Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
+          Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

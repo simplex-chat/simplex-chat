@@ -62,6 +62,7 @@ createOrUpdateContactRequest ::
   Maybe SharedMsgId ->
   Maybe (SharedMsgId, MsgContent) ->
   PQSupport ->
+  Bool ->
   ExceptT StoreError IO RequestStage
 createOrUpdateContactRequest
   db
@@ -77,7 +78,8 @@ createOrUpdateContactRequest
   xContactId_
   welcomeMsgId_
   requestMsg_
-  pqSup =
+  pqSup
+  rejectionSupported =
     case xContactId_ of
       -- 0) this is very old legacy, when we didn't have xContactId at all (this should be deprecated)
       Nothing -> createContactRequest
@@ -113,7 +115,7 @@ createOrUpdateContactRequest
                 SELECT
                   -- Contact
                   ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                  cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
+                  cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
                   ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
                   ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                   cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx, cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
@@ -124,6 +126,7 @@ createOrUpdateContactRequest
                 FROM contacts ct
                 JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
                 LEFT JOIN connections c ON c.contact_id = ct.contact_id
+                LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
                 WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
               |]
               (userId, xContactId)
@@ -152,7 +155,8 @@ createOrUpdateContactRequest
                 cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
                 cr.created_at, cr.updated_at,
                 cr.peer_chat_min_version, cr.peer_chat_max_version,
-                p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
+                p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
+                cr.rejection_supported
               FROM contact_requests cr
               JOIN contact_profiles p USING (contact_profile_id)
               WHERE cr.user_id = ?
@@ -177,11 +181,11 @@ createOrUpdateContactRequest
               [sql|
               INSERT INTO contact_requests
                 (user_contact_link_id, agent_invitation_id, peer_chat_min_version, peer_chat_max_version, contact_profile_id, local_display_name, user_id,
-                  created_at, updated_at, xcontact_id, welcome_shared_msg_id, request_shared_msg_id, pq_support)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                  created_at, updated_at, xcontact_id, welcome_shared_msg_id, request_shared_msg_id, pq_support, rejection_supported)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
               ( (uclId, Binary invId, minV, maxV, profileId, ldn, userId)
-                  :. (currentTs, currentTs, xContactId_, welcomeMsgId_, fst <$> requestMsg_, pqSup)
+                  :. (currentTs, currentTs, xContactId_, welcomeMsgId_, fst <$> requestMsg_, pqSup, BI rejectionSupported)
               )
           contactRequestId <- liftIO $ insertedRowId db
           createRequestEntity ldn profileId contactRequestId currentTs
