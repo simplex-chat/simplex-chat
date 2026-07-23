@@ -1630,9 +1630,11 @@ fun ComposeView(
       ReportReasonView(ctx.reason)
     }
 
+    // when editing, the media is already in the message and only its text is changed,
+    // so file and voice prohibitions don't apply (a link can be added by editing text, so it still does)
     val simplexLinkProhibited = chatsCtx.secondaryContextFilter == null && hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
-    val fileProhibited = chatsCtx.secondaryContextFilter == null && composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
-    val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
+    val fileProhibited = chatsCtx.secondaryContextFilter == null && composeState.value.attachmentPreview && !composeState.value.editing && !chat.groupFeatureEnabled(GroupFeature.Files)
+    val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !composeState.value.editing && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
     val disableSendButton = simplexLinkProhibited || fileProhibited || voiceProhibited
     if (composeState.value.preview !is ComposePreview.VoicePreview || composeState.value.editing) {
       if (simplexLinkProhibited) {
