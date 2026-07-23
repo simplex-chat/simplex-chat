@@ -12,13 +12,14 @@ import {CR} from "./responses"
 // Network usage: interactive.
 export interface APICreateMyAddress {
   userId: number // int64
+  pqRatchet?: boolean
 }
 
 export namespace APICreateMyAddress {
   export type Response = CR.UserContactLinkCreated | CR.ChatCmdError
 
   export function cmdString(self: APICreateMyAddress): string {
-    return '/_address ' + self.userId
+    return '/_address ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '')
   }
 }
 

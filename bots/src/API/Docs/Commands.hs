@@ -77,7 +77,7 @@ chatCommandsDocsData :: [(String, String, [(ConsName, [String], Text, [ConsName]
 chatCommandsDocsData =
   [ ( "Address commands",
       "Bots can use these commands to automatically check and create address when initialized",
-      [ ("APICreateMyAddress", ["server_"], "Create bot address.", ["CRUserContactLinkCreated", "CRChatCmdError"], [], Just UNInteractive, "/_address " <> Param "userId"),
+      [ ("APICreateMyAddress", ["server_"], "Create bot address.", ["CRUserContactLinkCreated", "CRChatCmdError"], [], Just UNInteractive, "/_address " <> Param "userId" <> OnOffParam "pq_ratchet" "pqRatchet" Nothing),
         ("APIDeleteMyAddress", [], "Delete bot address.", ["CRUserContactLinkDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete_address " <> Param "userId"),
         ("APIShowMyAddress", [], "Get bot address and settings.", ["CRUserContactLink", "CRChatCmdError"], [], Nothing, "/_show_address " <> Param "userId"),
         ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"),
@@ -392,6 +392,7 @@ undocumentedCommands =
     "APIRejectCall",
     "APIReorderChatTags",
     "APIReportMessage",
+    "APIRotateAddressRatchetKeys",
     "APISaveAppSettings",
     "APISendCallAnswer",
     "APISendCallExtraInfo",

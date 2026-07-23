@@ -2422,7 +2422,7 @@ processChatCommand cxt nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db cxt user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APIListContacts userId
-  APICreateMyAddress userId server_ -> withUserId userId $ \user@User {userChatRelay} -> do
+  APICreateMyAddress userId server_ pqRatchet_ -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
@@ -2431,7 +2431,12 @@ processChatCommand cxt nm = \case
     gVar <- asks random
     rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
-    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing IKUsePQ True server_
+    -- TODO [address DR] remove this option and switch to IKUsePQ True
+    let (pqInitKeys, useDR) = case pqRatchet_ of
+          Just True -> (IKUsePQ, True)
+          Just False -> (IKPQOn, True)
+          Nothing -> (IKPQOn, False)
+    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing pqInitKeys useDR server_
     ccLink' <- shortenCreatedLink ccLink
     -- TODO [relays] relay: add identity, key to link data?
     userData <-
@@ -2443,8 +2448,8 @@ processChatCommand cxt nm = \case
     let ccLink'' = if isTrue userChatRelay then setShortLinkType CCTRelay ccLink' else ccLink'
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode rootPrivKey
     pure $ CRUserContactLinkCreated user ccLink''
-  CreateMyAddress -> withUser $ \User {userId} ->
-    processChatCommand cxt nm $ APICreateMyAddress userId Nothing
+  CreateMyAddress ratchetKeys_ -> withUser $ \User {userId} ->
+    processChatCommand cxt nm $ APICreateMyAddress userId Nothing ratchetKeys_
   APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
     conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
     withChatLock "deleteMyAddress" $ do
@@ -4017,7 +4022,8 @@ processChatCommand cxt nm = \case
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
             | otherwise = contactShortLinkData shortLinkProfile $ Just addressSettings
           userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
-      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys (Just IKUsePQ))
+      -- TODO [address DR] switch to (Just IKUsePQ) after rotateKeys
+      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys Nothing)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
           ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
@@ -5722,8 +5728,8 @@ chatCommandP =
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/_connect contact " *> (APIConnectContactViaAddress <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
-      "/_address " *> (APICreateMyAddress <$> A.decimal <*> optional (A.space *> strP)),
-      ("/address" <|> "/ad") $> CreateMyAddress,
+      "/_address " *> (APICreateMyAddress <$> A.decimal <*> optional (A.space *> strP) <*> optional (" pq_ratchet=" *> onOffP)),
+      ("/address" <|> "/ad") *> (CreateMyAddress <$> optional (" pq_ratchet=" *> onOffP)),
       "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       "/_show_address " *> (APIShowMyAddress <$> A.decimal),
