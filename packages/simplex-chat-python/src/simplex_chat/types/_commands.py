@@ -63,11 +63,12 @@ APISetProfileAddress_Response = CR.UserProfileUpdated | CR.ChatCmdError
 # Network usage: interactive.
 class APISetAddressSettings(TypedDict):
     userId: int  # int64
+    pqRatchet: NotRequired[bool]
     settings: "T.AddressSettings"
 
 
 def APISetAddressSettings_cmd_string(self: APISetAddressSettings) -> str:
-    return '/_address_settings ' + str(self['userId']) + ' ' + json.dumps(self['settings'])
+    return '/_address_settings ' + str(self['userId']) + ((' pq_ratchet=' + ('on' if self.get('pqRatchet') else 'off')) if self.get('pqRatchet') is not None else '') + ' ' + json.dumps(self['settings'])
 
 APISetAddressSettings_Response = CR.UserContactLinkUpdated | CR.ChatCmdError
 

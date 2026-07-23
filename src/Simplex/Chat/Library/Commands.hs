@@ -107,7 +107,7 @@ import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (InitialKeys (..), PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (..), PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
@@ -2444,10 +2444,12 @@ processChatCommand cxt nm = \case
     CRUserContactLink user <$> withFastStore (`getUserAddress` user)
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand cxt nm $ APIShowMyAddress userId
-  APIAddMyAddressShortLink userId -> withUserId' userId $ \user ->
-    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData False user)
+  APIAddMyAddressShortLink userId pqRatchet_ -> withUserId' userId $ \user -> do
+    -- TODO [address DR] remove the option, and use IKUsePQ
+    let pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
+    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData False pqInitKeys user)
   APIRotateAddressRatchetKeys userId -> withUserId' userId $ \user ->
-    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData True user)
+    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData True (Just IKUsePQ) user)
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
@@ -2458,7 +2460,7 @@ processChatCommand cxt nm = \case
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APISetProfileAddress userId onOff
-  APISetAddressSettings userId settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
+  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
     ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
     forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
       when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
@@ -2467,11 +2469,12 @@ processChatCommand cxt nm = \case
       then pure $ CRUserContactLinkUpdated user ucl
       else do
         let ucl' = ucl {addressSettings = settings}
-        ucl'' <- if shortLinkDataSet then setMyAddressData False user ucl' else pure ucl'
+            pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
+        ucl'' <- if shortLinkDataSet then setMyAddressData False pqInitKeys user ucl' else pure ucl'
         withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
         pure $ CRUserContactLinkUpdated user ucl''
-  SetAddressSettings settings -> withUser $ \User {userId} ->
-    processChatCommand cxt nm $ APISetAddressSettings userId settings
+  SetAddressSettings pqRatchet_ settings -> withUser $ \User {userId} ->
+    processChatCommand cxt nm $ APISetAddressSettings userId pqRatchet_ settings
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand cxt nm $ APIAcceptContact incognito connReqId
@@ -3948,8 +3951,10 @@ processChatCommand cxt nm = \case
         setMyAddressData' :: User -> CM ()
         setMyAddressData' user' =
           withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
-            Right ucl@UserContactLink {shortLinkDataSet}
-              | shortLinkDataSet -> void $ setMyAddressData False user' ucl
+            Right ucl@UserContactLink {shortLinkDataSet, connLinkContact = CCLink {connFullLink = CRContactUri _ e2e}}
+              | shortLinkDataSet ->
+                  let pqInitKeys = (\(_, E2ERatchetParamsUri _ _ _ pq) -> if isJust pq then IKUsePQ else IKPQOn) <$> e2e
+                   in void $ setMyAddressData False pqInitKeys user' ucl
             _ -> pure ()
         sendUpdateToContacts :: User -> [Contact] -> CM UserProfileUpdateSummary
         sendUpdateToContacts user' contacts = do
@@ -3990,8 +3995,8 @@ processChatCommand cxt nm = \case
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
-    setMyAddressData :: Bool -> User -> UserContactLink -> CM UserContactLink
-    setMyAddressData rotateKeys user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _, addressSettings} = do
+    setMyAddressData :: Bool -> Maybe InitialKeys -> User -> UserContactLink -> CM UserContactLink
+    setMyAddressData rotateKeys pqInitKeys user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
       shortLinkProfile <- presentUserBadge user Nothing (userProfileDirect user Nothing Nothing True)
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
@@ -3999,8 +4004,8 @@ processChatCommand cxt nm = \case
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
             | otherwise = contactShortLinkData shortLinkProfile $ Just addressSettings
           userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
-      -- TODO [address DR] switch to (Just IKUsePQ) after rotateKeys
-      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys Nothing)
+      -- TODO [address DR] remove parameter and switch to (Just IKUsePQ) after rotateKeys
+      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys pqInitKeys)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
           ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
@@ -5708,12 +5713,12 @@ chatCommandP =
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       "/_show_address " *> (APIShowMyAddress <$> A.decimal),
       ("/show_address" <|> "/sa") $> ShowMyAddress,
-      "/_short_link_address " *> (APIAddMyAddressShortLink <$> A.decimal),
+      "/_short_link_address " *> (APIAddMyAddressShortLink <$> A.decimal <*> optional (" pq_ratchet=" *> onOffP)),
       "/_rotate_address_keys " *> (APIRotateAddressRatchetKeys <$> A.decimal),
       "/_profile_address " *> (APISetProfileAddress <$> A.decimal <* A.space <*> onOffP),
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
-      "/_address_settings " *> (APISetAddressSettings <$> A.decimal <* A.space <*> jsonP),
-      "/auto_accept " *> (SetAddressSettings <$> autoAcceptP),
+      "/_address_settings " *> (APISetAddressSettings <$> A.decimal <* A.space <*> optional (" pq_ratchet=" *> onOffP) <*> jsonP),
+      "/auto_accept " *> (SetAddressSettings <$> optional (" pq_ratchet=" *> onOffP) <*> autoAcceptP),
       ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayNameP),
       ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
