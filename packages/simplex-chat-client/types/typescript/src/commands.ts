@@ -70,6 +70,7 @@ export namespace APISetProfileAddress {
 // Network usage: interactive.
 export interface APISetAddressSettings {
   userId: number // int64
+  pqRatchet?: boolean
   settings: T.AddressSettings
 }
 
@@ -77,7 +78,7 @@ export namespace APISetAddressSettings {
   export type Response = CR.UserContactLinkUpdated | CR.ChatCmdError
 
   export function cmdString(self: APISetAddressSettings): string {
-    return '/_address_settings ' + self.userId + ' ' + JSON.stringify(self.settings)
+    return '/_address_settings ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '') + ' ' + JSON.stringify(self.settings)
   }
 }
 
