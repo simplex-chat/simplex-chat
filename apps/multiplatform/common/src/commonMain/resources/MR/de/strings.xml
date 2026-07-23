@@ -2925,7 +2925,7 @@
     <string name="webpage_info">Erstellen Sie eine Webseite, die Besuchern Ihren Kanal als Vorschau zeigt, bevor sie ihn abonnieren. Hosten Sie die Seite selbst oder nutzen Sie beliebiges statisches Hosting.</string>
     <string name="enter_webpage_url">URL der Webseite eingeben</string>
     <string name="group_webpage">Webseite der Gruppe</string>
-    <string name="help_and_support">Hilfe und Unterstützung</string>
+    <string name="help_and_support">Hilfe &amp; Unterstützung</string>
     <string name="web_page_url_placeholder">https://</string>
     <string name="webpage_url_footer">Dies wird Abonnenten angezeigt und zum Laden der Vorschau genutzt.</string>
     <string name="more_privacy">Weitere Privatsphäre</string>
@@ -2963,7 +2963,7 @@
     <string name="simplex_name_owner_no_channel_link">Der SimpleX‑Name %1$s wurde ohne Kanal‑Link registriert. Fügen Sie den Kanal‑Link über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_owner_no_address">Der SimpleX‑Name %1$s wurde ohne SimpleX-Adresse registriert. Fügen Sie die SimpleX-Adresse über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_not_found_desc">Dieser SimpleX-Name wurde nicht registriert. Bitte überprüfen Sie den Namen.</string>
-    <string name="operator_use_for_names">Für die Namensauflösung</string>
+    <string name="operator_use_for_names">Für Namensauflösung</string>
     <string name="simplex_name_unconfirmed">Unbestätigter Name</string>
     <string name="verify_simplex_name_action">Name überprüfen</string>
     <string name="verify_simplex_names">SimpleX-Namen überprüfen</string>
@@ -3001,4 +3001,6 @@
     <string name="v7_0_channels_relays">Ihre Relais verwalten.</string>
     <string name="v7_0_simplex_names_descr">Namen für Ihren Kanal oder Ihr Unternehmen.</string>
     <string name="v7_0_simplex_names">SimpleX-Namen (BETA)</string>
+    <string name="info_row_file_servers">Datei-Server</string>
+    <string name="share_text_file_servers">Datei-Server: %s</string>
 </resources>
