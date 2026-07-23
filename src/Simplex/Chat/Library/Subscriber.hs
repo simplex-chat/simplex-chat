@@ -107,6 +107,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.STM
+import qualified Data.Aeson as J
 
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
@@ -516,6 +517,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             case cReq of
               CRInvitationUri _ _ -> withStore' $ \db -> setConnConnReqInv db user connId cReq
               CRContactUri _ _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
+        RJCT reason -> do
+          ct' <- withStore' $ \db -> updateContactStatus db user ct CSRejected
+          toView $ CEvtContactRequestRejected user ct' (either (const Nothing) Just $ strDecode reason)
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
@@ -1395,16 +1399,24 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
-      REQ invId pqSupport _ connInfo -> do
+      REQ invId pqSupport _ connInfo rejectionSupported -> do
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
+          XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport rejectionSupported
           XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
-          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
+          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport rejectionSupported
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
           XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
           -- TODO show/log error, other events in contact request
           _ -> pure ()
+      SREQ invId payload ->
+        chatReadVar processServiceRequests >>= \case
+          True -> case J.eitherDecodeStrict' payload of
+            Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) request
+            Left _ -> dropSReq
+          False -> dropSReq
+        where
+          dropSReq = withAgent $ \a -> rejectServiceRequest a NRMBackground (aUserId user) invId Nothing
       LINK _link auData ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
@@ -1466,8 +1478,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ welcomeMsgId_ requestMsg_ reqPQSup = do
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> Bool -> CM ()
+        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported = do
           (ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           let v = maxVersion chatVRange
           case gLinkInfo_ of
@@ -1477,7 +1489,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   AddressSettings {autoAccept} = addressSettings
                   isSimplexTeam = sameConnReqContact connReq adminContactReq
               gVar <- asks random
-              withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup) >>= \case
+              withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported) >>= \case
                 RSAcceptedRequest _ucr re -> case re of
                   REContact ct ->
                     -- TODO [short links] update request msg

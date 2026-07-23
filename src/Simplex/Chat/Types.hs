@@ -60,7 +60,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), UserId, sConnectionMode)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -205,6 +205,7 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     preparedContact :: Maybe PreparedContact,
     contactRequestId :: Maybe Int64,
+    contactRequest :: Maybe UserContactRequestRef,
     -- contactGroupMemberId + contactGrpInvSent are used in conjunction for making connection request
     -- to a group member via direct message feature
     contactGroupMemberId :: Maybe GroupMemberId,
@@ -229,6 +230,12 @@ data PreparedContact = PreparedContact
     uiConnLinkType :: ConnectionMode,
     welcomeSharedMsgId :: Maybe SharedMsgId,
     requestSharedMsgId :: Maybe SharedMsgId
+  }
+  deriving (Eq, Show)
+
+data UserContactRequestRef = UserContactRequestRef
+  { contactRequestId :: Int64,
+    rejectionSupported :: Bool
   }
   deriving (Eq, Show)
 
@@ -316,6 +323,7 @@ data ContactStatus
   = CSActive
   | CSDeleted
   | CSDeletedByUser
+  | CSRejected
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
@@ -334,11 +342,13 @@ instance TextEncoding ContactStatus where
     "active" -> Just CSActive
     "deleted" -> Just CSDeleted
     "deletedByUser" -> Just CSDeletedByUser
+    "rejected" -> Just CSRejected
     _ -> Nothing
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
     CSDeletedByUser -> "deletedByUser"
+    CSRejected -> "rejected"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -383,7 +393,8 @@ data UserContactRequest = UserContactRequest
     xContactId :: Maybe XContactId,
     pqSupport :: PQSupport,
     welcomeSharedMsgId :: Maybe SharedMsgId,
-    requestSharedMsgId :: Maybe SharedMsgId
+    requestSharedMsgId :: Maybe SharedMsgId,
+    rejectionSupported :: Bool
   }
   deriving (Eq, Show)
 
@@ -989,6 +1000,26 @@ instance FromJSON GroupRejectionReason where
   parseJSON = strParseJSON "GroupRejectionReason"
 
 instance ToJSON GroupRejectionReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data ContactRejectionReason
+  = CRRUserRejected
+  | CRRUnknown {text :: Text}
+  deriving (Eq, Show)
+
+instance StrEncoding ContactRejectionReason where
+  strEncode = \case
+    CRRUserRejected -> "user_rejected"
+    CRRUnknown text -> encodeUtf8 text
+  strP =
+    "user_rejected" $> CRRUserRejected
+    <|> CRRUnknown . safeDecodeUtf8 <$> A.takeByteString
+
+instance FromJSON ContactRejectionReason where
+  parseJSON = strParseJSON "ContactRejectionReason"
+
+instance ToJSON ContactRejectionReason where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
@@ -1830,6 +1861,17 @@ instance StrEncoding AConnectTarget where
     where
       nameStart = "@" <|> "#" <|> "simplex:/name"
 
+instance ConnectionModeI m => StrEncoding (ConnectTarget m) where
+  strEncode t = strEncode $ ACTarget sConnectionMode t
+  strP = connectTargetP
+
+connectTargetP :: forall m. ConnectionModeI m => A.Parser (ConnectTarget m)
+connectTargetP = do
+  ACTarget m t <- strP
+  case testEquality m (sConnectionMode :: SConnectionMode m) of
+    Just Refl -> pure t
+    Nothing -> fail "bad connect target mode"
+
 aConnectTarget :: AConnectionLink -> AConnectTarget
 aConnectTarget (ACL SCMInvitation cl) = ACTarget SCMInvitation (CTInv cl)
 aConnectTarget (ACL SCMContact cl) = ACTarget SCMContact $ case cl of
@@ -2341,6 +2383,8 @@ $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
 
 $(JQ.deriveJSON defaultJSON ''PreparedContact)
+
+$(JQ.deriveJSON defaultJSON ''UserContactRequestRef)
 
 $(JQ.deriveJSON defaultJSON ''GroupDirectInvitation)
 
