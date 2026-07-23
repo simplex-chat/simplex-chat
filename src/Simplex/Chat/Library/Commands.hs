@@ -784,11 +784,7 @@ processChatCommand cxt nm = \case
       when (isNothing scope) $ assertUserGroupRole gInfo GRAuthor
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
       let (_, ft_) = msgContentTexts mc
-          -- SimpleX links are prohibited in updates in all scopes, as on receiving side
-          prohibitedContent
-            | prohibitedSimplexLinks gInfo membership mc ft_ = Just GFSimplexLinks
-            | otherwise = prohibitedGroupContent gInfo membership chatScopeInfo mc ft_ (Nothing :: Maybe CryptoFile) True
-      case prohibitedContent of
+      case prohibitedGroupContent gInfo membership chatScopeInfo mc ft_ (Nothing :: Maybe CryptoFile) True of
         Just f -> throwCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText f)
         Nothing -> do
           -- TODO [knocking] check chat item scope?

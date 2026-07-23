@@ -57,20 +57,35 @@ with `isMedia` next to `isVoice`/`isReport` in `Protocol.hs`, matching
 this one guard covers sending (`/_send`), receiving `x.msg.new`, and receiving
 `x.msg.update`.
 
-`APIUpdateChatItem` for groups now also runs `prohibitedGroupContent`, restoring
-the symmetry #4330 established and closing the same substitution at the source
-(it also covers voice, which was equally unchecked there). Its existing
-`prohibitedSimplexLinks` check is kept and runs first: inside
-`prohibitedGroupContent` that guard is gated on `isNothing scopeInfo`, but the
-update path prohibits links in every scope, exactly as `groupMessageUpdate` does
-when receiving. Replacing the links check rather than keeping it would let an
-update with a link in a member support scope be sent while every recipient
-dropped it — silent divergence in place of an error. `getChatScopeInfo` is
-hoisted above the check to supply the scope; it is a read-only store lookup, so
-this changes only error ordering.
+`APIUpdateChatItem` for groups now runs `prohibitedGroupContent` in place of its
+links-only check, restoring the symmetry #4330 established and closing the same
+substitution at the source (it also covers voice, which was equally unchecked
+there). `getChatScopeInfo` is hoisted above the check to supply the scope; it is
+a read-only store lookup, so this changes only error ordering.
 
 Support-scope behaviour is unchanged: the Files guard remains skipped when
 `scopeInfo` is set, as before.
+
+## Also: SimpleX links in support chats
+
+The update path carried its own `prohibitedSimplexLinks` check on both sides —
+`APIUpdateChatItem` when sending and `groupMessageUpdate` when receiving — with
+no scope condition, while the same guard inside `prohibitedGroupContent` is
+gated on `isNothing scopeInfo`. So a **new** message containing a link could be
+posted in a member support chat, but **editing** a message there to contain one
+was rejected.
+
+That check predates chat scopes: #4330 added it to both sides of the update path
+when a text edit could introduce no other prohibited content, and the scope gate
+added later never reached it. Support chats are not meant to prohibit content —
+that is why the files, reports and links guards are all scope-gated — so the
+special case is removed from both sides, and links in updates are judged by the
+same scope-gated guard as links in new messages.
+
+Main-chat updates containing links are still prohibited, via
+`prohibitedGroupContent`. The only visible difference is on receiving: such an
+update now creates a `CIRcvGroupFeatureRejected` item instead of being silently
+ignored, which is what a new message containing a link already did.
 
 ## Alternatives considered
 
@@ -120,3 +135,8 @@ Support-scope behaviour is unchanged: the Files guard remains skipped when
   `group live message`, the four channel message update tests, and
   `group preferences for specific member role` (direct messages, files & media,
   SimpleX links).
+- `testGroupPrefsSimplexLinksForRole` extended with the support chat case: with
+  links restricted to owners, a member can post a link in their support chat and
+  can edit a message there to contain one, while both remain rejected in the
+  main chat. The edit fails on the previous code with
+  `bad chat command: feature not allowed SimpleX links`.

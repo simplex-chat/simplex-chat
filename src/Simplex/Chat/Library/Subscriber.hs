@@ -2238,44 +2238,41 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           groupMsgToView cInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_
-      | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
-          messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
-      | otherwise = do
-          updateRcvChatItem `catchCINotFound` \_ -> do
-            -- This patches initial sharedMsgId into chat item when locally deleted chat item
-            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
-            -- Chat item and update message which created it will have different sharedMsgId in this case...
-            let timed_ = rcvGroupCITimed gInfo ttl_
-                showGroupAsSender = fromMaybe (isNothing m_) asGroup_
-            if showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_
-              then messageError "x.msg.update: member attempted to update as group" $> Nothing
-              else do
-                (gInfo', chatDir, mentions', scopeInfo) <-
-                  if showGroupAsSender
-                    then pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
-                    else case m_ of
-                      Just m -> do
-                        let mentions' = if memberBlocked m then [] else mentions
-                        (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m mc msgScope_
-                        pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
-                      Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
-                case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc ft_ (Nothing :: Maybe String) False of
-                  Just f -> do
-                    let ciContent = ciContentNoParse $ CIRcvGroupFeatureRejected f
-                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs ciContent Nothing timed_ False M.empty
-                    groupMsgToView cInfo ci
-                    pure Nothing
-                  Nothing -> do
-                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
-                    ci' <- withStore' $ \db -> do
-                      createChatItemVersion db (chatItemId' ci) brokerTs mc
-                      updateGroupChatItem db user groupId ci content True live Nothing
-                    ci'' <- case chatDir of
-                      CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
-                      CDChannelRcv {} -> pure ci'
-                    toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
-                    pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_ = do
+      updateRcvChatItem `catchCINotFound` \_ -> do
+        -- This patches initial sharedMsgId into chat item when locally deleted chat item
+        -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+        -- Chat item and update message which created it will have different sharedMsgId in this case...
+        let timed_ = rcvGroupCITimed gInfo ttl_
+            showGroupAsSender = fromMaybe (isNothing m_) asGroup_
+        if showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_
+          then messageError "x.msg.update: member attempted to update as group" $> Nothing
+          else do
+            (gInfo', chatDir, mentions', scopeInfo) <-
+              if showGroupAsSender
+                then pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
+                else case m_ of
+                  Just m -> do
+                    let mentions' = if memberBlocked m then [] else mentions
+                    (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m mc msgScope_
+                    pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
+                  Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
+            case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+              Just f -> do
+                let ciContent = ciContentNoParse $ CIRcvGroupFeatureRejected f
+                (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs ciContent Nothing timed_ False M.empty
+                groupMsgToView cInfo ci
+                pure Nothing
+              Nothing -> do
+                (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
+                ci' <- withStore' $ \db -> do
+                  createChatItemVersion db (chatItemId' ci) brokerTs mc
+                  updateGroupChatItem db user groupId ci content True live Nothing
+                ci'' <- case chatDir of
+                  CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
+                  CDChannelRcv {} -> pure ci'
+                toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
+                pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
         ts@(_, ft_) = msgContentTexts mc

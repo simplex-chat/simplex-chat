@@ -2988,6 +2988,20 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     alice #> ("#team " <> inv)
     bob <# ("#team alice> " <> inv)
     cath <# ("#team alice> " <> inv)
+    -- links are allowed in support chat, both in new and in updated messages
+    bob ##> ("/_send #1(_support) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\"}}]")
+    bob <# ("#team (support) " <> inv)
+    alice <# ("#team (support: bob) bob> " <> inv)
+    cath <# ("#team (support: bob) bob> " <> inv)
+    bob ##> "/_send #1(_support) text hi"
+    bob <# "#team (support) hi"
+    alice <# "#team (support: bob) bob> hi"
+    cath <# "#team (support: bob) bob> hi"
+    bobItemId <- lastItemId bob
+    bob ##> ("/_update item #1(_support) " <> bobItemId <> " text " <> inv)
+    bob <# ("#team (support) [edited] " <> inv)
+    alice <# ("#team (support: bob) bob> [edited] " <> inv)
+    cath <# ("#team (support: bob) bob> [edited] " <> inv)
   where
     linksForOwners :: HasCallStack => TestCC -> IO ()
     linksForOwners cc = do
