@@ -1033,6 +1033,12 @@ testProhibitFiles :: HasCallStack => TestParams -> IO ()
 testProhibitFiles =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> withXFTPServer $ do
     createGroup3 "team" alice bob cath
+    -- image content sent while files are allowed
+    alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"picture\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
+    alice <# "#team picture"
+    bob <# "#team alice> picture"
+    cath <# "#team alice> picture"
+    imageItemId <- lastItemId alice
     alice ##> "/set files #team off"
     alice <## "updated group preferences:"
     alice <## "Files and media: off"
@@ -1068,6 +1074,16 @@ testProhibitFiles =
     alice <## "bad chat command: feature not allowed Files and media"
     (bob </)
     (cath </)
+    -- text of the message with media can be updated, as the update does not add media
+    alice ##> ("/_update item #1 " <> imageItemId <> " json {\"msgContent\": {\"text\":\"picture!\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}, \"mentions\": {}}")
+    alice <# "#team [edited] picture!"
+    bob <# "#team alice> [edited] picture!"
+    cath <# "#team alice> [edited] picture!"
+    -- changing media in the message is prohibited
+    alice ##> ("/_update item #1 " <> imageItemId <> " json {\"msgContent\": {\"text\":\"picture!\",\"type\":\"image\",\"image\":\"" <> imageData' <> "\"}, \"mentions\": {}}")
+    alice <## "bad chat command: feature not allowed Files and media"
+    (bob </)
+    (cath </)
     -- reset preferences in bob's database to emulate the client that doesn't check them
     withCCTransaction bob $ \db ->
       DB.execute_ db "UPDATE group_profiles SET preferences = NULL"
@@ -1088,8 +1104,22 @@ testProhibitFiles =
     cath <# "#team bob> hey"
     alice #$> ("/_get chat #1 count=3", chat, [(0, "Files and media: received, prohibited"), (0, "hello"), (0, "hey")])
     cath #$> ("/_get chat #1 count=3", chat, [(0, "Files and media: received, prohibited"), (0, "hello"), (0, "hey")])
+    -- update of the message deleted by the recipient creates the item, and is rejected as a new message
+    bob #> "#team hi there"
+    alice <# "#team bob> hi there"
+    cath <# "#team bob> hi there"
+    aliceItemId' <- lastItemId alice
+    alice #$> ("/_delete item #1 " <> aliceItemId' <> " internal", id, "message deleted")
+    bobItemId' <- lastItemId bob
+    bob ##> ("/_update item #1 " <> bobItemId' <> " json {\"msgContent\": {\"text\":\"hi there\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}, \"mentions\": {}}")
+    bob <# "#team [edited] hi there"
+    bob #> "#team hey again"
+    alice <# "#team bob> hey again"
+    cath <# "#team bob> hey again"
+    alice #$> ("/_get chat #1 count=2", chat, [(0, "Files and media: received, prohibited"), (0, "hey again")])
   where
     imageData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
+    imageData' = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII="
 
 testXFTPStandaloneSmall :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do

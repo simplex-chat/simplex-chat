@@ -2035,19 +2035,23 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           cci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case cci of
             CChatItem SMDRcv ci@ChatItem {meta = CIMeta {itemForwarded, itemLive}, content = CIRcvMsgContent oldMC}
-              | isNothing itemForwarded -> do
-                  let changed = mc /= oldMC
-                  if changed || fromMaybe False itemLive
-                    then do
-                      ci' <- withStore' $ \db -> do
-                        when changed $
-                          addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
-                        reactions <- getDirectCIReactions db ct sharedMsgId
-                        let edited = itemLive /= Just True
-                        updateDirectChatItem' db user contactId ci {reactions} content edited live Nothing $ Just msgId
-                      toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
-                      startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
-                    else toView $ CEvtChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
+              | isNothing itemForwarded ->
+                  if isVoice mc && not (sameMedia mc oldMC) && not (featureAllowed SCFVoice forContact ct)
+                    -- the update is ignored, the previously received content remains
+                    then messageWarning ("x.msg.update ignored: feature not allowed " <> chatFeatureNameText CFVoice)
+                    else do
+                      let changed = mc /= oldMC
+                      if changed || fromMaybe False itemLive
+                        then do
+                          ci' <- withStore' $ \db -> do
+                            when changed $
+                              addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
+                            reactions <- getDirectCIReactions db ct sharedMsgId
+                            let edited = itemLive /= Just True
+                            updateDirectChatItem' db user contactId ci {reactions} content edited live Nothing $ Just msgId
+                          toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
+                          startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
+                        else toView $ CEvtChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
             _ -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> CM ()
@@ -2164,7 +2168,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
             if blockedByAdmin m'
               then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
-              else case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
+              else case prohibitedGroupContent gInfo' m' scopeInfo content Nothing ft_ fInv_ False of
                 Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
                 Nothing ->
                   withStore' (\db -> getCIModeration db cxt user gInfo' memberId sharedMsgId_) >>= \case
@@ -2257,7 +2261,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m mc msgScope_
                     pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
                   Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
-            case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+            case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc Nothing ft_ (Nothing :: Maybe String) False of
               Just f -> do
                 let ciContent = ciContentNoParse $ CIRcvGroupFeatureRejected f
                 (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs ciContent Nothing timed_ False M.empty
@@ -2307,7 +2311,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
         updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId =
-          case m_ >>= \m -> prohibitedGroupContent gInfo m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+          case m_ >>= \m -> prohibitedGroupContent gInfo m scopeInfo mc (Just oldMC) ft_ (Nothing :: Maybe String) False of
             -- the update is ignored, the previously received content remains
             Just f -> messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText f) $> Nothing
             Nothing -> do

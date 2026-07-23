@@ -763,6 +763,8 @@ processChatCommand cxt nm = \case
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId, editable) of
             (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
+              when (isVoice mc && not (sameMedia mc oldMC) && not (featureAllowed SCFVoice forUser ct)) $
+                throwCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice)
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
@@ -784,37 +786,38 @@ processChatCommand cxt nm = \case
       when (isNothing scope) $ assertUserGroupRole gInfo GRAuthor
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
       let (_, ft_) = msgContentTexts mc
-      case prohibitedGroupContent gInfo membership chatScopeInfo mc ft_ (Nothing :: Maybe CryptoFile) True of
-        Just f -> throwCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText f)
-        Nothing -> do
-          -- TODO [knocking] check chat item scope?
-          cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
-          case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
-              case (ciContent, itemSharedMsgId, editable) of
-                (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-                  recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
-                  let changed = mc /= oldMC
-                  if changed || fromMaybe False itemLive
-                    then do
-                      ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
-                      let msgScope = toMsgScope gInfo <$> chatScopeInfo
-                          mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
-                          reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
-                      SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients reuseSign event
-                      ci' <- withFastStore' $ \db -> do
-                        currentTs <- liftIO getCurrentTime
-                        when changed $
-                          addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                        let edited = itemLive /= Just True
-                        ci' <- updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
-                        updateGroupCIMentions db gInfo ci' ciMentions
-                      startUpdatedTimedItemThread user (ChatRef CTGroup groupId scope) ci ci'
-                      pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci')
-                    else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci)
-                _ -> throwChatError CEInvalidChatItemUpdate
-            CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
+      -- TODO [knocking] check chat item scope?
+      (cci, itemScopeInfo) <- withFastStore $ \db ->
+        (,) <$> getGroupCIWithReactions db user gInfo itemId <*> getGroupChatScopeInfoForItem db cxt user gInfo itemId
+      case cci of
+        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
+          case (ciContent, itemSharedMsgId, editable) of
+            -- the content is checked with the scope of the updated item, not with the scope of the command
+            (CISndMsgContent oldMC, Just itemSharedMId, True) -> case prohibitedGroupContent gInfo membership itemScopeInfo mc (Just oldMC) ft_ (Nothing :: Maybe CryptoFile) True of
+              Just f -> throwCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText f)
+              Nothing -> do
+                recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
+                let changed = mc /= oldMC
+                if changed || fromMaybe False itemLive
+                  then do
+                    ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
+                    let msgScope = toMsgScope gInfo <$> chatScopeInfo
+                        mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
+                        event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
+                        reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
+                    SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients reuseSign event
+                    ci' <- withFastStore' $ \db -> do
+                      currentTs <- liftIO getCurrentTime
+                      when changed $
+                        addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                      let edited = itemLive /= Just True
+                      ci' <- updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
+                      updateGroupCIMentions db gInfo ci' ciMentions
+                    startUpdatedTimedItemThread user (ChatRef CTGroup groupId scope) ci ci'
+                    pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci')
+                  else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo) ci)
+            _ -> throwChatError CEInvalidChatItemUpdate
+        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTLocal -> do
       unless (null mentions) $ throwCmdError "mentions are not supported in this chat"
       (nf@NoteFolder {noteFolderId}, cci) <- withFastStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
@@ -4769,7 +4772,7 @@ processChatCommand cxt nm = \case
             findProhibited :: [ComposedMessageReq] -> Maybe GroupFeature
             findProhibited =
               foldr'
-                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership chatScopeInfo mc ft fileSource True <|> acc)
+                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership chatScopeInfo mc Nothing ft fileSource True <|> acc)
                 Nothing
         processComposedMessages ::  CM ChatResponse
         processComposedMessages = do

@@ -824,6 +824,16 @@ isMedia = \case
   MCFile {} -> True
   _ -> False
 
+-- media of the updated message is the same when only its text is changed,
+-- in this case the update does not add media that is not already in the message.
+sameMedia :: MsgContent -> MsgContent -> Bool
+sameMedia mc mc' = case (mc, mc') of
+  (MCImage {image}, MCImage {image = image'}) -> image == image'
+  (MCVideo {image, duration}, MCVideo {image = image', duration = duration'}) -> image == image' && duration == duration'
+  (MCVoice {duration}, MCVoice {duration = duration'}) -> duration == duration'
+  (MCFile _, MCFile _) -> True
+  _ -> False
+
 isReport :: MsgContent -> Bool
 isReport = \case
   MCReport {} -> True

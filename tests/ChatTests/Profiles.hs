@@ -107,6 +107,7 @@ chatProfileTests = do
     it "change user for user without matching servers creates new connection" testChangePCCUserDiffSrv
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
+    it "prohibit voice message content in updated message" testProhibitVoiceUpdate
     it "feature offers" testFeatureOffers
     it "update group preferences" testUpdateGroupPrefs
     it "allow full deletion to contact" testAllowFullDeletionContact
@@ -2443,6 +2444,33 @@ testSetGroupAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/groups"
     alice <## "#team (2 members)"
 
+testProhibitVoiceUpdate :: HasCallStack => TestParams -> IO ()
+testProhibitVoiceUpdate = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/set voice @bob no"
+    alice <## "you updated preferences for bob:"
+    alice <## "Voice messages: off (you allow: no, contact allows: yes)"
+    bob <## "alice updated preferences for you:"
+    bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    aliceItemId <- lastItemId alice
+    -- voice message content cannot be sent by updating message
+    alice ##> ("/_update item @2 " <> aliceItemId <> " json {\"msgContent\": {\"type\":\"voice\",\"text\":\"\",\"duration\":10}, \"mentions\": {}}")
+    alice <## "bad chat command: feature not allowed Voice messages"
+    (bob </)
+    -- reset preferences in alice's database to emulate the client that doesn't check them
+    withCCTransaction alice $ \db ->
+      DB.execute_ db "UPDATE contacts SET user_preferences = '{}'"
+    alice ##> ("/_update item @2 " <> aliceItemId <> " json {\"msgContent\": {\"type\":\"voice\",\"text\":\"\",\"duration\":10}, \"mentions\": {}}")
+    alice <# "@bob [edited] voice message (00:10)"
+    -- the update is ignored by the recipient, previously received content remains
+    (bob </)
+    alice #> "@bob hey"
+    bob <# "alice> hey"
+    bob #$> ("/_get chat @2 count=2", chat, [(0, "hi"), (0, "hey")])
+
 testSetContactPrefs :: HasCallStack => TestParams -> IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> withXFTPServer $ do
@@ -3012,6 +3040,11 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     bob <# ("#team (support) [edited] " <> inv)
     alice <# ("#team (support: bob) bob> [edited] " <> inv)
     cath <# ("#team (support: bob) bob> [edited] " <> inv)
+    -- the content is checked with the scope of the updated item, not with the scope of the command
+    bob ##> ("/_update item #1(_support) " <> bobMainItemId <> " text " <> inv)
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    (alice </)
+    (cath </)
     -- reset preferences in bob's database to emulate the client that doesn't check them
     withCCTransaction bob $ \db ->
       DB.execute_ db "UPDATE group_profiles SET preferences = NULL"
