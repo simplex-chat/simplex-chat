@@ -2408,7 +2408,8 @@ processChatCommand cxt nm = \case
     gVar <- asks random
     rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
-    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing IKUsePQ True server_
+    -- TODO [address DR] switch to IKUsePQ True
+    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing IKPQOn False server_
     ccLink' <- shortenCreatedLink ccLink
     -- TODO [relays] relay: add identity, key to link data?
     userData <-
@@ -3994,7 +3995,8 @@ processChatCommand cxt nm = \case
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
             | otherwise = contactShortLinkData shortLinkProfile $ Just addressSettings
           userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
-      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys (Just IKUsePQ))
+      -- TODO [address DR] switch to (Just IKUsePQ) after rotateKeys
+      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys Nothing)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
           ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
