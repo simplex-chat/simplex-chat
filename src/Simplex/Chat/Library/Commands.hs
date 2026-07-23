@@ -102,7 +102,7 @@ import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
-import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
+import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -1445,7 +1445,7 @@ processChatCommand cxt nm = \case
               pure ct
             liftIO $ deleteContactRequest db user connReqId
             pure (cReq, ct_)
-        withAgent (`rejectContact` invId)
+        withAgent $ \a -> rejectContact a NRMInteractive (aUserId user) invId Nothing
         pure $ CRContactRequestRejected user cReq ct_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
