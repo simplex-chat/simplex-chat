@@ -184,6 +184,7 @@ chatGroupTests = do
     it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
+    it "media content is sent as text when files are prohibited" testGroupHistoryProhibitedMedia
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
     it "host's file" testGroupHistoryHostFile
@@ -5573,6 +5574,51 @@ testGroupHistory =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryProhibitedMedia :: HasCallStack => TestParams -> IO ()
+testGroupHistoryProhibitedMedia =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      -- image content sent while files are allowed; history items with expired
+      -- files are sent without file invitations, as this one is sent
+      alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"picture\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
+      alice <# "#team picture"
+      bob <# "#team alice> picture"
+
+      threadDelay 1000000
+
+      alice ##> "/set files #team off"
+      alice <## "updated group preferences:"
+      alice <## "Files and media: off"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Files and media: off"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> picture [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      -- the text of the message is received in history, not the prohibited media
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "picture")]
+  where
+    imageData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
 
 testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =

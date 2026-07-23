@@ -52,25 +52,63 @@ media required a file.
 Judge media by content type, the same way voice already is:
 
 ```haskell
-| isNothing scopeInfo && not (isVoice mc) && (isJust file_ || isMedia mc) && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
+| isNothing scopeInfo && not (isVoice mc) && (isJust file_ || (isMedia mc && newMedia)) && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
 ```
 
 with `isMedia` next to `isVoice`/`isReport` in `Protocol.hs`, matching
 `MCImage`, `MCVideo` and `MCFile` — the preference is "Files and media", and all
 three are its content, whether or not a file is attached.
 
+What the preference forbids is adding media, not the media that a message
+already has, so `prohibitedGroupContent` takes the content of the message being
+updated and both media guards ignore an update that keeps it:
+
+```haskell
+newMedia = not $ maybe False (sameMedia mc) oldMC_
+```
+
+`sameMedia` (`Protocol.hs`) compares the media itself — the image preview and
+duration — so editing the text of an image, video, file or voice message is
+allowed even after the group disables the feature, while replacing the media
+with different media is not. For new messages there is no previous content and
+the guards are unchanged.
+
 Both sides of the update path now run the same shared check:
 
 - `APIUpdateChatItem` for groups runs `prohibitedGroupContent` in place of its
   links-only check, restoring the symmetry #4330 established (it also covers
-  voice, which was equally unchecked there). `getChatScopeInfo` is hoisted above
-  the check to supply the scope; it is a read-only store lookup, so this changes
-  only error ordering.
+  voice, which was equally unchecked there). The check moved after the item is
+  read, so it uses the item's own scope from `getGroupChatScopeInfoForItem` and
+  the item's previous content. Using the scope of the command instead would let
+  a main chat item be edited with `#1(_support)` to skip the scope-gated guards.
 - `updateCI` in `groupMessageUpdate` runs it before applying the update, so it
   is reached for items that exist, which the `catchCINotFound` handler's call
   never was. A prohibited update is ignored with a warning and the previously
   received content remains — the shape the links check there already had, now
   applied to every feature and correctly gated on the item's scope.
+
+An update of a message the recipient does not have creates the item, so it is a
+way to send content. Only `updateCI` passes the previous content; the
+`catchCINotFound` handler passes none, so an update that creates an item is
+checked as a new message and a prohibited one is stored as
+`CIRcvGroupFeatureRejected`. Such an item cannot be updated into content later
+either — `updateRcvChatItem` only matches items with `CIRcvMsgContent`, anything
+else is an invalid update. The sending side cannot create an item this way at
+all, as it reads the item being updated.
+
+The same two holes existed in direct chats and are closed the same way: the
+voice check in `messageUpdate` only ever ran in its `catchCINotFound` handler,
+and `APIUpdateChatItem` for contacts had no check at all, so a text message
+could be turned into a voice message where voice is not allowed.
+
+History is sent with the file invitation only while the file is neither expired
+nor cancelled (`itemForwardMsgs`), so an older image, file or voice item is
+forwarded as media content with no file. `sendHistory` now sends the text of
+such an item when the group no longer allows the feature, instead of content
+that every receiving member would reject. A signed item cannot be changed to
+text without breaking its signature, so a signed item whose now-prohibited media
+has no file is dropped from history rather than sent as a prohibited item —
+signing is a channel/relay feature, off in ordinary groups.
 
 Support-scope behaviour is unchanged: the Files guard remains skipped when
 `scopeInfo` is set, as before.
@@ -115,11 +153,15 @@ still rejected on sending and ignored on receiving, as before.
 - Forwarding an image whose file is unavailable into a media-off group is now
   rejected. `forwardContent` keeps `MCImage` without a file in that case
   (`Library/Commands.hs`), and that payload is exactly what the preference
-  forbids.
-- Editing the caption of an image or of a file message that was sent while media
-  was still enabled is now rejected in a group that has since disabled media — by
-  the sender, and by recipients, which ignore the update and keep the previously
-  received content. Previously such an edit was delivered.
+  forbids. Video and file content without a file is forwarded as text there, so
+  it is unaffected.
+- The text of an image, video, file or voice message can still be edited after
+  the group disables the feature — the update keeps the media it had. Replacing
+  the media with different media is rejected by the sender and ignored by
+  recipients.
+- Editing a message with the scope of another chat now applies the rules of the
+  chat the message is in, so a member support chat can no longer be named in the
+  command to edit a main chat message.
 
 ## Verification
 
@@ -145,12 +187,28 @@ still rejected on sending and ignored on receiving, as before.
   both tests fail with the prohibited edit applied at the recipients —
   `but got: Just "#team bob> [edited] hi"` and
   `but got: Just "#team bob> [edited] https://simplex.chat/invitation#/..."`.
-- No regression in `group message update`, `group message edit history`,
-  `group live message`, the 29 channel message tests, `update group profile`,
-  and `group preferences` (direct messages, files & media, SimpleX links).
+- `testProhibitFiles` also covers editing the text of an image message sent
+  before media was disabled — it is accepted and delivered to the members — and
+  the same edit with different image data, which is rejected. With the media
+  comparison removed the test fails on the accepted edit.
+- `testGroupHistoryProhibitedMedia` (`tests/ChatTests/Groups.hs`): a member
+  joining a group that disabled media after an image was sent receives the text
+  of that message in history. With the content unchanged in `sendHistory` the
+  test fails — the joining member receives a prohibited item instead.
+- `testProhibitVoiceUpdate` (`tests/ChatTests/Profiles.hs`): a contact chat with
+  voice not allowed rejects an update of a message to voice content, and, with
+  the contact preferences reset in the sender's database, the recipient ignores
+  such an update and keeps the previous message. With the check in
+  `messageUpdate` removed the test fails.
 - `testGroupPrefsSimplexLinksForRole` extended with both sides of the scope
   boundary: with links restricted to owners, a member cannot post a link in the
   main chat and cannot edit a main chat message to contain one (and nothing
   reaches the other members), while in their support chat both the new message
   and the edit are allowed. The support chat edit fails on the previous code
-  with `bad chat command: feature not allowed SimpleX links`.
+  with `bad chat command: feature not allowed SimpleX links`. It also checks
+  that a main chat message cannot be edited with the support chat scope in the
+  command; with the check using the command's scope that edit is accepted.
+- No regression in `group message update`, `group message edit history`,
+  `group live message`, the 29 channel message tests, `update group profile`,
+  and `group preferences` (direct messages, files & media, SimpleX links); full
+  `chat groups`, `file tests` and `profile tests` suites pass.

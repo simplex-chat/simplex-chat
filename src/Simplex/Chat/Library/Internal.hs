@@ -1404,14 +1404,22 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                in Just (fInv, fileDescrText)
           | otherwise = Nothing
         processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
-        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
-          if isNothing fInvDescr_ && not (msgContentHasText mc)
-            then pure []
-            else do
-              let CIMeta {itemTs, itemSharedMsgId, itemTimed, showGroupAsSender} = meta
+        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_
+          | isNothing fInvDescr_ && not (msgContentHasText mc) = pure []
+          -- a signed item keeps its original content and signature, so its now-prohibited
+          -- media cannot be sent as text and the item is dropped from history instead
+          | isJust signedMsg_ && prohibitedMedia = pure []
+          | otherwise = do
+              let -- items with expired or cancelled files are sent without file invitation,
+                  -- and their media content would be prohibited by the members receiving history
+                  -- if the feature is now disabled, so only the text of such items is sent.
+                  historyMC
+                    | prohibitedMedia = MCText $ msgContentText mc
+                    | otherwise = mc
+                  CIMeta {itemTs, itemSharedMsgId, itemTimed, showGroupAsSender} = meta
                   quotedItemId_ = quoteItemId =<< quotedItem
                   fInv_ = fst <$> fInvDescr_
-                  (mc', _, mentions') = updatedMentionNames mc formattedText mentions
+                  (mc', _, mentions') = updatedMentionNames historyMC formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   -- for channel messages default chat version range to membership range
                   senderVRange = maybe (memberChatVRange' membership) memberChatVRange' member_
@@ -1436,6 +1444,14 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
+          where
+            author = fromMaybe membership member_
+            -- media without a file invitation is prohibited when the group no longer allows it
+            prohibitedMedia =
+              isNothing fInvDescr_
+                && ( (isMedia mc && not (groupFeatureMemberAllowed SGFFiles author gInfo))
+                       || (isVoice mc && not (groupFeatureMemberAllowed SGFVoice author gInfo))
+                   )
 
 memberShortenedName :: GroupMember -> ContactName
 memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
