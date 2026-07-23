@@ -240,6 +240,7 @@ chatGroupTests = do
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
+    it "should not read support chat items when reading group without scope" testScopedSupportUnreadStatsGroupReadNoScope
     it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
     it "should remove support chat with member when user removes member" testScopedSupportUserRemovesMember
     it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
@@ -8452,6 +8453,43 @@ testScopedSupportUnreadStatsCorrectOnOpen =
     alice <## "bob (Bob) (id 2): unread: 0, require attention: 100, mentions: 0"
 
     alice #$> ("/_get chat #1(_support:2) count=100", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUnreadStatsGroupReadNoScope :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsGroupReadNoScope =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+    -- capture the support item id directly: lastItemId returns the latest item by
+    -- item_ts, which right after createGroup2 can be a group event ("connected")
+    -- rather than the support message, making the per-item read below target the
+    -- wrong item.
+    bobItemId <-
+      withCCTransaction alice $ \db -> do
+        rows <- DB.query_ db "SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only Int]
+        case rows of
+          Only iId : _ -> pure $ show iId
+          _ -> error "testScopedSupportUnreadStatsGroupReadNoScope: no member_support item"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 1, mentions: 0"
+
+    -- reading the group without scope must not mark support scope items read
+    alice #$> ("/_read chat #1", id, "ok")
+
+    -- the support item was left unread, so reading it in scope still decrements the stats
+    alice #$> ("/_read chat items #1(_support:2) " <> bobItemId, id, "items read for chat")
 
     alice ##> "/member support chats #team"
     alice <## "members require attention: 0"
