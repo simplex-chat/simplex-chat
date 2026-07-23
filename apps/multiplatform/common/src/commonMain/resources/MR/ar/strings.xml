@@ -2904,4 +2904,6 @@
     <string name="v7_0_channels_relays">أدِر مُرحلاتك</string>
     <string name="v7_0_simplex_names">أسماء SimpleX (تجريبي)</string>
     <string name="v7_0_simplex_names_descr">أسماء لقناتك أو لشركتك.</string>
+    <string name="info_row_file_servers">خوادم الملفات</string>
+    <string name="share_text_file_servers">خوادم الملفات: %s</string>
 </resources>
