@@ -1,7 +1,10 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881`/`56290cc7b` prefer-content (msgContent, caption-less media wins) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview
+**Parts:** 1 wrong-chat revert · 2a sent preview · 2b received preview (incl. prefer-content: `msgContent`, caption-less media wins) · 2d edit/delete preview sync · 2e media preview · 3 review follow-ups
+
+(Sections are referenced by number rather than commit hash — the branch has been rebased and
+re-worked in review, so in-branch hashes go stale. Hashes below refer only to commits on `master`.)
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -117,7 +120,7 @@ main-list preview) was not actually delivered end-to-end. Gaps found and fixed i
 **2a (sent)**, **2b (received, incl. prefer-content)**, **2d (edit / delete sync)**, **2e (media)**;
 **2c (reload persistence)** was investigated and deferred for performance.
 
-## 2a. Sent messages — `862d93c64` (android, desktop)
+## 2a. Sent messages (android, desktop)
 
 **Symptom:** a pending invitee's own sent support message did not appear in the main-list
 preview (it did before the revert).
@@ -134,7 +137,8 @@ preview; with the revert it updated only the (invisible) secondary list. #5909's
 mirror it to the primary context (like the receive dispatcher):
 
 ```kotlin
-if (secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext && cItem.chatDir.sent) {
+if (secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext && cItem.chatDir.sent &&
+  chatInfo.groupChatScope() != null && chatInfo.groupInfo_?.membership?.memberPending == true) {
   chatsContext.addChatItem(rhId, chatInfo, cItem)
 }
 ```
@@ -144,7 +148,11 @@ Scoped to `GroupChatScopeContext` (reports view has no compose). Safe: sent item
 scope; no recursion (primary delegate has `secondaryContextFilter == null`). Matches iOS,
 where `ComposeView` already calls `chatModel.addChatItem` on its single list.
 
-## 2b. Received messages — `bd7c6c3e8` (android, desktop) · `55bdaa216` (ios) · `5b37cf881`/`56290cc7b` (prefer-content)
+The `groupChatScope() != null && memberPending` conditions were added in review (3b). Only a
+pending invitee's preview reads support items, so the mirror has nothing to do otherwise — and
+without them it also fired for items the dispatcher had already given the primary (3b).
+
+## 2b. Received messages (android, desktop, ios) · prefer-content
 
 **Symptom:** a received support message showed the static "reviewed by admins" status text
 in the preview instead of the message. (`ChatPreviewView` renders that text only when the
@@ -167,7 +175,7 @@ newPreviewItem = currentPreviewItem?.takeIf {
   else cItem.meta.itemTs < it.meta.itemTs
 } ?: cItem
 ```
-Part (2) (`5b37cf881`) fixes a follow-up symptom — **"reviewed by admins" reappearing after the
+Part (2) fixes a follow-up symptom — **"reviewed by admins" reappearing after the
 first message**: a pending invitee's member-support no-content events arrive as new chat items in
 member-support scope and, with bare "take newest", re-covered the preview. The trigger is
 `SGEUserPendingReview` on the PendingApproval→PendingReview transition (`Subscriber.hs:2661`),
@@ -175,18 +183,18 @@ plus member-connected / E2EE-info / group-feature items (`Subscriber.hs:878-881`
 `msgContent == null` (a true no-content event). The outer guard already restricts to
 `groupChatScope() == null || memberPending`, so non-pending groups keep plain `itemTs` ordering.
 
-The check uses **`msgContent != null` (is-a-message), not `hasMsgContent` (has non-empty text)**
-(`56290cc7b`): the original `hasMsgContent` treated a **caption-less** photo / voice / file like a
+The check uses **`msgContent != null` (is-a-message), not `hasMsgContent` (has non-empty text)**:
+the original `hasMsgContent` treated a **caption-less** photo / voice / file like a
 no-content event, so a sent file couldn't become the preview when a prior text message was shown —
 it was silently dropped. `msgContent != null` lets caption-less media win while still blocking real
 events (which have `msgContent == null`). This pairs with the 2e renderer change so the item both
 *becomes* the preview and *renders* as media.
 
-## 2d. Edit / delete of the shown support message — `2b20c9efb` · `8440f17d5` (android, desktop, ios)
+## 2d. Edit / delete of the shown support message (android, desktop, ios)
 
 Two parts.
 
-**Guard** (`2b20c9efb`): `addChatItem` got the `memberPending` exception, but its siblings
+**Guard:** `addChatItem` got the `memberPending` exception, but its siblings
 `upsertChatItem` / `removeChatItem` still gated their main-list-preview update on
 `groupChatScope() == null`. So once a support message was a pending invitee's preview, **editing it
 left stale text and deleting/moderating it left a phantom**. The same `memberPending` exception is
@@ -196,7 +204,7 @@ to main scope, so a support item's status updates don't churn the preview. Side 
 support-item unread increment with a decrement on delete / read-of-preview (partial mitigation of
 the unread limitation below).
 
-**Edit dispatch** (`8440f17d5`, android/desktop only): the guard alone wasn't enough for an
+**Edit dispatch** (android/desktop only): the guard alone wasn't enough for an
 invitee's **own** edit. Deletes reach the primary context (the receive dispatcher and the delete UI
 both call both contexts), but an own edit goes through `ComposeView` → `chatsCtx.upsertChatItem` on
 the **active (secondary) context only** — the same asymmetry as sends — so the primary preview was
@@ -204,16 +212,20 @@ never touched. Fix: on an edit in a `GroupChatScopeContext`, also call
 `chatModel.chatsContext.upsertChatItem` (`ComposeView.kt`). iOS is unaffected (single `chats` list;
 its `upsertChatItem` already updates the preview via the guard).
 
-## 2e. Media support messages in the preview — `1d2a7a3b5` · `8bb47e505` (android, desktop, ios)
+## 2e. Media support messages in the preview (android, desktop, ios)
 
 A caption-less photo / video / voice / file support message rendered its **thumbnail** (never
 gated) but its **text line** showed the status ("reviewed by admins"), because `ChatPreviewView`
 showed `chatPreviewInfoText()` whenever the last item had no non-empty *text* (`hasMsgContent`) —
 which also catches caption-less media. Fix: **for a pending invitee only**, show the status text just
 for true no-content events (`content.msgContent == null`), so a message — including caption-less media
-— renders its content ("image" / "video message" / etc.). Scoped to `memberPending` (`8bb47e505`):
+— renders its content ("image" / "video message" / etc.). Scoped to `memberPending`:
 `ChatPreviewView` is shared rendering, so every other chat (direct connection states, other group
 states) keeps the original `hasMsgContent` behaviour. Captioned media already worked (it has text).
+
+Also gated on **`showChatPreviews`** (see 3d): with message previews turned off the item's content
+is not rendered (Android/Desktop drop the row entirely; iOS redacts it), so the exception falls back
+to `hasMsgContent` and the status text is shown, as before.
 
 ## 2c. Reload persistence — investigated, **NOT implemented (performance)**
 
@@ -273,19 +285,11 @@ is revisited.
   decrement on read / delete (every support `−1` pairs with a `+1`), but reads of *non-preview*
   support messages reconcile via `membership.supportChat.unread` rather than the main counter, so the
   main unread badge can lag. Not fully addressed here.
-- **iOS unread over-decrement left untouched (pre-existing, out of scope):** iOS's
-  `changeUnreadCounter` does not clamp at 0, unlike Android's `decreaseCounterInPrimaryContext`
-  (`max(unreadCount − 1, 0)`); `markChatItemsRead` can over-decrement (it decrements by the requested
-  id count regardless of whether each item still counted). This is **general (all chats), not
-  introduced or worsened by this feature**, so it is intentionally not touched here — a clamp belongs
-  in its own change. (A clamp added during review, `342e270a1`/`fb849aa2c`, was removed in `0c7fa1886`
-  to keep this PR surgical.)
-- **Dispatcher-delivered *sent* support item double-touches the primary preview (Android/Desktop,
-  minor):** a remote-host / multi-device sent support message arrives via the dispatcher, which calls
-  **both** contexts; the secondary pass then re-runs the sent-mirror (`ChatModel.kt:525`) even though
-  the dispatcher's primary pass already added it, so the preview re-set + `reorderChat`/pop run twice.
-  Idempotent (preview content unchanged; unread unaffected since sent ≠ `RcvNew`) — redundant work,
-  not a visible bug. Local sends are single (only the secondary context is called).
+- **iOS unread clamp — now applied (3a).** Earlier revisions of this branch deferred it as
+  pre-existing. That reasoning does not hold for 2d: `removeChatItem` gained a decrement for support
+  items, and the count it decrements never contained them (the chat-list query filters
+  `group_scope_tag IS NULL`), so a moderated-while-unread support item could drive the count and the
+  **app icon badge** negative. Clamped at the apply point; see 3a.
 - **Hard- vs soft-delete preview differ (cosmetic):** deleting the shown support message via a hard /
   broadcast delete leaves `deletedItemDummy` (`msgContent == null`) → preview falls back to "reviewed
   by admins"; a soft delete / moderation keeps the item (`itemDeleted != null`, `msgContent` present)
@@ -297,3 +301,81 @@ is revisited.
 - iOS change mirrors the Kotlin guard one-to-one; reuses the existing
   `cInfo.groupInfo?.membership.memberPending` accessor already used two lines above.
 - 2c benchmark: `sqlite3` + `EXPLAIN QUERY PLAN` against `chat_schema.sql`, 500 groups × 100 items.
+
+---
+
+# Part 3 — Review follow-ups
+
+Found by adversarial review of the final branch, after the preview-selection simplification.
+
+## 3a. iOS unread counter clamped at the apply point (`ChatModel.swift`)
+
+`changeUnreadCounter(_ chatIndex:by:unreadMentions:)` applied the delta unclamped, so
+`chats[i].chatStats.unreadCount` could go **negative** and `NtfManager.changeNtfBadgeCount` could
+decrement the app icon badge — a state that persists until the chat list is reloaded, and that also
+suppresses the badge for genuinely unread messages arriving afterwards.
+
+Reachable because 2d added `removeChatItem` as a decrement source for support items while the count
+being decremented excludes them (`findGroupChatPreviews_` /  the chat-list unread subquery filter on
+`group_scope_tag IS NULL`, `Store/Messages.hs`): restart the app (count reloads without the support
+item), then have an admin moderate a still-unread support message → `−1` against a `0`.
+Merged PR #7281 widens this — a no-scope group read now leaves support items `RcvNew` in the DB
+while the client zeroes its own counter.
+
+Clamped at the **apply point** (the collector flush, its only caller) rather than at the call sites,
+so it is correct regardless of how the debounced deltas are batched, and the user/badge counter is
+fed the delta **actually applied**. This is what Android has always done in
+`decreaseCounterInPrimaryContext` (`max(unreadCount − 1, 0)` + `unreadCount − clamped`); iOS now
+matches. `unreadMentions` is clamped alongside it — same call site, same failure.
+
+## 3b. Both primary-context mirrors gated on `memberPending`
+
+2a's `addChatItem` mirror and 2d's `ComposeView` edit mirror keyed only off "a member-support scope
+is open". The primary's preview block runs for a scoped `ChatInfo` **only** when `memberPending`, so
+for everyone else the mirrored call could not update a preview — it only produced side effects:
+
+- **`addChatItem`:** the pop/reorder below the preview block is *not* scope-gated, so a
+  non-pending member (admin/moderator) replying inside a member-support chat re-ordered the group in
+  the **main** chat list while its preview text stayed unchanged. Pre-PR the secondary context's
+  reorder never touched the primary list.
+- **`addChatItem`, no scope check:** the guard tested only "sent", so any sent item arriving while a
+  support scope was open was mirrored — including ones the dispatcher (`SimpleXAPI` `NewChatItems`,
+  primary + secondary) had *already* given the primary. Confirmed reachable via
+  `CEvtNewChatItems` with `SMDSnd` (e.g. `APILeaveGroup`, `Commands.hs`; group feature items,
+  `Internal.hs`). Idempotent, but the mirror was relying on that.
+- **`ComposeView`:** the edit mirror is on the live-message path
+  (`updateLiveMessage` → `sendMessageAsync(live = true)` → `send` → `updateMessage`), so it fired on
+  every live-message tick to do nothing.
+
+Both now also require `memberPending` (and the `addChatItem` one, a non-null `groupChatScope()`),
+matching what the mirrors are actually for.
+
+## 3c. `upsertChatItem` no longer creates a chat entry from a scoped `ChatInfo`
+
+2d's `memberPending` exception made `upsertChatItem`'s "chat not in the list" branch reachable for a
+scoped `ChatInfo` for the first time. Unlike `addChatItem`'s equivalent branch — which at least
+stores empty `chatItems` for a scoped `cInfo` — it seeded the entry with the support item as the
+preview. `ChatInfo.Group.id` ignores the scope (`"#$groupId"`), so the entry would **shadow** the
+real group in `getChat`/`getChatIndex` rather than appear as a visible duplicate. On iOS it also set
+`itemAdded = true`, which `chatItemSimpleUpdate` uses to fire `notifyMessageReceived` — a *new
+message* notification for an item that was merely updated.
+
+An upsert should never create the main-list entry for a support item, so the branch is now skipped
+when `cInfo.groupChatScope() != null` (Kotlin + iOS). Reachable on Android's secondary context in the
+normal case, since its `chats` list starts empty.
+
+## 3d. `ChatPreviewView`: media exception gated on `showChatPreviews`
+
+2e's `msgContent == null` rule made a caption-less media support message "has content", so the status
+branch is skipped — but the next branch requires `showChatPreviews`, and on Android/Desktop
+`chatPreviewText()` has **no trailing `else`** (nor is the thumbnail rendered — it is gated by the
+same flag). With message previews turned off, a pending invitee whose latest support item was
+caption-less media therefore got an **empty preview row** where `master` showed "reviewed by admins".
+iOS degraded more gently (redacted rather than dropped) but also lost the status.
+
+The exception now requires `showChatPreviews` on both platforms, falling back to the original
+`hasMsgContent` rule when previews are off. No non-pending chat changes on either platform.
+
+## Verification (Part 3)
+- Desktop AppImage rebuilt on the branch after 3a–3d.
+- 3a/3c iOS changes need an Xcode build (not available in the environment used for review).
