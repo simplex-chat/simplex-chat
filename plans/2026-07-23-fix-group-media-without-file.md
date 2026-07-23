@@ -135,8 +135,9 @@ ignored, which is what a new message containing a link already did.
   `group live message`, the four channel message update tests, and
   `group preferences for specific member role` (direct messages, files & media,
   SimpleX links).
-- `testGroupPrefsSimplexLinksForRole` extended with the support chat case: with
-  links restricted to owners, a member can post a link in their support chat and
-  can edit a message there to contain one, while both remain rejected in the
-  main chat. The edit fails on the previous code with
-  `bad chat command: feature not allowed SimpleX links`.
+- `testGroupPrefsSimplexLinksForRole` extended with both sides of the scope
+  boundary: with links restricted to owners, a member cannot post a link in the
+  main chat and cannot edit a main chat message to contain one (and nothing
+  reaches the other members), while in their support chat both the new message
+  and the edit are allowed. The support chat edit fails on the previous code
+  with `bad chat command: feature not allowed SimpleX links`.

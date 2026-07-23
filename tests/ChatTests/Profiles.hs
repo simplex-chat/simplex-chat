@@ -2988,6 +2988,15 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     alice #> ("#team " <> inv)
     bob <# ("#team alice> " <> inv)
     cath <# ("#team alice> " <> inv)
+    -- links are prohibited when message is updated
+    bob #> "#team hello"
+    alice <# "#team bob> hello"
+    cath <# "#team bob> hello"
+    bobMainItemId <- lastItemId bob
+    bob ##> ("/_update item #1 " <> bobMainItemId <> " text " <> inv)
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    (alice </)
+    (cath </)
     -- links are allowed in support chat, both in new and in updated messages
     bob ##> ("/_send #1(_support) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\"}}]")
     bob <# ("#team (support) " <> inv)
