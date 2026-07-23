@@ -4830,9 +4830,9 @@ Fehler: %2$@</target>
         <target>Hilfe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Help &amp; support" xml:space="preserve">
+      <trans-unit id="Help &amp; support" xml:space="preserve" approved="no">
         <source>Help &amp; support</source>
-        <target>Hilfe und Unterstützung</target>
+        <target state="translated">Hilfe &amp; Unterstützung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help admins moderating their groups." xml:space="preserve">
@@ -9811,9 +9811,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Bitte erlauben Sie die Nutzung des Mikrofons, um Sprachnachrichten aufnehmen zu können.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To resolve names" xml:space="preserve">
+      <trans-unit id="To resolve names" xml:space="preserve" approved="no">
         <source>To resolve names</source>
-        <target>Für die Namensauflösung</target>
+        <target state="translated">Für Namensauflösung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
