@@ -88,19 +88,20 @@ Create bot address.
 
 **Parameters**:
 - userId: int64
+- pqRatchet: bool?
 
 **Syntax**:
 
 ```
-/_address <userId>
+/_address <userId>[ pq_ratchet=on|off]
 ```
 
 ```javascript
-'/_address ' + userId // JavaScript
+'/_address ' + userId + (typeof pqRatchet == 'boolean' ? ' pq_ratchet=' + (pqRatchet ? 'on' : 'off') : '') // JavaScript
 ```
 
 ```python
-'/_address ' + str(userId) # Python
+'/_address ' + str(userId) + ((' pq_ratchet=' + ('on' if pqRatchet else 'off')) if pqRatchet is not None else '') # Python
 ```
 
 **Responses**:
