@@ -815,6 +815,14 @@ isVoice = \case
   MCVoice {} -> True
   _ -> False
 
+-- image and video contents include media preview, so they are prohibited
+-- when files are not allowed even without the attached file.
+isMedia :: MsgContent -> Bool
+isMedia = \case
+  MCImage {} -> True
+  MCVideo {} -> True
+  _ -> False
+
 isReport :: MsgContent -> Bool
 isReport = \case
   MCReport {} -> True

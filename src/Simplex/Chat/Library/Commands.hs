@@ -782,17 +782,21 @@ processChatCommand cxt nm = \case
     CTGroup -> withGroupLock "updateChatItem" chatId $ do
       gInfo@GroupInfo {groupId, membership} <- withFastStore $ \db -> getGroupInfo db cxt user chatId
       when (isNothing scope) $ assertUserGroupRole gInfo GRAuthor
+      chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
       let (_, ft_) = msgContentTexts mc
-      if prohibitedSimplexLinks gInfo membership mc ft_
-        then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
-        else do
+          -- SimpleX links are prohibited in updates in all scopes, as on receiving side
+          prohibitedContent
+            | prohibitedSimplexLinks gInfo membership mc ft_ = Just GFSimplexLinks
+            | otherwise = prohibitedGroupContent gInfo membership chatScopeInfo mc ft_ (Nothing :: Maybe CryptoFile) True
+      case prohibitedContent of
+        Just f -> throwCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText f)
+        Nothing -> do
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
             CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-                  chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
                   recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive

@@ -1049,6 +1049,24 @@ testProhibitFiles =
     alice <## "bad chat command: feature not allowed Files and media"
     (bob </)
     (cath </)
+    -- image and video content is prohibited without file, as it includes preview
+    alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
+    alice <## "bad chat command: feature not allowed Files and media"
+    (bob </)
+    (cath </)
+    alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"\",\"type\":\"video\",\"image\":\"" <> imageData <> "\",\"duration\":5}}]")
+    alice <## "bad chat command: feature not allowed Files and media"
+    -- image content cannot be sent by updating message
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    cath <# "#team alice> hi"
+    aliceItemId <- lastItemId alice
+    alice ##> ("/_update item #1 " <> aliceItemId <> " json {\"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}, \"mentions\": {}}")
+    alice <## "bad chat command: feature not allowed Files and media"
+    (bob </)
+    (cath </)
+  where
+    imageData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
 
 testXFTPStandaloneSmall :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
