@@ -725,8 +725,9 @@ final class ChatModel: ObservableObject {
                     chat.chatItems = [cItem]
                 }
             } else if cInfo.groupChatScope() == nil {
-                // an upsert of a support item must not create the main list entry (addChatItem doesn't either),
-                // and itemAdded here would notify it as a new message
+                // an upsert must not materialise the chat entry for a support item: unlike addChatItem, which
+                // creates a placeholder with no items, this would seed the main list with the support item as
+                // preview, and itemAdded would have chatItemSimpleUpdate notify it as a new message
                 addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
                 itemAdded = true
             }
