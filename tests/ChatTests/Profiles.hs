@@ -35,6 +35,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -3011,6 +3012,26 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     bob <# ("#team (support) [edited] " <> inv)
     alice <# ("#team (support: bob) bob> [edited] " <> inv)
     cath <# ("#team (support: bob) bob> [edited] " <> inv)
+    -- reset preferences in bob's database to emulate the client that doesn't check them
+    withCCTransaction bob $ \db ->
+      DB.execute_ db "UPDATE group_profiles SET preferences = NULL"
+    -- link in new message is rejected by recipients
+    bob ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\"}}]")
+    bob <# ("#team " <> inv)
+    bob #> "#team hello"
+    alice <# "#team bob> hello"
+    cath <# "#team bob> hello"
+    -- link in updated message is ignored by recipients, previously received content remains
+    bobMainItemId' <- lastItemId bob
+    bob ##> ("/_update item #1 " <> bobMainItemId' <> " text " <> inv)
+    bob <# ("#team [edited] " <> inv)
+    (alice </)
+    (cath </)
+    bob #> "#team hey"
+    alice <# "#team bob> hey"
+    cath <# "#team bob> hey"
+    alice #$> ("/_get chat #1 count=3", chat, [(0, "SimpleX links: received, prohibited"), (0, "hello"), (0, "hey")])
+    cath #$> ("/_get chat #1 count=3", chat, [(0, "SimpleX links: received, prohibited"), (0, "hello"), (0, "hey")])
   where
     linksForOwners :: HasCallStack => TestCC -> IO ()
     linksForOwners cc = do

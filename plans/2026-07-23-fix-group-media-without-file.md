@@ -26,23 +26,26 @@ Files/media rule from the presence of a *file*, not from the *content type*:
 But `MCImage {text, image :: ImageData}` and `MCVideo {text, image, duration}`
 (`src/Simplex/Chat/Protocol.hs`) carry the media preview inline, independent of
 any file transfer. With `fileSource` omitted, `file_` is `Nothing`, the guard
-never fires, and the message is treated as ordinary text.
+never fires, and the message is treated as ordinary text. `MCFile {text}` is
+also file content the preference names, whatever is attached to it.
 
 The guard immediately above it shows the correct shape — voice is judged by
 content type (`isVoice mc`), never by file presence.
 
-Two further consequences of the same assumption:
+The update path had the same hole on both sides:
 
-- `groupMessageUpdate` (`Library/Subscriber.hs`) calls `prohibitedGroupContent`
-  with the file argument hardcoded to `Nothing`, so on the receiving side the
-  Files guard could never fire for `x.msg.update` — an update could always turn
-  a text item into an image.
 - `APIUpdateChatItem` for groups (`Library/Commands.hs`) only checked
-  `prohibitedSimplexLinks`, so the same substitution was unchecked when sending.
-  That check was added in #4330 on both the send and receive side of the update
-  path; links were then the only feature reachable by editing a message, which
-  held only while media required a file. #6870 later upgraded the receive side to
-  the full `prohibitedGroupContent`, leaving the two sides out of sync.
+  `prohibitedSimplexLinks`, so replacing a text item with image content was
+  unchecked when sending.
+- `groupMessageUpdate` (`Library/Subscriber.hs`) checked only
+  `prohibitedSimplexLinks` on the ordinary path. Its `prohibitedGroupContent`
+  call, added in #6870, sits inside the `catchCINotFound` handler — the branch
+  that recreates an item deleted locally — so for an item that exists, which is
+  the normal case, the Files guard was never reached at all.
+
+The links-only pair predates chat scopes: #4330 added it to both sides when a
+text edit could introduce no other prohibited content, which held only while
+media required a file.
 
 ## Fix
 
@@ -53,15 +56,21 @@ Judge media by content type, the same way voice already is:
 ```
 
 with `isMedia` next to `isVoice`/`isReport` in `Protocol.hs`, matching
-`MCImage`/`MCVideo`. Because all content paths share `prohibitedGroupContent`,
-this one guard covers sending (`/_send`), receiving `x.msg.new`, and receiving
-`x.msg.update`.
+`MCImage`, `MCVideo` and `MCFile` — the preference is "Files and media", and all
+three are its content, whether or not a file is attached.
 
-`APIUpdateChatItem` for groups now runs `prohibitedGroupContent` in place of its
-links-only check, restoring the symmetry #4330 established and closing the same
-substitution at the source (it also covers voice, which was equally unchecked
-there). `getChatScopeInfo` is hoisted above the check to supply the scope; it is
-a read-only store lookup, so this changes only error ordering.
+Both sides of the update path now run the same shared check:
+
+- `APIUpdateChatItem` for groups runs `prohibitedGroupContent` in place of its
+  links-only check, restoring the symmetry #4330 established (it also covers
+  voice, which was equally unchecked there). `getChatScopeInfo` is hoisted above
+  the check to supply the scope; it is a read-only store lookup, so this changes
+  only error ordering.
+- `updateCI` in `groupMessageUpdate` runs it before applying the update, so it
+  is reached for items that exist, which the `catchCINotFound` handler's call
+  never was. A prohibited update is ignored with a warning and the previously
+  received content remains — the shape the links check there already had, now
+  applied to every feature and correctly gated on the item's scope.
 
 Support-scope behaviour is unchanged: the Files guard remains skipped when
 `scopeInfo` is set, as before.
@@ -75,17 +84,12 @@ gated on `isNothing scopeInfo`. So a **new** message containing a link could be
 posted in a member support chat, but **editing** a message there to contain one
 was rejected.
 
-That check predates chat scopes: #4330 added it to both sides of the update path
-when a text edit could introduce no other prohibited content, and the scope gate
-added later never reached it. Support chats are not meant to prohibit content —
-that is why the files, reports and links guards are all scope-gated — so the
-special case is removed from both sides, and links in updates are judged by the
-same scope-gated guard as links in new messages.
-
-Main-chat updates containing links are still prohibited, via
-`prohibitedGroupContent`. The only visible difference is on receiving: such an
-update now creates a `CIRcvGroupFeatureRejected` item instead of being silently
-ignored, which is what a new message containing a link already did.
+Support chats are not meant to prohibit content — that is why the files, reports
+and links guards are all scope-gated — so the special case is removed from both
+sides, and links in updates are judged by the same scope-gated guard as links in
+new messages. Nothing stops being validated: the scope-gated guard is what the
+send and receive update paths now run, so main-chat updates containing links are
+still rejected on sending and ignored on receiving, as before.
 
 ## Alternatives considered
 
@@ -93,7 +97,7 @@ ignored, which is what a new message containing a link already did.
   modified client or a direct API caller never runs the sender's check. The
   receiving side is the boundary that matters.
 - **Include `MCImage` only.** `MCVideo` carries the identical inline preview and
-  would leave the hole open.
+  would leave the hole open; `MCFile` is named by the same preference.
 - **Also gate `MCLink` previews and `MCChat` profile images.** Both embed images
   too, but they belong to the SimpleX-links/link-preview features, and gating
   them would change ordinary link messages in media-off groups. Out of scope.
@@ -112,29 +116,38 @@ ignored, which is what a new message containing a link already did.
   rejected. `forwardContent` keeps `MCImage` without a file in that case
   (`Library/Commands.hs`), and that payload is exactly what the preference
   forbids.
-- Editing the caption of an image that was sent while media was still enabled is
-  now rejected in a group that has since disabled media — by the sender, and by
-  recipients, which run the same guard. Previously such an edit was delivered:
-  #6870 made the receiving side of the update path run the full check, but the
-  Files guard there could not fire, as it tested the file that an update never
-  carries.
+- Editing the caption of an image or of a file message that was sent while media
+  was still enabled is now rejected in a group that has since disabled media — by
+  the sender, and by recipients, which ignore the update and keep the previously
+  received content. Previously such an edit was delivered.
 
 ## Verification
 
 - `cabal build lib:simplex-chat` and `cabal build simplex-chat-test` — clean.
-- `testProhibitFiles` (`tests/ChatTests/Files.hs`) extended with three vectors:
-  `/_send` of image content and of video content with no `filePath`, and
-  `/_update item` replacing a text message with image content; each expects
+- `testProhibitFiles` (`tests/ChatTests/Files.hs`) extended with four sending
+  vectors: `/_send` of image, of video and of file content with no `filePath`,
+  and `/_update item` replacing a text message with image content; each expects
   `bad chat command: feature not allowed Files and media` and no delivery to the
   other members.
 - Negative control: with the source fix reverted and the test kept, the test
   fails — the send succeeds and the other member receives the message
   (`expected: Nothing but got: Just "09:31 #team alice>"`), reproducing the
   report.
+- Both tests also cover the receiving side, which is the boundary that matters,
+  by resetting group preferences in the sender's database — the client that does
+  not check them. A new message with prohibited content becomes
+  `Files and media: received, prohibited` / `SimpleX links: received, prohibited`
+  in the recipients' chats, and an update to prohibited content leaves the
+  previously received message unchanged. The recipients' state is asserted with
+  `/_get chat`, because items that are not `CIRcvMsgContent` are not printed by
+  the terminal view for new item events.
+- Negative control for the receiving side: with the check in `updateCI` removed,
+  both tests fail with the prohibited edit applied at the recipients —
+  `but got: Just "#team bob> [edited] hi"` and
+  `but got: Just "#team bob> [edited] https://simplex.chat/invitation#/..."`.
 - No regression in `group message update`, `group message edit history`,
-  `group live message`, the four channel message update tests, and
-  `group preferences for specific member role` (direct messages, files & media,
-  SimpleX links).
+  `group live message`, the 29 channel message tests, `update group profile`,
+  and `group preferences` (direct messages, files & media, SimpleX links).
 - `testGroupPrefsSimplexLinksForRole` extended with both sides of the scope
   boundary: with links restricted to owners, a member cannot post a link in the
   main chat and cannot edit a main chat message to contain one (and nothing

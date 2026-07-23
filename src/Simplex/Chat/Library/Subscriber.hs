@@ -2306,25 +2306,29 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     Nothing -> createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs) $> Nothing
               | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
-        updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId = do
-          let changed = mc /= oldMC
-          if changed || fromMaybe False itemLive
-            then do
-              ci' <- withStore' $ \db -> do
-                when changed $
-                  addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
-                reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
-                let edited = itemLive /= Just True
-                ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
-                ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
-                updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
-                updateGroupCIMentions db gInfo ci' ciMentions
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
-              startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
-              pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
-            else do
-              toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
-              pure Nothing
+        updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId =
+          case m_ >>= \m -> prohibitedGroupContent gInfo m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+            -- the update is ignored, the previously received content remains
+            Just f -> messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText f) $> Nothing
+            Nothing -> do
+              let changed = mc /= oldMC
+              if changed || fromMaybe False itemLive
+                then do
+                  ci' <- withStore' $ \db -> do
+                    when changed $
+                      addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
+                    reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
+                    let edited = itemLive /= Just True
+                    ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
+                    ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
+                    updateChatItemSignedMsg db (chatItemId' ci) signedMsg_ signedByGMId_
+                    updateGroupCIMentions db gInfo ci' ciMentions
+                  toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
+                  startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
+                  pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
+                else do
+                  toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
+                  pure Nothing
 
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =

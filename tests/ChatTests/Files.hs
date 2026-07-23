@@ -20,6 +20,7 @@ import Simplex.Chat.Library.Internal (roundedFDCount)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
@@ -1067,6 +1068,26 @@ testProhibitFiles =
     alice <## "bad chat command: feature not allowed Files and media"
     (bob </)
     (cath </)
+    -- reset preferences in bob's database to emulate the client that doesn't check them
+    withCCTransaction bob $ \db ->
+      DB.execute_ db "UPDATE group_profiles SET preferences = NULL"
+    -- image content in new message is rejected by recipients
+    bob ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"hi\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
+    bob <# "#team hi"
+    bob #> "#team hello"
+    alice <# "#team bob> hello"
+    cath <# "#team bob> hello"
+    -- image content in updated message is ignored by recipients, previously received content remains
+    bobItemId <- lastItemId bob
+    bob ##> ("/_update item #1 " <> bobItemId <> " json {\"msgContent\": {\"text\":\"hi\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}, \"mentions\": {}}")
+    bob <# "#team [edited] hi"
+    (alice </)
+    (cath </)
+    bob #> "#team hey"
+    alice <# "#team bob> hey"
+    cath <# "#team bob> hey"
+    alice #$> ("/_get chat #1 count=3", chat, [(0, "Files and media: received, prohibited"), (0, "hello"), (0, "hey")])
+    cath #$> ("/_get chat #1 count=3", chat, [(0, "Files and media: received, prohibited"), (0, "hello"), (0, "hey")])
   where
     imageData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
 
