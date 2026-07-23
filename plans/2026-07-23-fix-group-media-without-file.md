@@ -115,6 +115,14 @@ groups.
 Support-scope behaviour is unchanged: the Files guard remains skipped when
 `scopeInfo` is set, as before.
 
+The compose view (`ComposeView.kt`) disabled the send button whenever it held an
+attachment preview in a group with files disabled, which also blocked editing
+the text of an existing image, video or file message — so the core allowing the
+update was not enough. The file and voice prohibitions are now skipped when
+editing: the media is already in the message and the edit only changes its text
+(the attach button is disabled while editing, so no new media can be added). The
+links prohibition still applies when editing, as a link can be added to the text.
+
 ## Also: SimpleX links in support chats
 
 The update path carried its own `prohibitedSimplexLinks` check on both sides —
@@ -194,9 +202,11 @@ still rejected on sending and ignored on receiving, as before.
   the same edit with different image data, which is rejected. With the media
   comparison removed the test fails on the accepted edit.
 - `testGroupHistoryProhibitedMedia` (`tests/ChatTests/Groups.hs`): a member
-  joining a group that disabled media after an image was sent receives the text
-  of that message in history. With the content unchanged in `sendHistory` the
-  test fails — the joining member receives a prohibited item instead.
+  joining a group that disabled media receives the captions as text, for both an
+  inline image and an image sent with an XFTP file, with no file to receive.
+  With the downgrade narrowed to file-less items the test fails on the
+  image-with-file case — the joining member receives the prohibited image
+  instead of its caption.
 - `testProhibitVoiceUpdate` (`tests/ChatTests/Profiles.hs`): a contact chat with
   voice not allowed rejects an update of a message to voice content, and, with
   the contact preferences reset in the sender's database, the recipient ignores
