@@ -52,10 +52,14 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
 }
 
 actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withLongRunningApi(slow = 600_000) {
-  var fileSource = getLoadedFileSource(cItem.file)
-  if (chatModel.connectedToRemote() && fileSource == null) {
-    cItem.file?.loadRemoteFile(true)
-    fileSource = getLoadedFileSource(cItem.file)
+  // The file is copied only when the item has no text, so that a caption of an image/file can be copied
+  val fileSource = if (cItem.content.text.isNotEmpty()) null else {
+    var fs = getLoadedFileSource(cItem.file)
+    if (chatModel.connectedToRemote() && fs == null) {
+      cItem.file?.loadRemoteFile(true)
+      fs = getLoadedFileSource(cItem.file)
+    }
+    fs
   }
 
   if (fileSource != null) {
