@@ -1049,12 +1049,14 @@ testProhibitFiles =
     alice <## "bad chat command: feature not allowed Files and media"
     (bob </)
     (cath </)
-    -- image and video content is prohibited without file, as it includes preview
+    -- file and media content is prohibited without file, as image and video include preview
     alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
     alice <## "bad chat command: feature not allowed Files and media"
     (bob </)
     (cath </)
     alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"\",\"type\":\"video\",\"image\":\"" <> imageData <> "\",\"duration\":5}}]")
+    alice <## "bad chat command: feature not allowed Files and media"
+    alice ##> "/_send #1 json [{\"msgContent\": {\"text\":\"\",\"type\":\"file\"}}]"
     alice <## "bad chat command: feature not allowed Files and media"
     -- image content cannot be sent by updating message
     alice #> "#team hi"
