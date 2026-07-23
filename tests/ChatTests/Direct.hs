@@ -21,7 +21,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List (intercalate)
+import Data.List (intercalate, stripPrefix)
 import qualified Data.Text as T
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
@@ -119,6 +119,9 @@ chatDirectTests = do
     it "create second user" testCreateSecondUser
     it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
+    it "service request and response over a DR address" testServiceRequestResponse
+    it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
+    it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "delete user with chat tags" testDeleteUserChatTags
@@ -1893,6 +1896,45 @@ testUsersSubscribeAfterRestart ps = do
       -- first user receives message
       bob #> "@alice hey alice"
       (alice, "alice") $<# "bob> hey alice"
+
+testServiceRequestResponse :: HasCallStack => TestParams -> IO ()
+testServiceRequestResponse =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <## "chat started"
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
+          bob <## "service response: {\"pong\":2}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          alice <## "ok"
+      )
+  where
+    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
+
+testServiceRequestDroppedWhenOff :: HasCallStack => TestParams -> IO ()
+testServiceRequestDroppedWhenOff =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    bob ##> ("/_service_request 1 " <> sLink <> " timeout=2 {\"ping\":1}")
+    bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASETimeout}}"
+
+testServiceRequestNonDRAddress :: HasCallStack => TestParams -> IO ()
+testServiceRequestNonDRAddress =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (sLink, _) <- getContactLinks alice True
+    bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
+    bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASENotDRAddress}}"
 
 testMultipleUserAddresses :: HasCallStack => TestParams -> IO ()
 testMultipleUserAddresses =
