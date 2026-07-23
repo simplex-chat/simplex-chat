@@ -1405,20 +1405,21 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           | otherwise = Nothing
         processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
         processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_
-          | isNothing fInvDescr_ && not (msgContentHasText mc) = pure []
+          -- prohibited media is sent as text without the file, so items with no text are dropped
+          | not (msgContentHasText mc) && (prohibitedMedia || isNothing fInvDescr_) = pure []
           -- a signed item keeps its original content and signature, so its now-prohibited
           -- media cannot be sent as text and the item is dropped from history instead
           | isJust signedMsg_ && prohibitedMedia = pure []
           | otherwise = do
-              let -- items with expired or cancelled files are sent without file invitation,
-                  -- and their media content would be prohibited by the members receiving history
-                  -- if the feature is now disabled, so only the text of such items is sent.
+              let -- media the group no longer allows is sent as text without the file, so
+                  -- the members receiving history don't reject it as prohibited content.
                   historyMC
                     | prohibitedMedia = MCText $ msgContentText mc
                     | otherwise = mc
+                  fInvDescr' = if prohibitedMedia then Nothing else fInvDescr_
                   CIMeta {itemTs, itemSharedMsgId, itemTimed, showGroupAsSender} = meta
                   quotedItemId_ = quoteItemId =<< quotedItem
-                  fInv_ = fst <$> fInvDescr_
+                  fInv_ = fst <$> fInvDescr'
                   (mc', _, mentions') = updatedMentionNames historyMC formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   -- for channel messages default chat version range to membership range
@@ -1436,7 +1437,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   -- TODO [knocking] send history to other scopes too?
                   (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing showGroupAsSender mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
                   pure $ VMUnsigned ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
-              fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
+              fileDescrEvents <- case (snd <$> fInvDescr', itemSharedMsgId) of
                 (Just fileDescrText, Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize fileDescrText
@@ -1446,12 +1447,10 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
           where
             author = fromMaybe membership member_
-            -- media without a file invitation is prohibited when the group no longer allows it
+            -- media content the group no longer allows, with or without a file
             prohibitedMedia =
-              isNothing fInvDescr_
-                && ( (isMedia mc && not (groupFeatureMemberAllowed SGFFiles author gInfo))
-                       || (isVoice mc && not (groupFeatureMemberAllowed SGFVoice author gInfo))
-                   )
+              (isMedia mc && not (groupFeatureMemberAllowed SGFFiles author gInfo))
+                || (isVoice mc && not (groupFeatureMemberAllowed SGFVoice author gInfo))
 
 memberShortenedName :: GroupMember -> ContactName
 memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}

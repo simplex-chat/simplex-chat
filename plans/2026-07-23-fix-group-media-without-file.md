@@ -101,14 +101,16 @@ voice check in `messageUpdate` only ever ran in its `catchCINotFound` handler,
 and `APIUpdateChatItem` for contacts had no check at all, so a text message
 could be turned into a voice message where voice is not allowed.
 
-History is sent with the file invitation only while the file is neither expired
-nor cancelled (`itemForwardMsgs`), so an older image, file or voice item is
-forwarded as media content with no file. `sendHistory` now sends the text of
-such an item when the group no longer allows the feature, instead of content
-that every receiving member would reject. A signed item cannot be changed to
-text without breaking its signature, so a signed item whose now-prohibited media
-has no file is dropped from history rather than sent as a prohibited item —
-signing is a channel/relay feature, off in ordinary groups.
+History forwards each item's media content (`itemForwardMsgs`), with the file
+invitation attached while the file is neither expired nor cancelled. When the
+group no longer allows the feature, `sendHistory` now sends only the text of
+such an item, dropping the media and the file invitation, so the members
+receiving history don't reject it as prohibited content — for images sent with a
+file (the usual case) as well as inline images or items whose file has expired.
+Items with no text are dropped. A signed item cannot be changed to text without
+breaking its signature, so a signed item with now-prohibited media is dropped
+from history instead — signing is a channel/relay feature, off in ordinary
+groups.
 
 Support-scope behaviour is unchanged: the Files guard remains skipped when
 `scopeInfo` is set, as before.

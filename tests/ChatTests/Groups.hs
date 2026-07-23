@@ -5578,16 +5578,25 @@ testGroupHistory =
 testGroupHistoryProhibitedMedia :: HasCallStack => TestParams -> IO ()
 testGroupHistoryProhibitedMedia =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+    \alice bob cath -> withXFTPServer $ do
       createGroup2 "team" alice bob
 
       threadDelay 1000000
 
-      -- image content sent while files are allowed; history items with expired
-      -- files are sent without file invitations, as this one is sent
-      alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"picture\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
-      alice <# "#team picture"
-      bob <# "#team alice> picture"
+      -- image with a caption but no file (inline preview only), sent while files are allowed
+      alice ##> ("/_send #1 json [{\"msgContent\": {\"text\":\"inline pic\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
+      alice <# "#team inline pic"
+      bob <# "#team alice> inline pic"
+
+      -- image with an XFTP file and a caption, sent while files are allowed
+      alice ##> ("/_send #1 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"file pic\",\"type\":\"image\",\"image\":\"" <> imageData <> "\"}}]")
+      alice <# "#team file pic"
+      alice <# "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice> file pic"
+      bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.jpg) for #team"
 
       threadDelay 1000000
 
@@ -5605,7 +5614,9 @@ testGroupHistoryProhibitedMedia =
         [ alice <## "#team: cath joined the group",
           cath
             <### [ "#team: you joined the group",
-                   WithTime "#team alice> picture [>>]",
+                   -- both captions are received as text, without the prohibited images or the file
+                   WithTime "#team alice> inline pic [>>]",
+                   WithTime "#team alice> file pic [>>]",
                    "#team: member bob (Bob) is connected"
                  ],
           do
@@ -5613,10 +5624,11 @@ testGroupHistoryProhibitedMedia =
             bob <## "#team: new member cath is connected"
         ]
 
-      -- the text of the message is received in history, not the prohibited media
+      -- both captions are received in history as plain messages with no file
+      -- (a file invitation would show as an unconsumed "sends file" line above)
       cath ##> "/_get chat #1 count=100"
-      r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "picture")]
+      r <- chatF <$> getTermLine cath
+      r `shouldContain` [((0, "inline pic"), Nothing), ((0, "file pic"), Nothing)]
   where
     imageData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
 
