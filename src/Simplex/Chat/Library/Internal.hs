@@ -343,7 +343,7 @@ prohibitedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -
 prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
   | not supportAllowed = Just GFSupport
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
-  | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
+  | isNothing scopeInfo && not (isVoice mc) && (isJust file_ || isMedia mc) && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
   | otherwise = Nothing
