@@ -568,6 +568,15 @@ Plan:
 SEARCH address_ratchet_keys USING INDEX idx_address_ratchet_keys (conn_id=? AND ratchet_key_id=?)
 
 Query: 
+        UPDATE rcv_messages
+        SET receive_attempts = receive_attempts + 1
+        WHERE conn_id = ? AND internal_id = ?
+        RETURNING receive_attempts
+      
+Plan:
+SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
+
+Query: 
       DELETE FROM address_ratchet_keys
       WHERE conn_id = ?
         AND address_ratchet_key_id NOT IN (
