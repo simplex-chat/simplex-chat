@@ -51,6 +51,8 @@ export type ChatEvent =
   | CEvt.HostConnected
   | CEvt.HostDisconnected
   | CEvt.SubscriptionStatus
+  | CEvt.ServiceRequest
+  | CEvt.ServiceReplySent
   | CEvt.MessageError
   | CEvt.ChatError
   | CEvt.ChatErrors
@@ -104,6 +106,8 @@ export namespace CEvt {
     | "hostConnected"
     | "hostDisconnected"
     | "subscriptionStatus"
+    | "serviceRequest"
+    | "serviceReplySent"
     | "messageError"
     | "chatError"
     | "chatErrors"
@@ -462,6 +466,18 @@ export namespace CEvt {
     server: string
     subscriptionStatus: T.SubscriptionStatus
     connections: string[]
+  }
+
+  export interface ServiceRequest extends Interface {
+    type: "serviceRequest"
+    user: T.User
+    requestId: string
+    requestData: object
+  }
+
+  export interface ServiceReplySent extends Interface {
+    type: "serviceReplySent"
+    connectionId: string
   }
 
   export interface MessageError extends Interface {
