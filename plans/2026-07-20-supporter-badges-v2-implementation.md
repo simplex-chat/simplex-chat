@@ -472,10 +472,11 @@ data OrderStatus = OrderStatus
   { orderState  :: BotPaymentState, badgeState :: Maybe BotBadgeState
   , paidThrough :: Maybe UTCTime,   willRenew  :: Bool }
 
-data ServiceError = ServiceError { code :: ErrorCode, message :: Text }
+data ServiceError = ServiceError { code :: ErrorCode, message :: Text, retryAfter :: Maybe NominalDiffTime }
 data ErrorCode
   = OrderAuthInvalid | ProductChanged | ProductMismatch
   | PaymentPending | PaymentNotEntitled | ProviderUnavailable | ProviderRateLimited
+  | BadgeAlreadyIssued | SigningFailed
   | UnsupportedVersion | BadRequest | InternalError
 
 -- The bot assembles the internal BadgeRequest { masterKey, badgeInfo } where
@@ -690,9 +691,9 @@ Define five separate sums (the `ClientPaymentState` / `BotPaymentState` / `Servi
 
 ### Client tables
 
-`orders`: `order_id` (client UUID), encrypted `order_sk` + `order_key`, provider/product/plan, payment state payload, `provider_ref`, `paid_through`, `will_renew`, checked/retry time, version.
+`orders`: `order_id` (client UUID), encrypted `order_sk` + `order_key`, encrypted `badge_master_key` (one per order, reused each renewal), provider/product SKU, payment state payload, `provider_ref`, `paid_through`, `will_renew`, checked/retry time, version.
 
-`badges`: order id + grant-period + key hash, badge state payload, encrypted `badge_master_key`, cached credential, expiry, attempt/error, version.
+`badges`: order id + grant-period + key hash, badge state payload, cached credential, expiry, attempt/error, version.
 
 Join by order id and grant period only (the bot's `GrantId` is internal). Update active profile only after core installation.
 
@@ -725,7 +726,7 @@ data Provider = Apple | Google | Stripe
 
 Bot tables (**PK** bold, → foreign key, ⊤ unique). The `state` column is a tag plus state-specific fields for the sum named in brackets.
 
-- **`orders`** — one row per order. `order_id` **PK** (client UUID) · `order_key` (Ed25519 pub) · `provider` · `product_sku` (pinned) · `master_key` (badge product, encrypted) · `state` [`BotPaymentState`] · `paid_through` · `will_renew` · `version`
+- **`orders`** — one row per order. `order_id` **PK** (client UUID) · `order_key` (Ed25519 pub) · `provider` · `product_sku` (pinned) · `state` [`BotPaymentState`] · `paid_through` · `will_renew` · `version` — no master key: the client re-sends it in each `Purchase` product; the bot uses it in memory only
 - **`entitlements`** — `entitlement_id` **PK** · `provider` · `provider_ref` (encrypted) ⊤(`provider`,`provider_ref`) · `order_id` → `orders` · `reissue_count` per (`provider_ref`, period) — bounds total-loss re-binds
 - **`service_grants`** — `grant_id` **PK** · `order_id` → `orders` · `product_id` · `grant_period_start` · `state` [`ServiceGrantState`] · ⊤(`order_id`,`product_id`,`grant_period_start`)
 - **`badge_issuances`** — `issuance_id` **PK** · `grant_id` → `service_grants` · `master_key_hash` · `state` [`BotBadgeState`] · `credential` (cached) · ⊤(`grant_id`,`master_key_hash`)
@@ -735,10 +736,10 @@ Bot tables (**PK** bold, → foreign key, ⊤ unique). The `state` column is a t
 
 Client tables (local; the bot's `order_id` is the shared key):
 
-- **`orders`** — `order_id` **PK** · `order_sk` (encrypted) · `order_key` · `provider` · `product_sku` · `state` [`ClientPaymentState`] · `provider_ref` · `paid_through` · `will_renew` · `checked_at` · `retry_at` · `version`
-- **`badges`** — `id` **PK** · `order_id` → `orders` · `grant_period_start` · `master_key_hash` · `state` [`ClientBadgeState`] · `badge_master_key` (encrypted) · `credential` (cached) · `expiry` · `attempt` · `error` · `version` — the client keys a badge by `(order_id, grant_period_start)`; the bot's `GrantId` never crosses the wire
+- **`orders`** — `order_id` **PK** · `order_sk` (encrypted) · `order_key` · `badge_master_key` (encrypted, one per order) · `provider` · `product_sku` · `state` [`ClientPaymentState`] · `provider_ref` · `paid_through` · `will_renew` · `checked_at` · `retry_at` · `version`
+- **`badges`** — `id` **PK** · `order_id` → `orders` · `grant_period_start` · `master_key_hash` · `state` [`ClientBadgeState`] · `credential` (cached) · `expiry` · `attempt` · `error` · `version` — the client keys a badge by `(order_id, grant_period_start)`; the bot's `GrantId` never crosses the wire
 
-The client encrypts `order_sk` and `badge_master_key` at rest; the bot stores the `order_key` (public) and the `master_key` only as badge-signing input, never as an identifier.
+The client encrypts `order_sk` and `badge_master_key` at rest; the bot stores only the `order_key` (public) and never persists the master key — it receives it per `Purchase` and uses it in memory to sign.
 
 ```mermaid
 erDiagram
