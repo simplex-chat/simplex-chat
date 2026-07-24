@@ -389,8 +389,6 @@ fun removeWallpaperFilesFromAllChats(user: User) {
   }
 }
 
-// The created file is registered in ChatModel.filesToDelete, which ComposeView.deleteUnusedFiles()
-// empties on chat switch - do not use this helper for a file that has to survive a chat switch.
 fun <T> createTmpFileAndDelete(dir: File = tmpDir, onCreated: (File) -> T): T {
   val tmpFile = File(dir, UUID.randomUUID().toString())
   tmpFile.parentFile.mkdirs()

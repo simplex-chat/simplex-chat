@@ -321,10 +321,6 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
           // previous update's installer can be left in the temp dir; remove it here at the next
           // download instead of letting it accumulate. Other platforms delete the file after install.
           if (desktopPlatform.isWindows()) newFile.delete()
-          // Not using createTmpFileAndDelete: it registers the file in ChatModel.filesToDelete, which
-          // ComposeView.deleteUnusedFiles() empties on chat switch, and this download takes minutes -
-          // a chat switch during it deleted the file, and the move below then failed with NoSuchFileException.
-          // A .part file left by a failed download is truncated by the next one and removed with tmpDir on start.
           val partFile = File(tmpDir, "${asset.name}.part")
           partFile.parentFile.mkdirs()
           partFile.deleteOnExit()
@@ -377,7 +373,6 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
               }
             )
           } finally {
-            // no-op after a successful move, removes the partial file when the download failed or was cancelled
             partFile.delete()
           }
         }
