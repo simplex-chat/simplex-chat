@@ -163,7 +163,6 @@ fun MainScreen() {
               userPickerState.value = AnimatedViewState.VISIBLE
             }
           }
-          SetupClipboardListener()
           if (appPlatform.isAndroid) {
             AndroidWrapInCallLayout {
               AndroidScreen(userPickerState)

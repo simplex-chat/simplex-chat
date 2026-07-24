@@ -210,7 +210,6 @@ object ChatModel {
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
 
-  val clipboardHasText = mutableStateOf(false)
   val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
 
   val conditions = mutableStateOf(ServerOperatorConditionsDetail.empty)
@@ -5383,7 +5382,8 @@ data class ChatTag(
 class ChatItemInfo(
   val itemVersions: List<ChatItemVersion>,
   val memberDeliveryStatuses: List<MemberDeliveryStatus>?,
-  val forwardedFromChatItem: AChatItem?
+  val forwardedFromChatItem: AChatItem?,
+  val fileXftpServers: List<String> = emptyList()
 )
 
 @Serializable
