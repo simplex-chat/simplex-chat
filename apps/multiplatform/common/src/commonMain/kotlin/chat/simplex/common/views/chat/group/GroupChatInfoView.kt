@@ -1404,19 +1404,15 @@ fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, with
       val (updatedGroupInfo, updatedMembers) = r
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
-        updatedMembers.forEach { updatedMember ->
-          chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, updatedMember)
-          if (withMessages) {
-            chatModel.chatsContext.removeMemberItems(rhId, updatedMember, byMember = groupInfo.membership, groupInfo)
-          }
+        chatModel.chatsContext.upsertGroupMembers(rhId, updatedGroupInfo, updatedMembers)
+        if (withMessages) {
+          chatModel.chatsContext.removeMemberItems(rhId, updatedMembers, byMember = groupInfo.membership, groupInfo)
         }
       }
       withContext(Dispatchers.Main) {
-        updatedMembers.forEach { updatedMember ->
-          chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, updatedGroupInfo, updatedMember)
-          if (withMessages) {
-            chatModel.chatsContext.removeMemberItems(rhId, updatedMember, byMember = groupInfo.membership, groupInfo)
-          }
+        chatModel.secondaryChatsContext.value?.upsertGroupMembers(rhId, updatedGroupInfo, updatedMembers)
+        if (withMessages) {
+          chatModel.secondaryChatsContext.value?.removeMemberItems(rhId, updatedMembers, byMember = groupInfo.membership, groupInfo)
         }
       }
       onSuccess()
