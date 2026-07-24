@@ -81,6 +81,13 @@ chatEventsDocsData =
         ("CEvtChatItemsStatusesUpdated", "Message delivery status updates.")
       ]
     ),
+    ( "Service events",
+      "Bots with a double ratchet address, started with service request processing enabled, can answer service requests - a single request with a single response (RPC).",
+      [ ("CEvtServiceRequest", "Service request received.\n\nThe request needs to be answered using [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) command.")
+      ],
+      [ ("CEvtServiceReplySent", "Service reply was sent (delivered to the server).\n\nCorrelate `connectionId` with the connection ID from the response to [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) to learn when the reply is delivered.")
+      ]
+    ),
     ( "Group events",
       "Bots may use these events to manage users' groups and business address groups.\n\n\
       \*Please note*: programming groups is more complex than programming direct connections",
@@ -184,6 +191,7 @@ undocumentedEvents =
     "CEvtContactPQEnabled",
     "CEvtContactRatchetSync",
     "CEvtContactRequestAlreadyAccepted",
+    "CEvtContactRequestRejected",
     "CEvtContactSwitch",
     "CEvtCustomChatEvent",
     "CEvtGroupMemberRatchetSync",
