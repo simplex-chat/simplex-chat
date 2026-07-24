@@ -76,14 +76,17 @@ struct SimpleXApp: App {
                         chatModel.contentViewAccessAuthenticated = false
                         // authentication ---
 
-                        if CallController.useCallKit() && chatModel.activeCall != nil {
-                            CallController.shared.shouldSuspendChat = true
-                        } else {
-                            suspendChat()
-                            BGManager.shared.schedule()
+                        if !RemoteCtrlBGKeepAlive.shared.keepSessionInBackground() {
+                            if CallController.useCallKit() && chatModel.activeCall != nil {
+                                CallController.shared.shouldSuspendChat = true
+                            } else {
+                                suspendChat()
+                                BGManager.shared.schedule()
+                            }
                         }
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
+                        RemoteCtrlBGKeepAlive.shared.stopLegacyTask()
                         CallController.shared.shouldSuspendChat = false
                         let appState = AppChatState.shared.value
 
