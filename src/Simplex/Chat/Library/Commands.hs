@@ -1468,8 +1468,8 @@ processChatCommand cxt nm = \case
         CTDomain _ -> throwCmdError "service request target must be a contact address, not a domain"
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
-    withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
-    ok user
+    connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
+    pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId

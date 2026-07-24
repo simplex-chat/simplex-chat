@@ -1915,10 +1915,12 @@ testServiceRequestResponse =
           reqId <- serviceRequestId alice
           alice <## "request: {\"ping\":1}"
           alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
-          alice <## "ok"
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
       )
   where
     serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
+    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
 
 testServiceRequestDroppedWhenOff :: HasCallStack => TestParams -> IO ()
 testServiceRequestDroppedWhenOff =

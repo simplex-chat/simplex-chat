@@ -128,6 +128,8 @@ processAgentMessage _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
   eToView $ chatErrorAgent e
+processAgentMessage _ connId (SSENT _ _) =
+  toView $ CEvtServiceReplySent (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
