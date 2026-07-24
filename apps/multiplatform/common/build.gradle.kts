@@ -137,6 +137,7 @@ kotlin {
       }
     }
     val desktopMain by getting {
+      kotlin.srcDir("build/generated/moko/desktopMain/src")
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8") {
