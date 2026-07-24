@@ -175,7 +175,7 @@ askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} server_ h
     promptCreate = do
       ok <- if headless then pure True else onOffPrompt "Create relay address" True
       when ok $
-        execChatCommand' (APICreateMyAddress userId server_) 0 `runReaderT` cc >>= \case
+        execChatCommand' (APICreateMyAddress userId server_ Nothing) 0 `runReaderT` cc >>= \case
           Right (CRUserContactLinkCreated _ address) -> do
             putStrLn "Chat relay address is created:"
             putStrLn $ addressStr address

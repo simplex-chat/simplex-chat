@@ -8077,8 +8077,9 @@ sealed class SMPAgentError {
     is A_QUEUE -> "A_QUEUE"
   }
   @Serializable @SerialName("A_MESSAGE") object A_MESSAGE: SMPAgentError()
-  @Serializable @SerialName("A_PROHIBITED") object A_PROHIBITED: SMPAgentError()
+  @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED(prohibitedErr: String): SMPAgentError()
   @Serializable @SerialName("A_VERSION") object A_VERSION: SMPAgentError()
+  @Serializable @SerialName("A_LINK") class A_LINK(linkErr: String): SMPAgentError()
   @Serializable @SerialName("A_CRYPTO") object A_CRYPTO: SMPAgentError()
   @Serializable @SerialName("A_DUPLICATE") object A_DUPLICATE: SMPAgentError()
   @Serializable @SerialName("A_QUEUE") class A_QUEUE(val queueErr: String): SMPAgentError()

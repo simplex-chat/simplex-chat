@@ -560,6 +560,12 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   ("% ", text) -> Just text
   _ -> Nothing
 
+getForOldClientsLine :: HasCallStack => TestCC -> String -> IO String
+getForOldClientsLine cc prefix =
+  timeout 500000 (getTermLine cc) >>= \case
+    Just line -> dropLinePrefix prefix line
+    Nothing -> pure ""
+
 getInvitation :: HasCallStack => TestCC -> IO String
 getInvitation cc = do
   (_, fullInv) <- getInvitations cc
@@ -592,8 +598,7 @@ getContactLink cc created = do
 getContactLinks :: HasCallStack => TestCC -> Bool -> IO (String, String)
 getContactLinks cc created = do
   shortLink <- getContactLink_ cc created
-  line <- getTermLine' (Just "full contact link line") cc
-  fullLink <- dropLinePrefix "The contact link for old clients: " line
+  fullLink <- getForOldClientsLine cc "The contact link for old clients: "
   pure (shortLink, fullLink)
 
 getContactLinkNoShortLink :: HasCallStack => TestCC -> Bool -> IO String
@@ -624,8 +629,7 @@ getGroupLink cc gName mRole created = do
 getGroupLinks :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
 getGroupLinks cc gName mRole created = do
   shortLink <- getGroupLink_ cc gName mRole created
-  line <- getTermLine' (Just "full group link line") cc
-  fullLink <- dropLinePrefix "The group link for old clients: " line
+  fullLink <- getForOldClientsLine cc "The group link for old clients: "
   pure (shortLink, fullLink)
 
 getGroupLinkNoShortLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String

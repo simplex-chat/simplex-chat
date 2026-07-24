@@ -88,19 +88,20 @@ Create bot address.
 
 **Parameters**:
 - userId: int64
+- pqRatchet: bool?
 
 **Syntax**:
 
 ```
-/_address <userId>
+/_address <userId>[ pq_ratchet=on|off]
 ```
 
 ```javascript
-'/_address ' + userId // JavaScript
+'/_address ' + userId + (typeof pqRatchet == 'boolean' ? ' pq_ratchet=' + (pqRatchet ? 'on' : 'off') : '') // JavaScript
 ```
 
 ```python
-'/_address ' + str(userId) # Python
+'/_address ' + str(userId) + ((' pq_ratchet=' + ('on' if pqRatchet else 'off')) if pqRatchet is not None else '') # Python
 ```
 
 **Responses**:
@@ -238,20 +239,21 @@ Set bot address settings.
 
 **Parameters**:
 - userId: int64
+- pqRatchet: bool?
 - settings: [AddressSettings](./TYPES.md#addresssettings)
 
 **Syntax**:
 
 ```
-/_address_settings <userId> <json(settings)>
+/_address_settings <userId>[ pq_ratchet=on|off] <json(settings)>
 ```
 
 ```javascript
-'/_address_settings ' + userId + ' ' + JSON.stringify(settings) // JavaScript
+'/_address_settings ' + userId + (typeof pqRatchet == 'boolean' ? ' pq_ratchet=' + (pqRatchet ? 'on' : 'off') : '') + ' ' + JSON.stringify(settings) // JavaScript
 ```
 
 ```python
-'/_address_settings ' + str(userId) + ' ' + json.dumps(settings) # Python
+'/_address_settings ' + str(userId) + ((' pq_ratchet=' + ('on' if pqRatchet else 'off')) if pqRatchet is not None else '') + ' ' + json.dumps(settings) # Python
 ```
 
 **Responses**:

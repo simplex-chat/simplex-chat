@@ -90,7 +90,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SMPServerWithAuth, SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -152,6 +152,7 @@ data ChatConfig = ChatConfig
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
     showReactions :: Bool,
+    showFullLinks :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
@@ -547,17 +548,18 @@ data ChatCommand
   | ClearContact ContactName
   | APIListContacts {userId :: UserId}
   | ListContacts
-  | APICreateMyAddress {userId :: UserId, server_ :: Maybe SMPServerWithAuth}
-  | CreateMyAddress
+  | APICreateMyAddress {userId :: UserId, server_ :: Maybe SMPServerWithAuth, pqRatchet :: Maybe Bool}
+  | CreateMyAddress {pqRatchet :: Maybe Bool}
   | APIDeleteMyAddress {userId :: UserId}
   | DeleteMyAddress
   | APIShowMyAddress {userId :: UserId}
   | ShowMyAddress
-  | APIAddMyAddressShortLink UserId
+  | APIAddMyAddressShortLink {userId :: UserId, pqRatchet :: Maybe Bool}
+  | APIRotateAddressRatchetKeys UserId
   | APISetProfileAddress {userId :: UserId, enable :: Bool}
   | SetProfileAddress Bool
-  | APISetAddressSettings {userId :: UserId, settings :: AddressSettings}
-  | SetAddressSettings AddressSettings
+  | APISetAddressSettings {userId :: UserId, pqRatchet :: Maybe Bool, settings :: AddressSettings}
+  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings}
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}

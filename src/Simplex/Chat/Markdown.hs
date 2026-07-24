@@ -349,7 +349,7 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
     simplexUriFormat showText = \case
       ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
+        CRContactUri crData _ -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
         CRInvitationUri crData _ -> SimplexLink showText XLInvitation cLink $ uriHosts crData
         where
           cLink = ACL m $ CLFull $ simplexConnReqUri cReq
