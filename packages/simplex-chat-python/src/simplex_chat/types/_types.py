@@ -139,27 +139,27 @@ AgentErrorType = (
 
 AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FILE", "NO_NAME_SERVERS", "PROXY", "RCP", "BROKER", "AGENT", "NOTICE", "INTERNAL", "CRITICAL", "INACTIVE"]
 
-class AgentServiceError_aSERejected(TypedDict):
-    type: Literal["aSERejected"]
+class AgentServiceError_rejected(TypedDict):
+    type: Literal["rejected"]
     rejectReason: str
 
-class AgentServiceError_aSETimeout(TypedDict):
-    type: Literal["aSETimeout"]
+class AgentServiceError_timeout(TypedDict):
+    type: Literal["timeout"]
 
-class AgentServiceError_aSENoPendingRequest(TypedDict):
-    type: Literal["aSENoPendingRequest"]
+class AgentServiceError_noPendingRequest(TypedDict):
+    type: Literal["noPendingRequest"]
 
-class AgentServiceError_aSENotDRAddress(TypedDict):
-    type: Literal["aSENotDRAddress"]
+class AgentServiceError_notDRAddress(TypedDict):
+    type: Literal["notDRAddress"]
 
 AgentServiceError = (
-    AgentServiceError_aSERejected
-    | AgentServiceError_aSETimeout
-    | AgentServiceError_aSENoPendingRequest
-    | AgentServiceError_aSENotDRAddress
+    AgentServiceError_rejected
+    | AgentServiceError_timeout
+    | AgentServiceError_noPendingRequest
+    | AgentServiceError_notDRAddress
 )
 
-AgentServiceError_Tag = Literal["aSERejected", "aSETimeout", "aSENoPendingRequest", "aSENotDRAddress"]
+AgentServiceError_Tag = Literal["rejected", "timeout", "noPendingRequest", "notDRAddress"]
 
 class AutoAccept(TypedDict):
     acceptIncognito: bool

@@ -368,18 +368,18 @@ INACTIVE:
 
 **Discriminated union type**:
 
-ASERejected:
-- type: "aSERejected"
+Rejected:
+- type: "rejected"
 - rejectReason: string
 
-ASETimeout:
-- type: "aSETimeout"
+Timeout:
+- type: "timeout"
 
-ASENoPendingRequest:
-- type: "aSENoPendingRequest"
+NoPendingRequest:
+- type: "noPendingRequest"
 
-ASENotDRAddress:
-- type: "aSENotDRAddress"
+NotDRAddress:
+- type: "notDRAddress"
 
 
 ---
