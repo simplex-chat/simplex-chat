@@ -519,6 +519,16 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
+      // A member-support send reaches only the active (secondary) context; mirror it to the primary
+      // so the main-list preview updates for a pending invitee's own message - #5909.
+      // Only a pending invitee's preview reads support items, so nothing else needs the primary touched:
+      // without the scope/memberPending checks this also re-ran the primary for items it had already handled.
+      // Passing the scoped chatInfo on is safe: updateChatInfo strips the scope before storing it, and
+      // chatItemBelongsToScope keeps a scoped item out of the primary context's item list.
+      if (secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext && cItem.chatDir.sent &&
+        chatInfo.groupChatScope() != null && chatInfo.groupInfo_?.membership?.memberPending == true) {
+        chatsContext.addChatItem(rhId, chatInfo, cItem)
+      }
       // updates membersRequireAttention
       val cInfo = if (chatInfo is ChatInfo.Direct && chatInfo.chatDeleted) {
         // mark chat non deleted
@@ -532,27 +542,20 @@ object ChatModel {
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
       if (i >= 0) {
-        chat = chatsContext.chats[i]
+        chat = chats[i]
         // update preview (for chat from main scope to show new items for invitee in pending status)
         if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
-          val newPreviewItem = when (cInfo) {
-            is ChatInfo.Group -> {
-              val currentPreviewItem = chat.chatItems.firstOrNull()
-              if (currentPreviewItem != null) {
-                if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
-                  cItem
-                } else {
-                  currentPreviewItem
-                }
-              } else {
-                cItem
-              }
-            }
-
-            else -> cItem
-          }
+          val memberPending = cInfo.groupInfo_?.membership?.memberPending == true
+          val currentPreviewItem = if (cInfo is ChatInfo.Group) chat.chatItems.firstOrNull() else null
+          // the new item becomes the preview unless it is older - or, for a pending invitee, unless it is
+          // a no-content event that would re-cover an already shown support message (broker vs local
+          // itemTs aren't comparable there, so content presence is the criterion instead)
+          val newPreviewItem = currentPreviewItem?.takeIf {
+            if (memberPending) cItem.content.msgContent == null && it.content.msgContent != null
+            else cItem.meta.itemTs < it.meta.itemTs
+          } ?: cItem
           val wasUnread = chat.unreadTag
-          chatsContext.chats[i] = chat.copy(
+          chats[i] = chat.copy(
             chatItems = arrayListOf(newPreviewItem),
             chatStats =
             if (cItem.meta.itemStatus is CIStatus.RcvNew) {
@@ -561,11 +564,11 @@ object ChatModel {
             } else
               chat.chatStats
           )
-          updateChatTagReadInPrimaryContext(chatsContext.chats[i], wasUnread)
+          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
         }
         // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          reorderChat(chatsContext.chats[i], 0)
+          reorderChat(chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
@@ -610,7 +613,8 @@ object ChatModel {
     suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
       var itemAdded = false
       // update chat list
-      if (cInfo.groupChatScope() == null) {
+      // memberPending: a support item may be the main-list preview, keep it synced on edit/status (like addChatItem)
+      if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
         val i = getChatIndex(rhId, cInfo.id)
         val chat: Chat
         if (i >= 0) {
@@ -623,7 +627,10 @@ object ChatModel {
               decreaseCounterInPrimaryContext(rhId, cInfo.id)
             }
           }
-        } else {
+        } else if (cInfo.groupChatScope() == null) {
+          // an upsert must not materialise the chat entry for a support item: unlike addChatItem, which
+          // creates a placeholder with no items, this would seed the main list with the support item as
+          // preview - and ChatInfo.Group.id ignores the scope, so that entry shadows the real group
           addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
           itemAdded = true
         }
@@ -668,7 +675,8 @@ object ChatModel {
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       // update chat list
-      if (cInfo.groupChatScope() == null) {
+      // memberPending: a support item may be the main-list preview, clear it on delete/moderate (like addChatItem)
+      if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
         if (cItem.isRcvNew) {
           decreaseCounterInPrimaryContext(rhId, cInfo.id)
         }

@@ -775,6 +775,13 @@ fun ComposeView(
         if (updatedItem != null) {
           withContext(Dispatchers.Main) {
             chatsCtx.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            // a member-support edit reaches only the active context; also update primary so the preview reflects it.
+            // Only a pending invitee's preview shows a support item - for anyone else the primary call is a no-op,
+            // and this runs on every live message update too.
+            if (chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext &&
+              cInfo.groupInfo_?.membership?.memberPending == true) {
+              chatModel.chatsContext.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            }
           }
         }
         return updatedItem?.chatItem

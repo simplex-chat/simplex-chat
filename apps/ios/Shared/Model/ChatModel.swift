@@ -658,20 +658,17 @@ final class ChatModel: ObservableObject {
         if let i = getChatIndex(cInfo.id) {
             // update preview
             if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
-                chats[i].chatItems = switch cInfo {
-                case .group:
-                    if let currentPreviewItem = chats[i].chatItems.first {
-                        if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
-                            [cItem]
-                        } else {
-                            [currentPreviewItem]
-                        }
-                    } else {
-                        [cItem]
-                    }
-                default:
-                    [cItem]
+                let memberPending = cInfo.groupInfo?.membership.memberPending ?? false
+                let currentPreviewItem: ChatItem? = if case .group = cInfo { chats[i].chatItems.first } else { nil }
+                // the new item becomes the preview unless it is older - or, for a pending invitee, unless it is
+                // a no-content event that would re-cover an already shown support message (broker vs local
+                // itemTs aren't comparable there, so content presence is the criterion instead)
+                let keptPreviewItem = currentPreviewItem.flatMap { current in
+                    (memberPending
+                     ? cItem.content.msgContent == nil && current.content.msgContent != nil
+                     : cItem.meta.itemTs < current.meta.itemTs) ? current : nil
                 }
+                chats[i].chatItems = [keptPreviewItem ?? cItem]
                 if case .rcvNew = cItem.meta.itemStatus {
                     unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
                 }
@@ -717,16 +714,20 @@ final class ChatModel: ObservableObject {
     func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         // update chat list
         var itemAdded: Bool = false
-        if cInfo.groupChatScope() == nil {
+        // memberPending: a support item may be the main-list preview, keep it synced on edit/status (like addChatItem)
+        if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    if pItem.id == cItem.id || (cInfo.groupChatScope() == nil && chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
                         chat.chatItems = [cItem]
                     }
                 } else {
                     chat.chatItems = [cItem]
                 }
-            } else {
+            } else if cInfo.groupChatScope() == nil {
+                // an upsert must not materialise the chat entry for a support item: unlike addChatItem, which
+                // creates a placeholder with no items, this would seed the main list with the support item as
+                // preview, and itemAdded would have chatItemSimpleUpdate notify it as a new message
                 addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
                 itemAdded = true
             }
@@ -788,7 +789,8 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update chat list
-        if cInfo.groupChatScope() == nil {
+        // memberPending: a support item may be the main-list preview, clear it on delete/moderate (like addChatItem)
+        if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
             if cItem.isRcvNew {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
             }
@@ -1103,10 +1105,15 @@ final class ChatModel: ObservableObject {
     func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
         let stats = chats[chatIndex].chatStats
-        chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
-        chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
+        // clamp at 0 (Android does the same in decreaseCounterInPrimaryContext): a decrement can arrive
+        // for an item this counter never included - member support items are counted in-session but
+        // excluded from the chat list query the count is loaded from - and the badge must not go negative
+        let unreadCount = max(stats.unreadCount + count, 0)
+        chats[chatIndex].chatStats.unreadCount = unreadCount
+        chats[chatIndex].chatStats.unreadMentions = max(stats.unreadMentions + unreadMentions, 0)
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: count)
+        // feed the badge the delta actually applied, not the requested one
+        changeUnreadCounter(user: currentUser!, by: unreadCount - stats.unreadCount)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
