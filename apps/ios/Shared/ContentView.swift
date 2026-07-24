@@ -257,10 +257,11 @@ struct ContentView: View {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
                 .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
-                // opened via a SimpleX link: show the connection dialog alone — the notifications
-                // prompt and SimpleX Lock notice must not preempt or overlay it (shown on a later start)
-                if !connectViaUrl() {
-                    requestNtfAuthorization()
+                // when opened via a SimpleX link, present the connection dialog and suppress only the
+                // secondary in-app notices that would overlay/drop it; the notifications prompt still shows
+                let connectingViaLink = connectViaUrl()
+                requestNtfAuthorization(showDeniedAlert: !connectingViaLink)
+                if !connectingViaLink {
                     // Local Authentication notice is to be shown on next start after onboarding is complete
                     if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
                         prefLANoticeShown = true
@@ -386,10 +387,10 @@ struct ContentView: View {
         }
     }
 
-    func requestNtfAuthorization() {
+    func requestNtfAuthorization(showDeniedAlert: Bool = true) {
         NtfManager.shared.requestAuthorization(
             onDeny: {
-                if (!notificationAlertShown) {
+                if showDeniedAlert, !notificationAlertShown {
                     notificationAlertShown = true
                     alertManager.showAlert(notificationAlert())
                 }
