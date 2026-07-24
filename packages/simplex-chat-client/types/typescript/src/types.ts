@@ -189,33 +189,33 @@ export namespace AgentErrorType {
 }
 
 export type AgentServiceError = 
-  | AgentServiceError.ASERejected
-  | AgentServiceError.ASETimeout
-  | AgentServiceError.ASENoPendingRequest
-  | AgentServiceError.ASENotDRAddress
+  | AgentServiceError.Rejected
+  | AgentServiceError.Timeout
+  | AgentServiceError.NoPendingRequest
+  | AgentServiceError.NotDRAddress
 
 export namespace AgentServiceError {
-  export type Tag = "aSERejected" | "aSETimeout" | "aSENoPendingRequest" | "aSENotDRAddress"
+  export type Tag = "rejected" | "timeout" | "noPendingRequest" | "notDRAddress"
 
   interface Interface {
     type: Tag
   }
 
-  export interface ASERejected extends Interface {
-    type: "aSERejected"
+  export interface Rejected extends Interface {
+    type: "rejected"
     rejectReason: string
   }
 
-  export interface ASETimeout extends Interface {
-    type: "aSETimeout"
+  export interface Timeout extends Interface {
+    type: "timeout"
   }
 
-  export interface ASENoPendingRequest extends Interface {
-    type: "aSENoPendingRequest"
+  export interface NoPendingRequest extends Interface {
+    type: "noPendingRequest"
   }
 
-  export interface ASENotDRAddress extends Interface {
-    type: "aSENotDRAddress"
+  export interface NotDRAddress extends Interface {
+    type: "notDRAddress"
   }
 }
 
