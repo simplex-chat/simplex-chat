@@ -152,6 +152,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
           Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
           Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
+          Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
   else
       exposed-modules:
           Simplex.Chat.Archive

@@ -580,7 +580,8 @@ CREATE TABLE test_chat_schema.contact_requests (
     contact_id bigint,
     business_group_id bigint,
     welcome_shared_msg_id bytea,
-    request_shared_msg_id bytea
+    request_shared_msg_id bytea,
+    rejection_supported smallint DEFAULT 0 NOT NULL
 );
 
 
