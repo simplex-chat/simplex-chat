@@ -789,6 +789,7 @@ The request needs to be answered using [APISendServiceResponse](./COMMANDS.md#ap
 - type: "serviceRequest"
 - user: [User](./TYPES.md#user)
 - requestId: string
+- signerKey: string?
 - requestData: JSONObject
 
 ---

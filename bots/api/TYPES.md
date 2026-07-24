@@ -381,6 +381,9 @@ NoPendingRequest:
 NotDRAddress:
 - type: "notDRAddress"
 
+BadSignature:
+- type: "badSignature"
+
 
 ---
 
