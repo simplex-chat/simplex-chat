@@ -2100,10 +2100,32 @@ data class LocalProfile(
   }
 }
 
-@Serializable
-enum class ChatPeerType {
-  @SerialName("human") Human,
-  @SerialName("bot") Bot
+@Serializable(with = ChatPeerTypeSerializer::class)
+sealed class ChatPeerType {
+  @Serializable @SerialName("human") object Human: ChatPeerType()
+  @Serializable @SerialName("bot") object Bot: ChatPeerType()
+  @Serializable @SerialName("business") object Business: ChatPeerType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatPeerType()
+
+  val text: String
+    get() = when (this) {
+      is Human -> "human"
+      is Bot -> "bot"
+      is Business -> "business"
+      is Unknown -> type
+    }
+}
+
+object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatPeerType", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatPeerType =
+    when (val v = decoder.decodeString()) {
+      "human" -> ChatPeerType.Human
+      "bot" -> ChatPeerType.Bot
+      "business" -> ChatPeerType.Business
+      else -> ChatPeerType.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.

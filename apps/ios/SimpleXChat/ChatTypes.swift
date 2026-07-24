@@ -221,9 +221,36 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     )
 }
 
-public enum ChatPeerType: String, Codable {
+public enum ChatPeerType: Hashable {
     case human
     case bot
+    case business
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .human: "human"
+        case .bot: "bot"
+        case .business: "business"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatPeerType: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "human": self = .human
+        case "bot": self = .bot
+        case "business": self = .business
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
