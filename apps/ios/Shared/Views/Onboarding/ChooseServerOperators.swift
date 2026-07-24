@@ -184,7 +184,11 @@ struct OnboardingConditionsView: View {
     private func completeOnboarding() {
         let m = ChatModel.shared
         onboardingStageDefault.set(.onboardingComplete)
-        m.onboardingStage = .onboardingComplete
+        // dismiss any presented onboarding sheet and defer the swap, so the deep onboarding
+        // navigation stack isn't torn down mid-transition (crashes UIKit on completion)
+        dismissAllSheets(animated: false) {
+            m.onboardingStage = .onboardingComplete
+        }
     }
 
     private func enabledOperators(_ operators: [ServerOperator]) -> [ServerOperator]? {
