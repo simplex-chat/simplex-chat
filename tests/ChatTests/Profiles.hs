@@ -3934,14 +3934,14 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "alice: contact is prepared"
 
-      -- 2 ids are for "user contacts", 2 ids are for second user contact cards, so alice is id 5
-      bob ##> "/_set contact user @5 2"
+      -- 2 ids are for "user contacts", 1 id is for second user contact card, so alice is id 4
+      bob ##> "/_set contact user @4 2"
       bob <## "contact alice changed from user bob to user robert"
 
       bob ##> "/user robert"
       showActiveUser bob "robert"
 
-      bob ##> "/_connect contact @5 text hello"
+      bob ##> "/_connect contact @4 text hello"
       bob
         <### [ "alice: connection started",
                WithTime "@alice hello"
@@ -3955,8 +3955,8 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
 
       alice @@@ [("@robert", "hey")]
       alice `hasContactProfiles` ["alice", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
-      bob `hasContactProfiles` ["robert", "alice", "Ask SimpleX Team", "SimpleX Status"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@Ask SimpleX Team", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "Ask SimpleX Team"]
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
       bob @@@ []
@@ -3984,16 +3984,16 @@ testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProf
       bob <## "alice: contact is prepared"
 
       -- 2 ids are for "user contacts"
-      -- 2 ids are for second user contact cards
+      -- 1 id is for second user contact card
       -- 1 for second user's alice
-      -- so this alice is id 6
-      bob ##> "/_set contact user @6 2"
+      -- so this alice is id 5
+      bob ##> "/_set contact user @5 2"
       bob <## "contact alice changed from user bob to user robert, new local name: alice_1"
 
       bob ##> "/user robert"
       showActiveUser bob "robert"
 
-      bob ##> "/_connect contact @6 text hello"
+      bob ##> "/_connect contact @5 text hello"
       bob
         <### [ "alice_1: connection started",
                WithTime "@alice_1 hello"
@@ -4012,8 +4012,8 @@ testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProf
 
       alice @@@ [("@robert", "hey"), ("@robert_1", "hey")]
       alice `hasContactProfiles` ["alice", "robert", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@alice_1", "hey"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
-      bob `hasContactProfiles` ["robert", "alice", "alice", "Ask SimpleX Team", "SimpleX Status"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@alice_1", "hey"), ("@Ask SimpleX Team", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "alice", "Ask SimpleX Team"]
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
       bob @@@ []
@@ -4106,8 +4106,8 @@ testShortLinkChangePreparedGroupUser = testChat3 aliceProfile bobProfile cathPro
 
       alice @@@ [("#team", "3"), ("@cath","sent invitation to join group team as admin")]
       alice `hasContactProfiles` ["alice", "cath", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("#team", "3"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
-      bob `hasContactProfiles` ["robert", "alice", "cath", "Ask SimpleX Team", "SimpleX Status"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("#team", "3"), ("@Ask SimpleX Team", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "cath", "Ask SimpleX Team"]
       cath @@@ [("#team", "3"), ("@alice","received invitation to join group team as admin")]
       cath `hasContactProfiles` ["cath", "alice", "robert"]
       bob ##> "/user bob"
@@ -4220,7 +4220,7 @@ testShortLinkChangePreparedGroupUserDuplicate = testChat3 aliceProfile bobProfil
 
       alice @@@ [("#team", "7"), ("@cath","sent invitation to join group team as admin")]
       alice `hasContactProfiles` ["alice", "cath", "robert", "robert"]
-      bob `hasContactProfiles` ["robert", "robert", "robert", "alice", "alice", "cath", "cath", "Ask SimpleX Team", "SimpleX Status"]
+      bob `hasContactProfiles` ["robert", "robert", "robert", "alice", "alice", "cath", "cath", "Ask SimpleX Team"]
       cath @@@ [("#team", "7"), ("@alice","received invitation to join group team as admin")]
       cath `hasContactProfiles` ["cath", "alice", "robert", "robert"]
       bob ##> "/user bob"
