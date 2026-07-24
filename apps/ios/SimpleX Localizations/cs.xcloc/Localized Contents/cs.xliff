@@ -6767,8 +6767,8 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Register</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Register a test name" xml:space="preserve">
-        <source>Register a test name</source>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">

@@ -875,7 +875,10 @@ struct SetSimplexDomainView: View {
                     Button {
                         openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
                     } label: {
-                        Text("Register a test name")
+                        HStack {
+                            Text("How to register a test name")
+                            Image(systemName: "arrow.up.right.circle")
+                        }
                     }
                     Button {
                         if let w = broadcastWarning, changed {
