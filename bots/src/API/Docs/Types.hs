@@ -198,6 +198,7 @@ chatTypesDocsData =
     -- (STI "JSONObject" [], STRecord, "", [], "Arbitrary JSON object."),
     -- (STI "UTCTime" [], STRecord, "", [], "Timestampe in ISO8601 format as string."),
     (STI "VersionRange" [RecordTypeInfo "VersionRange" [FieldInfo "minVersion" (ti TInt), FieldInfo "maxVersion" (ti TInt)]], STRecord, "", [], "", ""),
+    (STI "UserContactRequestRef" [RecordTypeInfo "UserContactRequestRef" [FieldInfo "contactRequestId" (ti TInt64), FieldInfo "rejectionSupported" (ti TBool)]], STRecord, "", [], "", ""),
     (sti @(ChatItem 'CTDirect 'MDSnd), STRecord, "", [], "", ""),
     (sti @(CIFile 'MDSnd), STRecord, "", [], "", ""),
     (sti @(CIMeta 'CTDirect 'MDSnd), STRecord, "", [], "", ""),
@@ -209,6 +210,7 @@ chatTypesDocsData =
     (sti @AddressSettings, STRecord, "", [], "", ""),
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
+    (sti @AgentServiceError, STUnion, "", [], "", ""),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
@@ -435,6 +437,7 @@ deriving instance Generic AddRelayResult
 deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType
+deriving instance Generic AgentServiceError
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
 deriving instance Generic BlockingInfo
