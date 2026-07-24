@@ -220,11 +220,13 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
-[Jul 29, 2025 SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
+[Jul 22, 2026. SimpleX Public Names — a Name Nobody Can Take From You](./blog/20260722-simplex-public-names.md)
+
+[Apr 30, 2026. SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech](./blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md)
+
+[Jul 29, 2025. SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
 
 [Jul 3, 2025 SimpleX network: new experience of connecting with people &mdash; available in SimpleX Chat v6.4-beta.4](./blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.md)
-
-[Mar 8, 2025. SimpleX Chat v6.3: new user experience and safety in public groups](./blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md)
 
 [Jan 14, 2025. SimpleX network: large groups and privacy-preserving content moderation](./blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
 
@@ -241,10 +243,6 @@ Recent and important updates:
 [Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
-
-[Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
-
-[Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 [All updates](./blog)
 

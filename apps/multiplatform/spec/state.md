@@ -155,7 +155,6 @@ Defined at [`ChatModel.kt line 86`](../common/src/commonMain/kotlin/chat/simplex
 | [`notificationPreviewMode`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L147) | `MutableState<NotificationPreviewMode>` | 147 | Notification content preview level |
 | [`showAuthScreen`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L156) | `MutableState<Boolean>` | 156 | Whether to show authentication screen |
 | [`showChatPreviews`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L158) | `MutableState<Boolean>` | 158 | Whether to show chat preview text in list |
-| [`clipboardHasText`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L185) | `MutableState<Boolean>` | 185 | System clipboard has text content |
 | [`networkInfo`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L186) | `MutableState<UserNetworkInfo>` | 186 | Network type and online status |
 | [`conditions`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L188) | `MutableState<ServerOperatorConditionsDetail>` | 188 | Server operator terms/conditions |
 | [`updatingProgress`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L190) | `MutableState<Float?>` | 190 | Progress indicator for app updates |
