@@ -36,8 +36,10 @@ active_home: true
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
     <meta name="theme-color" content="#C1E3FE">
 
+    {%- if homeHero == 'default' -%}
     <link rel="preload" href="/img/design_3/cover.webp" as="image" type="image/webp">
     <link rel="preload" href="/img/design_3/cover-light.webp" as="image" type="image/webp" media="(prefers-color-scheme: light)">
+    {%- endif -%}
     <link rel="preload" href="/img/new/logo-dark.png" as="image">
     <link rel="preload" href="/img/new/logo-light.png" as="image" media="(prefers-color-scheme: light)">
     <link rel="preload" href="/img/design_3/publications/trail-of-bits.png" as="image">
@@ -94,6 +96,7 @@ active_home: true
     {% set lang = page.url | getlang %}
 
     <div class="screen">
+        {%- if homeHero == 'default' -%}
         <section class="page-1 cover page">
             <div class="area">
                 <div class="content">
@@ -152,9 +155,13 @@ active_home: true
                 </div>
             </div>
         </section>
+        {%- endif -%}
 
         <main>
             <div class="section-bg"></div>
+            {%- if homeHero != 'default' -%}
+            {% include "hero-crowdfunding.html" %}
+            {%- endif -%}
 
             <section id="messaging" class="page-2 page">
                 <div class="area">
@@ -271,7 +278,7 @@ active_home: true
         const header = document.querySelector('header#navbar');
         const cover = document.querySelector('.page-1.cover');
         const footer = document.querySelector('.footer.page');
-        if (!header || !cover || !footer || !('IntersectionObserver' in window)) {
+        if (!header || !footer || !('IntersectionObserver' in window)) {
             window.addEventListener('load', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             window.addEventListener('scroll', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             return;
@@ -281,7 +288,7 @@ active_home: true
             const onObserved = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.02);
             document.body.classList.toggle('change-nav-color', !onObserved);
         }, { threshold: [0, 0.02, 1] });
-        io.observe(cover);
+        if (cover) io.observe(cover);
         io.observe(footer);
     })();
     </script>
