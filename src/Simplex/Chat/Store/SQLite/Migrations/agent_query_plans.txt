@@ -560,11 +560,52 @@ SEARCH s USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
 
 Query: 
+        SELECT x3dh_priv_key_1, x3dh_priv_key_2, pq_priv_kem
+        FROM address_ratchet_keys
+        WHERE conn_id = ? AND ratchet_key_id = ?
+      
+Plan:
+SEARCH address_ratchet_keys USING INDEX idx_address_ratchet_keys (conn_id=? AND ratchet_key_id=?)
+
+Query: 
+        UPDATE rcv_messages
+        SET receive_attempts = receive_attempts + 1
+        WHERE conn_id = ? AND internal_id = ?
+        RETURNING receive_attempts
+      
+Plan:
+SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
+
+Query: 
+      DELETE FROM address_ratchet_keys
+      WHERE conn_id = ?
+        AND address_ratchet_key_id NOT IN (
+          SELECT address_ratchet_key_id
+          FROM address_ratchet_keys
+          WHERE conn_id = ?
+          ORDER BY address_ratchet_key_id DESC
+          LIMIT ?
+        )
+    
+Plan:
+SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
+LIST SUBQUERY 1
+SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
       DELETE FROM conn_confirmations
       WHERE conn_id = ?
     
 Plan:
 SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (conn_id=?)
+
+Query: 
+      INSERT INTO address_ratchet_keys
+        (conn_id, ratchet_key_id, x3dh_priv_key_1, x3dh_priv_key_2, pq_priv_kem)
+      VALUES (?, ?, ?, ?, ?)
+    
+Plan:
 
 Query: 
       INSERT INTO connections
