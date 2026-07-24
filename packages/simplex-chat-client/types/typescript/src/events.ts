@@ -472,6 +472,7 @@ export namespace CEvt {
     type: "serviceRequest"
     user: T.User
     requestId: string
+    signerKey?: string
     requestData: object
   }
 

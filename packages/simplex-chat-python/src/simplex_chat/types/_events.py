@@ -314,6 +314,7 @@ class ServiceRequest(TypedDict):
     type: Literal["serviceRequest"]
     user: "T.User"
     requestId: str
+    signerKey: NotRequired[str]
     requestData: dict[str, object]
 
 class ServiceReplySent(TypedDict):

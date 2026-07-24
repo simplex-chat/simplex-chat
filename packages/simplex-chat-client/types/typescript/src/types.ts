@@ -193,9 +193,10 @@ export type AgentServiceError =
   | AgentServiceError.Timeout
   | AgentServiceError.NoPendingRequest
   | AgentServiceError.NotDRAddress
+  | AgentServiceError.BadSignature
 
 export namespace AgentServiceError {
-  export type Tag = "rejected" | "timeout" | "noPendingRequest" | "notDRAddress"
+  export type Tag = "rejected" | "timeout" | "noPendingRequest" | "notDRAddress" | "badSignature"
 
   interface Interface {
     type: Tag
@@ -216,6 +217,10 @@ export namespace AgentServiceError {
 
   export interface NotDRAddress extends Interface {
     type: "notDRAddress"
+  }
+
+  export interface BadSignature extends Interface {
+    type: "badSignature"
   }
 }
 

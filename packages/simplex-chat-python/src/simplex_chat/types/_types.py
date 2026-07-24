@@ -152,14 +152,18 @@ class AgentServiceError_noPendingRequest(TypedDict):
 class AgentServiceError_notDRAddress(TypedDict):
     type: Literal["notDRAddress"]
 
+class AgentServiceError_badSignature(TypedDict):
+    type: Literal["badSignature"]
+
 AgentServiceError = (
     AgentServiceError_rejected
     | AgentServiceError_timeout
     | AgentServiceError_noPendingRequest
     | AgentServiceError_notDRAddress
+    | AgentServiceError_badSignature
 )
 
-AgentServiceError_Tag = Literal["rejected", "timeout", "noPendingRequest", "notDRAddress"]
+AgentServiceError_Tag = Literal["rejected", "timeout", "noPendingRequest", "notDRAddress", "badSignature"]
 
 class AutoAccept(TypedDict):
     acceptIncognito: bool
