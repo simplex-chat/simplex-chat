@@ -4,7 +4,7 @@
 **Status:** implementation-ready
 **Companion:** [Product and UX plan](2026-07-20-supporter-badges-v2-product.md)
 
-Payment verification creates a provider-neutral `ServiceGrant`. Badge issuance fulfills it. Payment and badge are separate state machines on client and bot.
+An **order** (`orderId` = client UUID, authenticated by an Ed25519 `orderKey`) carries a `product` and a `payment`. Payment verification creates a provider-neutral `ServiceGrant`; badge issuance fulfills it. Payment and badge are separate state machines on client and bot. Order / product(badge) / payment are decoupled and product-extensible.
 
 ![Architecture](assets/badge-v2-roles.svg)
 
@@ -29,15 +29,15 @@ Payment verification creates a provider-neutral `ServiceGrant`. Badge issuance f
 
 ```mermaid
 flowchart LR
-  C[Client] <-->|Service RPC| B[Badge bot]
+  C[Client] <-->|Signed order RPC| B[Badge bot]
   B <-->|Provider API / webhook| S[Apple / Google / Stripe]
 ```
 
 | Component | Owns | Must not own |
 |---|---|---|
-| Client payment | BBS master key, purchase UI, cached status, retry schedule | bot/provider truth |
-| Client badge | credential receipt and installation | billing state |
-| Payment service | BBS owner commitment, proof verification, billing state, grant schedule | raw master key, credential |
+| Client order | `orderId`, `orderSk` key, purchase UI, cached status, retry schedule | bot/provider truth |
+| Client badge | BBS master key, credential receipt and installation | billing state |
+| Order service | order key registration, product pin, proof verification, billing state, grant schedule | badge master key, credential |
 | Service grant | product and eligible monthly grant period | provider proof, credential |
 | Badge service | signing and idempotent credential cache | provider/billing logic |
 | Core | signature verification and installed badge | payment status |
@@ -47,13 +47,13 @@ Treat these as separate programs with typed interfaces.
 ### Invariants
 
 1. Provider verification changes payment state only.
-2. Before `Prepare`, client generates one `BadgeMasterKey` with `generateMasterKey`; it is 32 random bytes and BBS message 0.
-3. Payment stores `BadgeKeyCommitment = SHA-256("SimpleX badge key commitment v1" || BadgeMasterKey)` and every later issue must match it.
-4. Only `GrantReady` plus the matching raw master key enters badge signing.
-5. Grant fulfillment and cached issuance result are atomic/idempotent.
-6. Payment never activates perks; verified credential does.
-7. RPC has no caller identity, no bot-issued token, and no bot push. Each request carries its own credential — a fresh provider proof (Apple/Google) or a `BadgeMasterKey` possession proof (Stripe) — verified against the payment binding.
-8. Duplicate RPCs/events return the same result. Unknown states preserve prior state.
+2. An order is identified by a client-generated `orderId` (UUID) and authenticated by its Ed25519 `orderKey`, registered on the create request and verified on every request (external envelope). No caller identity, no bot-issued token, no bot push.
+3. The `product` is immutable per order: pinned on the first request; a differing product later is rejected.
+4. For a badge product, the client supplies only the SKU (`plan`) and `BadgeMasterKey`; the bot derives tier/expiry and assembles `BadgeInfo`. The declared SKU must equal the SKU verified in `payment`.
+5. `BadgeMasterKey` (32 random bytes, BBS message 0 via `generateMasterKey`) lives only inside the badge product; it signs the badge and is never an identifier or an auth credential.
+6. Only `GrantReady` plus the badge product's master key enters badge signing; grant fulfillment and cached issuance are atomic/idempotent.
+7. Payment never activates perks; the verified credential does.
+8. Duplicate requests/events return the same result. Unknown states preserve prior state.
 9. Provider dates create eligibility; retry/request time never changes badge expiry.
 
 ### Time and grant
@@ -63,18 +63,18 @@ data ServiceGrantState = GrantReady | GrantFulfilled | GrantRevoked
 
 data ServiceGrant = ServiceGrant
   { grantId :: GrantId
-  , paymentId :: PaymentId
+  , orderId :: OrderId
   , productId :: ServiceProductId
   , grantPeriodStart :: UTCTime
   , grantState :: ServiceGrantState
   }
 ```
 
-- One-time: one grant at verified purchase time. Reject another one-time prepare while its prior one-time service period is active.
+- One-time: one grant at verified purchase time. Reject another one-time order for the same entitlement while its prior one-time service period is active.
 - Subscription: `grantPeriodStart(n) = addCalendarMonths n verifiedAnchor` when `grantPeriodStart(n) <= now < paidThrough`.
 - Monthly and yearly plans both expose one grant per eligible month.
 - Badge service computes expiry as the start of the month two months after `grantPeriodStart`.
-- Unique grant: `(payment_id, product_id, grant_period_start)`.
+- Unique grant: `(order_id, product_id, grant_period_start)`.
 - Example: 21 July grant period → badge expires 1 September; monthly billing renews 21 August.
 
 Grant eligibility by payment state:
@@ -91,7 +91,7 @@ Grant eligibility by payment state:
 
 ## 2. State machines
 
-These names are canonical. Every transition is validated against the current constructor.
+These names are canonical. Every transition is validated against the current constructor. All five machines hang off one **order** (`orderId`): the bot order aggregates a payment sub-state, a service grant, and a badge sub-state; the client mirrors payment and badge. "Issue" below is the badge-fulfilling step of a `Purchase` operation, not a separate call.
 
 ### Client payment
 
@@ -113,7 +113,7 @@ These names are canonical. Every transition is validated against the current con
 
 | State | Meaning |
 |---|---|
-| `BPPrepared` | payment/commitment/binding stored |
+| `BPPrepared` | order/key/binding stored |
 | `BPCheckoutOpen` | Stripe Session stored |
 | `BPAwaitingPayment` | provider not complete |
 | `BPVerifying` | reconciliation lease active |
@@ -222,9 +222,9 @@ Bot payment:
 
 | From | On | To |
 |---|---|---|
-| — | `Prepare` | `BPPrepared` |
+| — | `Purchase` (create order) | `BPPrepared` |
 | `BPPrepared` | Stripe Session created | `BPCheckoutOpen` |
-| `BPPrepared` | Apple/Google evidence | `BPVerifying` |
+| `BPPrepared` | Apple/Google receipt | `BPVerifying` |
 | `BPCheckoutOpen` | webhook: paid | `BPVerifying` |
 | `BPCheckoutOpen` | webhook: async pending | `BPAwaitingPayment` |
 | `BPCheckoutOpen` | Checkout expired | `BPExpired` |
@@ -257,7 +257,7 @@ Bot badge:
 
 | From | On | To |
 |---|---|---|
-| — | `IssueBadge` on `GrantReady`, key matches commitment | `BBRequested` |
+| — | `Purchase` issues on `GrantReady`, badge product master key present | `BBRequested` |
 | `BBRequested` | claim signing lease | `BBSigning` |
 | `BBSigning` | signed + cached (marks `GrantFulfilled`) | `BBIssued` |
 | `BBSigning` | signing unavailable | `BBRetryableFailure` |
@@ -276,7 +276,7 @@ Client payment:
 | `CPStoreReady` | store pending | `CPAwaitingPayment` |
 | `CPStoreReady` | store canceled | prior state |
 | `CPCheckoutReady` | checkout opened | `CPAwaitingPayment` |
-| `CPAwaitingPayment` | send evidence / `IssueBadge` | `CPVerifying` |
+| `CPAwaitingPayment` | send `Purchase` (paid evidence) | `CPVerifying` |
 | `CPVerifying` | bot paid | `CPEntitled` |
 | `CPVerifying` | bot renewal-off | `CPEndsAtPeriodEnd` |
 | `CPVerifying` | bot grace/hold/paused/error | `CPPaymentProblem` |
@@ -297,7 +297,7 @@ Client badge:
 |---|---|---|
 | `CBNone` | grant available | `CBNeeded` |
 | `CBInstalled` | new grant period | `CBNeeded` |
-| `CBNeeded` | send `IssueBadge` | `CBRequesting` |
+| `CBNeeded` | send `Purchase` (issue) | `CBRequesting` |
 | `CBRequesting` | credential returned | `CBReceived` |
 | `CBRequesting` | retryable | `CBRetryableFailure` |
 | `CBRequesting` | final | `CBFinalFailure` |
@@ -313,9 +313,9 @@ Bot payment:
 
 ```mermaid
 stateDiagram-v2
-  [*] --> BPPrepared: Prepare
+  [*] --> BPPrepared: Purchase create
   BPPrepared --> BPCheckoutOpen: stripe session
-  BPPrepared --> BPVerifying: apple or google evidence
+  BPPrepared --> BPVerifying: apple or google receipt
   BPCheckoutOpen --> BPVerifying: webhook paid
   BPCheckoutOpen --> BPAwaitingPayment: async pending
   BPCheckoutOpen --> BPExpired: checkout expired
@@ -346,7 +346,7 @@ stateDiagram-v2
   state "BP paid: OneTime or SubscriptionActive or Grace or EndsAtPeriodEnd" as BPpaid
   [*] --> BPpaid: payment verified
   BPpaid --> GrantReady: create due grant
-  GrantReady --> BBRequested: IssueBadge, key matches
+  GrantReady --> BBRequested: Purchase issues, key present
   BBRequested --> BBSigning: claim lease
   BBSigning --> BBIssued: sign and cache
   BBIssued --> GrantFulfilled: mark fulfilled
@@ -392,7 +392,7 @@ stateDiagram-v2
   [*] --> CBNone
   CBNone --> CBNeeded: grant available
   CBInstalled --> CBNeeded: new grant period
-  CBNeeded --> CBRequesting: send IssueBadge
+  CBNeeded --> CBRequesting: send Purchase
   CBRequesting --> CBReceived: credential returned
   CBRequesting --> CBRetryableFailure: retryable
   CBRequesting --> CBFinalFailure: final
@@ -405,82 +405,118 @@ stateDiagram-v2
 
 ## 3. Contracts
 
-### RPC payload
+An order is `product + payment`, identified by a client `orderId` and authenticated by an external Ed25519 signature. The command layer never reasons about auth.
+
+### Envelope (external auth layer)
+
+Mirrors the SMP signed transmission — **entity id, signature, body**.
 
 ```haskell
-data ServiceCall = ServiceCall
-  { requestId :: RequestId
-  , payment :: PaymentInput
-  , request :: Maybe ServiceRequest
+newtype OrderId   = OrderId UUID                    -- client-generated, e.g. "b1e2…-uuid"
+newtype OrderKey  = OrderKey C.PublicKeyEd25519     -- order public key, registered on create
+type    Signature = C.Signature 'C.Ed25519          -- over (orderId ‖ body), made with orderSk
+
+data ServiceEnvelope = ServiceEnvelope
+  { orderId   :: OrderId
+  , signature :: Signature
+  , body      :: ServiceRequest
+  }
+```
+
+Signing (keygen → sign → verify):
+
+1. On create, the client generates `(orderSk, orderPk)` and the `orderId` UUID, stores `orderSk` encrypted (backed up with the profile), and puts `orderPk` in `body.orderKey`.
+2. The bot, seeing no order for `orderId`, treats it as create: stores `orderPk`, verifies the signature.
+3. Every request signs `signature = sign(orderSk, orderId ‖ body)`. Later requests may omit `orderKey`; if present it must equal the stored `orderPk`. Mismatch ⇒ `order_auth_invalid`.
+
+No `corrId`: `orderId` already correlates request↔response and keys idempotency (the SimpleX transport handles message delivery). Replay is benign — operations are idempotent by `orderId`, and the signature binds to `orderId` so a signed body cannot move to another order. Signing reuses the SMP `authTransmission` Ed25519 path. `orderSk` (order auth) and `BadgeMasterKey` (badge signing) are two distinct secrets.
+
+### Request / response body
+
+Every referenced type is defined here; existing `Simplex.Chat.Badges` types are reused, not redefined.
+
+```haskell
+data ServiceRequest = ServiceRequest
+  { orderKey  :: Maybe OrderKey    -- required on create; must equal the stored key thereafter
+  , operation :: Operation
+  , product   :: Product
+  , payment   :: Payment
   }
 
-data PaymentInput
-  = Prepare Provider ServiceProductId PurchaseKind BadgeKeyCommitment
-  | AppleEvidence BadgeKeyCommitment SignedTransactionJWS
-  | GoogleEvidence BadgeKeyCommitment PurchaseToken
-  | StripeStatus BadgeKeyProof
-  | StripeCancel BadgeKeyProof
-  | StripePortal BadgeKeyProof
+data Operation = Purchase | Cancel | Status         -- billing period is in the SKU, not here
 
--- BadgeKeyProof is the raw BadgeMasterKey, revealed over the E2E channel;
--- the bot re-derives BadgeKeyCommitment = SHA-256(domain || key) and matches.
--- This reuses issuance, which already sends the key, so it exposes nothing new.
---
--- No PaymentId on the wire: each Prepare uses a fresh BadgeMasterKey, so
--- BadgeKeyCommitment is 1:1 with the payment and selects it. Apple/Google
--- carry the commitment and authenticate by fresh store proof; Stripe calls
--- carry a BadgeKeyProof, which both selects (via commitment) and authenticates.
--- PaymentId (below) is an internal primary/foreign key only.
-type BadgeKeyProof = BadgeMasterKey
-data ServiceRequest = IssueBadge BadgeMasterKey (Maybe GrantId)
+newtype ServiceProductId = ServiceProductId Text    -- SKU, e.g. "supporter_monthly", "legend_onetime"
 
-data ServiceResponse = ServiceResponse
-  { requestId :: RequestId
-  , payment :: PaymentSnapshot
-  , grant :: Maybe ServiceGrantSummary
-  , service :: Maybe (Either ServiceError BadgeCredential)
-  , retryAfter :: Maybe NominalDiffTime
+data Product = ProductBadge BadgeProduct            -- | ProductName NameProduct ...  (future)
+data BadgeProduct = BadgeProduct
+  { plan      :: ServiceProductId   -- SKU → tier × period (server-authoritative via badge_types[plan])
+  , masterKey :: BadgeMasterKey     -- BBS delivery key; confined here, consumed at issuance
   }
+
+data Payment  = PaymentApple AppleOp | PaymentGoogle GoogleOp | PaymentStripe StripeOp
+newtype AppleOp  = AppleReceipt SignedTransactionJWS
+newtype GoogleOp = GoogleReceipt PurchaseToken
+data    StripeOp = StripeInvoice | StripePaid InvoiceId | StripeManage   -- Manage = cancel/status
+newtype InvoiceId = InvoiceId Text
+
+data ServiceResponse
+  = RspInvoice    InvoiceRef         -- Stripe Checkout URL, or Apple/Google store binding
+  | RspCredential BadgeCredential     -- reuse Simplex.Chat.Badges.BadgeCredential
+  | RspStatus     OrderStatus
+  | RspPortal     Url                 -- Stripe cancel-flow / management portal link
+  | RspError      ServiceError
+newtype InvoiceRef = InvoiceRef Text
+newtype Url        = Url Text
+
+data OrderStatus = OrderStatus
+  { orderState  :: BotPaymentState, badgeState :: Maybe BotBadgeState
+  , paidThrough :: Maybe UTCTime,   willRenew  :: Bool }
+
+data ServiceError = ServiceError { code :: ErrorCode, message :: Text }
+data ErrorCode
+  = OrderAuthInvalid | ProductChanged | ProductMismatch
+  | PaymentPending | PaymentNotEntitled | ProviderUnavailable | ProviderRateLimited
+  | UnsupportedVersion | BadRequest | InternalError
+
+-- The bot assembles the internal BadgeRequest { masterKey, badgeInfo } where
+-- badgeInfo = BadgeInfo { badgeType = badge_types[plan]
+--                       , badgeExpiry = Just end_of_next_month, badgeExtra = "" }.
 ```
 
 Rules:
 
-- Each `Prepare` uses a fresh `BadgeMasterKey`; renewals of the same subscription reuse it without a new `Prepare`. So `BadgeKeyCommitment` is unique per payment and is the wire selector; `PaymentId` never appears on the wire.
-- Client calls `generateMasterKey` once before `Prepare`, persists it encrypted, computes `BadgeKeyCommitment`, and reuses the key for all renewal badges.
-- `Prepare` stores `BadgeKeyCommitment` but cannot issue a badge.
-- Apple/Google evidence may include `IssueBadge`.
-- Stripe prepare returns Checkout data. The client then sends `IssueBadge`; while payment is pending the bot holds that call and sends no response.
-- The waiting call responds once after verified payment and issuance, or with a terminal payment error. Other retryable operations may still return `retryAfter`.
-- The `BadgeMasterKey`, its `BadgeKeyProof`, and `BadgeKeyCommitment` never enter Stripe metadata or a return URL.
-- `grantId` selects only; bot rechecks payment, owner, product, and eligibility.
-- `StripeCancel`/`StripePortal` return a portal URL in the payment snapshot (like the Checkout URL); the bot never cancels silently. `StripeCancel` deep-links to the cancel flow; `StripePortal` opens general management. When the request carries no valid `BadgeKeyProof` (customer cannot be identified), the bot returns the account-wide login page instead of a session.
-- There is no bot-issued authorization token and no `PaymentId` on the wire. The payment is selected by `BadgeKeyCommitment` (Apple/Google carry it explicitly; a Stripe `BadgeKeyProof` references it). Each RPC also authenticates: Apple/Google by fresh store proof, Stripe by the `BadgeKeyProof`. The bot resolves and verifies before acting.
-- Before signing, orchestrator recomputes `BadgeKeyCommitment` from `BadgeMasterKey`; mismatch returns `ownership_conflict` without fulfilling grant.
+- **Invoice-or-badge, one order.** A `Purchase` with `StripeInvoice` returns `RspInvoice`; the same `orderId` with `StripePaid`/`AppleReceipt`/`GoogleReceipt` verifies and returns `RspCredential`. Renewals are later `Purchase`/`Status` requests on the same order.
+- **Product is pinned per order.** The bot fixes `product` on the first request; a later differing product ⇒ `product_changed` ("invoice for A then claim paid on B ⇒ get lost").
+- **Tier/period/expiry are server-derived; only `masterKey` is client-authoritative.** The bot resolves the tier from `badge_types[plan]`, sets `badgeExpiry = end_of_next_month`, `badgeExtra = ""`, and assembles the internal `BadgeRequest`. `badgeType` is never on the wire.
+- **Declared SKU must equal the verified SKU** proven by `Payment` (Apple/Google receipt `productId`, Stripe `plan`); divergence ⇒ `product_mismatch`.
+- Stripe stays event-driven: a `Purchase` with `StripePaid` may hold the call until the webhook confirms; it responds once after verified payment + issuance, or a terminal payment error.
+- Stripe `Cancel`/`Status` (`StripeManage`) return a portal URL in `RspPortal`; the bot never cancels silently. When the order can't be identified, it returns the account-wide portal login page.
+- The `BadgeMasterKey` never enters Stripe metadata or a return URL.
 
 ### Internal interface
 
 ```haskell
-resolvePayment :: PaymentInput -> Transaction PaymentDecision
-fulfillBadge  :: ServiceGrant -> BadgeRequest -> Transaction BadgeResult
+resolveOrder :: OrderId -> ServiceRequest -> Transaction OrderDecision
+fulfillBadge :: ServiceGrant -> BadgeRequest -> Transaction BadgeResult
 ```
 
 Order:
 
-1. select the payment by `BadgeKeyCommitment` and authenticate the request credential (store proof, or `BadgeKeyProof` against that commitment);
-2. resolve/verify payment;
-3. commit payment and create/load due grant;
-4. verify the request key matches the payment `BadgeKeyCommitment`;
-5. pass only grant + request to badge service;
+1. verify the envelope signature against the order's `orderKey` (create registers it);
+2. load/pin the order's product; reject on `product_changed`;
+3. resolve/verify payment; check the verified SKU equals the declared SKU (`product_mismatch`);
+4. commit payment and create/load the due grant;
+5. assemble `BadgeRequest` (masterKey + server-derived `badgeInfo`) and pass grant + request to the badge service;
 6. cache issuance and mark grant fulfilled atomically;
 7. return the single response.
 
 ### Idempotency and audit
 
-- `requestId` binds to canonical request hash. Same body returns stored response; different body returns `idempotency_mismatch`.
+- `orderId` keys idempotency: the same operation on the same order returns the stored response; a changed product returns `product_changed`.
 - Transport replay dedupe is separate and shorter-lived.
-- Stripe mutation idempotency key derives from request ID + operation.
-- Developer Tools → Chat Console records start/result, request ID, method, payment suffix, before/after states, retry class, and duration.
-- Redact JWS/token, `BadgeKeyProof`, Checkout query/return token, master key, credential, and provider/customer IDs.
+- Stripe mutation idempotency key derives from `orderId` + operation.
+- Developer Tools → Chat Console records start/result, order id suffix, operation, before/after states, retry class, and duration.
+- Redact the Ed25519 signature, JWS/token, Checkout query/return token, `BadgeMasterKey`, credential, and provider/customer IDs.
 
 ## 4. Provider flows
 
@@ -493,11 +529,11 @@ sequenceDiagram
   participant C as Client
   participant B as Bot
   Note over C: CPVerifying + CBRequesting
-  C->>B: RPC payment status + IssueBadge
+  C->>B: Purchase (paid evidence), signed order
   Note over B: Payment: BPPaidOneTime / BPSubscriptionActive / BPGrace / BPEndsAtPeriodEnd
   B->>B: Create or load eligible grant period
   Note over B: Grant: GrantReady
-  B->>B: Verify BadgeMasterKey matches BadgeKeyCommitment
+  B->>B: Verify SKU, assemble BadgeRequest from product master key
   B->>B: Create issuance
   Note over B: Badge: BBRequested
   B->>B: Claim signing
@@ -522,7 +558,7 @@ sequenceDiagram
   participant B as Bot
   participant A as Apple
   Note over C: CPVerifying
-  C->>B: RPC AppleEvidence + optional IssueBadge
+  C->>B: Purchase (AppleReceipt), signed order
   Note over B: Payment: BPVerifying
   B->>B: Verify signed transaction offline
   Note over B: Payment: BPPaidOneTime or BPSubscriptionActive
@@ -541,7 +577,7 @@ sequenceDiagram
   participant B as Bot
   participant G as Google
   Note over C: CPVerifying
-  C->>B: RPC GoogleEvidence + optional IssueBadge
+  C->>B: Purchase (GoogleReceipt), signed order
   Note over B: Payment: BPVerifying
   B->>G: Verify purchase token
   G-->>B: Canonical purchase
@@ -552,7 +588,7 @@ sequenceDiagram
 
 Commit entitlement before outbox acknowledgement/consume. RTDN triggers provider GET; never create a service grant from the notification payload.
 
-### Stripe Checkout and waiting `IssueBadge`
+### Stripe Checkout and waiting `Purchase`
 
 ```mermaid
 sequenceDiagram
@@ -560,16 +596,16 @@ sequenceDiagram
   participant B as Bot
   participant S as Stripe
   Note over C: CPPreparing
-  C->>B: RPC Prepare Stripe
+  C->>B: Purchase (StripeInvoice), create order
   Note over B: BPPrepared
   B->>S: Create Checkout Session
   S-->>B: Session ID + URL
   Note over B: BPCheckoutOpen
-  B-->>C: RPC Checkout URL
+  B-->>C: RspInvoice (Checkout URL)
   Note over C: CPCheckoutReady
   C->>S: Open Checkout
   Note over C: CPAwaitingPayment
-  C->>B: RPC IssueBadge(requestId, key)
+  C->>B: Purchase (StripePaid), same orderId
   Note over C: CPAwaitingPayment + CBRequesting
   B->>B: Register waiter and recheck payment under lock
   Note over B: BPAwaitingPayment<br/>No response yet
@@ -586,11 +622,11 @@ sequenceDiagram
   Note over C: CBInstalled
 ```
 
-The second RPC has exactly one response. The bot sends it only after verified payment allows issuance, or after a terminal event such as Checkout expiry. Register-and-recheck under the payment lock prevents a webhook/request race. If the webhook completed first, `IssueBadge` responds immediately.
+The second `Purchase` (`StripePaid`) has exactly one response. The bot sends it only after verified payment allows issuance, or after a terminal event such as Checkout expiry. Register-and-recheck under the order lock prevents a webhook/request race. If the webhook completed first, the `Purchase` responds immediately.
 
 If Stripe retrieval fails transiently after the webhook, the bot keeps the call open and retries internally. It does not send an intermediate response; only the RPC deadline or a terminal payment result ends the wait.
 
-Persist request ID, hash, and result state; keep the live waiter and raw `BadgeMasterKey` only in memory. Webhook commit wakes live waiters after `GrantReady` is durable. After bot restart, the repeated request rechecks persisted payment/grant state and either returns immediately or installs a new waiter.
+Persist `orderId`, request hash, and result state; keep the live waiter and raw `BadgeMasterKey` only in memory. Webhook commit wakes live waiters after `GrantReady` is durable. After bot restart, the repeated `Purchase` rechecks persisted payment/grant state and either returns immediately or installs a new waiter.
 
 ### Stripe wait interruption
 
@@ -600,7 +636,7 @@ sequenceDiagram
   participant B as Bot
   participant S as Stripe
   Note over C: CPAwaitingPayment + CBRequesting
-  C->>B: RPC IssueBadge with stable requestId
+  C->>B: Purchase (StripePaid), stable orderId
   B->>B: Register waiter, payment still pending
   Note over B: Hold call, no response
   Note over C: RPC deadline / app restart
@@ -609,12 +645,12 @@ sequenceDiagram
   Note over B: Remove waiter, preserve payment state
   S-->>B: Webhook may complete payment later
   Note over B: Persist payment + GrantReady
-  C->>B: Repeat same IssueBadge on foreground
+  C->>B: Repeat same Purchase on foreground
   Note over C: CPAwaitingPayment + CBRequesting
   B-->>C: Credential immediately if ready<br/>otherwise hold this call
 ```
 
-The client persists `requestId` and `BadgeMasterKey` before opening Checkout. It retries only after an interrupted exchange, foreground, or explicit user action—never on a polling timer. A deep link is optional UX; no localhost listener is used.
+The client persists `orderId`, `orderSk`, and `BadgeMasterKey` before opening Checkout. It retries the same signed `Purchase` only after an interrupted exchange, foreground, or explicit user action—never on a polling timer. A deep link is optional UX; no localhost listener is used.
 
 ### Cancellation
 
@@ -630,10 +666,10 @@ Failure preserves previous state; client shows Retry and still says **Renews on*
 
 | Client presents | Portal link the bot returns |
 |---|---|
-| valid `BadgeKeyProof` (matches stored `BadgeKeyCommitment`) | authenticated `billing_portal.Session` with `flow_data.type=subscription_cancel` — opens straight to the cancel flow, no email code |
-| no valid proof (master key lost with the app) | the account-wide hosted portal **login page** (`prefilled_email` when the customer email is known), authenticated by email OTP |
+| a `Cancel` (`StripeManage`) on a known order (valid `orderKey` signature) | authenticated `billing_portal.Session` with `flow_data.type=subscription_cancel` — opens straight to the cancel flow, no email code |
+| no identifiable order (total loss — `orderId`/`orderSk` gone) | the account-wide hosted portal **login page** (`prefilled_email` when the customer email is known), authenticated by email OTP |
 
-The authenticated session link is short-lived and per-customer; the login page is the operator-config account-wide URL and returns no per-customer secret. The bot carries whichever link applies in Stripe status responses so a cancel path is always reachable. Because possession of the `BadgeMasterKey` is the sole client credential, there is no intermediate "capability lost" state: the client either can prove key possession (session) or cannot (login page).
+The authenticated session link is short-lived and per-customer; the login page is the operator-config account-wide URL and returns no per-customer secret. The bot carries whichever link applies in `RspStatus` so a cancel path is always reachable. The `orderKey` signature is the sole client credential: the client either can sign for the order (session) or cannot (login page).
 
 ## 5. Persistence and `CallState` pattern
 
@@ -654,20 +690,21 @@ Define five separate sums (the `ClientPaymentState` / `BotPaymentState` / `Servi
 
 ### Client tables
 
-`badge_payments`: provider/product/plan, payment state payload, encrypted `BadgeMasterKey`, `BadgeKeyCommitment`, binding/proof reference, `paidThrough`, `willRenew`, checked/retry time, version.
+`orders`: `order_id` (client UUID), encrypted `order_sk` + `order_key`, provider/product/plan, payment state payload, `provider_ref`, `paid_through`, `will_renew`, checked/retry time, version.
 
-`badges`: payment/grant/grant-period/key hash, badge state payload, cached credential, expiry, attempt/error, version.
+`badges`: order id + grant-period + key hash, badge state payload, encrypted `badge_master_key`, cached credential, expiry, attempt/error, version.
 
-Join by payment/grant ID only. Update active profile only after core installation.
+Join by order id and grant period only (the bot's `GrantId` is internal). Update active profile only after core installation.
 
 ### Bot tables
 
 | Table | Unique key / purpose |
 |---|---|
-| `payments` | provider-object ownership + `BadgeKeyCommitment`; canonical payment sum |
-| `service_grants` | payment + product + grant period |
+| `orders` | `order_id` (client UUID); `order_key`, pinned product SKU; canonical payment sum |
+| `entitlements` | provider-object binding (`sub_`/`cus_` \| original-transaction \| token) → order; per-period re-issue counter |
+| `service_grants` | order + product + grant period |
 | `badge_issuances` | grant + master-key hash; cached credential |
-| `rpc_requests` | request ID; pending waiter/result + request hash + response |
+| `rpc_requests` | order id + operation; pending waiter/result + request hash + response |
 | `provider_events` | provider event ID; dedupe/result |
 | `outbox` | acknowledge, consume, reconciliation, cleanup |
 
@@ -678,40 +715,39 @@ Provider calls/signing run outside long transactions. Leases and compare-and-swa
 Shared identifiers and enums:
 
 ```haskell
-newtype PaymentId          = PaymentId Int64
-newtype GrantId            = GrantId Int64
-newtype RequestId          = RequestId ByteString
-newtype BadgeKeyCommitment = BadgeKeyCommitment ByteString  -- 32-byte SHA-256
-newtype BadgeMasterKey     = BadgeMasterKey ByteString       -- 32 random bytes
-type    BadgeKeyProof      = BadgeMasterKey
+newtype OrderId        = OrderId UUID
+newtype GrantId        = GrantId Int64
+newtype ServiceProductId = ServiceProductId Text        -- SKU
+newtype BadgeMasterKey = BadgeMasterKey ByteString       -- 32 random bytes; badge product only
 
-data Provider     = Apple | Google | Stripe
-data PurchaseKind = OneTime | Monthly | Yearly
+data Provider = Apple | Google | Stripe
 ```
 
 Bot tables (**PK** bold, → foreign key, ⊤ unique). The `state` column is a tag plus state-specific fields for the sum named in brackets.
 
-- **`payments`** — one row per purchase. `payment_id` **PK** · `provider` · `product_id` · `purchase_kind` · `badge_key_commitment` ⊤ · `provider_ref` (`sub_`/`cus_` | original-transaction | token; encrypted) ⊤(`provider`,`provider_ref`) · `state` [`BotPaymentState`] · `paid_through` · `will_renew` · `version`
-- **`service_grants`** — `grant_id` **PK** · `payment_id` → `payments` · `product_id` · `grant_period_start` · `state` [`ServiceGrantState`] · ⊤(`payment_id`,`product_id`,`grant_period_start`)
+- **`orders`** — one row per order. `order_id` **PK** (client UUID) · `order_key` (Ed25519 pub) · `provider` · `product_sku` (pinned) · `master_key` (badge product, encrypted) · `state` [`BotPaymentState`] · `paid_through` · `will_renew` · `version`
+- **`entitlements`** — `entitlement_id` **PK** · `provider` · `provider_ref` (encrypted) ⊤(`provider`,`provider_ref`) · `order_id` → `orders` · `reissue_count` per (`provider_ref`, period) — bounds total-loss re-binds
+- **`service_grants`** — `grant_id` **PK** · `order_id` → `orders` · `product_id` · `grant_period_start` · `state` [`ServiceGrantState`] · ⊤(`order_id`,`product_id`,`grant_period_start`)
 - **`badge_issuances`** — `issuance_id` **PK** · `grant_id` → `service_grants` · `master_key_hash` · `state` [`BotBadgeState`] · `credential` (cached) · ⊤(`grant_id`,`master_key_hash`)
-- **`rpc_requests`** — `request_id` **PK** · `request_hash` · `state` (pending waiter | result) · `response` (cached)
+- **`rpc_requests`** — (`order_id`,`operation`) **PK** · `request_hash` · `state` (pending waiter | result) · `response` (cached)
 - **`provider_events`** — `event_id` **PK** · `kind` · `result` (dedupe)
 - **`outbox`** — `id` **PK** · `kind` (ack | consume | reconcile | cleanup) · `payload` · `status` · `attempts`
 
-Client tables (local ids; never the bot's `PaymentId`):
+Client tables (local; the bot's `order_id` is the shared key):
 
-- **`badge_payments`** — `id` **PK** · `provider` · `product_id` · `plan` · `state` [`ClientPaymentState`] · `badge_key_commitment` · `badge_master_key` (encrypted) · `provider_ref` · `paid_through` · `will_renew` · `checked_at` · `retry_at` · `version`
-- **`badges`** — `id` **PK** · `payment_id` → `badge_payments` · `grant_id` · `grant_period_start` · `master_key_hash` · `state` [`ClientBadgeState`] · `credential` (cached) · `expiry` · `attempt` · `error` · `version`
+- **`orders`** — `order_id` **PK** · `order_sk` (encrypted) · `order_key` · `provider` · `product_sku` · `state` [`ClientPaymentState`] · `provider_ref` · `paid_through` · `will_renew` · `checked_at` · `retry_at` · `version`
+- **`badges`** — `id` **PK** · `order_id` → `orders` · `grant_period_start` · `master_key_hash` · `state` [`ClientBadgeState`] · `badge_master_key` (encrypted) · `credential` (cached) · `expiry` · `attempt` · `error` · `version` — the client keys a badge by `(order_id, grant_period_start)`; the bot's `GrantId` never crosses the wire
 
-The client encrypts `badge_master_key` at rest; the bot stores only `badge_key_commitment` and never the key.
+The client encrypts `order_sk` and `badge_master_key` at rest; the bot stores the `order_key` (public) and the `master_key` only as badge-signing input, never as an identifier.
 
 ```mermaid
 erDiagram
-  payments ||--o{ service_grants : has
+  orders ||--o{ entitlements : binds
+  orders ||--o{ service_grants : has
   service_grants ||--o| badge_issuances : "fulfilled by"
 ```
 
-`rpc_requests`, `provider_events`, and `outbox` are keyed by their own ids and reference a payment only where relevant.
+`rpc_requests`, `provider_events`, and `outbox` are keyed by their own ids and reference an order only where relevant.
 
 ## 6. Reconciliation and errors
 
@@ -720,13 +756,13 @@ erDiagram
 Triggers: launch, foreground, profile switch, network restore, store update, Stripe browser return, manual retry, six-hour jittered timer, and date boundaries.
 
 ```text
-reconcile(payment):
+reconcile(order):
   coalesce to one worker
   render cached payment + installed badge
-  submit unseen Apple/Google evidence
-  for pending Stripe Checkout: ensure one IssueBadge call is waiting
-  otherwise request status for nonterminal payment
-  if GrantReady and no badge covers its grant period: CBNeeded -> request IssueBadge
+  submit a signed Purchase for unseen Apple/Google receipts
+  for pending Stripe Checkout: ensure one Purchase(StripePaid) is waiting
+  otherwise send Status for a nonterminal order
+  if GrantReady and no badge covers its grant period: CBNeeded -> Purchase (issue)
   if credential returned: CBReceived -> CBInstalling -> CBInstalled
   schedule next check
 ```
@@ -744,14 +780,14 @@ Every input is one of:
 
 | Input/result | Class | Client | Bot |
 |---|---|---|---|
-| Stripe awaiting webhook | wait | `CPAwaitingPayment` + `CBRequesting` | hold `IssueBadge`; no response |
+| Stripe awaiting webhook | wait | `CPAwaitingPayment` + `CBRequesting` | hold `Purchase`; no response |
 | timeout/429/5xx in a non-waiting operation | retry | `CPPaymentProblem` with prior snapshot | preserve current `BP…`; return `retryAfter` |
-| Stripe verification timeout/429/5xx while `IssueBadge` waits | wait; retry internally | `CPAwaitingPayment` + `CBRequesting` | preserve canonical payment state; retry Stripe; send no response |
-| deadline/restart/lost response | retry on foreground | preserve state; repeat same ID/body | remove waiter; return cached result or wait again |
+| Stripe verification timeout/429/5xx while `Purchase` waits | wait; retry internally | `CPAwaitingPayment` + `CBRequesting` | preserve canonical payment state; retry Stripe; send no response |
+| deadline/restart/lost response | retry on foreground | preserve state; repeat same signed order/op | remove waiter; return cached result or wait again |
 | duplicate event/request | idempotent | accept same state/result | preserve state; dedupe/re-fetch |
-| ID reused with new body | reject | preserve state; new ID only for new action | preserve state; telemetry |
-| invalid proof/binding | reject | preserve state; restore/support | preserve state; rate-limit |
-| invalid proof/product | reject | `CPPaymentProblem`; no blind retry | preserve `BP…`; quarantine/alert |
+| product changed for an order | reject | preserve state; a new product needs a new order | `product_changed`; preserve state; telemetry |
+| invalid order signature | reject | preserve state; restore/support | `order_auth_invalid`; preserve state; rate-limit |
+| declared SKU ≠ verified SKU | reject | `CPPaymentProblem`; no blind retry | `product_mismatch`; preserve `BP…`; quarantine/alert |
 | unknown provider state | quarantine | `CPPaymentProblem`; retry later | preserve `BP…`; re-fetch, never guess |
 | `GrantReady` | apply | `CBNeeded` → `CBRequesting` | `BBRequested` when requested |
 | `GrantFulfilled` | idempotent | `CBReceived` → install | return cached `BBIssued` |
@@ -765,12 +801,12 @@ Every input is one of:
 | refund/revocation | apply | `CPExpired`; signed badge survives to expiry | `BPRefunded`/`BPRevoked`; mark unused grants `GrantRevoked` |
 | webhook DB failure | retry delivery | no transition | no transition; non-2xx |
 
-Stable codes: `bad_request`, `unsupported_version`, `payment_pending`, `payment_not_entitled`, `ownership_conflict`, `proof_invalid`, `provider_rate_limited`, `provider_unavailable`, `idempotency_mismatch`, `badge_already_issued`, `signing_failed`, `internal_error`.
+Stable codes: `bad_request`, `unsupported_version`, `order_auth_invalid`, `product_changed`, `product_mismatch`, `payment_pending`, `payment_not_entitled`, `provider_rate_limited`, `provider_unavailable`, `badge_already_issued`, `signing_failed`, `internal_error`.
 
 ### Crash recovery
 
 - Before provider call: repeat request.
-- Waiting `IssueBadge` lost on deadline/restart: remove waiter; repeat the same logical request on foreground.
+- Waiting `Purchase` lost on deadline/restart: remove waiter; repeat the same signed order request on foreground.
 - Provider succeeds before commit: retrieve by idempotency key/object binding.
 - Payment committed before issuance: `GrantReady` remains unchanged.
 - Credential cached before response loss: repeat returns it.
@@ -807,61 +843,55 @@ Google linked-token replacement changes subscription identity/period data, then 
 Rules:
 
 - Google initial subscription acknowledgement and one-time consumption run from durable outbox.
-- Stripe uses server-selected Price, mode, Customer, `client_reference_id=paymentId`, metadata, redirect URLs, and collects customer email so the hosted portal login works.
+- Stripe uses server-selected Price (from `badge_types`/`stripe.plans[plan]`), mode, Customer, `client_reference_id=orderId`, metadata, redirect URLs, and collects customer email so the hosted portal login works.
 - Stripe subscription grant requires a paid invoice, not merely active Subscription status.
 - Webhook/status/completion page use one reconciliation function; redirects never fulfill.
 - All Stripe cancellation, invoices, and payment methods go through the browser Customer Portal — an authenticated `billing_portal.Session` when the customer is identifiable, else the account-wide login page (email OTP) which is also the app-removed path; the bot reconciles portal cancellation from the webhook. Apple/Google normal cancellation is store UI.
 
 ## 8. Recovery
 
-Recovery re-establishes payment control and the badge after reinstall, device transfer, or local data loss. There is no bot-issued token and no caller identity, so a reinstalled client is a new contact; it re-attaches by presenting a credential the bot matches to a stored payment.
+Recovery re-establishes order control and the badge after reinstall, device transfer, or local data loss. There is no bot-issued token and no caller identity, so a reinstalled client is a new contact. There are two tiers, by what survives.
 
 ### State ownership
 
 | Side | Durable | Lost on client wipe without backup |
 |---|---|---|
-| Bot | payment (keyed by `BadgeKeyCommitment`), provider bindings, `sub_`/`cus_`, grants, cached credential | — |
-| Client | — | `BadgeMasterKey` (commitment re-derives from it), cached credential, installed badge |
+| Bot | order (keyed by `order_id`), `order_key`, entitlement bindings, `sub_`/`cus_`, grants, cached credential | — |
+| Client | — | `order_id`, `order_sk`, `BadgeMasterKey`, cached credential, installed badge |
 
-The bot never loses the payment. `BadgeMasterKey` is the only client secret to protect; all other client state is re-derivable.
+The bot never loses the order. The client's durable secrets are `order_sk` (order auth) and `BadgeMasterKey` (badge); both belong in the profile backup.
 
-### Restore from backup
+### Tier 1 — restore from backup (normal path)
 
-SimpleX encrypted-profile backup or migration restores `BadgeMasterKey`, `BadgeKeyCommitment`, and the cached badge. No recovery RPC runs. This is the primary path.
+SimpleX encrypted-profile backup or migration restores `order_id`, `order_sk`, `BadgeMasterKey`, and the cached badge. The client re-attaches to the same order by signing a `Status` request with `order_sk`; if the master key also survived, the cached badge/grant re-issues to it. Nothing new is minted.
 
-### Re-attach when only the master key survives
+### Tier 2 — total loss (no backup)
 
-With `BadgeMasterKey` retained, the client re-derives `BadgeKeyCommitment` and re-attaches by presenting a provider credential (the store proof for Apple/Google, a key-possession proof for Stripe):
+`order_id`/`order_sk`/`BadgeMasterKey` are all gone. **Apple/Google are still recoverable** because the entitlement lives in the store:
 
-| Provider | Credential | Bot match | Result |
-|---|---|---|---|
-| Apple | signed transaction (`Transaction.currentEntitlements`) | original-transaction binding | re-attached; status/grant refreshed |
-| Google | purchase token (`queryPurchases`) | linked-token/order binding | re-attached; status/grant refreshed |
-| Stripe | `BadgeKeyProof` | `BadgeKeyCommitment` → `payments` row | re-attached; status/grant refreshed (portal session if requested) |
+1. The client makes a **fresh order** (new `order_id`/`order_sk`/`BadgeMasterKey`).
+2. It re-queries StoreKit `Transaction.currentEntitlements` / Play `queryPurchases` for a fresh receipt of the active subscription.
+3. It sends a signed `Purchase` with that receipt → the bot verifies and issues a badge bound to the new master key. The abandoned order/badge expires unused.
+
+This requires the bot to let a *new* order claim an entitlement a prior order already bound. The `entitlements` table binds each provider object to an order but permits re-bind to a new order on a fresh verified receipt, **capped by the per-period `reissue_count` and rate-limited** (BBS badges can't be revoked, so bound the over-issue).
+
+**Stripe has no tier-2 badge recovery** — there is no client-side re-presentable receipt. The hosted portal login (email OTP) can only cancel; a new badge requires a new order/purchase.
 
 ### Badge re-issuance
 
-Re-attaching does not install a badge. Reconciliation then issues from the eligible or fulfilled grant. Issuance is idempotent on `(grant, master-key hash)`: the same `BadgeMasterKey` returns the same cached credential — no new charge, no duplicate. A one-time grant already `GrantFulfilled` returns the cached credential.
-
-### Lost master key
-
-If `BadgeMasterKey` is lost with no backup, the payment cannot be re-attached:
-
-- Apple/Google: unaffected; the client re-presents store proof and cancellation is store-side.
-- Stripe: cancellation falls back to the hosted portal login page (email OTP); billing continues until canceled there or the card lapses.
-- Installed badges remain valid to signed expiry; no new issuance against the lost key.
+Issuance is idempotent on `(grant, master-key hash)`: within one order the same `BadgeMasterKey` returns the same cached credential — no new charge, no duplicate. A one-time grant already `GrantFulfilled` returns the cached credential.
 
 ### Abuse controls
 
-- Verify the credential before re-attaching; never re-attach on an unauthenticated selector such as a bare `BadgeKeyCommitment`.
-- Rate-limit attempts per `BadgeKeyCommitment` and per provider binding; the `BadgeKeyProof` nonce prevents replay.
-- Re-attaching changes only the client association; it never mutates provider or billing state.
+- Verify the order signature (tier 1) or the provider receipt (tier 2) before acting; never act on an unsigned request.
+- Rate-limit re-binds per entitlement and per provider object; enforce the per-period `reissue_count` cap.
+- Re-binding changes only which order owns an entitlement; it never mutates provider or billing state.
 
 ## 9. Security and concurrency
 
 - Verify provider signatures/objects server-side; never trust decoded client/redirect fields.
-- Encrypt retained proofs/provider IDs; rotate keys. Select the payment by `BadgeKeyCommitment` and authorize only on a verified proof (store proof or `BadgeKeyProof`); never act on an unauthenticated selector.
-- Keep raw `BadgeMasterKey` client-encrypted and bot-memory-only during ownership verification/signing; persist only domain-separated `BadgeKeyCommitment`.
+- Encrypt retained proofs/provider IDs; rotate keys. Authenticate every request by the order's Ed25519 signature and verify provider proof server-side; never act on an unsigned request.
+- Keep raw `BadgeMasterKey` client-encrypted and bot-memory-only during signing; the bot stores the `order_key` (public) and never keeps the master key as an identifier.
 - Allowlist product, app/package, environment, currency/price, and account binding.
 - Rate-limit operation/payment and cap payload sizes.
 - Serialize payment mutations with lock/version; events and RPC use the same transitions.
@@ -872,7 +902,7 @@ If `BadgeMasterKey` is lost with no backup, the payment cannot be re-attached:
 
 1. **Schema/protocol:** five sums/codecs, migrations, grant boundary, request ledger, Chat Console audit, core install API.
 2. **Apple/Google:** bindings, verification/status, Notifications V2/RTDN, acknowledge/consume, native UI.
-3. **Stripe:** Checkout, waiting `IssueBadge`, webhook wake-up, reconciliation, portal link (authenticated session + login-page fallback), portal cancellation + webhook reconciliation.
+3. **Stripe:** Checkout, waiting `Purchase(StripePaid)`, webhook wake-up, reconciliation, portal link (authenticated session + login-page fallback), portal cancellation + webhook reconciliation.
 4. **UX/hardening:** scheduler, all Product states, rollout compatibility, telemetry, cleanup.
 
 Tests:
@@ -884,7 +914,7 @@ Tests:
 - Stripe async payment, invoice renewal, cancellation, closed app/browser, delayed/duplicate/reordered webhook;
 - monthly/yearly grant periods and 21 July → 31 August expiry;
 - crash/replay at every side-effect boundary;
-- `BadgeKeyProof`/grant/BBS-owner isolation and wrong-`BadgeMasterKey` rejection;
+- order-signature/grant/BBS-owner isolation, product-pin/SKU-match checks, and wrong-`BadgeMasterKey` rejection;
 - Chat Console coverage and redaction snapshots.
 
 Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, store-policy review, complete error handling, operational dashboards.
@@ -893,7 +923,7 @@ Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, 
 
 | Location | Change |
 |---|---|
-| new `Simplex.Chat.Badges.Lifecycle` | client sums/transitions/reconciliation; call `generateMasterKey` before prepare |
+| new `Simplex.Chat.Badges.Lifecycle` | client sums/transitions/reconciliation; generate order key + `generateMasterKey` before order create |
 | `Library.Commands.addUserBadge` | non-CLI verified install API |
 | RPC/controller/console | calls, response handling, redacted audit |
 | client store/migrations | separate payment and badge stores |
@@ -916,4 +946,6 @@ Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, 
 
 ## 12. Open questions
 
-**Lost key.** Recovery §8 defines the behavior when `BadgeMasterKey` is lost with no backup (Stripe cancellation falls back to the portal login page; badge expires normally; Apple/Google unaffected). Decision: accept this, or add an optional user-held recovery code as a second Stripe recovery credential.
+**Stripe total loss.** Recovery §8 tier 2 shows Apple/Google recover after a full wipe (store re-presents the entitlement) but Stripe cannot — the hosted portal login only cancels, and a new badge needs a new order. Decision: accept this, or add an optional user-held recovery code as a second Stripe order-recovery credential.
+
+**Re-issue cap value.** The per-entitlement, per-period `reissue_count` bounds tier-2 over-issue. Decision: pick the cap (e.g. 2–3 per period) and the rate-limit window.

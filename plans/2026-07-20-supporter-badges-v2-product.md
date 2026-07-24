@@ -4,7 +4,7 @@
 **Status:** implementation-ready
 **Companion:** [Implementation plan](2026-07-20-supporter-badges-v2-implementation.md)
 
-Payment and badge are separate: payment creates a service grant for an eligible monthly grant period; the grant authorizes one badge issuance; core verifies and installs it.
+An **order** carries a plan (the product) and a payment. Payment creates a service grant for an eligible monthly grant period; the grant authorizes one badge issuance; core verifies and installs it. Order, payment, and badge are separate.
 
 ![Lifecycle](assets/badge-v2-e2e.svg)
 
@@ -35,6 +35,10 @@ Choices: **One-time**, **Monthly**, **Yearly**. There is no Extend action.
 - Cancellation stops renewal. It does not shorten an issued badge.
 - Stripe uses the system browser. No localhost service is required.
 
+### Tiers
+
+Supporter and investor grant the same functional perk (2 GB file uploads); legend raises it to 5 GB; investor is otherwise cosmetic (badge color). The tier is fixed by the plan purchased (its SKU), not chosen afterward. Badge expiry is a shared end-of-month boundary, so everyone renewing in a month shares one anonymity set.
+
 ### Dates
 
 | Payment event | Billing | Badge |
@@ -50,9 +54,9 @@ Show **Badge valid until** separately from **Renews on** or **Subscription ends 
 - Core signature and expiry decide badge validity.
 - Bot/provider verification decides payment status and grant eligibility.
 - Store state and Stripe redirects are hints only.
-- Each client RPC call receives exactly one bot response; the bot never initiates a call.
-- Before payment, the client generates one 32-byte BBS `BadgeMasterKey`. The payment and every badge issued from it are bound to that key; renewals reuse it.
-- There is no bot-issued token. Each request carries its own credential — a fresh store proof (Apple/Google) or a `BadgeMasterKey` possession proof (Stripe). The raw BBS key and provider proofs are redacted.
+- Each client request receives exactly one bot response; the bot never initiates a call.
+- Before buying, the client creates an order: a client-generated id, an Ed25519 order key whose signature authenticates every request, and one 32-byte BBS `BadgeMasterKey` for the badge. Renewals reuse the same order and keys.
+- There is no bot-issued token and no caller identity. Every request is signed by the order key; payment additionally carries a fresh store proof (Apple/Google) or is confirmed by webhook (Stripe). The order key, BBS key, and provider proofs are redacted.
 
 ## 2. UX states
 
@@ -103,13 +107,13 @@ sequenceDiagram
   participant C as Client
   participant A as StoreKit
   participant B as Bot
-  C->>B: Prepare Apple payment
-  B-->>C: Account binding
+  C->>B: Purchase (Apple), signed order
+  B-->>C: Order created + binding
   Note over C: Store ready
   C->>A: Purchase
   A-->>C: Signed transaction
   Note over C: Verifying
-  C->>B: Transaction + badge request
+  C->>B: Purchase (Apple receipt)
   Note over B: Payment entitled, badge issued
   B-->>C: Status + badge
   Note over C: Entitled, badge installed
@@ -122,8 +126,8 @@ sequenceDiagram
   participant C as Client
   participant A as StoreKit
   participant B as Bot
-  C->>B: Prepare Apple payment
-  B-->>C: Account binding
+  C->>B: Purchase (Apple), signed order
+  B-->>C: Order created + binding
   C->>A: Purchase
   A-->>C: Pending
   Note over C: Payment pending, badge unchanged
@@ -137,8 +141,8 @@ sequenceDiagram
   participant C as Client
   participant A as StoreKit
   participant B as Bot
-  C->>B: Prepare Apple payment
-  B-->>C: Account binding
+  C->>B: Purchase (Apple), signed order
+  B-->>C: Order created + binding
   C->>A: Purchase
   A-->>C: User canceled
   Note over C: Previous state
@@ -156,12 +160,12 @@ sequenceDiagram
   participant C as Client
   participant G as Google Play
   participant B as Bot
-  C->>B: Prepare Google payment
-  B-->>C: Account binding
+  C->>B: Purchase (Google), signed order
+  B-->>C: Order created + binding
   C->>G: Purchase
   G-->>C: Purchase token
   Note over C: Verifying
-  C->>B: Token + badge request
+  C->>B: Purchase (Google receipt)
   B->>G: Verify with Publisher API
   G-->>B: Paid period
   Note over B: Payment entitled, badge issued
@@ -176,8 +180,8 @@ sequenceDiagram
   participant C as Client
   participant G as Google Play
   participant B as Bot
-  C->>B: Prepare Google payment
-  B-->>C: Account binding
+  C->>B: Purchase (Google), signed order
+  B-->>C: Order created + binding
   C->>G: Purchase
   G-->>C: Pending
   Note over C: Payment pending, badge unchanged
@@ -191,8 +195,8 @@ sequenceDiagram
   participant C as Client
   participant G as Google Play
   participant B as Bot
-  C->>B: Prepare Google payment
-  B-->>C: Account binding
+  C->>B: Purchase (Google), signed order
+  B-->>C: Order created + binding
   C->>G: Purchase
   G-->>C: User canceled
   Note over C: Previous state
@@ -208,18 +212,18 @@ sequenceDiagram
   participant C as Client
   participant B as Bot
   participant S as Stripe
-  C->>B: RPC Prepare Stripe
+  C->>B: Purchase (StripeInvoice), create order
   B->>S: Create Checkout Session
-  B-->>C: RPC Checkout URL
+  B-->>C: RspInvoice (Checkout URL)
   C->>S: Open Checkout
   Note over C: CPAwaitingPayment
-  C->>B: RPC IssueBadge
+  C->>B: Purchase (StripePaid), same order
   Note over B: Hold call, no response yet
   S-->>B: Signed webhook
   B->>S: Retrieve and verify payment
   S-->>B: Paid
   Note over B: GrantReady → badge issued
-  B-->>C: RPC badge credential
+  B-->>C: RspCredential
   Note over C: CPEntitled + CBReceived
   C->>C: Verify and install
   Note over C: CBInstalled
@@ -231,13 +235,13 @@ sequenceDiagram
 sequenceDiagram
   participant C as Client
   participant B as Bot
-  C->>B: RPC IssueBadge
+  C->>B: Purchase (StripePaid)
   B->>B: Persisted payment is still pending
   Note over B: Hold call, no response
   Note over C: RPC deadline / app closes
   C-xB: Cancel waiting call
   Note over C: CPAwaitingPayment + CBRetryableFailure
-  C->>B: Repeat same IssueBadge on foreground
+  C->>B: Repeat same Purchase on foreground
   Note over C: CPAwaitingPayment + CBRequesting
   Note over B: Respond immediately if webhook already completed<br/>otherwise wait again
 ```
@@ -249,15 +253,15 @@ sequenceDiagram
   participant C as Client
   participant B as Bot
   participant S as Stripe
-  C->>B: RPC IssueBadge
+  C->>B: Purchase (StripePaid)
   Note over B: Hold call
   S-->>B: Signed Checkout expired event
   Note over B: BPExpired, no grant
-  B-->>C: RPC checkout expired
+  B-->>C: RspError checkout expired
   Note over C: CPExpired, new Checkout requires user action
 ```
 
-There is no payment polling. The pending `IssueBadge` call is the completion signal. A deep link may return the user to the app but is not required and is never payment proof.
+There is no payment polling. The pending `Purchase` call is the completion signal. A deep link may return the user to the app but is not required and is never payment proof.
 
 ### Cancel subscription
 
@@ -320,8 +324,8 @@ Stripe cancellation always happens in the browser Customer Portal (the portal ca
 
 | Client still holds | Cancel link the bot sends |
 |---|---|
-| the master key (proves ownership) | authenticated portal session — opens straight to the cancel flow, no email code |
-| nothing (key lost with the app) | generic hosted portal login page — user signs in with the email they paid with (email code) |
+| the order (can sign with its order key) | authenticated portal session — opens straight to the cancel flow, no email code |
+| nothing (order lost with the app) | generic hosted portal login page — user signs in with the email they paid with (email code) |
 
 ## 5. Refresh and errors
 
@@ -332,12 +336,12 @@ If `GrantReady` exists without the current badge, request issuance. Cache the re
 | Condition | Client action |
 |---|---|
 | Store canceled | restore previous screen |
-| Payment pending | keep `IssueBadge` waiting; retry the same call after deadline/restart |
+| Payment pending | keep `Purchase` waiting; retry the same signed call after deadline/restart |
 | Network/provider failure | keep cached state and active badge; retry |
 | Paid, issuance failed | show “Payment confirmed. Badge is being prepared”; retry |
 | Cancel failed | keep **Renews on**; retry |
 | Payment issue | show Fix payment / Manage |
-| Ownership/proof failure | restore/support; no sensitive details |
+| Order signature / proof failure | restore/support; no sensitive details |
 | Unknown issuer/protocol | require update |
 | Invalid credential | reject; retain old badge; retry/support |
 | Duplicate/lost response | repeat same request; no duplicate charge/badge |
@@ -352,7 +356,8 @@ Errors preserve the last payment snapshot and installed badge. The implementatio
 - Apple, Google, and Stripe have separate linear outcomes.
 - Payment verification creates a provider-neutral service grant; badge service has no provider logic.
 - Client and bot payment/badge states are separate.
-- RPC is client-request/bot-response only and idempotent.
+- Requests are client-signed (order key), one bot response each, idempotent by order id.
+- Tier and billing period are fixed by the plan (SKU); the client cannot request a higher tier or longer life than it paid for.
 - Stripe needs no localhost/deep-link success; cancellation is always via the browser Customer Portal — an authenticated session, or the login page when the client cannot identify the payment.
 - Every error category has an owner, state-preserving action, and retry/final result.
 - RPC attempts/results appear redacted in Developer Tools → Chat Console.
