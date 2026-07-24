@@ -316,21 +316,27 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
     call.execute().use { response ->
       response.body?.use { body ->
         body.byteStream().use { stream ->
+          val newFile = File(tmpDir, asset.name)
           // On Windows the install path exits the app before it can delete the downloaded file, so a
           // previous update's installer can be left in the temp dir; remove it here at the next
           // download instead of letting it accumulate. Other platforms delete the file after install.
-          if (desktopPlatform.isWindows()) File(tmpDir, asset.name).delete()
-          createTmpFileAndDelete { file ->
+          if (desktopPlatform.isWindows()) newFile.delete()
+          // Not using createTmpFileAndDelete: it registers the file in ChatModel.filesToDelete, which
+          // ComposeView.deleteUnusedFiles() empties on chat switch, and this download takes minutes -
+          // a chat switch during it deleted the file, and the move below then failed with NoSuchFileException.
+          // A .part file left by a failed download is truncated by the next one and removed with tmpDir on start.
+          val partFile = File(tmpDir, "${asset.name}.part")
+          partFile.parentFile.mkdirs()
+          partFile.deleteOnExit()
+          try {
             // It's important to close output stream (with use{}), otherwise, Windows cannot rename the file
-            file.outputStream().use { output ->
+            partFile.outputStream().use { output ->
               stream.copyTo(output)
             }
-            val newFile = File(file.parentFile, asset.name)
             // Moving instead of renameTo: a bare rename can silently fail (returns false, ignored),
-            // and the enclosing createTmpFileAndDelete then deletes the only copy in its finally block,
             // leaving the user with an empty download dir. Files.move performs the same in-place rename
             // when possible, falls back to copy when it can't, and throws (handled below) on real failure.
-            Files.move(file.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            Files.move(partFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
 
             AlertManager.shared.showAlertDialogButtonsColumn(
               generalGetString(MR.strings.app_check_for_updates_download_completed_title),
@@ -370,6 +376,9 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
                 }
               }
             )
+          } finally {
+            // no-op after a successful move, removes the partial file when the download failed or was cancelled
+            partFile.delete()
           }
         }
       }

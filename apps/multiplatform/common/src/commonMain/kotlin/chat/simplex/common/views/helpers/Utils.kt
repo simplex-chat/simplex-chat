@@ -389,14 +389,13 @@ fun removeWallpaperFilesFromAllChats(user: User) {
   }
 }
 
-// Not registered in ChatModel.filesToDelete: that set is emptied on every chat switch
-// (ComposeView.deleteUnusedFiles), which would delete this file while [onCreated] is still
-// using it - it deleted the in-app updater's download mid-transfer. The finally block below
-// already removes the file, so the registration only ever duplicated that.
+// The created file is registered in ChatModel.filesToDelete, which ComposeView.deleteUnusedFiles()
+// empties on chat switch - do not use this helper for a file that has to survive a chat switch.
 fun <T> createTmpFileAndDelete(dir: File = tmpDir, onCreated: (File) -> T): T {
   val tmpFile = File(dir, UUID.randomUUID().toString())
   tmpFile.parentFile.mkdirs()
   tmpFile.deleteOnExit()
+  ChatModel.filesToDelete.add(tmpFile)
   try {
     return onCreated(tmpFile)
   } finally {
