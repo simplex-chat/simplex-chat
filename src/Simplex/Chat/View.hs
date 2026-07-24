@@ -338,6 +338,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
       plain . LB.unpack $ J.encode agentQueuesInfo
     ]
   CRAppSettings as -> ["app settings: " <> viewJSON as]
+  CRServiceResponse user resp -> ttyUser user [plain $ "service response: " <> tshow resp]
   CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
   where
     ttyUser :: User -> [StyledString] -> [StyledString]

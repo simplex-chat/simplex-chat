@@ -65,6 +65,7 @@ library
       Simplex.Chat.Options.DB
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
+      Simplex.Chat.Service
       Simplex.Chat.Remote
       Simplex.Chat.Remote.AppVersion
       Simplex.Chat.Remote.Multicast
