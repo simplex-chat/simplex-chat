@@ -35,7 +35,9 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkTimeout (..))
+import Control.Concurrent.STM (atomically)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
@@ -120,6 +122,7 @@ chatDirectTests = do
     it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
     it "service request and response over a DR address" testServiceRequestResponse
+    it "signed service request delivers the verified key" testSignedServiceRequest
     it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
     it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
     it "create user with same servers" testCreateUserSameServers
@@ -1913,6 +1916,36 @@ testServiceRequestResponse =
       )
       ( do
           reqId <- serviceRequestId alice
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
+  where
+    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
+    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
+
+testSignedServiceRequest :: HasCallStack => TestParams -> IO ()
+testSignedServiceRequest =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <## "chat started"
+    g <- C.newRandom
+    (pub, priv) <- atomically $ C.generateKeyPair g
+    let signKey = B.unpack $ strEncode (priv :: C.PrivateKeyEd25519)
+        pubStr = B.unpack $ strEncode pub
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " sign_key=" <> signKey <> " {\"ping\":1}")
+          bob <## "service response: {\"pong\":2}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## ("signed by " <> pubStr)
           alice <## "request: {\"ping\":1}"
           alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
           replyConnId <- serviceReplyConnId alice
