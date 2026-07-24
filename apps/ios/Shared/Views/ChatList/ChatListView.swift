@@ -646,11 +646,12 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
-            // a typed name adds a row to connect to it (as on Android mobile), kept next to the chat list:
-            // above the search field with the reachable toolbar (search at the bottom), below it in top bar mode
+            // a typed name shows a row to connect to it (as on Android mobile): with the reachable toolbar it
+            // replaces the tags above the search field; in top bar mode the tags stay and it moves below (end of VStack)
             if oneHandUI, let candidate = connectNameCandidate {
                 connectByNameRow(candidate)
+            } else {
+                ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
