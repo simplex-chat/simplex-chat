@@ -28,7 +28,7 @@ Simple bot that replies with squares of numbers you send to it:
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
-      addressSettings: {welcomeMessage: "Send a number, I will square it.",
+      addressSettings: {welcomeMessage: "Send a number, I will square it."},
     },
     onMessage: async (ci, content) => {
       const n = +content.text
