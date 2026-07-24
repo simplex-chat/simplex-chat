@@ -257,26 +257,30 @@ struct ContentView: View {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
                 .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
-                requestNtfAuthorization()
-                // Local Authentication notice is to be shown on next start after onboarding is complete
-                if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
-                    prefLANoticeShown = true
-                    alertManager.showAlert(laNoticeAlert())
-                } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        if !noticesShown {
-                            let showWhatsNew = shouldShowWhatsNew()
-                            let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
-                            noticesShown = showWhatsNew || showUpdatedConditions
-                            if showWhatsNew || showUpdatedConditions {
-                                noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                // when opened via a SimpleX link, present the connection dialog and suppress only the
+                // secondary in-app notices that would overlay/drop it; the notifications prompt still shows
+                let connectingViaLink = connectViaUrl()
+                requestNtfAuthorization(showDeniedAlert: !connectingViaLink)
+                if !connectingViaLink {
+                    // Local Authentication notice is to be shown on next start after onboarding is complete
+                    if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
+                        prefLANoticeShown = true
+                        alertManager.showAlert(laNoticeAlert())
+                    } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            if !noticesShown {
+                                let showWhatsNew = shouldShowWhatsNew()
+                                let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                                noticesShown = showWhatsNew || showUpdatedConditions
+                                if showWhatsNew || showUpdatedConditions {
+                                    noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                                }
                             }
                         }
                     }
+                    showReRegisterTokenAlert()
                 }
                 prefShowLANotice = true
-                connectViaUrl()
-                showReRegisterTokenAlert()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .onChange(of: chatModel.reRegisterTknStatus) { _ in showReRegisterTokenAlert() }
@@ -383,10 +387,10 @@ struct ContentView: View {
         }
     }
 
-    func requestNtfAuthorization() {
+    func requestNtfAuthorization(showDeniedAlert: Bool = true) {
         NtfManager.shared.requestAuthorization(
             onDeny: {
-                if (!notificationAlertShown) {
+                if showDeniedAlert, !notificationAlertShown {
                     notificationAlertShown = true
                     alertManager.showAlert(notificationAlert())
                 }
@@ -436,16 +440,20 @@ struct ContentView: View {
     }
 
     // Spec: spec/client/navigation.md#connectViaUrl
-    func connectViaUrl() {
+    @discardableResult
+    func connectViaUrl() -> Bool {
         let m = ChatModel.shared
         if let url = m.appOpenUrl {
             m.appOpenUrl = nil
             connectViaUrl_(url)
+            return true
         } else if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active {
             // correcting branch in case .onChange(of: scenePhase) in SimpleXApp doesn't trigger and transfer appOpenUrlLater into appOpenUrl
             m.appOpenUrlLater = nil
             connectViaUrl_(url)
+            return true
         }
+        return false
     }
 
     func connectViaUrl_(_ url: URL) {
