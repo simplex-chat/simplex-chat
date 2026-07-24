@@ -210,7 +210,7 @@ chatTypesDocsData =
     (sti @AddressSettings, STRecord, "", [], "", ""),
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
-    (sti @AgentServiceError, STUnion, "", [], "", ""),
+    (sti @AgentServiceError, STUnion, "ASE", [], "", ""),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),

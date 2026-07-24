@@ -217,9 +217,9 @@ videoFilePrefix = "video_"
 
 -- enableSndFiles has no effect when mainApp is True
 startChatController :: Bool -> Bool -> Bool -> CM' (Async ())
-startChatController mainApp enableSndFiles processSvcReqs = do
+startChatController mainApp enableSndFiles serviceRequests = do
   asks smpAgent >>= liftIO . resumeAgentClient
-  chatWriteVar' processServiceRequests processSvcReqs
+  chatWriteVar' processServiceRequests serviceRequests
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withFastStore' getUsers)
   runExceptT (syncConnections' users) >>= \case
@@ -549,10 +549,10 @@ processChatCommand cxt nm = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat {mainApp, enableSndFiles, startServiceRequests = processSvcReqs} -> withUser' $ \_ ->
+  StartChat {mainApp, enableSndFiles, serviceRequests} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles processSvcReqs $> CRChatStarted
+      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles serviceRequests $> CRChatStarted
   CheckChatRunning -> maybe CRChatStopped (const CRChatRunning) <$> chatReadVar agentAsync
   APIStopChat -> do
     ask >>= liftIO . stopChatController
@@ -5438,9 +5438,9 @@ chatCommandP =
       "/_start " *> do
         mainApp <- "main=" *> onOffP
         enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
-        startServiceRequests <- " service_requests=" *> onOffP <|> pure False
-        pure StartChat {mainApp, enableSndFiles, startServiceRequests},
-      "/_start" $> StartChat {mainApp = True, enableSndFiles = True, startServiceRequests = False},
+        serviceRequests <- " service_requests=" *> onOffP <|> pure False
+        pure StartChat {mainApp, enableSndFiles, serviceRequests},
+      "/_start" $> StartChat {mainApp = True, enableSndFiles = True, serviceRequests = False},
       "/_check running" $> CheckChatRunning,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),

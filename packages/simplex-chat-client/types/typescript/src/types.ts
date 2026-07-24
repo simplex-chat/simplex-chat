@@ -188,6 +188,37 @@ export namespace AgentErrorType {
   }
 }
 
+export type AgentServiceError = 
+  | AgentServiceError.ASERejected
+  | AgentServiceError.ASETimeout
+  | AgentServiceError.ASENoPendingRequest
+  | AgentServiceError.ASENotDRAddress
+
+export namespace AgentServiceError {
+  export type Tag = "aSERejected" | "aSETimeout" | "aSENoPendingRequest" | "aSENotDRAddress"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface ASERejected extends Interface {
+    type: "aSERejected"
+    rejectReason: string
+  }
+
+  export interface ASETimeout extends Interface {
+    type: "aSETimeout"
+  }
+
+  export interface ASENoPendingRequest extends Interface {
+    type: "aSENoPendingRequest"
+  }
+
+  export interface ASENotDRAddress extends Interface {
+    type: "aSENotDRAddress"
+  }
+}
+
 export interface AutoAccept {
   acceptIncognito: boolean
 }
@@ -2021,6 +2052,7 @@ export interface Contact {
   chatTs?: string // ISO-8601 timestamp
   preparedContact?: PreparedContact
   contactRequestId?: number // int64
+  contactRequest?: UserContactRequestRef
   contactGroupMemberId?: number // int64
   contactGrpInvSent: boolean
   groupDirectInv?: GroupDirectInvitation
@@ -2093,6 +2125,7 @@ export enum ContactStatus {
   Active = "active",
   Deleted = "deleted",
   DeletedByUser = "deletedByUser",
+  Rejected = "rejected",
 }
 
 export type ContactUserPref = ContactUserPref.Contact | ContactUserPref.User
@@ -3926,6 +3959,7 @@ export type SMPAgentError =
   | SMPAgentError.A_CRYPTO
   | SMPAgentError.A_DUPLICATE
   | SMPAgentError.A_QUEUE
+  | SMPAgentError.A_SERVICE
 
 export namespace SMPAgentError {
   export type Tag = 
@@ -3936,6 +3970,7 @@ export namespace SMPAgentError {
     | "A_CRYPTO"
     | "A_DUPLICATE"
     | "A_QUEUE"
+    | "A_SERVICE"
 
   interface Interface {
     type: Tag
@@ -3972,6 +4007,11 @@ export namespace SMPAgentError {
   export interface A_QUEUE extends Interface {
     type: "A_QUEUE"
     queueErr: string
+  }
+
+  export interface A_SERVICE extends Interface {
+    type: "A_SERVICE"
+    serviceError: AgentServiceError
   }
 }
 
@@ -5043,6 +5083,12 @@ export interface UserContactRequest {
   pqSupport: boolean
   welcomeSharedMsgId?: string
   requestSharedMsgId?: string
+  rejectionSupported: boolean
+}
+
+export interface UserContactRequestRef {
+  contactRequestId: number // int64
+  rejectionSupported: boolean
 }
 
 export interface UserInfo {

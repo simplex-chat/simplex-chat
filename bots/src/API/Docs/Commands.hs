@@ -84,11 +84,6 @@ chatCommandsDocsData =
         ("APISetAddressSettings", [], "Set bot address settings.", ["CRUserContactLinkUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_address_settings " <> Param "userId" <> OnOffParam "pq_ratchet" "pqRatchet" Nothing <> " " <> Json "settings")
       ]
     ),
-    ( "Service commands",
-      "Bots with a double ratchet address can answer service requests - a single request with a single response (RPC).",
-      [ ("APISendServiceResponse", [], "Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.", ["CRServiceReplyAccepted", "CRChatCmdError"], [], Just UNBackground, "/_service_response " <> Param "userId" <> " " <> Param "requestId" <> " " <> Json "responseData")
-      ]
-    ),
     ( "Message commands",
       "Commands to send, update, delete, moderate messages and set message reactions",
       [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems", "CRChatCmdError"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> OnOffParam "sign" "signMessages" (Just False) <> " json " <> Json "composedMessages"),
@@ -191,6 +186,11 @@ chatCommandsDocsData =
         ("APIDeleteUser", [], "Delete user profile.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_delete user " <> Param "userId" <> OnOffParam "del_smp" "delSMPQueues" Nothing <> Optional "" (" " <> Json "$0") "viewPwd"),
         ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated", "CRUserProfileNoChange", "CRChatCmdError"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile"),
         ("APISetContactPrefs", [], "Configure chat preference overrides for the contact.", ["CRContactPrefsUpdated", "CRChatCmdError"], [], Just UNBackground, "/_set prefs @" <> Param "contactId" <> " " <> Json "preferences")
+      ]
+    ),
+    ( "Service commands",
+      "Bots with a double ratchet address can answer service requests.",
+      [ ("APISendServiceResponse", [], "Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.", ["CRServiceReplyAccepted", "CRChatCmdError"], [], Just UNBackground, "/_service_response " <> Param "userId" <> " " <> Param "requestId" <> " " <> Json "responseData")
       ]
     ),
     ( "Chat management",
