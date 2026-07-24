@@ -181,19 +181,23 @@ fun ChatView(
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
             selectionManager?.clearSelection()
-            val cInfo = activeChat.value?.chatInfo
+            // The outer chat/chatInfo/chatRh are captured once by LaunchedEffect(Unit) and go stale on desktop, where
+            // ChatView is reused across chat switches; read the opened chat fresh to avoid regressing the previous one.
+            val openedChat = chatModel.getChat(chatId)
+            val cInfo = openedChat?.chatInfo
+            val openedChatRh = openedChat?.remoteHostId
             if (chatsCtx.secondaryContextFilter == null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group || cInfo is ChatInfo.Local)) {
-              updateAvailableContent(chatRh, activeChat, availableContent)
+              updateAvailableContent(openedChatRh, activeChat, availableContent)
             }
-            if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
+            if (cInfo is ChatInfo.Direct && cInfo.contact.activeConn != null) {
               withBGApi {
-                val r = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
+                val r = chatModel.controller.apiContactInfo(openedChatRh, cInfo.apiId)
                 if (r != null) {
                   val contactStats = r.first
                   if (contactStats != null)
                     withContext(Dispatchers.Main) {
-                      chatModel.chatsContext.updateContactConnectionStats(chatRh, chat.chatInfo.contact, contactStats)
-                      chatModel.chatAgentConnId.value = chat.chatInfo.contact.activeConn.agentConnId
+                      chatModel.chatsContext.updateContactConnectionStats(openedChatRh, cInfo.contact, contactStats)
+                      chatModel.chatAgentConnId.value = cInfo.contact.activeConn.agentConnId
                       chatModel.chatSubStatus.value = contactStats.subStatus
                     }
                 }
@@ -206,17 +210,17 @@ fun ChatView(
             }
             if (cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays) {
               withBGApi {
-                setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
+                setGroupMembers(openedChatRh, cInfo.groupInfo, chatModel)
                 if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
-                  val relays = chatModel.controller.apiGetGroupRelays(chatRh, cInfo.groupInfo.groupId)
+                  val relays = chatModel.controller.apiGetGroupRelays(openedChatRh, cInfo.groupInfo.groupId)
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
                 } else if (cInfo.groupInfo.membership.memberCurrent) {
-                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
+                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(openedChatRh, cInfo.groupInfo.groupId)
                   if (gInfo != null) {
                     withContext(Dispatchers.Main) {
-                      chatModel.chatsContext.updateGroup(chatRh, gInfo)
+                      chatModel.chatsContext.updateGroup(openedChatRh, gInfo)
                     }
                   }
                 }
