@@ -428,6 +428,7 @@ CREATE TABLE contact_requests(
   business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
+  rejection_supported INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE

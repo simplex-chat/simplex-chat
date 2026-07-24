@@ -188,6 +188,11 @@ chatCommandsDocsData =
         ("APISetContactPrefs", [], "Configure chat preference overrides for the contact.", ["CRContactPrefsUpdated", "CRChatCmdError"], [], Just UNBackground, "/_set prefs @" <> Param "contactId" <> " " <> Json "preferences")
       ]
     ),
+    ( "Service commands",
+      "Bots with a double ratchet address can answer service requests.",
+      [ ("APISendServiceResponse", [], "Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.", ["CRServiceReplyAccepted", "CRChatCmdError"], [], Just UNBackground, "/_service_response " <> Param "userId" <> " " <> Param "requestId" <> " " <> Json "responseData")
+      ]
+    ),
     ( "Chat management",
       "These commands should not be used with CLI-based bots",
       [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start"),
@@ -398,6 +403,7 @@ undocumentedCommands =
     "APISendCallExtraInfo",
     "APISendCallInvitation",
     "APISendCallOffer",
+    "APISendServiceRequest",
     "APISetAppFilePaths",
     "APISetChatItemTTL",
     "APISetChatSettings",

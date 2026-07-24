@@ -179,6 +179,7 @@ newChatController
         inputQ <- newTBQueueIO tbqSize
         outputQ <- newTBQueueIO tbqSize
         subscriptionMode <- newTVarIO SMSubscribe
+        processServiceRequests <- newTVarIO False
         chatLock <- newEmptyTMVarIO
         entityLocks <- TM.emptyIO
         sndFiles <- newTVarIO M.empty
@@ -224,6 +225,7 @@ newChatController
               inputQ,
               outputQ,
               subscriptionMode,
+              processServiceRequests,
               chatLock,
               entityLocks,
               sndFiles,

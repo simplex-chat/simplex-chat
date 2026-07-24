@@ -102,7 +102,7 @@ import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
-import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
+import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -216,9 +216,10 @@ videoFilePrefix :: String
 videoFilePrefix = "video_"
 
 -- enableSndFiles has no effect when mainApp is True
-startChatController :: Bool -> Bool -> CM' (Async ())
-startChatController mainApp enableSndFiles = do
+startChatController :: Bool -> Bool -> Bool -> CM' (Async ())
+startChatController mainApp enableSndFiles serviceRequests = do
   asks smpAgent >>= liftIO . resumeAgentClient
+  chatWriteVar' processServiceRequests serviceRequests
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withFastStore' getUsers)
   runExceptT (syncConnections' users) >>= \case
@@ -548,10 +549,10 @@ processChatCommand cxt nm = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
+  StartChat {mainApp, enableSndFiles, serviceRequests} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
+      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles serviceRequests $> CRChatStarted
   CheckChatRunning -> maybe CRChatStopped (const CRChatRunning) <$> chatReadVar agentAsync
   APIStopChat -> do
     ask >>= liftIO . stopChatController
@@ -1429,24 +1430,46 @@ processChatCommand cxt nm = \case
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
             toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
-  APIRejectContact connReqId -> withUser $ \user -> do
+  APIRejectContact connReqId notify -> withUser $ \user -> do
     uclId_ <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withContactRequestLock "rejectContact" connReqId $ case uclId_ of
       Nothing -> rejectCReq user -- address was deleted
       Just uclId -> withUserContactLock "rejectContact" uclId $ rejectCReq user
     where
       rejectCReq user = do
-        (cReq@UserContactRequest {agentInvitationId = AgentInvId invId}, ct_) <-
+        cReq@UserContactRequest {agentInvitationId = AgentInvId invId, contactId_} <-
+          withFastStore $ \db -> getContactRequest db user connReqId
+        withAgent $ \a -> rejectContact a NRMInteractive (aUserId user) invId (if notify then Just (strEncode CRRUserRejected) else Nothing)
+        ct_ <-
           withFastStore $ \db -> do
-            cReq@UserContactRequest {contactId_} <- getContactRequest db user connReqId
             ct_ <- forM contactId_ $ \contactId -> do
               ct <- getContact db cxt user contactId
               deleteContact db user ct
               pure ct
             liftIO $ deleteContactRequest db user connReqId
-            pure (cReq, ct_)
-        withAgent (`rejectContact` invId)
+            pure ct_
         pure $ CRContactRequestRejected user cReq ct_
+  APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user -> do
+    cReq <- resolveServiceTarget user sendTarget
+    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
+    resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
+    pure $ CRServiceResponse user resp
+    where
+      resolveServiceTarget user = \case
+        CTFullContact cReq -> pure cReq
+        CTShortContact (CTLink sLnk) -> (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+        CTShortContact (CTName ni@SimplexNameInfo {nameType}) -> case nameType of
+          NTContact -> do
+            (ccLink, _, _, _) <- connectPlan user (ACTarget SCMContact (CTShortContact (CTName ni))) PRMUnknown Nothing Nothing
+            case ccLink of
+              ACCL SCMContact (CCLink cReq _) -> pure cReq
+              _ -> throwCmdError "service request target is not a contact address"
+          _ -> throwCmdError "service request target must be a contact, not a channel"
+        CTDomain _ -> throwCmdError "service request target must be a contact address, not a domain"
+  APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
+    let AgentInvId invId = requestId
+    connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
+    pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -2478,9 +2501,9 @@ processChatCommand cxt nm = \case
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand cxt nm $ APIAcceptContact incognito connReqId
-  RejectContact cName -> withUser $ \User {userId} -> do
+  RejectContact cName notify -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
-    processChatCommand cxt nm $ APIRejectContact connReqId
+    processChatCommand cxt nm $ APIRejectContact connReqId notify
   ForwardMessage toChatName fromContactName forwardedMsg -> withUser $ \user -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
@@ -5415,8 +5438,9 @@ chatCommandP =
       "/_start " *> do
         mainApp <- "main=" *> onOffP
         enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
-        pure StartChat {mainApp, enableSndFiles},
-      "/_start" $> StartChat {mainApp = True, enableSndFiles = True},
+        serviceRequests <- " service_requests=" *> onOffP <|> pure False
+        pure StartChat {mainApp, enableSndFiles, serviceRequests},
+      "/_start" $> StartChat {mainApp = True, enableSndFiles = True, serviceRequests = False},
       "/_check running" $> CheckChatRunning,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
@@ -5489,7 +5513,9 @@ chatCommandP =
       "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
-      "/_reject " *> (APIRejectContact <$> A.decimal),
+      "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
+      "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
+      "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -5721,7 +5747,7 @@ chatCommandP =
       "/_address_settings " *> (APISetAddressSettings <$> A.decimal <* A.space <*> optional (" pq_ratchet=" *> onOffP) <*> jsonP),
       "/auto_accept " *> (SetAddressSettings <$> optional (" pq_ratchet=" *> onOffP) <*> autoAcceptP),
       ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayNameP),
-      ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP),
+      ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP <*> (" notify" $> True <|> pure False)),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
       ("/welcome" <|> "/w") $> Welcome,
       "/set profile image file " *> (UpdateProfileImageFromFile <$> filePath),

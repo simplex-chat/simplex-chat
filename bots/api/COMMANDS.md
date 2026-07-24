@@ -68,6 +68,9 @@ This file is generated automatically.
 - [APIUpdateProfile](#apiupdateprofile)
 - [APISetContactPrefs](#apisetcontactprefs)
 
+[Service commands](#service-commands)
+- [APISendServiceResponse](#apisendserviceresponse)
+
 [Chat management](#chat-management)
 - [StartChat](#startchat)
 - [APIStopChat](#apistopchat)
@@ -1553,6 +1556,7 @@ Reject contact request. The user who sent the request is **not notified**.
 
 **Parameters**:
 - contactReqId: int64
+- notify: bool
 
 **Syntax**:
 
@@ -2120,6 +2124,50 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+## Service commands
+
+Bots with a double ratchet address can answer service requests.
+
+
+### APISendServiceResponse
+
+Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.
+
+*Network usage*: background.
+
+**Parameters**:
+- userId: int64
+- requestId: string
+- responseData: JSONObject
+
+**Syntax**:
+
+```
+/_service_response <userId> <requestId> <json(responseData)>
+```
+
+```javascript
+'/_service_response ' + userId + ' ' + requestId + ' ' + JSON.stringify(responseData) // JavaScript
+```
+
+```python
+'/_service_response ' + str(userId) + ' ' + requestId + ' ' + json.dumps(responseData) # Python
+```
+
+**Responses**:
+
+ServiceReplyAccepted: Service reply accepted for delivery. `connectionId` correlates the reply delivery event..
+- type: "serviceReplyAccepted"
+- user: [User](./TYPES.md#user)
+- connectionId: string
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
 ## Chat management
 
 These commands should not be used with CLI-based bots
@@ -2134,6 +2182,7 @@ Start chat controller.
 **Parameters**:
 - mainApp: bool
 - enableSndFiles: bool
+- serviceRequests: bool
 
 **Syntax**:
 

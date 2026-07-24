@@ -286,7 +286,7 @@ SEARCH c USING COVERING INDEX idx_connections_user (user_id=?)
 
 Query: 
           SELECT user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
-            last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
+            last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support, service_request_expires_at
           FROM connections
           WHERE conn_id = ? AND deleted = ?
         
@@ -310,7 +310,7 @@ Plan:
 
 Query: 
         INSERT INTO conn_invitations
-        (invitation_id, contact_conn_id, cr_invitation, recipient_conn_info, accepted) VALUES (?, ?, ?, ?, 0);
+        (invitation_id, contact_conn_id, cr_invitation, recipient_conn_info, accepted, service_request) VALUES (?, ?, ?, ?, 0, ?);
       
 Plan:
 
@@ -504,7 +504,7 @@ Plan:
 SEARCH conn_confirmations USING PRIMARY KEY (confirmation_id=?)
 
 Query: 
-        SELECT contact_conn_id, cr_invitation, recipient_conn_info, own_conn_info, accepted
+        SELECT contact_conn_id, cr_invitation, recipient_conn_info, own_conn_info, accepted, service_request, created_at
         FROM conn_invitations
         WHERE invitation_id = ?
           AND accepted = 0
@@ -609,7 +609,8 @@ Plan:
 
 Query: 
       INSERT INTO connections
-        (user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs, pq_support, duplex_handshake) VALUES (?,?,?,?,?,?,?)
+        (user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs, pq_support, service_request_expires_at, duplex_handshake, created_at)
+        VALUES (?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -1196,6 +1197,10 @@ Plan:
 
 Query: INSERT INTO users DEFAULT VALUES
 Plan:
+
+Query: SELECT 1 FROM connections WHERE conn_id = ? AND deleted_at_wait_delivery < ? LIMIT 1
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: SELECT 1 FROM encrypted_rcv_message_hashes WHERE conn_id = ? AND hash = ? LIMIT 1
 Plan:

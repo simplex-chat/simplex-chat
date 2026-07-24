@@ -146,6 +146,13 @@ chatEventsDocsData =
       ],
       []
     ),
+    ( "Service events",
+      "Bots with a double ratchet address, started with service request processing enabled, can answer service requests - a single request with a single response (RPC).",
+      [ ("CEvtServiceRequest", "Service request received.\n\nThe request needs to be answered using [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) command."),
+        ("CEvtServiceReplySent", "Service reply was sent (delivered to the server).\n\nCorrelate `connectionId` with the connection ID from the response to [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) to learn when the reply is delivered.")
+      ],
+      []
+    ),
     ( "Error events",
       "Bots may log these events for debugging. \
       \There will be many error events - this does NOT indicate a malfunction - \
@@ -184,6 +191,7 @@ undocumentedEvents =
     "CEvtContactPQEnabled",
     "CEvtContactRatchetSync",
     "CEvtContactRequestAlreadyAccepted",
+    "CEvtContactRequestRejected",
     "CEvtContactSwitch",
     "CEvtCustomChatEvent",
     "CEvtGroupMemberRatchetSync",

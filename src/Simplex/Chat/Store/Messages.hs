@@ -1141,7 +1141,7 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = do
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
-          cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+          cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
           cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
           cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
