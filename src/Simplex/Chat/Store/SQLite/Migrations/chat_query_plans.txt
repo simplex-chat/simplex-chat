@@ -1168,6 +1168,14 @@ SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             UPDATE contacts
+            SET local_display_name = ?, contact_profile_id = ?, updated_at = ?
+            WHERE user_id = ? AND contact_id = ?
+          
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            UPDATE contacts
             SET user_id = ?, local_display_name = ?, user_preferences = ?, updated_at = ?
             WHERE contact_id = ?
           
@@ -1805,17 +1813,10 @@ Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          UPDATE contacts
-          SET local_display_name = ?, contact_profile_id = ?, updated_at = ?
-          WHERE user_id = ? AND contact_id = ?
-        
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
           UPDATE group_members
           SET contact_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND contact_id IS NULL
+          RETURNING 1
         
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -4167,7 +4168,8 @@ SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_
 Query: 
         UPDATE group_members
         SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+        WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND contact_id IS NULL
+        RETURNING 1
       
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)

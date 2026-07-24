@@ -118,23 +118,24 @@ verifyGroupSig key publicGroupId memberId signatures signedBody =
   let prefix = smpEncode CBGroup <> smpEncode (publicGroupId, memberId)
    in all (\case (MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 key) sig (prefix <> signedBody)) signatures
 
-processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
-processAgentMessage _ _ (DEL_RCVQS delQs) =
+-- the lock entity is resolved by the caller (resolveEvent) and threaded in; entity-less events (DEL_*, empty-conn ERR) ignore it
+processAgentMessage :: Maybe ChatLockEntity -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
+processAgentMessage _ _ _ (DEL_RCVQS delQs) =
   toView $ CEvtAgentRcvQueuesDeleted $ L.map rcvQ delQs
   where
     rcvQ (connId, server, rcvId, err_) = DeletedRcvQueue (AgentConnId connId) server (AgentQueueId rcvId) err_
-processAgentMessage _ _ (DEL_CONNS connIds) =
+processAgentMessage _ _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
-processAgentMessage _ "" (ERR e) =
+processAgentMessage _ _ "" (ERR e) =
   eToView $ chatErrorAgent e
-processAgentMessage corrId connId msg = do
-  lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
+processAgentMessage (Just lockEntity) corrId connId msg =
   withEntityLock "processAgentMessage" lockEntity $ do
     cxt <- chatStoreCxt
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
     critical connId (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
       Just user -> processAgentMessageConn cxt user corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+processAgentMessage Nothing _ connId _ = throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -177,12 +178,12 @@ processAgentMessageNoConn = \case
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 
-processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
-processAgentMsgSndFile _corrId aFileId msg = do
-  (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
+-- (cRef_, fileId) are resolved by the caller (resolveEvent) and threaded in
+processAgentMsgSndFile :: (Maybe ChatRef, FileTransferId) -> ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
+processAgentMsgSndFile (cRef_, fileId) _corrId aFileId msg =
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-      Just user -> process user fileId `catchAllErrors` eToView
+      Just user -> process user `catchAllErrors` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
         throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
@@ -192,8 +193,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
       Just (ChatRef CTDirect contactId _) -> withContactLock "processAgentMsgSndFile" contactId
       Just (ChatRef CTGroup groupId _scope) -> withGroupLock "processAgentMsgSndFile" groupId
       _ -> id
-    process :: User -> FileTransferId -> CM ()
-    process user fileId = do
+    process :: User -> CM ()
+    process user = do
       (ft@FileTransferMeta {xftpRedirectFor, cancelled}, sfts) <- withStore $ \db -> getSndFileTransfer db user fileId
       cxt <- chatStoreCxt
       unless cancelled $ case msg of
@@ -317,12 +318,11 @@ agentFileError = \case
       SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
       e -> srvErr . SrvErrOther $ tshow e
 
-processAgentMsgRcvFile :: ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
-processAgentMsgRcvFile _corrId aFileId msg = do
-  (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
+processAgentMsgRcvFile :: (Maybe ChatRef, FileTransferId) -> ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
+processAgentMsgRcvFile (cRef_, fileId) _corrId aFileId msg =
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-      Just user -> process user fileId `catchAllErrors` eToView
+      Just user -> process user `catchAllErrors` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
         throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
@@ -332,8 +332,8 @@ processAgentMsgRcvFile _corrId aFileId msg = do
       Just (ChatRef CTDirect contactId _) -> withContactLock "processAgentMsgRcvFile" contactId
       Just (ChatRef CTGroup groupId _scope) -> withGroupLock "processAgentMsgRcvFile" groupId
       _ -> id
-    process :: User -> FileTransferId -> CM ()
-    process user fileId = do
+    process :: User -> CM ()
+    process user = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       cxt <- chatStoreCxt
       unless (rcvFileCompleteOrCancelled ft) $ case msg of
@@ -2914,10 +2914,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       case cgm1 of
         COMContact c1@Contact {profile = p1} ->
           case cgm2 of
-            COMGroupMember m2@GroupMember {memberProfile = p2, memberContactId}
-              | isNothing memberContactId && profilesMatch p1 p2 -> do
-                  void . sendDirectContactMessage user c1 $ XInfoProbeOk probe
-                  COMContact <$$> associateMemberAndContact c1 m2
+            COMGroupMember m2@GroupMember {memberProfile = p2, memberContactId} -- send XInfoProbeOk only if this side actually performed the association
+              | isNothing memberContactId && profilesMatch p1 p2 ->
+                  associateMemberAndContact c1 m2 >>= mapM (\c1' -> COMContact c1' <$ sendDirectContactMessage user c1 (XInfoProbeOk probe))
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
             COMContact _ -> messageWarning "probeMatch ignored: contacts are not merged" >> pure Nothing
         COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId} ->
@@ -2925,9 +2924,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             COMContact c2@Contact {profile = p2}
               | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 ->
                   case memberConn m1 of
-                    Just conn -> do
-                      void $ sendDirectMemberMessage conn (XInfoProbeOk probe) groupId
-                      COMContact <$$> associateMemberAndContact c2 m1
+                    Just conn ->
+                      associateMemberAndContact c2 m1 >>= mapM (\c2' -> COMContact c2' <$ sendDirectMemberMessage conn (XInfoProbeOk probe) groupId)
                     _ -> messageWarning "probeMatch ignored: matched member doesn't have connection" >> pure Nothing
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
@@ -3067,8 +3065,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           GroupMember {localDisplayName = mLDN} = m
       case (suffixOrd displayName cLDN, suffixOrd displayName mLDN) of
         (Just cOrd, Just mOrd)
-          | cOrd < mOrd -> Just <$> associateMemberWithContact c m
-          | mOrd < cOrd -> Just <$> associateContactWithMember m c
+          | cOrd < mOrd -> associateMemberWithContact c m
+          | mOrd < cOrd -> associateContactWithMember m c
           | otherwise -> pure Nothing
         _ -> pure Nothing
 
@@ -3079,19 +3077,19 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           Just suffix -> readMaybe $ T.unpack suffix
           Nothing -> Nothing
 
-    associateMemberWithContact :: Contact -> GroupMember -> CM Contact
+    associateMemberWithContact :: Contact -> GroupMember -> CM (Maybe Contact)
     associateMemberWithContact c1 m2@GroupMember {groupId} = do
-      g <- withStore $ \db -> do
-        liftIO $ associateMemberWithContactRecord db user c1 m2
-        getGroupInfo db cxt user groupId
-      toView $ CEvtContactAndMemberAssociated user c1 g m2 c1
-      pure c1
+      (won, g) <- withStore $ \db ->
+        liftM2 (,) (liftIO $ associateMemberWithContactRecord db user c1 m2) (getGroupInfo db cxt user groupId)
+      if won
+        then Just c1 <$ toView (CEvtContactAndMemberAssociated user c1 g m2 c1)
+        else pure Nothing
 
-    associateContactWithMember :: GroupMember -> Contact -> CM Contact
+    associateContactWithMember :: GroupMember -> Contact -> CM (Maybe Contact)
     associateContactWithMember m1@GroupMember {groupId} c2 = do
       (c2', g) <- withStore $ \db ->
         liftM2 (,) (associateContactWithMemberRecord db cxt user m1 c2) (getGroupInfo db cxt user groupId)
-      toView $ CEvtContactAndMemberAssociated user c2 g m1 c2'
+      mapM_ (toView . CEvtContactAndMemberAssociated user c2 g m1) c2'
       pure c2'
 
     saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Maybe GroupInfo)
@@ -3100,7 +3098,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          ct <- withStore $ \db -> createDirectContact db cxt user conn' p
+          ews <- asks entityWorkers
+          let Connection {connId} = conn'
+          -- keep this connection's events on one worker across the CLConnection->CLContact transition: register the existing worker under the contact key inside the tx (before the row is visible, so no enqueue can resolve CLContact and create a rival); the connection key is left in place (removing it could strand a stale pre-commit enqueue)
+          ct <- withStore $ \db -> do
+            ct@Contact {contactId} <- createDirectContact db cxt user conn' p
+            liftIO $ atomically $ TM.lookup (Just $ CLConnection connId) ews >>= mapM_ (\w -> TM.insert (Just $ CLContact contactId) w ews)
+            pure ct
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do

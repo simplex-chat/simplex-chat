@@ -68,6 +68,7 @@ import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
+import Simplex.Messaging.Util (unlessM)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
@@ -322,7 +323,7 @@ startTestChat_ TestParams {tmpPath, printOutput} db cfg opts@ChatOpts {coreOptio
   Right cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
-  unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
+  unless maintenance $ atomically $ unlessM (readTVar $ chatRunning cc) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput}

@@ -3088,52 +3088,56 @@ getContactOrMember_ db cxt user ids =
     (_, Just gId, Just gmId) -> COMGroupMember <$> getGroupMember db cxt user gId gmId
     _ -> throwError $ SEInternalError ""
 
-associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
+-- returns True if this call performed the association to handle concurrent workers
+associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO Bool
 associateMemberWithContactRecord
   db
   User {userId}
   Contact {contactId, localDisplayName, profile = LocalProfile {profileId}}
   GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}} = do
     currentTs <- getCurrentTime
-    DB.execute
-      db
-      [sql|
+    -- atomic compare-and-set: WHERE contact_id IS NULL makes a losing concurrent association a no-op; RETURNING reports whether it was set
+    won <- isJust <$> maybeFirstRow fromOnly (DB.query db [sql|
         UPDATE group_members
         SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-      |]
-      (contactId, localDisplayName, profileId, currentTs, userId, groupId, groupMemberId)
-    when (memProfileId /= profileId) $ deleteUnusedProfile_ db userId memProfileId
-    when (memLDN /= localDisplayName) $ deleteUnusedDisplayName_ db userId memLDN
+        WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND contact_id IS NULL
+        RETURNING 1
+      |] (contactId, localDisplayName, profileId, currentTs, userId, groupId, groupMemberId) :: IO [Only Int])
+    when won $ do
+      when (memProfileId /= profileId) $ deleteUnusedProfile_ db userId memProfileId
+      when (memLDN /= localDisplayName) $ deleteUnusedDisplayName_ db userId memLDN
+    pure won
 
-associateContactWithMemberRecord :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> ExceptT StoreError IO Contact
+-- returns Just the updated contact if this call performed the association, Nothing if a concurrent worker did it
+associateContactWithMemberRecord :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> ExceptT StoreError IO (Maybe Contact)
 associateContactWithMemberRecord
   db
   cxt
   user@User {userId}
   GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}}
   Contact {contactId, localDisplayName, profile = LocalProfile {profileId}} = do
-    liftIO $ do
+    won <- liftIO $ do
       currentTs <- getCurrentTime
-      DB.execute
-        db
-        [sql|
+      -- atomic compare-and-set: WHERE contact_id IS NULL makes a losing concurrent association a no-op; RETURNING reports whether we won
+      won <- isJust <$> maybeFirstRow fromOnly (DB.query db [sql|
           UPDATE group_members
           SET contact_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-        |]
-        (contactId, currentTs, userId, groupId, groupMemberId)
-      DB.execute
-        db
-        [sql|
-          UPDATE contacts
-          SET local_display_name = ?, contact_profile_id = ?, updated_at = ?
-          WHERE user_id = ? AND contact_id = ?
-        |]
-        (memLDN, memProfileId, currentTs, userId, contactId)
-      when (profileId /= memProfileId) $ deleteUnusedProfile_ db userId profileId
-      when (localDisplayName /= memLDN) $ deleteUnusedDisplayName_ db userId localDisplayName
-    getContact db cxt user contactId
+          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND contact_id IS NULL
+          RETURNING 1
+        |] (contactId, currentTs, userId, groupId, groupMemberId) :: IO [Only Int])
+      when won $ do
+        DB.execute
+          db
+          [sql|
+            UPDATE contacts
+            SET local_display_name = ?, contact_profile_id = ?, updated_at = ?
+            WHERE user_id = ? AND contact_id = ?
+          |]
+          (memLDN, memProfileId, currentTs, userId, contactId)
+        when (profileId /= memProfileId) $ deleteUnusedProfile_ db userId profileId
+        when (localDisplayName /= memLDN) $ deleteUnusedDisplayName_ db userId localDisplayName
+      pure won
+    if won then Just <$> getContact db cxt user contactId else pure Nothing
 
 deleteUnusedDisplayName_ :: DB.Connection -> UserId -> ContactName -> IO ()
 deleteUnusedDisplayName_ db userId localDisplayName =

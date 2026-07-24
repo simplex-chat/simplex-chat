@@ -20,6 +20,7 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
+import Control.Monad.Reader (runReaderT)
 import Data.Bifunctor (bimap, second)
 import Data.List (partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -166,13 +167,18 @@ newChatController
     agentXFTP <- randomServerCfgs "agent XFTP servers" SPXFTP opDomains rndSrvs
     let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP}
     servers <- withTransaction chatStore $ \db -> agentServers db config randomPresetServers randomAgentServers
-    runExceptT (getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode)
-      >>= mapM (mkChatController config randomPresetServers randomAgentServers)
+    ccVar <- newEmptyTMVarIO
+    let processEvent _ t = do
+          cc <- atomically $ readTMVar ccVar
+          queueAgentEvent cc t
+    runExceptT (getSMPAgentClient aCfg {tbqSize} servers agentStore processEvent)
+      >>= mapM (mkChatController config randomPresetServers randomAgentServers ccVar)
     where
-      mkChatController config randomPresetServers randomAgentServers smpAgent = do
+      mkChatController config randomPresetServers randomAgentServers ccVar smpAgent = do
         currentUser <- newTVarIO user
         currentRemoteHost <- newTVarIO Nothing
-        agentAsync <- newTVarIO Nothing
+        chatRunning <- newTVarIO False
+        subscribeAsync <- newTVarIO Nothing
         random <- liftIO C.newRandom
         eventSeq <- newTVarIO 0
         inputQ <- newTBQueueIO tbqSize
@@ -194,6 +200,8 @@ newChatController
         deliveryTaskWorkers <- TM.emptyIO
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
+        entityWorkers <- TM.emptyIO
+        entityWorkerSeq <- newTVarIO 0
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
@@ -207,53 +215,59 @@ newChatController
         tempDirectory <- newTVarIO optTempDirectory
         assetsDirectory <- newTVarIO Nothing
         contactMergeEnabled <- newTVarIO True
-        pure
-          ChatController
-            { firstTime = dbNew chatStore,
-              currentUser,
-              randomPresetServers,
-              randomAgentServers,
-              currentRemoteHost,
-              smpAgent,
-              agentAsync,
-              chatStore,
-              chatStoreChanged,
-              random,
-              eventSeq,
-              inputQ,
-              outputQ,
-              subscriptionMode,
-              chatLock,
-              entityLocks,
-              sndFiles,
-              rcvFiles,
-              currentCalls,
-              localDeviceName,
-              multicastSubscribers,
-              remoteSessionSeq,
-              remoteHostSessions,
-              remoteHostsFolder,
-              remoteCtrlSession,
-              config,
-              filesFolder,
-              deliveryTaskWorkers,
-              deliveryJobWorkers,
-              relayRequestWorkers,
-              relayGroupLinkChecksAsync,
-              webPreviewState,
-              chatRelayTests,
-              expireCIThreads,
-              expireCIFlags,
-              cleanupManagerAsync,
-              timedItemThreads,
-              chatActivated,
-              showLiveItems,
-              encryptLocalFiles,
-              tempDirectory,
-              assetsDirectory,
-              logFilePath = logFile,
-              contactMergeEnabled
-            }
+        let cc =
+              ChatController
+                { firstTime = dbNew chatStore,
+                  currentUser,
+                  randomPresetServers,
+                  randomAgentServers,
+                  currentRemoteHost,
+                  smpAgent,
+                  chatRunning,
+                  subscribeAsync,
+                  chatStore,
+                  chatStoreChanged,
+                  random,
+                  eventSeq,
+                  inputQ,
+                  outputQ,
+                  subscriptionMode,
+                  chatLock,
+                  entityLocks,
+                  sndFiles,
+                  rcvFiles,
+                  currentCalls,
+                  localDeviceName,
+                  multicastSubscribers,
+                  remoteSessionSeq,
+                  remoteHostSessions,
+                  remoteHostsFolder,
+                  remoteCtrlSession,
+                  config,
+                  filesFolder,
+                  deliveryTaskWorkers,
+                  deliveryJobWorkers,
+                  relayRequestWorkers,
+                  entityWorkers,
+                  entityWorkerSeq,
+                  relayGroupLinkChecksAsync,
+                  webPreviewState,
+                  chatRelayTests,
+                  expireCIThreads,
+                  expireCIFlags,
+                  cleanupManagerAsync,
+                  timedItemThreads,
+                  chatActivated,
+                  showLiveItems,
+                  encryptLocalFiles,
+                  tempDirectory,
+                  assetsDirectory,
+                  logFilePath = logFile,
+                  contactMergeEnabled
+                }
+        atomically $ putTMVar ccVar cc
+        startSMPAgentClient smpAgent backgroundMode
+        pure cc
       presetServers' :: PresetServers
       presetServers' = presetServers {operators = operators', netCfg = netCfg'}
         where

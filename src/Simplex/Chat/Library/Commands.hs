@@ -114,6 +114,7 @@ import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
+import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
 import Simplex.Messaging.Util
@@ -123,10 +124,12 @@ import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
+import Debug.Trace (traceIO)
+import System.Mem.Weak (deRefWeak)
 import System.Random (randomRIO)
 import System.Timeout (timeout)
 import UnliftIO.Async
-import UnliftIO.Concurrent (forkIO, threadDelay)
+import UnliftIO.Concurrent (forkIO, forkIOWithUnmask, killThread, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
@@ -216,7 +219,7 @@ videoFilePrefix :: String
 videoFilePrefix = "video_"
 
 -- enableSndFiles has no effect when mainApp is True
-startChatController :: Bool -> Bool -> CM' (Async ())
+startChatController :: Bool -> Bool -> CM' ()
 startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
@@ -225,8 +228,7 @@ startChatController mainApp enableSndFiles = do
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
     Right _ -> pure ()
   restoreCalls
-  s <- asks agentAsync
-  readTVarIO s >>= maybe (start s users) (pure . fst)
+  unlessM (chatReadVar' chatRunning) $ start users
   where
     syncConnections' users =
       whenM (withFastStore' shouldSyncConnections) $ do
@@ -235,13 +237,13 @@ startChatController mainApp enableSndFiles = do
         (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
-    start s users = do
-      a1 <- async agentSubscriber
-      a2 <-
+    start users = do
+      a <-
         if mainApp
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
-      atomically . writeTVar s $ Just (a1, a2)
+      chatWriteVar' chatRunning True
+      chatWriteVar' subscribeAsync a
       if mainApp
         then do
           startXFTP xftpStartWorkers
@@ -253,7 +255,6 @@ startChatController mainApp enableSndFiles = do
           startRelayChecks users
           startWebPreview users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
-      pure a1
     startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
       runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
@@ -345,18 +346,23 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+stopChatController ChatController {smpAgent, chatRunning, subscribeAsync, entityWorkers, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ (\(a1, a2) -> forkIO $ uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  readTVarIO entityWorkers >>= mapM_ stopEntityWorker
+  readTVarIO subscribeAsync >>= mapM_ (void . forkIO . uninterruptibleCancel)
   closeFiles sndFiles
   closeFiles rcvFiles
   atomically $ do
     keys <- M.keys <$> readTVar expireCIFlags
     forM_ keys $ \k -> TM.insert k False expireCIFlags
-    writeTVar s Nothing
+    writeTVar chatRunning False
+    writeTVar subscribeAsync Nothing
+    TM.clear entityWorkers -- drop the killed workers so a restart (/_start) creates fresh ones
   where
+    stopEntityWorker v =
+      atomically (tryReadTMVar $ sessionVar v) >>= mapM_ (\EntityWorker {workerThreadId} -> deRefWeak workerThreadId >>= mapM_ killThread)
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
       fs <- readTVarIO files
@@ -549,10 +555,9 @@ processChatCommand cxt nm = \case
     withChatLock "deleteUser" $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
   StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
-    asks agentAsync >>= readTVarIO >>= \case
-      Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
-  CheckChatRunning -> maybe CRChatStopped (const CRChatRunning) <$> chatReadVar agentAsync
+    ifM (chatReadVar chatRunning) (pure CRChatRunning) $
+      checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
+  CheckChatRunning -> ifM (chatReadVar chatRunning) (pure CRChatRunning) (pure CRChatStopped)
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -861,8 +866,12 @@ processChatCommand cxt nm = \case
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let signedEvents = L.nonEmpty $ mapMaybe (delEventSigned gInfo chatScopeInfo False) items
+          liftIO $ traceIO ("DELBCAST before send: " <> show (length items) <> " items, " <> show (length recipients) <> " recipients")
           mapM_ (sendGroupSignedMessages user gInfo Nothing False recipients) signedEvents
-          delGroupChatItems user gInfo chatScopeInfo items False
+          liftIO $ traceIO "DELBCAST before delGroupChatItems"
+          ds <- delGroupChatItems user gInfo chatScopeInfo items False
+          liftIO $ traceIO "DELBCAST done"
+          pure ds
         CIDMHistory -> do
           unless (publicGroupEditor gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
           recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
@@ -3664,7 +3673,7 @@ processChatCommand cxt nm = \case
         CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
         _ -> pure []
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
-    checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
+    checkChatStopped a = ifM (chatReadVar chatRunning) (throwChatError CEChatNotStopped) a
     setStoreChanged :: CM ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
 #if !defined(dbPostgres)
@@ -5155,22 +5164,67 @@ setAllExpireCIFlags b = do
     keys <- M.keys <$> readTVar expireFlags
     forM_ keys $ \k -> TM.insert k b expireFlags
 
-agentSubscriber :: CM' ()
-agentSubscriber = do
-  q <- asks $ subQ . smpAgent
-  forever (atomically (readTBQueue q) >>= process)
-    `catchOwn` \e -> do
-      eToView' $ chatErrorAgent $ CRITICAL True $ "Message reception stopped: " <> show e
-      E.throwIO e
+-- agent event callback: resolve the event's lock entity, then hand it to that entity's worker.
+-- runs on the agent thread (under its connection lock), so it must not block - the worker queue is unbounded.
+queueAgentEvent :: ChatController -> ATransmission -> IO ()
+queueAgentEvent cc t =
+  runReaderT (runExceptT $ resolveEvent t) cc >>= \case
+    Right rt -> getEntityWorker cc (workerKey rt) >>= \q -> atomically (writeTQueue q rt)
+    Left e -> runReaderT (eToView' e) cc
+
+-- resolves the event's chat lock entity once, used both to pick the worker and (threaded through) by the handler.
+-- a lookup failure is surfaced by queueAgentEvent and the event is not enqueued (not ACKed either, so it is redelivered).
+resolveEvent :: ATransmission -> CM ResolvedTransmission
+resolveEvent (corrId, entId, AEvt sae ev) = (corrId,entId,) <$> case sae of
+  SAEConn -> (\me -> ResolvedEvt (REConn me) ev) <$> connLockEntity
+  SAESndFile -> (\(cRef, fId) -> ResolvedEvt (RESndFile cRef fId) ev) <$> withStore (`getXFTPSndFileDBIds` AgentSndFileId entId)
+  SAERcvFile -> (\(cRef, fId) -> ResolvedEvt (RERcvFile cRef fId) ev) <$> withStore (`getXFTPRcvFileDBIds` AgentRcvFileId entId)
+  SAENone -> pure $ ResolvedEvt RENone ev
   where
-    process :: (ACorrId, AEntityId, AEvt) -> CM' ()
-    process (corrId, entId, AEvt e msg) = run $ case e of
-      SAENone -> processAgentMessageNoConn msg
-      SAEConn -> processAgentMessage corrId entId msg
-      SAERcvFile -> processAgentMsgRcvFile corrId entId msg
-      SAESndFile -> processAgentMsgSndFile corrId entId msg
-      where
-        run action = action `catchAllOwnErrors'` eToView'
+    connLockEntity
+      | B.null entId = pure Nothing -- DEL_RCVQS / DEL_CONNS / empty-conn ERR are entity-less
+      | otherwise = Just <$> critical entId (withStore (`getChatLockEntity` AgentConnId entId))
+
+workerKey :: ResolvedTransmission -> Maybe ChatLockEntity
+workerKey (_, _, ResolvedEvt re _) = case re of
+  REConn me -> me
+  RESndFile cRef fId -> Just $ fileEntity cRef fId
+  RERcvFile cRef fId -> Just $ fileEntity cRef fId
+  RENone -> Nothing
+
+-- file events run on the chat entity's worker; files with no chat entity use CLFile
+fileEntity :: Maybe ChatRef -> FileTransferId -> ChatLockEntity
+fileEntity cRef fId = case cRef of
+  Just (ChatRef CTDirect cId _) -> CLContact cId
+  Just (ChatRef CTGroup gId _) -> CLGroup gId
+  _ -> CLFile fId
+
+getEntityWorker :: ChatController -> Maybe ChatLockEntity -> IO (TQueue ResolvedTransmission)
+getEntityWorker cc@ChatController {entityWorkerSeq, entityWorkers} key = do
+  ts <- getCurrentTime
+  withGetSessVar' entityWorkerSeq key entityWorkers ts createWorker existingWorker
+  where
+    createWorker v = do
+      q <- newTQueueIO
+      -- forkIOWithUnmask (not forkIO): the callback runs under uninterruptibleMask, an inherited mask makes the worker unkillable
+      tId <- mkWeakThreadId =<< forkIOWithUnmask (\unmask -> unmask $ entityWorkerLoop cc q)
+      atomically $ putTMVar (sessionVar v) EntityWorker {eventQ = q, workerThreadId = tId}
+      pure q
+    existingWorker v = eventQ <$> atomically (readTMVar $ sessionVar v)
+
+entityWorkerLoop :: ChatController -> TQueue ResolvedTransmission -> IO ()
+entityWorkerLoop cc q = forever $
+  -- unmasked while blocked on the queue (killable at teardown), uninterruptible while processing so each event completes atomically
+  atomically (readTQueue q) >>= \rt -> E.uninterruptibleMask_ $ runReaderT (processAgentEvent rt) cc
+
+processAgentEvent :: ResolvedTransmission -> CM' ()
+processAgentEvent (corrId, entId, ResolvedEvt re ev) = run $ case re of
+  RENone -> processAgentMessageNoConn ev
+  REConn me -> processAgentMessage me corrId entId ev
+  RERcvFile cRef fId -> processAgentMsgRcvFile (cRef, fId) corrId entId ev
+  RESndFile cRef fId -> processAgentMsgSndFile (cRef, fId) corrId entId ev
+  where
+    run action = action `catchAllOwnErrors'` eToView'
 
 type AgentSubResult = Map ConnId (Either AgentErrorType ())
 

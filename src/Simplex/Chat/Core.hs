@@ -90,11 +90,10 @@ runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> C
 runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, headless, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
-      a1 <- runReaderT (startChatController True True) cc
+      runReaderT (startChatController True True) cc
       when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer headless
       forM_ (postStartHook chatHooks) ($ cc)
-      a2 <- async $ chat u cc
-      waitEither_ a1 a2
+      chat u cc
 
 sendChatCmdStr :: ChatController -> String -> IO (Either ChatError ChatResponse)
 sendChatCmdStr cc s = runReaderT (execChatCommand Nothing (encodeUtf8 $ T.pack s) 0) cc

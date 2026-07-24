@@ -2988,7 +2988,7 @@ testGroupLinkMemberRole =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 100000
+      threadDelay 500000
 
       alice ##> "/ms team"
       alice
@@ -3158,7 +3158,7 @@ testGroupLinkHostProfileReceived =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 100000
+      threadDelay 500000
 
       aliceImage <- getProfilePictureByName bob "alice"
       aliceImage `shouldBe` Just profileImage
@@ -3222,7 +3222,13 @@ testGLinkRejectBlockedName =
       bob <## "#team: joining the group..."
       bob <## "#team: join rejected, reason: GRRBlockedName"
 
-      threadDelay 100000
+      -- bob's contact is removed by async reject/handshake/delete events (~0.2-0.4s via per-entity workers); poll instead of a fixed delay
+      let waitRejected n = do
+            ps <- getContactProfiles alice
+            if "bob" `notElem` ps || (n :: Int) <= 0
+              then pure ()
+              else threadDelay 10000 >> waitRejected (n - 1)
+      waitRejected 300
 
       alice `hasContactProfiles` ["alice"]
       memCount <- withCCTransaction alice $ \db ->
@@ -3832,14 +3838,15 @@ setupDesynchronizedRatchet ps alice = do
     bob <# "#team alice> 1"
     bob #> "#team 2"
     alice <# "#team bob> 2"
-    alice #> "#team 3"
-    bob <# "#team alice> 3"
-    bob #> "#team 4"
-    alice <# "#team bob> 4"
-  withTestChat ps "bob_old" $ \bob -> do
-    bob <## "subscribed 2 connections on server localhost"
+    bob #> "#team 3"
+    alice <# "#team bob> 3"
+    alice #> "#team 4"
+    bob <# "#team alice> 4"
+    -- /sync is prohibited while the ratchet is in sync; checked here on a deterministically in-sync connection (bob_old below may already detect desync on subscribe, racing the command)
     bob ##> "/sync #team alice"
     bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
+  withTestChat ps "bob_old" $ \bob -> do
+    bob <## "subscribed 2 connections on server localhost"
     alice #> "#team 1"
     bob <## "#team alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync #team alice to synchronize"
@@ -6195,13 +6202,13 @@ testGroupHistoryDisappearingMessage =
 
       threadDelay 1000000
 
-      -- 3 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
-      alice ##> "/set disappear #team on 4"
+      -- 8 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
+      alice ##> "/set disappear #team on 8"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages: on (4 sec)"
+      alice <## "Disappearing messages: on (8 sec)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages: on (4 sec)"
+      bob <## "Disappearing messages: on (8 sec)"
 
       bob #> "#team 2"
       alice <# "#team bob> 2"
@@ -6244,6 +6251,8 @@ testGroupHistoryDisappearingMessage =
       cath ##> "/_get chat #1 count=100"
       r1 <- chat <$> getTermLine cath
       r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+
+      threadDelay 9000000
 
       concurrentlyN_
         [ alice
