@@ -47,7 +47,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
-    @State @ObservedObject var chat: Chat
+    @State var chat: Chat
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
@@ -1004,7 +1004,7 @@ struct ChatView: View {
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-        @Binding @ObservedObject var chat: Chat
+        @Binding var chat: Chat
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -1697,7 +1697,7 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
-        @Binding @ObservedObject var chat: Chat
+        @Binding var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let index: Int
         let isLastItem: Bool
