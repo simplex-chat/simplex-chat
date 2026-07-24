@@ -135,20 +135,6 @@ struct PrivacySettings: View {
                 }
             }
         }
-        .onChange(of: contactReceipts) { _ in
-            if contactReceiptsReset {
-                contactReceiptsReset = false
-            } else {
-                setOrAskSendReceiptsContacts(contactReceipts)
-            }
-        }
-        .onChange(of: groupReceipts) { _ in
-            if groupReceiptsReset {
-                groupReceiptsReset = false
-            } else {
-                setOrAskSendReceiptsGroups(groupReceipts)
-            }
-        }
         .onChange(of: autoAcceptMemberContacts) { _ in
             if autoAcceptMemberContactsReset {
                 autoAcceptMemberContactsReset = false
@@ -158,14 +144,6 @@ struct PrivacySettings: View {
         }
         .onAppear {
             if let u = m.currentUser {
-                if contactReceipts != u.sendRcptsContacts {
-                    contactReceiptsReset = true
-                    contactReceipts = u.sendRcptsContacts
-                }
-                if groupReceipts != u.sendRcptsSmallGroups {
-                    groupReceiptsReset = true
-                    groupReceipts = u.sendRcptsSmallGroups
-                }
                 if autoAcceptMemberContacts != u.autoAcceptMemberContacts {
                     autoAcceptMemberContactsReset = true
                     autoAcceptMemberContacts = u.autoAcceptMemberContacts
@@ -309,6 +287,32 @@ struct PrivacySettings: View {
                 Button("Cancel", role: .cancel) {
                     groupReceiptsReset = true
                     groupReceipts.toggle()
+                }
+            }
+        }
+        .onChange(of: contactReceipts) { _ in
+            if contactReceiptsReset {
+                contactReceiptsReset = false
+            } else {
+                setOrAskSendReceiptsContacts(contactReceipts)
+            }
+        }
+        .onChange(of: groupReceipts) { _ in
+            if groupReceiptsReset {
+                groupReceiptsReset = false
+            } else {
+                setOrAskSendReceiptsGroups(groupReceipts)
+            }
+        }
+        .onAppear {
+            if let u = m.currentUser {
+                if contactReceipts != u.sendRcptsContacts {
+                    contactReceiptsReset = true
+                    contactReceipts = u.sendRcptsContacts
+                }
+                if groupReceipts != u.sendRcptsSmallGroups {
+                    groupReceiptsReset = true
+                    groupReceipts = u.sendRcptsSmallGroups
                 }
             }
         }
