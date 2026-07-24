@@ -160,9 +160,13 @@ fun SetSimplexDomainView(
       SectionDividerSpaced()
       SectionView {
         if (editing.value) {
-          SectionItemView({ openBrowserAlert("https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md", uriHandler) }) {
-            Text(stringResource(MR.strings.register_test_name), color = MaterialTheme.colors.primary)
-          }
+          SettingsActionItem(
+            painterResource(MR.images.ic_open_in_new),
+            stringResource(MR.strings.register_test_name),
+            { openBrowserAlert("https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md", uriHandler) },
+            textColor = MaterialTheme.colors.primary,
+            iconColor = MaterialTheme.colors.primary
+          )
           SectionItemView({ if (broadcastWarning != null && !unchanged) AlertManager.shared.showAlertDialog(title = broadcastWarning, confirmText = generalGetString(MR.strings.save_verb), onConfirm = { doSave(close) }) else doSave(close) }, disabled = unchanged || saving.value || !isValid) {
             Text(
               stringResource(MR.strings.save_verb),
