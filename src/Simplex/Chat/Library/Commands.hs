@@ -1449,9 +1449,9 @@ processChatCommand cxt nm = \case
             liftIO $ deleteContactRequest db user connReqId
             pure ct_
         pure $ CRContactRequestRejected user cReq ct_
-  APISendServiceRequest userId sendTarget requestTimeout request -> withUserId userId $ \user -> do
+  APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user -> do
     cReq <- resolveServiceTarget user sendTarget
-    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (LB.toStrict $ J.encode request)
+    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
     resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
     pure $ CRServiceResponse user resp
     where
@@ -5514,7 +5514,7 @@ chatCommandP =
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
-      "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <* A.space <*> jsonP),
+      "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),

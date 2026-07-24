@@ -1411,10 +1411,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      SREQ invId payload ->
+      SREQ invId sigKey_ payload ->
         chatReadVar processServiceRequests >>= \case
           True -> case J.eitherDecodeStrict' payload of
-            Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) request
+            Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
             Left _ -> dropSReq
           False -> dropSReq
         where
