@@ -8,12 +8,13 @@
 
 import SwiftUI
 import CodeScanner
+import SimpleXChat
 
 struct ScanCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var connectionVerified: Bool
     var verify: (String?) async -> (Bool, String)?
-    @State private var showCodeError = false
+    @State private var scanAlert: SomeAlert?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -25,26 +26,32 @@ struct ScanCodeView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .alert(isPresented: $showCodeError) {
-            Alert(title: Text("Incorrect security code!"))
-        }
+        .alert(item: $scanAlert) { $0.alert }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            Task {
-                if let (ok, _) = await verify(r.string) {
-                    await MainActor.run {
-                        connectionVerified = ok
-                        if ok {
-                            dismiss()
-                        } else {
-                            showCodeError = true
+            let trimmed = r.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch checkLink(trimmed) {
+            case .verificationCode?, nil:
+                // a security code (or unrecognised text): run the existing verify path
+                Task {
+                    if let (ok, _) = await verify(trimmed) {
+                        await MainActor.run {
+                            connectionVerified = ok
+                            if ok {
+                                dismiss()
+                            } else {
+                                scanAlert = SomeAlert(alert: Alert(title: Text("Incorrect security code!")), id: "incorrectCode")
+                            }
                         }
                     }
                 }
+            case let type?:
+                // valid SimpleX code of another kind: tell the user what it is
+                scanAlert = SomeAlert(alert: wrongQRCodeAlert(wrongQRCodeMessage(type)), id: "wrongQRCode")
             }
         case let .failure(e):
             logger.error("ScanCodeView.processQRCode QR code error: \(e.localizedDescription)")

@@ -37,7 +37,7 @@ import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEnco
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
-import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
+import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri, simplexLinkType)
 import Simplex.Chat.Mobile.Badges
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
@@ -48,9 +48,10 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
+import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Protocol (AgentErrorType)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink, AgentErrorType)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
@@ -58,6 +59,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
+import Simplex.RemoteControl.Invitation (RCSignedInvitation)
 import System.IO (utf8)
 import System.Timeout (timeout)
 import qualified URI.ByteString as U
@@ -130,6 +132,8 @@ foreign export ccall "chat_recv_msg_wait" cChatRecvMsgWait :: StablePtr ChatCont
 foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO CJSONString
 
 foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
+
+foreign export ccall "chat_check_link" cChatCheckLink :: CString -> IO CJSONString
 
 foreign export ccall "chat_parse_uri" cChatParseUri :: CString -> CInt -> IO CJSONString
 
@@ -225,6 +229,10 @@ cChatParseMarkdown s = newCStringFromLazyBS . chatParseMarkdown =<< B.packCStrin
 -- | parse server address - returns ParsedServerAddress JSON
 cChatParseServer :: CString -> IO CJSONString
 cChatParseServer s = newCStringFromLazyBS . chatParseServer =<< B.packCString s
+
+-- | classify a scanned QR code / link - returns CheckedLink JSON
+cChatCheckLink :: CString -> IO CJSONString
+cChatCheckLink s = newCStringFromLazyBS . chatCheckLink =<< B.packCString s
 
 -- | parse web URI - returns ParsedUri JSON
 cChatParseUri :: CString -> CInt -> IO CJSONString
@@ -379,6 +387,23 @@ chatParseServer = J.encode . toServerAddress . strDecode
       Left e -> ParsedServerAddress Nothing e
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode
+
+-- | Classify a scanned QR code / link into ScannedLinkType, or Nothing if it is
+-- not a SimpleX code, by trying the same core decoders that later process each
+-- kind. The UI owns the real trim (see the plan); this ASCII-only trim is
+-- defensive so a stray edge byte never fails an otherwise-valid decode.
+chatCheckLink :: ByteString -> JSONByteString
+chatCheckLink = J.encode . CheckedLink . classify . trimAscii
+  where
+    isAsciiSpace c = c == ' ' || c == '\t' || c == '\r' || c == '\n'
+    trimAscii = B.dropWhileEnd isAsciiSpace . B.dropWhile isAsciiSpace
+    classify s
+      | Right {} <- strDecode @RCSignedInvitation s = Just SLTDesktopCtrl
+      | Right {} <- strDecode @FileDescriptionURI s = Just SLTFileDescription
+      | Right l <- strDecode @AConnectionLink s = Just $ SLTConnection $ simplexLinkType l
+      | Right {} <- strDecode @AProtoServerWithAuth s = Just SLTServer
+      | isVerificationCode s = Just SLTVerificationCode
+      | otherwise = Nothing
 
 chatParseUri :: Bool -> ByteString -> JSONByteString
 chatParseUri safe s = J.encode $ case parseUri s of
