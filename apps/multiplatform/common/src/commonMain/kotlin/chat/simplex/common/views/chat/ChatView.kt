@@ -135,7 +135,7 @@ fun ChatView(
       val draft = chatModel.draft.value
       val sharedContent = chatModel.sharedContent.value
       mutableStateOf(
-        if (chatModel.draftChatId.value == staleChatId.value && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == staleChatId.value)) {
+        if (chatModel.draftChatId.value == draftChatId(staleChatId.value, chatsCtx.groupScopeInfo?.toChatScope()) && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == staleChatId.value)) {
           draft
         } else {
           ComposeState(useLinkPreviews = useLinkPreviews)
