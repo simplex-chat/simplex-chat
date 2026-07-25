@@ -1458,12 +1458,11 @@ processChatCommand cxt nm = \case
       resolveServiceTarget user = \case
         CTFullContact cReq -> pure cReq
         CTShortContact (CTLink sLnk) -> (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
-        CTShortContact (CTName ni@SimplexNameInfo {nameType}) -> case nameType of
+        CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
           NTContact -> do
-            (ccLink, _, _, _) <- connectPlan user (ACTarget SCMContact (CTShortContact (CTName ni))) PRMUnknown Nothing Nothing
-            case ccLink of
-              ACCL SCMContact (CCLink cReq _) -> pure cReq
-              _ -> throwCmdError "service request target is not a contact address"
+            NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
+            sLnk <- maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink CCTContact nrSimplexContact
+            (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
           _ -> throwCmdError "service request target must be a contact, not a channel"
         CTDomain _ -> throwCmdError "service request target must be a contact address, not a domain"
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
