@@ -67,7 +67,7 @@
     <string name="notifications_mode_service">يعمل دائمًا</string>
     <string name="notifications_mode_off_desc">يمكن للتطبيق استلام الإشعارات فقط عند تشغيله، ولن يتم بدء تشغيل أي خدمة في الخلفية</string>
     <string name="allow_voice_messages_question">السماح بالرسائل الصوتية؟</string>
-    <string name="all_your_contacts_will_remain_connected">سيظل جميع جهات اتصالك متصلين.</string>
+    <string name="all_your_contacts_will_remain_connected">ستظل جميع جهات اتصالك متصلة.</string>
     <string name="always_use_relay">استخدم المُرحل دائمًا</string>
     <string name="full_backup">النسخ الاحتياطي لبيانات التطبيق</string>
     <string name="all_app_data_will_be_cleared">حُذفت جميع بيانات التطبيق.</string>
@@ -77,7 +77,7 @@
     <string name="app_version_code">بناء التطبيق: %s</string>
     <string name="appearance_settings">المظهر</string>
     <string name="add_address_to_your_profile">أضف عنوانًا إلى ملف تعريفك، حتى تتمكن جهات اتصالك على SimpleX من مشاركته مع أشخاص آخرين. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك على SimpleX.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">سيظل جميع جهات اتصالك متصلين. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">ستظل جميع جهات اتصالك متصلة. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
     <string name="settings_section_title_icon">أيقونة التطبيق</string>
     <string name="address_section_title">عنوان</string>
     <string name="allow_your_contacts_irreversibly_delete">اسمح لجهات اتصالك بحذف الرسائل المرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
@@ -214,7 +214,7 @@
     <string name="callstate_connecting">يتصل…</string>
     <string name="callstate_ended">انتهى</string>
     <string name="callstate_connected">متصل</string>
-    <string name="alert_text_decryption_error_too_many_skipped">%1$d رسائل تخطّت.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">تم تخطّي %1$d رسالة.</string>
     <string name="enable_lock">فعّل القفل</string>
     <string name="confirm_passcode">تأكيد رمز المرور</string>
     <string name="error_deleting_database">خطأ في حذف قاعدة بيانات الدردشة</string>
@@ -261,7 +261,7 @@
     <string name="chat_is_running">الدردشة قيد التشغيل</string>
     <string name="chat_database_imported">استُوردت قاعدة بيانات الدردشة</string>
     <string name="error_changing_address">خطأ في تغيير العنوان</string>
-    <string name="integrity_msg_skipped">%1$d رسائل تخطّت</string>
+    <string name="integrity_msg_skipped">%1$d رسالة مُتخطّاة</string>
     <string name="change_lock_mode">تغيير وضع القفل</string>
     <string name="enabled_self_destruct_passcode">فعّل رمز التدمير الذاتي</string>
     <string name="change_member_role_question">تغيير الدور؟</string>
@@ -598,7 +598,7 @@
     <string name="v4_4_disappearing_messages">رسائل تختفي</string>
     <string name="failed_to_create_user_duplicate_title">اسم العرض مكرر!</string>
     <string name="smp_server_test_disconnect">قطع الاتصال</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">استيثاق الجهاز غير مفعّلة. يمكنك تشغيل قفل SimpleX عبر الإعدادات، بمجرد تفعيل استيثاق الجهاز.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">استيثاق الجهاز غير مفعّل. يمكنك تشغيل قفل SimpleX عبر الإعدادات، بمجرد تفعيل استيثاق الجهاز.</string>
     <string name="smp_server_test_download_file">نزّل الملف</string>
     <string name="auth_disable_simplex_lock">عطّل قفل SimpleX</string>
     <string name="edit_verb">حرّر</string>
@@ -2163,7 +2163,7 @@
     <string name="message_deleted_or_not_received_error_title">لا توجد رسالة</string>
     <string name="no_message_servers_configured_for_receiving">لا يوجد خوادم لاستلام الرسائل.</string>
     <string name="v6_2_improved_chat_navigation_descr">- فتح الدردشة عند أول رسالة غير مقروءة.\n- الانتقال إلى الرسائل المقتبسة.</string>
-    <string name="you_can_set_connection_name_to_remember">يمكنك تعيين اسم الاتصال، لتتذكر الأشخاص الذين شاركَ الرابط معهم.</string>
+    <string name="you_can_set_connection_name_to_remember">يمكنك تعيين اسم الاتصال، لتتذكر الأشخاص الذين شاركتَ الرابط معهم.</string>
     <string name="onboarding_network_operators_review_later">راجع لاحقًا</string>
     <string name="error_server_protocol_changed">تغيّر بروتوكول الخادم.</string>
     <string name="share_address_publicly">شارك العنوان علناً</string>
@@ -2901,7 +2901,7 @@
     <string name="v7_0_channels">قنوات أفضل 📢</string>
     <string name="v7_0_channels_previews">أنشئ معاينة الويب.</string>
     <string name="v7_0_channels_wider_messages">أسهل في القراءة.</string>
-    <string name="v7_0_channels_relays">أدِر مُرحلاتك</string>
+    <string name="v7_0_channels_relays">أدِر مُرحلاتك.</string>
     <string name="v7_0_simplex_names">أسماء SimpleX (تجريبي)</string>
     <string name="v7_0_simplex_names_descr">أسماء لقناتك أو لشركتك.</string>
     <string name="info_row_file_servers">خوادم الملفات</string>

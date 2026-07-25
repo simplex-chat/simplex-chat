@@ -2915,6 +2915,12 @@ server test error */
 "File server error: %@" = "Datei-Server Fehler: %@";
 
 /* No comment provided by engineer. */
+"File servers" = "Datei-Server";
+
+/* copied message info */
+"File servers: %@" = "Datei-Server: %@";
+
+/* No comment provided by engineer. */
 "File status" = "Datei-Status";
 
 /* copied message info */
@@ -5882,7 +5888,7 @@ copied message info */
 "SimpleX name" = "SimpleX-Name";
 
 /* No comment provided by engineer. */
-"SimpleX name error" = "Fehler beim SimpleX-Name";
+"SimpleX name error" = "Fehler beim SimpleX-Namen";
 
 /* alert title */
 "SimpleX name not verified" = "SimpleX-Name ist nicht verifiziert";

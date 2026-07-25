@@ -2915,6 +2915,12 @@ server test error */
 "File server error: %@" = "Errore del server dei file: %@";
 
 /* No comment provided by engineer. */
+"File servers" = "Server di file";
+
+/* copied message info */
+"File servers: %@" = "Server di file: %@";
+
+/* No comment provided by engineer. */
 "File status" = "Stato del file";
 
 /* copied message info */

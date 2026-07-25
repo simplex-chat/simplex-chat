@@ -201,7 +201,7 @@
     <string name="contacts_can_mark_messages_for_deletion">A partnerei törlésre jelölhetnek üzeneteket; Ön majd meg tudja nézni azokat.</string>
     <string name="connect_via_invitation_link">Kapcsolódik az egyszer használható meghívón keresztül?</string>
     <string name="connect_via_link_or_qr">Kapcsolódás egy hivatkozáson vagy QR-kódon keresztül</string>
-    <string name="connection_error_auth">Kapcsolódási hiba</string>
+    <string name="connection_error_auth">A kapcsolódási hivatkozás el lett távolítva</string>
     <string name="notification_preview_mode_contact">Csak név</string>
     <string name="connect_via_contact_link">Kapcsolódik a kapcsolattartási címen keresztül?</string>
     <string name="create_address">Cím létrehozása</string>
@@ -1278,7 +1278,7 @@
     <string name="receiving_files_not_yet_supported">fájlok fogadása egyelőre még nem támogatott</string>
     <string name="save_group_profile">Csoportprofil mentése</string>
     <string name="network_options_reset_to_defaults">Visszaállítás alapértelmezettre</string>
-    <string name="connection_error_auth_desc">A partnere eltávolította ezt a hivatkozást, vagy egy egyszer használató meghívó volt, amit már felhasználtak.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy új hivatkozást.</string>
+    <string name="connection_error_auth_desc">A partnere eltávolította ezt a hivatkozást, vagy egy egyszer használható meghívó volt, amit már felhasználtak.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy új hivatkozást.</string>
     <string name="video_call_no_encryption">videóhívás (végpontok között NEM titkosított)</string>
     <string name="smp_servers_use_server_for_new_conn">Használat új kapcsolatokhoz</string>
     <string name="periodic_notifications_desc">Az új üzeneteket az alkalmazás időszakosan lekéri – naponta néhány százalékot használ az akkumulátorból. Az alkalmazás nem használ leküldéses értesítéseket – az eszközről származó adatok nem lesznek elküldve a kiszolgálóknak.</string>

@@ -2915,6 +2915,12 @@ server test error */
 "File server error: %@" = "Fájlkiszolgáló-hiba: %@";
 
 /* No comment provided by engineer. */
+"File servers" = "Fájlkiszolgálók";
+
+/* copied message info */
+"File servers: %@" = "Fájlkiszolgálók: %@";
+
+/* No comment provided by engineer. */
 "File status" = "Fájl állapota";
 
 /* copied message info */
