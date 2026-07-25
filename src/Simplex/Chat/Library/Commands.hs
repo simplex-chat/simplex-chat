@@ -1457,14 +1457,18 @@ processChatCommand cxt nm = \case
     where
       resolveServiceTarget user = \case
         CTFullContact cReq -> pure cReq
-        CTShortContact (CTLink sLnk) -> (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+        CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
         CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
-          NTContact -> do
-            NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
-            sLnk <- maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink CCTContact nrSimplexContact
-            (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
-          _ -> throwCmdError "service request target must be a contact, not a channel"
-        CTDomain _ -> throwCmdError "service request target must be a contact address, not a domain"
+          NTContact -> resolveDomain nameDomain
+          _ -> throwCmdError "service request target must be a contact"
+        CTDomain d -> resolveDomain d
+        where
+          resolveDomain d = do
+            nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
+            case firstNameLink CCTContact (nrSimplexContact nr) of
+              Just sLnk -> resolveShortLink sLnk
+              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
+          resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)

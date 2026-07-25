@@ -429,8 +429,8 @@ Query:
         WHERE cs.deleted = 0
       
 Plan:
-SCAN c USING INDEX idx_commands_conn_id
-SEARCH cs USING PRIMARY KEY (conn_id=?)
+SEARCH cs USING COVERING INDEX idx_connections_deleted (deleted=?)
+SEARCH c USING INDEX idx_commands_conn_id (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?) LEFT-JOIN
 USE TEMP B-TREE FOR DISTINCT
 
@@ -441,8 +441,8 @@ Query:
         JOIN connections c ON q.conn_id = c.conn_id
        WHERE  c.deleted = 0 AND q.deleted = 0
 Plan:
-SCAN q USING INDEX idx_rcv_queues_client_notice_id
-SEARCH c USING PRIMARY KEY (conn_id=?)
+SEARCH c USING INDEX idx_connections_deleted (deleted=?)
+SEARCH q USING INDEX idx_rcv_queue_id (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 USE TEMP B-TREE FOR DISTINCT
 
@@ -902,10 +902,10 @@ Query:
 Plan:
 MATERIALIZE d
 SCAN snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired
-SCAN d
-SEARCH q USING INDEX idx_snd_queue_id (conn_id=? AND snd_queue_id=?)
+SEARCH c USING INDEX idx_connections_deleted (deleted=?)
+SEARCH q USING INDEX idx_snd_queue_id (conn_id=?)
+SEARCH d USING AUTOMATIC COVERING INDEX (conn_id=? AND snd_queue_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
-SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
     SELECT
@@ -1216,7 +1216,7 @@ SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_ex
 
 Query: SELECT conn_id FROM connections WHERE deleted = 0
 Plan:
-SCAN connections
+SEARCH connections USING COVERING INDEX idx_connections_deleted (deleted=?)
 
 Query: SELECT conn_id FROM connections WHERE user_id = ?
 Plan:
@@ -1224,7 +1224,7 @@ SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 
 Query: SELECT count(1) FROM connections
 Plan:
-SCAN connections USING COVERING INDEX idx_connections_user
+SCAN connections USING COVERING INDEX idx_connections_deleted
 
 Query: SELECT count(1) FROM snd_message_bodies
 Plan:
