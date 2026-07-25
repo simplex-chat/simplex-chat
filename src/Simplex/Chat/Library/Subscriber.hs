@@ -2221,7 +2221,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               toView $ CEvtChatItemsDeleted user deletions False False
         -- m' is Maybe GroupMember
         createNonLive gInfo' m' scopeInfo file_ = do
-          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') False mentions
+          let mentions' = if maybe False memberBlocked m' then M.empty else mentions
+          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') False mentions'
         createContentItem gInfo' m' scopeInfo = do
           file_ <- processFileInv gInfo' m'
           newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') live'
