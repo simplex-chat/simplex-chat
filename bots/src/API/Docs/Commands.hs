@@ -195,7 +195,7 @@ chatCommandsDocsData =
     ),
     ( "Chat management",
       "These commands should not be used with CLI-based bots",
-      [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start"),
+      [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start" <> OnOffParam "main" "mainApp" (Just True) <> OnOffParam "snd_files" "enableSndFiles" (Just True) <> OnOffParam "service_requests" "serviceRequests" (Just False)),
         ("APIStopChat", [], "Stop chat controller.", ["CRChatStopped"], [], Nothing, "/_stop")
       ]
     )

@@ -2187,7 +2187,15 @@ Start chat controller.
 **Syntax**:
 
 ```
-/_start
+/_start[ main=off][ snd_files=off][ service_requests=on]
+```
+
+```javascript
+'/_start' + (!mainApp ? ' main=off' : '') + (!enableSndFiles ? ' snd_files=off' : '') + (serviceRequests ? ' service_requests=on' : '') // JavaScript
+```
+
+```python
+'/_start' + (' main=off' if not mainApp else '') + (' snd_files=off' if not enableSndFiles else '') + (' service_requests=on' if serviceRequests else '') # Python
 ```
 
 **Responses**:

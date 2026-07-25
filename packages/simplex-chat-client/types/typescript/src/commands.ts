@@ -822,8 +822,8 @@ export interface StartChat {
 export namespace StartChat {
   export type Response = CR.ChatStarted | CR.ChatRunning
 
-  export function cmdString(_self: StartChat): string {
-    return '/_start'
+  export function cmdString(self: StartChat): string {
+    return '/_start' + (!self.mainApp ? ' main=off' : '') + (!self.enableSndFiles ? ' snd_files=off' : '') + (self.serviceRequests ? ' service_requests=on' : '')
   }
 }
 

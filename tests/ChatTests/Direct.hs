@@ -1935,8 +1935,8 @@ testSignedServiceRequest =
     alice ##> "/_start main=on snd_files=on service_requests=on"
     alice <## "chat started"
     g <- C.newRandom
-    (pub, priv) <- atomically $ C.generateKeyPair g
-    let signKey = B.unpack $ strEncode (priv :: C.PrivateKeyEd25519)
+    (pub, priv :: C.PrivateKeyEd25519) <- atomically $ C.generateKeyPair g
+    let signKey = B.unpack $ strEncode $ C.StoredPrivateKey priv
         pubStr = B.unpack $ strEncode pub
     concurrently_
       ( do
