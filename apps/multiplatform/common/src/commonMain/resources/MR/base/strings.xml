@@ -396,7 +396,7 @@
   <string name="save_simplex_name_question">Save SimpleX name?</string>
   <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
   <string name="channel_simplex_name">Channel SimpleX name</string>
-  <string name="register_test_name">Register a test name</string>
+  <string name="register_test_name">How to register a test name</string>
   <string name="remove_name">Remove name</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>

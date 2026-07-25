@@ -7482,8 +7482,8 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Registra</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Register a test name" xml:space="preserve" approved="no">
-        <source>Register a test name</source>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
         <target state="translated">Registra un nome di prova</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

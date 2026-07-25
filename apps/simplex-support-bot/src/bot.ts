@@ -853,17 +853,12 @@ export class SupportBot {
     const members = await this.withMainProfile(() => this.chat.apiListMembers(groupId))
     const existing = members.find(m => m.memberContactId === teamContactId && isInGroup(m))
     if (existing) return existing
-    const member = await this.withMainProfile(() =>
-      this.chat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
+    // Invite directly as Owner in one call. Adding as Member then promoting
+    // sent a second invitation, since the API re-sends it when a pending
+    // (GSMemInvited) member's role changes. onMemberConnected re-asserts Owner.
+    return this.withMainProfile(() =>
+      this.chat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Owner)
     )
-    try {
-      await this.withMainProfile(() =>
-        this.chat.apiSetMembersRole(groupId, [member.groupMemberId], T.GroupMemberRole.Owner)
-      )
-    } catch {
-      // Not yet connected — will be promoted in onMemberConnected
-    }
-    return member
   }
 
   async sendToGroup(groupId: number, text: string): Promise<void> {

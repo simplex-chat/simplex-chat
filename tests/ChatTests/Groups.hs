@@ -213,6 +213,8 @@ chatGroupTests = do
     it "repeat block, unblock" testBlockForAllRepeat
     it "block multiple members" testBlockForAllMultipleMembers
     it "block left/removed members" testBlockForAllLeftRemoved
+    it "mentions of blocked member are ignored" testBlockForAllMentionsIgnored
+    it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -6920,6 +6922,73 @@ testBlockForAllMarkedBlocked =
               ]
             )
       bob #$> ("/_get chat #1 count=4", chat, [(1, "1"), (1, "2"), (1, "3"), (1, "4")])
+
+testBlockForAllMentionsIgnored :: HasCallStack => TestParams -> IO ()
+testBlockForAllMentionsIgnored =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      -- mention of user is shown as mention ("!" after member name)
+      bob #> "#team hello @alice"
+      alice <# "#team bob!> hello @alice"
+      cath <# "#team bob> hello @alice"
+
+      threadDelay 1000000
+
+      alice ##> "/block for all #team bob"
+      alice <## "#team: you blocked bob"
+      cath <## "#team: alice blocked bob"
+      bob <// 50000
+
+      threadDelay 1000000
+
+      -- mention of blocked member is ignored (no "!" after member name)
+      bob #> "#team hello again @alice"
+      alice <# "#team bob> hello again @alice [blocked by admin] <muted>"
+      cath <# "#team bob> hello again @alice [blocked by admin] <muted>"
+
+testBlockedMemberReplyNotMention :: HasCallStack => TestParams -> IO ()
+testBlockedMemberReplyNotMention =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+      cath <# "#team bob> hi"
+
+      threadDelay 1000000
+
+      -- reply to user message is shown as mention ("!" after member name)
+      alice `send` "> #team @bob (hi) hey bob!"
+      alice <# "#team > bob hi"
+      alice <## "      hey bob!"
+      bob <# "#team alice!> > bob hi"
+      bob <## "      hey bob!"
+      cath <# "#team alice> > bob hi"
+      cath <## "      hey bob!"
+
+      threadDelay 1000000
+
+      -- admins can only block for all, blocking for self via api
+      bob ##> "/_member settings #1 1 {\"showMessages\": false}"
+      bob <## "ok"
+
+      threadDelay 1000000
+
+      -- reply of blocked member is ignored (no "!" after member name)
+      alice `send` "> #team @bob (hi) hey again!"
+      alice <# "#team > bob hi"
+      alice <## "      hey again!"
+      bob <#. "#team alice> > bob hi"
+      bob <##. "      hey again!"
+      cath <# "#team alice> > bob hi"
+      cath <## "      hey again!"
 
 testBlockForAllFullDelete :: HasCallStack => TestParams -> IO ()
 testBlockForAllFullDelete =

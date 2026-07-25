@@ -7482,9 +7482,9 @@ Enable in *Network &amp; servers* settings.</target>
         <target>Register</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Register a test name" xml:space="preserve">
-        <source>Register a test name</source>
-        <target>Register a test name</target>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
+        <target>How to register a test name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">
