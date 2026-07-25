@@ -8072,14 +8072,15 @@ sealed class SMPAgentError {
     is A_MESSAGE -> "A_MESSAGE"
     is A_PROHIBITED -> "A_PROHIBITED"
     is A_VERSION -> "A_VERSION"
+    is A_LINK -> "A_LINK"
     is A_CRYPTO -> "A_CRYPTO"
     is A_DUPLICATE -> "A_DUPLICATE"
     is A_QUEUE -> "A_QUEUE"
   }
   @Serializable @SerialName("A_MESSAGE") object A_MESSAGE: SMPAgentError()
-  @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED(prohibitedErr: String): SMPAgentError()
+  @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED(val prohibitedErr: String): SMPAgentError()
   @Serializable @SerialName("A_VERSION") object A_VERSION: SMPAgentError()
-  @Serializable @SerialName("A_LINK") class A_LINK(linkErr: String): SMPAgentError()
+  @Serializable @SerialName("A_LINK") class A_LINK(val linkErr: String): SMPAgentError()
   @Serializable @SerialName("A_CRYPTO") object A_CRYPTO: SMPAgentError()
   @Serializable @SerialName("A_DUPLICATE") object A_DUPLICATE: SMPAgentError()
   @Serializable @SerialName("A_QUEUE") class A_QUEUE(val queueErr: String): SMPAgentError()
