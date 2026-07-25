@@ -47,7 +47,7 @@ Treat these as separate programs with typed interfaces.
 ### Invariants
 
 1. Provider verification changes payment state only.
-2. An order is identified by a client-generated `orderId` (UUID) and authenticated by its Ed25519 `orderKey`, registered on the create request and verified on every request (external envelope). No caller identity, no bot-issued token, no bot push.
+2. An order is identified by a client-generated `orderId` (UUID) and authenticated by its `orderKey` — the transport's agent-verified Ed25519 signer key, registered on create and equality-checked on every request. The bot does no signature crypto. No caller identity, no bot-issued token, no bot push.
 3. The `product` is immutable per order: pinned on the first request; a differing product later is rejected.
 4. For a badge product, the client supplies only the SKU (`plan`) and `BadgeMasterKey`; the bot derives tier/expiry and assembles `BadgeInfo`. The declared SKU must equal the SKU verified in `payment`.
 5. `BadgeMasterKey` (32 random bytes, BBS message 0 via `generateMasterKey`) lives only inside the badge product; it signs the badge and is never an identifier or an auth credential.
@@ -405,31 +405,22 @@ stateDiagram-v2
 
 ## 3. Contracts
 
-An order is `product + payment`, identified by a client `orderId` and authenticated by an external Ed25519 signature. The command layer never reasons about auth.
+An order is `product + payment`, identified by a client `orderId`. **Authentication is provided by the transport — we define no envelope and do no signature cryptography.**
 
-### Envelope (external auth layer)
+### Transport and auth
 
-Mirrors the SMP signed transmission — **entity id, signature, body**.
+The bot runs over the SimpleX **service RPC** (`simplex-chat` `ep/service-requests`): one request → one response over a double-ratchet contact address, JSON-object payloads both ways. A request may be signed with an Ed25519 key; the **agent constructs and verifies that signature** and hands the service the request plus the *already-verified* signer public key (`CEvtServiceRequest.signerKey :: Maybe C.PublicKeyEd25519`), or `Nothing` if unsigned. An invalid signature never reaches the service — the agent rejects it (`ASEBadSignature`) with no request delivered.
 
 ```haskell
-newtype OrderId   = OrderId UUID                    -- client-generated, e.g. "b1e2…-uuid"
-newtype OrderKey  = OrderKey C.PublicKeyEd25519     -- order public key, registered on create
-type    Signature = C.Signature 'C.Ed25519          -- over (orderId ‖ body), made with orderSk
-
-data ServiceEnvelope = ServiceEnvelope
-  { orderId   :: OrderId
-  , signature :: Signature
-  , body      :: ServiceRequest
-  }
+newtype OrderId  = OrderId UUID          -- client-generated, carried in the request body
+type    OrderKey = C.PublicKeyEd25519    -- the transport's verified signer key; NOT a body field
 ```
 
-Signing (keygen → sign → verify):
-
-1. On create, the client generates `(orderSk, orderPk)` and the `orderId` UUID, stores `orderSk` encrypted (backed up with the profile), and puts `orderPk` in `body.orderKey`.
-2. The bot, seeing no order for `orderId`, treats it as create: stores `orderPk`, verifies the signature.
-3. Every request signs `signature = sign(orderSk, orderId ‖ body)`. Later requests may omit `orderKey`; if present it must equal the stored `orderPk`. Mismatch ⇒ `order_auth_invalid`.
-
-No `corrId`: `orderId` already correlates request↔response and keys idempotency (the SimpleX transport handles message delivery). Replay is benign — operations are idempotent by `orderId`, and the signature binds to `orderId` so a signed body cannot move to another order. Signing reuses the SMP `authTransmission` Ed25519 path. `orderSk` (order auth) and `BadgeMasterKey` (badge signing) are two distinct secrets.
+- We never define or transmit a signature field and never verify one. `orderKey` is just the verified `signerKey` the transport delivers.
+- The client holds the matching private key (`orderSk`) and gives it to its agent to sign each request (`APISendServiceRequest.signKey`). `orderSk` is a client secret, backed up with the profile.
+- **Auth = key equality.** On the first (create) request the bot records the order's `orderKey`. Every later request must arrive with a signer key equal to the stored one — a plain equality check, no crypto. A mismatch, or a missing key on a management operation, gives `order_auth_invalid`.
+- `orderKey` is **optional**: an unsigned order (`signerKey = Nothing`) is allowed for a one-shot purchase but cannot be managed or recovered.
+- `orderId` (in the body) is the correlation + idempotency key; it lets the bot pair the two Stripe steps (invoice then paid) even when unsigned. The transport's per-request id (`AgentInvId`) routes the single response; there is no `corrId` of ours.
 
 ### Request / response body
 
@@ -437,7 +428,7 @@ Every referenced type is defined here; existing `Simplex.Chat.Badges` types are 
 
 ```haskell
 data ServiceRequest = ServiceRequest
-  { orderKey  :: Maybe OrderKey    -- required on create; must equal the stored key thereafter
+  { orderId   :: OrderId       -- client UUID; correlation + idempotency (auth is the transport signer key)
   , operation :: Operation
   , product   :: Product
   , payment   :: Payment
@@ -497,13 +488,14 @@ Rules:
 ### Internal interface
 
 ```haskell
-resolveOrder :: OrderId -> ServiceRequest -> Transaction OrderDecision
+-- signerKey is the transport-verified key (from CEvtServiceRequest.signerKey), not a body field
+resolveOrder :: Maybe OrderKey -> ServiceRequest -> Transaction OrderDecision
 fulfillBadge :: ServiceGrant -> BadgeRequest -> Transaction BadgeResult
 ```
 
 Order:
 
-1. verify the envelope signature against the order's `orderKey` (create registers it);
+1. match the transport-verified signer key to the order's stored `orderKey` by equality (create registers it); reject on mismatch/absence;
 2. load/pin the order's product; reject on `product_changed`;
 3. resolve/verify payment; check the verified SKU equals the declared SKU (`product_mismatch`);
 4. commit payment and create/load the due grant;
@@ -517,7 +509,7 @@ Order:
 - Transport replay dedupe is separate and shorter-lived.
 - Stripe mutation idempotency key derives from `orderId` + operation.
 - Developer Tools → Chat Console records start/result, order id suffix, operation, before/after states, retry class, and duration.
-- Redact the Ed25519 signature, JWS/token, Checkout query/return token, `BadgeMasterKey`, credential, and provider/customer IDs.
+- Redact JWS/token, Checkout query/return token, `BadgeMasterKey`, credential, and provider/customer IDs. (The order signer key is public; the signature is handled by the transport, not logged here.)
 
 ## 4. Provider flows
 
@@ -667,10 +659,10 @@ Failure preserves previous state; client shows Retry and still says **Renews on*
 
 | Client presents | Portal link the bot returns |
 |---|---|
-| a `Cancel` (`StripeManage`) on a known order (valid `orderKey` signature) | authenticated `billing_portal.Session` with `flow_data.type=subscription_cancel` — opens straight to the cancel flow, no email code |
+| a `Cancel` (`StripeManage`) whose signer key matches the order's `orderKey` | authenticated `billing_portal.Session` with `flow_data.type=subscription_cancel` — opens straight to the cancel flow, no email code |
 | no identifiable order (total loss — `orderId`/`orderSk` gone) | the account-wide hosted portal **login page** (`prefilled_email` when the customer email is known), authenticated by email OTP |
 
-The authenticated session link is short-lived and per-customer; the login page is the operator-config account-wide URL and returns no per-customer secret. The bot carries whichever link applies in `RspStatus` so a cancel path is always reachable. The `orderKey` signature is the sole client credential: the client either can sign for the order (session) or cannot (login page).
+The authenticated session link is short-lived and per-customer; the login page is the operator-config account-wide URL and returns no per-customer secret. The bot carries whichever link applies in `RspStatus` so a cancel path is always reachable. Signing for the order (holding `orderSk`, verified by the transport) is the sole client credential: the client either can sign as the order's `orderKey` (session) or cannot (login page).
 
 ## 5. Persistence and `CallState` pattern
 
@@ -787,7 +779,7 @@ Every input is one of:
 | deadline/restart/lost response | retry on foreground | preserve state; repeat same signed order/op | remove waiter; return cached result or wait again |
 | duplicate event/request | idempotent | accept same state/result | preserve state; dedupe/re-fetch |
 | product changed for an order | reject | preserve state; a new product needs a new order | `product_changed`; preserve state; telemetry |
-| invalid order signature | reject | preserve state; restore/support | `order_auth_invalid`; preserve state; rate-limit |
+| signer key mismatch / missing on management op | reject | preserve state; restore/support | `order_auth_invalid`; preserve state; rate-limit |
 | declared SKU ≠ verified SKU | reject | `CPPaymentProblem`; no blind retry | `product_mismatch`; preserve `BP…`; quarantine/alert |
 | unknown provider state | quarantine | `CPPaymentProblem`; retry later | preserve `BP…`; re-fetch, never guess |
 | `GrantReady` | apply | `CBNeeded` → `CBRequesting` | `BBRequested` when requested |
@@ -884,14 +876,14 @@ Issuance is idempotent on `(grant, master-key hash)`: within one order the same 
 
 ### Abuse controls
 
-- Verify the order signature (tier 1) or the provider receipt (tier 2) before acting; never act on an unsigned request.
+- Match the order's signer key (tier 1) or verify the provider receipt (tier 2) before acting; never act on a management op without a matching signer key.
 - Rate-limit re-binds per entitlement and per provider object; enforce the per-period `reissue_count` cap.
 - Re-binding changes only which order owns an entitlement; it never mutates provider or billing state.
 
 ## 9. Security and concurrency
 
 - Verify provider signatures/objects server-side; never trust decoded client/redirect fields.
-- Encrypt retained proofs/provider IDs; rotate keys. Authenticate every request by the order's Ed25519 signature and verify provider proof server-side; never act on an unsigned request.
+- Encrypt retained proofs/provider IDs; rotate keys. Order auth is the transport's verified signer key (equality-check, no crypto in the bot); verify provider proof server-side; never act on a management op without a matching signer key.
 - Keep raw `BadgeMasterKey` client-encrypted and bot-memory-only during signing; the bot stores the `order_key` (public) and never keeps the master key as an identifier.
 - Allowlist product, app/package, environment, currency/price, and account binding.
 - Rate-limit operation/payment and cap payload sizes.
@@ -943,7 +935,7 @@ Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, 
 | Apple | [StoreKit](https://developer.apple.com/storekit/), [subscription statuses](https://developer.apple.com/documentation/appstoreserverapi/get-all-subscription-statuses), Notifications V2 |
 | Google | [Play Billing](https://developer.android.com/google/play/billing/integrate), [`productsv2.getproductpurchasev2`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.productsv2/getproductpurchasev2), [`subscriptionsv2.get`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2/get), RTDN |
 | Stripe | [Checkout](https://docs.stripe.com/api/checkout/sessions/create), [fulfillment](https://docs.stripe.com/checkout/fulfillment), [webhooks](https://docs.stripe.com/webhooks), [subscription events](https://docs.stripe.com/billing/subscriptions/webhooks), [cancel](https://docs.stripe.com/billing/subscriptions/cancel), [Portal](https://docs.stripe.com/customer-management/integrate-customer-portal), [hosted portal login](https://docs.stripe.com/customer-management/activate-no-code-customer-portal) |
-| RPC | [`simplexmq` service RPC RFC](https://github.com/simplex-chat/simplexmq/blob/rpc/rfcs/2026-07-11-service-rpc.md) |
+| RPC | service RPC in `simplex-chat` branch `ep/service-requests` (`plans/2026-07-22-service-rpc-chat.md`; `APISendServiceRequest`/`CEvtServiceRequest`/`APISendServiceResponse` with `signKey`/`signerKey`); signed requests in `simplexmq` `plans/2026-07-24-signed-service-requests.md` (agent-side Ed25519 sign+verify, pin `0cc09fe5`) |
 
 ## 12. Open questions
 
