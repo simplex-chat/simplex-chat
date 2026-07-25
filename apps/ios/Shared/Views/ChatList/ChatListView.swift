@@ -638,6 +638,7 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: Set<String>
     @Binding var parentSheet: SomeSheet<AnyView>?
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var ignoreSearchTextChange = false
     // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
     @State private var connectNameCandidate: String? = nil
@@ -645,8 +646,9 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // a typed name replaces the list tags with a row to connect to it (as on Android mobile)
-            if let candidate = connectNameCandidate {
+            // a typed name shows a row to connect to it (as on Android mobile): with the reachable toolbar it
+            // replaces the tags above the search field; in top bar mode the tags stay and it moves below (end of VStack)
+            if oneHandUI, let candidate = connectNameCandidate {
                 connectByNameRow(candidate)
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -684,6 +686,9 @@ struct ChatListSearchBar: View {
                 } else if m.chats.count > 0 {
                     toggleFilterButton()
                 }
+            }
+            if !oneHandUI, let candidate = connectNameCandidate {
+                connectByNameRow(candidate)
             }
         }
         .onChange(of: searchFocussed) { sf in
