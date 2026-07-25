@@ -721,7 +721,7 @@ class StartChat(TypedDict):
 
 
 def StartChat_cmd_string(self: StartChat) -> str:
-    return '/_start' + (' main=off' if not self['mainApp'] else '') + (' snd_files=off' if not self['enableSndFiles'] else '') + (' service_requests=on' if self['serviceRequests'] else '')
+    return '/_start' + ' main=' + ('on' if self['mainApp'] else 'off') + (' snd_files=off' if not self['enableSndFiles'] else '') + (' service_requests=on' if self['serviceRequests'] else '')
 
 StartChat_Response = CR.ChatStarted | CR.ChatRunning
 

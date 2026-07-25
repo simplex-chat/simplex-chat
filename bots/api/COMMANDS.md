@@ -2187,15 +2187,15 @@ Start chat controller.
 **Syntax**:
 
 ```
-/_start[ main=off][ snd_files=off][ service_requests=on]
+/_start main=on|off[ snd_files=off][ service_requests=on]
 ```
 
 ```javascript
-'/_start' + (!mainApp ? ' main=off' : '') + (!enableSndFiles ? ' snd_files=off' : '') + (serviceRequests ? ' service_requests=on' : '') // JavaScript
+'/_start main=' + (mainApp ? 'on' : 'off') + (!enableSndFiles ? ' snd_files=off' : '') + (serviceRequests ? ' service_requests=on' : '') // JavaScript
 ```
 
 ```python
-'/_start' + (' main=off' if not mainApp else '') + (' snd_files=off' if not enableSndFiles else '') + (' service_requests=on' if serviceRequests else '') # Python
+'/_start' + ' main=' + ('on' if mainApp else 'off') + (' snd_files=off' if not enableSndFiles else '') + (' service_requests=on' if serviceRequests else '') # Python
 ```
 
 **Responses**:
