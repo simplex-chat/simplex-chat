@@ -1451,7 +1451,7 @@ processChatCommand cxt nm = \case
         pure $ CRContactRequestRejected user cReq ct_
   APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user -> do
     cReq <- resolveServiceTarget user sendTarget
-    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
+    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) (LB.toStrict $ J.encode request)
     resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
     pure $ CRServiceResponse user resp
     where
