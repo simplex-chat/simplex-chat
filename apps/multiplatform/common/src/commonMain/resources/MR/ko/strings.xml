@@ -307,8 +307,7 @@
     <string name="connected_to_server_to_receive_messages_from_contact">이 대화 상대로부터의 메시지를 수신할 서버와 연결되었어요.</string>
     <string name="app_name">SimpleX</string>
     <string name="contact_developers">앱 업데이트 후 개발자에게 연락해 주세요.</string>
-    <string name="connection_error_auth_desc">대화 상대가 나갔거나 초대 링크가 이미 사용된 경우가 아니면 버그일 수 있어요. 이 경우 개발자에게 알려주세요.
-\n대화 상대에게 다른 초대 링크 만들도록 부탁하고 네트워크 연결이 안정적인지 확인하세요.</string>
+    <string name="connection_error_auth_desc">대화 상대가 나갔거나 초대 링크가 이미 사용된 경우가 아니면 버그일 수 있어요. 이 경우 개발자에게 알려주세요. \n대화 상대에게 다른 초대 링크 만들도록 부탁하고 네트워크 연결이 안정적인지 확인하세요.</string>
     <string name="auth_enable_simplex_lock">SimpleX 잠금 활성화</string>
     <string name="auth_log_in_using_credential">자격 증명으로 로그인</string>
     <string name="auth_open_chat_console">채팅 콘솔 열기</string>

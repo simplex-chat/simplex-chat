@@ -4346,6 +4346,14 @@ server test error</note>
         <target>Ошибка сервера файлов: %@</target>
         <note>file error text</note>
       </trans-unit>
+      <trans-unit id="File servers" xml:space="preserve">
+        <source>File servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File servers: %@" xml:space="preserve">
+        <source>File servers: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="File status" xml:space="preserve">
         <source>File status</source>
         <target>Статус файла</target>
@@ -4872,6 +4880,10 @@ Error: %2$@</source>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
         <target>Инфо</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -7421,10 +7433,6 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Register" xml:space="preserve">
         <source>Register</source>
         <target>Зарегистрировать</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="How to register a test name" xml:space="preserve">
-        <source>How to register a test name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">

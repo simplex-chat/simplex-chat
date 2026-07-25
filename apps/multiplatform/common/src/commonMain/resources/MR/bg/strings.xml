@@ -1294,8 +1294,7 @@
     <string name="description_you_shared_one_time_link">споделихте еднократен линк за връзка</string>
     <string name="description_you_shared_one_time_link_incognito">споделихте еднократен инкогнито линк за връзка</string>
     <string name="description_via_one_time_link">чрез еднократен линк за връзка</string>
-    <string name="connection_error_auth_desc">Освен ако вашият контакт не е изтрил връзката или този линк вече е бил използван, това може да е грешка - моля, докладвайте.
-\nЗа да се свържете, моля, помолете вашия контакт да създаде друг линк за връзка и проверете дали имате стабилна мрежова връзка.</string>
+    <string name="connection_error_auth_desc">Освен ако вашият контакт не е изтрил връзката или този линк вече е бил използван, това може да е грешка - моля, докладвайте. \nЗа да се свържете, моля, помолете вашия контакт да създаде друг линк за връзка и проверете дали имате стабилна мрежова връзка.</string>
     <string name="smp_server_test_upload_file">Качи файл</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Вече сте вече свързани с %1$s.</string>
     <string name="la_notice_turn_on">Включи</string>

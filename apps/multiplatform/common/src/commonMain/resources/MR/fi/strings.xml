@@ -1004,8 +1004,7 @@
     <string name="custom_time_unit_seconds">sekuntia</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Kiitos käyttäjille – osallistu Weblaten kautta!</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Olet jo muodostanut yhteyden %1$s kanssa.</string>
-    <string name="connection_error_auth_desc">Ellei yhteyshenkilösi poistanut yhteyttä tai tämä linkki oli jo käytössä, se voi olla virhe - ilmoita siitä.
-\nJos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.</string>
+    <string name="connection_error_auth_desc">Ellei yhteyshenkilösi poistanut yhteyttä tai tämä linkki oli jo käytössä, se voi olla virhe - ilmoita siitä. \nJos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.</string>
     <string name="enter_passphrase_notification_desc">Jos haluat saada ilmoituksia, kirjoita tietokannan tunnuslause</string>
     <string name="la_notice_turn_on">Kytke päälle</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Suojaa tietosi ottamalla SimpleX Lock käyttöön.

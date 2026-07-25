@@ -30,7 +30,7 @@
     <string name="connection_error">连接错误</string>
     <string name="connection_timeout">连接超时</string>
     <string name="contact_already_exists">联系人已存在</string>
-    <string name="connection_error_auth">连接错误（AUTH）</string>
+    <string name="connection_error_auth">连接链接已删除</string>
     <string name="answer_call">接听来电</string>
     <string name="delete_chat_profile_question">删除聊天资料？</string>
     <string name="delete_files_and_media_all">删除所有文件</string>
@@ -568,7 +568,7 @@
     <string name="your_chat_profiles">你的聊天资料</string>
     <string name="icon_descr_call_missed">未接来电</string>
     <string name="icon_descr_call_pending_sent">待定来电</string>
-    <string name="connection_error_auth_desc">除非你的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。 \n如果要连接，请让你的联系人创建另一个连接链接，并检查你的网络连接是否稳定。</string>
+    <string name="connection_error_auth_desc">你的联系人删除了此链接，或者其为已使用的一次性链接。\n要进行连接，请你的联系人创建新链接。</string>
     <string name="you_are_already_connected_to_vName_via_this_link">你已经连接到 %1$s。</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">你的聊天资料将被发送 \n给你的联系人</string>
     <string name="users_delete_with_connections">资料和服务器连接</string>
@@ -785,7 +785,7 @@
     <string name="simplex_link_invitation">SimpleX 一次性邀请</string>
     <string name="simplex_link_group">SimpleX 群链接</string>
     <string name="simplex_link_mode">SimpleX 链接</string>
-    <string name="sender_may_have_deleted_the_connection_request">发送人可能已删除连接请求。</string>
+    <string name="sender_may_have_deleted_the_connection_request">发送人已删除连接请求。</string>
     <string name="smp_servers_preset_server">预设服务器</string>
     <string name="image_descr_qr_code">二维码</string>
     <string name="network_session_mode_transport_isolation">传输隔离</string>
@@ -2908,4 +2908,13 @@
     <string name="edit_description">编辑描述</string>
     <string name="enter_description_optional">输入描述（可选）</string>
     <string name="error_sharing_address">分享地址出错</string>
+    <string name="v7_0_channels_contributors">添加贡献者。</string>
+    <string name="v7_0_channels">更好的频道 📢</string>
+    <string name="v7_0_channels_previews">创建 web 预览。</string>
+    <string name="v7_0_channels_wider_messages">更易阅读。</string>
+    <string name="v7_0_channels_relays">管理你的中继。</string>
+    <string name="v7_0_simplex_names_descr">你的频道或企业的名称。</string>
+    <string name="v7_0_simplex_names">SimpleX 名称 (测试)</string>
+    <string name="info_row_file_servers">文件服务器</string>
+    <string name="share_text_file_servers">文件服务器：%s</string>
 </resources>

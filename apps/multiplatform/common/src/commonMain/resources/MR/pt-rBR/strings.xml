@@ -866,8 +866,7 @@
     <string name="unknown_message_format">formato de mensagem desconhecido</string>
     <string name="description_via_group_link">via link de grupo</string>
     <string name="simplex_link_connection">via %1$s</string>
-    <string name="connection_error_auth_desc">A menos que seu contato tenha excluído a conexão ou este link já tenha sido usado, pode ser um bug - por favor, relate-o.
-\nPara se conectar, peça ao seu contato para criar outro link de conexão e verifique se você tem uma conexão de rede estável.</string>
+    <string name="connection_error_auth_desc">A menos que seu contato tenha excluído a conexão ou este link já tenha sido usado, pode ser um bug - por favor, relate-o. \nPara se conectar, peça ao seu contato para criar outro link de conexão e verifique se você tem uma conexão de rede estável.</string>
     <string name="error_smp_test_failed_at_step">O teste falhou na etapa %s.</string>
     <string name="notifications_mode_periodic">Inicia periodicamente</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">envio não autorizado</string>
