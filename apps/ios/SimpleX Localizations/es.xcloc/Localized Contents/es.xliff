@@ -6044,8 +6044,8 @@ This is your link for group %@!</source>
         <target>Nombre no encontrado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -8904,8 +8904,8 @@ copied message info</note>
         <target>Nombre SimpleX no verificado</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">

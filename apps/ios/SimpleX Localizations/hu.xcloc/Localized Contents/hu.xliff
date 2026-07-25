@@ -6062,8 +6062,8 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nem található a név</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
         <target>Nevek a csatornákhoz vagy az üzleti profilokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8933,8 +8933,8 @@ copied message info</note>
         <target>Nincs ellenőrizve a SimpleX-név</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
         <target>SimpleX-nevek (béta)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

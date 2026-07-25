@@ -6062,8 +6062,8 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Name wurde nicht gefunden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
         <target>Namen für Ihren Kanal oder Ihr Unternehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8933,8 +8933,8 @@ copied message info</note>
         <target>SimpleX-Name ist nicht verifiziert</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
         <target>SimpleX-Namen (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

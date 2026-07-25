@@ -6062,9 +6062,9 @@ This is your link for group %@!</target>
         <target>Name not found</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
-        <target>Names for your channel or business.</target>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
+        <target>Public names for your channel or business.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -8933,9 +8933,9 @@ copied message info</note>
         <target>SimpleX name not verified</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
-        <target>SimpleX names (BETA)</target>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
+        <target>SimpleX public names (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
