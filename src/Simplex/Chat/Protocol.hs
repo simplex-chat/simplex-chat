@@ -815,6 +815,13 @@ isVoice = \case
   MCVoice {} -> True
   _ -> False
 
+isMedia :: MsgContent -> Bool
+isMedia = \case
+  MCImage {} -> True
+  MCVideo {} -> True
+  MCFile {} -> True
+  _ -> False
+
 isReport :: MsgContent -> Bool
 isReport = \case
   MCReport {} -> True

@@ -90,9 +90,9 @@ finishes the setup.
 
 Set the name on the same profile the record points at.
 
-- For your **contact address**, open your SimpleX address, tap **Your SimpleX
+- For your **contact address**, open your SimpleX address, tap **Get SimpleX
   name**, enter the name, and save.
-- For your **channel**, open the channel information, tap **SimpleX name** (below
+- For your **channel**, open the channel information, tap **Get SimpleX name** (under
   **Channel link**), enter the name, and save.
 
 This proves to people who connect to you that `#name.testing` (or `@name.testing`) is your name.
