@@ -359,6 +359,15 @@ struct ChatView: View {
             revealedItems = Set()
             stopAudioPlayer()
             if let cId {
+                // ComposeView.onDisappear does not run when another chat is opened in place, and composeState is shared
+                // with it - the message being sent must not be kept in the compose state of the chat opened next
+                if cId != chat.id, composeState.inProgress {
+                    if chatModel.draftChatId == draftChatId(chat.id, chat.chatInfo.groupChatScope()) {
+                        chatModel.draft = nil
+                        chatModel.draftChatId = nil
+                    }
+                    composeState = ComposeState()
+                }
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
