@@ -129,7 +129,8 @@ shortLinkDataTests = describe "Short link data encoding/decoding" $ do
           { direct = True,
             owners = [],
             relays = [],
-            userData = encodeShortLinkData (value :: String)
+            userData = encodeShortLinkData (value :: String),
+            ratchetKeys = Nothing
           }
 
 decodeChatMessageTest :: Spec

@@ -12,13 +12,14 @@ import {CR} from "./responses"
 // Network usage: interactive.
 export interface APICreateMyAddress {
   userId: number // int64
+  pqRatchet?: boolean
 }
 
 export namespace APICreateMyAddress {
   export type Response = CR.UserContactLinkCreated | CR.ChatCmdError
 
   export function cmdString(self: APICreateMyAddress): string {
-    return '/_address ' + self.userId
+    return '/_address ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '')
   }
 }
 
@@ -69,6 +70,7 @@ export namespace APISetProfileAddress {
 // Network usage: interactive.
 export interface APISetAddressSettings {
   userId: number // int64
+  pqRatchet?: boolean
   settings: T.AddressSettings
 }
 
@@ -76,7 +78,7 @@ export namespace APISetAddressSettings {
   export type Response = CR.UserContactLinkUpdated | CR.ChatCmdError
 
   export function cmdString(self: APISetAddressSettings): string {
-    return '/_address_settings ' + self.userId + ' ' + JSON.stringify(self.settings)
+    return '/_address_settings ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '') + ' ' + JSON.stringify(self.settings)
   }
 }
 

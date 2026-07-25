@@ -61,6 +61,7 @@ chatProfileTests = do
     it "supporter badge sent to contact connecting via address" testUserBadgeContactAddress
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "rotate address ratchet keys" testRotateAddressRatchetKeys
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "add contact link to profile" testProfileLink
@@ -616,10 +617,11 @@ testMultiWordProfileNames =
 
 testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatOpts3 testOptsNoFullLinks aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       alice ##> "/ad"
-      cLink <- getContactLink alice True
+      cLink <- getContactLink_ alice True
+      alice <// 100000 -- the "contact link for old clients" line is dropped when showFullLinks is off
       bob ##> ("/c " <> cLink)
       alice <#? bob
       alice @@@ [("@bob", "Audio/video calls: enabled")]
@@ -643,6 +645,29 @@ testUserContactLink =
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
+
+testRotateAddressRatchetKeys :: HasCallStack => TestParams -> IO ()
+testRotateAddressRatchetKeys =
+  testChatOpts2 testOptsNoFullLinks aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    sLink1 <- getContactLink_ alice True
+    alice ##> ("/_connect plan 1 " <> sLink1)
+    alice <## "contact address: own address"
+    alice ##> "/_rotate_address_keys 1"
+    sLink2 <- getContactLink_ alice False
+    alice <## "auto_accept off"
+    -- rotated address keeps the same identity (still recognized as own address)
+    alice ##> ("/_connect plan 1 " <> sLink2)
+    alice <## "contact address: own address"
+    -- and it still works for connecting
+    bob ##> ("/c " <> sLink2)
+    alice <#? bob
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    alice <##> bob
 
 testCreateAddressOnServer :: HasCallStack => TestParams -> IO ()
 testCreateAddressOnServer ps = testChat aliceProfile test ps
@@ -3047,9 +3072,10 @@ testSetUITheme =
 
 testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitation =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+  testChatOpts2 testOptsNoFullLinks aliceProfile bobProfile $ \alice bob -> do
     alice ##> "/c"
-    (inv, _) <- getInvitations alice
+    inv <- getInvitation_ alice
+    alice <// 100000 -- the "invitation link for old clients" line is dropped when showFullLinks is off
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
