@@ -1189,7 +1189,7 @@ processChatCommand cxt nm = \case
       Nothing -> throwCmdError "not a public group"
       Just PublicGroupProfile {groupLink} -> do
         let signingKeys = case (memberRole, groupKeys) of
-              (GROwner, Just gk@GroupKeys {groupRootKey = GRKPrivate _}) -> Just gk
+              (GROwner, Just gk@GroupKeys {publicGroupKeys = Just PublicGroupKeys {groupRootKey = GRKPrivate _}}) -> Just gk
               _ -> Nothing
         ownerSig <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
@@ -2693,7 +2693,8 @@ processChatCommand cxt nm = \case
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
-        let groupKeys = GroupKeys {publicGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+        let groupKeys = GroupKeys {publicGroupKeys, memberPrivKey}
+            publicGroupKeys = Just PublicGroupKeys {publicGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey}
             setupLink gInfo = do
               -- TODO [relays] starting role should be communicated in protocol from owner to relays
               subRole <- asks $ channelSubscriberRole . config

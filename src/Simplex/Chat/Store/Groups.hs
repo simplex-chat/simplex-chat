@@ -392,10 +392,12 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
     let (rootPrivKey_, rootPubKey_, memberPrivKey_) = case groupKeys of
           Nothing -> (Nothing, Nothing, Nothing)
-          Just GroupKeys {groupRootKey, memberPrivKey} ->
-            let (rpk, rpub) = case groupRootKey of
-                  GRKPrivate pk -> (Just pk, Nothing)
-                  GRKPublic k -> (Nothing, Just k)
+          Just GroupKeys {publicGroupKeys, memberPrivKey} ->
+            let (rpk, rpub) = case publicGroupKeys of
+                  Just PublicGroupKeys {groupRootKey} -> case groupRootKey of
+                    GRKPrivate pk -> (Just pk, Nothing)
+                    GRKPublic k -> (Nothing, Just k)
+                  Nothing -> (Nothing, Nothing)
              in (rpk, rpub, Just memberPrivKey)
     groupId <- liftIO $ do
       DB.execute

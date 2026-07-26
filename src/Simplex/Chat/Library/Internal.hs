@@ -96,7 +96,7 @@ import Simplex.Messaging.Compression (compressionLevel, limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
@@ -1547,7 +1547,7 @@ groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {public
       publicGroupData_ = PublicGroupData <$> publicMemberCount
       userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_}
       owners = case groupKeys of
-        Just GroupKeys {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey} ->
+        Just GroupKeys {publicGroupKeys = Just PublicGroupKeys {groupRootKey = GRKPrivate rootPrivKey}, memberPrivKey} ->
           let ownerId = unMemberId memberId
               ownerKey = C.publicKey memberPrivKey
               authOwnerSig = C.sign' rootPrivKey (ownerId <> C.encodePubKey ownerKey)
@@ -2212,13 +2212,18 @@ createSndMessages idsEvents = do
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 groupMsgSigning :: Bool -> GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning sign gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {publicGroupId, memberPrivKey}} evt
-  | useRelays' gInfo && shouldSign =
-      Just $ MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
-  where
-    tag = toCMEventTag evt
-    shouldSign = requiresSignature tag || (sign && signableContent tag)
-groupMsgSigning _ _ _ = Nothing
+groupMsgSigning sign GroupInfo {membership = GroupMember {memberId}, groupKeys} evt = case groupKeys of
+  Just gks@GroupKeys {memberPrivKey} | shouldSign -> Just $ MsgSigning CBGroup bindingData KRMember memberPrivKey
+    where
+      tag = toCMEventTag evt
+      shouldSign = requiresSignature tag || (sign && signableContent tag)
+      bindingData = groupBindingData (Just gks) memberId (C.publicKey memberPrivKey)
+  _ -> Nothing
+  
+groupBindingData :: Maybe GroupKeys -> MemberId -> C.PublicKeyEd25519 -> ByteString
+groupBindingData gks memberId memberKey = case gks >>= publicGroupKeys of
+  Just PublicGroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)
+  Nothing -> smpEncode (memberId, memberKey)
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
@@ -2292,9 +2297,10 @@ encodeSignedConnInfo signing chatMsgEvent = do
 encodeXMemberConnInfo :: GroupInfo -> MemberId -> Profile -> CM ByteString
 encodeXMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} relayMemberId profileToSend =
   case groupKeys of
-    Just GroupKeys {publicGroupId, memberPrivKey} ->
+    Just gks@GroupKeys {memberPrivKey} ->
       let xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey) (Just relayMemberId)
-          signing = MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
+          bindingData = groupBindingData (Just gks) memberId (C.publicKey memberPrivKey)
+          signing = MsgSigning CBGroup bindingData KRMember memberPrivKey
        in encodeSignedConnInfo signing xMemberEvt
     Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
 

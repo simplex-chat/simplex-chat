@@ -731,10 +731,10 @@ toPublicGroupAccess (groupWebPage, groupDomain_, domainWebPage_, allowEmbedding_
     allowEmbedding = maybe False unBI allowEmbedding_
 
 toGroupKeys :: Maybe B64UrlByteString -> GroupKeysRow -> Maybe GroupKeys
-toGroupKeys (Just publicGroupId) (rootPrivKey_, rootPubKey_, Just memberPrivKey) =
-  (\grk -> GroupKeys {publicGroupId, groupRootKey = grk, memberPrivKey})
-    <$> (GRKPrivate <$> rootPrivKey_ <|> GRKPublic <$> rootPubKey_)
-toGroupKeys _ _ = Nothing
+toGroupKeys publicGroupId (rootPrivKey, rootPubKey, memberPrivKey) =
+  let publicGroupKeys = PublicGroupKeys <$> publicGroupId <*> groupRootKey
+      groupRootKey = GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey
+   in GroupKeys publicGroupKeys <$> memberPrivKey
 
 toGroupMember :: UTCTime -> Int64 -> GroupMemberRow -> GroupMember
 toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =

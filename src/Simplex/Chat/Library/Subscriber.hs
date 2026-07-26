@@ -111,11 +111,11 @@ import UnliftIO.STM
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
 
--- Verifies member signatures over CBGroup <> (publicGroupId, memberId) <> signedBody under the given key.
+-- Verifies member signatures over CBGroup <> (publicGroupId, memberId) or (memberId, pubKey) <> signedBody under the given key.
 -- signatures is NonEmpty so the verification can't be vacuously true.
-verifyGroupSig :: C.PublicKeyEd25519 -> B64UrlByteString -> MemberId -> NonEmpty MsgSignature -> ByteString -> Bool
-verifyGroupSig key publicGroupId memberId signatures signedBody =
-  let prefix = smpEncode CBGroup <> smpEncode (publicGroupId, memberId)
+verifyGroupSig :: C.PublicKeyEd25519 -> Maybe GroupKeys -> MemberId -> NonEmpty MsgSignature -> ByteString -> Bool
+verifyGroupSig key gks memberId signatures signedBody =
+  let prefix = encodeChatBinding CBGroup $ groupBindingData gks memberId key
    in all (\case (MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 key) sig (prefix <> signedBody)) signatures
 
 processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
@@ -1683,9 +1683,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           where
             -- replay defense: the viaRelay == own memberId check (viaRelay is in the signed body); without it a sibling relay could replay a privileged member's signed join
             verifyKey gInfo rosterMem = case (signedMsg_, groupKeys gInfo) of
-              (Just SignedMsg {chatBinding = CBGroup, signatures, signedBody}, Just GroupKeys {publicGroupId}) ->
+              (Just SignedMsg {chatBinding = CBGroup, signatures, signedBody}, Just gks) ->
                 memberPubKey rosterMem == Just joiningKey
-                  && verifyGroupSig joiningKey publicGroupId joiningMemberId signatures signedBody
+                  && verifyGroupSig joiningKey (Just gks) joiningMemberId signatures signedBody
                   && viaRelay == Just (memberId' (membership gInfo))
               _ -> False
             acceptJoin gInfo existingMem_ acceptRole = do
@@ -3928,7 +3928,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
     withVerifiedMsg :: MsgEncodingI e => GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
-    withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
+    withVerifiedMsg gInfo@GroupInfo {membership, groupKeys} scopeInfo member@GroupMember {memberPubKey, memberId} (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
       case verified of
         Just verifiedMsg -> Just <$> action verifiedMsg
         Nothing -> do
@@ -3936,17 +3936,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           pure Nothing
       where
         verified = case signedMsg_ of
-          Just sm@SignedMsg {chatBinding, signatures, signedBody}
-            | GroupMember {memberPubKey = Just pubKey, memberId} <- member ->
-                case chatBinding of
-                  CBGroup
-                    | Just GroupKeys {publicGroupId} <- groupKeys gInfo ->
-                        signed MSSVerified <$ guard (verifyGroupSig pubKey publicGroupId memberId signatures signedBody)
-                    | otherwise ->
-                        let prefix = smpEncode chatBinding <> smpEncode (memberId, pubKey) -- forward compatibility for verifying signed messages in p2p groups
-                         in signed MSSVerified <$ guard (all (\case (MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
-                  _ -> signed MSSSignedNoKey <$ guard signatureOptional
-            | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
+          Just sm@SignedMsg {chatBinding, signatures, signedBody} -> case memberPubKey of
+            Just pubKey -> case chatBinding of
+              CBGroup -> signed MSSVerified <$ guard (verifyGroupSig pubKey groupKeys memberId signatures signedBody)
+              _ -> signed MSSSignedNoKey <$ guard signatureOptional
+            Nothing -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
             where
               signed status = VMSigned status sm chatMsg
           Nothing -> VMUnsigned chatMsg <$ guard signatureOptional
