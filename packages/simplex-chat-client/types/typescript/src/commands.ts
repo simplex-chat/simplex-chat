@@ -564,6 +564,7 @@ export namespace APIAcceptContact {
 // Network usage: no.
 export interface APIRejectContact {
   contactReqId: number // int64
+  notify: boolean
 }
 
 export namespace APIRejectContact {
@@ -788,6 +789,25 @@ export namespace APISetContactPrefs {
   }
 }
 
+// Service commands
+// Bots with a double ratchet address can answer service requests.
+
+// Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.
+// Network usage: background.
+export interface APISendServiceResponse {
+  userId: number // int64
+  requestId: string
+  responseData: object
+}
+
+export namespace APISendServiceResponse {
+  export type Response = CR.ServiceReplyAccepted | CR.ChatCmdError
+
+  export function cmdString(self: APISendServiceResponse): string {
+    return '/_service_response ' + self.userId + ' ' + self.requestId + ' ' + JSON.stringify(self.responseData)
+  }
+}
+
 // Chat management
 // These commands should not be used with CLI-based bots
 
@@ -796,13 +816,14 @@ export namespace APISetContactPrefs {
 export interface StartChat {
   mainApp: boolean
   enableSndFiles: boolean
+  serviceRequests: boolean
 }
 
 export namespace StartChat {
   export type Response = CR.ChatStarted | CR.ChatRunning
 
-  export function cmdString(_self: StartChat): string {
-    return '/_start'
+  export function cmdString(self: StartChat): string {
+    return '/_start main=' + (self.mainApp ? 'on' : 'off') + (!self.enableSndFiles ? ' snd_files=off' : '') + (self.serviceRequests ? ' service_requests=on' : '')
   }
 }
 
