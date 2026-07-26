@@ -477,7 +477,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
                   Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
+              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend Nothing
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
           void $ saveConnInfo conn connInfo
@@ -551,7 +551,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 XFile fInv -> processFileInvitation' ct'' fInv msg msgMeta
                 XFileCancel sharedMsgId -> xFileCancel ct'' sharedMsgId
                 XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct'' sharedMsgId fileConnReq_ fName
-                XInfo p -> xInfo ct'' p
+                XInfo p _ -> xInfo ct'' p
                 XDirectDel -> xDirectDel ct'' msg msgMeta
                 XGrpInv gInv -> processGroupInvitation ct'' gInv msg msgMeta
                 XInfoProbe probe -> xInfoProbe (COMContact ct'') probe
@@ -585,12 +585,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn'' confId XOk
-            XInfo profile -> do
+            XInfo profile _ -> do
               ct' <- processContactProfileUpdate ct profile False `catchAllErrors` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
               p <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
-              allowAgentConnectionAsync user conn'' confId $ XInfo p
+              allowAgentConnectionAsync user conn'' confId $ XInfo p Nothing
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
@@ -601,7 +601,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
               profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
+              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend Nothing
               toView $ CEvtBusinessLinkConnecting user gInfo host ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO pqSupport connInfo -> do
@@ -613,7 +613,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- TODO check member ID
               -- TODO update member profile
               pure ()
-            XInfo profile -> do
+            XInfo profile _ -> do
               let prepared = isJust (preparedContact ct) || isJust (contactRequestId' ct)
               void $ processContactProfileUpdate ct profile prepared
             XOk -> pure ()
@@ -835,7 +835,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     -- [incognito] send saved profile
                     incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
                     profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-                    allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
+                    -- TODO [member keys] send key
+                    allowAgentConnectionAsync user conn' confId $ XInfo profileToSend Nothing
                     toView $ CEvtGroupLinkConnecting user gInfo' m'
                 | otherwise -> messageError "x.grp.link.inv: publicGroupId mismatch"
               XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
@@ -864,7 +865,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 pure ()
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
           -- sent when connecting via group link
-          XInfo _ ->
+          XInfo _ _ ->
             -- TODO Keep rejected member to allow them to appeal against rejection.
             when (memberStatus m == GSMemRejected) $ do
               deleteMemberConnection' m True
@@ -1086,7 +1087,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' (Just m'') sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> Nothing <$ xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
-              XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p msg brokerTs
+              XInfo p mKey -> fmap ctx <$> xInfoMember gInfo' m'' p mKey msg brokerTs
               XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
               XGrpRelayNew rl -> fmap ctx <$> xGrpRelayNew gInfo' m'' rl
@@ -1398,9 +1399,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       REQ invId pqSupport _ connInfo -> do
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
+          XContact p _ xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
-          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
+          XInfo p _ -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
           XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
           -- TODO show/log error, other events in contact request
@@ -2751,8 +2752,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Profile {displayName = n, fullName = fn, shortDescr = sd, image = i, contactLink = cl} = p
             Profile {displayName = n', fullName = fn', shortDescr = sd', image = i', contactLink = cl'} = p'
 
-    xInfoMember :: GroupInfo -> GroupMember -> Profile -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xInfoMember gInfo m p' msg brokerTs = do
+    xInfoMember :: GroupInfo -> GroupMember -> Profile -> Maybe MemberKey -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xInfoMember gInfo m p' mKey msg brokerTs = do
+      -- TODO [member keys] udpate key if it was Nothing and is set, prohibit key changes unless message is signed with the current key
       void $ processMemberProfileUpdate gInfo m p' (Just (msg, brokerTs))
       pure $ memberEventDeliveryScope m
 
@@ -3100,7 +3102,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
-        XInfo p -> do
+        XInfo p _ -> do
           ct <- withStore $ \db -> createDirectContact db cxt user conn' p
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
@@ -3851,7 +3853,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           -- [incognito] send membership incognito profile
           p <- presentUserBadge user (incognitoMembershipProfile g) $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
           -- TODO PQ should negotitate contact connection with PQSupportOn? (use encodeConnInfoPQ)
-          dm <- encodeConnInfo $ XInfo p
+          dm <- encodeConnInfo $ XInfo p Nothing
           joinAgentConnectionAsync cmdId False acId True connReq dm subMode
         createItems mCt' m' = do
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
@@ -3909,7 +3911,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
-            XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
+            XInfo p mKey -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p mKey rcvMsg msgTs
             XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo (Just m) author memId memRole memberKey rosterVer rcvMsg msgTs

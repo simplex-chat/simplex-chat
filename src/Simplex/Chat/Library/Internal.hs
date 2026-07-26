@@ -918,7 +918,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
-  dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+  dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend Nothing
   (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
@@ -939,7 +939,7 @@ acceptContactRequestAsync
       Connection {connId} <- liftIO $ createAcceptedContactConn db user (Just uclId) contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
       liftIO $ setCommandConnId db user cmdId connId
       getContact db cxt user contactId
-    agentAcceptContactAsync cmdId acId True cReqInvId (XInfo profileToSend) cReqPQSup chatV subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId (XInfo profileToSend Nothing) cReqPQSup chatV subMode
     pure ct'
 
 acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> Maybe GroupMember -> CM GroupMember
@@ -2486,7 +2486,8 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
       profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
-      void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
+      -- TODO [member keys] add key
+      void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate Nothing
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 

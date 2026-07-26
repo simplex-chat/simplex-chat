@@ -164,7 +164,7 @@ checkProfileImageSize = mapM_ $ \(ImageData t) ->
    in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
 
 checkProfileSize :: Profile -> CM ()
-checkProfileSize p = checkInfoSize "Profile" (XInfo p)
+checkProfileSize p = checkInfoSize "Profile" (XInfo p Nothing)
 
 checkGroupProfileSize :: GroupProfile -> CM ()
 checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
@@ -3348,7 +3348,7 @@ processChatCommand cxt nm = \case
           joinPreparedConn subMode conn = do
             -- [incognito] send membership incognito profile
             p <- presentUserBadge user (incognitoMembershipProfile gInfo) $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
-            dm <- encodeConnInfo $ XInfo p
+            dm <- encodeConnInfo $ XInfo p Nothing
             sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
             void $ withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3748,7 +3748,7 @@ processChatCommand cxt nm = \case
                 joinPreparedConn conn incognitoProfile chatV
               joinPreparedConn conn incognitoProfile chatV = do
                 profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user incognitoProfile Nothing True
-                dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+                dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend Nothing
                 sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3908,7 +3908,9 @@ processChatCommand cxt nm = \case
         Just (Just gInfo) | useRelays' gInfo -> case relayMemberId_ of
           Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
           Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
-        _ -> encodeConnInfoPQ pqSup chatV $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
+        _ ->
+          -- TODO [member keys] send member key in groups
+          encodeConnInfoPQ pqSup chatV $ XContact profileToSend Nothing (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined
@@ -3981,7 +3983,7 @@ processChatCommand cxt nm = \case
             ctSndEvent :: ChangedProfileContact -> CM (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
             ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = do
               p'' <- presentUserBadge user' Nothing mergedProfile'
-              pure (ConnectionId connId, Nothing, XInfo p'')
+              pure (ConnectionId connId, Nothing, XInfo p'' Nothing)
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
@@ -4013,7 +4015,7 @@ processChatCommand cxt nm = \case
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
               p <- presentUserBadge user incognitoProfile mergedProfile'
-              void (sendDirectContactMessage user ct' $ XInfo p) `catchAllErrors` eToView
+              void (sendDirectContactMessage user ct' $ XInfo p Nothing) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> Bool -> CM ChatResponse
@@ -5097,7 +5099,7 @@ addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
         | not (connIncognito conn) -> do
             let ct' = updateMergedPreferences user' ct
             p <- presentUserBadge user' Nothing $ userProfileDirect user' Nothing (Just ct') False
-            void (sendDirectContactMessage user' ct' (XInfo p)) `catchAllErrors` eToView
+            void (sendDirectContactMessage user' ct' (XInfo p Nothing)) `catchAllErrors` eToView
       _ -> pure ()
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()

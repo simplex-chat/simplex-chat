@@ -492,8 +492,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
-  XInfo :: Profile -> ChatMsgEvent 'Json
-  XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
+  XInfo :: {profile :: Profile, memberKey :: Maybe MemberKey} -> ChatMsgEvent 'Json
+  XContact :: {profile :: Profile, memberKey :: Maybe MemberKey, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
   XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey, viaRelay :: Maybe MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
@@ -559,7 +559,7 @@ isForwardedGroupMsg ev = case ev of
   XMsgDel {} -> True
   XMsgReact {} -> True
   XFileCancel _ -> True
-  XInfo _ -> True
+  XInfo {} -> True
   XGrpRelayNew _ -> True
   XGrpMemNew {} -> True
   XGrpMemRole {} -> True
@@ -1261,7 +1261,7 @@ toCMEventTag msg = case msg of
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
   XFileCancel _ -> XFileCancel_
-  XInfo _ -> XInfo_
+  XInfo {} -> XInfo_
   XContact {} -> XContact_
   XMember {} -> XMember_
   XDirectDel -> XDirectDel_
@@ -1421,15 +1421,16 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
-      XInfo_ -> XInfo <$> p "profile"
+      XInfo_ -> XInfo <$> p "profile" <*> opt "memberKey"
       XContact_ -> do
         profile <- p "profile"
+        memberKey <- opt "memberKey"
         contactReqId <- opt "contactReqId"
         welcomeMsgId <- opt "welcomeMsgId"
         reqMsgId <- opt "msgId"
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
-        pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
+        pure XContact {profile, memberKey, contactReqId, welcomeMsgId, requestMsg}
       XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey" <*> opt "viaRelay"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
@@ -1504,8 +1505,8 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
-      XInfo profile -> o ["profile" .= profile]
-      XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
+      XInfo {profile, memberKey} -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]
+      XContact {profile, memberKey, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ("memberKey" .=? memberKey) $ ["profile" .= profile]
       XMember {profile, newMemberId, newMemberKey, viaRelay} -> o $ ("viaRelay" .=? viaRelay) ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
