@@ -980,7 +980,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 gInfo'' <- ensureUserMemberKey gInfo'''
                 let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
                 profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo'' (fromIncognitoProfile <$> incognitoProfile)
-                sendGroupMemberMessages user gInfo'' conn (XGrpLinkMem profileToSend (groupMemberKey gInfo'') :| [])
+                sendGroupMemberMessages user gInfo'' conn [XGrpLinkMem profileToSend (groupMemberKey gInfo'')]
                 withStore' $ \db -> setMembersMemberKeySent db [groupMemberId' m']
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
