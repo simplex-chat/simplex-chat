@@ -55,7 +55,7 @@ Show **Badge valid until** separately from **Renews on** or **Subscription ends 
 - Bot/provider verification decides payment status and issuance eligibility.
 - Store state and Stripe redirects are hints only.
 - Each client request receives exactly one bot response; the bot never initiates a call.
-- Before buying, the client creates an order: a client-generated id, an Ed25519 order key whose signature authenticates every request, and one 32-byte BBS `BadgeMasterKey` for the badge. Renewals reuse the same order and keys.
+- Before buying, the client creates an order: an Ed25519 order key that both identifies and authenticates it (a new key is a new order), and one 32-byte BBS `BadgeMasterKey` for the badge. Renewals reuse the same order and keys.
 - There is no bot-issued token and no caller identity. Every request is signed by the order key; payment additionally carries a fresh store proof (Apple/Google) or is confirmed by webhook (Stripe). The order key, BBS key, and provider proofs are redacted.
 
 ## 2. UX states
@@ -354,7 +354,7 @@ Errors preserve the last payment snapshot and installed badge. The implementatio
 - Apple, Google, and Stripe have separate linear outcomes.
 - Payment verification issues into a provider-neutral badge ledger; badge service has no provider logic.
 - Client and bot order/badge state are separate.
-- Requests are client-signed (order key), one bot response each, idempotent by order id.
+- Requests are client-signed with the order key (which also identifies the order), one bot response each; the per-period badge ledger dedups repeats.
 - Tier and billing period are fixed by the plan (SKU); the client cannot request a higher tier or longer life than it paid for.
 - Stripe needs no localhost/deep-link success; cancellation is always via the browser Customer Portal — an authenticated session, or the login page when the client cannot identify the payment.
 - Every error category has an owner, state-preserving action, and retry/final result.

@@ -4,7 +4,7 @@
 **Status:** implementation-ready
 **Companion:** [Product and UX plan](2026-07-20-supporter-badges-v2-product.md)
 
-An **order** (`orderId` = client UUID, authenticated by an Ed25519 `orderKey`) carries a `product` and a `payment`. It has three persisted states — **requesting → completed | failed** — and issued badges are rows in a separate `badges` ledger (one per paid period). Current provider/subscription status is re-derived on each request, never stored. Order / product(badge) / payment are decoupled and product-extensible.
+An **order** (identified and authenticated by its Ed25519 `orderKey` — the transport's verified signer key; a new key is a new order) carries a `product` and a `payment`. It has three persisted states — **requesting → completed | failed** — and issued badges are rows in a separate `badges` ledger (one per paid period). Current provider/subscription status is re-derived on each request, never stored. Order / product(badge) / payment are decoupled and product-extensible.
 
 ![Architecture](assets/badge-v2-roles.svg)
 
@@ -35,7 +35,7 @@ flowchart LR
 
 | Component | Owns | Must not own |
 |---|---|---|
-| Client order | `orderId`, `orderSk` key, purchase UI, cached status, retry schedule | bot/provider truth |
+| Client order | `orderSk` key (its public part is the order identity), purchase UI, cached status, retry schedule | bot/provider truth |
 | Client badge | BBS master key, credential receipt and installation | billing state |
 | Order service | order key registration, product pin, proof verification, order state, provider binding | badge master key, credential |
 | Badge ledger | one issued badge per paid period (the "grant" is just a row) | provider/billing logic |
@@ -47,7 +47,7 @@ Treat these as separate programs with typed interfaces.
 ### Invariants
 
 1. Provider verification changes the order's payment outcome only; it never signs or installs the badge.
-2. An order is identified by a client-generated `orderId` (UUID) and authenticated by its `orderKey` — the transport's agent-verified Ed25519 signer key, registered on create and equality-checked on every request. The bot does no signature crypto. No caller identity, no bot-issued token, no bot push.
+2. An order is identified **and** authenticated by its `orderKey` — the transport's agent-verified Ed25519 signer key; the first request creates it, later requests resolve by the same key. A new key is a new order; signing is mandatory. The bot does no signature crypto. No caller identity, no bot-issued token, no bot push.
 3. The `product` is immutable per order: pinned on the first request; a differing product later is rejected.
 4. For a badge product, the client supplies only the SKU (`plan`) and `BadgeMasterKey`; the bot derives tier/expiry and assembles `BadgeInfo`. The declared SKU must equal the SKU verified in `payment`.
 5. `BadgeMasterKey` (32 random bytes, BBS message 0 via `generateMasterKey`) lives only inside the badge product; it signs the badge and is never an identifier or an auth credential.
@@ -64,7 +64,7 @@ A paid order yields one badge per eligible month. Eligibility is **derived from 
 - Subscription: period `n` starts at `addCalendarMonths n verifiedAnchor`, eligible while `periodStart(n) <= now < paidThrough`.
 - Monthly and yearly plans both expose one period per eligible month.
 - Badge expiry is the start of the month two months after the period start.
-- A `badges` row is unique on `(order_id, period_start)`; the master-key hash binds it to the client key.
+- A `badges` row is unique on `(order_key, period_start)`; the master-key hash binds it to the client key.
 - Example: 21 July period → badge expires 1 September; monthly billing renews 21 August.
 
 On each request the bot asks the provider which periods are paid, then issues a badge for any eligible period with no row yet. Refund/revoke simply removes future eligibility (an already-issued BBS badge stands to its expiry); it is never a stored order state.
@@ -157,7 +157,7 @@ stateDiagram-v2
 
 ## 3. Contracts
 
-An order is `product + payment`, identified by a client `orderId`. **Authentication is provided by the transport — we define no envelope and do no signature cryptography.**
+An order is `product + payment`, identified and authenticated by its `orderKey` — the transport's verified Ed25519 signer key. **We define no envelope and do no signature cryptography; a new key is a new order.**
 
 ### Transport and auth
 
@@ -165,27 +165,25 @@ The bot runs over the SimpleX **service RPC** (branch `rpc`, merged `d2b63cd46`;
 
 **Prerequisites.** The bot publishes a double-ratchet address (`/_address … pq_ratchet=on`) and starts with service processing enabled (`/_start … service_requests=on`); a plain address yields `ASENotDRAddress` and an instance with processing off silently drops the request. The bot may rotate its address ratchet keys (`APIRotateAddressRatchetKeys`) without changing the address identity or invalidating stored `orderKey`s.
 
-**Timing.** The client blocks up to `requestTimeout` (agent default 30 s, overridable per call); the bot must answer within `serviceResponseTimeout` (agent default 180 s, operator-tunable) or the request is discarded and the reply fails. This bounds any held call (Stripe, §4). The bot answers with `APISendServiceResponse` → `CRServiceReplyAccepted {connectionId}`, and learns delivery via `CEvtServiceReplySent {connectionId}`. The transport carries no order identity across requests — only the per-request `AgentInvId` routes one response — so the body's `orderId` is the sole cross-request correlation key.
+**Timing.** The client blocks up to `requestTimeout` (agent default 30 s, overridable per call); the bot must answer within `serviceResponseTimeout` (agent default 180 s, operator-tunable) or the request is discarded and the reply fails. This bounds any held call (Stripe, §4). The bot answers with `APISendServiceResponse` → `CRServiceReplyAccepted {connectionId}`, and learns delivery via `CEvtServiceReplySent {connectionId}`. The transport carries no order identity across requests — only the per-request `AgentInvId` routes one response — so the verified signer key is the sole cross-request identity: every request signed by the same `orderSk` is the same order.
 
 ```haskell
-newtype OrderId  = OrderId UUID          -- client-generated, carried in the request body
-type    OrderKey = C.PublicKeyEd25519    -- the transport's verified signer key; NOT a body field
+type OrderKey = C.PublicKeyEd25519    -- the transport's verified signer key = the order identity
 ```
 
-- We never define or transmit a signature field and never verify one. `orderKey` is just the verified `signerKey` the transport delivers.
-- The client holds the matching private key (`orderSk`) and gives it to its agent to sign each request (`APISendServiceRequest.signKey`). `orderSk` is a client secret, backed up with the profile.
-- **Auth = key equality.** On the first (create) request the bot records the order's `orderKey`. Every later request must arrive with a signer key equal to the stored one — a plain equality check, no crypto. A mismatch, or a missing key on a management operation, gives `order_auth_invalid`.
-- `orderKey` is **optional**: an unsigned order (`signerKey = Nothing`) is allowed for a one-shot purchase but cannot be managed or recovered.
-- `orderId` (in the body) is the correlation + idempotency key; it lets the bot pair the two Stripe steps (invoice then paid) even when unsigned. The transport's per-request id (`AgentInvId`) routes the single response; there is no `corrId` of ours.
+- We never define or transmit a signature or an id field, and never verify a signature. `orderKey` is just the verified `signerKey` the transport delivers; it identifies **and** authenticates the order.
+- The client generates an Ed25519 keypair per order and gives the private key (`orderSk`) to its agent to sign each request (`APISendServiceRequest.signKey`). `orderSk` is a client secret, backed up with the profile; `orderKey = publicKey orderSk`.
+- **Identity = the key.** The first request creates an order keyed by `orderKey`; every later request signed by the same `orderSk` arrives with the same signer key and resolves to the same order — a plain lookup, no crypto, no correlation id. A new key is a new order.
+- **Signing is mandatory.** An unsigned request (`signerKey = Nothing`) has no identity, so it is not an order — the bot rejects it with `order_auth_invalid`. The two Stripe steps (invoice then paid) are paired by the shared signer key.
+- The transport's per-request id (`AgentInvId`) routes the single response; there is no `corrId` and no body-level id of ours.
 
 ### Request / response body
 
 Every referenced type is defined here; existing `Simplex.Chat.Badges` types are reused, not redefined.
 
 ```haskell
-data ServiceRequest = ServiceRequest
-  { orderId   :: OrderId       -- client UUID; correlation + idempotency (auth is the transport signer key)
-  , operation :: Operation
+data ServiceRequest = ServiceRequest      -- the order is the verified signer key; no id in the body
+  { operation :: Operation
   , product   :: Product
   , payment   :: Payment
   }
@@ -233,7 +231,7 @@ data ErrorCode
 
 Rules:
 
-- **Invoice-or-badge, one order.** A `Purchase` with `StripeInvoice` returns `RspInvoice`; the same `orderId` with `StripePaid`/`AppleReceipt`/`GoogleReceipt` verifies and returns `RspCredential`. Renewals are later `Purchase`/`Status` requests on the same order.
+- **Invoice-or-badge, one order.** A `Purchase` with `StripeInvoice` returns `RspInvoice`; a later `Purchase` with `StripePaid`/`AppleReceipt`/`GoogleReceipt`, signed by the same key, verifies and returns `RspCredential`. Renewals are later `Purchase`/`Status` requests signed by the same key.
 - **Product is pinned per order.** The bot fixes `product` on the first request; a later differing product ⇒ `product_changed` ("invoice for A then claim paid on B ⇒ get lost").
 - **Tier/period/expiry are server-derived; only `masterKey` is client-authoritative.** The bot resolves the tier from `badge_types[plan]`, sets `badgeExpiry = end_of_next_month`, `badgeExtra = ""`, and assembles the internal `BadgeRequest`. `badgeType` is never on the wire.
 - **Declared SKU must equal the verified SKU** proven by `Payment` (Apple/Google receipt `productId`, Stripe `plan`); divergence ⇒ `product_mismatch`.
@@ -245,24 +243,24 @@ Rules:
 
 ```haskell
 -- signerKey is the transport-verified key (from CEvtServiceRequest.signerKey), not a body field
-resolveOrder :: Maybe OrderKey -> ServiceRequest -> Transaction OrderDecision
-issueBadge   :: OrderId -> UTCTime -> BadgeRequest -> Transaction BadgeResult   -- period; idempotent
+resolveOrder :: Maybe OrderKey -> ServiceRequest -> Transaction OrderDecision   -- Nothing ⇒ reject
+issueBadge   :: OrderKey -> UTCTime -> BadgeRequest -> Transaction BadgeResult   -- period; idempotent
 ```
 
 Order:
 
-1. match the transport-verified signer key to the order's stored `orderKey` by equality (create registers it); reject on mismatch/absence;
+1. resolve the order by the transport-verified signer key (the first request creates it); reject an unsigned request (`order_auth_invalid`);
 2. load/pin the order's product; reject on `product_changed`;
 3. resolve/verify payment with the provider; check the verified SKU equals the declared SKU (`product_mismatch`);
-4. for each eligible unissued period (§1), assemble `BadgeRequest` (masterKey + server-derived `badgeInfo`) and issue a badge into the `badges` ledger — idempotent on `(order_id, period, master-key hash)` — and set `BOCompleted`;
+4. for each eligible unissued period (§1), assemble `BadgeRequest` (masterKey + server-derived `badgeInfo`) and issue a badge into the `badges` ledger — idempotent on `(order_key, period, master-key hash)` — and set `BOCompleted`;
 5. return the single response (credential + derived status).
 
 ### Idempotency and audit
 
-- `orderId` keys idempotency: the same operation on the same order returns the stored response; a changed product returns `product_changed`.
+- The order key identifies the order; the per-period `badges` ledger is the real dedup, so a repeated operation re-derives the same result. A changed product returns `product_changed`.
 - Transport replay dedupe is separate and shorter-lived.
-- Stripe mutation idempotency key derives from `orderId` + operation.
-- Developer Tools → Chat Console records start/result, order id suffix, operation, before/after states, retry class, and duration.
+- Stripe mutation idempotency key derives from the order key + operation.
+- Developer Tools → Chat Console records start/result, order-key suffix, operation, before/after states, retry class, and duration.
 - Redact JWS/token, Checkout query/return token, `BadgeMasterKey`, credential, and provider/customer IDs. (The order signer key is public; the signature is handled by the transport, not logged here.)
 
 ## 4. Provider flows
@@ -338,7 +336,7 @@ sequenceDiagram
   Note over C: CORequesting (checkout ready)
   C->>S: Open Checkout
   Note over C: COPaid
-  C->>B: Purchase (StripePaid), same orderId
+  C->>B: Purchase (StripePaid), same key
   B->>B: Register waiter and recheck payment under lock
   Note over B: BORequesting<br/>No response yet
   S-->>B: Signed webhook
@@ -365,7 +363,7 @@ sequenceDiagram
   participant B as Bot
   participant S as Stripe
   Note over C: COPaid
-  C->>B: Purchase (StripePaid), stable orderId
+  C->>B: Purchase (StripePaid), same key
   B->>B: Register waiter, payment still pending
   Note over B: Hold call (≤180 s), no response
   Note over C: RPC deadline / app restart
@@ -378,7 +376,7 @@ sequenceDiagram
   B-->>C: Credential immediately if ready<br/>otherwise hold this call
 ```
 
-The client persists `orderId`, `orderSk`, and `BadgeMasterKey` before opening Checkout. It retries the same signed `Purchase` only after an interrupted exchange, foreground, or explicit user action—never on a polling timer. A deep link is optional UX; no localhost listener is used.
+The client persists `orderSk` and `BadgeMasterKey` before opening Checkout. It retries the same signed `Purchase` only after an interrupted exchange, foreground, or explicit user action—never on a polling timer. A deep link is optional UX; no localhost listener is used.
 
 ### Cancellation
 
@@ -395,7 +393,7 @@ Failure preserves previous state; client shows Retry and still says **Renews on*
 | Client presents | Portal link the bot returns |
 |---|---|
 | a `Cancel` (`StripeManage`) whose signer key matches the order's `orderKey` | authenticated `billing_portal.Session` with `flow_data.type=subscription_cancel` — opens straight to the cancel flow, no email code |
-| no identifiable order (total loss — `orderId`/`orderSk` gone) | the account-wide hosted portal **login page** (`prefilled_email` when the customer email is known), authenticated by email OTP |
+| no identifiable order (total loss — `orderSk` gone) | the account-wide hosted portal **login page** (`prefilled_email` when the customer email is known), authenticated by email OTP |
 
 The authenticated session link is short-lived and per-customer; the login page is the operator-config account-wide URL and returns no per-customer secret. The bot carries whichever link applies in `RspStatus` so a cancel path is always reachable. Signing for the order (holding `orderSk`, verified by the transport) is the sole client credential: the client either can sign as the order's `orderKey` (session) or cannot (login page).
 
@@ -415,7 +413,7 @@ Two tables per side; a badge is a row, not a state.
 ### Shared identifiers
 
 ```haskell
-newtype OrderId          = OrderId UUID
+type    OrderKey         = C.PublicKeyEd25519            -- order identity = verified signer key
 newtype ServiceProductId = ServiceProductId Text        -- SKU
 newtype BadgeMasterKey   = BadgeMasterKey ByteString     -- 32 random bytes; badge product only
 data    Provider         = Apple | Google | Stripe
@@ -423,15 +421,15 @@ data    Provider         = Apple | Google | Stripe
 
 ### Bot tables (**PK** bold, → foreign key, ⊤ unique)
 
-- **`orders`** — `order_id` **PK** (client UUID) · `order_key` (Ed25519 pub, null = unsigned one-shot) · `order_type` (`badge`) · `product_sku` (pinned) · `provider` · `provider_ref` (encrypted binding: original-transaction | purchase token | Stripe sub/customer; null until known) · `state` [`BotOrderState`] · `paid_through` · `created_at`/`updated_at` — no master key: the client re-sends it per `Purchase`; the bot uses it in memory only
-- **`badges`** — `order_id` → `orders` · `period_start` · `master_key_hash` · `credential` (cached BBS credential) · `issued_at` · ⊤(`order_id`,`period_start`) — the issuance ledger; the "grant" is this row
+- **`orders`** — `order_key` **PK** (Ed25519 pub = verified signer key) · `order_type` (`badge`) · `product_sku` (pinned) · `provider` · `provider_ref` (encrypted binding: original-transaction | purchase token | Stripe sub/customer; null until known) · `state` [`BotOrderState`] · `paid_through` · `created_at`/`updated_at` — no master key: the client re-sends it per `Purchase`; the bot uses it in memory only
+- **`badges`** — `order_key` → `orders` · `period_start` · `master_key_hash` · `credential` (cached BBS credential) · `issued_at` · ⊤(`order_key`,`period_start`) — the issuance ledger; the "grant" is this row
 
 `provider_ref` doubles as the entitlement binding: to check whether a provider object is already bound, query `orders` by `(provider, provider_ref)`. Webhook/RTDN dedupe and Google acknowledge/consume use a small auxiliary bookkeeping table (`provider_events`), not order state; provider calls/signing run outside long transactions. Product detail is keyed by `order_type` — for `badge` it is the `badges` ledger; a future product type adds its own detail table without touching `orders`.
 
-### Client tables (local; `order_id` is the shared key)
+### Client tables (local; `order_key` is the shared identity)
 
-- **`orders`** — `order_id` **PK** · `order_sk` (encrypted) · `order_key` · `badge_master_key` (encrypted, one per order, reused each renewal) · `provider` · `product_sku` · `state` [`ClientOrderState`] · `provider_ref` (receipt/token, to re-claim) · `paid_through` · `created_at`/`updated_at`
-- **`badges`** — `order_id` → `orders` · `period_start` · `master_key_hash` · `credential` (cached) · `expiry` · `installed` (bool) · ⊤(`order_id`,`period_start`)
+- **`orders`** — `order_key` **PK** (= public part of `order_sk`) · `order_sk` (encrypted) · `badge_master_key` (encrypted, one per order, reused each renewal) · `provider` · `product_sku` · `state` [`ClientOrderState`] · `provider_ref` (receipt/token, to re-claim) · `paid_through` · `created_at`/`updated_at`
+- **`badges`** — `order_key` → `orders` · `period_start` · `master_key_hash` · `credential` (cached) · `expiry` · `installed` (bool) · ⊤(`order_key`,`period_start`)
 
 The client encrypts `order_sk` and `badge_master_key` at rest; the bot stores only the public `order_key` and never persists the master key. Update the active profile only after core installs the credential.
 
@@ -529,7 +527,7 @@ Google linked-token replacement changes subscription identity/period data, then 
 Rules:
 
 - Google initial subscription acknowledgement and one-time consumption run from durable retry (the auxiliary `provider_events` bookkeeping), not from order state.
-- Stripe uses server-selected Price (from `badge_types`/`stripe.plans[plan]`), mode, Customer, `client_reference_id=orderId`, metadata, redirect URLs, and collects customer email so the hosted portal login works.
+- Stripe uses server-selected Price (from `badge_types`/`stripe.plans[plan]`), mode, Customer, `client_reference_id=order_key` (so the webhook maps back to the order), metadata, redirect URLs, and collects customer email so the hosted portal login works.
 - Stripe issuance requires a paid invoice, not merely active Subscription status.
 - Webhook/status/completion page use one reconciliation function; redirects never fulfill.
 - All Stripe cancellation, invoices, and payment methods go through the browser Customer Portal — an authenticated `billing_portal.Session` when the customer is identifiable, else the account-wide login page (email OTP) which is also the app-removed path; the bot reconciles portal cancellation from the webhook. Apple/Google normal cancellation is store UI.
@@ -542,20 +540,20 @@ Recovery re-establishes order control and the badge after reinstall, device tran
 
 | Side | Durable | Lost on client wipe without backup |
 |---|---|---|
-| Bot | order (keyed by `order_id`), `order_key`, provider binding (`provider_ref`), issued badges (ledger) | — |
-| Client | — | `order_id`, `order_sk`, `BadgeMasterKey`, cached credential, installed badge |
+| Bot | order (keyed by `order_key`), provider binding (`provider_ref`), issued badges (ledger) | — |
+| Client | — | `order_sk`, `BadgeMasterKey`, cached credential, installed badge |
 
-The bot never loses the order. The client's durable secrets are `order_sk` (order auth) and `BadgeMasterKey` (badge); both belong in the profile backup.
+The bot never loses the order. The client's durable secrets are `order_sk` (order identity + auth; `order_key` is its public part) and `BadgeMasterKey` (badge); both belong in the profile backup.
 
 ### Tier 1 — restore from backup (normal path)
 
-SimpleX encrypted-profile backup or migration restores `order_id`, `order_sk`, `BadgeMasterKey`, and the cached badge. The client re-attaches to the same order by signing a `Status` request with `order_sk`; if the master key also survived, the cached badge re-installs. Nothing new is minted.
+SimpleX encrypted-profile backup or migration restores `order_sk`, `BadgeMasterKey`, and the cached badge. The client re-attaches to the same order by signing a `Status` request with `order_sk` (its `order_key` resolves the order); if the master key also survived, the cached badge re-installs. Nothing new is minted.
 
 ### Tier 2 — total loss (no backup)
 
-`order_id`/`order_sk`/`BadgeMasterKey` are all gone. **Apple/Google are still recoverable** because the entitlement lives in the store:
+`order_sk`/`BadgeMasterKey` are gone (so is the order identity). **Apple/Google are still recoverable** because the entitlement lives in the store:
 
-1. The client makes a **fresh order** (new `order_id`/`order_sk`/`BadgeMasterKey`).
+1. The client makes a **fresh order** (new `order_sk` → new `order_key`, new `BadgeMasterKey`).
 2. It re-queries StoreKit `Transaction.currentEntitlements` / Play `queryPurchases` for a fresh receipt of the active subscription.
 3. It sends a signed `Purchase` with that receipt → the bot verifies and issues a badge bound to the new master key. The abandoned order/badge expires unused.
 
