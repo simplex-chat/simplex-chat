@@ -113,10 +113,15 @@ public func resetChatCtrl() {
 // Spec: spec/api.md#sendSimpleXCmd
 @inline(__always)
 public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil, retryNum: Int32 = 0) -> APIResult<R> {
-    if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl, retryNum: retryNum) {
-        decodeAPIResult(d)
+    logger.debug("BUG1: sendSimpleXCmd FFI start, isMainThread=\(Thread.isMainThread)")
+    let d = sendSimpleXCmdStr(cmd.cmdString, ctrl, retryNum: retryNum)
+    logger.debug("BUG1: sendSimpleXCmd FFI returned=\(d != nil), isMainThread=\(Thread.isMainThread)")
+    if let d {
+        let r: APIResult<R> = decodeAPIResult(d)
+        logger.debug("BUG1: sendSimpleXCmd decode done")
+        return r
     } else {
-        APIResult.error(.invalidJSON(json: nil))
+        return APIResult.error(.invalidJSON(json: nil))
     }
 }
 
