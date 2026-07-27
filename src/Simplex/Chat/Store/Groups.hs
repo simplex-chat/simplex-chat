@@ -1718,7 +1718,7 @@ setMembersMemberKeySent db memberIds = do
   DB.executeMany
     db
     "UPDATE group_members SET user_member_key_sent = ?, updated_at = ? WHERE group_member_id = ?"
-    [(BI True, currentTs, memberId) | memberId <- memberIds]
+    (map (BI True,currentTs,) memberIds)
 #endif
 
 setGroupMemberVerified :: DB.Connection -> User -> GroupMemberId -> Maybe Text -> IO ()
