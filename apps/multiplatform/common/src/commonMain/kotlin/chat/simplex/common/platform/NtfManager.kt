@@ -49,11 +49,21 @@ abstract class NtfManager {
   }
 
   fun acceptContactRequestAction(userId: Long?, incognito: Boolean, chatId: ChatId) {
-    val isCurrentUser = ChatModel.currentUser.value?.userId == userId
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-    // TODO include remote host in notification
-    acceptContactRequest(null, incognito, apiId, isCurrentUser, ChatModel)
-    cancelNotificationsForChat(chatId)
+    withLongRunningApi {
+      awaitChatStartedIfNeeded(chatModel)
+      // switching to the user the request was sent to, so that accepted contact is shown
+      if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
+        chatModel.clearOverlays.value = true
+      }
+      val isCurrentUser = chatModel.currentUser.value?.userId == userId
+      // TODO include remote host in notification
+      acceptContactRequest(null, incognito, apiId, isCurrentUser, chatModel)
+      cancelNotificationsForChat(chatId)
+    }
   }
 
   fun openChatAction(userId: Long?, chatId: ChatId) {
