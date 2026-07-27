@@ -25,7 +25,7 @@ An **order** carries a plan (the product) and a payment. A verified payment issu
 |---|---|---|
 | iOS | StoreKit | Apple subscription UI |
 | Android Play | Play Billing | Google Play subscription UI |
-| F-Droid / desktop | Stripe Checkout | browser Customer Portal — authenticated session, or login page (email code) after app removal |
+| F-Droid / desktop | our own Stripe payment page (Payment Element, no email) | browser Customer Portal — authenticated session via order key or saved recovery handle |
 
 Choices: **One-time**, **Monthly**, **Yearly**. There is no Extend action.
 
@@ -211,9 +211,9 @@ sequenceDiagram
   participant B as Bot
   participant S as Stripe
   C->>B: Purchase (StripeInvoice), create order
-  B->>S: Create Checkout Session
-  B-->>C: RspInvoice (Checkout URL)
-  C->>S: Open Checkout
+  B->>S: Create Customer (no email) + payment
+  B-->>C: RspInvoice (our pay-page URL)
+  C->>S: Open our pay page (Payment Element, no email)
   Note over C: Paid, awaiting confirmation
   C->>B: Purchase (StripePaid), same order
   Note over B: Hold call, no response yet
@@ -244,7 +244,7 @@ sequenceDiagram
   Note over B: Respond immediately if webhook already completed<br/>otherwise wait again
 ```
 
-#### Checkout expired
+#### Payment page expired
 
 ```mermaid
 sequenceDiagram
@@ -253,13 +253,13 @@ sequenceDiagram
   participant S as Stripe
   C->>B: Purchase (StripePaid)
   Note over B: Hold call
-  S-->>B: Signed Checkout expired event
-  Note over B: Checkout expired, no badge
-  B-->>C: RspError checkout expired
-  Note over C: Expired — new Checkout requires user action
+  S-->>B: Signed intent/session expired event
+  Note over B: Payment page expired, no badge
+  B-->>C: RspError payment expired
+  Note over C: Expired — new payment page requires user action
 ```
 
-There is no payment polling. The pending `Purchase` call is the completion signal. A deep link may return the user to the app but is not required and is never payment proof.
+There is no payment polling. The pending `Purchase` call is the completion signal. A deep link may return the user to the app but is not required and is never payment proof. Stripe payment is on our own page (Stripe Payment Element) so no email is collected — the hosted Stripe Checkout, which forces an email field, is not used.
 
 ### Cancel subscription
 
@@ -305,8 +305,8 @@ sequenceDiagram
   participant B as Bot
   participant P as Stripe Portal
   participant S as Stripe API
-  C->>B: Request cancel link
-  B-->>C: Portal URL (session or login page)
+  C->>B: Request cancel link (signed, or with saved recovery handle)
+  B-->>C: Authenticated portal session URL
   C->>P: Open portal, confirm cancel
   P->>S: Cancel at period end
   S-->>B: Signed webhook (renewal off + end date)
@@ -316,14 +316,15 @@ sequenceDiagram
 
 Never show canceled until the bot confirms renewal is off.
 
-Cancellation also works after the app is removed: Apple/Google via the store subscription UI; Stripe via the hosted Customer Portal login page (`billing.stripe.com/p/login/…`), where the user signs in with the email they paid with. The bot reconciles the resulting cancellation from the provider webhook/status.
+Cancellation also works after the app is removed: Apple/Google via the store subscription UI; Stripe **only if the user saved their recovery handle** (we collect no email, so there is no email login). The bot reconciles the resulting cancellation from the provider webhook/status.
 
-Stripe cancellation always happens in the browser Customer Portal (the portal cancels; the bot reconciles from the webhook). The bot only chooses which link it sends, based on what the client can still prove:
+Stripe cancellation always happens in the browser Customer Portal (the portal cancels; the bot reconciles from the webhook). The bot always returns an authenticated per-customer session, sourced from whatever the client can still prove:
 
 | Client still holds | Cancel link the bot sends |
 |---|---|
-| the order (can sign with its order key) | authenticated portal session — opens straight to the cancel flow, no email code |
-| nothing (order lost with the app) | generic hosted portal login page — user signs in with the email they paid with (email code) |
+| the order (can sign with its order key) | authenticated portal session — opens straight to the cancel flow, no login |
+| only the saved recovery handle (order lost with the app) | same authenticated session, via handle → customer |
+| neither | no cancel path — nothing binds them to the customer (no email was collected) |
 
 ## 5. Refresh and errors
 
@@ -356,6 +357,6 @@ Errors preserve the last payment snapshot and installed badge. The implementatio
 - Client and bot order/badge state are separate.
 - Requests are client-signed with the order key (which also identifies the order), one bot response each; the per-period badge ledger dedups repeats.
 - Tier and billing period are fixed by the plan (SKU); the client cannot request a higher tier or longer life than it paid for.
-- Stripe needs no localhost/deep-link success; cancellation is always via the browser Customer Portal — an authenticated session, or the login page when the client cannot identify the payment.
+- Stripe payment is on our own page (Payment Element, no email), not hosted Checkout; needs no localhost/deep-link success. Cancellation is always an authenticated per-customer Customer Portal session, reached via the order key or a saved recovery handle (no email login).
 - Every error category has an owner, state-preserving action, and retry/final result.
 - RPC attempts/results appear redacted in Developer Tools → Chat Console.
