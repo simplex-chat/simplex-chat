@@ -1146,6 +1146,7 @@ data GroupMember = GroupMember
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
     memberPubKey :: Maybe C.PublicKeyEd25519,
+    userMemberKeySent :: Bool,
     relayLink :: Maybe ShortLinkContact,
     -- out-of-band verified security code for connectionless (channel) members;
     -- regular members carry it in activeConn instead (see memberSecurityCode)

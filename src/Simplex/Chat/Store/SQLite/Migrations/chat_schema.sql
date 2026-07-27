@@ -255,6 +255,7 @@ CREATE TABLE group_members(
   roster_served_version INTEGER,
   member_security_code TEXT,
   member_security_code_verified_at TEXT,
+  user_member_key_sent INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

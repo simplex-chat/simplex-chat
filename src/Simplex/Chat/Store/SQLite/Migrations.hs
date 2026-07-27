@@ -168,6 +168,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260714_member_security_code
 import Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
 import Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
 import Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
+import Simplex.Chat.Store.SQLite.Migrations.M20260727_member_key_sent
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -335,7 +336,8 @@ schemaMigrations =
     ("20260714_member_security_code", m20260714_member_security_code, Just down_m20260714_member_security_code),
     ("20260715_profile_description", m20260715_profile_description, Just down_m20260715_profile_description),
     ("20260716_signed_history", m20260716_signed_history, Just down_m20260716_signed_history),
-    ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles)
+    ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles),
+    ("20260727_member_key_sent", m20260727_member_key_sent, Just down_m20260727_member_key_sent)
   ]
 
 -- | The list of migrations in ascending order by date

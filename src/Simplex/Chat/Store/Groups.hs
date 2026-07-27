@@ -107,6 +107,9 @@ module Simplex.Chat.Store.Groups
     deleteRosterTransfer,
     deleteGroupRosterTransfers,
     setGroupMemberKeyRole,
+    setUserMemberKey,
+    setMemberPubKey,
+    setMembersMemberKeySent,
     setGroupMemberVerified,
     createRelayForOwner,
     getCreateRelayForMember,
@@ -260,11 +263,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. ContactDomainRow) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. ContactDomainRow) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe BoolInt, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
 
 toMaybeGroupMember :: UTCTime -> Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, description, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. domainRow) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =
-  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. domainRow) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_))
+toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, description, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. domainRow) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, Just userMemberKeySent, relayLink, memberCode_, memberCodeVerifiedAt_)) =
+  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. domainRow) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, userMemberKeySent, relayLink, memberCode_, memberCodeVerifiedAt_))
 toMaybeGroupMember _ _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -601,6 +604,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         updatedAt = createdAt,
         supportChat = Nothing,
         memberPubKey,
+        userMemberKeySent = False,
         relayLink = Nothing,
         memberVerifiedCode = Nothing
       }
@@ -1405,6 +1409,7 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             updatedAt = createdAt,
             supportChat = Nothing,
             memberPubKey = Nothing,
+            userMemberKeySent = False,
             relayLink = Nothing,
             memberVerifiedCode = Nothing
           }
@@ -1689,6 +1694,23 @@ setGroupMemberKeyRole :: DB.Connection -> GroupMember -> C.PublicKeyEd25519 -> G
 setGroupMemberKeyRole db GroupMember {groupMemberId} pubKey role = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_members SET member_pub_key = ?, member_role = ?, updated_at = ? WHERE group_member_id = ?" (pubKey, role, currentTs, groupMemberId)
+
+setUserMemberKey :: DB.Connection -> GroupId -> GroupMemberId -> C.PrivateKeyEd25519 -> IO ()
+setUserMemberKey db groupId membershipId memberPrivKey = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET member_priv_key = ?, updated_at = ? WHERE group_id = ?" (memberPrivKey, currentTs, groupId)
+  DB.execute db "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?" (C.publicKey memberPrivKey, currentTs, membershipId)
+
+setMemberPubKey :: DB.Connection -> GroupMemberId -> C.PublicKeyEd25519 -> IO ()
+setMemberPubKey db groupMemberId pubKey = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?" (pubKey, currentTs, groupMemberId)
+
+setMembersMemberKeySent :: DB.Connection -> [GroupMemberId] -> IO ()
+setMembersMemberKeySent db memberIds = do
+  currentTs <- getCurrentTime
+  forM_ memberIds $ \memberId ->
+    DB.execute db "UPDATE group_members SET user_member_key_sent = ?, updated_at = ? WHERE group_member_id = ?" (BI True, currentTs, memberId)
 
 setGroupMemberVerified :: DB.Connection -> User -> GroupMemberId -> Maybe Text -> IO ()
 setGroupMemberVerified db User {userId} groupMemberId code = do
@@ -2529,6 +2551,7 @@ createNewMember_
           updatedAt = createdAt,
           supportChat = Nothing,
           memberPubKey,
+          userMemberKeySent = False,
           relayLink = Nothing,
           memberVerifiedCode = Nothing
         }

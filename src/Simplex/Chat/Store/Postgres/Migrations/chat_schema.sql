@@ -843,7 +843,8 @@ CREATE TABLE test_chat_schema.group_members (
     removed_at timestamp with time zone,
     roster_served_version bigint,
     member_security_code text,
-    member_security_code_verified_at timestamp with time zone
+    member_security_code_verified_at timestamp with time zone,
+    user_member_key_sent smallint DEFAULT 0 NOT NULL
 );
 
 

@@ -34,13 +34,13 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Containers.ListUtils (nubOrd)
-import Data.Either (partitionEithers, rights)
+import Data.Either (isRight, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', mapAccumL, partition)
+import Data.List (find, foldl', mapAccumL, nubBy, partition)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -2225,15 +2225,41 @@ groupBindingData gks memberId memberKey = case gks >>= publicGroupKeys of
   Just PublicGroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)
   Nothing -> smpEncode (memberId, memberKey)
 
+ensureUserMemberKey :: GroupInfo -> CM GroupInfo
+ensureUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}
+  | useRelays' gInfo || isJust groupKeys = pure gInfo
+  | otherwise = do
+      g <- asks random
+      (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair g
+      withStore' $ \db -> setUserMemberKey db groupId (groupMemberId' membership) memberPrivKey
+      pure gInfo {groupKeys = Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}}
+
+groupMemberKey :: GroupInfo -> Maybe MemberKey
+groupMemberKey GroupInfo {groupKeys} = case groupKeys of
+  Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey} -> Just $ MemberKey $ C.publicKey memberPrivKey
+  _ -> Nothing
+
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning False gInfo evt, evt)) events
-      mode = if useRelays' gInfo then BMBinary else BMJson
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
-  forM_ (L.nonEmpty msgs) $ \msgs' ->
-    batchSendConnMessages mode user conn MsgFlags {notification = True} msgs'
+  forM_ (L.nonEmpty msgs) $ \msgs' -> do
+    let (mode, msgs'') = memberBatch gInfo conn msgs'
+    batchSendConnMessages mode user conn MsgFlags {notification = True} msgs''
+
+dropSignature :: SndMessage -> SndMessage
+dropSignature m = m {signedMsg_ = Nothing}
+
+memberBatch :: GroupInfo -> Connection -> NonEmpty SndMessage -> (BatchMode, NonEmpty SndMessage)
+memberBatch gInfo conn msgs
+  | useRelays' gInfo = (BMBinary, msgs)
+  | not anySigned = (BMJson, msgs)
+  | maxVersion (peerChatVRange conn) >= relayWebCapVersion = (BMBinary, msgs)
+  | otherwise = (BMJson, L.map dropSignature msgs)
+  where
+    anySigned = any (\SndMessage {signedMsg_} -> isJust signedMsg_) msgs
 
 batchSendConnMessages :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessages mode user conn msgFlags msgs =
@@ -2303,6 +2329,15 @@ encodeXMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys}
           signing = MsgSigning CBGroup bindingData KRMember memberPrivKey
        in encodeSignedConnInfo signing xMemberEvt
     Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
+
+encodeSignedGroupConnInfo :: MsgEncodingI e => GroupInfo -> ChatMsgEvent e -> CM ByteString
+encodeSignedGroupConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} chatMsgEvent =
+  case groupKeys of
+    Just gks@GroupKeys {memberPrivKey} ->
+      let bindingData = groupBindingData (Just gks) memberId (C.publicKey memberPrivKey)
+          signing = MsgSigning CBGroup bindingData KRMember memberPrivKey
+       in encodeSignedConnInfo signing chatMsgEvent
+    Nothing -> throwChatError $ CEInternalError "no group keys for signed conn info"
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -2456,22 +2491,22 @@ sendRelayCapIfNeeded user gInfo = do
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo scope asGroup members sign events = do
-  sendGroupProfileUpdate user gInfo scope asGroup members
-  sendGroupMessages_ user gInfo members sign events
+  gInfo' <- ensureUserMemberKey gInfo
+  sendGroupProfileUpdate user gInfo' scope asGroup members
+  sendGroupMessages_ user gInfo' members sign events
 
 -- per-item signer variant of sendGroupMessages (used for per-item delete signing); preserves the profile-update prelude
 sendGroupSignedMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupSignedMessages user gInfo scope asGroup members signedEvents = do
-  sendGroupProfileUpdate user gInfo scope asGroup members
-  sendGroupSignedMessages_ gInfo members signedEvents
+  gInfo' <- ensureUserMemberKey gInfo
+  sendGroupProfileUpdate user gInfo' scope asGroup members
+  sendGroupSignedMessages_ gInfo' members signedEvents
 
 sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
 sendGroupProfileUpdate user gInfo scope asGroup members =
-  -- TODO [knocking] send current profile to pending member after approval?
-  when shouldSendProfileUpdate $
-    sendProfileUpdate `catchAllErrors` eToView
+  unless (null recipients) $ sendProfileAndKey `catchAllErrors` eToView
   where
-    User {profile = p, userMemberProfileUpdatedAt} = user
+    User {userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
     shouldSendProfileUpdate
       | asGroup = False
@@ -2482,14 +2517,24 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
             (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
             (Nothing, Just _) -> True
             _ -> False
-    sendProfileUpdate = do
-      let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-      -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
-      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
-      -- TODO [member keys] add key
-      void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate Nothing
-      currentTs <- liftIO getCurrentTime
-      withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
+    ownKey = groupMemberKey gInfo
+    profileMembers
+      | shouldSendProfileUpdate = filter (`supportsVersion` memberProfileUpdateVersion) members
+      | otherwise = []
+    keyMembers
+      | isJust ownKey = filter (\m -> m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)) members
+      | otherwise = []
+    recipients = nubBy (\a b -> groupMemberId' a == groupMemberId' b) (profileMembers <> keyMembers)
+    sendProfileAndKey = do
+      let incognitoProfile = incognitoMembershipProfile gInfo
+      profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+      (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo recipients False (XInfo profile ownKey :| [])
+      when shouldSendProfileUpdate $ do
+        currentTs <- liftIO getCurrentTime
+        withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
+      let delivered = [mId | (mId, _, r) <- sentTo, isRight r] <> [mId | (mId, _, _) <- pending] <> map groupMemberId' forwarded
+          keyDelivered = [groupMemberId' m | m <- keyMembers, groupMemberId' m `elem` delivered]
+      unless (null keyDelivered) $ withStore' $ \db -> setMembersMemberKeySent db keyDelivered
 
 data GroupSndResult = GroupSndResult
   { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
@@ -2545,17 +2590,27 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-    prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched = do
-      let mode = if useRelays' gInfo then BMBinary else BMJson
-          batched_ = batchSndMessagesJSON mode msgs
-      case L.nonEmpty batched_ of
-        Just batched' -> do
-          let lenMsgs = length msgs
-              (memsSep, mreqsSep) = foldMembers lenMsgs sndMessageMBR msgs toSendSeparate
-              (memsBtch, mreqsBtch) = foldMembers (length batched' + lenMsgs) msgBatchMBR batched' toSendBatched
-          (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
-        Nothing -> ([], [])
+    prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched
+      | useRelays' gInfo = single BMBinary msgs toSendSeparate toSendBatched
+      | not anySigned = single BMJson msgs toSendSeparate toSendBatched
+      | otherwise =
+          let (sepBin, sepJson) = partition binaryCapable toSendSeparate
+              (btchBin, btchJson) = partition binaryCapable toSendBatched
+              (binIds, binReqs) = single BMBinary msgs sepBin btchBin
+              (jsonIds, jsonReqs) = single BMJson (L.map (fmap dropSignature) msgs) sepJson btchJson
+           in (binIds <> jsonIds, binReqs <> jsonReqs)
       where
+        anySigned = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) (L.toList msgs)
+        binaryCapable (m, _) = m `supportsVersion` relayWebCapVersion
+        single mode msgs' sep btch =
+          let batched_ = batchSndMessagesJSON mode msgs'
+           in case L.nonEmpty batched_ of
+                Just batched' ->
+                  let lenMsgs = length msgs'
+                      (memsSep, mreqsSep) = foldMembers lenMsgs sndMessageMBR msgs' sep
+                      (memsBtch, mreqsBtch) = foldMembers (length batched' + lenMsgs) msgBatchMBR batched' btch
+                   in (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
+                Nothing -> ([], [])
         foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
         foldMembers lastRef mkMb mbs mems = snd $ foldr' foldMsgBodies (lastMemIdx_, ([], [])) mems
           where
@@ -2673,10 +2728,10 @@ sendFwdMemberMessage member fwd verifiedMsg =
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()
 sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
-  let mode = if useRelays' gInfo then BMBinary else BMJson
   msgs <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    void $ batchSendConnMessages mode user conn MsgFlags {notification = True} msgs'
+    let (mode, msgs'') = memberBatch gInfo conn msgs'
+    void $ batchSendConnMessages mode user conn MsgFlags {notification = True} msgs''
     lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs'
 
 saveDirectRcvMSG :: forall e. MsgEncodingI e => Connection -> MsgMeta -> ChatMessage e -> CM (Connection, RcvMessage)
@@ -2879,9 +2934,13 @@ joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMod
   withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
-allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersion} confId msg = do
-  cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
+allowAgentConnectionAsync user conn@Connection {pqSupport, connChatVersion} confId msg = do
   dm <- encodeConnInfoPQ pqSupport connChatVersion msg
+  allowAgentConnectionInfo user conn confId dm
+
+allowAgentConnectionInfo :: User -> Connection -> ConfirmationId -> ByteString -> CM ()
+allowAgentConnectionInfo user conn@Connection {connId} confId dm = do
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 

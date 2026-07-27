@@ -2639,7 +2639,8 @@ processChatCommand cxt nm = \case
   APINewGroup userId incognito gProfile -> withUserId userId $ \user -> do
     g <- asks random
     memberId <- liftIO $ MemberId <$> encodedRandomBytes g 12
-    gInfo <- newGroup user incognito gProfile False memberId Nothing Nothing
+    (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair g
+    gInfo <- newGroup user incognito gProfile False memberId (Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}) Nothing
     createNewGroupItems user gInfo
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
@@ -3905,11 +3906,14 @@ processChatCommand cxt nm = \case
           Just gInfo_' -> userProfileInGroup' user gInfo_' incognitoProfile
           Nothing -> userProfileDirect user incognitoProfile Nothing True
       dm <- case gInfo_ of
-        Just (Just gInfo) | useRelays' gInfo -> case relayMemberId_ of
-          Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
-          Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
+        Just (Just gInfo)
+          | useRelays' gInfo -> case relayMemberId_ of
+              Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
+              Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
+          | otherwise -> do
+              gInfo' <- ensureUserMemberKey gInfo
+              encodeConnInfoPQ pqSup chatV $ XContact profileToSend (groupMemberKey gInfo') (Just xContactId) welcomeSharedMsgId msg_
         _ ->
-          -- TODO [member keys] send member key in groups
           encodeConnInfoPQ pqSup chatV $ XContact profileToSend Nothing (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode

@@ -86,12 +86,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
 -- 18 - relay web capabilities (2026-05-31)
 -- 19 - group roster (2026-06-18)
+-- 20 - p2p group member keys for signing (2026-07-26)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 19
+currentChatVersion = VersionChat 20
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -166,6 +167,10 @@ relayWebCapVersion = VersionChat 18
 -- a relay below this version is published without the handshake (it can't ack a roster)
 groupRosterVersion :: VersionChat
 groupRosterVersion = VersionChat 19
+
+-- members sign messages in p2p groups; member keys are distributed for verification
+groupMemberKeyVersion :: VersionChat
+groupMemberKeyVersion = VersionChat 20
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -500,7 +505,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
-  XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
+  XGrpLinkMem :: Profile -> Maybe MemberKey -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
   XGrpRelayAcpt :: ShortLinkContact -> RelayCapabilities -> ChatMsgEvent 'Json
@@ -1269,7 +1274,7 @@ toCMEventTag msg = case msg of
   XGrpAcpt _ -> XGrpAcpt_
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkReject _ -> XGrpLinkReject_
-  XGrpLinkMem _ -> XGrpLinkMem_
+  XGrpLinkMem {} -> XGrpLinkMem_
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
   XGrpRelayInv _ -> XGrpRelayInv_
   XGrpRelayAcpt {} -> XGrpRelayAcpt_
@@ -1355,6 +1360,7 @@ requiresSignature = \case
   XGrpRelayNew_ -> True
   XGrpRoster_ -> True
   XInfo_ -> True
+  XGrpLinkMem_ -> True
   _ -> False
 
 -- | Content events a member may sign (XMsgNew opt-in; XMsgUpdate/XMsgDel when the target was signed).
@@ -1437,7 +1443,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
-      XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
+      XGrpLinkMem_ -> XGrpLinkMem <$> p "profile" <*> opt "memberKey"
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "acceptance" <*> p "role" <*> p "memberId"
       XGrpRelayInv_ -> XGrpRelayInv <$> p "groupRelayInvitation"
       XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink" <*> (fromMaybe defaultRelayCapabilities <$> opt "relayCap")
@@ -1513,7 +1519,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
-      XGrpLinkMem profile -> o ["profile" .= profile]
+      XGrpLinkMem profile memberKey -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]
       XGrpLinkAcpt acceptance role memberId -> o ["acceptance" .= acceptance, "role" .= role, "memberId" .= memberId]
       XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
       XGrpRelayAcpt relayLink relayCap -> o ["relayLink" .= relayLink, "relayCap" .= relayCap]
