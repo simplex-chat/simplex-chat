@@ -2513,7 +2513,7 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
             (Nothing, Just _) -> True
             _ -> False
     ownKey = groupMemberKey gInfo
-    keyMember m = not (useRelays' gInfo) && isJust ownKey && m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
+    keyMember m = not (useRelays' gInfo) && m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
     profileMember m = shouldSendProfileUpdate && m `supportsVersion` memberProfileUpdateVersion
     keyMembers = filter keyMember members
     recipients = filter (\m -> profileMember m || keyMember m) members
