@@ -831,14 +831,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       pgId = fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId),
                   useRelays' gInfo == isJust rcvPG && pgId rcvPG == pgId curPG -> do
                     -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
-                    (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db cxt user gInfo m glInv
-                    gInfoK <- ensureUserMemberKey gInfo'
+                    (gInfo'', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db cxt user gInfo m glInv
+                    gInfo' <- ensureUserMemberKey gInfo''
                     -- [incognito] send saved profile
                     incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-                    profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfoK (fromLocalProfile <$> incognitoProfile)
-                    if maxVersion chatVRange >= relayWebCapVersion && isJust (groupKeys gInfoK)
+                    profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo' (fromLocalProfile <$> incognitoProfile)
+                    if maxVersion chatVRange >= relayWebCapVersion && isJust (groupKeys gInfo')
                       then do
-                        dm <- encodeSignedGroupConnInfo gInfoK $ XInfo profileToSend (groupMemberKey gInfoK)
+                        dm <- encodeSignedGroupConnInfo gInfo' $ XInfo profileToSend (groupMemberKey gInfo')
                         allowAgentConnectionInfo user conn' confId dm
                       else allowAgentConnectionAsync user conn' confId $ XInfo profileToSend Nothing
                     toView $ CEvtGroupLinkConnecting user gInfo' m'
@@ -874,7 +874,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             | memberStatus m == GSMemRejected -> do
                 deleteMemberConnection' m True
                 withStore' $ \db -> deleteGroupMember db user m
-            | otherwise -> storeMemberKey gInfo m mKey signedMsg_
+            | otherwise -> mapM_ (storeMemberKey gInfo m signedMsg_) mKey
           XOk ->
             -- transient relay-reject row cleanup after the rejection handshake completes
             when (memberCategory m == GCHostMember && not (relayServesGroup gInfo)) $ do
@@ -976,11 +976,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                             _ -> False
                       when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
             where
-              sendXGrpLinkMem gInfo'' m' = do
-                gInfoK <- ensureUserMemberKey gInfo''
-                let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfoK
-                profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfoK (fromIncognitoProfile <$> incognitoProfile)
-                sendGroupMemberMessages user gInfoK conn (XGrpLinkMem profileToSend (groupMemberKey gInfoK) :| [])
+              sendXGrpLinkMem gInfo''' m' = do
+                gInfo'' <- ensureUserMemberKey gInfo'''
+                let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
+                profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo'' (fromIncognitoProfile <$> incognitoProfile)
+                sendGroupMemberMessages user gInfo'' conn (XGrpLinkMem profileToSend (groupMemberKey gInfo'') :| [])
                 withStore' $ \db -> setMembersMemberKeySent db [groupMemberId' m']
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
@@ -2761,33 +2761,32 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> Maybe MemberKey -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xInfoMember gInfo m p' mKey msg@RcvMessage {signedMsg_} brokerTs = do
-      storeMemberKey gInfo m mKey signedMsg_
+      mapM_ (storeMemberKey gInfo m signedMsg_) mKey
       void $ processMemberProfileUpdate gInfo m p' (Just (msg, brokerTs))
       pure $ memberEventDeliveryScope m
-
-    storeMemberKey :: GroupInfo -> GroupMember -> Maybe MemberKey -> Maybe SignedMsg -> CM ()
-    storeMemberKey gInfo GroupMember {groupMemberId, memberPubKey, memberId} mKey signedMsg_ =
-      forM_ mKey $ \(MemberKey k) -> case memberPubKey of
-        Just k0 -> when (k /= k0) $ messageError "member key change rejected, keeping current key"
-        Nothing
-          | keyCertified k -> withStore' $ \db -> setMemberPubKey db groupMemberId k
-          | otherwise -> messageError "member key not signed by that key, ignored"
-      where
-        keyCertified k = case signedMsg_ of
-          Just SignedMsg {chatBinding = CBGroup, signatures, signedBody} -> verifyGroupSig k (groupKeys gInfo) memberId signatures signedBody
-          _ -> False
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> Maybe MemberKey -> RcvMessage -> CM ()
     xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' mKey RcvMessage {signedMsg_} = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
-          storeMemberKey gInfo m mKey signedMsg_
+          mapM_ (storeMemberKey gInfo m signedMsg_) mKey
           m' <- processMemberProfileUpdate gInfo m p' Nothing
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
           let connectedIncognito = memberIncognito membership
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
+
+    storeMemberKey :: GroupInfo -> GroupMember -> Maybe SignedMsg -> MemberKey -> CM ()
+    storeMemberKey gInfo GroupMember {groupMemberId, memberPubKey, memberId} signedMsg_ (MemberKey k) = case memberPubKey of
+      Just k0 -> when (k /= k0) $ messageError "member key change rejected, keeping current key"
+      Nothing
+        | signed -> withStore' $ \db -> setMemberPubKey db groupMemberId k
+        | otherwise -> messageError "member key not signed by that key, ignored"
+      where
+        signed = case signedMsg_ of
+          Just SignedMsg {chatBinding = CBGroup, signatures, signedBody} -> verifyGroupSig k (groupKeys gInfo) memberId signatures signedBody
+          _ -> False
 
     xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupAcceptance -> GroupMemberRole -> MemberId -> RcvMessage -> UTCTime -> CM ()
     xGrpLinkAcpt gInfo@GroupInfo {membership} m acceptance role memberId msg brokerTs
