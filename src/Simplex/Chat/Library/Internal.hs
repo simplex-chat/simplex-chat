@@ -2235,19 +2235,17 @@ ensureUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}
       pure gInfo {groupKeys = Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}}
 
 groupMemberKey :: GroupInfo -> Maybe MemberKey
-groupMemberKey GroupInfo {groupKeys} = case groupKeys of
-  Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey} -> Just $ MemberKey $ C.publicKey memberPrivKey
-  _ -> Nothing
+groupMemberKey GroupInfo {groupKeys} = MemberKey . C.publicKey . memberPrivKey <$> groupKeys
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning False gInfo evt, evt)) events
+      signed = any (\(_, s, _) -> isJust s) idsEvts
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
-  forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    let (mode, msgs'') = memberBatch gInfo conn msgs'
-    batchSendConnMessages mode user conn MsgFlags {notification = True} msgs''
+  forM_ (L.nonEmpty msgs) $ \msgs' ->
+    batchSendConnMessages gInfo signed user conn MsgFlags {notification = True} msgs'
 
 dropSignature :: SndMessage -> SndMessage
 dropSignature m = m {signedMsg_ = Nothing}
@@ -2255,16 +2253,15 @@ dropSignature m = m {signedMsg_ = Nothing}
 signedSnd :: SndMessage -> Bool
 signedSnd SndMessage {signedMsg_} = isJust signedMsg_
 
-memberBatch :: GroupInfo -> Connection -> NonEmpty SndMessage -> (BatchMode, NonEmpty SndMessage)
-memberBatch gInfo conn msgs
-  | useRelays' gInfo = (BMBinary, msgs)
-  | not (any signedSnd msgs) = (BMJson, msgs)
-  | maxVersion (peerChatVRange conn) >= relayWebCapVersion = (BMBinary, msgs)
-  | otherwise = (BMJson, L.map dropSignature msgs)
-
-batchSendConnMessages :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
-batchSendConnMessages mode user conn msgFlags msgs =
-  batchSendConnMessagesB mode user conn msgFlags $ L.map Right msgs
+batchSendConnMessages :: GroupInfo -> Bool -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
+batchSendConnMessages gInfo signed user conn msgFlags msgs =
+  batchSendConnMessagesB mode user conn msgFlags $ L.map Right msgs'
+  where
+    (mode, msgs')
+      | useRelays' gInfo = (BMBinary, msgs)
+      | not signed = (BMJson, msgs)
+      | maxVersion (peerChatVRange conn) >= relayWebCapVersion = (BMBinary, msgs)
+      | otherwise = (BMJson, L.map dropSignature msgs)
 
 batchSendConnMessagesB :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
@@ -2331,14 +2328,11 @@ encodeXMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys}
        in encodeSignedConnInfo signing xMemberEvt
     Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
 
-encodeSignedGroupConnInfo :: MsgEncodingI e => GroupInfo -> ChatMsgEvent e -> CM ByteString
-encodeSignedGroupConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} chatMsgEvent =
-  case groupKeys of
-    Just gks@GroupKeys {memberPrivKey} ->
-      let bindingData = groupBindingData (Just gks) memberId (C.publicKey memberPrivKey)
-          signing = MsgSigning CBGroup bindingData KRMember memberPrivKey
-       in encodeSignedConnInfo signing chatMsgEvent
-    Nothing -> throwChatError $ CEInternalError "no group keys for signed conn info"
+encodeSignedGroupConnInfo :: MsgEncodingI e => GroupInfo -> GroupKeys -> ChatMsgEvent e -> CM ByteString
+encodeSignedGroupConnInfo GroupInfo {membership = GroupMember {memberId}} gks@GroupKeys {memberPrivKey} chatMsgEvent =
+  let bindingData = groupBindingData (Just gks) memberId (C.publicKey memberPrivKey)
+      signing = MsgSigning CBGroup bindingData KRMember memberPrivKey
+   in encodeSignedConnInfo signing chatMsgEvent
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -2519,7 +2513,7 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
             (Nothing, Just _) -> True
             _ -> False
     ownKey = groupMemberKey gInfo
-    keyMember m = isJust ownKey && m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
+    keyMember m = not (useRelays' gInfo) && isJust ownKey && m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
     profileMember m = shouldSendProfileUpdate && m `supportsVersion` memberProfileUpdateVersion
     keyMembers = filter keyMember members
     recipients = filter (\m -> profileMember m || keyMember m) members
@@ -2567,6 +2561,7 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded})
   where
     events = L.map snd signedEvents
+    anySigned = any (isJust . fst) signedEvents
     idsEvts = L.map (\(signing, evt) -> (GroupId groupId, signing, evt)) signedEvents
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
@@ -2591,7 +2586,7 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched =
       batchReqs BMBinary msgs binSep binBtch <> batchReqs BMJson jsonMsgs jsonSep jsonBtch
       where
-        signed = not (useRelays' gInfo) && any (either (const False) signedSnd) (L.toList msgs)
+        signed = not (useRelays' gInfo) && anySigned
         jsonMsgs = if signed then L.map (fmap dropSignature) msgs else msgs
         toBinary (m, _) = useRelays' gInfo || (signed && m `supportsVersion` relayWebCapVersion)
         (binSep, jsonSep) = partition toBinary toSendSeparate
@@ -2723,8 +2718,7 @@ sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM
 sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
   msgs <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    let (mode, msgs'') = memberBatch gInfo conn msgs'
-    void $ batchSendConnMessages mode user conn MsgFlags {notification = True} msgs''
+    void $ batchSendConnMessages gInfo (any signedSnd msgs') user conn MsgFlags {notification = True} msgs'
     lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs'
 
 saveDirectRcvMSG :: forall e. MsgEncodingI e => Connection -> MsgMeta -> ChatMessage e -> CM (Connection, RcvMessage)

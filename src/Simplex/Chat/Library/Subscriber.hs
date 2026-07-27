@@ -836,11 +836,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     -- [incognito] send saved profile
                     incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
                     profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo' (fromLocalProfile <$> incognitoProfile)
-                    if maxVersion chatVRange >= relayWebCapVersion && isJust (groupKeys gInfo')
-                      then do
-                        dm <- encodeSignedGroupConnInfo gInfo' $ XInfo profileToSend (groupMemberKey gInfo')
+                    case groupKeys gInfo' of
+                      Just gks | maxVersion chatVRange >= relayWebCapVersion -> do
+                        dm <- encodeSignedGroupConnInfo gInfo' gks $ XInfo profileToSend (groupMemberKey gInfo')
                         allowAgentConnectionInfo user conn' confId dm
-                      else allowAgentConnectionAsync user conn' confId $ XInfo profileToSend Nothing
+                      _ -> allowAgentConnectionAsync user conn' confId $ XInfo profileToSend Nothing
                     toView $ CEvtGroupLinkConnecting user gInfo' m'
                 | otherwise -> messageError "x.grp.link.inv: publicGroupId mismatch"
               XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
