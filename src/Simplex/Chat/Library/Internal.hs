@@ -914,6 +914,10 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
             forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
             createAcceptedContactConn db user userContactLinkId_ contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
           pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile)
+        -- contact connection in any status other than prepared is created when the request is accepted
+        -- (see createAcceptedContactConn), so the request was already accepted -
+        -- accepting it again would fail in the agent, as the invitation is already used.
+        Just Connection {connStatus} | connStatus /= ConnPrepared -> throwCmdError "contact request already accepted"
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
