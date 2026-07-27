@@ -43,8 +43,9 @@ struct SimpleXApp: App {
                 .environmentObject(chatModel)
                 .environmentObject(AppTheme.shared)
                 .onOpenURL { url in
-                    logger.debug("BUG1: onOpenURL: \(url), AppChatState=\(String(describing: AppChatState.shared.value)), onboardingStage=\(String(describing: chatModel.onboardingStage))")
-                    if AppChatState.shared.value == .active {
+                    let active = AppChatState.shared.value == .active
+                    logger.debug("BUG1: onOpenURL received, active=\(active, privacy: .public), AppChatState=\(String(describing: AppChatState.shared.value), privacy: .public), onboardingStage=\(String(describing: chatModel.onboardingStage), privacy: .public), sets=\(active ? "appOpenUrl" : "appOpenUrlLater", privacy: .public)")
+                    if active {
                         chatModel.appOpenUrl = url
                     } else {
                         chatModel.appOpenUrlLater = url
@@ -84,6 +85,7 @@ struct SimpleXApp: App {
                         }
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
+                        logger.debug("BUG1: scenePhase -> active, AppChatState=\(String(describing: AppChatState.shared.value), privacy: .public), hasAppOpenUrl=\(chatModel.appOpenUrl != nil, privacy: .public), hasAppOpenUrlLater=\(chatModel.appOpenUrlLater != nil, privacy: .public)")
                         CallController.shared.shouldSuspendChat = false
                         let appState = AppChatState.shared.value
 
@@ -101,6 +103,7 @@ struct SimpleXApp: App {
                                                 await updateCallInvitations()
                                             }
                                             if let url = chatModel.appOpenUrlLater {
+                                                logger.debug("BUG1: scenePhase active (inactive branch): transferring appOpenUrlLater -> appOpenUrl")
                                                 await MainActor.run {
                                                     chatModel.appOpenUrlLater = nil
                                                     chatModel.appOpenUrl = url
@@ -108,6 +111,7 @@ struct SimpleXApp: App {
                                             }
                                         }
                                     } else if let url = chatModel.appOpenUrlLater {
+                                        logger.debug("BUG1: scenePhase active (else branch): transferring appOpenUrlLater -> appOpenUrl")
                                         chatModel.appOpenUrlLater = nil
                                         chatModel.appOpenUrl = url
                                     }

@@ -257,35 +257,32 @@ struct ContentView: View {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
                 .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
-                // present the connection dialog only after the notifications prompt is resolved: while
-                // the system prompt is up the scene is not foregroundActive, so getTopViewController()
-                // returns nil and the connection dialog cannot present (and, being one-shot, is lost)
-                let openingViaLink = pendingConnectUrl != nil
-                requestNtfAuthorization(showDeniedAlert: !openingViaLink) {
-                    connectViaUrl()
-                }
-                if !openingViaLink {
-                    // Local Authentication notice is to be shown on next start after onboarding is complete
-                    if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
-                        prefLANoticeShown = true
-                        alertManager.showAlert(laNoticeAlert())
-                    } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            if !noticesShown {
-                                let showWhatsNew = shouldShowWhatsNew()
-                                let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
-                                noticesShown = showWhatsNew || showUpdatedConditions
-                                if showWhatsNew || showUpdatedConditions {
-                                    noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
-                                }
+                logger.debug("BUG1: mainView.onAppear")
+                requestNtfAuthorization()
+                // Local Authentication notice is to be shown on next start after onboarding is complete
+                if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
+                    prefLANoticeShown = true
+                    alertManager.showAlert(laNoticeAlert())
+                } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        if !noticesShown {
+                            let showWhatsNew = shouldShowWhatsNew()
+                            let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                            noticesShown = showWhatsNew || showUpdatedConditions
+                            if showWhatsNew || showUpdatedConditions {
+                                noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
                             }
                         }
                     }
-                    showReRegisterTokenAlert()
                 }
                 prefShowLANotice = true
+                connectViaUrl()
+                showReRegisterTokenAlert()
             }
-            .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
+            .onChange(of: chatModel.appOpenUrl) { _ in
+                logger.debug("BUG1: onChange(appOpenUrl) fired, hasUrl=\(chatModel.appOpenUrl != nil, privacy: .public)")
+                connectViaUrl()
+            }
             .onChange(of: chatModel.reRegisterTknStatus) { _ in showReRegisterTokenAlert() }
             .sheet(item: $noticesSheetItem) { item in
                 switch item {
@@ -455,7 +452,7 @@ struct ContentView: View {
 
     func connectViaUrl() {
         let m = ChatModel.shared
-        logger.debug("BUG1: connectViaUrl: appOpenUrl=\(String(describing: m.appOpenUrl)), appOpenUrlLater=\(String(describing: m.appOpenUrlLater)), AppChatState=\(String(describing: AppChatState.shared.value)), scenePhase=\(String(describing: scenePhase))")
+        logger.debug("BUG1: connectViaUrl: hasAppOpenUrl=\(m.appOpenUrl != nil, privacy: .public), hasAppOpenUrlLater=\(m.appOpenUrlLater != nil, privacy: .public), AppChatState=\(String(describing: AppChatState.shared.value), privacy: .public), scenePhase=\(String(describing: scenePhase), privacy: .public)")
         guard let url = pendingConnectUrl else {
             logger.debug("BUG1: connectViaUrl: no pending url")
             return
