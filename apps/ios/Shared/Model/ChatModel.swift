@@ -1244,6 +1244,15 @@ final class ChatModel: ObservableObject {
         chats.insert(chat, at: position)
     }
 
+    func replaceConnReqView(_ id: String, _ withId: ChatId) {
+        if id == showingInvitation?.pcc.id {
+            markShowingInvitationUsed()
+            dismissAllSheets(animated: true) {
+                ItemsModel.shared.loadOpenChat(withId)
+            }
+        }
+    }
+
     func dismissConnReqView(_ id: String) {
         if id == showingInvitation?.pcc.id {
             markShowingInvitationUsed()
