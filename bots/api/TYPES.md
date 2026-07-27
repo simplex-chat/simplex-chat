@@ -2454,6 +2454,7 @@ UpdateRequired:
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - memberPubKey: string?
+- userMemberKeySent: bool
 - relayLink: string?
 - memberVerifiedCode: [SecurityCode](#securitycode)?
 

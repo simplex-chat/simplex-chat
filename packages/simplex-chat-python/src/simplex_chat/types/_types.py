@@ -1933,6 +1933,7 @@ class GroupMember(TypedDict):
     updatedAt: str  # ISO-8601 timestamp
     supportChat: NotRequired["GroupSupportChat"]
     memberPubKey: NotRequired[str]
+    userMemberKeySent: bool
     relayLink: NotRequired[str]
     memberVerifiedCode: NotRequired["SecurityCode"]
 
