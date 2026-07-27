@@ -735,20 +735,25 @@ fun acceptContactRequest(
 ) {
   withBGApi {
     inProgress?.value = true
-    val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, contactRequestId)
-    if (contact != null && isCurrentUser) {
-      val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
-      withContext(Dispatchers.Main) {
-        if (contact.contactRequestId != null) { // means contact request was initially created with contact, so we don't need to replace it
-          chatModel.chatsContext.updateContact(rhId, contact)
-        } else {
-          chatModel.chatsContext.replaceChat(rhId, contactRequestChatId(contactRequestId), chat)
+    chatModel.acceptingContactRequests.add(contactRequestId)
+    try {
+      val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, contactRequestId)
+      if (contact != null && isCurrentUser) {
+        val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
+        withContext(Dispatchers.Main) {
+          if (contact.contactRequestId != null) { // means contact request was initially created with contact, so we don't need to replace it
+            chatModel.chatsContext.updateContact(rhId, contact)
+          } else {
+            chatModel.chatsContext.replaceChat(rhId, contactRequestChatId(contactRequestId), chat)
+          }
+          inProgress?.value = false
         }
+        close?.invoke(chat)
+      } else {
         inProgress?.value = false
       }
-      close?.invoke(chat)
-    } else {
-      inProgress?.value = false
+    } finally {
+      chatModel.acceptingContactRequests.remove(contactRequestId)
     }
   }
 }

@@ -28,12 +28,14 @@ fun ComposeContextContactRequestActionsView(
   rhId: Long?,
   contactRequestId: Long
 ) {
-  val inProgress = rememberSaveable { mutableStateOf(false) }
+  val inProgressLocal = rememberSaveable { mutableStateOf(false) }
+  // the request can also be accepted from another view, e.g. via notification
+  val inProgress = remember(contactRequestId) { derivedStateOf { inProgressLocal.value || contactRequestId in chatModel.acceptingContactRequests } }
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
 
   KeyChangeEffect(chatModel.chatId.value) {
-    if (inProgress.value) {
-      inProgress.value = false
+    if (inProgressLocal.value) {
+      inProgressLocal.value = false
       progressByTimeout = false
     }
   }
@@ -89,9 +91,9 @@ fun ComposeContextContactRequestActionsView(
           else
             acceptButtonModifier.clickable {
               if (chatModel.addressShortLinkDataSet()) {
-                acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgress)
+                acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgressLocal)
               } else {
-                showAcceptRequestAlert(rhId, contactRequestId, inProgress = inProgress)
+                showAcceptRequestAlert(rhId, contactRequestId, inProgress = inProgressLocal)
               }
             }
         Row(
