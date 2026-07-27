@@ -409,7 +409,11 @@ An order is `product + payment`, identified by a client `orderId`. **Authenticat
 
 ### Transport and auth
 
-The bot runs over the SimpleX **service RPC** (`simplex-chat` `ep/service-requests`): one request → one response over a double-ratchet contact address, JSON-object payloads both ways. A request may be signed with an Ed25519 key; the **agent constructs and verifies that signature** and hands the service the request plus the *already-verified* signer public key (`CEvtServiceRequest.signerKey :: Maybe C.PublicKeyEd25519`), or `Nothing` if unsigned. An invalid signature never reaches the service — the agent rejects it (`ASEBadSignature`) with no request delivered.
+The bot runs over the SimpleX **service RPC** (branch `rpc`, merged `d2b63cd46`; `plans/2026-07-22-service-rpc-chat.md`; simplexmq pin `a82b487a`): one request → one response over a double-ratchet contact address, JSON-object payloads both ways. A request may be signed with an Ed25519 key; the **agent constructs and verifies that signature** and hands the service the request plus the *already-verified* signer public key (`CEvtServiceRequest.signerKey :: Maybe C.PublicKeyEd25519`), or `Nothing` if unsigned. An invalid signature, a malformed (non-JSON-object) body, or a request to an instance with processing off never reaches the service — the agent/chat layer discards it (`ASEBadSignature`, or a silent drop the client observes as `ASETimeout`) with no request delivered. So the bot only ever handles well-formed, signature-checked requests.
+
+**Prerequisites.** The bot publishes a double-ratchet address (`/_address … pq_ratchet=on`) and starts with service processing enabled (`/_start … service_requests=on`); a plain address yields `ASENotDRAddress` and an instance with processing off silently drops the request. The bot may rotate its address ratchet keys (`APIRotateAddressRatchetKeys`) without changing the address identity or invalidating stored `orderKey`s.
+
+**Timing.** The client blocks up to `requestTimeout` (agent default 30 s, overridable per call); the bot must answer within `serviceResponseTimeout` (agent default 180 s, operator-tunable) or the request is discarded and the reply fails. This bounds any held call (Stripe, §4). The bot answers with `APISendServiceResponse` → `CRServiceReplyAccepted {connectionId}`, and learns delivery via `CEvtServiceReplySent {connectionId}`. The transport carries no order identity across requests — only the per-request `AgentInvId` routes one response — so the body's `orderId` is the sole cross-request correlation key.
 
 ```haskell
 newtype OrderId  = OrderId UUID          -- client-generated, carried in the request body
@@ -481,7 +485,7 @@ Rules:
 - **Product is pinned per order.** The bot fixes `product` on the first request; a later differing product ⇒ `product_changed` ("invoice for A then claim paid on B ⇒ get lost").
 - **Tier/period/expiry are server-derived; only `masterKey` is client-authoritative.** The bot resolves the tier from `badge_types[plan]`, sets `badgeExpiry = end_of_next_month`, `badgeExtra = ""`, and assembles the internal `BadgeRequest`. `badgeType` is never on the wire.
 - **Declared SKU must equal the verified SKU** proven by `Payment` (Apple/Google receipt `productId`, Stripe `plan`); divergence ⇒ `product_mismatch`.
-- Stripe stays event-driven: a `Purchase` with `StripePaid` may hold the call until the webhook confirms; it responds once after verified payment + issuance, or a terminal payment error.
+- Stripe stays event-driven: a `Purchase` with `StripePaid` holds the call until the webhook confirms, but only within `serviceResponseTimeout` (≤180 s); it responds once after verified payment + issuance, a terminal payment error, or the deadline (after which the client re-requests, §4).
 - Stripe `Cancel`/`Status` (`StripeManage`) return a portal URL in `RspPortal`; the bot never cancels silently. When the order can't be identified, it returns the account-wide portal login page.
 - The `BadgeMasterKey` never enters Stripe metadata or a return URL.
 
@@ -617,7 +621,7 @@ sequenceDiagram
 
 The second `Purchase` (`StripePaid`) has exactly one response. The bot sends it only after verified payment allows issuance, or after a terminal event such as Checkout expiry. Register-and-recheck under the order lock prevents a webhook/request race. If the webhook completed first, the `Purchase` responds immediately.
 
-If Stripe retrieval fails transiently after the webhook, the bot keeps the call open and retries internally. It does not send an intermediate response; only the RPC deadline or a terminal payment result ends the wait.
+The hold is bounded by `serviceResponseTimeout` (≤180 s). A `checkout.session.completed` webhook normally lands within seconds, so the common case answers on the held call. If Stripe retrieval fails transiently after the webhook, the bot retries internally within that window and sends no intermediate response. If the window elapses first (or payment is still pending), the call ends without a badge and the client re-requests the same signed `Purchase` on foreground (see wait interruption below) — genuinely async/long-settlement payments always take this path.
 
 Persist `orderId`, request hash, and result state; keep the live waiter and raw `BadgeMasterKey` only in memory. Webhook commit wakes live waiters after `GrantReady` is durable. After bot restart, the repeated `Purchase` rechecks persisted payment/grant state and either returns immediately or installs a new waiter.
 
@@ -773,9 +777,9 @@ Every input is one of:
 
 | Input/result | Class | Client | Bot |
 |---|---|---|---|
-| Stripe awaiting webhook | wait | `CPAwaitingPayment` + `CBRequesting` | hold `Purchase`; no response |
+| Stripe awaiting webhook | wait | `CPAwaitingPayment` + `CBRequesting` | hold `Purchase` up to `serviceResponseTimeout` (≤180 s); no response |
 | timeout/429/5xx in a non-waiting operation | retry | `CPPaymentProblem` with prior snapshot | preserve current `BP…`; return `retryAfter` |
-| Stripe verification timeout/429/5xx while `Purchase` waits | wait; retry internally | `CPAwaitingPayment` + `CBRequesting` | preserve canonical payment state; retry Stripe; send no response |
+| Stripe verification timeout/429/5xx while `Purchase` waits | wait; retry internally | `CPAwaitingPayment` + `CBRequesting` | preserve canonical payment state; retry Stripe within the response window; send no response |
 | deadline/restart/lost response | retry on foreground | preserve state; repeat same signed order/op | remove waiter; return cached result or wait again |
 | duplicate event/request | idempotent | accept same state/result | preserve state; dedupe/re-fetch |
 | product changed for an order | reject | preserve state; a new product needs a new order | `product_changed`; preserve state; telemetry |
@@ -905,6 +909,7 @@ Tests:
 - message tests proving only the named owner changes state;
 - Apple JWS/status/notification and Google pending/renewal/grace/hold/cancel cases;
 - Stripe async payment, invoice renewal, cancellation, closed app/browser, delayed/duplicate/reordered webhook;
+- response-deadline (`serviceResponseTimeout` ≤180 s) elapsing mid-wait → client re-requests the same signed `Purchase`; non-DR address (`ASENotDRAddress`) and processing-off (silent drop → `ASETimeout`) prerequisites;
 - monthly/yearly grant periods and 21 July → 31 August expiry;
 - crash/replay at every side-effect boundary;
 - order-signature/grant/BBS-owner isolation, product-pin/SKU-match checks, and wrong-`BadgeMasterKey` rejection;
@@ -935,7 +940,7 @@ Release gates: provider sandbox E2E, webhook signature/replay, schema rollback, 
 | Apple | [StoreKit](https://developer.apple.com/storekit/), [subscription statuses](https://developer.apple.com/documentation/appstoreserverapi/get-all-subscription-statuses), Notifications V2 |
 | Google | [Play Billing](https://developer.android.com/google/play/billing/integrate), [`productsv2.getproductpurchasev2`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.productsv2/getproductpurchasev2), [`subscriptionsv2.get`](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2/get), RTDN |
 | Stripe | [Checkout](https://docs.stripe.com/api/checkout/sessions/create), [fulfillment](https://docs.stripe.com/checkout/fulfillment), [webhooks](https://docs.stripe.com/webhooks), [subscription events](https://docs.stripe.com/billing/subscriptions/webhooks), [cancel](https://docs.stripe.com/billing/subscriptions/cancel), [Portal](https://docs.stripe.com/customer-management/integrate-customer-portal), [hosted portal login](https://docs.stripe.com/customer-management/activate-no-code-customer-portal) |
-| RPC | service RPC in `simplex-chat` branch `ep/service-requests` (`plans/2026-07-22-service-rpc-chat.md`; `APISendServiceRequest`/`CEvtServiceRequest`/`APISendServiceResponse` with `signKey`/`signerKey`); signed requests in `simplexmq` `plans/2026-07-24-signed-service-requests.md` (agent-side Ed25519 sign+verify, pin `0cc09fe5`) |
+| RPC | service RPC in `simplex-chat` branch `rpc` (merged `d2b63cd46`; `plans/2026-07-22-service-rpc-chat.md`). Bot side: `CEvtServiceRequest {signerKey :: Maybe C.PublicKeyEd25519, requestData}` → `APISendServiceResponse` → `CRServiceReplyAccepted {connectionId}` → `CEvtServiceReplySent {connectionId}`. Requester: `APISendServiceRequest {signKey :: Maybe (C.StoredPrivateKey 'Ed25519), requestTimeout}`. Agent-side Ed25519 sign+verify (binding `sha3_256("SimpleXService" <> rcAD)`), errors `ASETimeout`/`ASENotDRAddress`/`ASEBadSignature`; simplexmq pin `a82b487a` |
 
 ## 12. Open questions
 
