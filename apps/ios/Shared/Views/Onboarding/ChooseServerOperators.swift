@@ -184,10 +184,13 @@ struct OnboardingConditionsView: View {
     private func completeOnboarding() {
         let m = ChatModel.shared
         onboardingStageDefault.set(.onboardingComplete)
-        // dismiss any presented onboarding sheet and defer the swap, so the deep onboarding
-        // navigation stack isn't torn down mid-transition (crashes UIKit on completion)
+        // defer the stage swap off the Accept handler's call stack so the deep onboarding nav stack
+        // isn't torn down from inside its own event handling (UIKit crash on completion); the inner
+        // async guarantees this even if dismissAllSheets runs its completion synchronously.
         dismissAllSheets(animated: false) {
-            m.onboardingStage = .onboardingComplete
+            DispatchQueue.main.async {
+                m.onboardingStage = .onboardingComplete
+            }
         }
     }
 
