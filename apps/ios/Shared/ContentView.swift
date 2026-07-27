@@ -257,27 +257,35 @@ struct ContentView: View {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
                 .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
-                logger.debug("BUG1: mainView.onAppear")
-                requestNtfAuthorization()
-                // Local Authentication notice is to be shown on next start after onboarding is complete
-                if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
-                    prefLANoticeShown = true
-                    alertManager.showAlert(laNoticeAlert())
-                } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        if !noticesShown {
-                            let showWhatsNew = shouldShowWhatsNew()
-                            let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
-                            noticesShown = showWhatsNew || showUpdatedConditions
-                            if showWhatsNew || showUpdatedConditions {
-                                noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                logger.debug("BUG1: mainView.onAppear, hasPendingUrl=\(pendingConnectUrl != nil, privacy: .public)")
+                // Connect only after the notifications prompt is resolved: the system prompt suspends
+                // the app (scene .inactive), which kills an in-flight connect and makes
+                // getTopViewController() nil. Deferring keeps the URL until the app is active again.
+                let openingViaLink = pendingConnectUrl != nil
+                requestNtfAuthorization(showDeniedAlert: !openingViaLink) {
+                    logger.debug("BUG1: requestNtfAuthorization whenDone -> connectViaUrl")
+                    connectViaUrl()
+                }
+                if !openingViaLink {
+                    // Local Authentication notice is to be shown on next start after onboarding is complete
+                    if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
+                        prefLANoticeShown = true
+                        alertManager.showAlert(laNoticeAlert())
+                    } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            if !noticesShown {
+                                let showWhatsNew = shouldShowWhatsNew()
+                                let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                                noticesShown = showWhatsNew || showUpdatedConditions
+                                if showWhatsNew || showUpdatedConditions {
+                                    noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                                }
                             }
                         }
                     }
+                    showReRegisterTokenAlert()
                 }
                 prefShowLANotice = true
-                connectViaUrl()
-                showReRegisterTokenAlert()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in
                 logger.debug("BUG1: onChange(appOpenUrl) fired, hasUrl=\(chatModel.appOpenUrl != nil, privacy: .public)")
