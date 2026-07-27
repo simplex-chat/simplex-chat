@@ -443,6 +443,7 @@ struct ContentView: View {
     @discardableResult
     func connectViaUrl() -> Bool {
         let m = ChatModel.shared
+        logger.debug("BUG1: connectViaUrl: appOpenUrl=\(String(describing: m.appOpenUrl)), appOpenUrlLater=\(String(describing: m.appOpenUrlLater)), AppChatState=\(String(describing: AppChatState.shared.value)), scenePhase=\(String(describing: scenePhase))")
         if let url = m.appOpenUrl {
             m.appOpenUrl = nil
             connectViaUrl_(url)
@@ -453,11 +454,14 @@ struct ContentView: View {
             connectViaUrl_(url)
             return true
         }
+        logger.debug("BUG1: connectViaUrl: no pending url, returning false")
         return false
     }
 
     func connectViaUrl_(_ url: URL) {
+        logger.debug("BUG1: connectViaUrl_: \(url), path=\(url.path)")
         dismissAllSheets() {
+            logger.debug("BUG1: connectViaUrl_: in dismissAllSheets completion, path=\(url.path)")
             var path = url.path
             if path == "/r" {
                 showAlert(
@@ -467,6 +471,7 @@ struct ContentView: View {
             } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
                 path.removeFirst()
                 let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+                logger.debug("BUG1: connectViaUrl_: calling planAndConnect for \(link)")
                 planAndConnect(
                     link,
                     theme: theme,

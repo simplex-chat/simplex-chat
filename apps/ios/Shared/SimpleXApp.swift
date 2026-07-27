@@ -43,7 +43,7 @@ struct SimpleXApp: App {
                 .environmentObject(chatModel)
                 .environmentObject(AppTheme.shared)
                 .onOpenURL { url in
-                    logger.debug("ContentView.onOpenURL: \(url)")
+                    logger.debug("BUG1: onOpenURL: \(url), AppChatState=\(String(describing: AppChatState.shared.value)), onboardingStage=\(String(describing: chatModel.onboardingStage))")
                     if AppChatState.shared.value == .active {
                         chatModel.appOpenUrl = url
                     } else {
