@@ -15,11 +15,15 @@ func getTopViewController() -> UIViewController? {
        let rootViewController = keyWindow.rootViewController {
         // Find the top-most presented view controller
         var topController = rootViewController
+        var depth = 0
         while let presentedViewController = topController.presentedViewController {
             topController = presentedViewController
+            depth += 1
         }
+        logger.debug("BUG1: getTopViewController: top=\(String(describing: type(of: topController))), presentedDepth=\(depth), isBeingDismissed=\(topController.isBeingDismissed), isBeingPresented=\(topController.isBeingPresented)")
         return topController
     }
+    logger.debug("BUG1: getTopViewController: nil (no foregroundActive key window / rootVC)")
     return nil
 }
 
@@ -87,7 +91,12 @@ func showSheet(
             popover.permittedArrowDirections = []
         }
 
-        topController.present(sheet, animated: true)
+        logger.debug("BUG1: showSheet: calling present")
+        topController.present(sheet, animated: true) {
+            logger.debug("BUG1: showSheet: present completion fired")
+        }
+    } else {
+        logger.debug("BUG1: showSheet: no top view controller")
     }
 }
 
@@ -453,6 +462,11 @@ func showOpenChatAlert<Content: View>(
             onConfirm: onConfirm,
             onSecond: onSecond
         )
-        topVC.present(alertVC, animated: true)
+        logger.debug("BUG1: showOpenChatAlert: calling present")
+        topVC.present(alertVC, animated: true) {
+            logger.debug("BUG1: showOpenChatAlert: present completion fired")
+        }
+    } else {
+        logger.debug("BUG1: showOpenChatAlert: no top view controller")
     }
 }

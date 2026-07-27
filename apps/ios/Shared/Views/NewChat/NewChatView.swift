@@ -1349,6 +1349,7 @@ func planAndConnect(
             if let result {
                 let connectionLink = result.connLink
                 let connectionPlan = result.connectionPlan
+                logger.debug("BUG1: planAndConnect result connectionPlan=\(String(describing: connectionPlan))")
                 let planSimplexName = result.planSimplexName
                 // the name can also resolve to the other kind; its type picks the verb, its short form the label and target
                 let connectOtherLink = result.otherSimplexName?.shortStr
