@@ -1314,7 +1314,6 @@ func planAndConnect(
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
-    logger.debug("BUG1: planAndConnect: \(shortOrFullLink)")
     switch strConnectTarget(shortOrFullLink) {
     case let .link(_, linkType, _):
         if linkType == .relay {
@@ -1339,17 +1338,14 @@ func planAndConnect(
 
     func connectTask(_ inProgress: BoxedValue<Bool>) {
         Task {
-            logger.debug("BUG1: planAndConnect: calling apiConnectPlan")
             let result = await apiConnectPlan(connLink: shortOrFullLink, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
             await MainActor.run {
                 ConnectProgressManager.shared.stopConnectProgress()
             }
-            logger.debug("BUG1: planAndConnect: apiConnectPlan returned, inProgress=\(inProgress.boxedValue), result=\(result != nil)")
             if !inProgress.boxedValue { return }
             if let result {
                 let connectionLink = result.connLink
                 let connectionPlan = result.connectionPlan
-                logger.debug("BUG1: planAndConnect result connectionPlan=\(String(describing: connectionPlan))")
                 let planSimplexName = result.planSimplexName
                 // the name can also resolve to the other kind; its type picks the verb, its short form the label and target
                 let connectOtherLink = result.otherSimplexName?.shortStr

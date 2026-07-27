@@ -257,13 +257,11 @@ struct ContentView: View {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
                 .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
-                logger.debug("BUG1: mainView.onAppear, hasPendingUrl=\(pendingConnectUrl != nil, privacy: .public)")
                 // Connect only after the notifications prompt is resolved: the system prompt suspends
                 // the app (scene .inactive), which kills an in-flight connect and makes
                 // getTopViewController() nil. Deferring keeps the URL until the app is active again.
                 let openingViaLink = pendingConnectUrl != nil
                 requestNtfAuthorization(showDeniedAlert: !openingViaLink) {
-                    logger.debug("BUG1: requestNtfAuthorization whenDone -> connectViaUrl")
                     connectViaUrl()
                 }
                 if !openingViaLink {
@@ -287,10 +285,7 @@ struct ContentView: View {
                 }
                 prefShowLANotice = true
             }
-            .onChange(of: chatModel.appOpenUrl) { _ in
-                logger.debug("BUG1: onChange(appOpenUrl) fired, hasUrl=\(chatModel.appOpenUrl != nil, privacy: .public)")
-                connectViaUrl()
-            }
+            .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .onChange(of: chatModel.reRegisterTknStatus) { _ in showReRegisterTokenAlert() }
             .sheet(item: $noticesSheetItem) { item in
                 switch item {
@@ -460,19 +455,13 @@ struct ContentView: View {
 
     func connectViaUrl() {
         let m = ChatModel.shared
-        logger.debug("BUG1: connectViaUrl: hasAppOpenUrl=\(m.appOpenUrl != nil, privacy: .public), hasAppOpenUrlLater=\(m.appOpenUrlLater != nil, privacy: .public), AppChatState=\(String(describing: AppChatState.shared.value), privacy: .public), scenePhase=\(String(describing: scenePhase), privacy: .public)")
-        guard let url = pendingConnectUrl else {
-            logger.debug("BUG1: connectViaUrl: no pending url")
-            return
-        }
+        guard let url = pendingConnectUrl else { return }
         if m.appOpenUrl != nil { m.appOpenUrl = nil } else { m.appOpenUrlLater = nil }
         connectViaUrl_(url)
     }
 
     func connectViaUrl_(_ url: URL) {
-        logger.debug("BUG1: connectViaUrl_: \(url), path=\(url.path)")
         dismissAllSheets() {
-            logger.debug("BUG1: connectViaUrl_: in dismissAllSheets completion, path=\(url.path)")
             var path = url.path
             if path == "/r" {
                 showAlert(
@@ -482,7 +471,6 @@ struct ContentView: View {
             } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
                 path.removeFirst()
                 let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                logger.debug("BUG1: connectViaUrl_: calling planAndConnect for \(link)")
                 planAndConnect(
                     link,
                     theme: theme,

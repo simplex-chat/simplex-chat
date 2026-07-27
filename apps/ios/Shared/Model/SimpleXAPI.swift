@@ -126,10 +126,8 @@ func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDe
 // Spec: spec/api.md#chatApiSendCmdWithRetry
 func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0) async -> APIResult<R>? {
     let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum)
-    logger.debug("BUG1: chatApiSendCmdWithRetry: \(cmd.cmdType) response=\(r.responseType), retryNum=\(retryNum)")
     if inProgress == nil || inProgress?.boxedValue == true,
        case let .error(e) = r, let alert = retryableNetworkErrorAlert(e) {
-        logger.debug("BUG1: chatApiSendCmdWithRetry: \(cmd.cmdType) SHOWING RETRY ALERT and awaiting user")
         return await withCheckedContinuation { cont in
             showRetryAlert(
                 alert,
