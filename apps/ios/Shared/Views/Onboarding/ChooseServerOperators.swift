@@ -184,9 +184,9 @@ struct OnboardingConditionsView: View {
     private func completeOnboarding() {
         let m = ChatModel.shared
         onboardingStageDefault.set(.onboardingComplete)
-        // defer the swap off the runloop so the deep onboarding nav stack isn't torn down mid-transition
-        // (UIKit crash); inner async is required as dismissAllSheets runs its completion synchronously
-        // when nothing is presented (Accept on the pushed view, not the review-conditions sheet).
+        // defer the stage swap off the Accept handler's call stack so the deep onboarding nav stack
+        // isn't torn down from inside its own event handling (UIKit crash on completion); the inner
+        // async guarantees this even if dismissAllSheets runs its completion synchronously.
         dismissAllSheets(animated: false) {
             DispatchQueue.main.async {
                 m.onboardingStage = .onboardingComplete
