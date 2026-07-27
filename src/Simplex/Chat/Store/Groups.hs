@@ -1709,8 +1709,17 @@ setMemberPubKey db groupMemberId pubKey = do
 setMembersMemberKeySent :: DB.Connection -> [GroupMemberId] -> IO ()
 setMembersMemberKeySent db memberIds = do
   currentTs <- getCurrentTime
-  forM_ memberIds $ \memberId ->
-    DB.execute db "UPDATE group_members SET user_member_key_sent = ?, updated_at = ? WHERE group_member_id = ?" (BI True, currentTs, memberId)
+#if defined(dbPostgres)
+  DB.execute
+    db
+    "UPDATE group_members SET user_member_key_sent = ?, updated_at = ? WHERE group_member_id IN ?"
+    (BI True, currentTs, In memberIds)
+#else
+  DB.executeMany
+    db
+    "UPDATE group_members SET user_member_key_sent = ?, updated_at = ? WHERE group_member_id = ?"
+    [(BI True, currentTs, memberId) | memberId <- memberIds]
+#endif
 
 setGroupMemberVerified :: DB.Connection -> User -> GroupMemberId -> Maybe Text -> IO ()
 setGroupMemberVerified db User {userId} groupMemberId code = do
