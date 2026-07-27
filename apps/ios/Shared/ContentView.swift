@@ -257,11 +257,14 @@ struct ContentView: View {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
                 .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
-                // when opened via a SimpleX link, present the connection dialog and suppress only the
-                // secondary in-app notices that would overlay/drop it; the notifications prompt still shows
-                let connectingViaLink = connectViaUrl()
-                requestNtfAuthorization(showDeniedAlert: !connectingViaLink)
-                if !connectingViaLink {
+                // present the connection dialog only after the notifications prompt is resolved: while
+                // the system prompt is up the scene is not foregroundActive, so getTopViewController()
+                // returns nil and the connection dialog cannot present (and, being one-shot, is lost)
+                let openingViaLink = pendingConnectUrl != nil
+                requestNtfAuthorization(showDeniedAlert: !openingViaLink) {
+                    connectViaUrl()
+                }
+                if !openingViaLink {
                     // Local Authentication notice is to be shown on next start after onboarding is complete
                     if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
                         prefLANoticeShown = true
@@ -387,7 +390,7 @@ struct ContentView: View {
         }
     }
 
-    func requestNtfAuthorization(showDeniedAlert: Bool = true) {
+    func requestNtfAuthorization(showDeniedAlert: Bool = true, whenDone: (() -> Void)? = nil) {
         NtfManager.shared.requestAuthorization(
             onDeny: {
                 if showDeniedAlert, !notificationAlertShown {
@@ -395,7 +398,8 @@ struct ContentView: View {
                     alertManager.showAlert(notificationAlert())
                 }
             },
-            onAuthorized: { notificationAlertShown = false }
+            onAuthorized: { notificationAlertShown = false },
+            whenDone: { if let whenDone { DispatchQueue.main.async(execute: whenDone) } }
         )
     }
 
@@ -440,22 +444,24 @@ struct ContentView: View {
     }
 
     // Spec: spec/client/navigation.md#connectViaUrl
-    @discardableResult
-    func connectViaUrl() -> Bool {
+    // a URL opened via link that is ready to be connected now (appOpenUrl immediately, or
+    // appOpenUrlLater once the app is active — see .onChange(of: scenePhase) in SimpleXApp)
+    private var pendingConnectUrl: URL? {
+        let m = ChatModel.shared
+        if let url = m.appOpenUrl { return url }
+        if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active { return url }
+        return nil
+    }
+
+    func connectViaUrl() {
         let m = ChatModel.shared
         logger.debug("BUG1: connectViaUrl: appOpenUrl=\(String(describing: m.appOpenUrl)), appOpenUrlLater=\(String(describing: m.appOpenUrlLater)), AppChatState=\(String(describing: AppChatState.shared.value)), scenePhase=\(String(describing: scenePhase))")
-        if let url = m.appOpenUrl {
-            m.appOpenUrl = nil
-            connectViaUrl_(url)
-            return true
-        } else if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active {
-            // correcting branch in case .onChange(of: scenePhase) in SimpleXApp doesn't trigger and transfer appOpenUrlLater into appOpenUrl
-            m.appOpenUrlLater = nil
-            connectViaUrl_(url)
-            return true
+        guard let url = pendingConnectUrl else {
+            logger.debug("BUG1: connectViaUrl: no pending url")
+            return
         }
-        logger.debug("BUG1: connectViaUrl: no pending url, returning false")
-        return false
+        if m.appOpenUrl != nil { m.appOpenUrl = nil } else { m.appOpenUrlLater = nil }
+        connectViaUrl_(url)
     }
 
     func connectViaUrl_(_ url: URL) {
