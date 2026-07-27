@@ -201,7 +201,7 @@
     <string name="contacts_can_mark_messages_for_deletion">A partnerei törlésre jelölhetnek üzeneteket; Ön majd meg tudja nézni azokat.</string>
     <string name="connect_via_invitation_link">Kapcsolódik az egyszer használható meghívón keresztül?</string>
     <string name="connect_via_link_or_qr">Kapcsolódás egy hivatkozáson vagy QR-kódon keresztül</string>
-    <string name="connection_error_auth">Kapcsolódási hiba</string>
+    <string name="connection_error_auth">A kapcsolódási hivatkozás el lett távolítva</string>
     <string name="notification_preview_mode_contact">Csak név</string>
     <string name="connect_via_contact_link">Kapcsolódik a kapcsolattartási címen keresztül?</string>
     <string name="create_address">Cím létrehozása</string>
@@ -1095,7 +1095,7 @@
     <string name="set_database_passphrase">Adatbázis-jelmondat beállítása</string>
     <string name="view_security_code">Biztonsági kód megtekintése</string>
     <string name="unblock_member_question">Feloldja a tag letiltását?</string>
-    <string name="sender_may_have_deleted_the_connection_request">A kérés küldője törölhette a kapcsolódási kérést.</string>
+    <string name="sender_may_have_deleted_the_connection_request">A kérés küldője törölte a kapcsolódási kérést.</string>
     <string name="wrong_passphrase">Érvénytelen adatbázis-jelmondat</string>
     <string name="your_SMP_servers">Saját SMP-kiszolgálók</string>
     <string name="send_receipts_disabled_alert_title">A kézbesítési jelentések le vannak tiltva</string>
@@ -1278,7 +1278,7 @@
     <string name="receiving_files_not_yet_supported">fájlok fogadása egyelőre még nem támogatott</string>
     <string name="save_group_profile">Csoportprofil mentése</string>
     <string name="network_options_reset_to_defaults">Visszaállítás alapértelmezettre</string>
-    <string name="connection_error_auth_desc">Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.</string>
+    <string name="connection_error_auth_desc">A partnere eltávolította ezt a hivatkozást, vagy egy egyszer használható meghívó volt, amit már felhasználtak.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy új hivatkozást.</string>
     <string name="video_call_no_encryption">videóhívás (végpontok között NEM titkosított)</string>
     <string name="smp_servers_use_server_for_new_conn">Használat új kapcsolatokhoz</string>
     <string name="periodic_notifications_desc">Az új üzeneteket az alkalmazás időszakosan lekéri – naponta néhány százalékot használ az akkumulátorból. Az alkalmazás nem használ leküldéses értesítéseket – az eszközről származó adatok nem lesznek elküldve a kiszolgálóknak.</string>
@@ -1471,13 +1471,13 @@
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza – profiljai, partnerei, üzenetei és fájljai véglegesen törölve lesznek.</string>
     <string name="info_row_updated_at">Bejegyzés frissítve</string>
-    <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[További információkat a <font color="#0088ff">használati útmutatóban</font> talál.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet kivonata különbözik.</string>
     <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
-    <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub-tárolónkban</font>.]]></string>
+    <string name="read_more_in_github_with_link"><![CDATA[További információkat a <font color="#0088ff">GitHub-tárolónkban</font> talál.]]></string>
     <string name="error_showing_content">Hiba történt a tartalom megjelenítésekor</string>
     <string name="error_showing_message">Hiba történt az üzenet megjelenítésekor</string>
     <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti a SimpleXbeli partnerei számára a beállításokban.</string>
@@ -1798,10 +1798,10 @@
     <string name="v5_8_message_delivery_descr">Csökkentett akkumulátor-használattal.</string>
     <string name="error_initializing_web_view">Hiba történt a WebView előkészítésekor. Frissítse rendszerét az új verzióra. Lépjen kapcsolatba a fejlesztőkkel.\nHiba: %s</string>
     <string name="chat_theme_reset_to_user_theme">Felhasználó által létrehozott téma visszaállítása</string>
-    <string name="message_queue_info">Üzenet várólista információi</string>
+    <string name="message_queue_info">Üzenet várólista-információi</string>
     <string name="message_queue_info_none">nincs</string>
     <string name="info_row_debug_delivery">Kézbesítési hibák felderítése</string>
-    <string name="message_queue_info_server_info">a kiszolgáló várólista információi: %1$s\n\nutoljára fogadott üzenet: %2$s</string>
+    <string name="message_queue_info_server_info">kiszolgáló várólista-információi: %1$s\n\nutoljára fogadott üzenet: %2$s</string>
     <string name="file_error_auth">Érvénytelen kulcs vagy ismeretlen fájltöredékcím – valószínűleg a fájl törlődött.</string>
     <string name="temporary_file_error">Ideiglenes fájlhiba</string>
     <string name="info_row_message_status">Üzenet állapota</string>
@@ -2058,7 +2058,7 @@
     <string name="network_session_mode_session_description">Minden alkalommal, amikor elindítja az alkalmazást, új SOCKS-hitelesítési adatok lesznek használva.</string>
     <string name="network_session_mode_session">Alkalmazás munkamenete</string>
     <string name="network_session_mode_server_description">Az összes kiszolgálóhoz új, SOCKS-hitelesítési adatok lesznek használva.</string>
-    <string name="call_desktop_permission_denied_chrome">Kattintson a címmező melletti információ gombra a mikrofon használatának engedélyezéséhez.</string>
+    <string name="call_desktop_permission_denied_chrome">Kattintson a címmező melletti információgombra a mikrofon használatának engedélyezéséhez.</string>
     <string name="call_desktop_permission_denied_safari">Nyissa meg a Safari / Beállítások / Weboldalak / Mikrofon menüt, majd válassza a helyi kiszolgálók engedélyezése beállítást.</string>
     <string name="call_desktop_permission_denied_title">Hívások kezdeményezéséhez engedélyezze a mikrofon használatát. Fejezze be a hívást, és próbálja meg a hívást újra.</string>
     <string name="v6_1_better_calls">Továbbfejlesztett hívásélmény</string>
@@ -2867,7 +2867,7 @@
     <string name="connect_plan_connect_to_name">Kapcsolódás hozzá: %s</string>
     <string name="connect_plan_join_name">Csatlakozás a(z) %s nevű csatornához</string>
     <string name="sign_message">Üzenet aláírása</string>
-    <string name="sign_message_desc">Az aláírás igazolja, hogy Ön írta ezt az üzenetet, és azt később nem lehet letagadni.</string>
+    <string name="sign_message_desc">Az aláírás igazolja, hogy Ön írta ezt az üzenetet, és azt később már nem lehet letagadni.</string>
     <string name="info_row_signed">Aláírva</string>
     <string name="info_row_signed_verified">Aláírva és ellenőrizve</string>
     <string name="sign_messages">Üzenetek aláírása</string>
@@ -2890,4 +2890,13 @@
     <string name="add_description">Leírás hozzáadása</string>
     <string name="edit_description">Leírás szerkesztése</string>
     <string name="enter_description_optional">Adja meg a leírást (nem kötelező)</string>
+    <string name="v7_0_channels_contributors">Közreműködők hozzáadása.</string>
+    <string name="v7_0_channels">Továbbfejlesztett csatornák 📢</string>
+    <string name="v7_0_channels_previews">Előnézet készítése a weboldalakhoz.</string>
+    <string name="v7_0_channels_wider_messages">Könnyebb olvashatóság.</string>
+    <string name="v7_0_channels_relays">Saját átjátszók kezelése.</string>
+    <string name="v7_0_simplex_names_descr">Nevek a csatornákhoz vagy az üzleti profilokhoz.</string>
+    <string name="v7_0_simplex_names">SimpleX-nevek (béta)</string>
+    <string name="info_row_file_servers">Fájlkiszolgálók</string>
+    <string name="share_text_file_servers">Fájlkiszolgálók: %s</string>
 </resources>

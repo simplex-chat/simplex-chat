@@ -4268,6 +4268,14 @@ server test error</note>
         <target>Dosya sunucusu hatası: %@</target>
         <note>file error text</note>
       </trans-unit>
+      <trans-unit id="File servers" xml:space="preserve">
+        <source>File servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File servers: %@" xml:space="preserve">
+        <source>File servers: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="File status" xml:space="preserve">
         <source>File status</source>
         <target>Dosya durumu</target>
@@ -4786,6 +4794,10 @@ Hata: %2$@</target>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
         <target>Nasıl yapılır</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -5893,8 +5905,8 @@ Bu senin grup için bağlantın %@!</target>
         <source>Name not found</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -7282,10 +7294,6 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Kaydol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to register a test name" xml:space="preserve">
-        <source>How to register a test name</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">
         <source>Register notification token?</source>
         <target>Bildirim jetonunu kaydet?</target>
@@ -8669,8 +8677,8 @@ copied message info</note>
         <source>SimpleX name not verified</source>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">

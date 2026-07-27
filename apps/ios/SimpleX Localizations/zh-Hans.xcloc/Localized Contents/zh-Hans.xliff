@@ -4372,6 +4372,14 @@ server test error</note>
         <target>文件服务器错误：%@</target>
         <note>file error text</note>
       </trans-unit>
+      <trans-unit id="File servers" xml:space="preserve">
+        <source>File servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File servers: %@" xml:space="preserve">
+        <source>File servers: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="File status" xml:space="preserve">
         <source>File status</source>
         <target>文件状态</target>
@@ -4900,6 +4908,10 @@ Error: %2$@</source>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
         <target>如何</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -6031,8 +6043,8 @@ This is your link for group %@!</source>
         <target>未找到名称</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -7465,10 +7477,6 @@ Enable in *Network &amp; servers* settings.</source>
         <target>注册</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to register a test name" xml:space="preserve">
-        <source>How to register a test name</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">
         <source>Register notification token?</source>
         <target>注册通知令牌？</target>
@@ -8893,8 +8901,8 @@ copied message info</note>
         <target>SimpleX 名称未验证</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">

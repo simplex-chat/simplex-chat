@@ -1352,12 +1352,14 @@ fun ComposeView(
     composeState.value = composeState.value.copy(maxFileSize = getMaxFileSize(FileProtocol.XFTP, if (incognito) null else chatModel.currentUser.value?.profile))
   }
   if (appPlatform.isDesktop) {
+    // the same ComposeView is reused when switching chats, so `chat` captured by onDispose would be the chat opened first, not the current one
+    val currentChatId = rememberUpdatedState(chat.id)
     // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
     DisposableEffect(Unit) {
       onDispose {
         if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
           chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = chat.id
+          chatModel.draftChatId.value = currentChatId.value
         }
       }
     }

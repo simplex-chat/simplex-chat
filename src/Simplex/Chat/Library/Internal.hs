@@ -2811,7 +2811,11 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
   where
     groupMentions db g membership = do
       mentions' <- getRcvCIMentions db user g ft_ mentions
-      let userReply = case cmToQuotedMsg chatMsgEvent of
+      -- messages of blocked members are hidden, they should not mention user
+      let senderBlocked = case cd of
+            CDGroupRcv _g _scope m -> memberBlocked m
+            _ -> False
+          userReply = not senderBlocked && case cmToQuotedMsg chatMsgEvent of
             Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
             _ -> False
           userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
