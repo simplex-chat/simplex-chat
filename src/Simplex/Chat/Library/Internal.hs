@@ -40,7 +40,7 @@ import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', mapAccumL, nubBy, partition)
+import Data.List (find, foldl', mapAccumL, partition)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -2252,14 +2252,15 @@ sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
 dropSignature :: SndMessage -> SndMessage
 dropSignature m = m {signedMsg_ = Nothing}
 
+signedSnd :: SndMessage -> Bool
+signedSnd SndMessage {signedMsg_} = isJust signedMsg_
+
 memberBatch :: GroupInfo -> Connection -> NonEmpty SndMessage -> (BatchMode, NonEmpty SndMessage)
 memberBatch gInfo conn msgs
   | useRelays' gInfo = (BMBinary, msgs)
-  | not anySigned = (BMJson, msgs)
+  | not (any signedSnd msgs) = (BMJson, msgs)
   | maxVersion (peerChatVRange conn) >= relayWebCapVersion = (BMBinary, msgs)
   | otherwise = (BMJson, L.map dropSignature msgs)
-  where
-    anySigned = any (\SndMessage {signedMsg_} -> isJust signedMsg_) msgs
 
 batchSendConnMessages :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessages mode user conn msgFlags msgs =
@@ -2518,13 +2519,10 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
             (Nothing, Just _) -> True
             _ -> False
     ownKey = groupMemberKey gInfo
-    profileMembers
-      | shouldSendProfileUpdate = filter (`supportsVersion` memberProfileUpdateVersion) members
-      | otherwise = []
-    keyMembers
-      | isJust ownKey = filter (\m -> m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)) members
-      | otherwise = []
-    recipients = nubBy (\a b -> groupMemberId' a == groupMemberId' b) (profileMembers <> keyMembers)
+    keyMember m = isJust ownKey && m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
+    profileMember m = shouldSendProfileUpdate && m `supportsVersion` memberProfileUpdateVersion
+    keyMembers = filter keyMember members
+    recipients = filter (\m -> profileMember m || keyMember m) members
     sendProfileAndKey = do
       let incognitoProfile = incognitoMembershipProfile gInfo
       profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
@@ -2533,7 +2531,7 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
         currentTs <- liftIO getCurrentTime
         withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
       let delivered = [mId | (mId, _, r) <- sentTo, isRight r] <> [mId | (mId, _, _) <- pending] <> map groupMemberId' forwarded
-          keyDelivered = [groupMemberId' m | m <- keyMembers, groupMemberId' m `elem` delivered]
+          keyDelivered = filter (`elem` delivered) (map groupMemberId' keyMembers)
       unless (null keyDelivered) $ withStore' $ \db -> setMembersMemberKeySent db keyDelivered
 
 data GroupSndResult = GroupSndResult
@@ -2590,27 +2588,22 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-    prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched
-      | useRelays' gInfo = single BMBinary msgs toSendSeparate toSendBatched
-      | not anySigned = single BMJson msgs toSendSeparate toSendBatched
-      | otherwise =
-          let (sepBin, sepJson) = partition binaryCapable toSendSeparate
-              (btchBin, btchJson) = partition binaryCapable toSendBatched
-              (binIds, binReqs) = single BMBinary msgs sepBin btchBin
-              (jsonIds, jsonReqs) = single BMJson (L.map (fmap dropSignature) msgs) sepJson btchJson
-           in (binIds <> jsonIds, binReqs <> jsonReqs)
+    prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched =
+      batchReqs BMBinary msgs binSep binBtch <> batchReqs BMJson jsonMsgs jsonSep jsonBtch
       where
-        anySigned = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) (L.toList msgs)
-        binaryCapable (m, _) = m `supportsVersion` relayWebCapVersion
-        single mode msgs' sep btch =
-          let batched_ = batchSndMessagesJSON mode msgs'
-           in case L.nonEmpty batched_ of
-                Just batched' ->
-                  let lenMsgs = length msgs'
-                      (memsSep, mreqsSep) = foldMembers lenMsgs sndMessageMBR msgs' sep
-                      (memsBtch, mreqsBtch) = foldMembers (length batched' + lenMsgs) msgBatchMBR batched' btch
-                   in (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
-                Nothing -> ([], [])
+        signed = not (useRelays' gInfo) && any (either (const False) signedSnd) (L.toList msgs)
+        jsonMsgs = if signed then L.map (fmap dropSignature) msgs else msgs
+        toBinary (m, _) = useRelays' gInfo || (signed && m `supportsVersion` relayWebCapVersion)
+        (binSep, jsonSep) = partition toBinary toSendSeparate
+        (binBtch, jsonBtch) = partition toBinary toSendBatched
+        batchReqs _ _ [] [] = ([], [])
+        batchReqs mode msgs' sep btch = case L.nonEmpty (batchSndMessagesJSON mode msgs') of
+          Just batched ->
+            let lenMsgs = length msgs'
+                (memsSep, mreqsSep) = foldMembers lenMsgs sndMessageMBR msgs' sep
+                (memsBtch, mreqsBtch) = foldMembers (length batched + lenMsgs) msgBatchMBR batched btch
+             in (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
+          Nothing -> ([], [])
         foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
         foldMembers lastRef mkMb mbs mems = snd $ foldr' foldMsgBodies (lastMemIdx_, ([], [])) mems
           where

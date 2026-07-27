@@ -960,7 +960,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   _ -> pure ()
                 toView $ CEvtJoinedGroupMember user gInfo'' m' {memberStatus = mStatus}
                 let Connection {viaUserContactLink} = conn
-                when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
+                when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo'' m'
                 when (connChatVersion < batchSend2Version) $ getAutoReplyMsg >>= mapM_ (\mc -> sendGroupAutoReply mc Nothing)
                 if useRelays' gInfo''
                   then do
@@ -976,11 +976,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                             _ -> False
                       when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
             where
-              sendXGrpLinkMem gInfo'' = do
-                gInfo3 <- ensureUserMemberKey gInfo''
-                let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo3
-                profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo3 (fromIncognitoProfile <$> incognitoProfile)
-                sendGroupMemberMessages user gInfo3 conn (XGrpLinkMem profileToSend (groupMemberKey gInfo3) :| [])
+              sendXGrpLinkMem gInfo'' m' = do
+                gInfoK <- ensureUserMemberKey gInfo''
+                let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfoK
+                profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfoK (fromIncognitoProfile <$> incognitoProfile)
+                sendGroupMemberMessages user gInfoK conn (XGrpLinkMem profileToSend (groupMemberKey gInfoK) :| [])
+                withStore' $ \db -> setMembersMemberKeySent db [groupMemberId' m']
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
             notifyMemberConnected gInfo m Nothing
