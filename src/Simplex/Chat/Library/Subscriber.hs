@@ -836,7 +836,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     -- [incognito] send saved profile
                     incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
                     profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfoK (fromLocalProfile <$> incognitoProfile)
-                    if not (useRelays' gInfo) && maxVersion chatVRange >= relayWebCapVersion
+                    if maxVersion chatVRange >= relayWebCapVersion && isJust (groupKeys gInfoK)
                       then do
                         dm <- encodeSignedGroupConnInfo gInfoK $ XInfo profileToSend (groupMemberKey gInfoK)
                         allowAgentConnectionInfo user conn' confId dm
