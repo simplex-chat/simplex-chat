@@ -2985,7 +2985,7 @@
     <string name="signature_missing_alert_desc">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</string>
     <string name="channel_simplex_name">Im Kanal genutzter SimpleX-Name</string>
     <string name="get_simplex_name_beta">SimpleX-Name erhalten (BETA)</string>
-    <string name="register_test_name">Einen Test-Namen registrieren</string>
+    <string name="register_test_name">Wie man einen Test-Namen registriert</string>
     <string name="remove_name">Name entfernen</string>
     <string name="save_simplex_name_question">SimpleX-Name speichern?</string>
     <string name="add_description">Beschreibung hinzufügen</string>
@@ -2999,8 +2999,8 @@
     <string name="v7_0_channels_previews">Eine Web-Vorschau erstellen.</string>
     <string name="v7_0_channels_wider_messages">Einfacher zu lesen.</string>
     <string name="v7_0_channels_relays">Ihre Relais verwalten.</string>
-    <string name="v7_0_simplex_names_descr">Namen für Ihren Kanal oder Ihr Unternehmen.</string>
-    <string name="v7_0_simplex_names">SimpleX-Namen (BETA)</string>
+    <string name="v7_0_simplex_names_descr">Öffentliche Namen für Ihren Kanal oder Ihr Unternehmen.</string>
+    <string name="v7_0_simplex_names">Öffentliche SimpleX-Namen (BETA)</string>
     <string name="info_row_file_servers">Datei-Server</string>
     <string name="share_text_file_servers">Datei-Server: %s</string>
 </resources>
