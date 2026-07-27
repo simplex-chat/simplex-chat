@@ -277,7 +277,7 @@ sequenceDiagram
   participant B as Bot
   Note over C: COPaid
   C->>B: Purchase (paid evidence), signed order
-  B->>B: Verify payment with provider; derive eligible periods
+  B->>B: Verify payment with provider, derive eligible periods
   B->>B: Verify SKU, assemble BadgeRequest from product master key
   B->>B: Sign + cache credential into badges ledger (idempotent)
   Note over B: BOCompleted

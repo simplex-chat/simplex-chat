@@ -238,7 +238,7 @@ sequenceDiagram
   Note over B: Hold call, no response
   Note over C: RPC deadline / app closes
   C-xB: Cancel waiting call
-  Note over C: Paid; claim to retry
+  Note over C: Paid — claim to retry
   C->>B: Repeat same Purchase on foreground
   Note over C: Retrying claim
   Note over B: Respond immediately if webhook already completed<br/>otherwise wait again
@@ -256,7 +256,7 @@ sequenceDiagram
   S-->>B: Signed Checkout expired event
   Note over B: Checkout expired, no badge
   B-->>C: RspError checkout expired
-  Note over C: Expired; new Checkout requires user action
+  Note over C: Expired — new Checkout requires user action
 ```
 
 There is no payment polling. The pending `Purchase` call is the completion signal. A deep link may return the user to the app but is not required and is never payment proof.
