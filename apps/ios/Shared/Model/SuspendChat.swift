@@ -306,7 +306,7 @@ private final class RemoteCtrlLiveActivityManager {
                 )
             } catch {
                 logger.error("RemoteCtrlLiveActivity request error: \(error.localizedDescription)")
-                RemoteCtrlBackgroundAudio.shared.stop()
+                RemoteCtrlBGKeepAlive.shared.stop()
             }
         }
     }
