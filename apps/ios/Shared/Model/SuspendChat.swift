@@ -193,9 +193,7 @@ func suspendChatForBackground() {
     if CallController.useCallKit() && ChatModel.shared.activeCall != nil {
         CallController.shared.shouldSuspendChat = true
     } else {
-        if AppChatState.shared.value.canSuspend {
-            suspendChat()
-        }
+        suspendChat()
         BGManager.shared.schedule()
     }
 }
@@ -241,24 +239,13 @@ private final class RemoteCtrlBackgroundAudio {
         let item = AVPlayerItem(asset: AVURLAsset(url: url))
         player = queuePlayer
         looper = AVPlayerLooper(player: queuePlayer, templateItem: item)
-        queuePlayer.seek(to: .zero)
         queuePlayer.play()
-        logger.debug("RemoteCtrlBackgroundAudio started")
     }
 
     func stop() {
         player?.pause()
         looper = nil
         player = nil
-        do {
-            try AVAudioSession.sharedInstance().setActive(
-                false,
-                options: .notifyOthersOnDeactivation
-            )
-        } catch {
-            logger.error("RemoteCtrlBackgroundAudio deactivation error: \(error.localizedDescription)")
-        }
-        logger.debug("RemoteCtrlBackgroundAudio stopped")
     }
 }
 
@@ -316,9 +303,6 @@ private final class RemoteCtrlLiveActivityManager {
 final class RemoteCtrlBGKeepAlive {
     static let shared = RemoteCtrlBGKeepAlive()
 
-    private var sessionTerminationInProgress = false
-    private var deferredRemoteStoppedSession: RemoteCtrlSession?
-
     private init() {}
 
     var backgroundAudioActive: Bool {
@@ -339,72 +323,20 @@ final class RemoteCtrlBGKeepAlive {
     }
 
     func handleAppBackgrounding() {
-        if let session = deferredRemoteStoppedSession {
-            // Restore locally before the scene path suspends chat if backgrounding
-            // happens during the remote-stop recovery delay.
-            deferredRemoteStoppedSession = nil
-            completeSessionTermination(session, suspendForBackground: true)
-        } else if !backgroundAudioActive {
+        if !backgroundAudioActive {
             suspendChatForBackground()
         }
     }
 
-    func disconnectRemoteCtrl() async throws {
-        guard !sessionTerminationInProgress else { return }
-        sessionTerminationInProgress = true
-        let session = ChatModel.shared.remoteCtrlSession
-        do {
-            try await stopRemoteCtrl()
-        } catch {
-            let suspendForBackground = UIApplication.shared.applicationState == .background
-            completeSessionTermination(session, suspendForBackground: suspendForBackground)
-            throw error
-        }
-        let suspendForBackground = UIApplication.shared.applicationState == .background
-        completeSessionTermination(session, suspendForBackground: suspendForBackground)
-    }
-
-    func handleRemoteCtrlStopped(_ session: RemoteCtrlSession) {
-        ChatModel.shared.remoteCtrlSession = nil
-        guard !sessionTerminationInProgress else { return }
-        sessionTerminationInProgress = true
-        if case .connected = session.sessionState {
-            // This delay is needed to cancel the session that fails on network failure,
-            // e.g. when user did not grant permission to access local network yet.
-            deferredRemoteStoppedSession = session
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                guard let session = RemoteCtrlBGKeepAlive.shared.deferredRemoteStoppedSession else { return }
-                RemoteCtrlBGKeepAlive.shared.deferredRemoteStoppedSession = nil
-                let suspendForBackground = UIApplication.shared.applicationState == .background
-                RemoteCtrlBGKeepAlive.shared.completeSessionTermination(
-                    session,
-                    suspendForBackground: suspendForBackground
-                )
-            }
-        } else {
-            let suspendForBackground = UIApplication.shared.applicationState == .background
-            completeSessionTermination(session, suspendForBackground: suspendForBackground)
-        }
-    }
-
-    private func completeSessionTermination(
-        _ session: RemoteCtrlSession?,
-        suspendForBackground: Bool
-    ) {
-        if case .connected = session?.sessionState {
-            switchToLocalSession()
-        } else {
-            ChatModel.shared.remoteCtrlSession = nil
-        }
+    func stop() {
+        let suspendForBackground = backgroundAudioActive && UIApplication.shared.applicationState == .background
         if #available(iOS 16.1, *) {
             RemoteCtrlLiveActivityManager.shared.stop()
         }
         RemoteCtrlBackgroundAudio.shared.stop()
-        UIApplication.shared.isIdleTimerDisabled = false
         if suspendForBackground {
             suspendChatForBackground()
         }
-        sessionTerminationInProgress = false
     }
 }
 

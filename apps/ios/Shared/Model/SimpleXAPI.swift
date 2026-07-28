@@ -2900,12 +2900,14 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await MainActor.run {
             let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
             m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
-            RemoteCtrlBGKeepAlive.shared.start()
         }
     case let .remoteCtrlStopped(_, rcStopReason):
+        // This delay is needed to cancel the session that fails on network failure,
+        // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
             await MainActor.run {
-                RemoteCtrlBGKeepAlive.shared.handleRemoteCtrlStopped(sess)
+                RemoteCtrlBGKeepAlive.shared.stop()
+                m.remoteCtrlSession = nil
                 dismissAllSheets() {
                     switch rcStopReason {
                     case .disconnected:
@@ -2923,6 +2925,11 @@ func processReceivedMsg(_ res: ChatEvent) async {
                             secondaryButton: .default(Text("Copy error")) { UIPasteboard.general.string = String(describing: rcStopReason) }
                         ))
                     }
+                }
+            }
+            if case .connected = sess.sessionState {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    switchToLocalSession()
                 }
             }
         }
