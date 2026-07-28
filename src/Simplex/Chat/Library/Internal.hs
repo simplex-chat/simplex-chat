@@ -2490,7 +2490,7 @@ sendGroupSignedMessages user gInfo scope asGroup members signedEvents = do
 
 sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
 sendGroupProfileUpdate user gInfo scope asGroup members =
-  unless (null recipients) $ sendProfileAndKey `catchAllErrors` eToView
+  sendProfileAndKey `catchAllErrors` eToView
   where
     User {userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
@@ -2505,22 +2505,25 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
             _ -> False
     ownKey = groupMemberKey gInfo
     keyMember m = not (useRelays' gInfo) && m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
-    profileMember m = shouldSendProfileUpdate && m `supportsVersion` memberProfileUpdateVersion
-    recipients = filter (\m -> profileMember m || keyMember m) members
-    sendProfileAndKey = do
-      let incognitoProfile = incognitoMembershipProfile gInfo
-      profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-      (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo recipients False (XInfo profile ownKey :| [])
-      let delivered = [mId | (mId, _, r) <- sentTo, isRight r] <> [mId | (mId, _, _) <- pending] <> map groupMemberId' forwarded
-      keySent <-
-        if shouldSendProfileUpdate
-          then do
+    sendProfileAndKey
+      | shouldSendProfileUpdate = do
+          let recipients = filter (`supportsVersion` memberProfileUpdateVersion) members
+          unless (null recipients) $ do
+            delivered <- sendXInfo recipients
             currentTs <- liftIO getCurrentTime
             withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
             let keyIds = S.fromList [groupMemberId' m | m <- recipients, keyMember m]
-            pure $ filter (`S.member` keyIds) delivered
-          else pure delivered
-      unless (null keySent) $ withStore' $ \db -> setMembersMemberKeySent db keySent
+            markKeySent $ filter (`S.member` keyIds) delivered
+      | otherwise = do
+          let recipients = filter keyMember members
+          unless (null recipients) $ sendXInfo recipients >>= markKeySent
+      where
+        sendXInfo recipients = do
+          let incognitoProfile = incognitoMembershipProfile gInfo
+          profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+          (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo recipients False (XInfo profile ownKey :| [])
+          pure $ [mId | (mId, _, r) <- sentTo, isRight r] <> [mId | (mId, _, _) <- pending] <> map groupMemberId' forwarded
+        markKeySent ids = unless (null ids) $ withStore' $ \db -> setMembersMemberKeySent db ids
 
 data GroupSndResult = GroupSndResult
   { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
