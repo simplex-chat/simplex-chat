@@ -174,7 +174,9 @@ struct ChatListView: View {
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
+    @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @State private var showBadgesSheet = false
     
     // Spec: spec/client/chat-list.md#body
     var body: some View {
@@ -210,6 +212,11 @@ struct ChatListView: View {
         .appSheet(isPresented: $showNewChatSheet) {
             NewChatSheet()
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+        }
+        .appSheet(isPresented: $showBadgesSheet) {
+            NavigationView {
+                BadgesSupportSimplexView()
+            }
         }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
@@ -413,6 +420,13 @@ struct ChatListView: View {
                     }
                     if !oneHandUICardShown {
                         OneHandUICard()
+                            .padding(.vertical, 6)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    if !supporterBannerShown {
+                        SupportSimpleXBanner(onTap: { showBadgesSheet = true })
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)

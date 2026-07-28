@@ -250,6 +250,12 @@
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
 		E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51CC1E52C62085600DB91FE /* OneHandUICard.swift */; };
+		E5BADE0101000000BADE0001 /* BadgesSupportSimplexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE0102000000BADE0001 /* BadgesSupportSimplexView.swift */; };
+		E5BADE0103000000BADE0002 /* BadgesYourLevelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE0104000000BADE0002 /* BadgesYourLevelView.swift */; };
+		E5BADE0105000000BADE0003 /* BadgesPayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE0106000000BADE0003 /* BadgesPayView.swift */; };
+		E5BADE0107000000BADE0004 /* BadgesRedeemCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE0108000000BADE0004 /* BadgesRedeemCodeView.swift */; };
+		E5BADE0109000000BADE0005 /* BadgesHowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE010A000000BADE0005 /* BadgesHowItWorksView.swift */; };
+		E5BADE010B000000BADE0006 /* SupportSimpleXBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE010C000000BADE0006 /* SupportSimpleXBanner.swift */; };
 		E559A0A12E3F77EE00B26F74 /* CommandsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */; };
 		E5A0B0012F960000AAAA0001 /* YourNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A0B0022F960000AAAA0001 /* YourNetwork.swift */; };
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
@@ -626,6 +632,12 @@
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
 		D7AA2C3429A936B400737B40 /* MediaEncryption.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = MediaEncryption.playground; path = Shared/MediaEncryption.playground; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		E51CC1E52C62085600DB91FE /* OneHandUICard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneHandUICard.swift; sourceTree = "<group>"; };
+		E5BADE0102000000BADE0001 /* BadgesSupportSimplexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesSupportSimplexView.swift; sourceTree = "<group>"; };
+		E5BADE0104000000BADE0002 /* BadgesYourLevelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesYourLevelView.swift; sourceTree = "<group>"; };
+		E5BADE0106000000BADE0003 /* BadgesPayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesPayView.swift; sourceTree = "<group>"; };
+		E5BADE0108000000BADE0004 /* BadgesRedeemCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesRedeemCodeView.swift; sourceTree = "<group>"; };
+		E5BADE010A000000BADE0005 /* BadgesHowItWorksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesHowItWorksView.swift; sourceTree = "<group>"; };
+		E5BADE010C000000BADE0006 /* SupportSimpleXBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportSimpleXBanner.swift; sourceTree = "<group>"; };
 		E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsMenuView.swift; sourceTree = "<group>"; };
 		E5A0B0022F960000AAAA0001 /* YourNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourNetwork.swift; sourceTree = "<group>"; };
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkHeader.swift; sourceTree = "<group>"; };
@@ -784,6 +796,7 @@
 				8C7D94982B8894D300B7B9E1 /* Migration */,
 				5CA8D01B2AD9B076001FD661 /* RemoteAccess */,
 				5CB924DF27A8678B00ACCCDD /* UserSettings */,
+				E5BADE0100000000BADE0000 /* Badges */,
 				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
 			);
 			path = Views;
@@ -1040,6 +1053,19 @@
 				B70A39722D24090D00E80A5F /* TagListView.swift */,
 			);
 			path = ChatList;
+			sourceTree = "<group>";
+		};
+		E5BADE0100000000BADE0000 /* Badges */ = {
+			isa = PBXGroup;
+			children = (
+				E5BADE0102000000BADE0001 /* BadgesSupportSimplexView.swift */,
+				E5BADE0104000000BADE0002 /* BadgesYourLevelView.swift */,
+				E5BADE0106000000BADE0003 /* BadgesPayView.swift */,
+				E5BADE0108000000BADE0004 /* BadgesRedeemCodeView.swift */,
+				E5BADE010A000000BADE0005 /* BadgesHowItWorksView.swift */,
+				E5BADE010C000000BADE0006 /* SupportSimpleXBanner.swift */,
+			);
+			path = Badges;
 			sourceTree = "<group>";
 		};
 		5CDCAD462818589900503DA2 /* SimpleX NSE */ = {
@@ -1531,6 +1557,12 @@
 				5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */,
 				5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */,
 				E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */,
+				E5BADE0101000000BADE0001 /* BadgesSupportSimplexView.swift in Sources */,
+				E5BADE0103000000BADE0002 /* BadgesYourLevelView.swift in Sources */,
+				E5BADE0105000000BADE0003 /* BadgesPayView.swift in Sources */,
+				E5BADE0107000000BADE0004 /* BadgesRedeemCodeView.swift in Sources */,
+				E5BADE0109000000BADE0005 /* BadgesHowItWorksView.swift in Sources */,
+				E5BADE010B000000BADE0006 /* SupportSimpleXBanner.swift in Sources */,
 				5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,
