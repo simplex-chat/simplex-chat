@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Containers.ListUtils (nubOrd)
-import Data.Either (isRight, partitionEithers, rights)
+import Data.Either (partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Foldable (foldr')
 import Data.Functor (($>))
@@ -2509,7 +2509,7 @@ sendGroupProfileUpdate user gInfo scope asGroup members
       let incognitoProfile = incognitoMembershipProfile gInfo
       profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
       (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
-      pure $ [mId | (mId, _, Right r) <- sentTo] <> map (\(mId, _, _) -> mId) pending <> map groupMemberId' forwarded
+      pure $ [mId | (mId, _, Right _) <- sentTo] <> map (\(mId, _, _) -> mId) pending <> map groupMemberId' forwarded
     sendProfileUpdate members' = unless (null members') $ do
       delivered <- sendProfile_ members'
       currentTs <- liftIO getCurrentTime
@@ -2517,7 +2517,7 @@ sendGroupProfileUpdate user gInfo scope asGroup members
         updateUserMemberProfileSentAt db user gInfo currentTs
         let keyIds = S.fromList [groupMemberId' m | m <- members', memberNeedsKey m]
             delivered' = filter (`S.member` keyIds) delivered
-        unless (useRelays' gInfo || null delivered') $ setMembersMemberKeySent db delivered' 
+        unless (useRelays' gInfo || null delivered') $ setMembersMemberKeySent db delivered'
     sendProfileAndKey members' = unless (null members') $ do
       delivered <- sendProfile_ members'
       unless (null delivered) $ withStore' (`setMembersMemberKeySent` delivered)
