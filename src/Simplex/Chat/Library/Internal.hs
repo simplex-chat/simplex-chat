@@ -2476,17 +2476,17 @@ sendRelayCapIfNeeded user gInfo = do
       withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages user gInfo scope asGroup members sign events = do
-  gInfo' <- ensureUserMemberKey gInfo
-  sendGroupProfileUpdate user gInfo' scope asGroup members
-  sendGroupMessages_ user gInfo' members sign events
+sendGroupMessages user gInfo' scope asGroup members sign events = do
+  gInfo <- ensureUserMemberKey gInfo'
+  sendGroupProfileUpdate user gInfo scope asGroup members
+  sendGroupMessages_ user gInfo members sign events
 
 -- per-item signer variant of sendGroupMessages (used for per-item delete signing); preserves the profile-update prelude
 sendGroupSignedMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupSignedMessages user gInfo scope asGroup members signedEvents = do
-  gInfo' <- ensureUserMemberKey gInfo
-  sendGroupProfileUpdate user gInfo' scope asGroup members
-  sendGroupSignedMessages_ gInfo' members signedEvents
+sendGroupSignedMessages user gInfo' scope asGroup members signedEvents = do
+  gInfo <- ensureUserMemberKey gInfo'
+  sendGroupProfileUpdate user gInfo scope asGroup members
+  sendGroupSignedMessages_ gInfo members signedEvents
 
 sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
 sendGroupProfileUpdate user gInfo scope asGroup members
