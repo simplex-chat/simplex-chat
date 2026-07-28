@@ -2644,7 +2644,9 @@ sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
 
 saveDirectRcvMSG :: forall e. MsgEncodingI e => Connection -> MsgMeta -> ChatMessage e -> CM (Connection, RcvMessage)
 saveDirectRcvMSG conn@Connection {connId} agentMsgMeta chatMsg@ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
-  conn' <- updatePeerChatVRange conn chatVRange
+  conn' <- case encoding @e of
+    SJson -> updatePeerChatVRange conn chatVRange
+    SBinary -> pure conn
   let agentMsgId = fst $ recipient agentMsgMeta
       brokerTs = metaBrokerTs agentMsgMeta
       newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg = VMUnsigned chatMsg, brokerTs}
