@@ -23,6 +23,7 @@ struct RemoteCtrlLiveActivity: Widget {
                     Spacer(minLength: 8)
                     connectedTimer(context.state.connectedAt)
                         .font(.headline.monospacedDigit())
+                        .multilineTextAlignment(.trailing)
                         .lineLimit(1)
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
