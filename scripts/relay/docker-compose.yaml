@@ -1,0 +1,74 @@
+name: simplex-chat-relay
+
+services:
+  relay:
+    build:
+      context: .
+      args:
+        CHAT_REF: ${CHAT_REF:-v7.0.0-beta.5}
+    image: chat-relay:latest                 # set your image/registry name
+    container_name: chat-relay               # optional: rename
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RELAY_NAME: ${RELAY_NAME}
+      RELAY_WEB_DOMAIN: ${RELAY_WEB_DOMAIN}
+      # Password comes from PGPASSWORD (libpq reads it), so it stays out of the
+      # process argv and needs no URL-encoding.
+      DB_CONN: postgresql://${POSTGRES_USER}@db:5432/${POSTGRES_DB}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # Channel previews + CORS config, served by the host's system Caddy.
+      - /var/www/relay-web-channels:/var/www/relay-web-channels
+      # Relay address is written here: `cat out/relay-address.txt`.
+      - ./out:/out
+    restart: unless-stopped
+
+  db:
+    image: postgres:18
+    container_name: chat-relay-db            # optional: rename
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Parallel workers use POSIX shared memory; the default 64 MB /dev/shm can
+    # be too small and cause "could not resize shared memory segment" errors.
+    shm_size: 256mb
+    volumes:
+      # PG18+ uses a version-specific PGDATA (/var/lib/postgresql/18/docker) and
+      # a VOLUME at /var/lib/postgresql. Mount there so major-version upgrades
+      # can use pg_upgrade --link.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Tuning for ~5 GB RAM / 4 cores. Match to the actual server.
+    # `--name=value` is postgres's equivalent of `-c name=value`.
+    command:
+      - postgres
+      - --max_connections=100
+      - --shared_buffers=1280MB
+      - --effective_cache_size=3840MB
+      - --maintenance_work_mem=320MB
+      - --checkpoint_completion_target=0.9
+      - --wal_buffers=16MB
+      - --default_statistics_target=100
+      - --random_page_cost=1.1
+      - --effective_io_concurrency=200
+      - --work_mem=6301kB
+      - --huge_pages=off
+      - --jit=off
+      - --wal_compression=lz4
+      - --min_wal_size=1GB
+      - --max_wal_size=4GB
+      - --max_worker_processes=4
+      - --max_parallel_workers_per_gather=2
+      - --max_parallel_workers=4
+      - --max_parallel_maintenance_workers=2
+    restart: unless-stopped
+
+volumes:
+  pgdata:
