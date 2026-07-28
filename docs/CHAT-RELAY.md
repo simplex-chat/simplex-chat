@@ -1,6 +1,6 @@
 ---
 title: Hosting your own Chat Relay
-revision: 16.07.2026
+revision: 28.07.2026
 ---
 
 # Hosting your own Chat Relay
@@ -20,6 +20,7 @@ This guide explains how to set up a chat relay on a Linux server, how to run it,
    - [Relay options](#relay-options)
    - [Get the relay address](#get-the-relay-address)
    - [Run relay commands](#run-relay-commands)
+- [Run with Docker](#run-with-docker)
 - [Channel web previews](#channel-web-previews)
    - [Relay web options](#relay-web-options)
    - [Serve the previews with Caddy](#serve-the-previews-with-caddy)
@@ -125,6 +126,71 @@ systemctl stop simplex-relay
 simplex-chat-relay -d /home/relay/relay -e "/set profile image file /home/relay/new-avatar.png"
 systemctl start simplex-relay
 ```
+
+## Run with Docker
+
+Instead of the binary and `systemd` setup above, you can build and run the relay with Docker Compose. It builds `simplex-chat` from source with PostgreSQL support, runs it against a PostgreSQL container, and generates channel web previews. The files are in [`scripts/relay`](https://github.com/simplex-chat/simplex-chat/tree/master/scripts/relay). You need Docker with the Compose plugin.
+
+1. Clone the repository and switch to the relay directory:
+
+   ```sh
+   git clone https://github.com/simplex-chat/simplex-chat
+   cd simplex-chat/scripts/relay
+   ```
+
+2. Copy the example environment file and edit it:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+   Set `RELAY_NAME` (display name), `RELAY_WEB_DOMAIN` (the domain previews are served from), and `POSTGRES_PASSWORD`. `CHAT_REF` pins the `simplex-chat` tag that is built.
+
+3. Create the directory the relay writes previews and the CORS file to, owned by the container's user (UID `1000`):
+
+   ```sh
+   mkdir -p /var/www/relay-web-channels/channel
+   chown -R 1000:1000 /var/www/relay-web-channels
+   chmod 0755 /var/www/relay-web-channels
+   ```
+
+4. Create the output directory for the relay address (also owned by UID `1000`), then build and start:
+
+   ```sh
+   mkdir -p out && chown 1000:1000 out
+   docker compose build
+   docker compose up -d
+   ```
+
+   The first build compiles `simplex-chat` from source and takes a while. PostgreSQL starts first; the relay creates its profile and address on the first start.
+
+5. Read the relay address, written to a file on the first start:
+
+   ```sh
+   cat out/relay-address.txt
+   ```
+
+   It is also in the logs: `docker compose logs relay | grep -A1 "address is created"`.
+
+To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml` that mounts it and sets `RELAY_IMAGE_FILE`:
+
+```yaml
+services:
+  relay:
+    environment:
+      RELAY_IMAGE_FILE: /avatar.png
+    volumes:
+      - ./avatar.png:/avatar.png:ro
+```
+
+To run a one-off command against the relay's database (e.g. to change the picture later), override the entrypoint:
+
+```sh
+docker compose run --rm --entrypoint sh relay -c \
+  'simplex-chat-relay -d "$DB_CONN" -e "/set profile image file /avatar.png"'
+```
+
+The compose file already runs the relay with the web-preview options, writing previews and the CORS file to `/var/www/relay-web-channels`. To serve them, follow [Serve the previews with Caddy](#serve-the-previews-with-caddy) and [Reload CORS automatically](#reload-cors-automatically) below, but skip the `usermod -aG relay caddy` step: with Docker the files are world-readable and there is no `relay` user.
 
 ## Channel web previews
 
