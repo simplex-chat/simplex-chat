@@ -1704,9 +1704,8 @@ updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' 
         toView $ CEvtContactPQEnabled user ct' pqRcvEnabled'
       pure (ct', conn')
 
-updatePeerChatVRange :: SMsgEncoding e -> Connection -> VersionRangeChat -> CM Connection
-updatePeerChatVRange SBinary conn _ = pure conn
-updatePeerChatVRange SJson conn@Connection {connId, connChatVersion = v, peerChatVRange, connType, pqSupport, pqEncryption} msgVRange = do
+updatePeerChatVRange :: Connection -> VersionRangeChat -> CM Connection
+updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRange, connType, pqSupport, pqEncryption} msgVRange = do
   v' <- lift $ upgradedConnVersion v msgVRange
   conn' <-
     if msgVRange /= peerChatVRange || v' /= v
@@ -2675,7 +2674,9 @@ sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
 
 saveDirectRcvMSG :: forall e. MsgEncodingI e => Connection -> MsgMeta -> ChatMessage e -> CM (Connection, RcvMessage)
 saveDirectRcvMSG conn@Connection {connId} agentMsgMeta chatMsg@ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
-  conn' <- updatePeerChatVRange (encoding @e) conn chatVRange
+  conn' <- case encoding @e of
+    SJson -> updatePeerChatVRange conn chatVRange
+    SBinary -> pure conn
   let agentMsgId = fst $ recipient agentMsgMeta
       brokerTs = metaBrokerTs agentMsgMeta
       newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg = VMUnsigned chatMsg, brokerTs}
