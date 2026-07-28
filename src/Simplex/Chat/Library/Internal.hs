@@ -2248,7 +2248,7 @@ sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
 
 batchSendConnMessages :: GroupInfo -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessages gInfo user conn msgFlags msgs =
-  batchSendConnMessagesB mode user conn msgFlags (L.map Right msgs)
+  batchSendConnMessagesB mode user conn msgFlags $ L.map Right msgs
   where
     mode
       | useRelays' gInfo || maxVersion (peerChatVRange conn) >= relayWebCapVersion = BMBinary
