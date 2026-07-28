@@ -649,7 +649,13 @@ struct ChatListSearchBar: View {
             // a typed name shows a row to connect to it (as on Android mobile): with the reachable toolbar it
             // replaces the tags above the search field; in top bar mode the tags stay and it moves below (end of VStack)
             if oneHandUI, let candidate = connectNameCandidate {
-                connectByNameRow(candidate)
+                ConnectByNameRow(
+                    name: candidate,
+                    searchText: $searchText,
+                    connectNameCandidate: $connectNameCandidate,
+                    searchFocussed: $searchFocussed,
+                    dismiss: false
+                )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             }
@@ -688,7 +694,13 @@ struct ChatListSearchBar: View {
                 }
             }
             if !oneHandUI, let candidate = connectNameCandidate {
-                connectByNameRow(candidate)
+                ConnectByNameRow(
+                    name: candidate,
+                    searchText: $searchText,
+                    connectNameCandidate: $connectNameCandidate,
+                    searchFocussed: $searchFocussed,
+                    dismiss: false
+                )
             }
         }
         .onChange(of: searchFocussed) { sf in
@@ -770,10 +782,33 @@ struct ChatListSearchBar: View {
         }
     }
 
-    // Row shown in place of the list tags when the search text is a SimpleX name. The @ icon marks a
-    // contact name, the tag icon a channel/other name; tapping hides the keyboard, connects online, and
-    // clears the field.
-    private func connectByNameRow(_ name: String) -> some View {
+    private func connect(_ link: String) {
+        planAndConnect(
+            link,
+            theme: theme,
+            dismiss: false,
+            cleanup: {
+                searchText = ""
+                searchFocussed = false
+            },
+            filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
+            filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
+        )
+    }
+}
+
+// Row shown when the search text is a SimpleX name — in place of the list tags in the chat list, below
+// the search field in the new chat sheet. The @ icon marks a contact name, the tag icon a channel/other
+// name; tapping hides the keyboard, connects online, and clears the field.
+struct ConnectByNameRow: View {
+    @EnvironmentObject var theme: AppTheme
+    var name: String
+    @Binding var searchText: String
+    @Binding var connectNameCandidate: String?
+    @FocusState.Binding var searchFocussed: Bool
+    var dismiss: Bool
+
+    var body: some View {
         HStack(spacing: 4) {
             Image(systemName: name.hasPrefix("@") ? "at" : "number")
                 .foregroundColor(theme.colors.primary)
@@ -788,27 +823,13 @@ struct ChatListSearchBar: View {
             planAndConnect(
                 name,
                 theme: theme,
-                dismiss: false,
+                dismiss: dismiss,
                 cleanup: {
                     searchText = ""
                     connectNameCandidate = nil
                 }
             )
         }
-    }
-
-    private func connect(_ link: String) {
-        planAndConnect(
-            link,
-            theme: theme,
-            dismiss: false,
-            cleanup: {
-                searchText = ""
-                searchFocussed = false
-            },
-            filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
-            filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
-        )
     }
 }
 
