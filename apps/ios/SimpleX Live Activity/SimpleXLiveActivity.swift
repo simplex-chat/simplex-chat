@@ -7,29 +7,32 @@ import WidgetKit
 struct RemoteCtrlLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RemoteCtrlActivityAttributes.self) { context in
-            HStack(spacing: 14) {
-                simplexLogo(size: 44)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Connected to desktop")
-                        .font(.headline)
-                    Text(context.attributes.desktopName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+            GeometryReader { proxy in
+                HStack(spacing: 12) {
+                    simplexLogo(size: 36)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Connected to desktop")
+                            .font(.headline)
+                            .lineLimit(1)
+                        Text(context.attributes.desktopName)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .layoutPriority(1)
+                    Spacer(minLength: 8)
+                    connectedTimer(context.state.connectedAt)
+                        .font(.headline.monospacedDigit())
                         .lineLimit(1)
                 }
-                Spacer(minLength: 12)
-                connectedTimer(context.state.connectedAt)
-                    .font(.headline.monospacedDigit())
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .activityBackgroundTint(Color(uiColor: .systemBackground))
-            .activitySystemActionForegroundColor(.primary)
+            .frame(height: 64)
+            .padding(.horizontal, 14)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    simplexLogo(size: 30)
+                    simplexLogo(size: 24)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     connectedTimer(context.state.connectedAt)
@@ -37,17 +40,17 @@ struct RemoteCtrlLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     Text("Connected to \(context.attributes.desktopName)")
+                        .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
-                        .frame(maxWidth: .infinity)
                 }
             } compactLeading: {
-                simplexLogo(size: 22)
+                simplexLogo(size: 16)
             } compactTrailing: {
                 connectedTimer(context.state.connectedAt)
                     .font(.caption2.monospacedDigit())
                     .frame(width: 40)
             } minimal: {
-                simplexLogo(size: 20)
+                simplexLogo(size: 14)
             }
         }
     }
@@ -61,6 +64,10 @@ struct RemoteCtrlLiveActivity: Widget {
     }
 
     private func connectedTimer(_ connectedAt: Date) -> Text {
-        Text(timerInterval: connectedAt...Date.distantFuture, countsDown: false)
+        Text(
+            timerInterval: connectedAt...connectedAt.addingTimeInterval(8 * 60 * 60),
+            countsDown: false,
+            showsHours: false
+        )
     }
 }

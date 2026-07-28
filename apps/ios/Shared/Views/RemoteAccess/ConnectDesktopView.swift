@@ -306,7 +306,7 @@ struct ConnectDesktopView: View {
                 }
             }
         }
-        .navigationTitle("Connected to desktop")
+        .navigationTitle(scenePhase == .active ? Text("Connected to desktop") : Text(""))
         .modifier(ThemedBackground(grouped: true))
     }
 
