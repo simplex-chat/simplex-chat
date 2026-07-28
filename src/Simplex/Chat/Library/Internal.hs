@@ -1704,23 +1704,22 @@ updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' 
         toView $ CEvtContactPQEnabled user ct' pqRcvEnabled'
       pure (ct', conn')
 
-updatePeerChatVRange :: forall e. MsgEncodingI e => Connection -> VersionRangeChat -> ChatMsgEvent e -> CM Connection
-updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRange, connType, pqSupport, pqEncryption} msgVRange _ = case encoding @e of
-  SBinary -> pure conn
-  SJson -> do
-    v' <- lift $ upgradedConnVersion v msgVRange
-    conn' <-
-      if msgVRange /= peerChatVRange || v' /= v
-        then do
-          withStore' $ \db -> setPeerChatVRange db connId v' msgVRange
-          pure conn {connChatVersion = v', peerChatVRange = msgVRange}
-        else pure conn
-    -- TODO v6.0 remove/review: for contacts only version upgrade should trigger enabling PQ support/encryption
-    if connType == ConnContact && v' >= pqEncryptionCompressionVersion && (pqSupport /= PQSupportOn || pqEncryption /= PQEncOn)
+updatePeerChatVRange :: SMsgEncoding e -> Connection -> VersionRangeChat -> CM Connection
+updatePeerChatVRange SBinary conn _ = pure conn
+updatePeerChatVRange SJson conn@Connection {connId, connChatVersion = v, peerChatVRange, connType, pqSupport, pqEncryption} msgVRange = do
+  v' <- lift $ upgradedConnVersion v msgVRange
+  conn' <-
+    if msgVRange /= peerChatVRange || v' /= v
       then do
-        withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn PQEncOn
-        pure conn' {pqSupport = PQSupportOn, pqEncryption = PQEncOn}
-      else pure conn'
+        withStore' $ \db -> setPeerChatVRange db connId v' msgVRange
+        pure conn {connChatVersion = v', peerChatVRange = msgVRange}
+      else pure conn
+  -- TODO v6.0 remove/review: for contacts only version upgrade should trigger enabling PQ support/encryption
+  if connType == ConnContact && v' >= pqEncryptionCompressionVersion && (pqSupport /= PQSupportOn || pqEncryption /= PQEncOn)
+    then do
+      withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn PQEncOn
+      pure conn' {pqSupport = PQSupportOn, pqEncryption = PQEncOn}
+    else pure conn'
 
 updateMemberChatVRange :: GroupMember -> Connection -> VersionRangeChat -> CM (GroupMember, Connection)
 updateMemberChatVRange mem@GroupMember {groupMemberId, memberChatVRange} conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do
@@ -2676,7 +2675,7 @@ sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
 
 saveDirectRcvMSG :: forall e. MsgEncodingI e => Connection -> MsgMeta -> ChatMessage e -> CM (Connection, RcvMessage)
 saveDirectRcvMSG conn@Connection {connId} agentMsgMeta chatMsg@ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
-  conn' <- updatePeerChatVRange conn chatVRange chatMsgEvent
+  conn' <- updatePeerChatVRange (encoding @e) conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       brokerTs = metaBrokerTs agentMsgMeta
       newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg = VMUnsigned chatMsg, brokerTs}

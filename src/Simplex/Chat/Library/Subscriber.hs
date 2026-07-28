@@ -576,8 +576,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             directMsgReceived ct conn msgMeta msgRcpt
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
-          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn' connInfo
-          conn'' <- updatePeerChatVRange conn' chatVRange chatMsgEvent
+          ChatMessage {chatVRange, chatMsgEvent} :: ChatMessage e <- parseChatMessage conn' connInfo
+          conn'' <- updatePeerChatVRange (encoding @e) conn' chatVRange
           case chatMsgEvent of
             -- confirming direct connection with a member
             XGrpMemInfo _memId _memProfile -> do
@@ -606,8 +606,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
-          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-          _conn' <- updatePeerChatVRange conn chatVRange chatMsgEvent
+          ChatMessage {chatVRange, chatMsgEvent} :: ChatMessage e <- parseChatMessage conn connInfo
+          _conn' <- updatePeerChatVRange (encoding @e) conn chatVRange
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
               -- TODO check member ID
@@ -790,8 +790,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _pqSupport _ connInfo -> do
-        ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-        conn' <- updatePeerChatVRange conn chatVRange chatMsgEvent
+        ChatMessage {chatVRange, chatMsgEvent} :: ChatMessage e <- parseChatMessage conn connInfo
+        conn' <- updatePeerChatVRange (encoding @e) conn chatVRange
         case memberCategory m of
           GCInviteeMember ->
             case chatMsgEvent of
@@ -855,8 +855,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO _pqSupport connInfo -> do
-        ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-        _conn' <- updatePeerChatVRange conn chatVRange chatMsgEvent
+        ChatMessage {chatVRange, chatMsgEvent} :: ChatMessage e <- parseChatMessage conn connInfo
+        _conn' <- updatePeerChatVRange (encoding @e) conn chatVRange
         case chatMsgEvent of
           XGrpMemInfo memId _memProfile
             | sameMemberId memId m -> do
@@ -3097,8 +3097,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Maybe GroupInfo)
     saveConnInfo activeConn connInfo = do
-      ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
-      conn' <- updatePeerChatVRange activeConn chatVRange chatMsgEvent
+      ChatMessage {chatVRange, chatMsgEvent} :: ChatMessage e <- parseChatMessage activeConn connInfo
+      conn' <- updatePeerChatVRange (encoding @e) activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db cxt user conn' p
