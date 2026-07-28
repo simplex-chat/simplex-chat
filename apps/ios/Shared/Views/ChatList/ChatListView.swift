@@ -815,8 +815,8 @@ struct ChatListSearchBar: View {
 // Default top-level part used to complete a bare name typed in the search field (search field only;
 // the message parser and the wire format are unchanged).
 private let DEFAULT_NAME_TLD = "testing"
-// Shortest name that offers the button, so it is discoverable but does not flash on a single letter.
-private let MIN_NAME_LENGTH = 2
+// Shortest name that offers the button, so it is discoverable but does not flash on short prefixes.
+private let MIN_NAME_LENGTH = 5
 
 private func isNameLabel(_ s: String) -> Bool {
     s.count >= 1 && s.count <= 63 && s.range(of: "^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$", options: .regularExpression) != nil
