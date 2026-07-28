@@ -4835,7 +4835,7 @@ alert title */
 "Public channels - speak freely 🚀" = "Nyilvános csatornák – mondja el szabadon a véleményét 🚀";
 
 /* No comment provided by engineer. */
-"Public names for your channel or business." = "Nevek a csatornákhoz vagy az üzleti profilokhoz.";
+"Public names for your channel or business." = "Nyilvános nevek a csatornákhoz vagy az üzleti profilokhoz.";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Leküldéses értesítések";
@@ -5900,7 +5900,7 @@ copied message info */
 "SimpleX protocols reviewed by Trail of Bits." = "A SimpleX protokollokat a Trail of Bits auditálta.";
 
 /* No comment provided by engineer. */
-"SimpleX public names (BETA)" = "SimpleX-nevek (béta)";
+"SimpleX public names (BETA)" = "Nyilvános SimpleX-nevek (béta)";
 
 /* simplex link type */
 "SimpleX relay address" = "SimpleX-átjátszó címe";

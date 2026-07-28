@@ -569,7 +569,7 @@
     <string name="smp_servers_invalid_address">¡Dirección de servidor no válida!</string>
     <string name="make_private_connection">Establecer una conexión privada</string>
     <string name="network_error_desc">Comprueba tu conexión de red con %1$s e inténtalo de nuevo.</string>
-    <string name="sender_may_have_deleted_the_connection_request">El servidor ha eliminado la solicitud de conexión.</string>
+    <string name="sender_may_have_deleted_the_connection_request">El remitente ha eliminado la solicitud de conexión.</string>
     <string name="error_smp_test_certificate">La huella en la dirección del servidor no coincide con el certificado.</string>
     <string name="reply_verb">Responder</string>
     <string name="save_passphrase_in_keychain">Guardar contraseña en Keystore</string>
@@ -2906,8 +2906,8 @@
     <string name="info_row_signed">Firmado</string>
     <string name="info_row_signed_verified">Firmado y verificado</string>
     <string name="sign_messages">Firmar mensajes</string>
-    <string name="require_message_signatures">Se requieren mensajes firmados.</string>
-    <string name="do_not_require_message_signatures">No se requieren mensajes firmados.</string>
+    <string name="require_message_signatures">Requerir la firma de mensajes.</string>
+    <string name="do_not_require_message_signatures">No requerir la firma de mensajes.</string>
     <string name="message_signatures_are_required">Los mensajes firmados son obligatorios.</string>
     <string name="message_signatures_are_not_required">Los mensajes firmados no son obligatorios.</string>
     <string name="show_signature">Mostrar firma</string>
@@ -2915,13 +2915,13 @@
     <string name="signature_missing_alert_title">Falta la firma</string>
     <string name="signature_missing_alert_desc">El canal requiere que el mensaje esté firmado, pero falta la firma.</string>
     <string name="channel_simplex_name">Nombre SimpleX del canal</string>
-    <string name="register_test_name">Cómo registrar nombres en pruebas</string>
+    <string name="register_test_name">Cómo registrar un nombre de prueba</string>
     <string name="add_description">Añadir descripción</string>
     <string name="profile_description__field">Descripción</string>
     <string name="edit_description">Editar descripción</string>
     <string name="enter_description_optional">Introduce descripción (opcional)</string>
     <string name="error_sharing_address">Error compartiendo dirección</string>
-    <string name="to_verify_channel_member_key">Para verificar la clave con el suscriptor, compara (o escanea) el código en tu dispositivo.</string>
+    <string name="to_verify_channel_member_key">Para verificar las claves con este suscriptor, compara (o escanea) el código en ambos dispositivos.</string>
     <string name="v7_0_channels_contributors">Añade colaboradores.</string>
     <string name="v7_0_channels">Canales mejorados 📢</string>
     <string name="v7_0_channels_previews">Crea previsualizaciones web.</string>

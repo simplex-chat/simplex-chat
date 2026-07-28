@@ -4835,7 +4835,7 @@ alert title */
 "Public channels - speak freely 🚀" = "Canali pubblici - parla liberamente 🚀";
 
 /* No comment provided by engineer. */
-"Public names for your channel or business." = "Nomi per il tuo canale o per il lavoro.";
+"Public names for your channel or business." = "Nomi pubblici per il tuo canale o per il lavoro.";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Notifiche push";
@@ -5900,7 +5900,7 @@ copied message info */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocolli di SimpleX esaminati da Trail of Bits.";
 
 /* No comment provided by engineer. */
-"SimpleX public names (BETA)" = "Nomi SimpleX (BETA)";
+"SimpleX public names (BETA)" = "Nomi pubblici SimpleX (BETA)";
 
 /* simplex link type */
 "SimpleX relay address" = "Indirizzo del relay SimpleX";

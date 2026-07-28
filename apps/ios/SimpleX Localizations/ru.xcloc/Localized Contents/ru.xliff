@@ -11237,7 +11237,7 @@ Relays can access channel messages.</source>
       </trans-unit>
       <trans-unit id="acknowledged roster" xml:space="preserve">
         <source>acknowledged roster</source>
-        <target>подтвержденный список</target>
+        <target>подтверждённый список</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="active" xml:space="preserve">

@@ -3382,7 +3382,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Do not require signing messages." xml:space="preserve">
         <source>Do not require signing messages.</source>
-        <target>No se requieren mensajes firmados.</target>
+        <target>No requerir la firma de mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do not send history to new members." xml:space="preserve">
@@ -4927,7 +4927,7 @@ Error: %2$@</target>
       </trans-unit>
       <trans-unit id="How to register a test name" xml:space="preserve">
         <source>How to register a test name</source>
-        <target>Cómo registrar nombres en pruebas</target>
+        <target>Cómo registrar un nombre de prueba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -7741,7 +7741,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Require signing messages." xml:space="preserve">
         <source>Require signing messages.</source>
-        <target>Se requieren mensajes firmados.</target>
+        <target>Requerir la firma de mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Required" xml:space="preserve">
@@ -9863,7 +9863,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="To verify keys with this subscriber, compare (or scan) the code on your devices." xml:space="preserve">
         <source>To verify keys with this subscriber, compare (or scan) the code on your devices.</source>
-        <target>Para verificar la clave con el suscriptor, compara (o escanea) el código en tu dispositivo.</target>
+        <target>Para verificar las claves con este suscriptor, compara (o escanea) el código en ambos dispositivos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">

@@ -2244,7 +2244,7 @@ alert button */
 "Do it later" = "Hacer más tarde";
 
 /* No comment provided by engineer. */
-"Do not require signing messages." = "No se requieren mensajes firmados.";
+"Do not require signing messages." = "No requerir la firma de mensajes.";
 
 /* No comment provided by engineer. */
 "Do not send history to new members." = "No se envía el historial a los miembros nuevos.";
@@ -3256,7 +3256,7 @@ servers warning */
 "How to" = "Cómo";
 
 /* No comment provided by engineer. */
-"How to register a test name" = "Cómo registrar nombres en pruebas";
+"How to register a test name" = "Cómo registrar un nombre de prueba";
 
 /* No comment provided by engineer. */
 "How to use it" = "Guía de uso";
@@ -5146,7 +5146,7 @@ swipe action */
 "requested to connect" = "solicitado para conectar";
 
 /* No comment provided by engineer. */
-"Require signing messages." = "Se requieren mensajes firmados.";
+"Require signing messages." = "Requerir la firma de mensajes.";
 
 /* No comment provided by engineer. */
 "Required" = "Obligatorio";
@@ -6467,7 +6467,7 @@ alert subtitle */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.";
 
 /* No comment provided by engineer. */
-"To verify keys with this subscriber, compare (or scan) the code on your devices." = "Para verificar la clave con el suscriptor, compara (o escanea) el código en tu dispositivo.";
+"To verify keys with this subscriber, compare (or scan) the code on your devices." = "Para verificar las claves con este suscriptor, compara (o escanea) el código en ambos dispositivos.";
 
 /* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Activa incógnito al conectar.";

@@ -467,7 +467,7 @@ swipe action */
 "Acknowledged" = "Подтверждено";
 
 /* No comment provided by engineer. */
-"acknowledged roster" = "подтвержденный список";
+"acknowledged roster" = "подтверждённый список";
 
 /* No comment provided by engineer. */
 "Acknowledgement errors" = "Ошибки подтверждения";

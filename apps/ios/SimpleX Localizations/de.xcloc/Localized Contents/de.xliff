@@ -4927,7 +4927,7 @@ Fehler: %2$@</target>
       </trans-unit>
       <trans-unit id="How to register a test name" xml:space="preserve">
         <source>How to register a test name</source>
-        <target>Einen Test-Namen registrieren</target>
+        <target>Wie man einen Test-Namen registriert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -7319,7 +7319,7 @@ Aktivieren Sie es in den *Netzwerk und Server* Einstellungen.</target>
       </trans-unit>
       <trans-unit id="Public names for your channel or business." xml:space="preserve">
         <source>Public names for your channel or business.</source>
-        <target>Namen für Ihren Kanal oder Ihr Unternehmen.</target>
+        <target>Öffentliche Namen für Ihren Kanal oder Ihr Unternehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -8945,7 +8945,7 @@ copied message info</note>
       </trans-unit>
       <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
         <source>SimpleX public names (BETA)</source>
-        <target>SimpleX-Namen (BETA)</target>
+        <target>Öffentliche SimpleX-Namen (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">
