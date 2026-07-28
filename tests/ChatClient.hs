@@ -250,7 +250,7 @@ testCfgVPrev =
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
-    { chatVRange = v1Range,
+    { chatVRange = chatInitialVRange,
       agentConfig = testAgentCfgV1
     }
 
