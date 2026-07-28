@@ -2505,6 +2505,11 @@ sendGroupProfileUpdate user gInfo scope asGroup members
             (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
             (Nothing, Just _) -> True
             _ -> False
+    sendProfile_ members' = do
+      let incognitoProfile = incognitoMembershipProfile gInfo
+      profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+      (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
+      pure $ [mId | (mId, _, Right r) <- sentTo] <> map (\(mId, _, _) -> mId) pending <> map groupMemberId' forwarded
     sendProfileUpdate members' = unless (null members') $ do
       delivered <- sendProfile_ members'
       currentTs <- liftIO getCurrentTime
@@ -2517,11 +2522,6 @@ sendGroupProfileUpdate user gInfo scope asGroup members
       delivered <- sendProfile_ members'
       unless (null delivered) $ withStore' (`setMembersMemberKeySent` delivered)
     memberNeedsKey m = m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
-    sendProfile_ members' = do
-      let incognitoProfile = incognitoMembershipProfile gInfo
-      profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-      (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
-      pure $ [mId | (mId, _, Right r) <- sentTo] <> map (\(mId, _, _) -> mId) pending <> map groupMemberId' forwarded
 
 data GroupSndResult = GroupSndResult
   { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
