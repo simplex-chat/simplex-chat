@@ -204,6 +204,11 @@ private final class RemoteCtrlBackgroundAudio {
 
     private var player: AVQueuePlayer?
     private var looper: AVPlayerLooper?
+    private var previousSessionConfiguration: (
+        category: AVAudioSession.Category,
+        mode: AVAudioSession.Mode,
+        options: AVAudioSession.CategoryOptions
+    )?
 
     private init() {}
 
@@ -216,14 +221,16 @@ private final class RemoteCtrlBackgroundAudio {
         guard #available(iOS 16.1, *) else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
-        do {
-            try AVAudioSession.sharedInstance().setCategory(
-                .playback,
-                mode: .default,
-                options: .mixWithOthers
-            )
-        } catch {
-            logger.error("RemoteCtrlBackgroundAudio audio session error: \(error.localizedDescription)")
+        let audioSession = AVAudioSession.sharedInstance()
+        if audioSession.category != .playAndRecord {
+            previousSessionConfiguration = (audioSession.category, audioSession.mode, audioSession.categoryOptions)
+            do {
+                try audioSession.setCategory(.playback, mode: .default, options: .mixWithOthers)
+            } catch {
+                previousSessionConfiguration = nil
+                logger.error("RemoteCtrlBackgroundAudio audio session error: \(error.localizedDescription)")
+                return
+            }
         }
 
         guard let url = Bundle.main.url(
@@ -232,6 +239,7 @@ private final class RemoteCtrlBackgroundAudio {
             subdirectory: "sounds"
         ) else {
             logger.error("RemoteCtrlBackgroundAudio sample.mp3 not found")
+            restoreAudioSession()
             return
         }
 
@@ -246,6 +254,22 @@ private final class RemoteCtrlBackgroundAudio {
         player?.pause()
         looper = nil
         player = nil
+        restoreAudioSession()
+    }
+
+    private func restoreAudioSession() {
+        guard let previousSessionConfiguration else { return }
+        let audioSession = AVAudioSession.sharedInstance()
+        if audioSession.category == .playback,
+           audioSession.mode == .default,
+           audioSession.categoryOptions == .mixWithOthers {
+            try? audioSession.setCategory(
+                previousSessionConfiguration.category,
+                mode: previousSessionConfiguration.mode,
+                options: previousSessionConfiguration.options
+            )
+        }
+        self.previousSessionConfiguration = nil
     }
 }
 
@@ -282,6 +306,7 @@ private final class RemoteCtrlLiveActivityManager {
                 )
             } catch {
                 logger.error("RemoteCtrlLiveActivity request error: \(error.localizedDescription)")
+                RemoteCtrlBackgroundAudio.shared.stop()
             }
         }
     }
@@ -334,6 +359,7 @@ final class RemoteCtrlBGKeepAlive {
             RemoteCtrlLiveActivityManager.shared.stop()
         }
         RemoteCtrlBackgroundAudio.shared.stop()
+        UIApplication.shared.isIdleTimerDisabled = false
         if suspendForBackground {
             suspendChatForBackground()
         }
