@@ -300,7 +300,7 @@ struct ConnectDesktopView: View {
             Section {
                 disconnectButton()
             } footer: {
-                if !RemoteCtrlBGKeepAlive.shared.continuedProcessingAccepted {
+                if !RemoteCtrlBGKeepAlive.shared.backgroundAudioActive {
                     Text("Keep the app open to use it from desktop")
                         .foregroundColor(theme.colors.secondary)
                 }
@@ -478,9 +478,7 @@ struct ConnectDesktopView: View {
                 let rc = try await verifyRemoteCtrlSession(sessCode)
                 await MainActor.run {
                     m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: rc, sessionCode: sessCode))
-                    if #available(iOS 26.0, *) {
-                        RemoteCtrlBGKeepAlive.shared.startContinuedProcessing()
-                    }
+                    RemoteCtrlBGKeepAlive.shared.start()
                 }
                 await MainActor.run {
                     updateRemoteCtrls()
