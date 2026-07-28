@@ -4030,9 +4030,6 @@ servers warning */
 "Name not found" = "Nem található a név";
 
 /* No comment provided by engineer. */
-"Names for your channel or business." = "Nevek a csatornákhoz vagy az üzleti profilokhoz.";
-
-/* No comment provided by engineer. */
 "Network & servers" = "Hálózat és kiszolgálók";
 
 /* No comment provided by engineer. */
@@ -4836,6 +4833,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "Public channels - speak freely 🚀" = "Nyilvános csatornák – mondja el szabadon a véleményét 🚀";
+
+/* No comment provided by engineer. */
+"Public names for your channel or business." = "Nevek a csatornákhoz vagy az üzleti profilokhoz.";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Leküldéses értesítések";
@@ -5893,14 +5893,14 @@ copied message info */
 /* alert title */
 "SimpleX name not verified" = "Nincs ellenőrizve a SimpleX-név";
 
-/* No comment provided by engineer. */
-"SimpleX names (BETA)" = "SimpleX-nevek (béta)";
-
 /* simplex link type */
 "SimpleX one-time invitation" = "Egyszer használható SimpleX meghívó";
 
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "A SimpleX protokollokat a Trail of Bits auditálta.";
+
+/* No comment provided by engineer. */
+"SimpleX public names (BETA)" = "SimpleX-nevek (béta)";
 
 /* simplex link type */
 "SimpleX relay address" = "SimpleX-átjátszó címe";

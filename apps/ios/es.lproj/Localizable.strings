@@ -488,6 +488,12 @@ swipe action */
 "Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." = "Añade la dirección a tu perfil para que tus contactos SimpleX puedan compartirla con otros. La actualización del perfil se enviará a tus contactos SimpleX.";
 
 /* No comment provided by engineer. */
+"Add contributors." = "Añade colaboradores.";
+
+/* No comment provided by engineer. */
+"Add description" = "Añadir descripción";
+
+/* No comment provided by engineer. */
 "Add friends" = "Añadir amigos";
 
 /* No comment provided by engineer. */
@@ -932,6 +938,9 @@ swipe action */
 "Better calls" = "Llamadas mejoradas";
 
 /* No comment provided by engineer. */
+"Better channels 📢" = "Canales mejorados 📢";
+
+/* No comment provided by engineer. */
 "Better groups" = "Grupos mejorados";
 
 /* No comment provided by engineer. */
@@ -1220,6 +1229,9 @@ alert subtitle */
 
 /* alert message */
 "Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers." = "El perfil del canal ha sido modificado. Si lo guardas, el perfil actualizado será enviado a los suscriptores.";
+
+/* No comment provided by engineer. */
+"Channel SimpleX name" = "Nombre SimpleX del canal";
 
 /* alert title */
 "Channel temporarily unavailable" = "Canales no disponibles temporalmente";
@@ -1767,6 +1779,9 @@ server test step */
 "Create SimpleX address" = "Crear dirección SimpleX";
 
 /* No comment provided by engineer. */
+"Create web preview." = "Crea previsualizaciones web.";
+
+/* No comment provided by engineer. */
 "Create your address" = "Crea tu dirección";
 
 /* No comment provided by engineer. */
@@ -2229,6 +2244,9 @@ alert button */
 "Do it later" = "Hacer más tarde";
 
 /* No comment provided by engineer. */
+"Do not require signing messages." = "No se requieren mensajes firmados.";
+
+/* No comment provided by engineer. */
 "Do not send history to new members." = "No se envía el historial a los miembros nuevos.";
 
 /* No comment provided by engineer. */
@@ -2257,6 +2275,9 @@ alert button */
 
 /* No comment provided by engineer. */
 "Don't miss important messages." = "No pierdas los mensajes importantes.";
+
+/* alert action */
+"Don't save" = "No guardar";
 
 /* alert action */
 "Don't show again" = "No volver a mostrar";
@@ -2316,11 +2337,17 @@ chat item action */
 /* No comment provided by engineer. */
 "Easier to invite your friends 👋" = "Invitar a tus amigos es más fácil 👋";
 
+/* No comment provided by engineer. */
+"Easier to read." = "Fácil de leer.";
+
 /* chat item action */
 "Edit" = "Editar";
 
 /* No comment provided by engineer. */
 "Edit channel profile" = "Editar perfil del canal";
+
+/* No comment provided by engineer. */
+"Edit description" = "Editar descripción";
 
 /* No comment provided by engineer. */
 "Edit group profile" = "Editar perfil de grupo";
@@ -2477,6 +2504,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enter correct passphrase." = "Introduce la contraseña correcta.";
+
+/* placeholder */
+"Enter description (optional)" = "Introduce descripción (opcional)";
 
 /* No comment provided by engineer. */
 "Enter group name…" = "Nombre del grupo…";
@@ -2740,6 +2770,9 @@ chat item action */
 "Error setting delivery receipts!" = "¡Error al configurar confirmaciones de entrega!";
 
 /* alert title */
+"Error sharing address" = "Error compartiendo dirección";
+
+/* alert title */
 "Error sharing channel" = "Error al compartir el canal";
 
 /* No comment provided by engineer. */
@@ -2880,6 +2913,12 @@ server test error */
 
 /* file error text */
 "File server error: %@" = "Error del servidor de archivos: %@";
+
+/* No comment provided by engineer. */
+"File servers" = "Servidores de archivos";
+
+/* copied message info */
+"File servers: %@" = "Servidores de archivos: %@";
 
 /* No comment provided by engineer. */
 "File status" = "Estado del archivo";
@@ -3067,6 +3106,9 @@ servers warning */
 "Get notified when mentioned." = "Las menciones ahora se notifican.";
 
 /* No comment provided by engineer. */
+"Get SimpleX name (BETA)" = "Obtener nombre SimpleX (BETA)";
+
+/* No comment provided by engineer. */
 "Get started" = "Empezar";
 
 /* No comment provided by engineer. */
@@ -3212,6 +3254,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "How to" = "Cómo";
+
+/* No comment provided by engineer. */
+"How to register a test name" = "Cómo registrar nombres en pruebas";
 
 /* No comment provided by engineer. */
 "How to use it" = "Guía de uso";
@@ -3676,6 +3721,9 @@ servers warning */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Asegúrate de que las direcciones del servidor WebRTC ICE tienen el formato correcto, están separadas por líneas y no duplicadas.";
 
 /* No comment provided by engineer. */
+"Manage your relays." = "Gestiona tus servidores.";
+
+/* No comment provided by engineer. */
 "Mark deleted for everyone" = "Marcar como eliminado para todos";
 
 /* No comment provided by engineer. */
@@ -3824,6 +3872,12 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Message shape" = "Forma del mensaje";
+
+/* No comment provided by engineer. */
+"Message signing is not required." = "Los mensajes firmados no son obligatorios.";
+
+/* No comment provided by engineer. */
+"Message signing is required." = "Los mensajes firmados son obligatorios.";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "El autor del mensaje se mantiene privado.";
@@ -4781,6 +4835,9 @@ alert title */
 "Public channels - speak freely 🚀" = "Canales públicos - habla con libertad 🚀";
 
 /* No comment provided by engineer. */
+"Public names for your channel or business." = "Nombres públicos para tu canal o negocio.";
+
+/* No comment provided by engineer. */
 "Push notifications" = "Notificaciones push";
 
 /* No comment provided by engineer. */
@@ -4978,6 +5035,9 @@ swipe action */
 "Remove member?" = "¿Expulsar miembro?";
 
 /* No comment provided by engineer. */
+"Remove name" = "Eliminar nombre";
+
+/* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "¿Eliminar contraseña de Keychain?";
 
 /* No comment provided by engineer. */
@@ -5084,6 +5144,9 @@ swipe action */
 
 /* chat list item title */
 "requested to connect" = "solicitado para conectar";
+
+/* No comment provided by engineer. */
+"Require signing messages." = "Se requieren mensajes firmados.";
 
 /* No comment provided by engineer. */
 "Required" = "Obligatorio";
@@ -5260,6 +5323,9 @@ chat item action */
 
 /* alert title */
 "Save servers?" = "¿Guardar servidores?";
+
+/* alert title */
+"Save SimpleX name?" = "¿Guardar el nombre SimpleX?";
 
 /* alert title */
 "Save webpage settings?" = "¿Guardar la configuración web?";
@@ -5722,6 +5788,9 @@ chat item action */
 "Show developer options" = "Mostrar opciones de desarrollador";
 
 /* No comment provided by engineer. */
+"Show encryption" = "Mostrar cifrado";
+
+/* No comment provided by engineer. */
 "Show last messages" = "Mostrar último mensaje";
 
 /* No comment provided by engineer. */
@@ -5738,6 +5807,25 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Show:" = "Muestra:";
+
+/* No comment provided by engineer. */
+"Sign message" = "Firmar mensaje";
+
+/* chat feature */
+"Sign messages" = "Firmar mensajes";
+
+/* alert title
+copied message info */
+"Signature missing" = "Falta la firma";
+
+/* copied message info */
+"Signed" = "Firmado";
+
+/* copied message info */
+"Signed & verified" = "Firmado y verificado";
+
+/* No comment provided by engineer. */
+"Signing proves you authored this message and can't be denied later." = "La firma prueba que eres el autor del mensaje sin posibilidad de repudio.";
 
 /* No comment provided by engineer. */
 "SimpleX" = "SimpleX";
@@ -5810,6 +5898,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocolos de SimpleX auditados por Trail of Bits.";
+
+/* No comment provided by engineer. */
+"SimpleX public names (BETA)" = "Nombres públicos SimpleX (BETA)";
 
 /* simplex link type */
 "SimpleX relay address" = "Dirección de servidor SimpleX";
@@ -6125,6 +6216,9 @@ server test failure */
 /* badge alert */
 "The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." = "La insignia está firmada con una clave que esta versión de la app no reconoce. Actualiza la app para verificar la insignia.";
 
+/* alert message */
+"The channel required this message to be signed, but the signature is missing." = "El canal requiere que el mensaje esté firmado, pero falta la firma.";
+
 /* No comment provided by engineer. */
 "The code you scanned is not a SimpleX link QR code." = "El código QR escaneado no es un enlace de SimpleX.";
 
@@ -6371,6 +6465,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.";
+
+/* No comment provided by engineer. */
+"To verify keys with this subscriber, compare (or scan) the code on your devices." = "Para verificar la clave con el suscriptor, compara (o escanea) el código en tu dispositivo.";
 
 /* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Activa incógnito al conectar.";
