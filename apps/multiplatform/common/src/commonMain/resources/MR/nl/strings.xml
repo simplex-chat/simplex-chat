@@ -887,8 +887,7 @@
     <string name="chat_preferences_you_allow">Jij staat toe</string>
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.]]></string>
-    <string name="connection_error_auth_desc">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
-\nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
+    <string name="connection_error_auth_desc">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft. \nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat servers gebruiken\?</string>
     <string name="voice_messages_are_prohibited">Spraak berichten zijn niet toegestaan.</string>
     <string name="personal_welcome">Welkom %1$s!</string>

@@ -665,13 +665,13 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "v7.0-beta.4",
+        version: "v7.0",
         post: nil,
         features: [
             .feature(Description(
                 icon: "at",
-                title: "SimpleX names (BETA)",
-                description: "Names for your channel or business."
+                title: "SimpleX public names (BETA)",
+                description: "Public names for your channel or business."
             )),
             .feature(Description(
                 icon: nil,
