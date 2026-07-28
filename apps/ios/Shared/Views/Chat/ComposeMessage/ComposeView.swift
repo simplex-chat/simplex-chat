@@ -1548,7 +1548,7 @@ struct ComposeView: View {
             let wasForwarding = composeState.forwarding
             clearState(live: live)
             if wasForwarding,
-               chatModel.draftChatId == chat.chatInfo.id,
+               chatModel.draftChatId == draftChatId(chat.chatInfo.id, chat.chatInfo.groupChatScope()),
                let draft = chatModel.draft {
                 composeState = draft
             }
@@ -1851,12 +1851,12 @@ struct ComposeView: View {
     // Spec: spec/client/compose.md#saveCurrentDraft
     private func saveCurrentDraft() {
         chatModel.draft = composeState
-        chatModel.draftChatId = chat.id
+        chatModel.draftChatId = draftChatId(chat.id, chat.chatInfo.groupChatScope())
     }
 
     // Spec: spec/client/compose.md#clearCurrentDraft
     private func clearCurrentDraft() {
-        if chatModel.draftChatId == chat.id {
+        if chatModel.draftChatId == draftChatId(chat.id, chat.chatInfo.groupChatScope()) {
             chatModel.draft = nil
             chatModel.draftChatId = nil
         }

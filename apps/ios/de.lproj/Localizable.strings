@@ -3256,7 +3256,7 @@ servers warning */
 "How to" = "Anleitung";
 
 /* No comment provided by engineer. */
-"How to register a test name" = "Einen Test-Namen registrieren";
+"How to register a test name" = "Wie man einen Test-Namen registriert";
 
 /* No comment provided by engineer. */
 "How to use it" = "Wie man SimpleX nutzt";
@@ -4028,9 +4028,6 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Name not found" = "Name wurde nicht gefunden";
-
-/* No comment provided by engineer. */
-"Names for your channel or business." = "Namen für Ihren Kanal oder Ihr Unternehmen.";
 
 /* No comment provided by engineer. */
 "Network & servers" = "Netzwerk und Server";
@@ -4836,6 +4833,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "Public channels - speak freely 🚀" = "Öffentliche Kanäle – frei sprechen 🚀";
+
+/* No comment provided by engineer. */
+"Public names for your channel or business." = "Öffentliche Namen für Ihren Kanal oder Ihr Unternehmen.";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Push-Benachrichtigungen";
@@ -5893,14 +5893,14 @@ copied message info */
 /* alert title */
 "SimpleX name not verified" = "SimpleX-Name ist nicht verifiziert";
 
-/* No comment provided by engineer. */
-"SimpleX names (BETA)" = "SimpleX-Namen (BETA)";
-
 /* simplex link type */
 "SimpleX one-time invitation" = "SimpleX-Einmal-Einladung";
 
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Die SimpleX-Protokolle wurden von Trail of Bits überprüft.";
+
+/* No comment provided by engineer. */
+"SimpleX public names (BETA)" = "Öffentliche SimpleX-Namen (BETA)";
 
 /* simplex link type */
 "SimpleX relay address" = "SimpleX Relais-Adresse";

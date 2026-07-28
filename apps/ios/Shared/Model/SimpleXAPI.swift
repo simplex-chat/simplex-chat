@@ -2439,7 +2439,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateContact(contact)
                 if let conn = contact.activeConn {
-                    m.dismissConnReqView(conn.id)
+                    m.replaceConnReqView(conn.id, contact.id)
                     m.removeChat(conn.id)
                 }
                 if contact.id == m.chatId, let conn = contact.activeConn {
@@ -2456,7 +2456,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateContact(contact)
                 if let conn = contact.activeConn {
-                    m.dismissConnReqView(conn.id)
+                    m.replaceConnReqView(conn.id, contact.id)
                     m.removeChat(conn.id)
                 }
             }
@@ -2466,7 +2466,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateContact(contact)
                 if let conn = contact.activeConn {
-                    m.dismissConnReqView(conn.id)
+                    m.replaceConnReqView(conn.id, contact.id)
                     m.removeChat(conn.id)
                 }
             }
@@ -2616,7 +2616,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await MainActor.run {
             m.updateGroup(groupInfo)
             if let conn = hostContact?.activeConn {
-                m.dismissConnReqView(conn.id)
+                m.replaceConnReqView(conn.id, groupInfo.id)
                 m.removeChat(conn.id)
             }
         }
@@ -2626,7 +2626,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
             m.updateGroup(groupInfo)
             _ = m.upsertGroupMember(groupInfo, hostMember)
             if let hostConn = hostMember.activeConn {
-                m.dismissConnReqView(hostConn.id)
+                m.replaceConnReqView(hostConn.id, groupInfo.id)
                 m.removeChat(hostConn.id)
             }
         }

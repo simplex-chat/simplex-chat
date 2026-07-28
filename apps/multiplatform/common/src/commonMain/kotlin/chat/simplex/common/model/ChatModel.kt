@@ -202,6 +202,7 @@ object ChatModel {
   val migrationState: MutableState<MigrationToState?> by lazy { mutableStateOf(MigrationToDeviceState.makeMigrationState()) }
 
   var draft = mutableStateOf(null as ComposeState?)
+  // chat id with chat scope, see draftChatId() - group chat and its support chats have the same chat id
   var draftChatId = mutableStateOf(null as String?)
 
   // working with external intents or internal forwarding of chat items
@@ -1258,6 +1259,12 @@ fun sameChatScope(scope1: GroupChatScope, scope2: GroupChatScope) =
   scope1 is GroupChatScope.MemberSupport
       && scope2 is GroupChatScope.MemberSupport
       && scope1.groupMemberId_ == scope2.groupMemberId_
+
+fun draftChatId(chatId: String?, scope: GroupChatScope?): String? =
+  if (chatId == null || scope == null) chatId
+  else when (scope) {
+    is GroupChatScope.MemberSupport -> "$chatId support:${scope.groupMemberId_ ?: ""}"
+  }
 
 @Serializable
 sealed class GroupChatScopeInfo {

@@ -429,6 +429,7 @@ final class ChatModel: ObservableObject {
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
+    // chat id with chat scope, see draftChatId() - group chat and its support chats have the same chat id
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // usage conditions
@@ -1242,6 +1243,15 @@ final class ChatModel: ObservableObject {
     private func popChat_(_ i: Int, to position: Int = 0) {
         let chat = chats.remove(at: i)
         chats.insert(chat, at: position)
+    }
+
+    func replaceConnReqView(_ id: String, _ withId: ChatId) {
+        if id == showingInvitation?.pcc.id {
+            markShowingInvitationUsed()
+            dismissAllSheets(animated: true) {
+                ItemsModel.shared.loadOpenChat(withId)
+            }
+        }
     }
 
     func dismissConnReqView(_ id: String) {
