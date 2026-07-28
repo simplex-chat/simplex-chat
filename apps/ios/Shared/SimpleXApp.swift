@@ -79,7 +79,6 @@ struct SimpleXApp: App {
                         RemoteCtrlBGKeepAlive.shared.handleAppBackgrounding()
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
-                        RemoteCtrlBGKeepAlive.shared.stopLegacyTask()
                         CallController.shared.shouldSuspendChat = false
                         let appState = AppChatState.shared.value
 

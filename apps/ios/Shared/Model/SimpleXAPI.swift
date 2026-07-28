@@ -2906,6 +2906,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await MainActor.run {
             let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
             m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
+            RemoteCtrlBGKeepAlive.shared.start()
         }
     case let .remoteCtrlStopped(_, rcStopReason):
         if let sess = m.remoteCtrlSession {

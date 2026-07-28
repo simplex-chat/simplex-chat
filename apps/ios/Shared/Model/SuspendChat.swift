@@ -8,7 +8,8 @@
 
 import Foundation
 import UIKit
-@preconcurrency import BackgroundTasks
+import ActivityKit
+import AVFoundation
 import SimpleXChat
 import SwiftUI
 
@@ -199,53 +200,142 @@ func suspendChatForBackground() {
     }
 }
 
-private let remoteCtrlKeepAliveTaskId = "chat.simplex.app.remote-control.keepalive.session"
+@MainActor
+private final class RemoteCtrlBackgroundAudio {
+    static let shared = RemoteCtrlBackgroundAudio()
 
-private func remoteCtrlConnectedSubtitle(_ seconds: Int64) -> String {
-    let duration = durationText(Int(seconds))
-    return String.localizedStringWithFormat(
-        NSLocalizedString("Connected for %@", comment: "continued background activity duration"),
-        seconds < 3600 ? "00:\(duration)" : duration
-    )
+    private var player: AVQueuePlayer?
+    private var looper: AVPlayerLooper?
+
+    private init() {}
+
+    var isRunning: Bool {
+        player != nil
+    }
+
+    func start() {
+        guard player == nil else { return }
+        guard #available(iOS 16.1, *) else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+
+        do {
+            try AVAudioSession.sharedInstance().setCategory(
+                .playback,
+                mode: .default,
+                options: .mixWithOthers
+            )
+        } catch {
+            logger.error("RemoteCtrlBackgroundAudio audio session error: \(error.localizedDescription)")
+        }
+
+        guard let url = Bundle.main.url(
+            forResource: "sample",
+            withExtension: "mp3",
+            subdirectory: "sounds"
+        ) else {
+            logger.error("RemoteCtrlBackgroundAudio sample.mp3 not found")
+            return
+        }
+
+        let queuePlayer = AVQueuePlayer()
+        let item = AVPlayerItem(asset: AVURLAsset(url: url))
+        player = queuePlayer
+        looper = AVPlayerLooper(player: queuePlayer, templateItem: item)
+        queuePlayer.seek(to: .zero)
+        queuePlayer.play()
+        logger.debug("RemoteCtrlBackgroundAudio started")
+    }
+
+    func stop() {
+        player?.pause()
+        looper = nil
+        player = nil
+        do {
+            try AVAudioSession.sharedInstance().setActive(
+                false,
+                options: .notifyOthersOnDeactivation
+            )
+        } catch {
+            logger.error("RemoteCtrlBackgroundAudio deactivation error: \(error.localizedDescription)")
+        }
+        logger.debug("RemoteCtrlBackgroundAudio stopped")
+    }
+}
+
+@available(iOS 16.1, *)
+@MainActor
+private final class RemoteCtrlLiveActivityManager {
+    static let shared = RemoteCtrlLiveActivityManager()
+
+    private var activity: Activity<RemoteCtrlActivityAttributes>?
+    private var lifecycleTask: Task<Void, Never>?
+    private var generation = 0
+
+    private init() {}
+
+    func start(desktopName: String) {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard activity == nil else { return }
+        generation += 1
+        let requestedGeneration = generation
+        let previousTask = lifecycleTask
+        lifecycleTask = Task {
+            await previousTask?.value
+            guard requestedGeneration == generation else { return }
+            for staleActivity in Activity<RemoteCtrlActivityAttributes>.activities {
+                await staleActivity.end(using: nil, dismissalPolicy: .immediate)
+            }
+            guard requestedGeneration == generation else { return }
+            do {
+                let state = RemoteCtrlActivityAttributes.ContentState(connectedAt: .now)
+                activity = try Activity.request(
+                    attributes: RemoteCtrlActivityAttributes(desktopName: desktopName),
+                    contentState: state,
+                    pushType: nil
+                )
+            } catch {
+                logger.error("RemoteCtrlLiveActivity request error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func stop() {
+        generation += 1
+        activity = nil
+        let previousTask = lifecycleTask
+        lifecycleTask = Task {
+            await previousTask?.value
+            for activeActivity in Activity<RemoteCtrlActivityAttributes>.activities {
+                await activeActivity.end(using: nil, dismissalPolicy: .immediate)
+            }
+        }
+    }
 }
 
 @MainActor
 final class RemoteCtrlBGKeepAlive {
     static let shared = RemoteCtrlBGKeepAlive()
 
-    private var registered = false
-    private var continuedTask: BGTask?
-    private var continuedProgressTask: Task<Void, Never>?
-    private var remoteCtrlElapsedSecondsProvider: (() -> Int64)?
-    private var legacyTask: UIBackgroundTaskIdentifier = .invalid
-    private var legacyTaskToken: UUID?
     private var sessionTerminationInProgress = false
     private var deferredRemoteStoppedSession: RemoteCtrlSession?
-    private(set) var continuedProcessingAccepted = false
 
     private init() {}
 
-    @available(iOS 26.0, *)
-    func startContinuedProcessing() {
-        let clock = ContinuousClock()
-        let connectedAt = clock.now
-        guard ChatModel.shared.activeRemoteCtrl, registerContinuedProcessing() else { return }
+    var backgroundAudioActive: Bool {
+        RemoteCtrlBackgroundAudio.shared.isRunning
+    }
 
-        let request = BGContinuedProcessingTaskRequest(
-            identifier: remoteCtrlKeepAliveTaskId,
-            title: NSLocalizedString("Connected to desktop", comment: "continued background activity title"),
-            subtitle: remoteCtrlConnectedSubtitle(0)
-        )
-        request.strategy = .fail
-        do {
-            try BGTaskScheduler.shared.submit(request)
-            remoteCtrlElapsedSecondsProvider = {
-                connectedAt.duration(to: clock.now).components.seconds
-            }
-            continuedProcessingAccepted = true
-        } catch {
-            logger.error("RemoteCtrlBGKeepAlive.submit error: \(error.localizedDescription)")
+    func start() {
+        // Threat model: a verified desktop, including a malicious or stalled peer,
+        // can keep audio and network work active until the user disconnects here.
+        // Every local termination path releases the keepalive and restores local UI.
+        guard ChatModel.shared.activeRemoteCtrl else { return }
+        if #available(iOS 16.1, *),
+           let session = ChatModel.shared.remoteCtrlSession,
+           case let .connected(remoteCtrl, _) = session.sessionState {
+            RemoteCtrlLiveActivityManager.shared.start(desktopName: remoteCtrl.deviceViewName)
         }
+        RemoteCtrlBackgroundAudio.shared.start()
     }
 
     func handleAppBackgrounding() {
@@ -253,36 +343,10 @@ final class RemoteCtrlBGKeepAlive {
             // Restore locally before the scene path suspends chat if backgrounding
             // happens during the remote-stop recovery delay.
             deferredRemoteStoppedSession = nil
-            completeSessionTermination(session, success: true, suspendForBackground: true)
-        } else if !keepSessionInBackground() {
+            completeSessionTermination(session, suspendForBackground: true)
+        } else if !backgroundAudioActive {
             suspendChatForBackground()
         }
-    }
-
-    private func keepSessionInBackground() -> Bool {
-        guard ChatModel.shared.activeRemoteCtrl || sessionTerminationInProgress else { return false }
-        if continuedTask != nil { return true }
-        if legacyTask == .invalid {
-            let token = UUID()
-            legacyTaskToken = token
-            legacyTask = UIApplication.shared.beginBackgroundTask {
-                Task { @MainActor in
-                    await RemoteCtrlBGKeepAlive.shared.expireLegacyTask(token)
-                }
-            }
-            if legacyTask == .invalid {
-                legacyTaskToken = nil
-                finish(success: false)
-            }
-        }
-        return legacyTask != .invalid
-    }
-
-    func stopLegacyTask() {
-        guard legacyTask != .invalid else { return }
-        legacyTaskToken = nil
-        UIApplication.shared.endBackgroundTask(legacyTask)
-        legacyTask = .invalid
     }
 
     func disconnectRemoteCtrl() async throws {
@@ -292,13 +356,12 @@ final class RemoteCtrlBGKeepAlive {
         do {
             try await stopRemoteCtrl()
         } catch {
-            if ChatModel.shared.remoteCtrlSession != nil {
-                sessionTerminationInProgress = false
-                throw error
-            }
+            let suspendForBackground = UIApplication.shared.applicationState == .background
+            completeSessionTermination(session, suspendForBackground: suspendForBackground)
+            throw error
         }
         let suspendForBackground = UIApplication.shared.applicationState == .background
-        completeSessionTermination(session, success: true, suspendForBackground: suspendForBackground)
+        completeSessionTermination(session, suspendForBackground: suspendForBackground)
     }
 
     func handleRemoteCtrlStopped(_ session: RemoteCtrlSession) {
@@ -315,39 +378,17 @@ final class RemoteCtrlBGKeepAlive {
                 let suspendForBackground = UIApplication.shared.applicationState == .background
                 RemoteCtrlBGKeepAlive.shared.completeSessionTermination(
                     session,
-                    success: true,
                     suspendForBackground: suspendForBackground
                 )
             }
         } else {
             let suspendForBackground = UIApplication.shared.applicationState == .background
-            completeSessionTermination(session, success: true, suspendForBackground: suspendForBackground)
+            completeSessionTermination(session, suspendForBackground: suspendForBackground)
         }
-    }
-
-    private func expireLegacyTask(_ token: UUID) async {
-        guard legacyTaskToken == token else { return }
-        await expire()
-    }
-
-    @available(iOS 26.0, *)
-    private func expireContinuedProcessingTask(_ task: BGContinuedProcessingTask) async {
-        guard continuedTask === task else { return }
-        await expire()
-    }
-
-    private func expire() async {
-        guard !sessionTerminationInProgress else { return }
-        sessionTerminationInProgress = true
-        let session = ChatModel.shared.remoteCtrlSession
-        try? await stopRemoteCtrl()
-        let suspendForBackground = UIApplication.shared.applicationState == .background
-        completeSessionTermination(session, success: false, suspendForBackground: suspendForBackground)
     }
 
     private func completeSessionTermination(
         _ session: RemoteCtrlSession?,
-        success: Bool,
         suspendForBackground: Bool
     ) {
         if case .connected = session?.sessionState {
@@ -355,82 +396,15 @@ final class RemoteCtrlBGKeepAlive {
         } else {
             ChatModel.shared.remoteCtrlSession = nil
         }
-        finish(success: success)
+        if #available(iOS 16.1, *) {
+            RemoteCtrlLiveActivityManager.shared.stop()
+        }
+        RemoteCtrlBackgroundAudio.shared.stop()
+        UIApplication.shared.isIdleTimerDisabled = false
         if suspendForBackground {
             suspendChatForBackground()
         }
         sessionTerminationInProgress = false
-    }
-
-    @available(iOS 26.0, *)
-    private func registerContinuedProcessing() -> Bool {
-        if registered { return true }
-        registered = BGTaskScheduler.shared.register(forTaskWithIdentifier: remoteCtrlKeepAliveTaskId, using: nil) { task in
-            guard let task = task as? BGContinuedProcessingTask else {
-                task.setTaskCompleted(success: false)
-                return
-            }
-            Task { @MainActor in
-                RemoteCtrlBGKeepAlive.shared.handleContinuedProcessing(task)
-            }
-        }
-        return registered
-    }
-
-    @available(iOS 26.0, *)
-    private func handleContinuedProcessing(_ task: BGContinuedProcessingTask) {
-        guard ChatModel.shared.activeRemoteCtrl,
-              continuedProcessingAccepted,
-              !sessionTerminationInProgress else {
-            task.setTaskCompleted(success: false)
-            return
-        }
-        continuedTask = task
-        task.expirationHandler = { [weak task] in
-            Task { @MainActor in
-                guard let task else { return }
-                await RemoteCtrlBGKeepAlive.shared.expireContinuedProcessingTask(task)
-            }
-        }
-        let progressWindow: Int64 = 600
-        task.progress.totalUnitCount = progressWindow
-        task.progress.completedUnitCount = 0
-        continuedProgressTask = Task { @MainActor [weak task] in
-            let clock = ContinuousClock()
-            guard let task,
-                  let elapsedSeconds = RemoteCtrlBGKeepAlive.shared.remoteCtrlElapsedSecondsProvider else { return }
-            while !Task.isCancelled,
-                  RemoteCtrlBGKeepAlive.shared.continuedTask === task,
-                  ChatModel.shared.activeRemoteCtrl {
-                do {
-                    try await clock.sleep(for: .seconds(1))
-                } catch {
-                    break
-                }
-                guard RemoteCtrlBGKeepAlive.shared.continuedTask === task,
-                      ChatModel.shared.activeRemoteCtrl else { break }
-                task.progress.completedUnitCount += 1
-                if task.progress.completedUnitCount * 2 > task.progress.totalUnitCount {
-                    task.progress.totalUnitCount += progressWindow
-                }
-                let connectedSeconds = elapsedSeconds()
-                task.updateTitle(task.title, subtitle: remoteCtrlConnectedSubtitle(connectedSeconds))
-            }
-        }
-        stopLegacyTask()
-    }
-
-    private func finish(success: Bool) {
-        continuedProgressTask?.cancel()
-        continuedProgressTask = nil
-        remoteCtrlElapsedSecondsProvider = nil
-        if #available(iOS 26.0, *) {
-            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: remoteCtrlKeepAliveTaskId)
-            continuedTask?.setTaskCompleted(success: success)
-            continuedTask = nil
-            continuedProcessingAccepted = false
-        }
-        stopLegacyTask()
     }
 }
 
