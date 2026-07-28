@@ -502,8 +502,14 @@ struct ConnectDesktopView: View {
     private func disconnectDesktop(_ action: UserDisconnectAction? = nil) {
         Task {
             do {
-                try await RemoteCtrlBGKeepAlive.shared.disconnectRemoteCtrl()
+                try await stopRemoteCtrl()
                 await MainActor.run {
+                    if case .connected = m.remoteCtrlSession?.sessionState {
+                        switchToLocalSession()
+                    } else {
+                        m.remoteCtrlSession = nil
+                    }
+                    RemoteCtrlBGKeepAlive.shared.stop()
                     switch action {
                     case .back: dismiss()
                     case .dismiss: dismiss()

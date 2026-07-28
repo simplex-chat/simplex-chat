@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [API Reference](api.md) | [State Management](state.md) | [Database](database.md)
 > Related product: [Product Overview](../product/README.md)
 
-**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L180) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L209) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L3082) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
+**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L209) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
 
 ---
 
@@ -21,7 +21,7 @@
 
 ---
 
-## [1. Layered Architecture](../Shared/SimpleXApp.swift#L17-L180)
+## [1. Layered Architecture](../Shared/SimpleXApp.swift#L17-L184)
 
 The app follows a strict layered model where each layer communicates only with its immediate neighbor:
 
@@ -130,7 +130,7 @@ All FFI calls are wrapped in [`beginBGTask()`](../Shared/Model/SimpleXAPI.swift#
 
 ---
 
-## [3. Event Streaming](../Shared/Model/SimpleXAPI.swift#L2375-L2945)
+## [3. Event Streaming](../Shared/Model/SimpleXAPI.swift#L2220-L2916)
 
 The Haskell core emits async events (new messages, connection status changes, file progress, etc.) that are not direct responses to commands. These are received via polling:
 
@@ -138,7 +138,7 @@ The Haskell core emits async events (new messages, connection status changes, fi
 Haskell Core --[chat_recv_msg_wait]--> Swift event loop --> ChatModel update --> SwiftUI re-render
 ```
 
-The event loop is implemented in [`ChatReceiver`](../Shared/Model/SimpleXAPI.swift#L2375-L2418), and events are dispatched by [`processReceivedMsg`](../Shared/Model/SimpleXAPI.swift#L2421-L2945).
+The event loop is implemented in [`ChatReceiver`](../Shared/Model/SimpleXAPI.swift#L2220-L2263), and events are dispatched by [`processReceivedMsg`](../Shared/Model/SimpleXAPI.swift#L2266).
 
 ### [Event Types (ChatEvent enum)](../Shared/Model/AppAPITypes.swift#L1055-L1129)
 
@@ -178,7 +178,7 @@ See [Database & Storage specification](database.md) for full details.
 
 ---
 
-## [5. App Lifecycle](../Shared/SimpleXApp.swift#L17-L180)
+## [5. App Lifecycle](../Shared/SimpleXApp.swift#L17-L184)
 
 ### [Initialization Sequence (SimpleXApp.swift)](../Shared/SimpleXApp.swift#L17-L38)
 
@@ -220,19 +220,15 @@ See [Database & Storage specification](database.md) for full details.
               └──────────┘
 ```
 
-### [Scene Phase Handling (SimpleXApp.swift)](../Shared/SimpleXApp.swift#L38-L116)
+### [Scene Phase Handling (SimpleXApp.swift)](../Shared/SimpleXApp.swift#L38-L123)
 
-- **`.active`**: Ends any legacy remote-control background task, calls `startChatAndActivate()`, processes pending notification responses, refreshes chat list and call invitations
-- **`.background`**: Records authentication timestamp. If a remote desktop session is active, keeps the delivered iOS 26 continued task running or starts a system-granted legacy task while launch is pending or continued processing is unavailable; while either task owns execution, skips normal chat suspension/background-refresh scheduling. Otherwise calls `suspendChat()` (unless CallKit call active), schedules `BGManager` background refresh, and updates badge count
+- **`.active`**: Calls `startChatAndActivate()`, processes pending notification responses, refreshes chat list and call invitations
+- **`.background`**: Records authentication timestamp, calls `suspendChat()` (unless CallKit call active), schedules `BGManager` background refresh, updates badge count
 - **`.inactive`**: No explicit handling (transitional state)
 
 ### CallKit Exception
 
 When a CallKit call is active during backgrounding, chat suspension is deferred (`CallController.shared.shouldSuspendChat = true`) until the call ends, to maintain the WebRTC session.
-
-### Remote Desktop Exception
-
-On iOS 26 and later, `RemoteCtrlBGKeepAlive` submits a continued-processing task when the user verifies a desktop session. Until its launch handler supplies the task, and whenever submission is rejected, backgrounding uses a `UIApplication` background task; earlier iOS versions use only that legacy task. Expiration or a remote desktop stop ends the remote-control session and restores normal chat suspension and background-refresh scheduling.
 
 ---
 
@@ -258,19 +254,15 @@ The Share Extension (`SimpleX SE/`) allows sharing content (text, images, files)
 
 ---
 
-## [7. Remote Desktop Control](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L546)
+## [7. Remote Desktop Control](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545)
 
 Optional desktop pairing allows controlling the mobile app from a desktop client:
 
 - **Pairing**: Encrypted QR code scanned by desktop client establishes a session
-- **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1722-L1727), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1729-L1731), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1733-L1737), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1739-L1743), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1745-L1749), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1751-L1753), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1755-L1757)
-- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L425) tracks the active `RemoteCtrlSession?`
-- **Background keepalive**: `RemoteCtrlBGKeepAlive` uses continued processing on iOS 26 and the system-granted `UIApplication` background task on earlier versions, when continued processing is rejected, or while an accepted request is awaiting launch
-- **System activity**: The iOS 26 activity reports monotonic elapsed connected seconds as indeterminate progress and shows `Connected for HH:MM:SS`, updated once per second
+- **Commands**: [`connectRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1613), [`findKnownRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1620), [`confirmRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1624), [`verifyRemoteCtrlSession`](../Shared/Model/SimpleXAPI.swift#L1630), [`listRemoteCtrls`](../Shared/Model/SimpleXAPI.swift#L1636), [`stopRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1642), [`deleteRemoteCtrl`](../Shared/Model/SimpleXAPI.swift#L1646)
+- **State**: [`ChatModel.remoteCtrlSession`](../Shared/Model/ChatModel.swift#L395)`: RemoteCtrlSession?` tracks the active session
 - **Transport**: Encrypted reverse HTTP transport between mobile and desktop
-- **Lifecycle integration**: [`activeSessionView`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L288-L312), [`verifyDesktopSessionCode`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L476-L495), [`disconnectDesktop`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L505-L522), [`processReceivedMsg` remote-stop handling](../Shared/Model/SimpleXAPI.swift#L2904-L2927), and [scene-phase handling](../Shared/SimpleXApp.swift#L65-L116)
-- **Keepalive functions**: [`suspendChatForBackground`](../Shared/Model/SuspendChat.swift#L191-L200), [`remoteCtrlConnectedSubtitle`](../Shared/Model/SuspendChat.swift#L204-L210), [`startContinuedProcessing`](../Shared/Model/SuspendChat.swift#L229-L249), [`handleAppBackgrounding`](../Shared/Model/SuspendChat.swift#L251-L260), [`keepSessionInBackground`](../Shared/Model/SuspendChat.swift#L262-L279), [`stopLegacyTask`](../Shared/Model/SuspendChat.swift#L281-L286), [`disconnectRemoteCtrl`](../Shared/Model/SuspendChat.swift#L288-L302), [`handleRemoteCtrlStopped`](../Shared/Model/SuspendChat.swift#L304-L326), [`expireLegacyTask`](../Shared/Model/SuspendChat.swift#L328-L331), [`expireContinuedProcessingTask`](../Shared/Model/SuspendChat.swift#L334-L337), [`expire`](../Shared/Model/SuspendChat.swift#L339-L346), [`completeSessionTermination`](../Shared/Model/SuspendChat.swift#L348-L363), [`registerContinuedProcessing`](../Shared/Model/SuspendChat.swift#L366-L378), [`handleContinuedProcessing`](../Shared/Model/SuspendChat.swift#L381-L421), and [`finish`](../Shared/Model/SuspendChat.swift#L423-L434)
-- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L546), [`RemoteCtrlBGKeepAlive`](../Shared/Model/SuspendChat.swift#L213-L435), see `Remote.hs` in `../../src/SimpleX/Chat/`
+- **Source**: [`Shared/Views/RemoteAccess/ConnectDesktopView.swift`](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545), see `Remote.hs` in `../../src/Simplex/Chat/`
 
 ---
 

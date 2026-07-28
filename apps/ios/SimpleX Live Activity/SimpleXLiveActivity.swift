@@ -4,12 +4,6 @@ import SwiftUI
 import WidgetKit
 
 @main
-struct SimpleXLiveActivityBundle: WidgetBundle {
-    var body: some Widget {
-        RemoteCtrlLiveActivity()
-    }
-}
-
 struct RemoteCtrlLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RemoteCtrlActivityAttributes.self) { context in
@@ -24,13 +18,8 @@ struct RemoteCtrlLiveActivity: Widget {
                         .lineLimit(1)
                 }
                 Spacer(minLength: 12)
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Active")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                    connectedTimer(context.state.connectedAt)
-                        .font(.headline.monospacedDigit())
-                }
+                connectedTimer(context.state.connectedAt)
+                    .font(.headline.monospacedDigit())
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
@@ -47,13 +36,9 @@ struct RemoteCtrlLiveActivity: Widget {
                         .font(.caption.monospacedDigit())
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack {
-                        Text("Connected to \(context.attributes.desktopName)")
-                            .lineLimit(1)
-                        Spacer()
-                        Image(systemName: "lock.fill")
-                    }
-                    .frame(maxWidth: .infinity)
+                    Text("Connected to \(context.attributes.desktopName)")
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
                 }
             } compactLeading: {
                 simplexLogo(size: 22)
