@@ -2241,27 +2241,18 @@ sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Conn
 sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning False gInfo evt, evt)) events
-      signed = any (\(_, s, _) -> isJust s) idsEvts
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
   forM_ (L.nonEmpty msgs) $ \msgs' ->
-    batchSendConnMessages gInfo signed user conn MsgFlags {notification = True} msgs'
+    batchSendConnMessages gInfo user conn MsgFlags {notification = True} msgs'
 
-dropSignature :: SndMessage -> SndMessage
-dropSignature m = m {signedMsg_ = Nothing}
-
-signedSnd :: SndMessage -> Bool
-signedSnd SndMessage {signedMsg_} = isJust signedMsg_
-
-batchSendConnMessages :: GroupInfo -> Bool -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
-batchSendConnMessages gInfo signed user conn msgFlags msgs =
-  batchSendConnMessagesB mode user conn msgFlags $ L.map Right msgs'
+batchSendConnMessages :: GroupInfo -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
+batchSendConnMessages gInfo user conn msgFlags msgs =
+  batchSendConnMessagesB mode user conn msgFlags (L.map Right msgs)
   where
-    (mode, msgs')
-      | useRelays' gInfo = (BMBinary, msgs)
-      | not signed = (BMJson, msgs)
-      | maxVersion (peerChatVRange conn) >= relayWebCapVersion = (BMBinary, msgs)
-      | otherwise = (BMJson, L.map dropSignature msgs)
+    mode
+      | useRelays' gInfo || maxVersion (peerChatVRange conn) >= relayWebCapVersion = BMBinary
+      | otherwise = BMJson
 
 batchSendConnMessagesB :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
@@ -2515,18 +2506,21 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
     ownKey = groupMemberKey gInfo
     keyMember m = not (useRelays' gInfo) && m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
     profileMember m = shouldSendProfileUpdate && m `supportsVersion` memberProfileUpdateVersion
-    keyMembers = filter keyMember members
     recipients = filter (\m -> profileMember m || keyMember m) members
     sendProfileAndKey = do
       let incognitoProfile = incognitoMembershipProfile gInfo
       profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
       (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo recipients False (XInfo profile ownKey :| [])
-      when shouldSendProfileUpdate $ do
-        currentTs <- liftIO getCurrentTime
-        withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
       let delivered = [mId | (mId, _, r) <- sentTo, isRight r] <> [mId | (mId, _, _) <- pending] <> map groupMemberId' forwarded
-          keyDelivered = filter (`elem` delivered) (map groupMemberId' keyMembers)
-      unless (null keyDelivered) $ withStore' $ \db -> setMembersMemberKeySent db keyDelivered
+      keySent <-
+        if shouldSendProfileUpdate
+          then do
+            currentTs <- liftIO getCurrentTime
+            withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
+            let keyIds = S.fromList [groupMemberId' m | m <- recipients, keyMember m]
+            pure $ filter (`S.member` keyIds) delivered
+          else pure delivered
+      unless (null keySent) $ withStore' $ \db -> setMembersMemberKeySent db keySent
 
 data GroupSndResult = GroupSndResult
   { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
@@ -2561,7 +2555,6 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded})
   where
     events = L.map snd signedEvents
-    anySigned = any (isJust . fst) signedEvents
     idsEvts = L.map (\(signing, evt) -> (GroupId groupId, signing, evt)) signedEvents
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
@@ -2584,11 +2577,9 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched =
-      batchReqs BMBinary msgs binSep binBtch <> batchReqs BMJson jsonMsgs jsonSep jsonBtch
+      batchReqs BMBinary msgs binSep binBtch <> batchReqs BMJson msgs jsonSep jsonBtch
       where
-        signed = not (useRelays' gInfo) && anySigned
-        jsonMsgs = if signed then L.map (fmap dropSignature) msgs else msgs
-        toBinary (m, _) = useRelays' gInfo || (signed && m `supportsVersion` relayWebCapVersion)
+        toBinary (m, _) = useRelays' gInfo || m `supportsVersion` relayWebCapVersion
         (binSep, jsonSep) = partition toBinary toSendSeparate
         (binBtch, jsonBtch) = partition toBinary toSendBatched
         batchReqs _ _ [] [] = ([], [])
@@ -2718,7 +2709,7 @@ sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM
 sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
   msgs <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    void $ batchSendConnMessages gInfo (any signedSnd msgs') user conn MsgFlags {notification = True} msgs'
+    void $ batchSendConnMessages gInfo user conn MsgFlags {notification = True} msgs'
     lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs'
 
 saveDirectRcvMSG :: forall e. MsgEncodingI e => Connection -> MsgMeta -> ChatMessage e -> CM (Connection, RcvMessage)
