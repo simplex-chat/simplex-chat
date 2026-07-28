@@ -33,6 +33,8 @@ The UserPicker's **Use from desktop** action opens `ConnectDesktopView` for
 pairing and managing a remote desktop session. After verification, iOS 26 shows
 a system activity with the title "Connected to desktop" and an elapsed
 `Connected for HH:MM:SS` subtitle while the session can continue in background.
+While the desktop session is active, the sheet cannot be dismissed by swiping
+down; the user must disconnect it or let the desktop or system activity stop it.
 Earlier iOS versions, or iOS 26 when continued processing is unavailable, show
 "Keep the app open to use it from desktop" and rely on the shorter system-granted
 background window.

@@ -148,6 +148,7 @@ struct ConnectDesktopView: View {
                 mkAlert(title: title, message: error)
             }
         }
+        .interactiveDismissDisabled(m.activeRemoteCtrl)
     }
 
     private func connectDesktopView(showScanner: Bool = true) -> some View {
@@ -504,14 +505,8 @@ struct ConnectDesktopView: View {
     private func disconnectDesktop(_ action: UserDisconnectAction? = nil) {
         Task {
             do {
-                try await stopRemoteCtrl()
+                try await RemoteCtrlBGKeepAlive.shared.disconnectRemoteCtrl()
                 await MainActor.run {
-                    RemoteCtrlBGKeepAlive.shared.stopKeepingSession()
-                    if case .connected = m.remoteCtrlSession?.sessionState {
-                        switchToLocalSession()
-                    } else {
-                        m.remoteCtrlSession = nil
-                    }
                     switch action {
                     case .back: dismiss()
                     case .dismiss: dismiss()

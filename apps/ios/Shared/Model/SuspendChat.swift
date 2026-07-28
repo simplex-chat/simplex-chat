@@ -187,6 +187,18 @@ func startChatAndActivate(_ completion: @escaping () -> Void) {
     }
 }
 
+@MainActor
+func suspendChatForBackground() {
+    if CallController.useCallKit() && ChatModel.shared.activeCall != nil {
+        CallController.shared.shouldSuspendChat = true
+    } else {
+        if AppChatState.shared.value.canSuspend {
+            suspendChat()
+        }
+        BGManager.shared.schedule()
+    }
+}
+
 private let remoteCtrlKeepAliveTaskId = "chat.simplex.app.remote-control.keepalive.session"
 
 private func remoteCtrlConnectedSubtitle(_ seconds: Int64) -> String {
@@ -207,7 +219,8 @@ final class RemoteCtrlBGKeepAlive {
     private var remoteCtrlElapsedSecondsProvider: (() -> Int64)?
     private var legacyTask: UIBackgroundTaskIdentifier = .invalid
     private var legacyTaskToken: UUID?
-    private var expirationInProgress = false
+    private var sessionTerminationInProgress = false
+    private var deferredRemoteStoppedSession: RemoteCtrlSession?
     private(set) var continuedProcessingAccepted = false
 
     private init() {}
@@ -235,8 +248,19 @@ final class RemoteCtrlBGKeepAlive {
         }
     }
 
-    func keepSessionInBackground() -> Bool {
-        guard ChatModel.shared.activeRemoteCtrl else { return false }
+    func handleAppBackgrounding() {
+        if let session = deferredRemoteStoppedSession {
+            // Restore locally before the scene path suspends chat if backgrounding
+            // happens during the remote-stop recovery delay.
+            deferredRemoteStoppedSession = nil
+            completeSessionTermination(session, success: true, suspendForBackground: true)
+        } else if !keepSessionInBackground() {
+            suspendChatForBackground()
+        }
+    }
+
+    private func keepSessionInBackground() -> Bool {
+        guard ChatModel.shared.activeRemoteCtrl || sessionTerminationInProgress else { return false }
         if continuedTask != nil { return true }
         if legacyTask == .invalid {
             let token = UUID()
@@ -261,8 +285,44 @@ final class RemoteCtrlBGKeepAlive {
         legacyTask = .invalid
     }
 
-    func stopKeepingSession() {
-        finish(success: true)
+    func disconnectRemoteCtrl() async throws {
+        guard !sessionTerminationInProgress else { return }
+        sessionTerminationInProgress = true
+        let session = ChatModel.shared.remoteCtrlSession
+        do {
+            try await stopRemoteCtrl()
+        } catch {
+            if ChatModel.shared.remoteCtrlSession != nil {
+                sessionTerminationInProgress = false
+                throw error
+            }
+        }
+        let suspendForBackground = UIApplication.shared.applicationState == .background
+        completeSessionTermination(session, success: true, suspendForBackground: suspendForBackground)
+    }
+
+    func handleRemoteCtrlStopped(_ session: RemoteCtrlSession) {
+        ChatModel.shared.remoteCtrlSession = nil
+        guard !sessionTerminationInProgress else { return }
+        sessionTerminationInProgress = true
+        if case .connected = session.sessionState {
+            // This delay is needed to cancel the session that fails on network failure,
+            // e.g. when user did not grant permission to access local network yet.
+            deferredRemoteStoppedSession = session
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                guard let session = RemoteCtrlBGKeepAlive.shared.deferredRemoteStoppedSession else { return }
+                RemoteCtrlBGKeepAlive.shared.deferredRemoteStoppedSession = nil
+                let suspendForBackground = UIApplication.shared.applicationState == .background
+                RemoteCtrlBGKeepAlive.shared.completeSessionTermination(
+                    session,
+                    success: true,
+                    suspendForBackground: suspendForBackground
+                )
+            }
+        } else {
+            let suspendForBackground = UIApplication.shared.applicationState == .background
+            completeSessionTermination(session, success: true, suspendForBackground: suspendForBackground)
+        }
     }
 
     private func expireLegacyTask(_ token: UUID) async {
@@ -277,20 +337,29 @@ final class RemoteCtrlBGKeepAlive {
     }
 
     private func expire() async {
-        guard !expirationInProgress else { return }
-        expirationInProgress = true
-        defer { expirationInProgress = false }
+        guard !sessionTerminationInProgress else { return }
+        sessionTerminationInProgress = true
+        let session = ChatModel.shared.remoteCtrlSession
         try? await stopRemoteCtrl()
-        if case .connected = ChatModel.shared.remoteCtrlSession?.sessionState {
+        let suspendForBackground = UIApplication.shared.applicationState == .background
+        completeSessionTermination(session, success: false, suspendForBackground: suspendForBackground)
+    }
+
+    private func completeSessionTermination(
+        _ session: RemoteCtrlSession?,
+        success: Bool,
+        suspendForBackground: Bool
+    ) {
+        if case .connected = session?.sessionState {
             switchToLocalSession()
         } else {
             ChatModel.shared.remoteCtrlSession = nil
         }
-        finish(success: false)
-        if UIApplication.shared.applicationState == .background {
-            suspendChat()
-            BGManager.shared.schedule()
+        finish(success: success)
+        if suspendForBackground {
+            suspendChatForBackground()
         }
+        sessionTerminationInProgress = false
     }
 
     @available(iOS 26.0, *)
@@ -312,7 +381,7 @@ final class RemoteCtrlBGKeepAlive {
     private func handleContinuedProcessing(_ task: BGContinuedProcessingTask) {
         guard ChatModel.shared.activeRemoteCtrl,
               continuedProcessingAccepted,
-              !expirationInProgress else {
+              !sessionTerminationInProgress else {
             task.setTaskCompleted(success: false)
             return
         }
