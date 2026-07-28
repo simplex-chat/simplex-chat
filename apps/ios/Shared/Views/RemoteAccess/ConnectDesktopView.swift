@@ -148,7 +148,6 @@ struct ConnectDesktopView: View {
                 mkAlert(title: title, message: error)
             }
         }
-        .interactiveDismissDisabled(m.activeRemoteCtrl)
     }
 
     private func connectDesktopView(showScanner: Bool = true) -> some View {

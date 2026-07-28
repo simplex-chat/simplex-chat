@@ -137,6 +137,7 @@ struct UserPickerSheetView: View {
             }
         }
         .environmentObject(ss)
+        .interactiveDismissDisabled(sheet == .useFromDesktop && chatModel.activeRemoteCtrl)
     }
 }
 
