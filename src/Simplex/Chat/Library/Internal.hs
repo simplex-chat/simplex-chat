@@ -2484,12 +2484,12 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
-      (toSendBatched, toPending, forwarded, _, dups) =
+      (toSend, toPending, forwarded, _, dups) =
         foldr' (addMember recipientMembers') ([], [], [], S.empty, 0 :: Int) recipientMembers'
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
-  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSendBatched
+  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSend
   delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB) $ L.nonEmpty msgReqs
   when (length delivered /= length sendToMemIds) $ logError "sendGroupMessages_: sendToMemIds and delivered length mismatch"
   -- Save as pending for toPending members
@@ -2509,24 +2509,24 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember members m acc@(toSendBatched, pending, forwarded, !mIds, !dups) =
+    addMember members m acc@(toSend, pending, forwarded, !mIds, !dups) =
       case memberSendAction gInfo events members m of
         Just a
-          | mId `S.member` mIds -> (toSendBatched, pending, forwarded, mIds, dups + 1)
+          | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
           | otherwise -> case a of
-              MSASendBatched conn -> ((m, conn) : toSendBatched, pending, forwarded, mIds', dups)
-              MSAPending -> (toSendBatched, m : pending, forwarded, mIds', dups)
-              MSAForwarded -> (toSendBatched, pending, m : forwarded, mIds', dups)
+              MSASend conn -> ((m, conn) : toSend, pending, forwarded, mIds', dups)
+              MSAPending -> (toSend, m : pending, forwarded, mIds', dups)
+              MSAForwarded -> (toSend, pending, m : forwarded, mIds', dups)
         Nothing -> acc
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-    prepareMsgReqs msgFlags msgs toSendBatched = do
+    prepareMsgReqs msgFlags msgs toSend = do
       let mode = if useRelays' gInfo then BMBinary else BMJson
           batched_ = batchSndMessagesJSON mode msgs
       case L.nonEmpty batched_ of
-        Just batched' -> foldMembers (length batched' + length msgs) msgBatchMBR batched' toSendBatched
+        Just batched' -> foldMembers (length batched' + length msgs) msgBatchMBR batched' toSend
         Nothing -> ([], [])
       where
         foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
@@ -2563,7 +2563,7 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     createPendingMsg db (groupMemberId, msgId) =
       createPendingGroupMessage db groupMemberId msgId $> Right ()
 
-data MemberSendAction = MSASendBatched Connection | MSAPending | MSAForwarded
+data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded
 
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
 memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memberRole, memberStatus}
@@ -2571,16 +2571,16 @@ memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memb
   | useRelays' gInfo =
       if
         -- if user is chat relay, send to all non chat relay members
-        | isRelay membership && not (isRelay m) -> MSASendBatched . snd <$> readyMemberConn m
+        | isRelay membership && not (isRelay m) -> MSASend . snd <$> readyMemberConn m
         -- if user is not chat relay, send only to chat relays
-        | not (isRelay membership) && isRelay m -> MSASendBatched . snd <$> readyMemberConn m
+        | not (isRelay membership) && isRelay m -> MSASend . snd <$> readyMemberConn m
         | otherwise -> Nothing -- TODO [relays] MSAForwarded to create GSSForwarded snd statuses?
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
       Just conn@Connection {connStatus}
         | connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus || memberStatus == GSMemRejected -> Nothing
         | connInactive conn -> Just MSAPending
-        | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASendBatched conn)
+        | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
         | otherwise -> pendingOrForwarded
   where
     pendingOrForwarded = case memberCategory m of
@@ -2622,7 +2622,7 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
   where
     messageMember :: SndMessage -> CM ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
-      MSASendBatched conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
+      MSASend conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId
       MSAForwarded -> pure ()
 
