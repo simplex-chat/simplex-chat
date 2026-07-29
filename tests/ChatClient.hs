@@ -50,7 +50,7 @@ import Simplex.FileTransfer.Server.Store
 import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (duplexHandshakeSMPAgentVersion, supportedSMPAgentVRange)
+import Simplex.Messaging.Agent.Protocol (duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.Entity (SDBStored (..))
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
@@ -235,8 +235,8 @@ testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = versionToRange duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = versionToRange CR.kdfX3DHE2EEncryptVersion,
+      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion,
+      e2eEncryptVRange = mkVersionRange CR.kdfX3DHE2EEncryptVersion CR.pqRatchetE2EEncryptVersion,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange minClientSMPRelayVersion}
     }
 

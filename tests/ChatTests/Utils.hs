@@ -127,9 +127,9 @@ versionTestMatrix2 runTest = do
   it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest False True)
   it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
   it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False False)
-  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False True)
-  xit "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False False)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True False)
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest True True)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True False)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
