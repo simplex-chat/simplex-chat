@@ -47,6 +47,8 @@ struct BadgesSupportSimplexView: View {
                         .font(.headline)
                 }
 
+                Spacer(minLength: 0)
+
                 PhoneSupporterHero()
                     .frame(maxWidth: g.size.width * 0.55)
                     .layoutPriority(-1)
@@ -60,7 +62,7 @@ struct BadgesSupportSimplexView: View {
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
             .padding(.horizontal, 25)
-            .padding(.top, 8)
+            .padding(.top, 28)
             .padding(.bottom, 20)
             // .frame(height:) instead of .frame(minHeight:) — locks the VStack to the
             // proposed geometry. In the onboarding flow (full-screen presentation) minHeight is
