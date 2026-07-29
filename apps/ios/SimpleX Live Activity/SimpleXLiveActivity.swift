@@ -68,7 +68,7 @@ struct RemoteCtrlLiveActivity: Widget {
         Text(
             timerInterval: connectedAt...connectedAt.addingTimeInterval(8 * 60 * 60),
             countsDown: false,
-            showsHours: false
+            showsHours: true
         )
     }
 }
