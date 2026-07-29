@@ -1,10 +1,10 @@
 # Fix: message being sent leaks into another chat's compose/draft, and erases what is typed there
 
-Branch: `nd/fix-inflight-send-writes-other-chat-compose` (off `origin/master`)
+Branch: `nd/fix-inflight-send-writes-other-chat-compose` (off `origin/stable`)
 Date: 2026-07-25
 PR: #7308
 
-Line references are against `origin/master` at `64bf35804`, with this fix
+Line references are against `origin/stable` at `8dc387cb5`, with this fix
 applied. Android and desktop only
 (`multiplatform/.../views/chat/ComposeView.kt`); iOS has the same defect
 but is not addressed here.
@@ -35,23 +35,23 @@ The compose state is shared, and the send outlives the chat:
 - `Utils.kt:43-46` — `withLongRunningApi` launches on
   `CoroutineScope(Dispatchers.Default)`, a standalone scope with no tie
   to the composition or to the chat, and `sendMessage`
-  (`ComposeView.kt:968-972`) uses it. Leaving the chat never cancels an
+  (`ComposeView.kt:972-976`) uses it. Leaving the chat never cancels an
   in-flight send.
 
 Two writes then act on the wrong chat:
 
-- **On the chat switch** — `ComposeView.kt:1339-1343`: the `cs.inProgress`
+- **On the chat switch** — `ComposeView.kt:1343-1347`: the `cs.inProgress`
   branch used to keep the message in the shared compose state
   (`composeState.value = cs.copy(inProgress = false, progressByTimeout = false)`)
   and only cleared the *previous* chat's saved draft. The text and the
   quote were therefore sitting in the input of the chat opened next, and
-  `ComposeView.kt:1344-1354` (`!cs.empty`) then saved them as *that*
+  `ComposeView.kt:1348-1358` (`!cs.empty`) then saved them as *that*
   chat's draft on the next switch. Symptom 1.
-- **When the send completes** — `ComposeView.kt:939-963`, running in the
+- **When the send completes** — `ComposeView.kt:943-968`, running in the
   detached coroutine after the switch: `clearState(live)` on success, or
   `composeState.value = lastFailed` on failure, where `lastFailed =
   cs.copy(inProgress = false, preview = preview)`
-  (`ComposeView.kt:725`) **keeps `contextItem`, i.e. the reply**. On
+  (`ComposeView.kt:729`) **keeps `contextItem`, i.e. the reply**. On
   success this wipes whatever is in the input now — including a message
   typed after coming back (symptom 2); on failure it dumps the old
   message into whichever chat is open (symptom 1 again).
@@ -67,7 +67,7 @@ displayed at that moment.
 Two changes, both in `ComposeView.kt`.
 
 **1. Do not keep the message being sent in the shared compose state**
-(`ComposeView.kt:1339-1343`). On switching away with a send in flight the
+(`ComposeView.kt:1343-1347`). On switching away with a send in flight the
 compose state is cleared, so nothing leaks into the chat opened next:
 
 ```kotlin
@@ -90,7 +90,7 @@ message has been submitted and will most likely be sent, and a draft is
 for messages that are not sent yet.
 
 **2. Only touch the compose state if it still holds the message that was
-sent** (`ComposeView.kt:932-963`):
+sent** (`ComposeView.kt:936-968`):
 
 ```kotlin
 withContext(Dispatchers.Main) {
@@ -129,7 +129,7 @@ there too.
 `inProgress` is the marker that the compose state is still the submitted
 message: it is set by `sending()` (`ComposeView.kt:596-598`), preserved by
 `copy` while sending (the only other write during a send is
-`progressByTimeout` at `ComposeView.kt:1606-1613`), reset when switching
+`progressByTimeout` at `ComposeView.kt:1610-1617`), reset when switching
 away (change 1), and never set by typing a new message. So a chat switch
 *or* newly typed text both make the guard false.
 
@@ -149,12 +149,17 @@ Deliberately unchanged:
   instead, **deleting** the destination chat's draft that the branch
   exists to preserve - only the compose write inside it is gated.
 - Live message sends (`live`, or `cs.liveMessage != null` for the send
-  that finalises a live message when leaving the chat, `ComposeView.kt:1334-1338`).
+  that finalises a live message when leaving the chat, `ComposeView.kt:1338-1342`).
   They never call `sending()`, so a guard based on `inProgress` would
   change their behaviour: failed live sends would stop restoring and would
   write a draft on every failing keystroke send. `sendMessageAsync` reads
-  `composeState` inside the coroutine (`ComposeView.kt:680`), so that
+  `composeState` inside the coroutine (`ComposeView.kt:684`), so that
   branch cannot clear the state itself without racing the send.
+
+**3. The same check where the flag is shared** (`ComposeView.kt:600-602`
+and the three senders that connect a prepared chat). They call the same
+`sending()`, so an unguarded `clearState()` or `inProgress` reset from
+one of them corrupts the state of a send started in the chat opened next.
 
 ## Behaviour after the fix
 
@@ -177,15 +182,13 @@ Kept deliberately, to not grow the change:
   failed forward already has a draft (its own draft is preserved
   instead), and when the single draft slot is later taken by another
   chat - drafts are one global slot, so the last write wins.
-- Change 1 clears the compose state for any send in progress, including
-  the three senders that connect a prepared chat (they call the same
-  `sending()`). Those have no failed-message restore, so their typed
-  message is dropped when the chat is switched instead of being carried
-  into the next chat. They also still clear the compose on completion
-  without checking which chat is open, so the symptom this fixes remains
-  reachable through them, and their failure path can reset `inProgress`
-  for a send started in the chat opened next, leaving that sent message
-  in the input.
+- The three senders that connect a prepared chat share the same
+  `sending()` flag, so they use the same check (`ComposeView.kt:604-616`,
+  `618-640`, `659-685`). Without it a connect completing after the chat
+  was switched would clear `inProgress` for a send started in the chat
+  opened next, and that sent message would then stay in the input. They
+  have no failed-message restore, so their typed message is dropped when
+  the chat is switched instead of being carried into the next chat.
 - Typing in the same chat while its own send is in flight is still
   cleared when the send completes: `inProgress` is preserved by `copy`,
   so the guard stays true. Unchanged from before, and different from the

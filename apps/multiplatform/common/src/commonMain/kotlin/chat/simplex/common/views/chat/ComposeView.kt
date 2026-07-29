@@ -597,6 +597,10 @@ fun ComposeView(
     composeState.value = composeState.value.copy(inProgress = true)
   }
 
+  // composeState and its inProgress flag are shared between the chats opened in this view, and sending is not cancelled
+  // when the chat is switched - a send may only clear or reset the state while it still holds the message that was sent
+  fun composeHasSentMessage(): Boolean = chatModel.chatId.value == chat.id && composeState.value.inProgress
+
   suspend fun sendMemberContactInvitation() {
     val mc = checkLinkPreview()
     sending()
@@ -604,10 +608,10 @@ fun ComposeView(
     if (contact != null) {
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
-        clearState()
+        if (composeHasSentMessage()) clearState()
       }
-    } else {
-      composeState.value = composeState.value.copy(inProgress = false)
+    } else withContext(Dispatchers.Main) {
+      if (composeHasSentMessage()) composeState.value = composeState.value.copy(inProgress = false)
     }
   }
 
@@ -624,10 +628,10 @@ fun ComposeView(
     if (contact != null) {
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
-        clearState()
+        if (composeHasSentMessage()) clearState()
       }
-    } else {
-      composeState.value = composeState.value.copy(inProgress = false)
+    } else withContext(Dispatchers.Main) {
+      if (composeHasSentMessage()) composeState.value = composeState.value.copy(inProgress = false)
     }
   }
 
@@ -669,10 +673,10 @@ fun ComposeView(
         chatModel.channelRelayHostnames.remove(groupInfo.groupId)
         chatModel.groupMembers.value = relayResults.map { it.relayMember }
         chatModel.populateGroupMembersIndexes()
-        clearState()
+        if (composeHasSentMessage()) clearState()
       }
-    } else {
-      composeState.value = composeState.value.copy(inProgress = false)
+    } else withContext(Dispatchers.Main) {
+      if (composeHasSentMessage()) composeState.value = composeState.value.copy(inProgress = false)
     }
   }
 
