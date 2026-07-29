@@ -51,6 +51,9 @@ struct SimpleXApp: App {
                     }
                 }
                 .onAppear() {
+                    if chatModel.remoteCtrlSession == nil {
+                        RemoteCtrlBGKeepAlive.shared.stop()
+                    }
                     // Present screen for continue migration if it wasn't finished yet
                     if chatModel.migrationState != nil {
                         // It's important, otherwise, user may be locked in undefined state

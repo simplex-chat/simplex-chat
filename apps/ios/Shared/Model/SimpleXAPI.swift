@@ -2904,9 +2904,11 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .remoteCtrlStopped(_, rcStopReason):
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
+        await MainActor.run {
+            RemoteCtrlBGKeepAlive.shared.stop()
+        }
         if let sess = m.remoteCtrlSession {
             await MainActor.run {
-                RemoteCtrlBGKeepAlive.shared.stop()
                 m.remoteCtrlSession = nil
                 dismissAllSheets() {
                     switch rcStopReason {

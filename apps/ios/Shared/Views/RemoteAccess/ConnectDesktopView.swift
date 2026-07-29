@@ -501,24 +501,26 @@ struct ConnectDesktopView: View {
 
     private func disconnectDesktop(_ action: UserDisconnectAction? = nil) {
         Task {
+            var disconnectError: Error?
             do {
                 try await stopRemoteCtrl()
-                await MainActor.run {
-                    if case .connected = m.remoteCtrlSession?.sessionState {
-                        switchToLocalSession()
-                    } else {
-                        m.remoteCtrlSession = nil
-                    }
-                    RemoteCtrlBGKeepAlive.shared.stop()
-                    switch action {
-                    case .back: dismiss()
-                    case .dismiss: dismiss()
-                    case .none: ()
-                    }
-                }
             } catch let e {
-                await MainActor.run {
-                    errorAlert(e)
+                disconnectError = e
+            }
+            await MainActor.run {
+                if case .connected = m.remoteCtrlSession?.sessionState {
+                    switchToLocalSession()
+                } else {
+                    m.remoteCtrlSession = nil
+                }
+                RemoteCtrlBGKeepAlive.shared.stop()
+                switch action {
+                case .back: dismiss()
+                case .dismiss: dismiss()
+                case .none: ()
+                }
+                if let disconnectError {
+                    errorAlert(disconnectError)
                 }
             }
         }
