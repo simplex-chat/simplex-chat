@@ -15,17 +15,15 @@ desktop, where every chat switch reuses the same view.
 ## Cause
 
 A live message is committed when the chat is switched
-(`ComposeView.kt:1315-1322`):
+(`ComposeView.kt:1315-1327`), which before this change was:
 
-```kotlin
-KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
-  val cs = composeState.value
-  if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
-    sendMessage(null)
+```
+    if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
+      sendMessage(null)
 ```
 
 `KeyChangeEffect` is `LaunchedEffect(key1) { block(prev) }`
-(`Utils.kt:640-654`), so when the key changes, `remember(key1)` rebuilds
+(`Utils.kt:683-698`), so when the key changes, `remember(key1)` rebuilds
 it from the lambda of the composition that is running *now* - and by then
 `chatModel.chatId` is already the new chat, `ChatView` has recomposed
 `ComposeView` with the new `chat`, and the block that runs captured that

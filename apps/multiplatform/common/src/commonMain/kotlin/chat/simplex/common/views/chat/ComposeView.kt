@@ -792,7 +792,7 @@ fun ComposeView(
       sending()
     }
     if (!cs.forwarding || chatModel.draft.value?.forwarding == true) {
-      clearCurrentDraft()
+      clearCurrentDraft(toChat)
     }
 
     if (cs.contextItem is ComposeContextItem.ForwardingItems) {
