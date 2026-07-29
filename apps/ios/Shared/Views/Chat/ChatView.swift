@@ -780,7 +780,7 @@ struct ChatView: View {
             }
             updateAvailableContent()
         }
-        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
+        if chatModel.draftChatId == draftChatId(cInfo.id, cInfo.groupChatScope()) && !composeState.forwarding,
            let draft = chatModel.draft {
             composeState = draft
         }

@@ -2929,8 +2929,8 @@
     <string name="v7_0_channels_previews">Crea un\'anteprima web.</string>
     <string name="v7_0_channels_wider_messages">Lettura più facile.</string>
     <string name="v7_0_channels_relays">Gestisci i tuoi relay.</string>
-    <string name="v7_0_simplex_names_descr">Nomi per il tuo canale o per il lavoro.</string>
-    <string name="v7_0_simplex_names">Nomi SimpleX (BETA)</string>
+    <string name="v7_0_simplex_names_descr">Nomi pubblici per il tuo canale o per il lavoro.</string>
+    <string name="v7_0_simplex_names">Nomi pubblici SimpleX (BETA)</string>
     <string name="v7_0_channels_contributors">Aggiungi collaboratori.</string>
     <string name="info_row_file_servers">Server di file</string>
     <string name="share_text_file_servers">Server di file: %s</string>

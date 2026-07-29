@@ -6062,11 +6062,6 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nome non trovato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Public names for your channel or business." xml:space="preserve">
-        <source>Public names for your channel or business.</source>
-        <target>Nomi per il tuo canale o per il lavoro.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Rete e server</target>
@@ -7320,6 +7315,11 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       <trans-unit id="Public channels - speak freely 🚀" xml:space="preserve">
         <source>Public channels - speak freely 🚀</source>
         <target>Canali pubblici - parla liberamente 🚀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
+        <target>Nomi pubblici per il tuo canale o per il lavoro.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -8933,11 +8933,6 @@ copied message info</note>
         <target>Nome SimpleX non verificato</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
-        <source>SimpleX public names (BETA)</source>
-        <target>Nomi SimpleX (BETA)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
         <source>SimpleX one-time invitation</source>
         <target>Invito SimpleX una tantum</target>
@@ -8946,6 +8941,11 @@ copied message info</note>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
         <target>Protocolli di SimpleX esaminati da Trail of Bits.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
+        <target>Nomi pubblici SimpleX (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">

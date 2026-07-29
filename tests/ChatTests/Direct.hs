@@ -3323,17 +3323,17 @@ testUpdatePeerChatVRange ps =
     cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
 
 vr11 :: VersionRangeChat
-vr11 = mkVersionRange (VersionChat 1) (VersionChat 1)
+vr11 = mkVersionRange (VersionChat 9) (VersionChat 9)
 
 contactInfoChatVRange :: TestCC -> VersionRangeChat -> IO ()
-contactInfoChatVRange cc (VersionRange minVer maxVer) = do
+contactInfoChatVRange cc vr = do
   cc <## "contact ID: 2"
   cc <## "receiving messages via: localhost"
   cc <## "sending messages via: localhost"
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
   cc <## "quantum resistant end-to-end encryption"
-  cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+  cc <## ("peer chat protocol version range: " <> vRangeStr vr)
 
 testLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testLinkContentFilter =

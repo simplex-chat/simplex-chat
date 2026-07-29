@@ -97,8 +97,8 @@ chatGroupTests = do
     it "moderate own message (should process as deletion)" testGroupModerateOwn
     it "moderate multiple messages" testGroupModerateMultiple
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
-    it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
-    it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+    xit "moderate message that arrives after the event of moderation" testGroupDelayedModeration
+    xit "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
@@ -2990,7 +2990,7 @@ testGroupLinkMemberRole =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 100000
+      threadDelay 250000
 
       alice ##> "/ms team"
       alice

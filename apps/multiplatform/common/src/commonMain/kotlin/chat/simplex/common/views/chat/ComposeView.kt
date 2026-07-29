@@ -394,6 +394,8 @@ fun ComposeView(
   focusRequester: FocusRequester?,
 ) {
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
+  val chatScope = remember(chatsCtx) { chatsCtx.groupScopeInfo?.toChatScope() }
+  val scopeChatId = remember { chat.id }
   fun isSimplexLink(link: String): Boolean =
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
 
@@ -489,14 +491,14 @@ fun ComposeView(
   }
 
   fun clearPrevDraft(prevChatId: String?) {
-    if (chatModel.draftChatId.value == prevChatId) {
+    if (chatModel.draftChatId.value == draftChatId(prevChatId, chatScope)) {
       chatModel.draft.value = null
       chatModel.draftChatId.value = null
     }
   }
 
   fun clearCurrentDraft() {
-    if (chatModel.draftChatId.value == chat.id) {
+    if (chatModel.draftChatId.value == draftChatId(chat.id, chatScope)) {
       chatModel.draft.value = null
       chatModel.draftChatId.value = null
     }
@@ -936,7 +938,7 @@ fun ComposeView(
       composeState.value = lastFailed
     }
     val draft = chatModel.draft.value
-    if (wasForwarding && chatModel.draftChatId.value == chat.chatInfo.id && forwardingFromChatId != chat.chatInfo.id && draft != null) {
+    if (wasForwarding && chatModel.draftChatId.value == draftChatId(chat.chatInfo.id, chatScope) && forwardingFromChatId != chat.chatInfo.id && draft != null) {
       composeState.value = draft
     } else {
       clearCurrentDraft()
@@ -1326,10 +1328,10 @@ fun ComposeView(
       }
       if (saveLastDraft) {
         chatModel.draft.value = composeState.value
-        chatModel.draftChatId.value = prevChatId
+        chatModel.draftChatId.value = draftChatId(prevChatId, chatScope)
       }
       composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
-    } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+    } else if (chatModel.draftChatId.value == draftChatId(chatModel.chatId.value, chatScope) && chatModel.draft.value != null) {
       composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
     } else {
       clearPrevDraft(prevChatId)
@@ -1359,9 +1361,21 @@ fun ComposeView(
       onDispose {
         if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
           chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = currentChatId.value
+          chatModel.draftChatId.value = draftChatId(currentChatId.value, chatScope)
         }
       }
+    }
+  }
+  // support chat is closed without changing chat id, and then `KeyChangeEffect(chatModel.chatId.value)` doesn't save the draft
+  DisposableEffect(Unit) {
+    onDispose {
+      val cs = composeState.value
+      // chat change is handled by KeyChangeEffect, unfinished voice recording should not replace the saved draft
+      if (chatScope == null || chatModel.chatId.value != scopeChatId || (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished)) return@onDispose
+      if (saveLastDraft && !cs.empty) {
+        chatModel.draft.value = cs
+        chatModel.draftChatId.value = draftChatId(scopeChatId, chatScope)
+      } else clearPrevDraft(scopeChatId)
     }
   }
 

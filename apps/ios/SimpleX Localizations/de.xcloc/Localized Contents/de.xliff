@@ -4927,7 +4927,7 @@ Fehler: %2$@</target>
       </trans-unit>
       <trans-unit id="How to register a test name" xml:space="preserve">
         <source>How to register a test name</source>
-        <target>Einen Test-Namen registrieren</target>
+        <target>Wie man einen Test-Namen registriert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -6060,11 +6060,6 @@ Das ist Ihr Link für die Gruppe %@!</target>
       <trans-unit id="Name not found" xml:space="preserve">
         <source>Name not found</source>
         <target>Name wurde nicht gefunden</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Public names for your channel or business." xml:space="preserve">
-        <source>Public names for your channel or business.</source>
-        <target>Namen für Ihren Kanal oder Ihr Unternehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -7320,6 +7315,11 @@ Aktivieren Sie es in den *Netzwerk und Server* Einstellungen.</target>
       <trans-unit id="Public channels - speak freely 🚀" xml:space="preserve">
         <source>Public channels - speak freely 🚀</source>
         <target>Öffentliche Kanäle – frei sprechen 🚀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
+        <target>Öffentliche Namen für Ihren Kanal oder Ihr Unternehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -8933,11 +8933,6 @@ copied message info</note>
         <target>SimpleX-Name ist nicht verifiziert</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
-        <source>SimpleX public names (BETA)</source>
-        <target>SimpleX-Namen (BETA)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
         <source>SimpleX one-time invitation</source>
         <target>SimpleX-Einmal-Einladung</target>
@@ -8946,6 +8941,11 @@ copied message info</note>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
         <target>Die SimpleX-Protokolle wurden von Trail of Bits überprüft.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
+        <target>Öffentliche SimpleX-Namen (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">
