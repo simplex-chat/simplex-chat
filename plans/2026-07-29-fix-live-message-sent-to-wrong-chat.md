@@ -3,7 +3,7 @@
 Branch: `nd/fix-live-message-sent-to-wrong-chat` (off `origin/master`)
 Date: 2026-07-29
 
-Line references are against `origin/master` at `64bf35804`, with this fix
+Line references are against `origin/master` at `f1418f9e5`, with this fix
 applied. Android and desktop (`commonMain/ComposeView.kt`).
 
 ## Problem
@@ -69,6 +69,26 @@ all, and the compose state is cleared so it does not leak into the chat
 that was opened. Sending it to the chat that is open now is the defect
 being fixed, so it is not used as a fallback.
 
+## Blast radius
+
+`toChat` defaults to the chat this view shows, so every other send is
+unchanged: the send button (`SendMsgView.kt`), the live updates while
+typing (`sendMessageAsync(live = true)`), forwarding, editing and
+reporting all pass no chat and behave exactly as before. Only the send
+started by the chat switch passes a different one.
+
+The live message update loop is not affected: it is started once
+(`SendMsgView.kt:523-559`) with the `::updateLiveMessage` reference of the
+composition in which live mode started, so its updates already go to the
+chat the message belongs to, and it exits when the send started by the
+chat switch clears `liveMessage`. Only that send was created fresh on
+every composition, which is why it was the one going to the wrong chat.
+
+Not covered, and unchanged: a live message in a member support chat that
+is closed without changing the chat id is never committed - the effect
+that commits it is keyed on the chat id, which does not change when that
+view is closed.
+
 ## Verification
 
 - `./gradlew :common:compileKotlinDesktop` — passes.
@@ -84,5 +104,9 @@ being fixed, so it is not used as a fallback.
      member support chat still goes to that scope.
 
 Independent of #7308 (that one is about a send that is still in flight
-when the chat is switched), but both change this file, so expect a small
-conflict if they land together.
+when the chat is switched), but both change the end of `sendMessageAsync`,
+so expect a conflict if they land together. Resolving it: the checks #7308
+adds there act on the chat the message was sent to, so its `chat.id` /
+`chat.chatInfo.id` become `toChat.id` / `toChat.chatInfo.id`; its
+`cs.liveMessage != null` clause already covers the send made by the chat
+switch.
