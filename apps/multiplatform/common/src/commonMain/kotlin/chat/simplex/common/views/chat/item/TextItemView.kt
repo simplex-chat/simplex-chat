@@ -12,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.AnnotatedString.Range
@@ -394,12 +396,12 @@ fun MarkdownText (
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
-            icon.value =
-              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")) {
-                PointerIcon.Hand
-              } else {
-                PointerIcon.Text
-              }
+            val hand = hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND") || hasAnnotation("MODAL")
+            icon.value = if (hand) PointerIcon.Hand else PointerIcon.Text
+          },
+          onHoverExit = {
+            // reset icon.value too, or pointerHoverIcon re-displays a stale Hand on the next Enter
+            icon.value = PointerIcon.Text
           },
           shouldConsumeEvent = { offset ->
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
@@ -433,34 +435,45 @@ fun ClickableText(
   onClick: (Int) -> Unit,
   onLongClick: (Int) -> Unit = {},
   onHover: (Int) -> Unit = {},
+  onHoverExit: () -> Unit = {},
   shouldConsumeEvent: (Int) -> Boolean
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val pressIndicator = Modifier.pointerInput(onClick, onLongClick) {
+  // pointerInput keyed on these lambdas restarts on every recomposition (they are new
+  // instances each time), and a restart mid-gesture swallows the click/hover in flight;
+  // key on Unit and read the latest handlers via rememberUpdatedState instead
+  val currentOnClick = rememberUpdatedState(onClick)
+  val currentOnLongClick = rememberUpdatedState(onLongClick)
+  val currentOnHover = rememberUpdatedState(onHover)
+  val currentOnHoverExit = rememberUpdatedState(onHoverExit)
+  val currentShouldConsumeEvent = rememberUpdatedState(shouldConsumeEvent)
+  // to tell a moved pointer from text that shifted under a stationary pointer (see waitForUpOrCancellation)
+  val textCoordinates = remember { mutableStateOf<LayoutCoordinates?>(null) }
+  val pressIndicator = Modifier.pointerInput(Unit) {
     detectGesture(onLongPress = { pos ->
       layoutResult.value?.let { layoutResult ->
-        onLongClick(layoutResult.getOffsetForPosition(pos))
+        currentOnLongClick.value(layoutResult.getOffsetForPosition(pos))
       }
     }, onPress = { pos ->
       layoutResult.value?.let { layoutResult ->
         val res  = tryAwaitRelease()
         if (res) {
-          onClick(layoutResult.getOffsetForPosition(pos))
+          currentOnClick.value(layoutResult.getOffsetForPosition(pos))
         }
       }
-    }, shouldConsumeEvent = { pos ->
+    }, positionInWindow = { textCoordinates.value?.positionInWindow() ?: Offset.Zero }, shouldConsumeEvent = { pos ->
       var consume = false
       layoutResult.value?.let { layoutResult ->
-        consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
+        consume = currentShouldConsumeEvent.value(layoutResult.getOffsetForPosition(pos))
       }
       consume
     }
     )
-  }.pointerInput(onHover) {
+  }.pointerInput(Unit) {
     if (appPlatform.isDesktop) {
-      detectCursorMove { pos ->
+      detectCursorMove(onExit = { currentOnHoverExit.value() }) { pos ->
         layoutResult.value?.let { layoutResult ->
-          onHover(layoutResult.getOffsetForPosition(pos))
+          currentOnHover.value(layoutResult.getOffsetForPosition(pos))
         }
       }
     }
@@ -468,7 +481,8 @@ fun ClickableText(
 
   BasicText(
     text = text,
-    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator),
+    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator)
+      .onGloballyPositioned { textCoordinates.value = it },
     style = style,
     softWrap = softWrap,
     overflow = overflow,

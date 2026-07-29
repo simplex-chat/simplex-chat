@@ -4384,6 +4384,16 @@ server test error</note>
         <target>File server error: %@</target>
         <note>file error text</note>
       </trans-unit>
+      <trans-unit id="File servers" xml:space="preserve">
+        <source>File servers</source>
+        <target>File servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File servers: %@" xml:space="preserve">
+        <source>File servers: %@</source>
+        <target>File servers: %@</target>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="File status" xml:space="preserve">
         <source>File status</source>
         <target>File status</target>
@@ -4913,6 +4923,11 @@ Error: %2$@</target>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
         <target>How to</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
+        <target>How to register a test name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -6045,11 +6060,6 @@ This is your link for group %@!</target>
       <trans-unit id="Name not found" xml:space="preserve">
         <source>Name not found</source>
         <target>Name not found</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
-        <target>Names for your channel or business.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -7307,6 +7317,11 @@ Enable in *Network &amp; servers* settings.</target>
         <target>Public channels - speak freely 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
+        <target>Public names for your channel or business.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>Push notifications</target>
@@ -7480,11 +7495,6 @@ Enable in *Network &amp; servers* settings.</target>
       <trans-unit id="Register" xml:space="preserve">
         <source>Register</source>
         <target>Register</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Register a test name" xml:space="preserve">
-        <source>Register a test name</source>
-        <target>Register a test name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">
@@ -8923,11 +8933,6 @@ copied message info</note>
         <target>SimpleX name not verified</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
-        <target>SimpleX names (BETA)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
         <source>SimpleX one-time invitation</source>
         <target>SimpleX one-time invitation</target>
@@ -8936,6 +8941,11 @@ copied message info</note>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
         <target>SimpleX protocols reviewed by Trail of Bits.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
+        <target>SimpleX public names (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">

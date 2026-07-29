@@ -10653,8 +10653,8 @@ More improvements are coming soon!</source>
         <source>Owner</source>
         <target state="translated">擁有者</target>
       </trans-unit>
-      <trans-unit id="Owners< &amp; contributors" xml:space="preserve" approved="no">
-        <source>Owners< &amp; contributors</source>
+      <trans-unit id="Owners &amp; contributors" xml:space="preserve" approved="no">
+        <source>Owners &amp; contributors</source>
         <target state="translated">擁有者</target>
       </trans-unit>
       <trans-unit id="Preset relay address" xml:space="preserve" approved="no">

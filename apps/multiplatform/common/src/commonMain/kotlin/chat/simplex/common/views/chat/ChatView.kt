@@ -135,7 +135,7 @@ fun ChatView(
       val draft = chatModel.draft.value
       val sharedContent = chatModel.sharedContent.value
       mutableStateOf(
-        if (chatModel.draftChatId.value == staleChatId.value && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == staleChatId.value)) {
+        if (chatModel.draftChatId.value == draftChatId(staleChatId.value, chatsCtx.groupScopeInfo?.toChatScope()) && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == staleChatId.value)) {
           draft
         } else {
           ComposeState(useLinkPreviews = useLinkPreviews)
@@ -181,19 +181,23 @@ fun ChatView(
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
             selectionManager?.clearSelection()
-            val cInfo = activeChat.value?.chatInfo
+            // The outer chat/chatInfo/chatRh are captured once by LaunchedEffect(Unit) and go stale on desktop, where
+            // ChatView is reused across chat switches; read the opened chat fresh to avoid regressing the previous one.
+            val openedChat = chatModel.getChat(chatId)
+            val cInfo = openedChat?.chatInfo
+            val openedChatRh = openedChat?.remoteHostId
             if (chatsCtx.secondaryContextFilter == null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group || cInfo is ChatInfo.Local)) {
-              updateAvailableContent(chatRh, activeChat, availableContent)
+              updateAvailableContent(openedChatRh, activeChat, availableContent)
             }
-            if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
+            if (cInfo is ChatInfo.Direct && cInfo.contact.activeConn != null) {
               withBGApi {
-                val r = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
+                val r = chatModel.controller.apiContactInfo(openedChatRh, cInfo.apiId)
                 if (r != null) {
                   val contactStats = r.first
                   if (contactStats != null)
                     withContext(Dispatchers.Main) {
-                      chatModel.chatsContext.updateContactConnectionStats(chatRh, chat.chatInfo.contact, contactStats)
-                      chatModel.chatAgentConnId.value = chat.chatInfo.contact.activeConn.agentConnId
+                      chatModel.chatsContext.updateContactConnectionStats(openedChatRh, cInfo.contact, contactStats)
+                      chatModel.chatAgentConnId.value = cInfo.contact.activeConn.agentConnId
                       chatModel.chatSubStatus.value = contactStats.subStatus
                     }
                 }
@@ -206,17 +210,17 @@ fun ChatView(
             }
             if (cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays) {
               withBGApi {
-                setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
+                setGroupMembers(openedChatRh, cInfo.groupInfo, chatModel)
                 if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
-                  val relays = chatModel.controller.apiGetGroupRelays(chatRh, cInfo.groupInfo.groupId)
+                  val relays = chatModel.controller.apiGetGroupRelays(openedChatRh, cInfo.groupInfo.groupId)
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
                 } else if (cInfo.groupInfo.membership.memberCurrent) {
-                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
+                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(openedChatRh, cInfo.groupInfo.groupId)
                   if (gInfo != null) {
                     withContext(Dispatchers.Main) {
-                      chatModel.chatsContext.updateGroup(chatRh, gInfo)
+                      chatModel.chatsContext.updateGroup(openedChatRh, gInfo)
                     }
                   }
                 }
@@ -1909,10 +1913,13 @@ fun BoxScope.ChatItemsList(
     reveal: (Boolean) -> Unit
   ) {
     val itemScope = rememberCoroutineScope()
+    val viewConfiguration = LocalViewConfiguration.current
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
-      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
-      LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view.
+      // remember: pointerInput handlers observe ViewConfiguration and reset on any change, so a new
+      // instance per recomposition kills in-flight presses/hover whenever a message is inserted
+      LocalViewConfiguration provides remember(viewConfiguration) { viewConfiguration.bigTouchSlop() }
     ) {
       val provider = {
         providerForGallery(reversedChatItems.value.asReversed(), cItem.id) { indexInReversed ->
@@ -1960,7 +1967,7 @@ fun BoxScope.ChatItemsList(
           }
           false
         }
-        val swipeableModifier = if (appPlatform.isDesktop || !chatInfo.sendMsgEnabled) Modifier else SwipeToDismissModifier(
+        val swipeableModifier = if (appPlatform.isDesktop || !chatInfo.sendMsgEnabled || cItem.meta.itemDeleted != null) Modifier else SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },

@@ -396,7 +396,7 @@
   <string name="save_simplex_name_question">Save SimpleX name?</string>
   <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
   <string name="channel_simplex_name">Channel SimpleX name</string>
-  <string name="register_test_name">Register a test name</string>
+  <string name="register_test_name">How to register a test name</string>
   <string name="remove_name">Remove name</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
@@ -2025,6 +2025,7 @@
   <string name="info_row_updated_at">Record updated at</string>
   <string name="info_row_message_status">Message status</string>
   <string name="info_row_file_status">File status</string>
+  <string name="info_row_file_servers">File servers</string>
   <string name="info_row_sent_at">Sent at</string>
   <string name="info_row_created_at">Created at</string>
   <string name="info_row_received_at">Received at</string>
@@ -2035,6 +2036,7 @@
   <string name="share_text_updated_at">Record updated at: %s</string>
   <string name="share_text_message_status">Message status: %s</string>
   <string name="share_text_file_status">File status: %s</string>
+  <string name="share_text_file_servers">File servers: %s</string>
   <string name="share_text_sent_at">Sent at: %s</string>
   <string name="share_text_created_at">Created at: %s</string>
   <string name="share_text_received_at">Received at: %s</string>
@@ -2734,8 +2736,8 @@
   <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
-  <string name="v7_0_simplex_names">SimpleX names (BETA)</string>
-  <string name="v7_0_simplex_names_descr">Names for your channel or business.</string>
+  <string name="v7_0_simplex_names">SimpleX public names (BETA)</string>
+  <string name="v7_0_simplex_names_descr">Public names for your channel or business.</string>
   <string name="v7_0_channels">Better channels 📢</string>
   <string name="v7_0_channels_previews">Create web preview.</string>
   <string name="v7_0_channels_relays">Manage your relays.</string>

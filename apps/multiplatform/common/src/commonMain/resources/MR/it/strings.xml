@@ -64,9 +64,9 @@
     <string name="contact_already_exists">Il contatto esiste già</string>
     <string name="invalid_connection_link">Link di connessione non valido</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controlla di aver usato il link giusto o chiedi al tuo contatto di inviartene un altro.</string>
-    <string name="connection_error_auth">Errore di connessione</string>
+    <string name="connection_error_auth">Link di connessione rimosso</string>
     <string name="error_accepting_contact_request">Errore di accettazione della richiesta del contatto</string>
-    <string name="sender_may_have_deleted_the_connection_request">Il mittente potrebbe aver eliminato la richiesta di connessione.</string>
+    <string name="sender_may_have_deleted_the_connection_request">Il mittente ha eliminato la richiesta di connessione.</string>
     <string name="error_deleting_contact">Errore di eliminazione del contatto</string>
     <string name="error_deleting_group">Errore di eliminazione del gruppo</string>
     <string name="error_deleting_contact_request">Errore di eliminazione della richiesta di contatto</string>
@@ -208,8 +208,7 @@
     <string name="simplex_link_connection">via %1$s</string>
     <string name="simplex_link_mode_browser_warning">Aprire il link nel browser può ridurre la privacy e la sicurezza della connessione. I link SimpleX non fidati saranno in rosso.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Sei già connesso a %1$s.</string>
-    <string name="connection_error_auth_desc">A meno che il tuo contatto non abbia eliminato la connessione o che questo link non sia già stato usato, potrebbe essere un errore; per favore segnalalo.
-\nPer connetterti, chiedi al tuo contatto di creare un altro link di connessione e controlla di avere una connessione di rete stabile.</string>
+    <string name="connection_error_auth_desc">Il tuo contatto ha rimosso questo link, o era un link una tantum che è già stato usato.\nPer connetterti, chiedi al tuo contatto di creare un nuovo link.</string>
     <string name="error_smp_test_certificate">L\'impronta digitale nell\'indirizzo del server non corrisponde al certificato.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Per migliorare la privacy, <b>SimpleX funziona in secondo piano</b> invece di usare le notifiche push.]]></string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Consentilo</b> nella prossima schermata per ricevere le notifiche immediatamente.]]></string>
@@ -2441,7 +2440,7 @@
     <string name="e2ee_info_e2ee"><![CDATA[I messaggi sono protetti da <b>crittografia end-to-end</b>.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Potrai inviare messaggi <b>solo dopo che la tua richiesta verrà accettata</b>.]]></string>
     <string name="compose_view_connect">Connetti</string>
-    <string name="contact_should_accept">il contatto dovrebbe accettare…</string>
+    <string name="contact_should_accept">il contatto deve accettare…</string>
     <string name="error_changing_user">Errore cambiando l\'profilo</string>
     <string name="error_preparing_contact">Errore di apertura della chat</string>
     <string name="error_preparing_group">Errore di apertura del gruppo</string>
@@ -2926,4 +2925,13 @@
     <string name="edit_description">Modifica descrizione</string>
     <string name="enter_description_optional">Inserisci la descrizione (facoltativa)</string>
     <string name="error_sharing_address">Errore di condivisione dell\'indirizzo</string>
+    <string name="v7_0_channels">Canali migliorati 📢</string>
+    <string name="v7_0_channels_previews">Crea un\'anteprima web.</string>
+    <string name="v7_0_channels_wider_messages">Lettura più facile.</string>
+    <string name="v7_0_channels_relays">Gestisci i tuoi relay.</string>
+    <string name="v7_0_simplex_names_descr">Nomi pubblici per il tuo canale o per il lavoro.</string>
+    <string name="v7_0_simplex_names">Nomi pubblici SimpleX (BETA)</string>
+    <string name="v7_0_channels_contributors">Aggiungi collaboratori.</string>
+    <string name="info_row_file_servers">Server di file</string>
+    <string name="share_text_file_servers">Server di file: %s</string>
 </resources>

@@ -196,7 +196,6 @@ private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
 private fun MutableState<MigrationFromState>.ChatStopFailedView(reason: String) {
   SectionView(stringResource(MR.strings.error_stopping_chat)) {
     Text(reason)
-    SectionDividerSpaced()
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_report_filled),
       text = stringResource(MR.strings.auth_stop_chat),

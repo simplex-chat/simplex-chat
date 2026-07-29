@@ -1540,8 +1540,7 @@
     <string name="marked_deleted_description">pažymėta ištrinta</string>
     <string name="live">GYVAI</string>
     <string name="moderated_description">moderuota</string>
-    <string name="connection_error_auth_desc">Nebent jūsų kontaktas ištrynė šį prisijungimą arba nuoroda jau buvo panaudota, tai gali būti klaida - prašome ją pranešti.
-\nKad prisijungti, paprašykite savo kontakto sukurti kitą prisijungimo nuorodą ir patikrinkite, kad turite stabilų interneto ryšį.</string>
+    <string name="connection_error_auth_desc">Nebent jūsų kontaktas ištrynė šį prisijungimą arba nuoroda jau buvo panaudota, tai gali būti klaida - prašome ją pranešti. \nKad prisijungti, paprašykite savo kontakto sukurti kitą prisijungimo nuorodą ir patikrinkite, kad turite stabilų interneto ryšį.</string>
     <string name="system_restricted_background_warn"><![CDATA[Kad įjungti pranešimus, prašome pasirinkti <b>Programėlės akumuliatoriaus naudojimas</b> / <b>Neapribotas</b> programėlės nustatymuose.]]></string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Kad daryti skambučius fone, prašome pasirinkti <b>Programėlės akumuliatoriaus naudojimas</b> / <b>Neapribotas</b> programėlės nustatymuose.]]></string>
     <string name="system_restricted_background_in_call_title">Nėra foninių skambučių</string>

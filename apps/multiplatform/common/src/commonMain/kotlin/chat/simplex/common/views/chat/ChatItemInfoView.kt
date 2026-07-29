@@ -30,6 +30,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.serialization.encodeToString
@@ -287,6 +288,16 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         ExpandableInfoRow(stringResource(MR.strings.info_row_message_status), jsonShort.encodeToString(ci.meta.itemStatus))
         if (ci.file != null) {
           ExpandableInfoRow(stringResource(MR.strings.info_row_file_status), jsonShort.encodeToString(ci.file.fileStatus))
+        }
+      }
+    }
+    if (ci.file != null && ciInfo.fileXftpServers.isNotEmpty()) {
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionView(stringResource(MR.strings.info_row_file_servers)) {
+        ciInfo.fileXftpServers.forEach { server ->
+          SectionItemView {
+            Text(serverHostname(server), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+          }
         }
       }
     }
@@ -580,6 +591,9 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
     if (ci.file != null) {
       shareText.add(String.format(generalGetString(MR.strings.share_text_file_status), jsonShort.encodeToString(ci.file.fileStatus)))
     }
+  }
+  if (ci.file != null && chatItemInfo.fileXftpServers.isNotEmpty()) {
+    shareText.add(String.format(generalGetString(MR.strings.share_text_file_servers), chatItemInfo.fileXftpServers.joinToString(", ") { serverHostname(it) }))
   }
   val qi = ci.quotedItem
   if (qi != null) {

@@ -441,7 +441,6 @@ processChatCommand cxt nm = \case
     where
       createPresetContactCards :: DB.Connection -> User -> ExceptT StoreError IO ()
       createPresetContactCards db user = do
-        createContact db cxt user simplexStatusContactProfile
         createContact db cxt user simplexTeamContactProfile
       chooseServers :: Maybe User -> CM ([UpdatedUserOperatorServers], (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
       chooseServers user_ = do
@@ -693,7 +692,8 @@ processChatCommand cxt nm = \case
       (SCTGroup, SMDSnd) -> L.nonEmpty <$> withFastStore' (`getGroupSndStatuses` itemId)
       _ -> pure Nothing
     forwardedFromChatItem <- getForwardedFromItem user ci
-    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem}
+    fileXftpServers <- getChatItemFileServers user dir ci
+    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem, fileXftpServers}
     where
       getForwardedFromItem :: User -> ChatItem c d -> CM (Maybe AChatItem)
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
@@ -1667,8 +1667,8 @@ processChatCommand cxt nm = \case
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
             lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
               Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
-              Just (agentV, _) -> do
-                let chatV = agentToChatVersion agentV
+              Just _ -> do
+                let chatV = initialChatVersion
                 subMode <- chatReadVar subscriptionMode
                 connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
                 conn@Connection {connId = testCId} <- withFastStore $ \db ->
@@ -2879,11 +2879,14 @@ processChatCommand cxt nm = \case
       -- TODO [relays] possible optimization is to read only required members + relays
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db cxt user groupId
       when (selfSelected gInfo) $ throwCmdError "can't change role for self"
-      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending, anyPrivilegedTarget, anyRosterChange, finalPrivilegedCount) = selectMembers members
+      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending, anyPrivilegedTarget, anyRelay, anyRosterChange, finalPrivilegedCount) = selectMembers members
       when (length invitedMems + length currentMems + length unchangedMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && (anyAdmin || newRole >= GRAdmin)) $
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
+      when (anyRelay || newRole == GRRelay) $ throwCmdError "relay role can't be changed"
+      -- TODO allow moderators (needs UI) - relay is rejected above (anyRelay), so drop the GRAdmin floor:
+      -- TODO   assertUserGroupRole gInfo (roleRequiredToChange maxRole newRole)
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
       -- in relay groups the roster has a single signer, so only the owner may change member/moderator/admin roles
       when (useRelays' gInfo && (isRosterRole newRole || anyPrivilegedTarget) && memberRole' (membership gInfo) /= GROwner) $
@@ -2904,22 +2907,23 @@ processChatCommand cxt nm = \case
       -- anyPrivilegedTarget: a target currently member/moderator/admin (gates the owner-only check); anyRosterChange:
       -- a current member's role change that alters the roster blob - the only case that bumps the version, since a
       -- bump with no delta reads as a gap to subscribers; finalPrivilegedCount: moderators + admins after the change.
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool, Bool, Int)
-      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False, False, False, 0)
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool, Bool, Bool, Int)
+      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False, False, False, False, 0)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRosterChange, privCount)
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRelay, anyRosterChange, privCount)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
                     anyPending' = anyPending || memberPending m
                     anyPrivTarget' = anyPrivTarget || isRosterRole memberRole
+                    anyRelay' = anyRelay || memberRole == GRRelay
                     privCount' = if isRosterRole newRole then privCount + 1 else privCount
                  in if
-                      | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRosterChange, privCount')
-                      | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRosterChange, privCount')
+                      | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange, privCount')
+                      | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange, privCount')
                       -- a current member's role actually changes here; it alters the roster iff the old or new role is on it
-                      | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRosterChange || isRosterRole newRole || isRosterRole memberRole, privCount')
-            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRosterChange, if isRosterRole memberRole then privCount + 1 else privCount)
+                      | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange || isRosterRole newRole || isRosterRole memberRole, privCount')
+            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRelay, anyRosterChange, if isRosterRole memberRole then privCount + 1 else privCount)
       changeRoleInvitedMems :: User -> GroupInfo -> [GroupMember] -> CM ([ChatError], [GroupMember])
       changeRoleInvitedMems user gInfo memsToChange = do
         -- not batched, as we need to send different invitations to different connections anyway
@@ -3279,7 +3283,7 @@ processChatCommand cxt nm = \case
     unless (groupFeatureUserAllowed SGFDirectMessages g) $ throwCmdError "direct messages not allowed"
     case memberConn m of
       Just mConn@Connection {peerChatVRange} -> do
-        unless (maxVersion peerChatVRange >= groupDirectInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
+        unless (maxVersion peerChatVRange >= initialChatVersion) $ throwChatError CEPeerChatVRangeIncompatible
         when (isJust $ memberContactId m) $ throwCmdError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
         -- TODO PQ should negotitate contact connection with PQSupportOn?
@@ -3723,15 +3727,15 @@ processChatCommand cxt nm = \case
         lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
           Nothing -> throwChatError CEInvalidConnReq
           -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
-          Just (agentV, pqSup') -> do
-            let chatV = agentToChatVersion agentV
+          Just (_, pqSup') -> do
+            let chatV = initialChatVersion
             withFastStore' (\db -> getConnectionEntityByConnReq db cxt user cReqs) >>= \case
               Nothing -> joinNewConn chatV
               Just (RcvDirectMsgConnection conn@Connection {connStatus, contactConnInitiated, customUserProfileId} _ct_)
                 | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV -- own connection link
                 | connStatus == ConnPrepared -> do -- retrying join after error
                     localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
-                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile) chatV
+                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile)
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
               joinNewConn chatV = do
@@ -3740,10 +3744,10 @@ processChatCommand cxt nm = \case
                 connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
-                joinPreparedConn conn incognitoProfile chatV
-              joinPreparedConn conn incognitoProfile chatV = do
+                joinPreparedConn conn incognitoProfile
+              joinPreparedConn conn incognitoProfile = do
                 profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user incognitoProfile Nothing True
-                dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+                dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
                 sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3886,14 +3890,14 @@ processChatCommand cxt nm = \case
       -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
       lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
-        Just (agentV, _) -> do
-          let chatV = agentToChatVersion agentV
+        Just _ -> do
+          let chatV = initialChatVersion
           connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
           pure (connId, chatV)
     mkXContactId :: Maybe XContactId -> CM XContactId
     mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
     joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfo) -> Maybe MemberId -> PQSupport -> CM Connection
-    joinContact user conn@Connection {connChatVersion = chatV} cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
+    joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
       -- gInfo_ is Maybe (Maybe GroupInfo), where Just Nothing means "some unknown group", e.g. when joining via link without profile
       profileToSend <-
         presentUserBadge user incognitoProfile $ case gInfo_ of
@@ -3903,7 +3907,7 @@ processChatCommand cxt nm = \case
         Just (Just gInfo) | useRelays' gInfo -> case relayMemberId_ of
           Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
           Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
-        _ -> encodeConnInfoPQ pqSup chatV $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
+        _ -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined
@@ -4211,8 +4215,8 @@ processChatCommand cxt nm = \case
           (FixedLinkData {linkConnReq = cReq}, _cData) <- getShortLinkConnReq nm user address
           lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
-            Just (agentV, _) -> do
-              let chatV = agentToChatVersion agentV
+            Just _ -> do
+              let chatV = initialChatVersion
               gVar <- asks random
               subMode <- chatReadVar subscriptionMode
               connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
@@ -4305,7 +4309,7 @@ processChatCommand cxt nm = \case
       CLShort l -> do
         let l' = serverShortLink l
         knownLinkPlans l' >>= \case
-          Just (l, p) -> pure (l, Nothing, Nothing, p)
+          Just (createdLink, p) -> pure (createdLink, Nothing, Nothing, p)
           Nothing -> do
             (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
             contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
@@ -4489,15 +4493,15 @@ processChatCommand cxt nm = \case
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
-            CPContactAddress (CAPOk (Just sld) _) | isJust vName -> connectContactViaName sld vName
+            CPContactAddress (CAPOk (Just sld) _) | isJust vName -> connectContactViaName sld
             CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _)
-              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld vName
+              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
       where
         vName = nameDomain <$> planSimplexName
-        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
-        joinChannelViaRelays ccl gld vName = do
+        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
+        joinChannelViaRelays ccl gld = do
           GroupInfo {groupId} <- prepareChannelGroup
           processChatCommand cxt nm APIConnectPreparedGroup {groupId, incognito, ownerContact = Nothing, msgContent_ = Nothing}
             `catchAllErrors` \e -> do
@@ -4512,8 +4516,8 @@ processChatCommand cxt nm = \case
               gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
               deleteGroupConnections user gInfo False
               withFastStore' $ \db -> deleteGroup db user gInfo
-        connectContactViaName :: ContactShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
-        connectContactViaName sld vName =
+        connectContactViaName :: ContactShortLinkData -> CM ChatResponse
+        connectContactViaName sld =
           processChatCommand cxt nm (APIPrepareContact userId ccLink vName sld) >>= \case
             CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
               processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)

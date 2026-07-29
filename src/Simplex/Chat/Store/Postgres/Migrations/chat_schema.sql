@@ -1187,7 +1187,10 @@ CREATE TABLE test_chat_schema.protocol_servers (
     user_id bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    protocol text DEFAULT 'smp'::text NOT NULL
+    protocol text DEFAULT 'smp'::text NOT NULL,
+    role_storage smallint,
+    role_proxy smallint,
+    role_names smallint
 );
 
 

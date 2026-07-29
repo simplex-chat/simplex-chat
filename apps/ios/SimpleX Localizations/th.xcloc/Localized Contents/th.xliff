@@ -3881,6 +3881,14 @@ server test error</note>
         <source>File server error: %@</source>
         <note>file error text</note>
       </trans-unit>
+      <trans-unit id="File servers" xml:space="preserve">
+        <source>File servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File servers: %@" xml:space="preserve">
+        <source>File servers: %@</source>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="File status" xml:space="preserve">
         <source>File status</source>
         <note>No comment provided by engineer.</note>
@@ -4356,6 +4364,10 @@ Error: %2$@</source>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
         <target>วิธี</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How to register a test name" xml:space="preserve">
+        <source>How to register a test name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -5369,10 +5381,6 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Name not found" xml:space="preserve">
         <source>Name not found</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Names for your channel or business." xml:space="preserve">
-        <source>Names for your channel or business.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -6466,6 +6474,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Public channels - speak freely 🚀</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Public names for your channel or business." xml:space="preserve">
+        <source>Public names for your channel or business.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>การแจ้งเตือนแบบทันที</target>
@@ -6623,10 +6635,6 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Register" xml:space="preserve">
         <source>Register</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Register a test name" xml:space="preserve">
-        <source>Register a test name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Register notification token?" xml:space="preserve">
@@ -7887,10 +7895,6 @@ copied message info</note>
         <source>SimpleX name not verified</source>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX names (BETA)" xml:space="preserve">
-        <source>SimpleX names (BETA)</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
         <source>SimpleX one-time invitation</source>
         <target>คำเชิญ SimpleX แบบครั้งเดียว</target>
@@ -7898,6 +7902,10 @@ copied message info</note>
       </trans-unit>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+        <source>SimpleX public names (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">

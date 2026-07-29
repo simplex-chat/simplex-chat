@@ -988,8 +988,7 @@
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Aby chronić Twoją prywatność, SimpleX używa oddzielnych identyfikatorów dla każdego z Twoich kontaktów.</string>
     <string name="to_verify_compare">Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.</string>
     <string name="smp_servers_use_server_for_new_conn">Użyj dla nowych połączeń</string>
-    <string name="connection_error_auth_desc">O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go.
-\nAby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.</string>
+    <string name="connection_error_auth_desc">O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go. \nAby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.</string>
     <string name="use_simplex_chat_servers__question">Używać serwerów SimpleX Chat\?</string>
     <string name="icon_descr_simplex_team">Drużyna SimpleX</string>
     <string name="network_use_onion_hosts_prefer">Gdy dostępny</string>

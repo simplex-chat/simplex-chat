@@ -55,7 +55,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, sumTypeJSON)
-import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
+import Simplex.Messaging.Protocol (BlockingInfo, MsgBody, XFTPServer)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
@@ -1345,7 +1345,8 @@ instance TextEncoding CIForwardedFromTag where
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
     memberDeliveryStatuses :: Maybe (NonEmpty MemberDeliveryStatus),
-    forwardedFromChatItem :: Maybe AChatItem
+    forwardedFromChatItem :: Maybe AChatItem,
+    fileXftpServers :: [XFTPServer]
   }
   deriving (Show)
 

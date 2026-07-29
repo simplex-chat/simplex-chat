@@ -1586,10 +1586,11 @@ Query:
           SELECT chat_item_id, timed_ttl
           FROM chat_items
           WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
             AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: 
           SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at
@@ -4064,7 +4065,8 @@ SCAN s
 SEARCH r USING AUTOMATIC PARTIAL COVERING INDEX (local_display_name=?)
 
 Query: 
-        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled
+        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled,
+               role_storage, role_proxy, role_names
         FROM protocol_servers
         WHERE user_id = ? AND protocol = ?
       
@@ -4766,13 +4768,6 @@ Query:
 Plan:
 
 Query: 
-      INSERT INTO chat_item_moderations
-        (group_id, moderator_member_id, item_member_id, shared_msg_id, created_by_msg_id, moderated_at)
-        VALUES (?,?,?,?,?,?)
-    
-Plan:
-
-Query: 
       INSERT INTO chat_item_versions (chat_item_id, msg_content, item_version_ts)
       VALUES (?,?,?)
     
@@ -4901,8 +4896,9 @@ Plan:
 
 Query: 
       INSERT INTO protocol_servers
-        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled,
+         role_storage, role_proxy, role_names, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -5040,10 +5036,11 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND group_id = ?
+        AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
         AND item_status = ?
     
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
@@ -5433,7 +5430,8 @@ SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id
 Query: 
       UPDATE protocol_servers
       SET protocol = ?, host = ?, port = ?, key_hash = ?, basic_auth = ?,
-          preset = ?, tested = ?, enabled = ?, updated_at = ?
+          preset = ?, tested = ?, enabled = ?,
+          role_storage = ?, role_proxy = ?, role_names = ?, updated_at = ?
       WHERE smp_server_id = ?
     
 Plan:
@@ -6472,10 +6470,6 @@ Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 
-Query: DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
-Plan:
-SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group (group_id=? AND item_member_id=? AND shared_msg_id=?)
-
 Query: DELETE FROM chat_item_reactions WHERE contact_id = ?
 Plan:
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_contact_id (contact_id=?)
@@ -7164,6 +7158,10 @@ Query: SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group
 Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
+
+Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SCAN chat_items
 
 Query: SELECT chat_item_id FROM chat_items WHERE item_text LIKE '%' || ? || '%' ORDER BY chat_item_id DESC LIMIT 1
 Plan:

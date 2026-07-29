@@ -638,6 +638,7 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: Set<String>
     @Binding var parentSheet: SomeSheet<AnyView>?
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @State private var ignoreSearchTextChange = false
     // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
     @State private var connectNameCandidate: String? = nil
@@ -645,9 +646,16 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // a typed name replaces the list tags with a row to connect to it (as on Android mobile)
-            if let candidate = connectNameCandidate {
-                connectByNameRow(candidate)
+            // a typed name shows a row to connect to it (as on Android mobile): with the reachable toolbar it
+            // replaces the tags above the search field; in top bar mode the tags stay and it moves below (end of VStack)
+            if oneHandUI, let candidate = connectNameCandidate {
+                ConnectByNameRow(
+                    name: candidate,
+                    searchText: $searchText,
+                    connectNameCandidate: $connectNameCandidate,
+                    searchFocussed: $searchFocussed,
+                    dismiss: false
+                )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             }
@@ -684,6 +692,15 @@ struct ChatListSearchBar: View {
                 } else if m.chats.count > 0 {
                     toggleFilterButton()
                 }
+            }
+            if !oneHandUI, let candidate = connectNameCandidate {
+                ConnectByNameRow(
+                    name: candidate,
+                    searchText: $searchText,
+                    connectNameCandidate: $connectNameCandidate,
+                    searchFocussed: $searchFocussed,
+                    dismiss: false
+                )
             }
         }
         .onChange(of: searchFocussed) { sf in
@@ -765,33 +782,6 @@ struct ChatListSearchBar: View {
         }
     }
 
-    // Row shown in place of the list tags when the search text is a SimpleX name. The @ icon marks a
-    // contact name, the tag icon a channel/other name; tapping hides the keyboard, connects online, and
-    // clears the field.
-    private func connectByNameRow(_ name: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: name.hasPrefix("@") ? "at" : "number")
-                .foregroundColor(theme.colors.primary)
-            Text(String.localizedStringWithFormat(NSLocalizedString("Connect to %@", comment: "new chat action"), name))
-                .foregroundColor(theme.colors.primary)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            searchFocussed = false
-            planAndConnect(
-                name,
-                theme: theme,
-                dismiss: false,
-                cleanup: {
-                    searchText = ""
-                    connectNameCandidate = nil
-                }
-            )
-        }
-    }
-
     private func connect(_ link: String) {
         planAndConnect(
             link,
@@ -807,11 +797,47 @@ struct ChatListSearchBar: View {
     }
 }
 
+// Row shown when the search text is a SimpleX name — in place of the list tags in the chat list, below
+// the search field in the new chat sheet. The @ icon marks a contact name, the tag icon a channel/other
+// name; tapping hides the keyboard, connects online, and clears the field.
+struct ConnectByNameRow: View {
+    @EnvironmentObject var theme: AppTheme
+    var name: String
+    @Binding var searchText: String
+    @Binding var connectNameCandidate: String?
+    @FocusState.Binding var searchFocussed: Bool
+    var dismiss: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: name.hasPrefix("@") ? "at" : "number")
+                .foregroundColor(theme.colors.primary)
+            Text(String.localizedStringWithFormat(NSLocalizedString("Connect to %@", comment: "new chat action"), name))
+                .foregroundColor(theme.colors.primary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            searchFocussed = false
+            planAndConnect(
+                name,
+                theme: theme,
+                dismiss: dismiss,
+                cleanup: {
+                    searchText = ""
+                    connectNameCandidate = nil
+                }
+            )
+        }
+    }
+}
+
 // Default top-level part used to complete a bare name typed in the search field (search field only;
 // the message parser and the wire format are unchanged).
 private let DEFAULT_NAME_TLD = "testing"
-// Shortest name that offers the button, so it is discoverable but does not flash on a single letter.
-private let MIN_NAME_LENGTH = 2
+// Shortest name that offers the button, so it is discoverable but does not flash on short prefixes.
+private let MIN_NAME_LENGTH = 5
 
 private func isNameLabel(_ s: String) -> Bool {
     s.count >= 1 && s.count <= 63 && s.range(of: "^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$", options: .regularExpression) != nil

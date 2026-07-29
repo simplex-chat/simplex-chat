@@ -1813,6 +1813,15 @@ struct ServerRoles: Equatable, Codable {
     var storage: Bool
     var proxy: Bool
     var names: Bool
+
+    // roles applied when a server matches no operator, mirrors core resolveServerRoles (Operators.hs)
+    static let noOperatorDefault = ServerRoles(storage: true, proxy: true, names: false)
+}
+
+struct ServerRolesOverride: Equatable, Codable, Hashable {
+    var storage: Bool?
+    var proxy: Bool?
+    var names: Bool?
 }
 
 struct UserOperatorServers: Identifiable, Equatable, Codable {
@@ -1839,8 +1848,8 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
                 serverDomains: [],
                 conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
-                smpRoles: ServerRoles(storage: true, proxy: true, names: true),
-                xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
+                smpRoles: ServerRoles.noOperatorDefault,
+                xftpRoles: ServerRoles.noOperatorDefault
             )
         }
         set { `operator` = newValue }
@@ -1962,11 +1971,12 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
     var tested: Bool?
     var enabled: Bool
     var deleted: Bool
+    var roles: ServerRolesOverride = ServerRolesOverride()
     var createdAt = Date()
 
     static func == (l: UserServer, r: UserServer) -> Bool {
         l.serverId == r.serverId && l.server == r.server && l.preset == r.preset && l.tested == r.tested &&
-        l.enabled == r.enabled && l.deleted == r.deleted
+        l.enabled == r.enabled && l.deleted == r.deleted && l.roles == r.roles
     }
 
     var id: String { "\(server) \(createdAt)" }
@@ -2026,6 +2036,7 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
         case tested
         case enabled
         case deleted
+        case roles
     }
 }
 
