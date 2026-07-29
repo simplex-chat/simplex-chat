@@ -4768,13 +4768,6 @@ Query:
 Plan:
 
 Query: 
-      INSERT INTO chat_item_moderations
-        (group_id, moderator_member_id, item_member_id, shared_msg_id, created_by_msg_id, moderated_at)
-        VALUES (?,?,?,?,?,?)
-    
-Plan:
-
-Query: 
       INSERT INTO chat_item_versions (chat_item_id, msg_content, item_version_ts)
       VALUES (?,?,?)
     
@@ -6477,10 +6470,6 @@ Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 
-Query: DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
-Plan:
-SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group (group_id=? AND item_member_id=? AND shared_msg_id=?)
-
 Query: DELETE FROM chat_item_reactions WHERE contact_id = ?
 Plan:
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_contact_id (contact_id=?)
@@ -7169,6 +7158,10 @@ Query: SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group
 Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
+
+Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SCAN chat_items
 
 Query: SELECT chat_item_id FROM chat_items WHERE item_text LIKE '%' || ? || '%' ORDER BY chat_item_id DESC LIMIT 1
 Plan:

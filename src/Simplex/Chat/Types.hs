@@ -2071,7 +2071,7 @@ instance TextEncoding CommandStatus where
 
 data CommandFunction
   = CFCreateConnGrpMemInv
-  | CFCreateConnGrpInv
+  | CFCreateConnGrpInv -- deprecated
   | CFCreateConnFileInvDirect -- deprecated
   | CFCreateConnFileInvGroup -- deprecated
   | CFJoinConn
@@ -2204,7 +2204,7 @@ peerConnChatVersion _local@(VersionRange lmin lmax) _peer@(VersionRange rmin rma
   | otherwise = rmax
 
 initialChatVersion :: VersionChat
-initialChatVersion = VersionChat 1
+initialChatVersion = VersionChat 9
 
 chatInitialVRange :: VersionRangeChat
 chatInitialVRange = versionToRange initialChatVersion

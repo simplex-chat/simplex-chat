@@ -26,7 +26,7 @@ import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..), currentChatVersion)
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName)
 import qualified Simplex.Messaging.Crypto as C
@@ -3040,7 +3040,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## ("peer chat protocol version range: (Version 1, " <> show currentChatVersion <> ")")
+      a <## currentChatVRangeInfo
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

@@ -40,7 +40,7 @@ import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', mapAccumL, partition)
+import Data.List (foldl', mapAccumL, partition)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -96,7 +96,7 @@ import Simplex.Messaging.Compression (compressionLevel, limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
@@ -918,7 +918,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
-  dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+  dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
   (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
@@ -939,7 +939,7 @@ acceptContactRequestAsync
       Connection {connId} <- liftIO $ createAcceptedContactConn db user (Just uclId) contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
       liftIO $ setCommandConnId db user cmdId connId
       getContact db cxt user contactId
-    agentAcceptContactAsync cmdId acId True cReqInvId (XInfo profileToSend) cReqPQSup chatV subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId (XInfo profileToSend) cReqPQSup subMode
     pure ct'
 
 acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> Maybe GroupMember -> CM GroupMember
@@ -992,7 +992,7 @@ acceptGroupJoinRequestAsync
     m <- withStore $ \db -> do
       liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db cxt user groupMemberId
-    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff subMode
     pure m
 
 acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupRejectionReason -> CM GroupMember
@@ -1024,7 +1024,7 @@ acceptGroupJoinSendRejectAsync
     m <- withStore $ \db -> do
       liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db cxt user groupMemberId
-    agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff chatV subMode
+    agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff subMode
     pure m
 
 acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
@@ -1058,7 +1058,7 @@ acceptBusinessJoinRequestAsync
     withStore' $ \db -> do
       forM_ xContactId $ \xcId -> setBusinessChatAcceptedXContactId db gInfo xcId
       createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
-    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff subMode
     let cd = CDGroupSnd gInfo Nothing
     -- TODO [short links] move to profileContactRequest?
     createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
@@ -1087,7 +1087,7 @@ acceptRelayJoinRequestAsync
       gInfo' <- liftIO $ updateRelayOwnStatusFromTo db gInfo RSInvited RSAccepted
       ownerMember' <- getGroupMemberById db cxt user groupMemberId
       pure (gInfo', ownerMember')
-    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff subMode
     pure r
 
 rejectRelayInvitationAsync
@@ -1111,7 +1111,7 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv invId reqChatVRange init
   (cmdId, acId) <- prepareAgentAccept user False invId PQSupportOff
   withStore' $ \db ->
     createJoiningMemberConnection db user uclId (cmdId, acId) chatV reqChatVRange groupMemberId subMode
-  agentAcceptContactAsync cmdId acId False invId msg PQSupportOff chatV subMode
+  agentAcceptContactAsync cmdId acId False invId msg PQSupportOff subMode
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences =
@@ -1155,7 +1155,7 @@ shouldIntroduce m vec mem =
 
 introduceMember :: User -> GroupInfo -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
 introduceMember _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
-introduceMember user gInfo@GroupInfo {groupId} toMember@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
+introduceMember user gInfo toMember@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
   void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo gInfo toMember) msgScope
   sendIntroductions introduceToMembers
   where
@@ -1163,13 +1163,9 @@ introduceMember user gInfo@GroupInfo {groupId} toMember@GroupMember {activeConn 
       updateToMemberVector reMembers
       updateReMembersVectors reMembers
       shuffledReMembers <- liftIO $ shuffleMembers reMembers
-      if toMember `supportsVersion` batchSendVersion
-        then do
-          let events = map (memberIntroEvt gInfo) shuffledReMembers
-          forM_ (L.nonEmpty events) $ \events' ->
-            sendGroupMemberMessages user gInfo conn events'
-        else forM_ shuffledReMembers $ \reMember ->
-          void $ sendDirectMemberMessage conn (memberIntroEvt gInfo reMember) groupId
+      let events = map (memberIntroEvt gInfo) shuffledReMembers
+      forM_ (L.nonEmpty events) $ \events' ->
+        sendGroupMemberMessages user gInfo conn events'
     updateToMemberVector :: [GroupMember] -> CM ()
     updateToMemberVector reMembers = do
       let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, (IDReferencedIntroduced, MRIntroduced))) reMembers
@@ -1315,20 +1311,19 @@ buildGroupRoster mods = take maxGroupRosterSize $ mapMaybe rosterMember mods
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
 sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just conn} =
-  when (m `supportsVersion` batchSendVersion) $ do
-    (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
-    (errs', fwdMsgsByItem) <- partitionEithers <$> mapM (tryAllErrors . itemForwardMsgs) items
-    let errors = map ChatErrorStore errs <> errs'
-    unless (null errors) $ toView $ CEvtChatErrors errors
-    -- signed items keep the author's original bytes/signature, unsigned are re-encoded; the welcome message
-    -- (regular groups only; never channels) is an authored element -- all batch together in order.
-    let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
-    welcomeEl <- welcomeElement
-    let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
-    when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
-    forM_ batches $ \body ->
-      void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just conn} = do
+  (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
+  (errs', fwdMsgsByItem) <- partitionEithers <$> mapM (tryAllErrors . itemForwardMsgs) items
+  let errors = map ChatErrorStore errs <> errs'
+  unless (null errors) $ toView $ CEvtChatErrors errors
+  -- signed items keep the author's original bytes/signature, unsigned are re-encoded; the welcome message
+  -- (regular groups only; never channels) is an authored element -- all batch together in order.
+  let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
+  welcomeEl <- welcomeElement
+  let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
+  when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
+  forM_ batches $ \body ->
+    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
   where
     welcomeElement :: CM (Maybe ByteString)
     welcomeElement = case descrEvent_ of
@@ -1347,10 +1342,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
       -- in channels sendHistory runs on the relay, which cannot author XMsgNew (GRRelay < GRObserver);
       -- the welcome message reaches new members via the channel link data instead
       | useRelays' gInfo = Nothing
-      | m `supportsVersion` groupHistoryIncludeWelcomeVersion = do
+      | otherwise = do
           let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
           fmap (\descr -> XMsgNew $ mcSimple (MCText descr)) description
-      | otherwise = Nothing
     itemForwardMsgs :: (CChatItem 'CTGroup, (Maybe SignedMsg, Maybe GroupMemberId)) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
     itemForwardMsgs (cci, (signedMsg_, signedByGMId_)) = case cci of
       (CChatItem SMDRcv ci@ChatItem {content = CIRcvMsgContent mc, file})
@@ -1714,7 +1708,7 @@ updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRang
         pure conn {connChatVersion = v', peerChatVRange = msgVRange}
       else pure conn
   -- TODO v6.0 remove/review: for contacts only version upgrade should trigger enabling PQ support/encryption
-  if connType == ConnContact && v' >= pqEncryptionCompressionVersion && (pqSupport /= PQSupportOn || pqEncryption /= PQEncOn)
+  if connType == ConnContact && (pqSupport /= PQSupportOn || pqEncryption /= PQEncOn)
     then do
       withStore' $ \db -> updateConnSupportPQ db connId PQSupportOn PQEncOn
       pure conn' {pqSupport = PQSupportOn, pqEncryption = PQEncOn}
@@ -2118,14 +2112,6 @@ deleteSupportChatIfExists db user gInfo m = do
 
 sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
 sendDirectContactMessages user ct events = do
-  Connection {connChatVersion = v} <- liftEither $ contactSendConn_ ct
-  if v >= batchSend2Version
-    then sendDirectContactMessages' user ct events
-    else forM (L.toList events) $ \evt ->
-      (Right . fst <$> sendDirectContactMessage user ct evt) `catchAllErrors` \e -> pure (Left e)
-
-sendDirectContactMessages' :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
-sendDirectContactMessages' user ct events = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
   let idsEvts = L.map (ConnectionId connId,Nothing,) events
       msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
@@ -2261,17 +2247,15 @@ batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [
 batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
-encodeConnInfo chatMsgEvent = do
-  cxt <- chatStoreCxt
-  encodeConnInfoPQ PQSupportOff (maxVersion (vr cxt)) chatMsgEvent
+encodeConnInfo = encodeConnInfoPQ PQSupportOff
 
-encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> VersionChat -> ChatMsgEvent e -> CM ByteString
-encodeConnInfoPQ pqSup v chatMsgEvent = do
+encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> ChatMsgEvent e -> CM ByteString
+encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
   case encodeChatMessage maxEncodedInfoLength info of
     ECMEncoded connInfo -> case pqSup of
-      PQSupportOn | v >= pqEncryptionCompressionVersion && B.length connInfo > maxCompressedInfoLength -> do
+      PQSupportOn | B.length connInfo > maxCompressedInfoLength -> do
         let connInfo' = compressedBatchMsgBody_ connInfo
         when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
         pure connInfo'
@@ -2326,7 +2310,7 @@ deliverMessagesB msgReqs = do
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
     connSupportsPQ = \case
-      Right (Connection {pqSupport = PQSupportOn, connChatVersion = v}, _, _) -> v >= pqEncryptionCompressionVersion
+      Right (Connection {pqSupport = PQSupportOn}, _, _) -> True
       _ -> False
     compressBodies =
       forME msgReqs $ \(conn, msgFlags, (mbr, msgIds)) -> runExceptT $ do
@@ -2477,10 +2461,9 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
             (Nothing, Just _) -> True
             _ -> False
     sendProfileUpdate = do
-      let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
       profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
-      void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
+      void $ sendGroupMessage' user gInfo members $ XInfo profileUpdate
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
@@ -2499,12 +2482,12 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
-      (toSendSeparate, toSendBatched, toPending, forwarded, _, dups) =
-        foldr' (addMember recipientMembers') ([], [], [], [], S.empty, 0 :: Int) recipientMembers'
+      (toSend, toPending, forwarded, _, dups) =
+        foldr' (addMember recipientMembers') ([], [], [], S.empty, 0 :: Int) recipientMembers'
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
-  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSendSeparate toSendBatched
+  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSend
   delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB) $ L.nonEmpty msgReqs
   when (length delivered /= length sendToMemIds) $ logError "sendGroupMessages_: sendToMemIds and delivered length mismatch"
   -- Save as pending for toPending members
@@ -2524,29 +2507,24 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember members m acc@(toSendSeparate, toSendBatched, pending, forwarded, !mIds, !dups) =
+    addMember members m acc@(toSend, pending, forwarded, !mIds, !dups) =
       case memberSendAction gInfo events members m of
         Just a
-          | mId `S.member` mIds -> (toSendSeparate, toSendBatched, pending, forwarded, mIds, dups + 1)
+          | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
           | otherwise -> case a of
-              MSASend conn -> ((m, conn) : toSendSeparate, toSendBatched, pending, forwarded, mIds', dups)
-              MSASendBatched conn -> (toSendSeparate, (m, conn) : toSendBatched, pending, forwarded, mIds', dups)
-              MSAPending -> (toSendSeparate, toSendBatched, m : pending, forwarded, mIds', dups)
-              MSAForwarded -> (toSendSeparate, toSendBatched, pending, m : forwarded, mIds', dups)
+              MSASend conn -> ((m, conn) : toSend, pending, forwarded, mIds', dups)
+              MSAPending -> (toSend, m : pending, forwarded, mIds', dups)
+              MSAForwarded -> (toSend, pending, m : forwarded, mIds', dups)
         Nothing -> acc
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-    prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched = do
+    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+    prepareMsgReqs msgFlags msgs toSend = do
       let mode = if useRelays' gInfo then BMBinary else BMJson
           batched_ = batchSndMessagesJSON mode msgs
       case L.nonEmpty batched_ of
-        Just batched' -> do
-          let lenMsgs = length msgs
-              (memsSep, mreqsSep) = foldMembers lenMsgs sndMessageMBR msgs toSendSeparate
-              (memsBtch, mreqsBtch) = foldMembers (length batched' + lenMsgs) msgBatchMBR batched' toSendBatched
-          (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
+        Just batched' -> foldMembers (length batched' + length msgs) msgBatchMBR batched' toSend
         Nothing -> ([], [])
       where
         foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
@@ -2561,8 +2539,6 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
                 addBody mb (i, (memIds, reqs)) =
                   let req = (conn,msgFlags,) . mkMb memIdx_ i <$> mb
                    in (i - 1, (groupMemberId : memIds, req : reqs))
-        sndMessageMBR :: Maybe Int -> Int -> SndMessage -> (ValueOrRef MsgBody, [MessageId])
-        sndMessageMBR memIdx_ i SndMessage {msgId, msgBody} = (vrValue_ memIdx_ i msgBody, [msgId])
         msgBatchMBR :: Maybe Int -> Int -> MsgBatch -> (ValueOrRef MsgBody, [MessageId])
         msgBatchMBR memIdx_ i (MsgBatch batchBody sndMsgs) = (vrValue_ memIdx_ i batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
         vrValue_ memIdx_ i v = case memIdx_ of
@@ -2583,31 +2559,26 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     createPendingMsg db (groupMemberId, msgId) =
       createPendingGroupMessage db groupMemberId msgId $> Right ()
 
-data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
+data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded
 
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memberRole, memberStatus}
+memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memberStatus}
   -- groups with relays require newer version - we don't need to check member version for batching and forwarding support
   | useRelays' gInfo =
       if
         -- if user is chat relay, send to all non chat relay members
-        | isRelay membership && not (isRelay m) -> MSASendBatched . snd <$> readyMemberConn m
+        | isRelay membership && not (isRelay m) -> MSASend . snd <$> readyMemberConn m
         -- if user is not chat relay, send only to chat relays
-        | not (isRelay membership) && isRelay m -> MSASendBatched . snd <$> readyMemberConn m
+        | not (isRelay membership) && isRelay m -> MSASend . snd <$> readyMemberConn m
         | otherwise -> Nothing -- TODO [relays] MSAForwarded to create GSSForwarded snd statuses?
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
       Just conn@Connection {connStatus}
         | connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus || memberStatus == GSMemRejected -> Nothing
         | connInactive conn -> Just MSAPending
-        | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrSeparate conn
+        | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
         | otherwise -> pendingOrForwarded
   where
-    sendBatchedOrSeparate conn
-      -- admin doesn't support batch forwarding - send messages separately so that admin can forward one by one
-      | memberRole >= GRAdmin && not (m `supportsVersion` batchSend2Version) = Just (MSASend conn)
-      -- either member is not admin, or admin supports batched forwarding
-      | otherwise = Just (MSASendBatched conn)
     pendingOrForwarded = case memberCategory m of
       GCUserMember -> Nothing -- shouldn't happen
       GCInviteeMember -> Just MSAPending
@@ -2616,18 +2587,14 @@ memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memb
       GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
       where
         forwardSupportedOrPending invitingMemberId_
-          | membersSupport && all isForwardedGroupMsg events = Just MSAForwarded
+          | hasInvitingMember && all isForwardedGroupMsg events = Just MSAForwarded
           | any isXGrpMsgForward events = Nothing
           | otherwise = Just MSAPending
           where
-            membersSupport =
-              m `supportsVersion` groupForwardVersion && invitingMemberSupportsForward
-            invitingMemberSupportsForward = case invitingMemberId_ of
+            hasInvitingMember = case invitingMemberId_ of
               Just invMemberId ->
                 -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
-                case find (\m' -> groupMemberId' m' == invMemberId) members of
-                  Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
-                  Nothing -> False
+                any (\m' -> groupMemberId' m' == invMemberId) members
               Nothing -> False
             isXGrpMsgForward event = case event of
               XGrpMsgForward {} -> True
@@ -2652,7 +2619,6 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
     messageMember :: SndMessage -> CM ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
       MSASend conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
-      MSASendBatched conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId
       MSAForwarded -> pure ()
 
@@ -2874,9 +2840,9 @@ joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMod
   withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
-allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersion} confId msg = do
+allowAgentConnectionAsync user conn@Connection {connId, pqSupport} confId msg = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
-  dm <- encodeConnInfoPQ pqSupport connChatVersion msg
+  dm <- encodeConnInfoPQ pqSupport msg
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
@@ -2886,9 +2852,9 @@ prepareAgentAccept user enableNtfs invId pqSup = do
   connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) enableNtfs invId pqSup
   pure (cmdId, connId)
 
-agentAcceptContactAsync :: MsgEncodingI e => CommandId -> ConnId -> Bool -> InvitationId -> ChatMsgEvent e -> PQSupport -> VersionChat -> SubscriptionMode -> CM ()
-agentAcceptContactAsync cmdId connId enableNtfs invId msg pqSup chatV subMode = do
-  dm <- encodeConnInfoPQ pqSup chatV msg
+agentAcceptContactAsync :: MsgEncodingI e => CommandId -> ConnId -> Bool -> InvitationId -> ChatMsgEvent e -> PQSupport -> SubscriptionMode -> CM ()
+agentAcceptContactAsync cmdId connId enableNtfs invId msg pqSup subMode = do
+  dm <- encodeConnInfoPQ pqSup msg
   withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) connId enableNtfs invId dm pqSup subMode
 
 deleteAgentConnectionAsync :: ConnId -> CM ()
