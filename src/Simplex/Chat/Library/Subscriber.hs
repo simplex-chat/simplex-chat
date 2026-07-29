@@ -439,7 +439,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       when (pq /= pq') $ messageWarning "processINFOpqSupport: unexpected pqSupport change"
 
     processDirectMessage :: AEvent e -> ConnectionEntity -> Connection -> Maybe Contact -> CM ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, connChatVersion, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId pqSupport _ connInfo -> do
           chatRelayTests_ <- asks chatRelayTests
@@ -727,7 +727,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -1605,7 +1605,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   withStore $ \db -> do
                     Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
                     liftIO $ setCommandConnId db user cmdId testCId
-                  agentAcceptContactAsync cmdId acId True invId msg PQSupportOff chatV subMode
+                  agentAcceptContactAsync cmdId acId True invId msg PQSupportOff subMode
           | otherwise = messageError "relay test sent to non-relay link"
             where
               User {userChatRelay} = user
@@ -3169,7 +3169,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
                     Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
-                    Just (ChatVersionRange mcvr) -> do
+                    Just _ -> do
                       subMode <- chatReadVar subscriptionMode
                       groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
                       let chatV = maybe (minVersion (vr cxt)) (\peerVR -> vr cxt `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
