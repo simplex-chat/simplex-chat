@@ -2541,8 +2541,6 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
                 addBody mb (i, (memIds, reqs)) =
                   let req = (conn,msgFlags,) . mkMb memIdx_ i <$> mb
                    in (i - 1, (groupMemberId : memIds, req : reqs))
-        sndMessageMBR :: Maybe Int -> Int -> SndMessage -> (ValueOrRef MsgBody, [MessageId])
-        sndMessageMBR memIdx_ i SndMessage {msgId, msgBody} = (vrValue_ memIdx_ i msgBody, [msgId])
         msgBatchMBR :: Maybe Int -> Int -> MsgBatch -> (ValueOrRef MsgBody, [MessageId])
         msgBatchMBR memIdx_ i (MsgBatch batchBody sndMsgs) = (vrValue_ memIdx_ i batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
         vrValue_ memIdx_ i v = case memIdx_ of
