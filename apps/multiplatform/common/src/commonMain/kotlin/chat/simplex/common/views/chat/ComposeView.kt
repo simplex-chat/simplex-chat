@@ -497,8 +497,8 @@ fun ComposeView(
     }
   }
 
-  fun clearCurrentDraft() {
-    if (chatModel.draftChatId.value == draftChatId(chat.id, chatScope)) {
+  fun clearCurrentDraft(forChat: Chat = chat) {
+    if (chatModel.draftChatId.value == draftChatId(forChat.id, chatScope)) {
       chatModel.draft.value = null
       chatModel.draftChatId.value = null
     }
@@ -676,7 +676,9 @@ fun ComposeView(
     }
   }
 
-  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false): List<ChatItem>? {
+  // toChat is the chat the message was composed in: a live message is sent when the chat is switched, and by then
+  // this view is already showing the chat that was opened, so the message would be sent there
+  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false, toChat: Chat = chat): List<ChatItem>? {
     val cs = composeState.value
     var sent: List<ChatItem>?
     var lastMessageFailedToSend: ComposeState? = null
@@ -685,10 +687,10 @@ fun ComposeView(
     suspend fun forwardItem(rhId: Long?, forwardedItem: List<ChatItem>, fromChatInfo: ChatInfo, ttl: Int?): List<ChatItem>? {
       val chatItems = controller.apiForwardChatItems(
         rh = rhId,
-        toChatType = chat.chatInfo.chatType,
-        toChatId = chat.chatInfo.apiId,
-        toScope = chat.chatInfo.groupChatScope(),
-        sendAsGroup = chat.chatInfo.sendAsGroup,
+        toChatType = toChat.chatInfo.chatType,
+        toChatId = toChat.chatInfo.apiId,
+        toScope = toChat.chatInfo.groupChatScope(),
+        sendAsGroup = toChat.chatInfo.sendAsGroup,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
         fromScope = fromChatInfo.groupChatScope(),
@@ -698,7 +700,7 @@ fun ComposeView(
 
       withContext(Dispatchers.Main) {
         chatItems?.forEach { chatItem ->
-          chatsCtx.addChatItem(rhId, chat.chatInfo, chatItem)
+          chatsCtx.addChatItem(rhId, toChat.chatInfo, chatItem)
         }
       }
 
@@ -756,7 +758,7 @@ fun ComposeView(
     }
 
     suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
-      val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
+      val cItems = chatModel.controller.apiReportMessage(toChat.remoteHostId, toChat.chatInfo.apiId, chatItemId, reportReason, msgText)
       if (chatModel.controller.appPrefs.showReportsInSupportChatAlert.get()) showReportsInSupportChatAlert()
       return cItems?.map { it.chatItem }
     }
@@ -794,14 +796,14 @@ fun ComposeView(
     }
 
     if (cs.contextItem is ComposeContextItem.ForwardingItems) {
-      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItems, cs.contextItem.fromChatInfo, ttl = ttl)
+      sent = forwardItem(toChat.remoteHostId, cs.contextItem.chatItems, cs.contextItem.fromChatInfo, ttl = ttl)
       if (sent == null) {
         lastMessageFailedToSend = constructFailedMessage(cs)
       }
       if (cs.message.text.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
+            send(toChat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
           } else {
             message
           }
@@ -810,11 +812,11 @@ fun ComposeView(
     }
     else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
-      val updatedMessage = updateMessage(ei, chat, live)
+      val updatedMessage = updateMessage(ei, toChat, live)
       sent = if (updatedMessage != null) listOf(updatedMessage) else null
       lastMessageFailedToSend = if (updatedMessage == null) constructFailedMessage(cs) else null
     } else if (liveMessage != null && liveMessage.sent) {
-      val updatedMessage = updateMessage(liveMessage.chatItem, chat, live)
+      val updatedMessage = updateMessage(liveMessage.chatItem, toChat, live)
       sent = if (updatedMessage != null) listOf(updatedMessage) else null
     } else if (cs.contextItem is ComposeContextItem.ReportedItem) {
       sent = sendReport(cs.contextItem.reason, cs.contextItem.chatItem.id)
@@ -915,7 +917,7 @@ fun ComposeView(
             localPath = file.filePath
           )
         }
-        val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
+        val sendResult = send(toChat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl,
           mentions = cs.memberMentions,
@@ -938,17 +940,17 @@ fun ComposeView(
       composeState.value = lastFailed
     }
     val draft = chatModel.draft.value
-    if (wasForwarding && chatModel.draftChatId.value == draftChatId(chat.chatInfo.id, chatScope) && forwardingFromChatId != chat.chatInfo.id && draft != null) {
+    if (wasForwarding && chatModel.draftChatId.value == draftChatId(toChat.chatInfo.id, chatScope) && forwardingFromChatId != toChat.chatInfo.id && draft != null) {
       composeState.value = draft
     } else {
-      clearCurrentDraft()
+      clearCurrentDraft(toChat)
     }
     return sent
   }
 
-  fun sendMessage(ttl: Int?, sign: Boolean = false) {
+  fun sendMessage(ttl: Int?, sign: Boolean = false, toChat: Chat = chat) {
     withLongRunningApi(slow = 120_000) {
-      sendMessageAsync(null, false, ttl, sign)
+      sendMessageAsync(null, false, ttl, sign, toChat)
     }
   }
 
@@ -1313,7 +1315,11 @@ fun ComposeView(
   KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
     val cs = composeState.value
     if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
-      sendMessage(null)
+      // the chat is already switched here, and this view shows the chat that was opened - the live message
+      // has to be sent to the chat it was composed in, which is the one with the same id as before the switch
+      val liveMessageChat = if (prevChatId == null || prevChatId == chat.id) chat else chatsCtx.getChat(prevChatId)
+      // if that chat is gone there is nowhere to send it, and it must not be sent to the chat opened instead
+      if (liveMessageChat != null) sendMessage(null, toChat = liveMessageChat) else clearState()
       resetLinkPreview()
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
