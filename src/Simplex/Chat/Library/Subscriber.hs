@@ -739,37 +739,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   liftIO $ setConnConnReqInv db user connId cReq
                   getHostConnId db user groupId
                 sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
-              -- TODO REMOVE LEGACY vvv
-              -- [async agent commands] group link auto-accept continuation on receiving INV
-              CFCreateConnGrpInv -> do
-                (ct, groupLinkId) <- withStore $ \db -> do
-                  ct <- getContactViaMember db cxt user m
-                  liftIO $ setNewContactMemberConnRequest db user m cReq
-                  liftIO $ (ct,) <$> getGroupLinkId db user gInfo
-                if memberRole' membership >= GRAdmin
-                  then do
-                    sendGrpInvitation ct m groupLinkId
-                    toView $ CEvtSentGroupInvitation user gInfo ct m
-                  else messageError "processGroupMessage: group link host no longer has admin role"
-                where
-                  sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> CM ()
-                  sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
-                    let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
-                        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-                        groupInv =
-                          GroupInvitation
-                            { fromMember = MemberIdRole userMemberId userRole,
-                              invitedMember = MemberIdRole memberId memRole,
-                              connRequest = cReq,
-                              groupProfile,
-                              business = Nothing,
-                              groupLinkId = groupLinkId,
-                              groupSize = Just currentMemCount
-                            }
-                    (_msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
-                    -- we could link chat item with sent group invitation message (_msg)
-                    createInternalChatItem user (CDGroupRcv gInfo Nothing m) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-              -- TODO REMOVE LEGACY ^^^
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _pqSupport _ connInfo -> do

@@ -27,7 +27,6 @@ module Simplex.Chat.Store.Groups
     getGroupLinkConnection,
     deleteGroupLink,
     getGroupLink,
-    getGroupLinkId,
     setGroupLinkMemberRole,
     setGroupLinkShortLink,
     createNewGroup,
@@ -134,7 +133,6 @@ module Simplex.Chat.Store.Groups
     createJoiningMemberConnection,
     createBusinessRequestGroup,
     getContactViaMember,
-    setNewContactMemberConnRequest,
     getMemberInvitation,
     createMemberConnection,
     createMemberConnectionAsync,
@@ -352,11 +350,6 @@ getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
         groupLinkId,
         acceptMemberRole = fromMaybe GRMember mRole_
       }
-
-getGroupLinkId :: DB.Connection -> User -> GroupInfo -> IO (Maybe GroupLinkId)
-getGroupLinkId db User {userId} GroupInfo {groupId} =
-  fmap join . maybeFirstRow fromOnly $
-    DB.query db "SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
 
 setGroupLinkMemberRole :: DB.Connection -> User -> GroupLink -> GroupMemberRole -> IO GroupLink
 setGroupLinkMemberRole db User {userId} gLnk@GroupLink{userContactLinkId} memberRole = do
@@ -2195,11 +2188,6 @@ getContactViaMember db cxt user@User {userId} GroupMember {groupMemberId} = do
           |]
           (userId, groupMemberId)
   getContact db cxt user contactId
-
-setNewContactMemberConnRequest :: DB.Connection -> User -> GroupMember -> ConnReqInvitation -> IO ()
-setNewContactMemberConnRequest db User {userId} GroupMember {groupMemberId} connRequest = do
-  currentTs <- getCurrentTime
-  DB.execute db "UPDATE group_members SET sent_inv_queue_info = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?" (connRequest, currentTs, userId, groupMemberId)
 
 getMemberInvitation :: DB.Connection -> User -> Int64 -> IO (Maybe ConnReqInvitation)
 getMemberInvitation db User {userId} groupMemberId =
