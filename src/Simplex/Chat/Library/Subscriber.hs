@@ -642,17 +642,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           when (contactConnInitiated conn') $ do
             probeMatchingMembers ct' (contactConnIncognito ct')
             withStore' $ \db -> resetContactConnInitiated db user conn'
-          forM_ viaUserContactLink $ \userContactLinkId -> do
-            (ucl, gli_) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-            -- TODO REMOVE LEGACY vvv
-            forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
-              groupInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
-              subMode <- chatReadVar subscriptionMode
-              groupConnIds@(cmdId, grpConnId) <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
-              gVar <- asks random
-              withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
-              withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) grpConnId True SCMInvitation CR.IKPQOff subMode
-        -- TODO REMOVE LEGACY ^^^
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId

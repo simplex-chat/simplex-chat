@@ -2071,7 +2071,7 @@ instance TextEncoding CommandStatus where
 
 data CommandFunction
   = CFCreateConnGrpMemInv
-  | CFCreateConnGrpInv
+  | CFCreateConnGrpInv -- deprecated
   | CFCreateConnFileInvDirect -- deprecated
   | CFCreateConnFileInvGroup -- deprecated
   | CFJoinConn

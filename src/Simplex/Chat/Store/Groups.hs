@@ -129,7 +129,6 @@ module Simplex.Chat.Store.Groups
     getRelayServedGroups,
     getRelayPublishableGroups,
     getRelayInactiveGroups,
-    createNewContactMemberAsync,
     createJoiningMember,
     getMemberJoinRequest,
     createJoiningMemberConnection,
@@ -2037,33 +2036,6 @@ getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do
           <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status = ? AND g.relay_inactive_at IS NOT NULL AND g.relay_inactive_at <= ?"
       )
       (userId, userContactId, RSInactive, cutoffTs)
-
-createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> SubscriptionMode -> ExceptT StoreError IO ()
-createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) chatV peerChatVRange subMode =
-  createWithRandomId' db gVar $ \memId -> runExceptT $ do
-    createdAt <- liftIO getCurrentTime
-    insertMember_ (MemberId memId) createdAt
-    groupMemberId <- liftIO $ insertedRowId db
-    Connection {connId} <- liftIO $ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange Nothing 0 createdAt subMode
-    liftIO $ setCommandConnId db user cmdId connId
-  where
-    VersionRange minV maxV = peerChatVRange
-    insertMember_ memberId createdAt = do
-      indexInGroup <- getUpdateNextIndexInGroup_ db groupId
-      liftIO $
-        DB.execute
-          db
-          [sql|
-            INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
-                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-                peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-          |]
-          ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, GSMemInvited, Binary B.empty, fromInvitedBy userContactId IBUser, groupMemberId' membership)
-              :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
-              :. (minV, maxV)
-          )
 
 createJoiningMember :: DB.Connection -> StoreCxt -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> Maybe MemberKey -> ExceptT StoreError IO (GroupMemberId, MemberId)
 createJoiningMember
