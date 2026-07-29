@@ -107,7 +107,7 @@ struct BadgesPayView: View {
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
         return Button {
-            withAnimation { selectedPeriod = period }
+            selectedPeriod = period
         } label: {
             VStack(spacing: 12) {
                 Image(systemName: period.icon)
@@ -126,7 +126,7 @@ struct BadgesPayView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? theme.colors.primary : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? theme.colors.primary : Color(uiColor: .secondarySystemFill), lineWidth: 2)
             )
         }
         .buttonStyle(.plain)

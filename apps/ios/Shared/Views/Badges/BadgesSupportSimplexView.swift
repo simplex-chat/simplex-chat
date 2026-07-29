@@ -24,46 +24,55 @@ struct BadgesSupportSimplexView: View {
         // TODO [badges] when the state machine lands, gate on user badge status:
         // - no badge → this view (support prompt)
         // - active badge → a "Manage your badge" view
+        //
+        // No ScrollView here — matches SimpleXInfo/YourNetworkView: on tight screens the
+        // .scaledToFit hero shrinks to fit the vertical space left by the fixed-height title,
+        // body, info button and CTAs, instead of pushing content off-screen.
         GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .center, spacing: 16) {
-                    Text("Support SimpleX")
-                        .font(.largeTitle)
-                        .bold()
-                        .foregroundColor(theme.colors.primary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .center, spacing: 16) {
+                Text("Support SimpleX")
+                    .font(.largeTitle)
+                    .bold()
+                    .foregroundColor(theme.colors.primary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text("SimpleX doesn't sell ads or data. It's funded by its users and by investors who share the mission. You can support the project and show a badge on your profile.")
-                        .font(.body)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+                Text("SimpleX doesn't sell ads or data. It's funded by its users and by investors who share the mission. You can support the project and show a badge on your profile.")
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Button { showWhySimpleX = true } label: {
-                        Label("Why SimpleX is built.", systemImage: "info.circle")
-                            .font(.headline)
-                    }
-
-                    PhoneSupporterHero()
-                        .padding(.top, 12)
-                        .padding(.horizontal, 25)
-
-                    Spacer(minLength: 20)
-
-                    chooseLevelButton()
-
-                    redeemCodeButton()
-                        .padding(.top, 4)
-                        .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
+                Button { showWhySimpleX = true } label: {
+                    Label("Why SimpleX is built.", systemImage: "info.circle")
+                        .font(.headline)
                 }
-                .padding(.horizontal, 25)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
-                .frame(minHeight: g.size.height)
+
+                PhoneSupporterHero()
+                    .frame(maxWidth: g.size.width * 0.55)
+                    .layoutPriority(-1)
+
+                Spacer(minLength: 0)
+
+                chooseLevelButton()
+
+                redeemCodeButton()
+                    .padding(.top, 4)
+                    .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
+            .padding(.horizontal, 25)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+            // .frame(height:) instead of .frame(minHeight:) — locks the VStack to the
+            // proposed geometry. In the onboarding flow (full-screen presentation) minHeight is
+            // enough because the parent caps at the screen; inside the banner sheet's NavigationView
+            // the parent DOESN'T cap, so a minHeight-only VStack expands past the visible area,
+            // which both makes the hero gigantic and lets the sheet interpret the overflow as
+            // scroll content. Locking to the geometry keeps the layout inside the visible bounds.
+            .frame(height: g.size.height)
         }
         .frame(maxHeight: .infinity)
         .modifier(ThemedBackground())
+        .navigationBarHidden(true)
         .sheet(isPresented: $showWhySimpleX) {
             WhySimpleX(onboarding: false, createProfileNavLinkActive: .constant(false))
         }

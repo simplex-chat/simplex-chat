@@ -145,7 +145,7 @@ struct BadgesYourLevelView: View {
     private func levelCard(_ level: BadgeLevel) -> some View {
         let isSelected = level == selectedLevel
         return Button {
-            withAnimation { selectedLevel = level }
+            selectedLevel = level
         } label: {
             VStack(spacing: 10) {
                 Image(level.badgeAsset)
@@ -168,7 +168,7 @@ struct BadgesYourLevelView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? theme.colors.primary : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? theme.colors.primary : Color(uiColor: .secondarySystemFill), lineWidth: 2)
             )
         }
         .buttonStyle(.plain)
