@@ -1147,13 +1147,13 @@ struct ComposeView: View {
                     let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
                     await MainActor.run {
                         self.chatModel.updateContact(contact)
-                        if composeHasSentMessage() { clearState() }
+                        clearState()
                     }
                 } else {
                     AlertManager.shared.showAlertMsg(title: "Empty message!")
                 }
             } catch {
-                await MainActor.run { if composeHasSentMessage() { composeState.inProgress = false } }
+                await MainActor.run { composeState.inProgress = false }
                 logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
                 AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
             }
@@ -1186,10 +1186,10 @@ struct ComposeView: View {
             if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateContact(contact)
-                    if composeHasSentMessage() { clearState() }
+                    clearState()
                 }
             } else {
-                await MainActor.run { if composeHasSentMessage() { composeState.inProgress = false } }
+                await MainActor.run { composeState.inProgress = false }
             }
         }
     }
@@ -1206,10 +1206,10 @@ struct ComposeView: View {
                     self.chatModel.channelRelayHostnames.removeValue(forKey: groupInfo.groupId)
                     self.chatModel.groupMembers = relayResults.map { GMember($0.relayMember) }
                     self.chatModel.populateGroupMembersIndexes()
-                    if composeHasSentMessage() { clearState() }
+                    clearState()
                 }
             } else {
-                await MainActor.run { if composeHasSentMessage() { composeState.inProgress = false } }
+                await MainActor.run { composeState.inProgress = false }
             }
         }
     }
@@ -1545,17 +1545,12 @@ struct ComposeView: View {
             }
         }
         await MainActor.run {
-            // composeState is shared between the chats opened in this view, and this runs after the send API call, so the user
-            // could have switched chats or typed another message in the meantime - only the message that was sent may be
-            // cleared or restored. Live messages are sent while typing in the chat or when leaving it, they are not affected.
-            if live || liveMessage != nil || composeHasSentMessage() {
-                let wasForwarding = composeState.forwarding
-                clearState(live: live)
-                if wasForwarding,
-                   chatModel.draftChatId == draftChatId(chat.chatInfo.id, chat.chatInfo.groupChatScope()),
-                   let draft = chatModel.draft {
-                    composeState = draft
-                }
+            let wasForwarding = composeState.forwarding
+            clearState(live: live)
+            if wasForwarding,
+               chatModel.draftChatId == draftChatId(chat.chatInfo.id, chat.chatInfo.groupChatScope()),
+               let draft = chatModel.draft {
+                composeState = draft
             }
         }
         return sent
@@ -1752,12 +1747,6 @@ struct ComposeView: View {
 
     func sending() async {
         await MainActor.run { composeState.inProgress = true }
-    }
-
-    // composeState is shared between the chats opened in this view and sending is not cancelled when the chat is switched,
-    // so when a send completes the user may have switched chats or typed another message - only the sent message may be cleared or restored
-    private func composeHasSentMessage() -> Bool {
-        chatModel.chatId == chat.id && composeState.inProgress
     }
 
     // Spec: spec/client/compose.md#startVoiceMessageRecording
