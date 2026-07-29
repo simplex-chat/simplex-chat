@@ -2878,7 +2878,7 @@
     <string name="connect_plan_join_name">انضم للقناة %s</string>
     <string name="message_signatures_are_not_required">توقيع الرسالة ليس إلزاميًا.</string>
     <string name="message_signatures_are_required">مطلوب توقيع الرسالة.</string>
-    <string name="register_test_name">سجِّل اسم اختبار</string>
+    <string name="register_test_name">كيفية تسجيل اسم اختبار</string>
     <string name="remove_name">أزِل الاسم</string>
     <string name="require_message_signatures">تطلب توقيع الرسائل.</string>
     <string name="save_simplex_name_question">احفظ اسم SimpleX؟</string>
@@ -2902,8 +2902,8 @@
     <string name="v7_0_channels_previews">أنشئ معاينة الويب.</string>
     <string name="v7_0_channels_wider_messages">أسهل في القراءة.</string>
     <string name="v7_0_channels_relays">أدِر مُرحلاتك.</string>
-    <string name="v7_0_simplex_names">أسماء SimpleX (تجريبي)</string>
-    <string name="v7_0_simplex_names_descr">أسماء لقناتك أو لشركتك.</string>
+    <string name="v7_0_simplex_names">أسماء SimpleX العامة (تجريبي)</string>
+    <string name="v7_0_simplex_names_descr">الأسماء العامة لقناتك أو لشركتك.</string>
     <string name="info_row_file_servers">خوادم الملفات</string>
     <string name="share_text_file_servers">خوادم الملفات: %s</string>
 </resources>
