@@ -2959,7 +2959,7 @@
     <string name="simplex_name_error">Fehler beim SimpleX-Namen</string>
     <string name="simplex_name_not_verified">SimpleX-Name ist nicht verifiziert</string>
     <string name="simplex_name_no_valid_link_desc">Der SimpleX-Name %1$s wurde registriert, aber er hat keinen gültigen Link.</string>
-    <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.</string>
+    <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte fügen Sie ihn zu Ihrer Adresse oder zum Kanalprofil hinzu, sofern Sie der Besitzer sind.</string>
     <string name="simplex_name_owner_no_channel_link">Der SimpleX‑Name %1$s wurde ohne Kanal‑Link registriert. Fügen Sie den Kanal‑Link über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_owner_no_address">Der SimpleX‑Name %1$s wurde ohne SimpleX-Adresse registriert. Fügen Sie die SimpleX-Adresse über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_not_found_desc">Dieser SimpleX-Name wurde nicht registriert. Bitte überprüfen Sie den Namen.</string>
@@ -2984,7 +2984,7 @@
     <string name="sign_messages">Nachrichten signieren</string>
     <string name="signature_missing_alert_desc">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</string>
     <string name="channel_simplex_name">Im Kanal genutzter SimpleX-Name</string>
-    <string name="get_simplex_name_beta">SimpleX-Name erhalten (BETA)</string>
+    <string name="get_simplex_name_beta">Einen SimpleX-Namen erhalten (BETA)</string>
     <string name="register_test_name">Wie man einen Test-Namen registriert</string>
     <string name="remove_name">Name entfernen</string>
     <string name="save_simplex_name_question">SimpleX-Name speichern?</string>
