@@ -229,7 +229,6 @@ private final class RemoteCtrlBackgroundAudio {
             } catch {
                 previousSessionConfiguration = nil
                 logger.error("RemoteCtrlBackgroundAudio audio session error: \(error.localizedDescription)")
-                return
             }
         }
 
@@ -280,6 +279,7 @@ private final class RemoteCtrlLiveActivityManager {
 
     private var activity: Activity<RemoteCtrlActivityAttributes>?
     private var lifecycleTask: Task<Void, Never>?
+    private var endingBackgroundTask = UIBackgroundTaskIdentifier.invalid
     private var generation = 0
 
     private init() {}
@@ -314,13 +314,31 @@ private final class RemoteCtrlLiveActivityManager {
     func stop() {
         generation += 1
         activity = nil
+        beginEndingBackgroundTask()
         let previousTask = lifecycleTask
         lifecycleTask = Task {
             await previousTask?.value
             for activeActivity in Activity<RemoteCtrlActivityAttributes>.activities {
                 await activeActivity.end(using: nil, dismissalPolicy: .immediate)
             }
+            endEndingBackgroundTask()
         }
+    }
+
+    private func beginEndingBackgroundTask() {
+        guard UIApplication.shared.applicationState != .active,
+              endingBackgroundTask == .invalid else { return }
+        endingBackgroundTask = UIApplication.shared.beginBackgroundTask {
+            Task { @MainActor in
+                self.endEndingBackgroundTask()
+            }
+        }
+    }
+
+    private func endEndingBackgroundTask() {
+        guard endingBackgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(endingBackgroundTask)
+        endingBackgroundTask = .invalid
     }
 }
 
