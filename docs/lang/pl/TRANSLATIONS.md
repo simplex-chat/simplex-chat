@@ -3,7 +3,7 @@ title: Współtworzenie tłumaczenia SimpleX Chat
 revision: 19.03.2023
 ---
 
-| 19.03.2023 | PL, [EN](/docs/TRANSLATIONS.md), [CZ](/docs/lang/cs/TRANSLATIONS.md), [FR](/docs/lang/fr/TRANSLATIONS.md)|
+| 19.03.2023 | PL, [EN](/docs/TRANSLATIONS.md), [CZ](/docs/lang/cs/TRANSLATIONS.md), [FR](/docs/lang/fr/TRANSLATIONS.md), [JA](/docs/lang/ja/TRANSLATIONS.md)|
 
 # Współtworzenie tłumaczenia SimpleX Chat
 
