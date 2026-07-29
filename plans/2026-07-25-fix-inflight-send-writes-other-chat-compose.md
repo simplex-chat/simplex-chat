@@ -177,6 +177,15 @@ Kept deliberately, to not grow the change:
   failed forward already has a draft (its own draft is preserved
   instead), and when the single draft slot is later taken by another
   chat - drafts are one global slot, so the last write wins.
+- Change 1 clears the compose state for any send in progress, including
+  the three senders that connect a prepared chat (they call the same
+  `sending()`). Those have no failed-message restore, so their typed
+  message is dropped when the chat is switched instead of being carried
+  into the next chat. They also still clear the compose on completion
+  without checking which chat is open, so the symptom this fixes remains
+  reachable through them, and their failure path can reset `inProgress`
+  for a send started in the chat opened next, leaving that sent message
+  in the input.
 - Typing in the same chat while its own send is in flight is still
   cleared when the send completes: `inProgress` is preserved by `copy`,
   so the guard stays true. Unchanged from before, and different from the
