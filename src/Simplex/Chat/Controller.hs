@@ -58,6 +58,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Markdown (SimplexLinkType (..))
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
@@ -1372,6 +1373,20 @@ data ServerAddress = ServerAddress
   }
   deriving (Show)
 
+-- The kinds of QR code / link the app knows how to scan, for chat_check_link.
+-- A scanner that rejects a scan passes the text here to learn what it actually
+-- was, so it can tell the user where to use it.
+data ScannedLinkType
+  = SLTConnection {linkType :: SimplexLinkType} -- connection link; subtype reuses markdown's enum
+  | SLTServer -- SMP/XFTP server address
+  | SLTFileDescription -- migration / standalone file link
+  | SLTDesktopCtrl -- desktop session address (xrcp)
+  | SLTVerificationCode -- contact's security code
+  deriving (Eq, Show)
+
+newtype CheckedLink = CheckedLink {linkType :: Maybe ScannedLinkType} -- Nothing = not a SimpleX QR code
+  deriving (Eq, Show)
+
 data TimedMessagesEnabled
   = TMEEnableSetTTL Int
   | TMEEnableKeepTTL
@@ -1825,6 +1840,10 @@ $(JQ.deriveJSON defaultJSON ''DeletedRcvQueue)
 $(JQ.deriveJSON defaultJSON ''ServerAddress)
 
 $(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SLT") ''ScannedLinkType)
+
+$(JQ.deriveJSON defaultJSON ''CheckedLink)
 
 $(JQ.deriveJSON defaultJSON ''ChatItemDeletion)
 

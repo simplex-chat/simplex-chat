@@ -654,14 +654,21 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
 
     SectionView(stringResource(MR.strings.or_scan_qr_code), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
-        val linkVerified = verifyOnly(text)
-        if (!linkVerified) {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.invalid_qr_code),
-            text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
-          )
+        val trimmed = text.trim()
+        when (val type = checkLink(trimmed)) {
+          is ScannedLinkType.Connection -> connect(rhId, trimmed, close)
+          null -> {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.invalid_qr_code),
+              text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
+            )
+            false
+          }
+          else -> {
+            showWrongQRCodeAlert(type)
+            false
+          }
         }
-        verifyAndConnect(rhId, text, close)
       }
     }
   }
@@ -777,17 +784,6 @@ private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): L
   }
 }
 
-private fun verifyOnly(text: String?): Boolean = text != null && strIsSimplexLink(text)
-
-private suspend fun verifyAndConnect(rhId: Long?, text: String?, close: () -> Unit): Boolean {
-  if (text != null && strIsSimplexLink(text)) {
-    return withContext(Dispatchers.Default) {
-      connect(rhId, text, close)
-    }
-  }
-  return false
-}
-
 private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanup: (() -> Unit)? = null): Boolean =
   planAndConnect(
     rhId,
@@ -819,11 +815,6 @@ private fun createInvitation(
       }
     }
   }
-}
-
-fun strIsSimplexLink(str: String): Boolean {
-  val parsedMd = parseToMarkdown(str)
-  return parsedMd != null && parsedMd.size == 1 && parsedMd[0].format is Format.SimplexLink
 }
 
 sealed class ConnectTarget {

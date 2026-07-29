@@ -187,6 +187,38 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
+// The kind of SimpleX QR code / link a scanned string turned out to be, as
+// determined by the core (chat_check_link). Public: it crosses the
+// SimpleXChat -> app module boundary. Case names and the connection payload
+// label must match the Haskell ScannedLinkType wire tags.
+public enum ScannedLinkType: Decodable {
+    case connection(linkType: SimplexLinkType)
+    case server
+    case fileDescription
+    case desktopCtrl
+    case verificationCode
+}
+
+// Wrapper stays internal — it never leaves the framework. A missing linkType
+// key (the "not a SimpleX code" case) decodes to nil.
+struct CheckedLink: Decodable {
+    var linkType: ScannedLinkType?
+}
+
+public func checkLink(_ s: String) -> ScannedLinkType? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_check_link(&c) {
+        if let d = dataFromCString(cjson) {
+            do {
+                return try jsonDecoder.decode(CheckedLink.self, from: d).linkType
+            } catch {
+                logger.error("checkLink jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
 public func parseSanitizeUri(_ s: String, safe: Bool) -> ParsedUri? {
     var c = s.cString(using: .utf8)!
     if let cjson = chat_parse_uri(&c, safe ? 1 : 0) {

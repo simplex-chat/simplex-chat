@@ -684,13 +684,19 @@ private struct ConnectView: View {
     private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            let link = r.string
-            if strIsSimplexLink(r.string) {
-                connect(link)
-            } else {
+            let trimmed = r.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch checkLink(trimmed) {
+            case .some(.connection):
+                connect(trimmed)
+            case nil:
                 alert = .newChatSomeAlert(alert: SomeAlert(
                     alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
                     id: "processQRCode: code is not a SimpleX link"
+                ))
+            case let type?:
+                alert = .newChatSomeAlert(alert: SomeAlert(
+                    alert: wrongQRCodeAlert(wrongQRCodeMessage(type)),
+                    id: "processQRCode: wrong QR code type"
                 ))
             }
         case let .failure(e):
@@ -838,16 +844,6 @@ struct InfoSheetButton<Content: View>: View {
         .sheet(isPresented: $showInfoSheet) {
             content
         }
-    }
-}
-
-func strIsSimplexLink(_ str: String) -> Bool {
-    if let parsedMd = parseSimpleXMarkdown(str),
-       parsedMd.count == 1,
-       case .simplexLink = parsedMd[0].format {
-        return true
-    } else {
-        return false
     }
 }
 
@@ -1319,7 +1315,7 @@ func planAndConnect(
         if linkType == .relay {
             showAlert(
                 NSLocalizedString("Relay address", comment: "alert title"),
-                message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
+                message: NSLocalizedString("This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, and paste the address there.", comment: "alert message")
             )
             cleanup?()
             return
