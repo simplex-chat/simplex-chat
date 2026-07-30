@@ -21,24 +21,23 @@ struct SupportSimpleXBanner: View {
     @State private var showDismissAlert = false
     let onTap: () -> Void
 
-    private let cardCornerRadius: CGFloat = 24
-    private let cardHeight: CGFloat = 78
-    private let cardHorizontalPadding: CGFloat = 16
-    private let heroWidth: CGFloat = 90
-    // Illustration is DRAWN at heroDrawnHeight (taller than the visible slot on purpose) — this is
-    // what sets how far into the phone body the crop line falls. The wrapping slot is
-    // heroVisibleHeight; the bottom (heroDrawnHeight - heroVisibleHeight) points get cut by
-    // .clipped(), producing the "phone continues below but the banner slices it off" look. The
-    // visible slot is bottom-anchored to the card via .overlay(.bottomTrailing), so the crop line
-    // coincides with the card bottom. Aspect 90/130 = 0.69 is ~13% off the natural 0.795 (subtle
-    // vertical stretch, much less than the earlier 25%).
-    private let heroDrawnHeight: CGFloat = 130
-    private let heroVisibleHeight: CGFloat = 100
-    // Trailing padding keeps the hero's right edge to the LEFT of the dismiss X's left edge
-    // (X's claim from the card right is trailing 16 + width 12 = 28pt, matching OneHandUICard,
-    // so hero trailing 32 gives a ~4pt gap between hero right and X left).
-    private let heroTrailingPadding: CGFloat = 32
-    private let textToHeroGap: CGFloat = 8
+    private let cardCornerRadius: CGFloat = 16
+    private let cardHeight: CGFloat = 72
+    // 16pt matches OneHandUICard's segment icon .padding(.leading, 16) — so the banner's text
+    // aligns with the icon column of the Reachable-toolbar card above it in the list.
+    private let cardLeadingPadding: CGFloat = 16
+    private let cardTrailingPadding: CGFloat = 8
+    private let heroWidth: CGFloat = 110
+    // Illustration is DRAWN at NATURAL aspect (0.795) via .aspectRatio(.fill) — for heroWidth 110
+    // that gives a 110×138 image. The visible slot is heroWidth × heroVisibleHeight (110×108), top-
+    // aligned; the ~30pt of natural image below the slot is cut by .clipped(). Crop line lands
+    // ~78% into the phone body.
+    private let heroVisibleHeight: CGFloat = 108
+    // 28 (was 32) — hero right sits exactly at X's left edge (X's own trailing 16 + width 12 = 28).
+    // No overlap, no gap. Required so the wider 110pt hero still leaves subtitle room.
+    private let heroTrailingPadding: CGFloat = 28
+    // 6 (was 8) — small reduction to reclaim text width with the bigger hero.
+    private let textToHeroGap: CGFloat = 6
 
     var body: some View {
         if !supporterBannerShown {
@@ -61,7 +60,8 @@ struct SupportSimpleXBanner: View {
                         }
                         Spacer(minLength: heroWidth + heroTrailingPadding + textToHeroGap)
                     }
-                    .padding(.horizontal, cardHorizontalPadding)
+                    .padding(.leading, cardLeadingPadding)
+                    .padding(.trailing, cardTrailingPadding)
                     .frame(height: cardHeight)
                     .background(gradientBackground())
                     .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
@@ -104,15 +104,13 @@ struct SupportSimpleXBanner: View {
     @ViewBuilder
     private func heroThumbnail() -> some View {
         #if SIMPLEX_ASSETS
-        // Two nested frames: the inner frame draws the image at heroDrawnHeight (taller than the
-        // outer), and the outer frame constrains the visible slot to heroVisibleHeight with .top
-        // alignment (so the drawn image's TOP shows and its BOTTOM sticks out below the slot).
-        // .clipped() cuts that bottom overhang, producing the mid-illustration cut. Aspect is
-        // slightly stretched (heroWidth/heroDrawnHeight = 0.59 vs the asset's natural 0.795, about
-        // 25% more portrait) — this is what puts the crop line deep in the phone body.
+        // .aspectRatio(.fill) draws at NATURAL aspect (0.795) filling the frame — image ends up
+        // ~110×138. .frame(width, heroVisibleHeight, alignment: .top) makes the visible slot
+        // shorter than the drawn image, top-aligned; .clipped() cuts the ~30pt of natural image
+        // that would otherwise overflow the slot. The crop line lands ~78% into the phone body.
         Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
             .resizable()
-            .frame(width: heroWidth, height: heroDrawnHeight)
+            .aspectRatio(contentMode: .fill)
             .frame(width: heroWidth, height: heroVisibleHeight, alignment: .top)
             .clipped()
         #else
