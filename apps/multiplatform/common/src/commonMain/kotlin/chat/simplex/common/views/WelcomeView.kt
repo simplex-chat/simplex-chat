@@ -58,7 +58,7 @@ fun bioFitsLimit(bio: String): Boolean {
 }
 
 @Composable
-fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
+fun CreateProfile(onSubmit: (displayName: String, shortDescr: String, image: String?) -> Unit) {
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
@@ -160,13 +160,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
-          click = {
-            if (chatModel.localUserCreated.value == true) {
-              createProfileInProfiles(chatModel, displayName.value, shortDescr.value, profileImage.value, close)
-            } else {
-              createProfileInNoProfileSetup(displayName.value, profileImage.value, close)
-            }
-          },
+          click = { onSubmit(displayName.value, shortDescr.value, profileImage.value) },
         )
         SectionTextFooter(generalGetString(MR.strings.your_profile_is_stored_on_your_device))
         SectionTextFooter(generalGetString(MR.strings.profile_is_only_shared_with_your_contacts))
@@ -350,6 +344,17 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   LaunchedEffect(refocusTrigger.value) {
     delay(300)
     focusRequester.requestFocus()
+  }
+}
+
+// The two ordinary "add a profile" paths, where the new profile becomes the active
+// one. Creating one for an invitation takes neither, which is why the form itself
+// no longer chooses.
+fun createProfileFromForm(chatModel: ChatModel, displayName: String, shortDescr: String, image: String?, close: () -> Unit) {
+  if (chatModel.localUserCreated.value == true) {
+    createProfileInProfiles(chatModel, displayName, shortDescr, image, close)
+  } else {
+    createProfileInNoProfileSetup(displayName, image, close)
   }
 }
 

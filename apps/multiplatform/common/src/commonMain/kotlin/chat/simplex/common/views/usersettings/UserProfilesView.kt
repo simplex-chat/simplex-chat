@@ -28,6 +28,7 @@ import chat.simplex.common.views.chatlist.UserProfilePickerItem
 import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.createProfileFromForm
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
@@ -49,7 +50,9 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     addUser = {
       withAuth {
         ModalManager.center.showModalCloseable { close ->
-          CreateProfile(m, close)
+          CreateProfile { displayName, shortDescr, image ->
+            createProfileFromForm(m, displayName, shortDescr, image, close)
+          }
         }
       }
     },
