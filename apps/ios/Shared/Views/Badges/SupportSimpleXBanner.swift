@@ -118,7 +118,8 @@ struct SupportSimpleXBanner: View {
             .resizable()
             .scaledToFit()
             .frame(width: 48, height: 48)
-            .padding(.top, (cardHeight - 48) / 2)
+            .padding(.vertical, (cardHeight - 48) / 2)
+            .padding(.trailing, 12)
         #endif
     }
 
