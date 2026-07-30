@@ -22,10 +22,18 @@ struct SupportSimpleXBanner: View {
     let onTap: () -> Void
 
     private let cardCornerRadius: CGFloat = 24
-    private let cardHeight: CGFloat = 72
+    private let cardHeight: CGFloat = 78
     private let cardHorizontalPadding: CGFloat = 16
     private let heroWidth: CGFloat = 90
-    private let heroHeight: CGFloat = 110
+    // Illustration is DRAWN at heroDrawnHeight (taller than the visible slot on purpose) — this is
+    // what sets how far into the phone body the crop line falls. The wrapping slot is
+    // heroVisibleHeight; the bottom (heroDrawnHeight - heroVisibleHeight) points get cut by
+    // .clipped(), producing the "phone continues below but the banner slices it off" look. The
+    // visible slot is bottom-anchored to the card via .overlay(.bottomTrailing), so the crop line
+    // coincides with the card bottom. Aspect 90/130 = 0.69 is ~13% off the natural 0.795 (subtle
+    // vertical stretch, much less than the earlier 25%).
+    private let heroDrawnHeight: CGFloat = 130
+    private let heroVisibleHeight: CGFloat = 100
     // Trailing padding keeps the hero's right edge to the LEFT of the dismiss X's left edge
     // (X's claim from the card right is trailing 16 + width 12 = 28pt, matching OneHandUICard,
     // so hero trailing 32 gives a ~4pt gap between hero right and X left).
@@ -60,6 +68,10 @@ struct SupportSimpleXBanner: View {
                 }
                 .buttonStyle(.plain)
                 .overlay(alignment: .bottomTrailing) {
+                    // Hero bottom-anchored to card bottom via .overlay(.bottomTrailing); the
+                    // illustration extends UP above the card top only. No .offset — nothing must
+                    // draw below the card. .clipped() inside heroThumbnail is a hard rectangular
+                    // clip at the hero's own frame boundary to guarantee that.
                     heroThumbnail()
                         .padding(.trailing, heroTrailingPadding)
                         .allowsHitTesting(false)
@@ -92,15 +104,17 @@ struct SupportSimpleXBanner: View {
     @ViewBuilder
     private func heroThumbnail() -> some View {
         #if SIMPLEX_ASSETS
-        // .resizable + .frame (no aspect modifier) stretches the asset to fill the frame exactly.
-        // The asset aspect (0.795) is close enough to the frame aspect (heroWidth/heroHeight ≈ 0.82)
-        // that horizontal stretching is barely perceptible (~3%), and this guarantees the phone
-        // illustration's bottom lines up with the frame bottom = card bottom (no whitespace gap
-        // from .scaledToFit centering, no overhang from .aspectRatio(.fill) leaking past the clip).
+        // Two nested frames: the inner frame draws the image at heroDrawnHeight (taller than the
+        // outer), and the outer frame constrains the visible slot to heroVisibleHeight with .top
+        // alignment (so the drawn image's TOP shows and its BOTTOM sticks out below the slot).
+        // .clipped() cuts that bottom overhang, producing the mid-illustration cut. Aspect is
+        // slightly stretched (heroWidth/heroDrawnHeight = 0.59 vs the asset's natural 0.795, about
+        // 25% more portrait) — this is what puts the crop line deep in the phone body.
         Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
             .resizable()
-            .frame(width: heroWidth, height: heroHeight)
-            .clipShape(HeroBottomRightRoundedShape(cornerRadius: cardCornerRadius))
+            .frame(width: heroWidth, height: heroDrawnHeight)
+            .frame(width: heroWidth, height: heroVisibleHeight, alignment: .top)
+            .clipped()
         #else
         Image("badge-supporter")
             .resizable()
@@ -117,28 +131,6 @@ struct SupportSimpleXBanner: View {
             startPoint: gp.start,
             endPoint: gp.end
         )
-    }
-}
-
-// Rounds only the bottom-right corner of the hero to match the card's rounded bottom-right —
-// leaves the top, left and bottom-left edges straight so the hero can extend above the card
-// (top) and reach into the card without extra rounding on the sides.
-private struct HeroBottomRightRoundedShape: Shape {
-    let cornerRadius: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - cornerRadius))
-        p.addQuadCurve(
-            to: CGPoint(x: rect.maxX - cornerRadius, y: rect.maxY),
-            control: CGPoint(x: rect.maxX, y: rect.maxY)
-        )
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
-        p.closeSubpath()
-        return p
     }
 }
 
