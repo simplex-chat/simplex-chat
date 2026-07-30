@@ -92,8 +92,7 @@ struct BadgesPayView: View {
             ProfileImage(imageStr: user?.image, size: 128)
             HStack(alignment: .center, spacing: 6) {
                 Text(user?.displayName ?? NSLocalizedString("My nickname", comment: "badges preview placeholder"))
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .font(.largeTitle)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 Image(level.badgeAsset)
