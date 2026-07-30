@@ -2492,25 +2492,55 @@ sendGroupProfileUpdate user gInfo scope asGroup members
     sendProfile_ members' = do
       let incognitoProfile = incognitoMembershipProfile gInfo
       profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-      (_, GroupSndResult {sentTo, pending, forwarded}) <- sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
-      pure $ [mId | (mId, _, Right _) <- sentTo] <> map (\(mId, _, _) -> mId) pending <> map groupMemberId' forwarded
+      snd <$> sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
     sendProfileUpdate = unless (null members) $ do
-      delivered <- sendProfile_ members
+      gsr <- sendProfile_ members
       currentTs <- liftIO getCurrentTime
-      withStore' $ \db -> do
-        updateUserMemberProfileSentAt db user gInfo currentTs
-        let keyIds = S.fromList [groupMemberId' m | m <- members, memberNeedsKey m]
-            delivered' = filter (`S.member` keyIds) delivered
-        unless (useRelays' gInfo || null delivered') $ setMembersMemberKeySent db delivered'
+      withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
+      unless (useRelays' gInfo) $ markKeySends (keyIds members) gsr
     sendProfileAndKey members' = unless (null members') $ do
-      delivered <- sendProfile_ members'
-      unless (null delivered) $ withStore' (`setMembersMemberKeySent` delivered)
-    memberNeedsKey m = m `supportsVersion` groupMemberKeyVersion && not (userMemberKeySent m)
+      gsr <- sendProfile_ members'
+      markKeySends (keyIds members') gsr
+    keyIds ms = S.fromList [groupMemberId' m | m <- ms, memberNeedsKey m]
+    memberNeedsKey m = m `supportsVersion` groupMemberKeyVersion && case userMemberKeyStatus m of
+      KSAttempts n -> n < maxKeySendAttempts
+      _ -> False
+    maxKeySendAttempts :: Int
+    maxKeySendAttempts = 5
+    terminalKeySend = \case
+      ChatErrorAgent {agentError} -> case agentError of
+        CONN SIMPLEX _ -> True
+        CONN NOT_FOUND _ -> True
+        NO_USER -> True
+        _ -> False
+      _ -> False
+    markKeySends kIds GroupSndResult {sentTo, pending, forwarded, failed} =
+      withStore' $ \db -> do
+        unless (null sentIds) $ setMembersKeyStatus db KSSent sentIds
+        unless (null failedIds) $ setMembersKeyStatus db KSFailed failedIds
+        unless (null retriable) $ incMembersKeyAttempts db retriable
+        forM_ (M.toList terminalErrs) $ \(reason, mIds) -> setMembersKeyStatus db (KSError reason) mIds
+      where
+        keyMember mId = mId `S.member` kIds
+        keyIdsOf ms = [gmId | m <- ms, let gmId = groupMemberId' m, keyMember gmId]
+        (delivered, errored) = foldr part (foldr part ([], []) pending) sentTo
+        part :: (GroupMemberId, a, Either ChatError b) -> ([GroupMemberId], [(GroupMemberId, ChatError)]) -> ([GroupMemberId], [(GroupMemberId, ChatError)])
+        part (mId, _, r) acc@(d, e)
+          | not (keyMember mId) = acc
+          | Left err <- r = (d, (mId, err) : e)
+          | otherwise = (mId : d, e)
+        (retriable, terminalErrs) = foldr splitErr ([], M.empty) errored
+        splitErr (mId, e) (ret, terr)
+          | terminalKeySend e = (ret, M.insertWith (<>) (tshow e) [mId] terr)
+          | otherwise = (mId : ret, terr)
+        sentIds = delivered <> keyIdsOf forwarded
+        failedIds = keyIdsOf failed
 
 data GroupSndResult = GroupSndResult
   { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
     pending :: [(GroupMemberId, Either ChatError MessageId, Either ChatError ())],
-    forwarded :: [GroupMember]
+    forwarded :: [GroupMember],
+    failed :: [GroupMember]
   }
 
 sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
@@ -2522,8 +2552,8 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
-      (toSend, toPending, forwarded, _, dups) =
-        foldr' (addMember recipientMembers') ([], [], [], S.empty, 0 :: Int) recipientMembers'
+      (toSend, toPending, forwarded, failed, _, dups) =
+        foldr' (addMember recipientMembers') (([], []), [], [], [], S.empty, 0 :: Int) recipientMembers'
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
@@ -2537,7 +2567,7 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   -- Zip for easier access to results
   let sentTo = zipWith3 (\mId mReq r -> (mId, fmap (\(_, _, (_, msgIds)) -> msgIds) mReq, r)) sendToMemIds msgReqs delivered
       pending = zipWith3 (\mId pReq r -> (mId, fmap snd pReq, r)) pendingMemIds pendingReqs stored
-  pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded})
+  pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded, failed})
   where
     events = L.map snd signedEvents
     idsEvts = L.map (\(signing, evt) -> (GroupId groupId, signing, evt)) signedEvents
@@ -2547,23 +2577,29 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember members m acc@(toSend, pending, forwarded, !mIds, !dups) =
+    batchMode m
+      | useRelays' gInfo || m `supportsVersion` relayWebCapVersion = BMBinary
+      | otherwise = BMJson
+    addMember members m acc@(toSend@(toSendBin, toSendJson), pending, forwarded, failed, !mIds, !dups) =
       case memberSendAction gInfo events members m of
         Just a
-          | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
+          | mId `S.member` mIds -> (toSend, pending, forwarded, failed, mIds, dups + 1)
           | otherwise -> case a of
-              MSASend conn -> ((m, conn) : toSend, pending, forwarded, mIds', dups)
-              MSAPending -> (toSend, m : pending, forwarded, mIds', dups)
-              MSAForwarded -> (toSend, pending, m : forwarded, mIds', dups)
+              MSASend conn ->
+                let toSend' = case batchMode m of
+                      BMBinary -> ((m, conn) : toSendBin, toSendJson)
+                      BMJson -> (toSendBin, (m, conn) : toSendJson)
+                 in (toSend', pending, forwarded, failed, mIds', dups)
+              MSAPending -> (toSend, m : pending, forwarded, failed, mIds', dups)
+              MSAForwarded -> (toSend, pending, m : forwarded, failed, mIds', dups)
+              MSAFail -> (toSend, pending, forwarded, m : failed, mIds', dups)
         Nothing -> acc
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-    prepareMsgReqs msgFlags msgs toSend =
-      let (toSendBin, toSendJson) = partition useBinary toSend
-          useBinary (m, _) = useRelays' gInfo || m `supportsVersion` relayWebCapVersion
-       in batchReqs BMBinary msgs toSendBin <> batchReqs BMJson msgs toSendJson
+    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> ([(GroupMember, Connection)], [(GroupMember, Connection)]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+    prepareMsgReqs msgFlags msgs (toSendBin, toSendJson) =
+      batchReqs BMBinary msgs toSendBin <> batchReqs BMJson msgs toSendJson
       where
         batchReqs _ [] [] = ([], [])
         batchReqs mode msgs' toSend' = case L.nonEmpty (batchSndMessagesJSON mode msgs') of
@@ -2601,7 +2637,7 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     createPendingMsg db (groupMemberId, msgId) =
       createPendingGroupMessage db groupMemberId msgId $> Right ()
 
-data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded
+data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded | MSAFail
 
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
 memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memberStatus}
@@ -2616,7 +2652,7 @@ memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memb
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
       Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus || memberStatus == GSMemRejected -> Nothing
+        | connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus || memberStatus == GSMemRejected -> Just MSAFail
         | connInactive conn -> Just MSAPending
         | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
         | otherwise -> pendingOrForwarded
@@ -2663,6 +2699,7 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
       MSASend conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId
       MSAForwarded -> pure ()
+      MSAFail -> pure ()
 
 -- Send pre-encoded forwarded message preserving original signature
 sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()

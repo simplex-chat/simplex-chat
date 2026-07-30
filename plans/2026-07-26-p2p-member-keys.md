@@ -95,20 +95,95 @@ A binary-capable member below `groupMemberKeyVersion` (18-19) receives the signe
 
 Three mode sites to update: `prepareMsgReqs` (`:2549`, main group send), `sendGroupMemberMessages` (`:2232`, member-to-member / introductions), and `:2676`.
 
-## Implementation status (2026-07-27)
+## Revision (2026-07-30): consolidate the send decision, classify delivery
 
-All seven items implemented:
+Items 2, 4, 7 above are the first-cut design - a boolean `user_member_key_sent`, set true on delivery, with the binary/JSON split re-derived in `prepareMsgReqs`. That shipped (commit `261d09ba4` onward) and is the current code. This revision replaces it. Two problems drove it:
 
-1. Version - `groupMemberKeyVersion = 20`, `currentChatVersion = 20`, `XGrpLinkMem` in `requiresSignature`, `XGrpLinkMem`/`XInfo`/`XContact` carry `Maybe MemberKey`.
-2. Schema/type/rows - `user_member_key_sent` column (both backends, migration `M20260727_member_key_sent`), `userMemberKeySent :: Bool` on `GroupMember`, all `GroupMemberRow`/`MaybeGroupMemberRow` SELECTs and parses.
-3. Generation - `setUserMemberKey`, `ensureUserMemberKey`, `groupMemberKey`; keyed at `APINewGroup` (create), `joinContact` (contact-link join), `sendXGrpLinkMem` and `XGrpLinkInv` handshake (prepared-group join), and lazily at the send entries.
-4. `sendGroupProfileUpdate` - one `XInfo profile (Just ownKey)` to `profileMembers ∪ keyMembers` via `sendGroupMessages_`, marks `setMembersMemberKeySent` for delivered v20+ recipients (`sentTo` Right / `pending` / `forwarded`), `updateUserMemberProfileSentAt` only when the profile changed.
-5. Distribution - `XContact` (joiner->host, TOFU) threaded through `profileContactRequest` to `acceptGroupJoinRequestAsync`; `XGrpLinkMem` (host->joiner) signed via `sendGroupMemberMessages`; `XInfo` allow-reply (joiner->host) signed via `encodeSignedGroupConnInfo` + `allowAgentConnectionInfo`, gated on `not (useRelays' gInfo) && maxVersion chatVRange >= relayWebCapVersion`.
-6. Receive - `storeMemberKey` (pin-or-reject, self-certified by `verifyGroupSig`) at `xInfoMember`, `xGrpLinkMem`, and the `INFO`/`XInfo` allow-reply (switched to `parseChatMessage'`).
-7. Signed send - `prepareMsgReqs` partitions recipients by `relayWebCapVersion` (binary-signed to v18+, sig-stripped JSON below); `memberBatch` does the single-connection equivalent for `sendGroupMemberMessages` and `sendPendingGroupMessages`.
+1. **`prepareMsgReqs` re-derives the send mode.** `memberSendAction` (`Internal.hs:2606`) already walks every member - with `useRelays'` and version in hand - to choose `MSASend`; `prepareMsgReqs` then walks the resulting `toSend` again - `partition useBinary` where `useBinary (m,_) = useRelays' gInfo || m supportsVersion relayWebCapVersion` (`:2564`) - recomputing the same decision. One decision, two owners.
+2. **The boolean models only the happy path.** A `sentTo` `Left` is never marked, so an errored member is re-selected every send forever, uncounted; a disabled member (a `memberSendAction` skip) likewise. No permanent/transient split, no give-up.
+
+### A. `MemberSendAction` - total, records mode and skip reason
+
+```haskell
+data SkipReason = SRUnsendable | SRNotApplicable
+  -- SRUnsendable: disabled / ConnDeleted / failed / GSMemRejected (memberSendAction :2619)
+  -- SRNotApplicable: relay non-target (:2615), self GCUserMember (:2625), forward with no path (:2633)
+data MemberSendAction = MSASend BatchMode Connection | MSAPending | MSAForwarded | MSASkip SkipReason
+memberSendAction :: ... -> MemberSendAction   -- total, no Maybe
+```
+
+- Every current `Nothing` becomes `MSASkip r` with the reason from the branch it came from. For a key recipient (a real, non-self member receiving `XInfo`, not `XGrpMsgForward`), only `:2619` → `SRUnsendable` is reachable.
+- `MSASend` records the `BatchMode` (`BMBinary` for `useRelays' gInfo || m supportsVersion relayWebCapVersion`, else `BMJson`) - computed where `memberSendAction` already branches on exactly that predicate.
+- `addMember` (`:2550`) sorts `MSASend BMBinary` / `MSASend BMJson` into pre-partitioned `toSendBin` / `toSendJson`; `prepareMsgReqs` consumes those and drops its own `partition useBinary`. Problem 1 gone.
+- `GroupSndResult` gains `skipped :: [(GroupMember, SkipReason)]` so the key-marking sees skips. The other consumer, `createMemberSndStatuses` (`Commands.hs:4822`), ignores `skipped` and the mode - unchanged.
+
+### B. Two columns + `KeySendStatus` sum type
+
+Replace the boolean with two columns (edit the unreleased `M20260727` migration + both `chat_schema.sql`; no new migration):
+- `user_member_key_status TEXT` - `NULL` = attempting; `"sent"` = delivered; any other text = terminal error reason.
+- `user_member_key_attempts INTEGER NOT NULL DEFAULT 0` - retriable-failure count.
+
+`GroupMember` field `userMemberKeyStatus :: KeySendStatus` (was `userMemberKeySent :: Bool`), a sum type constructed from the two columns:
+
+```haskell
+data KeySendStatus = KSSent | KSError Text | KSAttempts Int
+-- from (status :: Maybe Text, attempts :: Int):
+--   (Just "sent", _)    -> KSSent
+--   (Just reason, _)    -> KSError reason      -- any non-null, non-"sent" text ("sent" reserved)
+--   (Nothing, n)        -> KSAttempts n        -- still attempting, n prior retriable failures
+```
+
+Two columns, not one text field, so each marking outcome is one uniform bulk write (C): success touches only `status`, a retry touches only `attempts` (`attempts = attempts + 1`, no per-row value), an error groups by reason. Member creation default `KSAttempts 0` = (`NULL`, `0`).
+
+Selection: `memberNeedsKey m = m supportsVersion groupMemberKeyVersion && case userMemberKeyStatus m of { KSAttempts n -> n < maxKeySendAttempts; _ -> False }`. Comparing the count to config (E) means no separate "abandoned" state; raising the cap re-includes maxed-out members.
+
+### C. Marking - classify once, from `GroupSndResult`
+
+Per key-recipient, one outcome, written as partitioned bulk updates:
+- **Delivered** (`sentTo` enqueue `Right`, or `pending`, or `forwarded`) → `status = "sent"`.
+- **Skipped** (`skipped`): `SRUnsendable` → `status = <reason>` terminal (a disabled connection is terminal in practice - `APIEnableGroupMember` is effectively never called - so stop re-selecting it); `SRNotApplicable` → untouched.
+- **Errored** (`sentTo` `Left`): `terminalKeySend e` → `status = <reason>` (grouped by reason); else → `attempts = attempts + 1`.
+
+The send is async: this classifies only the synchronous **enqueue** result. `submitPendingMsg` (`Agent.hs:2068`) hands the message to the SND worker, which does the network send and emits `SENT` / `MERR` (`Agent.hs:2196,2274`) - so AUTH / QUOTA / NETWORK / BROKER never reach this point; the agent retries them itself. `temporaryOrHostError` is therefore the wrong classifier here - it triages the async errors that cannot occur, and misjudges the few that can.
+
+### D. `terminalKeySend` - closed terminal set, default retriable
+
+```haskell
+terminalKeySend :: ChatError -> Bool
+terminalKeySend = \case
+  ChatErrorAgent {agentError} -> case agentError of
+    CONN SIMPLEX _   -> True   -- connection has no send queue (prepareConn :1821)
+    CONN NOT_FOUND _ -> True   -- connection / ratchet gone (getConn :1812)
+    NO_USER          -> True   -- user deleted
+    _                -> False
+  _ -> False
+```
+
+Everything else is retriable, bounded by the cap: `CMD PROHIBITED` (ratchet resync, `Agent.hs:1826`), `CRITICAL True` (agent DB lock, `SEDatabaseBusy`), `INACTIVE` (agent suspended), `ChatErrorStore` (chat DB contention), `INTERNAL` (catch-all - ambiguous, so retriable), and oversize (`CMD LARGE` / batch `CEInternalError "large message"` / `CEException "large compressed message"` - rare, a global profile-size problem, self-limiting under the cap; a dedicated `ChatErrorType` constructor for the batch case is a separate cleanup, out of this branch). Inverting to a terminal whitelist is deliberate: at the enqueue phase, mislabeling a transient error permanent abandons a member whose next send would succeed, while mislabeling a permanent error retriable costs only a few capped sends.
+
+Exhaustive reachability (why the terminal set is these three): the only synchronous producers are `getConn_` (`Agent.hs:1806`), `prepareConn` (`:1814`), and `enqueueMessageB`/`storeSentMsg` (`:2062`). All network/server errors (`SMP`/`BROKER`/`PROXY`/`NTF`/`XFTP`, and `AUTH`/`QUOTA`) are async (MERR) and unreachable here; `AGENT (A_*)` are receive/queue-op side; `CONN DUPLICATE`/`NOT_ACCEPTED`/`NOT_AVAILABLE`, `CMD SYNTAX`/`NO_CONN`/`SIZE`, `NTF`/`XFTP`/`FILE`/`RCP`/`NOTICE`/`CRITICAL False` are other paths.
+
+### E. Config
+
+`maxKeySendAttempts :: Int` in the chat config (value immaterial - a small cap like 5; over-retrying a rare ambiguous error is cheap).
+
+## Implementation status (2026-07-30)
+
+- Items 1, 3, 5, 6 - implemented as described: versions, key generation, distribution (`XContact` / `XGrpLinkMem` / `XInfo`), receive pin-or-reject.
+- Items 2, 4, 7 - the boolean baseline is **replaced by the Revision (A-E)**, which is now implemented and compiles (`cabal build lib:simplex-chat`, both backends' schema + migration updated):
+  - A - `MemberSendAction` total, records `BatchMode` and `SkipReason`; `sendBatchMode` is the single owner of the binary/JSON decision; `sendGroupSignedMessages_` dedups then classifies with list comprehensions into pre-partitioned `toSendBin`/`toSendJson`; `prepareMsgReqs` reads them (no re-derivation); `GroupSndResult` gains `skipped`.
+  - B - two columns `user_member_key_status TEXT` / `user_member_key_attempts` (migration `M20260727` + both `chat_schema.sql`), field `userMemberKeyStatus :: KeySendStatus` built by `toKeySendStatus`, store fns `setMembersKeyStatus` / `incMembersKeyAttempts`.
+  - C - `markKeySends` classifies each key-recipient once from `GroupSndResult` and writes partitioned bulk updates; `memberNeedsKey` selects `KSAttempts n < maxKeySendAttempts`.
+  - D - `terminalKeySend` = {`CONN SIMPLEX`, `CONN NOT_FOUND`, `NO_USER`}; everything else retriable.
+  - E - `maxKeySendAttempts = 5`.
+
+Remaining work:
+- Regenerate the client-type mirrors: `userMemberKeyStatus` still shows as `userMemberKeySent: boolean` in the generated `types.ts`, `_types.py`, and `bots/api/TYPES.md` (generated by `bots/src/API/Docs/Generate*.hs`).
+- Tests: the branch adds none beyond `ProtocolTests` field plumbing - no coverage of distribution, pin-or-reject, signed send/verify, or the classification.
 
 ## Open decisions
 
-None outstanding.
+- Names, to confirm or adjust: columns `user_member_key_status` / `user_member_key_attempts`, field `userMemberKeyStatus :: KeySendStatus`, constructors `KeySendStatus`/`KS*` and `SkipReason`/`SR*`, config `maxKeySendAttempts`.
+- Whether a `SRUnsendable` skip is recorded as a terminal `error` (proposed: yes - a disabled connection is terminal in practice).
 
-Resolved: names finalized during implementation. Both key writes required (`groups.member_priv_key` and own-row `member_pub_key`). `XContact` includes the unsigned key at member creation and the signed allow-reply confirms it. Reuse `relayWebCapVersion` (18) as the binary floor. `user_member_key_sent` is a boolean, set `True` for key recipients in `sentTo`/`pending`/`forwarded`; no cap or error classification - `memberSendAction` skips dead connections (`Internal.hs:2608`), so they are re-filtered, not re-sent, until ready. Key change on receipt - reject any change, immutable. Signed send (item 7) - partition by binary capability. Key distribution runs in all p2p groups including incognito. First send after generation is signed. Sign criteria unchanged. Handshake allow-reply signed, confirms the key at join.
+Resolved: both key writes required (`groups.member_priv_key` and own-row `member_pub_key`). `XContact` includes the unsigned key at member creation and the signed allow-reply confirms it. Reuse `relayWebCapVersion` (18) as the binary floor. Key change on receipt - reject any change, immutable. Signed send (item 7) - partition by binary capability, and (Revision A) the mode is decided once in `memberSendAction`, not re-derived. Key distribution runs in all p2p groups including incognito. First send after generation is signed. Sign criteria unchanged. Handshake allow-reply signed, confirms the key at join. Status is a two-column `KeySendStatus` sum type (not a boolean); delivery is classified terminal-vs-retriable with a capped attempt counter, terminal set closed (D).

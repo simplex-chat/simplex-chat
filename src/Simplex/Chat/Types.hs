@@ -1116,6 +1116,9 @@ type GroupMemberId = Int64
 
 -- memberProfile's profileId is COALESCE(member_profile_id, contact_profile_id), member_profile_id is non null
 -- if incognito profile was saved for member (used for hosts and invitees in incognito groups)
+data KeySendStatus = KSSent | KSFailed | KSError Text | KSAttempts Int
+  deriving (Eq, Show)
+
 data GroupMember = GroupMember
   { groupMemberId :: GroupMemberId,
     groupId :: GroupId,
@@ -1146,7 +1149,7 @@ data GroupMember = GroupMember
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
     memberPubKey :: Maybe C.PublicKeyEd25519,
-    userMemberKeySent :: Bool,
+    userMemberKeyStatus :: KeySendStatus,
     relayLink :: Maybe ShortLinkContact,
     -- out-of-band verified security code for connectionless (channel) members;
     -- regular members carry it in activeConn instead (see memberSecurityCode)
@@ -2267,6 +2270,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
 $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
 
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "KS") ''KeySendStatus)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Conn") ''ConnStatus)
 
