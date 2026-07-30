@@ -79,6 +79,7 @@ fun ComposeContextProfilePickerView(
 
   fun changeProfile(newUser: User) {
     withApi {
+      var chatMoved = false
       if (chat.chatInfo is ChatInfo.Direct) {
         val updatedContact = chatModel.controller.apiChangePreparedContactUser(rhId, chat.chatInfo.contact.contactId, newUser.userId)
         if (updatedContact != null) {
@@ -86,6 +87,7 @@ fun ComposeContextProfilePickerView(
           chatModel.controller.appPrefs.incognito.set(false)
           listExpanded.value = false
           chatModel.chatsContext.updateContact(rhId, updatedContact)
+          chatMoved = true
         }
       } else if (chat.chatInfo is ChatInfo.Group) {
         val updatedGroup = chatModel.controller.apiChangePreparedGroupUser(rhId, chat.chatInfo.groupInfo.groupId, newUser.userId)
@@ -94,19 +96,24 @@ fun ComposeContextProfilePickerView(
           chatModel.controller.appPrefs.incognito.set(false)
           listExpanded.value = false
           chatModel.chatsContext.updateGroup(rhId, updatedGroup)
+          chatMoved = true
         }
       }
-      chatModel.controller.changeActiveUser_(
-        rhId = newUser.remoteHostId,
-        toUserId = newUser.userId,
-        viewPwd = null,
-        keepingChatId = chat.id
-      )
-      if (chatModel.currentUser.value?.userId != newUser.userId) {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.switching_profile_error_title),
-          String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
+      // Only switch profile if the chat was actually moved to it, otherwise the user
+      // would end up in another profile with the invitation left behind in this one.
+      if (chatMoved) {
+        chatModel.controller.changeActiveUser_(
+          rhId = newUser.remoteHostId,
+          toUserId = newUser.userId,
+          viewPwd = null,
+          keepingChatId = chat.id
         )
+        if (chatModel.currentUser.value?.userId != newUser.userId) {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.switching_profile_error_title),
+            String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
+          )
+        }
       }
     }
   }
