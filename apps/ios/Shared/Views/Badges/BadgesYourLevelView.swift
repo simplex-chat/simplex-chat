@@ -72,10 +72,16 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         case .legend: "badge-legend"
         }
     }
+
+    var badgeType: BadgeType {
+        switch self {
+        case .supporter: .supporter
+        case .legend: .legend
+        }
+    }
 }
 
 struct BadgesYourLevelView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State private var selectedLevel: BadgeLevel = .supporter
     @State private var continueActive = false
@@ -92,8 +98,12 @@ struct BadgesYourLevelView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    userPreview()
-                        .padding(.top, 4)
+                    BadgeUserPreview(level: selectedLevel) {
+                        Image(systemName: "chevron.down")
+                            .font(.body)
+                            .foregroundColor(theme.colors.primary)
+                    }
+                    .padding(.top, 4)
 
                     HStack(alignment: .top, spacing: 12) {
                         levelCard(.supporter)
@@ -116,29 +126,6 @@ struct BadgesYourLevelView: View {
             }
         }
         .frame(maxHeight: .infinity)
-    }
-
-    // The avatar + name preview shows the user how their profile will look with the selected badge.
-    // Uses the current user's real profile image and display name; when SIMPLEX_ASSETS is absent the
-    // avatar falls back to ProfileImage's own default. TODO [badges] wire real LocalBadge preview.
-    private func userPreview() -> some View {
-        let user = chatModel.currentUser
-        return VStack(spacing: 12) {
-            ProfileImage(imageStr: user?.image, size: 128)
-            HStack(alignment: .center, spacing: 6) {
-                Text(user?.displayName ?? NSLocalizedString("My nickname", comment: "badges preview placeholder"))
-                    .font(.largeTitle)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                Image(selectedLevel.badgeAsset)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 28, height: 28)
-                Image(systemName: "chevron.down")
-                    .font(.body)
-                    .foregroundColor(theme.colors.primary)
-            }
-        }
     }
 
     private func levelCard(_ level: BadgeLevel) -> some View {

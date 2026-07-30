@@ -123,13 +123,27 @@ struct SupportSimpleXBanner: View {
         #endif
     }
 
+    @ViewBuilder
     private func gradientBackground() -> some View {
-        let stops = colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops
-        return LinearGradient(
-            colors: [stops.first!.color, stops.last!.color],
-            startPoint: .bottomLeading,
-            endPoint: .topTrailing
-        )
+        // Light: just the first and last stops of OnboardingCardView.lightStops as a simple
+        // 2-color gradient — the intermediate stops there include a hard blue plateau (0.0–0.5)
+        // that reads as "almost entirely blue" on this wide-short banner.
+        // Dark: the full OnboardingCardView.darkStops (all 5 locations) — the intermediate blue-to-
+        // navy transitions land nicely on this shape, giving depth we'd lose with only 2 colors.
+        if colorScheme == .light {
+            let stops = OnboardingCardView.lightStops
+            LinearGradient(
+                colors: [stops.first!.color, stops.last!.color],
+                startPoint: .bottomLeading,
+                endPoint: .topTrailing
+            )
+        } else {
+            LinearGradient(
+                stops: OnboardingCardView.darkStops,
+                startPoint: .bottomLeading,
+                endPoint: .topTrailing
+            )
+        }
     }
 }
 

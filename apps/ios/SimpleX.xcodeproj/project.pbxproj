@@ -256,6 +256,7 @@
 		E5BADE0107000000BADE0004 /* BadgesRedeemCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE0108000000BADE0004 /* BadgesRedeemCodeView.swift */; };
 		E5BADE0109000000BADE0005 /* BadgesHowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE010A000000BADE0005 /* BadgesHowItWorksView.swift */; };
 		E5BADE010B000000BADE0006 /* SupportSimpleXBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE010C000000BADE0006 /* SupportSimpleXBanner.swift */; };
+		E5BADE010D000000BADE0007 /* BadgeUserPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5BADE010E000000BADE0007 /* BadgeUserPreview.swift */; };
 		E559A0A12E3F77EE00B26F74 /* CommandsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */; };
 		E5A0B0012F960000AAAA0001 /* YourNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A0B0022F960000AAAA0001 /* YourNetwork.swift */; };
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
@@ -638,6 +639,7 @@
 		E5BADE0108000000BADE0004 /* BadgesRedeemCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesRedeemCodeView.swift; sourceTree = "<group>"; };
 		E5BADE010A000000BADE0005 /* BadgesHowItWorksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesHowItWorksView.swift; sourceTree = "<group>"; };
 		E5BADE010C000000BADE0006 /* SupportSimpleXBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportSimpleXBanner.swift; sourceTree = "<group>"; };
+		E5BADE010E000000BADE0007 /* BadgeUserPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeUserPreview.swift; sourceTree = "<group>"; };
 		E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsMenuView.swift; sourceTree = "<group>"; };
 		E5A0B0022F960000AAAA0001 /* YourNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourNetwork.swift; sourceTree = "<group>"; };
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkHeader.swift; sourceTree = "<group>"; };
@@ -1064,6 +1066,7 @@
 				E5BADE0108000000BADE0004 /* BadgesRedeemCodeView.swift */,
 				E5BADE010A000000BADE0005 /* BadgesHowItWorksView.swift */,
 				E5BADE010C000000BADE0006 /* SupportSimpleXBanner.swift */,
+				E5BADE010E000000BADE0007 /* BadgeUserPreview.swift */,
 			);
 			path = Badges;
 			sourceTree = "<group>";
@@ -1563,6 +1566,7 @@
 				E5BADE0107000000BADE0004 /* BadgesRedeemCodeView.swift in Sources */,
 				E5BADE0109000000BADE0005 /* BadgesHowItWorksView.swift in Sources */,
 				E5BADE010B000000BADE0006 /* SupportSimpleXBanner.swift in Sources */,
+				E5BADE010D000000BADE0007 /* BadgeUserPreview.swift in Sources */,
 				5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,

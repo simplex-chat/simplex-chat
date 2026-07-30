@@ -33,7 +33,6 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 }
 
 struct BadgesPayView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     let level: BadgeLevel
     @State private var selectedPeriod: BadgePeriod = .subscribe
@@ -49,7 +48,7 @@ struct BadgesPayView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    userPreview()
+                    BadgeUserPreview(level: level)
                         .padding(.top, 4)
 
                     Text(level.tagline)
@@ -84,23 +83,6 @@ struct BadgesPayView: View {
             }
         }
         .frame(maxHeight: .infinity)
-    }
-
-    private func userPreview() -> some View {
-        let user = chatModel.currentUser
-        return VStack(spacing: 12) {
-            ProfileImage(imageStr: user?.image, size: 128)
-            HStack(alignment: .center, spacing: 6) {
-                Text(user?.displayName ?? NSLocalizedString("My nickname", comment: "badges preview placeholder"))
-                    .font(.largeTitle)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                Image(level.badgeAsset)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 28, height: 28)
-            }
-        }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {
