@@ -9,10 +9,8 @@
 import SwiftUI
 import SimpleXChat
 
-// Entry point for badges management. The subsequent screens (level selection, pay, redeem code,
-// how it works) are pushed via NavigationLink from this view, so the enclosing NavigationView —
-// either the settings NavigationView or the sheet NavigationView presented from the chat list
-// banner — provides the sliding animation.
+// Entry point for badges management. Subsequent screens push via NavigationLink; the enclosing
+// NavigationView (settings or the chat-list banner sheet) provides the sliding animation.
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
@@ -21,13 +19,7 @@ struct BadgesSupportSimplexView: View {
     @State private var redeemCodeActive = false
 
     var body: some View {
-        // TODO [badges] when the state machine lands, gate on user badge status:
-        // - no badge → this view (support prompt)
-        // - active badge → a "Manage your badge" view
-        //
-        // No ScrollView here — matches SimpleXInfo/YourNetworkView: on tight screens the
-        // .scaledToFit hero shrinks to fit the vertical space left by the fixed-height title,
-        // body, info button and CTAs, instead of pushing content off-screen.
+        // TODO [badges] gate on user badge status (no badge → this view, active → "Manage your badge")
         GeometryReader { g in
             VStack(alignment: .center, spacing: 16) {
                 Text("Support SimpleX")
@@ -64,12 +56,8 @@ struct BadgesSupportSimplexView: View {
             .padding(.horizontal, 25)
             .padding(.top, 28)
             .padding(.bottom, 20)
-            // .frame(height:) instead of .frame(minHeight:) — locks the VStack to the
-            // proposed geometry. In the onboarding flow (full-screen presentation) minHeight is
-            // enough because the parent caps at the screen; inside the banner sheet's NavigationView
-            // the parent DOESN'T cap, so a minHeight-only VStack expands past the visible area,
-            // which both makes the hero gigantic and lets the sheet interpret the overflow as
-            // scroll content. Locking to the geometry keeps the layout inside the visible bounds.
+            // .frame(height:) not minHeight — inside the banner sheet's NavigationView minHeight
+            // would let the VStack expand past the visible area and inflate the hero.
             .frame(height: g.size.height)
         }
         .frame(maxHeight: .infinity)
@@ -123,9 +111,8 @@ struct BadgesSupportSimplexView: View {
     }
 }
 
-// Hero image reused across badges views and the WhatsNewView v7.1 entry. Falls back to a gradient
-// card carrying the small supporter badge glyph when SIMPLEX_ASSETS is not defined — matching the
-// onboarding placeholder convention.
+// Hero image reused across badges views and WhatsNewView v7.1. Fallback (no SIMPLEX_ASSETS) is a
+// gradient card carrying the small supporter badge glyph.
 struct PhoneSupporterHero: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme

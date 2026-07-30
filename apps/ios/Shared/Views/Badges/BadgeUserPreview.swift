@@ -9,11 +9,9 @@
 import SwiftUI
 import SimpleXChat
 
-// Shows the user's avatar and display name with a synthesized preview badge at the selected
-// level, using the same NameWithBadge helper that renders badges everywhere else in the app —
-// so the preview matches what will actually appear on the user's name. Any picker affordance
-// (e.g. a chevron) is supplied by the caller via `trailing`, and is laid out next to the
-// name row without leaking into this view.
+// User's avatar + name with a preview badge at the selected level, rendered via NameWithBadge
+// so the preview matches how the badge appears on the name elsewhere. Callers can inject a
+// picker affordance (e.g. a chevron) into the name row via `trailing`.
 struct BadgeUserPreview<Trailing: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     let level: BadgeLevel

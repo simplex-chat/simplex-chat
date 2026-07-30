@@ -9,105 +9,79 @@
 import SwiftUI
 import SimpleXChat
 
-// A dismissible chat-list card promoting the badges purchase flow. Tapping the card opens the
-// badges entry view (BadgesSupportSimplexView) — the same first screen the settings row opens.
-// The dismiss X shows a confirmation alert (matching the Reachable-toolbar banner), and once
-// dismissed the banner stays hidden until DEFAULT_SUPPORTER_BANNER_SHOWN is reset. The row-level
-// show gate (chat count > 2 counting only visible chats) lives in ChatListView.
+// Dumb chat-list card promoting the badges purchase flow. Both the show gate and the dismissal
+// persistence live in ChatListView; this view just renders and reports taps.
 struct SupportSimpleXBanner: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
     @State private var showDismissAlert = false
     let onTap: () -> Void
+    let onDismiss: () -> Void
 
     private let cardCornerRadius: CGFloat = 16
     private let cardHeight: CGFloat = 72
-    // 16pt matches OneHandUICard's segment icon .padding(.leading, 16) — so the banner's text
-    // aligns with the icon column of the Reachable-toolbar card above it in the list.
+    // matches OneHandUICard's segment icon leading so the text aligns with it in the list
     private let cardLeadingPadding: CGFloat = 16
     private let cardTrailingPadding: CGFloat = 8
     private let heroWidth: CGFloat = 110
-    // Illustration is DRAWN at NATURAL aspect (0.795) via .aspectRatio(.fill) — for heroWidth 110
-    // that gives a 110×138 image. The visible slot is heroWidth × heroVisibleHeight (110×108), top-
-    // aligned; the ~30pt of natural image below the slot is cut by .clipped(). Crop line lands
-    // ~78% into the phone body.
+    // shorter than the natural drawn height so .clipped() slices the phone body at card bottom
     private let heroVisibleHeight: CGFloat = 108
-    // 28 (was 32) — hero right sits exactly at X's left edge (X's own trailing 16 + width 12 = 28).
-    // No overlap, no gap. Required so the wider 110pt hero still leaves subtitle room.
+    // hero right edge sits exactly at the dismiss X's left edge (X trailing 16 + width 12)
     private let heroTrailingPadding: CGFloat = 28
-    // 6 (was 8) — small reduction to reclaim text width with the bigger hero.
     private let textToHeroGap: CGFloat = 6
 
     var body: some View {
-        if !supporterBannerShown {
-            // The card Button is the base (its natural size is the card rectangle, cardHeight tall)
-            // and the hero image is added as an .overlay so it can visually extend past the card top
-            // without changing the layout size. The dismiss X lives as a sibling in the outer
-            // ZStack, aligned .topTrailing so it sits at the card's top-right; the X label uses
-            // asymmetric vertical padding (12 top / 4 bottom) so the icon has a visible gap from
-            // the card top edge without being pinned to the very top.
-            ZStack(alignment: .topTrailing) {
-                Button(action: onTap) {
-                    HStack(spacing: 0) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Support SimpleX")
-                                .font(.headline)
-                                .foregroundColor(theme.colors.primary)
-                            Text("Get badge + files up to 5GB")
-                                .font(.subheadline)
-                                .foregroundColor(theme.colors.onBackground)
-                        }
-                        Spacer(minLength: heroWidth + heroTrailingPadding + textToHeroGap)
+        // Card is the Button; hero is an overlay so it can extend above the card top without
+        // affecting layout size. Dismiss X is a ZStack sibling anchored to the card's top-right.
+        ZStack(alignment: .topTrailing) {
+            Button(action: onTap) {
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Support SimpleX")
+                            .font(.headline)
+                            .foregroundColor(theme.colors.primary)
+                        Text("Get badge + files up to 5GB")
+                            .font(.subheadline)
+                            .foregroundColor(theme.colors.onBackground)
                     }
-                    .padding(.leading, cardLeadingPadding)
-                    .padding(.trailing, cardTrailingPadding)
-                    .frame(height: cardHeight)
-                    .background(gradientBackground())
-                    .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+                    Spacer(minLength: heroWidth + heroTrailingPadding + textToHeroGap)
                 }
-                .buttonStyle(.plain)
-                .overlay(alignment: .bottomTrailing) {
-                    // Hero bottom-anchored to card bottom via .overlay(.bottomTrailing); the
-                    // illustration extends UP above the card top only. No .offset — nothing must
-                    // draw below the card. .clipped() inside heroThumbnail is a hard rectangular
-                    // clip at the hero's own frame boundary to guarantee that.
-                    heroThumbnail()
-                        .padding(.trailing, heroTrailingPadding)
-                        .allowsHitTesting(false)
-                }
+                .padding(.leading, cardLeadingPadding)
+                .padding(.trailing, cardTrailingPadding)
+                .frame(height: cardHeight)
+                .background(gradientBackground())
+                .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+            }
+            .buttonStyle(.plain)
+            .overlay(alignment: .bottomTrailing) {
+                heroThumbnail()
+                    .padding(.trailing, heroTrailingPadding)
+                    .allowsHitTesting(false)
+            }
 
-                // X, sibling of the Button in ZStack, aligned to CARD top-right.
-                Image(systemName: "multiply")
-                    .foregroundColor(theme.colors.secondary)
-                    .frame(width: 12, height: 12)
-                    .padding(.top, 12)
-                    .padding(.bottom, 4)
-                    .padding(.trailing, 16)
-                    .padding(.leading, 4)
-                    .contentShape(Rectangle())
-                    .onTapGesture { showDismissAlert = true }
-            }
-            .zIndex(1)
-            .alert(isPresented: $showDismissAlert) {
-                Alert(
-                    title: Text("Support SimpleX"),
-                    message: Text("You can support SimpleX later in Settings."),
-                    dismissButton: .default(Text("Ok")) {
-                        withAnimation { supporterBannerShown = true }
-                    }
-                )
-            }
+            Image(systemName: "multiply")
+                .foregroundColor(theme.colors.secondary)
+                .frame(width: 12, height: 12)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+                .padding(.trailing, 16)
+                .padding(.leading, 4)
+                .contentShape(Rectangle())
+                .onTapGesture { showDismissAlert = true }
+        }
+        .alert(isPresented: $showDismissAlert) {
+            Alert(
+                title: Text("Support SimpleX"),
+                message: Text("You can support SimpleX later in Settings."),
+                dismissButton: .default(Text("Ok"), action: onDismiss)
+            )
         }
     }
 
     @ViewBuilder
     private func heroThumbnail() -> some View {
         #if SIMPLEX_ASSETS
-        // .aspectRatio(.fill) draws at NATURAL aspect (0.795) filling the frame — image ends up
-        // ~110×138. .frame(width, heroVisibleHeight, alignment: .top) makes the visible slot
-        // shorter than the drawn image, top-aligned; .clipped() cuts the ~30pt of natural image
-        // that would otherwise overflow the slot. The crop line lands ~78% into the phone body.
+        // draws at natural aspect, top-aligned in a shorter slot; .clipped() cuts the overflow at card bottom
         Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
             .resizable()
             .aspectRatio(contentMode: .fill)
@@ -125,11 +99,8 @@ struct SupportSimpleXBanner: View {
 
     @ViewBuilder
     private func gradientBackground() -> some View {
-        // Light: just the first and last stops of OnboardingCardView.lightStops as a simple
-        // 2-color gradient — the intermediate stops there include a hard blue plateau (0.0–0.5)
-        // that reads as "almost entirely blue" on this wide-short banner.
-        // Dark: the full OnboardingCardView.darkStops (all 5 locations) — the intermediate blue-to-
-        // navy transitions land nicely on this shape, giving depth we'd lose with only 2 colors.
+        // light: 2-color end-to-end (lightStops' 0.0–0.5 blue plateau would read as all-blue here).
+        // dark: full 5-stop darkStops — the intermediate blue-to-navy transitions land nicely.
         if colorScheme == .light {
             let stops = OnboardingCardView.lightStops
             LinearGradient(
@@ -149,7 +120,7 @@ struct SupportSimpleXBanner: View {
 
 struct SupportSimpleXBanner_Previews: PreviewProvider {
     static var previews: some View {
-        SupportSimpleXBanner(onTap: {})
+        SupportSimpleXBanner(onTap: {}, onDismiss: {})
             .padding()
     }
 }

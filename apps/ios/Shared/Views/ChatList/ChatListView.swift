@@ -374,19 +374,6 @@ struct ChatListView: View {
         !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations
     }
 
-    // Count of user-facing conversations (excludes pending contact requests/connections, deleted
-    // chats and contact cards) — used as the show gate for SupportSimpleXBanner so the banner only
-    // appears once the user actually has a few conversations in the list.
-    private var visibleChatCount: Int {
-        chatModel.chats.reduce(into: 0) { count, chat in
-            switch chat.chatInfo {
-            case let .direct(contact): if !contact.chatDeleted && !contact.isContactCard { count += 1 }
-            case .group, .local: count += 1
-            case .contactRequest, .contactConnection, .invalidJSON: break
-            }
-        }
-    }
-
     private var hasConversations: Bool {
         chatModel.chats.contains { chat in
             switch chat.chatInfo {
@@ -438,8 +425,13 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    if !supporterBannerShown && visibleChatCount > 2 {
-                        SupportSimpleXBanner(onTap: { showBadgesSheet = true })
+                    // +1 vs SimpleX Lock's threshold (ContentView) accounts for the always-present
+                    // SimpleX Directory contact card, so this still needs 3 real conversations.
+                    if !supporterBannerShown && chatModel.chats.count > 3 {
+                        SupportSimpleXBanner(
+                            onTap: { showBadgesSheet = true },
+                            onDismiss: { withAnimation { supporterBannerShown = true } }
+                        )
                             .padding(.vertical, 3)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
