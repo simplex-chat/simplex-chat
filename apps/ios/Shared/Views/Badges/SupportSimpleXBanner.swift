@@ -123,16 +123,11 @@ struct SupportSimpleXBanner: View {
     }
 
     private func gradientBackground() -> some View {
-        // Same endpoint COLORS as ConnectBannerCard ("New 1-time link" / "Paste link / Scan")
-        // — first and last stops only. OnboardingCardView.lightStops has an intermediate blue
-        // plateau (0.0–0.5) that made this wide-short banner read as almost entirely blue with
-        // white only in the last ~10%. Using just the extremes gives a smooth transition
-        // across the whole axis. .leading → .trailing keeps it fully horizontal.
         let stops = colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops
         return LinearGradient(
             colors: [stops.first!.color, stops.last!.color],
-            startPoint: .leading,
-            endPoint: .trailing
+            startPoint: .bottomLeading,
+            endPoint: .topTrailing
         )
     }
 }
