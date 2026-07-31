@@ -95,7 +95,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
       Icon(
         painterResource(MR.images.ic_close),
         contentDescription = generalGetString(MR.strings.icon_descr_close_button),
-        tint = MaterialTheme.colors.secondary,
+        tint = if (isDark) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary,
         modifier = Modifier
           .align(Alignment.TopEnd)
           .padding(end = 4.dp, top = 4.dp)
@@ -160,7 +160,7 @@ private fun gradientBrush(isDark: Boolean, size: IntSize): Brush {
   if (size.width == 0 || size.height == 0) return Brush.linearGradient(colorStops = stops)
   val w = size.width.toFloat()
   val h = size.height.toFloat()
-  val gp = gradientPoints(h / w, if (isDark) 1.5f else 1.2f)
+  val gp = gradientPoints(h / w, if (isDark) 2.1f else 1.7f)
   return Brush.linearGradient(
     colorStops = stops,
     start = Offset(gp.startX * w, gp.startY * h),
