@@ -676,8 +676,9 @@ fun ComposeView(
     }
   }
 
-  // toChat is the chat the message was composed in: a live message is sent when the chat is switched, and by then
-  // this view is already showing the chat that was opened, so the message would be sent there
+  // toChat is the chat the message was composed in - it differs from the chat this view shows only for a live message,
+  // which is sent when the chat is switched, when this view already shows the chat that was opened. Live messages have
+  // no context item, so the forwarding, editing and reporting branches below cannot be reached with a different chat.
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false, toChat: Chat = chat): List<ChatItem>? {
     val cs = composeState.value
     var sent: List<ChatItem>?
@@ -687,10 +688,10 @@ fun ComposeView(
     suspend fun forwardItem(rhId: Long?, forwardedItem: List<ChatItem>, fromChatInfo: ChatInfo, ttl: Int?): List<ChatItem>? {
       val chatItems = controller.apiForwardChatItems(
         rh = rhId,
-        toChatType = toChat.chatInfo.chatType,
-        toChatId = toChat.chatInfo.apiId,
-        toScope = toChat.chatInfo.groupChatScope(),
-        sendAsGroup = toChat.chatInfo.sendAsGroup,
+        toChatType = chat.chatInfo.chatType,
+        toChatId = chat.chatInfo.apiId,
+        toScope = chat.chatInfo.groupChatScope(),
+        sendAsGroup = chat.chatInfo.sendAsGroup,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
         fromScope = fromChatInfo.groupChatScope(),
@@ -700,7 +701,7 @@ fun ComposeView(
 
       withContext(Dispatchers.Main) {
         chatItems?.forEach { chatItem ->
-          chatsCtx.addChatItem(rhId, toChat.chatInfo, chatItem)
+          chatsCtx.addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
 
@@ -758,7 +759,7 @@ fun ComposeView(
     }
 
     suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
-      val cItems = chatModel.controller.apiReportMessage(toChat.remoteHostId, toChat.chatInfo.apiId, chatItemId, reportReason, msgText)
+      val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
       if (chatModel.controller.appPrefs.showReportsInSupportChatAlert.get()) showReportsInSupportChatAlert()
       return cItems?.map { it.chatItem }
     }
@@ -796,14 +797,14 @@ fun ComposeView(
     }
 
     if (cs.contextItem is ComposeContextItem.ForwardingItems) {
-      sent = forwardItem(toChat.remoteHostId, cs.contextItem.chatItems, cs.contextItem.fromChatInfo, ttl = ttl)
+      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItems, cs.contextItem.fromChatInfo, ttl = ttl)
       if (sent == null) {
         lastMessageFailedToSend = constructFailedMessage(cs)
       }
       if (cs.message.text.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(toChat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
           } else {
             message
           }
@@ -812,7 +813,7 @@ fun ComposeView(
     }
     else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
-      val updatedMessage = updateMessage(ei, toChat, live)
+      val updatedMessage = updateMessage(ei, chat, live)
       sent = if (updatedMessage != null) listOf(updatedMessage) else null
       lastMessageFailedToSend = if (updatedMessage == null) constructFailedMessage(cs) else null
     } else if (liveMessage != null && liveMessage.sent) {
@@ -940,7 +941,7 @@ fun ComposeView(
       composeState.value = lastFailed
     }
     val draft = chatModel.draft.value
-    if (wasForwarding && chatModel.draftChatId.value == draftChatId(toChat.chatInfo.id, chatScope) && forwardingFromChatId != toChat.chatInfo.id && draft != null) {
+    if (wasForwarding && chatModel.draftChatId.value == draftChatId(chat.chatInfo.id, chatScope) && forwardingFromChatId != chat.chatInfo.id && draft != null) {
       composeState.value = draft
     } else {
       clearCurrentDraft(toChat)

@@ -1,9 +1,9 @@
 # Fix: live message is sent to the chat opened after switching chats
 
-Branch: `nd/fix-live-message-sent-to-wrong-chat` (off `origin/master`)
+Branch: `nd/fix-live-message-sent-to-wrong-chat` (off `origin/stable`)
 Date: 2026-07-29
 
-Line references are against `origin/master` at `f1418f9e5`, with this fix
+Line references are against `origin/stable` at `8dc387cb5`, with this fix
 applied. Android and desktop (`commonMain/ComposeView.kt`).
 
 ## Problem
@@ -15,7 +15,7 @@ desktop, where every chat switch reuses the same view.
 ## Cause
 
 A live message is committed when the chat is switched
-(`ComposeView.kt:1315-1327`), which before this change was:
+(`ComposeView.kt:1316-1328`), which before this change was:
 
 ```
     if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
@@ -48,9 +48,13 @@ never sent.
 
 `sendMessageAsync` and `sendMessage` take the chat the message was
 composed in, defaulting to the chat this view shows
-(`ComposeView.kt:679-681`, `949-953`); inside, the API calls, the item
-insertion and the draft bookkeeping use it instead of the captured
-`chat`.
+(`ComposeView.kt:679-682`, `952-956`). Only what a live message can reach
+uses it: the message send, the update of an already sent live message,
+and the two places that clear the draft after sending. Live messages have
+no context item (`SendMsgView.kt:156-165` only offers the button when the
+compose is empty and has none), so the forwarding, editing and reporting
+branches cannot run with a chat other than the view's and keep using
+`chat` - the parameter is not threaded through them.
 
 The chat switch resolves the chat by the id it had before the switch:
 
@@ -75,7 +79,8 @@ being fixed, so it is not used as a fallback.
 unchanged: the send button (`SendMsgView.kt`), the live updates while
 typing (`sendMessageAsync(live = true)`), forwarding, editing and
 reporting all pass no chat and behave exactly as before. Only the send
-started by the chat switch passes a different one.
+started by the chat switch passes a different one, and only the branches
+it can reach were changed.
 
 The live message update loop is not affected: it is started once
 (`SendMsgView.kt:523-559`) with the `::updateLiveMessage` reference of the
