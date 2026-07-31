@@ -429,9 +429,9 @@ testGroupShared alice bob cath checkMessages = do
   -- test observer role
   alice ##> "/mr team bob observer"
   concurrentlyN_
-    [ alice <## "#team: you changed the role of bob to observer",
-      bob <## "#team: alice changed your role from admin to observer",
-      cath <## "#team: alice changed the role of bob from admin to observer"
+    [ alice <## "#team: you changed the role of bob to observer (signed)",
+      bob <## ("#team: alice changed your role from admin to observer" <> signedSuffix bob),
+      cath <## ("#team: alice changed the role of bob from admin to observer" <> signedSuffix cath)
     ]
   bob ##> "#team hello"
   bob <## "#team: you don't have permission to send messages"
@@ -439,9 +439,9 @@ testGroupShared alice bob cath checkMessages = do
   bob <## "#team: you have insufficient permissions for this action, the required role is admin"
   alice ##> "/mr team bob admin"
   concurrentlyN_
-    [ alice <## "#team: you changed the role of bob to admin",
-      bob <## "#team: alice changed your role from observer to admin",
-      cath <## "#team: alice changed the role of bob from observer to admin"
+    [ alice <## "#team: you changed the role of bob to admin (signed)",
+      bob <## ("#team: alice changed your role from observer to admin" <> signedSuffix bob),
+      cath <## ("#team: alice changed the role of bob from observer to admin" <> signedSuffix cath)
     ]
   -- delete contact
   alice ##> "/d bob"
