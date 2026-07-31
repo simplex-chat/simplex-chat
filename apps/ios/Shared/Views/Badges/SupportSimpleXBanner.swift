@@ -103,22 +103,20 @@ struct SupportSimpleXBanner: View {
         #endif
     }
 
-    @ViewBuilder
     private func gradientBackground() -> some View {
-        // light: 2-color end-to-end (lightStops' 0.0–0.5 blue plateau would read as all-blue here).
-        // dark: full 5-stop darkStops — the intermediate blue-to-navy transitions land nicely.
-        if colorScheme == .light {
-            let stops = OnboardingCardView.lightStops
-            LinearGradient(
-                colors: [stops.first!.color, stops.last!.color],
-                startPoint: .bottomLeading,
-                endPoint: .topTrailing
+        // Same geometry-aware gradient as ConnectBannerCard: aspect ratio drives the start/end points
+        // along a fixed 80° axis (OnboardingCardView.gradientAngle) so the full 5-stop palette lands
+        // correctly regardless of the card being very wide (aspect ≈ 0.2) or growing at large fonts.
+        GeometryReader { geo in
+            let aspect = max(geo.size.height, 1) / max(geo.size.width, 1)
+            let gp = OnboardingCardView.gradientPoints(
+                aspectRatio: aspect,
+                scale: colorScheme == .light ? 1.2 : 1.5
             )
-        } else {
             LinearGradient(
-                stops: OnboardingCardView.darkStops,
-                startPoint: .bottomLeading,
-                endPoint: .topTrailing
+                stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
+                startPoint: gp.start,
+                endPoint: gp.end
             )
         }
     }
