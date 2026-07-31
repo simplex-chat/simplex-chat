@@ -708,7 +708,7 @@ data Profile = Profile
   }
   deriving (Eq, Show)
 
-data ChatPeerType = CPTHuman | CPTBot
+data ChatPeerType = CPTHuman | CPTBot | CPTBusiness | CPTUnknown Text
   deriving (Eq, Show)
 
 instance FromJSON ChatPeerType where
@@ -723,13 +723,16 @@ instance FromField ChatPeerType where fromField = fromTextField_ textDecode
 instance ToField ChatPeerType where toField = toField . textEncode
 
 instance TextEncoding ChatPeerType where
-  textDecode = \case
-    "human" -> Just CPTHuman
-    "bot" -> Just CPTBot
-    _ -> Nothing
+  textDecode s = Just $ case s of
+    "human" -> CPTHuman
+    "bot" -> CPTBot
+    "business" -> CPTBusiness
+    tag -> CPTUnknown tag
   textEncode = \case
     CPTHuman -> "human"
     CPTBot -> "bot"
+    CPTBusiness -> "business"
+    CPTUnknown tag -> tag
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
