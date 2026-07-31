@@ -108,7 +108,7 @@ module Simplex.Chat.Store.Groups
     setGroupMemberKeyRole,
     setUserMemberKey,
     setMemberPubKey,
-    setMemberKeySent,
+    setMemberKeyStatus,
     setMembersKeyStatus,
     incMembersKeyAttempts,
     setGroupMemberVerified,
@@ -1700,13 +1700,13 @@ setMemberPubKey db groupMemberId pubKey = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?" (pubKey, currentTs, groupMemberId)
 
-setMemberKeySent :: DB.Connection -> GroupMemberId -> IO ()
-setMemberKeySent db groupMemberId = do
+setMemberKeyStatus :: DB.Connection -> KeySendStatus -> GroupMemberId -> IO ()
+setMemberKeyStatus db status groupMemberId = do
   currentTs <- getCurrentTime
-  DB.execute db "UPDATE group_members SET user_member_key_status = ?, updated_at = ? WHERE group_member_id = ?" (keySendStatusText KSSent, currentTs, groupMemberId)
+  DB.execute db "UPDATE group_members SET user_member_key_status = ?, updated_at = ? WHERE group_member_id = ?" (keySendStatusText status, currentTs, groupMemberId)
 
 setMembersKeyStatus :: DB.Connection -> KeySendStatus -> [GroupMemberId] -> IO ()
-setMembersKeyStatus db status memberIds = do
+setMembersKeyStatus db status memberIds = unless (null memberIds) $ do
   currentTs <- getCurrentTime
 #if defined(dbPostgres)
   DB.execute

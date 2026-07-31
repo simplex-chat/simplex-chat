@@ -2507,22 +2507,23 @@ sendGroupProfileUpdate user gInfo scope asGroup members
       recordKeyStatus gsr
     recordKeyStatus GroupSndResult {sentTo, pending, forwarded, failed} =
       withStore' $ \db -> do
-        unless (null sentIds) $ setMembersKeyStatus db KSSent sentIds
-        unless (null failedIds) $ setMembersKeyStatus db KSFailed failedIds
+        setMembersKeyStatus db KSSent $ deliveredIds <> keyMemIds forwarded
+        setMembersKeyStatus db KSFailed $ keyMemIds failed
         unless (null retriableIds) $ incMembersKeyAttempts db retriableIds
-        forM_ terminal $ \(m, e) -> setMembersKeyStatus db (KSError $ tshow e) [groupMemberId' m]
+        forM_ finalErrs $ \(mId, e) -> setMemberKeyStatus db (KSError $ tshow e) mId
       where
-        keyIdsOf = map groupMemberId' . filter memberNeedsKey
-        sentIds = keyIdsOf $ delivered <> forwarded
-        failedIds = keyIdsOf failed
-        retriableIds = map (groupMemberId' . fst) retriable
-        (terminal, retriable) = partition (terminalKeySend . snd) $ filter (memberNeedsKey . fst) errored
-        (delivered, errored) = foldr part (foldr part ([], []) pending) sentTo
-        part :: (GroupMember, a, Either ChatError b) -> ([GroupMember], [(GroupMember, ChatError)]) -> ([GroupMember], [(GroupMember, ChatError)])
-        part (m, _, r) (d, e) = case r of
-          Right _ -> (m : d, e)
-          Left err -> (d, (m, err) : e)
-    terminalKeySend = \case
+        keyMemIds = map groupMemberId' . filter memberNeedsKey
+        (deliveredIds, retriableIds, finalErrs) = foldr addResult (foldr addResult ([], [], []) pending) sentTo
+          where
+            addResult :: (GroupMember, a, Either ChatError b) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)]) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)])
+            addResult (m, _, r) acc@(delivered, retriable, final)
+              | memberNeedsKey m = case r of
+                  Right _ -> (groupMemberId' m : delivered, retriable, final)
+                  Left e
+                    | finalError e -> (delivered, retriable, (groupMemberId' m, e) : final)
+                    | otherwise -> (delivered, groupMemberId' m : retriable, final)
+              | otherwise = acc
+    finalError = \case
       ChatErrorAgent {agentError} -> case agentError of
         CONN SIMPLEX _ -> True
         CONN NOT_FOUND _ -> True
