@@ -2509,19 +2509,19 @@ sendGroupProfileUpdate user gInfo scope asGroup members
       withStore' $ \db -> do
         setMembersKeyStatus db KSSent $ deliveredIds <> keyMemIds forwarded
         setMembersKeyStatus db KSFailed $ keyMemIds failed
-        unless (null retriableIds) $ incMembersKeyAttempts db retriableIds
+        incMembersKeyAttempts db retriableIds
         forM_ finalErrs $ \(mId, e) -> setMemberKeyStatus db (KSError $ tshow e) mId
       where
         keyMemIds = map groupMemberId' . filter memberNeedsKey
         (deliveredIds, retriableIds, finalErrs) = foldr addResult (foldr addResult ([], [], []) pending) sentTo
           where
             addResult :: (GroupMember, a, Either ChatError b) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)]) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)])
-            addResult (m, _, r) acc@(delivered, retriable, final)
+            addResult (m@GroupMember {groupMemberId = mId}, _, r) acc@(delivered, retriable, final)
               | memberNeedsKey m = case r of
-                  Right _ -> (groupMemberId' m : delivered, retriable, final)
+                  Right _ -> (mId : delivered, retriable, final)
                   Left e
-                    | finalError e -> (delivered, retriable, (groupMemberId' m, e) : final)
-                    | otherwise -> (delivered, groupMemberId' m : retriable, final)
+                    | finalError e -> (delivered, retriable, (mId, e) : final)
+                    | otherwise -> (delivered, mId : retriable, final)
               | otherwise = acc
     finalError = \case
       ChatErrorAgent {agentError} -> case agentError of

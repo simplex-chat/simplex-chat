@@ -1721,7 +1721,7 @@ setMembersKeyStatus db status memberIds = unless (null memberIds) $ do
 #endif
 
 incMembersKeyAttempts :: DB.Connection -> [GroupMemberId] -> IO ()
-incMembersKeyAttempts db memberIds = do
+incMembersKeyAttempts db memberIds = unless (null memberIds) $ do
   currentTs <- getCurrentTime
 #if defined(dbPostgres)
   DB.execute
