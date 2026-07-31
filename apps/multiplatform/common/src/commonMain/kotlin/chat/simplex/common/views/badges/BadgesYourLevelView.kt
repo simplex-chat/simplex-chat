@@ -140,11 +140,14 @@ fun BadgesYourLevelView() {
 private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Modifier, onSelect: (BadgeLevel) -> Unit) {
   val isSelected = level == selectedLevel
   val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
+  // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.
+  val cardBackground = if (isInDarkTheme()) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+                       else MaterialTheme.colors.background
   val shape = RoundedCornerShape(16.dp)
   Column(
     modifier
       .clip(shape)
-      .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f), shape)
+      .background(cardBackground, shape)
       .border(2.dp, borderColor, shape)
       .clickable { onSelect(level) }
       .padding(vertical = 20.dp, horizontal = 12.dp),

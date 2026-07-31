@@ -109,11 +109,14 @@ fun BadgesPayView(level: BadgeLevel) {
 private fun PeriodCard(period: BadgePeriod, selectedPeriod: BadgePeriod, modifier: Modifier, onSelect: (BadgePeriod) -> Unit) {
   val isSelected = period == selectedPeriod
   val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
+  // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.
+  val cardBackground = if (isInDarkTheme()) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+                       else MaterialTheme.colors.background
   val shape = RoundedCornerShape(16.dp)
   Column(
     modifier
       .clip(shape)
-      .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f), shape)
+      .background(cardBackground, shape)
       .border(2.dp, borderColor, shape)
       .clickable { onSelect(period) }
       .padding(vertical = 30.dp, horizontal = 12.dp),
