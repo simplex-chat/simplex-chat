@@ -64,7 +64,7 @@ struct BadgesSupportSimplexView: View {
         .modifier(ThemedBackground())
         .navigationBarHidden(true)
         .sheet(isPresented: $showWhySimpleX) {
-            WhySimpleX(onboarding: false, createProfileNavLinkActive: .constant(false))
+            WhySimpleX(onboarding: false, titleColor: theme.colors.primary, createProfileNavLinkActive: .constant(false))
         }
     }
 

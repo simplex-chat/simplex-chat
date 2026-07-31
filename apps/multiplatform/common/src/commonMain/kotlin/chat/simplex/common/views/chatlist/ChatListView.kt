@@ -41,6 +41,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -910,6 +911,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -996,6 +998,18 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     if (!oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
+      }
+    }
+    // +1 vs SimpleX Lock's threshold accounts for the always-present SimpleX Directory contact card,
+    // so this still needs 3 real conversations.
+    if (!supporterBannerShown.value && chatModel.chats.value.size > 3) {
+      item {
+        Box(Modifier.padding(16.dp).zIndex(1f)) {
+          SupportSimpleXBanner(
+            onTap = { ModalManager.start.showModal { BadgesSupportSimplexView() } },
+            onDismiss = { appPrefs.supporterBannerShown.set(true) }
+          )
+        }
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
