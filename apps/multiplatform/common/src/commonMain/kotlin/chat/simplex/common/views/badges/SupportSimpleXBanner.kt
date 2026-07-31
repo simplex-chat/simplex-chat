@@ -153,17 +153,23 @@ private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, 
   }
 }
 
-// Same geometry-aware gradient as OnboardingCardView / ConnectBannerCard: aspect drives the
-// start/end points along a fixed 80° axis so the full 5-stop palette lands correctly at any size.
+// Geometry-aware gradient with asymmetric scale: start (dark) pushed further below the card than
+// end (warm) is above, so card-middle lands at the bright/mid-transition stop, not the dark region.
 private fun gradientBrush(isDark: Boolean, size: IntSize): Brush {
   val stops = if (isDark) darkStops else lightStops
   if (size.width == 0 || size.height == 0) return Brush.linearGradient(colorStops = stops)
   val w = size.width.toFloat()
   val h = size.height.toFloat()
-  val gp = gradientPoints(h / w, if (isDark) 2.1f else 1.7f)
+  val startScale = if (isDark) 3.0f else 2.5f
+  val endScale = if (isDark) 2.1f else 1.7f
+  val gp = gradientPoints(h / w, 1.0f)
+  val sx = 0.5f + (gp.startX - 0.5f) * startScale
+  val sy = 0.5f + (gp.startY - 0.5f) * startScale
+  val ex = 0.5f + (gp.endX - 0.5f) * endScale
+  val ey = 0.5f + (gp.endY - 0.5f) * endScale
   return Brush.linearGradient(
     colorStops = stops,
-    start = Offset(gp.startX * w, gp.startY * h),
-    end = Offset(gp.endX * w, gp.endY * h)
+    start = Offset(sx * w, sy * h),
+    end = Offset(ex * w, ey * h)
   )
 }
