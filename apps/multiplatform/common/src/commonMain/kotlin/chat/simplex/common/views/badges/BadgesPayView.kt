@@ -73,12 +73,14 @@ fun BadgesPayView(level: BadgeLevel) {
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
+    // IntrinsicSize.Max + fillMaxHeight on children so both cards match the taller card's height
+    // when 2-line labels at large fonts would otherwise size them differently.
     Row(
-      Modifier.fillMaxWidth(),
+      Modifier.fillMaxWidth().height(IntrinsicSize.Max),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-      PeriodCard(BadgePeriod.OneMonth, selectedPeriod, Modifier.weight(1f)) { selectedPeriod = it }
-      PeriodCard(BadgePeriod.Subscribe, selectedPeriod, Modifier.weight(1f)) { selectedPeriod = it }
+      PeriodCard(BadgePeriod.OneMonth, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
+      PeriodCard(BadgePeriod.Subscribe, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
     }
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))

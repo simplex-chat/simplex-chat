@@ -113,12 +113,14 @@ fun BadgesYourLevelView() {
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
+    // IntrinsicSize.Max + fillMaxHeight on children so both cards match the taller card's height
+    // when 2-line labels at large fonts would otherwise size them differently.
     Row(
-      Modifier.fillMaxWidth(),
+      Modifier.fillMaxWidth().height(IntrinsicSize.Max),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-      LevelCard(BadgeLevel.Supporter, selectedLevel, Modifier.weight(1f)) { selectedLevel = it }
-      LevelCard(BadgeLevel.Legend, selectedLevel, Modifier.weight(1f)) { selectedLevel = it }
+      LevelCard(BadgeLevel.Supporter, selectedLevel, Modifier.weight(1f).fillMaxHeight()) { selectedLevel = it }
+      LevelCard(BadgeLevel.Legend, selectedLevel, Modifier.weight(1f).fillMaxHeight()) { selectedLevel = it }
     }
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
