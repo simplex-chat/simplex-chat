@@ -66,7 +66,7 @@ struct SupportSimpleXBanner: View {
             }
 
             Image(systemName: "multiply")
-                .foregroundColor(theme.colors.secondary)
+                .foregroundColor(colorScheme == .dark ? theme.colors.onBackground : theme.colors.secondary)
                 .frame(width: 12, height: 12)
                 .padding(.top, 12)
                 .padding(.bottom, 4)
@@ -104,14 +104,14 @@ struct SupportSimpleXBanner: View {
     }
 
     private func gradientBackground() -> some View {
-        // Same geometry-aware gradient as ConnectBannerCard: aspect ratio drives the start/end points
-        // along a fixed 80° axis (OnboardingCardView.gradientAngle) so the full 5-stop palette lands
-        // correctly regardless of the card being very wide (aspect ≈ 0.2) or growing at large fonts.
+        // Geometry-driven axis (80° with aspect correction) is nearly vertical for a wide banner so
+        // warm stops run along the top edge, tilted to the right. Larger scale than OnboardingCardView
+        // pushes the whitest stops just past the top so only a right-side accent of warm is visible.
         GeometryReader { geo in
             let aspect = max(geo.size.height, 1) / max(geo.size.width, 1)
             let gp = OnboardingCardView.gradientPoints(
                 aspectRatio: aspect,
-                scale: colorScheme == .light ? 1.2 : 1.5
+                scale: colorScheme == .light ? 1.7 : 2.1
             )
             LinearGradient(
                 stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
