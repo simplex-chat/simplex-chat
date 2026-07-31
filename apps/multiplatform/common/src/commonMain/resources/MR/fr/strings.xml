@@ -2444,4 +2444,5 @@
     <string name="share_group_profile_via_link_alert_text">Le lien sera court, et le profil de groupe sera partagé via le lien.</string>
     <string name="the_sender_will_not_be_notified">L\'expéditeur n\'en sera PAS informé.</string>
     <string name="this_setting_is_for_your_current_profile">Ce réglage est pour votre profil actuel</string>
+    <string name="channel_members_section_owners">Propriétaires &amp; contributeurs</string>
 </resources>
