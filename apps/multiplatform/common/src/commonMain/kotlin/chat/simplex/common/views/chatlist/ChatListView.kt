@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.AppLock
@@ -1004,7 +1005,18 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     // so this still needs 3 real conversations.
     if (!supporterBannerShown.value && chatModel.chats.value.size > 3) {
       item {
-        Box(Modifier.padding(16.dp).zIndex(1f)) {
+        // Only hero's above-card extension overhangs, so card background never bleeds up at large fonts.
+        val overhang = (108.dp - (72.dp * fontSizeMultiplier)).coerceIn(0.dp, 24.dp)
+        Box(
+          Modifier
+            .layout { measurable, constraints ->
+              val dy = overhang.roundToPx()
+              val p = measurable.measure(constraints)
+              layout(p.width, (p.height - dy).coerceAtLeast(0)) { p.place(0, -dy) }
+            }
+            .zIndex(1f)
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+        ) {
           SupportSimpleXBanner(
             onTap = { ModalManager.start.showModal { BadgesSupportSimplexView() } },
             onDismiss = { appPrefs.supporterBannerShown.set(true) }
