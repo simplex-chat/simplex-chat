@@ -208,8 +208,9 @@
         <source>%d owners</source>
         <note>channel owners count</note>
       </trans-unit>
-      <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve" approved="no">
         <source>%d owners &amp; contributors</source>
+        <target state="translated">%d propriétaires &amp; contributeurs</target>
         <note>channel members count</note>
       </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
@@ -270,13 +271,15 @@ channel relay bar progress</note>
         <target>%1$d/%2$d relais actifs, %3$d erreurs</target>
         <note>channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d failed</source>
+        <target state="translated">%1$d/%2$d relais actifs, %3$d en échec</target>
         <note>channel creation progress with errors
 channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d removed</source>
+        <target state="translated">%1$d/%2$d relais actifs, %3$d supprimé(s)</target>
         <note>channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected" xml:space="preserve">
