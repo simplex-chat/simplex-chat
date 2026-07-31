@@ -2474,12 +2474,17 @@ sendGroupSignedMessages user gInfo' scope asGroup members signedEvents = do
 
 sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
 sendGroupProfileUpdate user gInfo scope asGroup members
-  | shouldSendProfileUpdate = sendProfileUpdate `catchAllErrors` eToView
-  | not (useRelays' gInfo) = sendProfileAndKey (filter memberNeedsKey members) `catchAllErrors` eToView
+  | shouldSendProfileUpdate = sendUpdate members True `catchAllErrors` eToView
+  | not (useRelays' gInfo) = sendUpdate keyMembers False `catchAllErrors` eToView
   | otherwise = pure ()
   where
     User {userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
+    keyMembers = filter memberNeedsKey members
+    memberNeedsKey m = m `supportsVersion` groupMemberKeyVersion && case userMemberKeyStatus m of
+      KSAttempts n -> n < maxKeySendAttempts
+      _ -> False
+    maxKeySendAttempts = 5 :: Int
     shouldSendProfileUpdate
       | asGroup = False
       | isJust scope = False -- why not sending profile updates to scopes?
@@ -2489,24 +2494,31 @@ sendGroupProfileUpdate user gInfo scope asGroup members
             (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
             (Nothing, Just _) -> True
             _ -> False
-    sendProfile_ members' = do
+    sendUpdate recipients profileChanged = unless (null recipients) $ do
       let incognitoProfile = incognitoMembershipProfile gInfo
       profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-      snd <$> sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
-    sendProfileUpdate = unless (null members) $ do
-      gsr <- sendProfile_ members
-      currentTs <- liftIO getCurrentTime
-      withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
-      unless (useRelays' gInfo) $ markKeySends (keyIds members) gsr
-    sendProfileAndKey members' = unless (null members') $ do
-      gsr <- sendProfile_ members'
-      markKeySends (keyIds members') gsr
-    keyIds ms = S.fromList [groupMemberId' m | m <- ms, memberNeedsKey m]
-    memberNeedsKey m = m `supportsVersion` groupMemberKeyVersion && case userMemberKeyStatus m of
-      KSAttempts n -> n < maxKeySendAttempts
-      _ -> False
-    maxKeySendAttempts :: Int
-    maxKeySendAttempts = 5
+      gsr <- snd <$> sendGroupMessages_ user gInfo recipients False [XInfo profile (groupMemberKey gInfo)]
+      when profileChanged $ do
+        currentTs <- liftIO getCurrentTime
+        withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
+      unless (useRelays' gInfo) $ recordKeyStatus gsr
+    recordKeyStatus GroupSndResult {sentTo, pending, forwarded, failed} =
+      withStore' $ \db -> do
+        unless (null sentIds) $ setMembersKeyStatus db KSSent sentIds
+        unless (null failedIds) $ setMembersKeyStatus db KSFailed failedIds
+        unless (null retriableIds) $ incMembersKeyAttempts db retriableIds
+        forM_ terminal $ \(m, e) -> setMembersKeyStatus db (KSError $ tshow e) [groupMemberId' m]
+      where
+        keyIdsOf = map groupMemberId' . filter memberNeedsKey
+        sentIds = keyIdsOf $ delivered <> forwarded
+        failedIds = keyIdsOf failed
+        retriableIds = map (groupMemberId' . fst) retriable
+        (terminal, retriable) = partition (terminalKeySend . snd) $ filter (memberNeedsKey . fst) errored
+        (delivered, errored) = foldr part (foldr part ([], []) pending) sentTo
+        part :: (GroupMember, a, Either ChatError b) -> ([GroupMember], [(GroupMember, ChatError)]) -> ([GroupMember], [(GroupMember, ChatError)])
+        part (m, _, r) (d, e) = case r of
+          Right _ -> (m : d, e)
+          Left err -> (d, (m, err) : e)
     terminalKeySend = \case
       ChatErrorAgent {agentError} -> case agentError of
         CONN SIMPLEX _ -> True
@@ -2514,31 +2526,10 @@ sendGroupProfileUpdate user gInfo scope asGroup members
         NO_USER -> True
         _ -> False
       _ -> False
-    markKeySends kIds GroupSndResult {sentTo, pending, forwarded, failed} =
-      withStore' $ \db -> do
-        unless (null sentIds) $ setMembersKeyStatus db KSSent sentIds
-        unless (null failedIds) $ setMembersKeyStatus db KSFailed failedIds
-        unless (null retriable) $ incMembersKeyAttempts db retriable
-        forM_ (M.toList terminalErrs) $ \(reason, mIds) -> setMembersKeyStatus db (KSError reason) mIds
-      where
-        keyMember mId = mId `S.member` kIds
-        keyIdsOf ms = [gmId | m <- ms, let gmId = groupMemberId' m, keyMember gmId]
-        (delivered, errored) = foldr part (foldr part ([], []) pending) sentTo
-        part :: (GroupMemberId, a, Either ChatError b) -> ([GroupMemberId], [(GroupMemberId, ChatError)]) -> ([GroupMemberId], [(GroupMemberId, ChatError)])
-        part (mId, _, r) acc@(d, e)
-          | not (keyMember mId) = acc
-          | Left err <- r = (d, (mId, err) : e)
-          | otherwise = (mId : d, e)
-        (retriable, terminalErrs) = foldr splitErr ([], M.empty) errored
-        splitErr (mId, e) (ret, terr)
-          | terminalKeySend e = (ret, M.insertWith (<>) (tshow e) [mId] terr)
-          | otherwise = (mId : ret, terr)
-        sentIds = delivered <> keyIdsOf forwarded
-        failedIds = keyIdsOf failed
 
 data GroupSndResult = GroupSndResult
-  { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
-    pending :: [(GroupMemberId, Either ChatError MessageId, Either ChatError ())],
+  { sentTo :: [(GroupMember, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
+    pending :: [(GroupMember, Either ChatError MessageId, Either ChatError ())],
     forwarded :: [GroupMember],
     failed :: [GroupMember]
   }
@@ -2557,16 +2548,16 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
-  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSend
+  let (sendToMembers, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSend
   delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB) $ L.nonEmpty msgReqs
-  when (length delivered /= length sendToMemIds) $ logError "sendGroupMessages_: sendToMemIds and delivered length mismatch"
+  when (length delivered /= length sendToMembers) $ logError "sendGroupMessages_: sendToMembers and delivered length mismatch"
   -- Save as pending for toPending members
-  let (pendingMemIds, pendingReqs) = preparePending sndMsgs_ toPending
+  let (pendingMembers, pendingReqs) = preparePending sndMsgs_ toPending
   stored <- lift $ withStoreBatch (\db -> map (bindRight $ createPendingMsg db) pendingReqs)
-  when (length stored /= length pendingMemIds) $ logError "sendGroupMessages_: pendingMemIds and stored length mismatch"
+  when (length stored /= length pendingMembers) $ logError "sendGroupMessages_: pendingMembers and stored length mismatch"
   -- Zip for easier access to results
-  let sentTo = zipWith3 (\mId mReq r -> (mId, fmap (\(_, _, (_, msgIds)) -> msgIds) mReq, r)) sendToMemIds msgReqs delivered
-      pending = zipWith3 (\mId pReq r -> (mId, fmap snd pReq, r)) pendingMemIds pendingReqs stored
+  let sentTo = zipWith3 (\m mReq r -> (m, fmap (\(_, _, (_, msgIds)) -> msgIds) mReq, r)) sendToMembers msgReqs delivered
+      pending = zipWith3 (\m pReq r -> (m, fmap snd pReq, r)) pendingMembers pendingReqs stored
   pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded, failed})
   where
     events = L.map snd signedEvents
@@ -2597,7 +2588,7 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> ([(GroupMember, Connection)], [(GroupMember, Connection)]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> ([(GroupMember, Connection)], [(GroupMember, Connection)]) -> ([GroupMember], [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs (toSendBin, toSendJson) =
       batchReqs BMBinary msgs toSendBin <> batchReqs BMJson msgs toSendJson
       where
@@ -2605,31 +2596,31 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
         batchReqs mode msgs' toSend' = case L.nonEmpty (batchSndMessagesJSON mode msgs') of
           Just batched -> foldMembers (length batched + length msgs') msgBatchMBR batched toSend'
           Nothing -> ([], [])
-        foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+        foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMember], [Either ChatError ChatMsgReq])
         foldMembers lastRef mkMb mbs mems = snd $ foldr' foldMsgBodies (lastMemIdx_, ([], [])) mems
           where
             lastMemIdx_ = let len = length mems in if len > 1 then Just len else Nothing
-            foldMsgBodies :: (GroupMember, Connection) -> (Maybe Int, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Maybe Int, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-            foldMsgBodies (GroupMember {groupMemberId}, conn) (memIdx_, memIdsReqs) =
-              (subtract 1 <$> memIdx_,) $ snd $ foldr' addBody (lastRef, memIdsReqs) mbs
+            foldMsgBodies :: (GroupMember, Connection) -> (Maybe Int, ([GroupMember], [Either ChatError ChatMsgReq])) -> (Maybe Int, ([GroupMember], [Either ChatError ChatMsgReq]))
+            foldMsgBodies (m, conn) (memIdx_, memsReqs) =
+              (subtract 1 <$> memIdx_,) $ snd $ foldr' addBody (lastRef, memsReqs) mbs
               where
-                addBody :: Either ChatError a -> (Int, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Int, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-                addBody mb (i, (memIds, reqs)) =
+                addBody :: Either ChatError a -> (Int, ([GroupMember], [Either ChatError ChatMsgReq])) -> (Int, ([GroupMember], [Either ChatError ChatMsgReq]))
+                addBody mb (i, (ms, reqs)) =
                   let req = (conn,msgFlags,) . mkMb memIdx_ i <$> mb
-                   in (i - 1, (groupMemberId : memIds, req : reqs))
+                   in (i - 1, (m : ms, req : reqs))
         msgBatchMBR :: Maybe Int -> Int -> MsgBatch -> (ValueOrRef MsgBody, [MessageId])
         msgBatchMBR memIdx_ i (MsgBatch batchBody sndMsgs) = (vrValue_ memIdx_ i batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
         vrValue_ memIdx_ i v = case memIdx_ of
           Nothing -> VRValue Nothing v -- sending to one member, do not reference bodies
           Just 1 -> VRValue (Just i) v
           Just _ -> VRRef i
-    preparePending :: NonEmpty (Either ChatError SndMessage) -> [GroupMember] -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)])
+    preparePending :: NonEmpty (Either ChatError SndMessage) -> [GroupMember] -> ([GroupMember], [Either ChatError (GroupMemberId, MessageId)])
     preparePending msgs_ =
       foldr' foldMsgs ([], [])
       where
-        foldMsgs :: GroupMember -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)]) -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)])
-        foldMsgs GroupMember {groupMemberId} memIdsReqs =
-          foldr' (\msg_ (memIds, reqs) -> (groupMemberId : memIds, fmap pendingReq msg_ : reqs)) memIdsReqs msgs_
+        foldMsgs :: GroupMember -> ([GroupMember], [Either ChatError (GroupMemberId, MessageId)]) -> ([GroupMember], [Either ChatError (GroupMemberId, MessageId)])
+        foldMsgs m@GroupMember {groupMemberId} memsReqs =
+          foldr' (\msg_ (ms, reqs) -> (m : ms, fmap pendingReq msg_ : reqs)) memsReqs msgs_
           where
             pendingReq :: SndMessage -> (GroupMemberId, MessageId)
             pendingReq SndMessage {msgId} = (groupMemberId, msgId)

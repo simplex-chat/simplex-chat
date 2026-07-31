@@ -4831,24 +4831,24 @@ processChatCommand cxt nm = \case
                   where
                     addItem (Right SndMessage {msgId}, Right ci) m = M.insert msgId (chatItemId' ci) m
                     addItem _ m = m
-                processSentTo :: DB.Connection -> Map MessageId ChatItemId -> (GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption)) -> IO ()
-                processSentTo db msgToItem (mId, msgIds_, deliveryResult) = forM_ msgIds_ $ \msgIds -> do
+                processSentTo :: DB.Connection -> Map MessageId ChatItemId -> (GroupMember, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption)) -> IO ()
+                processSentTo db msgToItem (m, msgIds_, deliveryResult) = forM_ msgIds_ $ \msgIds -> do
                   let ciIds = mapMaybe (`M.lookup` msgToItem) msgIds
                       status = case deliveryResult of
                         Right _ -> GSSNew
                         Left e -> GSSError $ SndErrOther $ tshow e
-                  forM_ ciIds $ \ciId -> createGroupSndStatus db ciId mId status
+                  forM_ ciIds $ \ciId -> createGroupSndStatus db ciId (groupMemberId' m) status
                 processForwarded :: DB.Connection -> GroupMember -> IO ()
                 processForwarded db GroupMember {groupMemberId} =
                   forM_ cis_ $ \ci_ ->
                     forM_ ci_ $ \ci -> createGroupSndStatus db (chatItemId' ci) groupMemberId GSSForwarded
-                processPending :: DB.Connection -> Map MessageId ChatItemId -> (GroupMemberId, Either ChatError MessageId, Either ChatError ()) -> IO ()
-                processPending db msgToItem (mId, msgId_, pendingResult) = forM_ msgId_ $ \msgId -> do
+                processPending :: DB.Connection -> Map MessageId ChatItemId -> (GroupMember, Either ChatError MessageId, Either ChatError ()) -> IO ()
+                processPending db msgToItem (m, msgId_, pendingResult) = forM_ msgId_ $ \msgId -> do
                   let ciId_ = M.lookup msgId msgToItem
                       status = case pendingResult of
                         Right _ -> GSSInactive
                         Left e -> GSSError $ SndErrOther $ tshow e
-                  forM_ ciId_ $ \ciId -> createGroupSndStatus db ciId mId status
+                  forM_ ciId_ $ \ciId -> createGroupSndStatus db ciId (groupMemberId' m) status
     assertMultiSendable :: Bool -> NonEmpty ComposedMessageReq -> CM ()
     assertMultiSendable live cmrs
       | length cmrs == 1 = pure ()
