@@ -14,6 +14,9 @@ import SimpleXChat
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
+    // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
+    // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
+    var showsAsSheet: Bool = false
     @State private var whyBuiltActive = false
     @State private var chooseLevelActive = false
     @State private var redeemCodeActive = false
@@ -54,7 +57,7 @@ struct BadgesSupportSimplexView: View {
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
             .padding(.horizontal, 25)
-            .padding(.top, 28)
+            .padding(.top, showsAsSheet ? 48 : 0)
             .padding(.bottom, 20)
             // .frame(height:) not minHeight — inside the banner sheet's NavigationView minHeight
             // would let the VStack expand past the visible area and inflate the hero.
@@ -62,14 +65,17 @@ struct BadgesSupportSimplexView: View {
         }
         .frame(maxHeight: .infinity)
         .modifier(ThemedBackground())
-        .navigationBarHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func whyBuiltButton() -> some View {
         ZStack {
             Button { whyBuiltActive = true } label: {
-                Label("Why SimpleX is built.", systemImage: "info.circle")
-                    .font(.headline)
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle")
+                    Text("Why SimpleX is built.").fontWeight(.medium)
+                }
+                .font(.body)
             }
             NavigationLink(isActive: $whyBuiltActive) {
                 WhySimpleX(onboarding: false, titleColor: theme.colors.primary, createProfileNavLinkActive: .constant(false))

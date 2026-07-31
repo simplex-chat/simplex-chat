@@ -58,11 +58,12 @@ struct BadgesPayView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 4)
 
+                    Spacer(minLength: 20)
+
                     HStack(alignment: .top, spacing: 12) {
                         periodCard(.oneMonth)
                         periodCard(.subscribe)
                     }
-                    .padding(.top, 12)
 
                     Spacer(minLength: 20)
 
@@ -79,12 +80,13 @@ struct BadgesPayView: View {
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
                 .padding(.horizontal, 25)
-                .padding(.top, 8)
+                .padding(.top, 0)
                 .padding(.bottom, 20)
                 .frame(minHeight: g.size.height)
             }
         }
         .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {

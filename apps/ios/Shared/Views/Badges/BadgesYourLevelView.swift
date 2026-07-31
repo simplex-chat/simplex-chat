@@ -105,11 +105,12 @@ struct BadgesYourLevelView: View {
                     }
                     .padding(.top, 4)
 
+                    Spacer(minLength: 20)
+
                     HStack(alignment: .top, spacing: 12) {
                         levelCard(.supporter)
                         levelCard(.legend)
                     }
-                    .padding(.top, 8)
 
                     Spacer(minLength: 20)
 
@@ -122,12 +123,13 @@ struct BadgesYourLevelView: View {
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
                 .padding(.horizontal, 25)
-                .padding(.top, 8)
+                .padding(.top, 0)
                 .padding(.bottom, 20)
                 .frame(minHeight: g.size.height)
             }
         }
         .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func levelCard(_ level: BadgeLevel) -> some View {
@@ -187,8 +189,11 @@ struct BadgesYourLevelView: View {
             Button {
                 howItWorksActive = true
             } label: {
-                Label("How private badges work", systemImage: "info.circle")
-                    .font(.headline)
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle")
+                    Text("How private badges work").fontWeight(.medium)
+                }
+                .font(.body)
             }
 
             NavigationLink(isActive: $howItWorksActive) {
