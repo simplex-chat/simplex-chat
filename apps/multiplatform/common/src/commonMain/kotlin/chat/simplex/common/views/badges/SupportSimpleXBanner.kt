@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,11 +51,9 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
   var cardSize by remember { mutableStateOf(IntSize.Zero) }
   val brush = remember(isDark, cardSize) { gradientBrush(isDark, cardSize) }
 
-  // Two-Box structure so text can grow (2-line wrapping at large fonts) while X stays anchored to
-  // the card's top-right, not the outer wrapper's top-right (which would drift up into hero overhang).
-  // Outer Box takes max(inner card, hero); inner Box wraps the card Row + X together and aligns to
-  // Outer bottom so hero overhangs above.
-  Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+  // Layout sizes to the card; hero is placed at y = cardHeight - heroHeight (negative → hero
+  // overhangs above card at normal fonts, 0/positive → hero fits inside card at large fonts).
+  Layout(content = {
     Box(Modifier.fillMaxWidth()) {
       Row(
         Modifier
@@ -117,8 +116,15 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
       heroVisibleHeight = heroVisibleHeight,
       cardHeight = cardHeight,
       trailingPadding = heroTrailingPadding,
-      modifier = Modifier.align(Alignment.BottomEnd)
+      modifier = Modifier
     )
+  }) { measurables, constraints ->
+    val cardPlaceable = measurables[0].measure(constraints)
+    val heroPlaceable = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
+    layout(cardPlaceable.width, cardPlaceable.height) {
+      cardPlaceable.place(0, 0)
+      heroPlaceable.place(cardPlaceable.width - heroPlaceable.width, cardPlaceable.height - heroPlaceable.height)
+    }
   }
 }
 
