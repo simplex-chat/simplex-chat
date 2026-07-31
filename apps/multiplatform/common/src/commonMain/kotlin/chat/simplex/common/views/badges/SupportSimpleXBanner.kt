@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -31,15 +32,17 @@ import chat.simplex.res.MR
 @Composable
 fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
   val cardCornerRadius = 16.dp
-  val cardHeight = 72.dp
+  // grows with system font but never shrinks below the default so small-font users see the same
+  // banner as today; hero image stays fixed so its above-card overhang shrinks at very large fonts
+  val cardHeight = (72.dp * fontSizeSqrtMultiplier).coerceAtLeast(72.dp)
   // matches OneHandUICard's segment icon leading so the text aligns with it in the list
   val cardLeadingPadding = 16.dp
   val cardTrailingPadding = 8.dp
   val heroWidth = 110.dp
   // shorter than the natural drawn height so ContentScale.Crop slices the phone body at card bottom
   val heroVisibleHeight = 108.dp
-  // matches the OneHandUICard-style X: outer end pad 4 + circle click area 32 = 36 reserved on right
-  val heroTrailingPadding = 36.dp
+  // hero right edge sits at the dismiss X's icon left edge (X: outer 4pt + inner-pad 8 + half of 16pt icon)
+  val heroTrailingPadding = 28.dp
   val textToHeroGap = 6.dp
 
   val isDark = isInDarkTheme()
@@ -64,12 +67,16 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
           generalGetString(MR.strings.badges_banner_title),
           style = MaterialTheme.typography.body1,
           fontWeight = FontWeight.SemiBold,
-          color = MaterialTheme.colors.primary
+          color = MaterialTheme.colors.primary,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis
         )
         Text(
           generalGetString(MR.strings.badges_banner_subtitle),
           style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.onBackground
+          color = MaterialTheme.colors.onBackground,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis
         )
       }
     }

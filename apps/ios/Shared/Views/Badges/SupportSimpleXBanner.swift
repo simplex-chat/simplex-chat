@@ -19,7 +19,10 @@ struct SupportSimpleXBanner: View {
     let onDismiss: () -> Void
 
     private let cardCornerRadius: CGFloat = 16
-    private let cardHeight: CGFloat = 72
+    // grows with Dynamic Type but never shrinks below the default so small-font users see the same
+    // banner as today; hero stays fixed so its above-card overhang shrinks at very large fonts
+    @ScaledMetric(relativeTo: .body) private var scaledCardHeight: CGFloat = 72
+    private var cardHeight: CGFloat { max(72, scaledCardHeight) }
     // matches OneHandUICard's segment icon leading so the text aligns with it in the list
     private let cardLeadingPadding: CGFloat = 16
     private let cardTrailingPadding: CGFloat = 8
@@ -40,9 +43,11 @@ struct SupportSimpleXBanner: View {
                         Text("Support SimpleX")
                             .font(.headline)
                             .foregroundColor(theme.colors.primary)
+                            .lineLimit(2)
                         Text("Get badge + files up to 5GB")
                             .font(.subheadline)
                             .foregroundColor(theme.colors.onBackground)
+                            .lineLimit(2)
                     }
                     Spacer(minLength: heroWidth + heroTrailingPadding + textToHeroGap)
                 }

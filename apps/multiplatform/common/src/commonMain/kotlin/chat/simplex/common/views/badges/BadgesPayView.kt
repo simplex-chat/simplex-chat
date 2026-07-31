@@ -120,7 +120,7 @@ private fun PeriodCard(period: BadgePeriod, selectedPeriod: BadgePeriod, modifie
 @Composable
 private fun PayButton(level: BadgeLevel, selectedPeriod: BadgePeriod) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier,
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = if (selectedPeriod == BadgePeriod.Subscribe) level.payMonthlyLabel else level.payOnceLabel,
     onboarding = null,
     onclick = {
