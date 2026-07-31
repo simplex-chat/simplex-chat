@@ -46,7 +46,7 @@ fun BadgesPayView(level: BadgeLevel) {
   var selectedPeriod by remember { mutableStateOf(BadgePeriod.Subscribe) }
 
   ColumnWithScrollBar(
-    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     maxIntrinsicSize = true,
@@ -65,7 +65,7 @@ fun BadgesPayView(level: BadgeLevel) {
     Text(
       stringResource(level.tagline),
       style = MaterialTheme.typography.body1,
-      color = MaterialTheme.colors.secondary,
+      color = MaterialTheme.colors.onBackground,
       textAlign = TextAlign.Center,
       modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
     )
@@ -80,15 +80,20 @@ fun BadgesPayView(level: BadgeLevel) {
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
-    PayButton(level, selectedPeriod)
-
-    Text(
-      stringResource(billingFooter(selectedPeriod)),
-      style = MaterialTheme.typography.body2,
-      color = MaterialTheme.colors.secondary,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-    )
+    // Plain Text (not TextButtonBelowOnboardingButton) because the billing footer is informational,
+    // not an action — using TextButtonBelowOnboardingButton would force a Medium-weight bold look.
+    // 15.5dp top padding matches the visual gap the TextButtonBelowOnboardingButton produces on
+    // the other two badges views (7.5dp Modifier + 8dp TextButton chip inner padding).
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      PayButton(level, selectedPeriod)
+      Text(
+        stringResource(billingFooter(selectedPeriod)),
+        style = MaterialTheme.typography.body2,
+        color = MaterialTheme.colors.secondary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(top = 15.5.dp)
+      )
+    }
   }
 }
 
@@ -103,7 +108,7 @@ private fun PeriodCard(period: BadgePeriod, selectedPeriod: BadgePeriod, modifie
       .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f), shape)
       .border(2.dp, borderColor, shape)
       .clickable { onSelect(period) }
-      .padding(vertical = 20.dp),
+      .padding(vertical = 20.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
@@ -113,7 +118,7 @@ private fun PeriodCard(period: BadgePeriod, selectedPeriod: BadgePeriod, modifie
       tint = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       modifier = Modifier.size(32.dp)
     )
-    Text(stringResource(period.label), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold)
+    Text(stringResource(period.label), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
   }
 }
 

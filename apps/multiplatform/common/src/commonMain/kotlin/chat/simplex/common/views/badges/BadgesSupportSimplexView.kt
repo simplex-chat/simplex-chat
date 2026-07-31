@@ -27,6 +27,7 @@ import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.onboarding.HowItWorks
 import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
 // Entry point for badges management. Subsequent screens push via ModalManager; the enclosing
@@ -35,7 +36,7 @@ import chat.simplex.res.MR
 fun BadgesSupportSimplexView() {
   // TODO [badges] gate on user badge status (no badge → this view, active → "Manage your badge")
   ColumnWithScrollBar(
-    Modifier.padding(horizontal = 25.dp).padding(top = 28.dp, bottom = 20.dp),
+    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 28.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     maxIntrinsicSize = true,
@@ -72,9 +73,13 @@ fun BadgesSupportSimplexView() {
 
     Spacer(Modifier.weight(1f))
 
-    ChooseLevelButton()
-
-    RedeemCodeButton(Modifier.padding(top = 4.dp))
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      ChooseLevelButton()
+      TextButtonBelowOnboardingButton(
+        text = stringResource(MR.strings.badges_redeem_code_button),
+        onClick = { ModalManager.start.showModal { BadgesRedeemCodeView() } }
+      )
+    }
   }
 }
 
@@ -90,19 +95,6 @@ private fun ChooseLevelButton() {
   )
 }
 
-@Composable
-private fun RedeemCodeButton(modifier: Modifier = Modifier) {
-  TextButton(
-    onClick = { ModalManager.start.showModal { BadgesRedeemCodeView() } },
-    modifier = modifier
-  ) {
-    Text(
-      stringResource(MR.strings.badges_redeem_code_button),
-      color = MaterialTheme.colors.primary,
-      fontWeight = FontWeight.Medium
-    )
-  }
-}
 
 // Hero image reused across badges views and WhatsNewView v7.1. Fallback (no SIMPLEX_ASSETS) is a
 // gradient card carrying the small supporter badge glyph.

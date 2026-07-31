@@ -113,11 +113,13 @@ struct BadgesYourLevelView: View {
 
                     Spacer(minLength: 20)
 
-                    continueButton()
-
-                    howItWorksButton()
-                        .padding(.top, 4)
-                        .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
+                    VStack(spacing: 10) {
+                        continueButton()
+                            .padding(.vertical, 10)
+                        howItWorksButton()
+                            .frame(height: 22)
+                    }
+                    .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
                 .padding(.horizontal, 25)
                 .padding(.top, 8)
