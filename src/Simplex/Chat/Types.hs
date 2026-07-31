@@ -1114,11 +1114,11 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
 
 type GroupMemberId = Int64
 
--- memberProfile's profileId is COALESCE(member_profile_id, contact_profile_id), member_profile_id is non null
--- if incognito profile was saved for member (used for hosts and invitees in incognito groups)
 data KeySendStatus = KSSent | KSFailed | KSError Text | KSAttempts Int
   deriving (Eq, Show)
 
+-- memberProfile's profileId is COALESCE(member_profile_id, contact_profile_id), member_profile_id is non null
+-- if incognito profile was saved for member (used for hosts and invitees in incognito groups)
 data GroupMember = GroupMember
   { groupMemberId :: GroupMemberId,
     groupId :: GroupId,
