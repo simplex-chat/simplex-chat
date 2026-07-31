@@ -26,7 +26,13 @@
 | `settings` | "Supporter perks" row in Your settings |
 | `whats-new` | v7.0 announcement entry |
 
-These designs cover the acquisition path for iOS/Play builds only. Missing designs: payment method + duration selector (2.1), crypto invoice screen (2.1), user-picker badge presence (2.3), management screen (2.6), start-sharing question (2.5).
+These designs cover the acquisition path for iOS/Play builds only. Missing designs:
+
+- payment method + duration selector (2.1)
+- crypto invoice screen (2.1)
+- user-picker badge presence (2.3)
+- management screen (2.6)
+- start-sharing question (2.5)
 
 Store builds display store-fetched localized prices; catalog prices apply to Stripe/BTCPay only.
 
@@ -109,17 +115,33 @@ The service grants any badge type for 1/3/12 months per code (investor: lifetime
 
 ### 2.9 Core engine
 
-Triggers: chat start, foreground, network restore, profile switch, timers (renewal, expiry, Monday boundaries).
+Triggers:
+
+- chat start
+- foreground
+- network restore
+- profile switch
+- timers: renewal, expiry, Monday boundaries
 
 1. resume/claim: unclaimed settled payments; subscription renewals after `renews_at`; monthly re-issue while balance > 0 and not paused; invoiced/pending crypto payments;
-2. `account(now)` at each claim: `lapse` rows, `consume` row + issuance (§3);
+2. `advance(now)` + `issue(now)` at each claim (§3);
 3. presentation on/after Monday (UTC): fresh proofs for renewed badges and for badges whose `use_from` was reached; removal updates for badges expired unrenewed;
 4. alert derivation (2.4), `CEvtBadgeAlert`;
 5. sync: store charges and ledger rows received after the `since` cursor (§3).
 
 Events to the app: `CEvtBadgeChanged`, `CEvtBadgeAlert`.
 
-API calls (user actions): get status; start purchase / get invoice; claim after store payment (the app passes store evidence to core); cancel (opens the store sheet — no bot op); pause / resume; switch shown badge / set start date; acknowledge / snooze alert; reminder and presentation toggles; redeem code.
+API calls (user actions):
+
+- get status
+- start purchase / get invoice
+- claim after store payment (the app passes store evidence to core)
+- cancel — opens the store sheet; no bot op
+- pause / resume
+- switch shown badge / set start date
+- acknowledge / snooze alert
+- reminder and presentation toggles
+- redeem code
 
 On `ASETimeout` core retries the identical signed envelope on the next trigger; never on a poll timer.
 
@@ -151,6 +173,31 @@ Issued credentials are not pausable (expiry is signed); re-issuance is. Pause su
 - On resume: issuance is resumed at the next claim.
 
 ## 3. Model
+
+### Ownership — two databases
+
+Bot tables (no private keys, no master keys, no UI state):
+
+- `orders` — `order_key` PK; `offer_id`; `provider`; `provider_ref`; receipt hash; timestamps. Order state is derived from the ledger + provider.
+- `charges`
+- `badge_ledger` — authoritative
+- `issuances` + cached credentials
+- webhook dedup
+
+Client tables:
+
+- `products`, `offers` — catalog cache
+- `payments`
+- `charges` — replica
+- `badge_ledger` — replica
+- `issuances` — replica
+- `badges` — keys, credential, UI state
+
+Rules:
+
+- The replicated tables (`badge_ledger`, `issuances`, `charges`) have the same schema and identical row content on both sides: bot-assigned row ids and refs. The account column is `order_key` on the bot and `badge_id` on the client — 1:1, one key per badge.
+- Synced via the `since` cursor; all ledger transitions (§ ledger) are executed by the bot only; the client stores received rows unchanged.
+- Not replicated: the client's `payments` row records the local act (evidence, invoice URL, status); the bot's `orders` row records the binding (offer, `provider_ref`, receipt hash); `badges` has no bot counterpart.
 
 ### `products` + `offers` — two-tier catalog
 
@@ -205,7 +252,7 @@ Prices:
 - `cancelled` — bot-confirmed renewal-off
 - `created_at`, `updated_at`
 
-One row per act: purchase, subscribe, upgrade, resubscribe, each crypto invoice, code redemption. Abandoned attempts remain as history. On settlement the bot runs `account` then `grant` (§ ledger). `paidThrough` = last ledger row; `badge_expiry` = last issuance.
+One row per act: purchase, subscribe, upgrade, resubscribe, each crypto invoice, code redemption. Abandoned attempts remain as history. On settlement the bot runs `advance` then `grant` (§ ledger). `paidThrough` = last ledger row; `badge_expiry` = last issuance.
 
 ### `charges` — provider-initiated billing events
 
@@ -219,7 +266,10 @@ One row per act: purchase, subscribe, upgrade, resubscribe, each crypto invoice,
 
 Rules:
 
-- Sources: Stripe invoices by subscription; Apple Get Transaction History by original transaction id; Google per-renewal order ids. The first charge of a subscription is also a row.
+- Sources — the first charge of a subscription is also a row:
+  - Stripe: invoices by subscription
+  - Apple: Get Transaction History by original transaction id
+  - Google: per-renewal order ids
 - Synced to the client via the `since` cursor.
 - For each settled charge the bot records a `grant` of the charge's period length: +1 monthly, +12 annual.
 - Charges are money facts referenced by grants, not ledger rows: a grant is not recorded for every charge (webhook replays are rejected by the unique key before any grant; charges from provider history for consumed, refunded, or re-bound periods are recorded without grants), and `charged_at` differs from the accounting time.
@@ -240,7 +290,7 @@ Rules:
 | O8 | transfer out | −balance | — |
 | O9 | correction (code abuse) | −balance | — |
 | O10 | issue a month | −1 | new credential |
-| O11 | lapse a month | −1 | — |
+| O11 | lapse elapsed months | −k | — |
 | O12 | repeat claim, same month | none | cached credential, no rows |
 | O13 | lifetime issuance (investor) | none — no ledger | new credential |
 | O14 | pause / resume (post-MVP) | 0 | — |
@@ -248,7 +298,7 @@ Rules:
 **Ledger state** — two values; every row contains the state after it; **the last row is the state**:
 
 - `months` — unused months.
-- `start` — the date the unused balance starts. Not changed by grants (while `months > 0`); advanced by one month per `consume`/`lapse`.
+- `start` — the date the unused balance starts. Not changed by grants (while `months > 0`); advanced by one month per `consume` and by the lapsed count per `lapse`.
 
 Coverage = `[start, addMonths months start)`. `paidThrough = addMonths months start` — read from the last row alone; not a `badges` column.
 
@@ -265,17 +315,20 @@ Coverage = `[start, addMonths months start)`. `paidThrough = addMonths months st
 
 Append protocol: lock the badge's ledger → read the last row → compute the next → insert. The client stores rows verbatim from responses (`since` cursor = last `entry_id` held) and can re-verify each row from its predecessor.
 
-**Transitions** — from the last row `(start, months)`; `account t` is run before every grant and debit:
+**Transitions** — from the last row `(start, months)`; `advance t` is run before every issue, grant, and debit:
 
 ```
-account t:
-  while months > 0 && addMonths 1 start <= t:
-    append (lapse, −1, months − 1, addMonths 1 start)                        -- O11
-  if months > 0 && start <= t:
-    append (consume, −1, months − 1, addMonths 1 start)                      -- O10
-    new issuance for [start, addMonths 1 start), expiry sundayAfter (addMonths 1 start)
-  else if period of last issuance contains t: cached credential              -- O12
-  else: no coverage
+advance t:            -- time bookkeeping only: one lapse row for the fully elapsed months
+  k = min months (fullMonthsBetween start t)
+      -- fullMonthsBetween start t: the largest m >= 0 with addMonths m start <= t
+  if k > 0: append (lapse, −k, months − k, addMonths k start)               -- O11, one row
+
+issue t:              -- run after advance t
+  requires months > 0 && start <= t && no issuance for [start, addMonths 1 start)
+  sign the credential, expiry sundayAfter (addMonths 1 start)
+  in one transaction: append (consume, −1, months − 1, addMonths 1 start)   -- O10
+                      + issuance row for [start, addMonths 1 start)
+  on signing failure: no rows; retried at the next claim
 
 grant t n src:                                    -- O1–O5; t = settlement time,
   months == 0 → append (grant src, +n, n, max start t)      -- provider period start for O2
@@ -301,8 +354,8 @@ resume t:      append (resume, 0, months, max start t)      -- O14; no row is wr
 
 1. Each row's `(months, start)` equals the transition applied to its predecessor — client-verifiable per row.
 2. `months ≥ 0`; the sum of `delta` equals `months`; `start` is non-decreasing.
-3. `consume` rows ↔ period issuances are 1:1 (`issuances.entry_id`).
-4. Re-running `account t` immediately appends nothing; the result is the cached credential or no-coverage.
+3. `consume` rows ↔ period issuances are 1:1 (`issuances.entry_id`) — written in one transaction, after the credential is signed.
+4. Re-running the `claim` op (§4) immediately appends nothing; the response is the cached credential or no-coverage.
 
 **Example** — buy 3 months Tue Mar 10, 2026; app off Apr 5 – May 20; claim May 20:
 
@@ -377,7 +430,7 @@ Every request is signed with the badge's order key; the verified signer key is t
 - `claim` (idempotent):
   - verify payment — Apple: offline JWS; Google: Publisher API; Stripe/BTCPay: webhook/API state (the request contains no evidence; the signer key identifies the order);
   - match the offer — stores: SKU ↔ store product id; non-store: amount/currency ↔ offer price;
-  - run `account(now)` (§3);
+  - run `advance(now)`; then: current month issued → cached credential (O12); `issue` precondition met → `issue(now)`; otherwise no coverage (§3);
   - respond with credential + status + charges and ledger rows after `since` + receipt for new settlements.
 - `status`: same response shape without issuance intent.
 - `pause` / `resume`: prepaid only (2.13).
@@ -432,14 +485,28 @@ Non-store payments at MVP are multi-month prepaid purchases: one flow (invoice �
   - the Cancel button opens the store management sheet; the engine sends `status` on return;
   - the client renders cancelled-active from local renewal state (StoreKit 2 `RenewalInfo.willAutoRenew`, Play Billing `Purchase.isAutoRenewing`);
   - the bot reads cancellation from the provider on every `claim`/`status` (App Store Server API `autoRenewStatus`, Play `subscriptionsv2`) and from store notifications.
-- Bot-side provider notifications, required: Stripe webhooks, BTCPay webhooks, App Store Server Notifications V2, Play RTDN (cancellations, grace/on-hold, refunds/voided purchases).
+- Bot-side provider notifications, required:
+  - Stripe webhooks
+  - BTCPay webhooks
+  - App Store Server Notifications V2
+  - Play RTDN
+  - covering: cancellations, grace/on-hold, refunds/voided purchases
   - On a notification the bot updates its records and re-reads provider state; credentials are never issued from a notification payload; nothing is pushed to the client.
-- Tables: `products`, `offers`, `payments`, `charges`, `badge_ledger`, `issuances`, `badges` (without `shown`, `use_from`, `paused_at`).
-- Engine per 2.9: claims, monthly re-issue, `account` recording, Monday presentation incl. removal updates, alert derivation.
+- Tables (§3 ownership):
+  - `products`, `offers`
+  - `payments`
+  - `charges`
+  - `badge_ledger`
+  - `issuances`
+  - `badges` — without `shown`, `use_from`, `paused_at`
+- Engine per 2.9: claims, monthly re-issue, `advance`/`issue` recording, Monday presentation incl. removal updates, alert derivation.
 - Alerts: the full 2.4 set (renewal approaching: store subscriptions only); opt-out toggle.
 - Receipts for every Stripe/crypto payment with the checkout save prompt; `transfer` op deferred — support executes recovery manually against a presented receipt.
 - Entry points: chat-list banner, Settings "Supporter perks" row, whats-new. Management screen without Paused and held-badges switching; `charges` recorded from the first release, history UI deferred.
-- New designs: management screen, method + duration selector, crypto invoice screen.
+- New designs:
+  - management screen
+  - method + duration selector
+  - crypto invoice screen
 - Multi-profile; incognito profiles never present a badge.
 
 ### Required in the first release (or earlier)
