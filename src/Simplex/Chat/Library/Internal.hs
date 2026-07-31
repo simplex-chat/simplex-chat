@@ -40,7 +40,7 @@ import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (foldl', mapAccumL, partition)
+import Data.List (find, foldl', mapAccumL, partition)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -2507,12 +2507,11 @@ sendGroupProfileUpdate user gInfo scope asGroup members
       recordKeyStatus gsr
     recordKeyStatus GroupSndResult {sentTo, pending, forwarded, failed} =
       withStore' $ \db -> do
-        setMembersKeyStatus db KSSent $ deliveredIds <> keyMemIds forwarded
-        setMembersKeyStatus db KSFailed $ keyMemIds failed
+        setMembersKeyStatus db KSSent $ deliveredIds <> [groupMemberId' m | (m, BMBinary) <- forwarded, memberNeedsKey m]
+        setMembersKeyStatus db KSFailed $ map groupMemberId' (filter memberNeedsKey failed)
         incMembersKeyAttempts db retriableIds
         forM_ finalErrs $ \(mId, e) -> setMemberKeyStatus db (KSError $ tshow e) mId
       where
-        keyMemIds = map groupMemberId' . filter memberNeedsKey
         (deliveredIds, retriableIds, finalErrs) = foldr addResult (foldr addResult ([], [], []) pending) sentTo
           where
             addResult :: (GroupMember, a, Either ChatError b) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)]) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)])
@@ -2534,7 +2533,7 @@ sendGroupProfileUpdate user gInfo scope asGroup members
 data GroupSndResult = GroupSndResult
   { sentTo :: [(GroupMember, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
     pending :: [(GroupMember, Either ChatError MessageId, Either ChatError ())],
-    forwarded :: [GroupMember],
+    forwarded :: [(GroupMember, BatchMode)],
     failed :: [GroupMember]
   }
 
@@ -2572,21 +2571,18 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    batchMode m
-      | useRelays' gInfo || m `supportsVersion` relayWebCapVersion = BMBinary
-      | otherwise = BMJson
     addMember members m acc@(toSend@(toSendBin, toSendJson), pending, forwarded, failed, !mIds, !dups) =
       case memberSendAction gInfo events members m of
         Just a
           | mId `S.member` mIds -> (toSend, pending, forwarded, failed, mIds, dups + 1)
           | otherwise -> case a of
               MSASend conn ->
-                let toSend' = case batchMode m of
+                let toSend' = case batchMode gInfo m of
                       BMBinary -> ((m, conn) : toSendBin, toSendJson)
                       BMJson -> (toSendBin, (m, conn) : toSendJson)
                  in (toSend', pending, forwarded, failed, mIds', dups)
               MSAPending -> (toSend, m : pending, forwarded, failed, mIds', dups)
-              MSAForwarded -> (toSend, pending, m : forwarded, failed, mIds', dups)
+              MSAForwarded mode -> (toSend, pending, (m, mode) : forwarded, failed, mIds', dups)
               MSAFail -> (toSend, pending, forwarded, m : failed, mIds', dups)
         Nothing -> acc
       where
@@ -2632,7 +2628,12 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     createPendingMsg db (groupMemberId, msgId) =
       createPendingGroupMessage db groupMemberId msgId $> Right ()
 
-data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded | MSAFail
+batchMode :: GroupInfo -> GroupMember -> BatchMode
+batchMode gInfo m
+  | useRelays' gInfo || m `supportsVersion` relayWebCapVersion = BMBinary
+  | otherwise = BMJson
+
+data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded BatchMode | MSAFail
 
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
 memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memberStatus}
@@ -2659,16 +2660,15 @@ memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memb
       GCPreMember -> forwardSupportedOrPending (invitedByGroupMemberId membership)
       GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
       where
-        forwardSupportedOrPending invitingMemberId_
-          | hasInvitingMember && all isForwardedGroupMsg events = Just MSAForwarded
-          | any isXGrpMsgForward events = Nothing
-          | otherwise = Just MSAPending
+        forwardSupportedOrPending invitingMemberId_ = case invitingMember_ of
+          Just forwarder | all isForwardedGroupMsg events -> Just (MSAForwarded (batchMode gInfo forwarder))
+          _
+            | any isXGrpMsgForward events -> Nothing
+            | otherwise -> Just MSAPending
           where
-            hasInvitingMember = case invitingMemberId_ of
-              Just invMemberId ->
-                -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
-                any (\m' -> groupMemberId' m' == invMemberId) members
-              Nothing -> False
+            invitingMember_ = invitingMemberId_ >>= \invMemberId ->
+              -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
+              find (\m' -> groupMemberId' m' == invMemberId) members
             isXGrpMsgForward event = case event of
               XGrpMsgForward {} -> True
               _ -> False
@@ -2693,7 +2693,7 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
       MSASend conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId
-      MSAForwarded -> pure ()
+      MSAForwarded _ -> pure ()
       MSAFail -> pure ()
 
 -- Send pre-encoded forwarded message preserving original signature

@@ -64,7 +64,7 @@ import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), Deliv
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (encodeBatchElement)
+import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -4838,8 +4838,8 @@ processChatCommand cxt nm = \case
                         Right _ -> GSSNew
                         Left e -> GSSError $ SndErrOther $ tshow e
                   forM_ ciIds $ \ciId -> createGroupSndStatus db ciId (groupMemberId' m) status
-                processForwarded :: DB.Connection -> GroupMember -> IO ()
-                processForwarded db GroupMember {groupMemberId} =
+                processForwarded :: DB.Connection -> (GroupMember, BatchMode) -> IO ()
+                processForwarded db (GroupMember {groupMemberId}, _) =
                   forM_ cis_ $ \ci_ ->
                     forM_ ci_ $ \ci -> createGroupSndStatus db (chatItemId' ci) groupMemberId GSSForwarded
                 processPending :: DB.Connection -> Map MessageId ChatItemId -> (GroupMember, Either ChatError MessageId, Either ChatError ()) -> IO ()
