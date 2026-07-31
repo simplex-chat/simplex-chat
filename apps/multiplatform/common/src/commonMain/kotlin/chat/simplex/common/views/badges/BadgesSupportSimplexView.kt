@@ -36,7 +36,7 @@ import chat.simplex.res.MR
 fun BadgesSupportSimplexView() {
   // TODO [badges] gate on user badge status (no badge → this view, active → "Manage your badge")
   ColumnWithScrollBar(
-    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 28.dp, bottom = 20.dp),
+    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     maxIntrinsicSize = true,
