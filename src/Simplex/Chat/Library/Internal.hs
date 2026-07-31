@@ -2474,13 +2474,12 @@ sendGroupSignedMessages user gInfo' scope asGroup members signedEvents = do
 
 sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
 sendGroupProfileUpdate user gInfo scope asGroup members
-  | shouldSendProfileUpdate = sendUpdate members True `catchAllErrors` eToView
-  | not (useRelays' gInfo) = sendUpdate keyMembers False `catchAllErrors` eToView
+  | shouldSendProfileUpdate = sendProfileUpdate `catchAllErrors` eToView
+  | not (useRelays' gInfo) = sendProfileAndKey (filter memberNeedsKey members) `catchAllErrors` eToView
   | otherwise = pure ()
   where
     User {userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
-    keyMembers = filter memberNeedsKey members
     memberNeedsKey m = m `supportsVersion` groupMemberKeyVersion && case userMemberKeyStatus m of
       KSAttempts n -> n < maxKeySendAttempts
       _ -> False
@@ -2494,14 +2493,18 @@ sendGroupProfileUpdate user gInfo scope asGroup members
             (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
             (Nothing, Just _) -> True
             _ -> False
-    sendUpdate recipients profileChanged = unless (null recipients) $ do
+    sendProfile_ members' = do
       let incognitoProfile = incognitoMembershipProfile gInfo
       profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-      gsr <- snd <$> sendGroupMessages_ user gInfo recipients False [XInfo profile (groupMemberKey gInfo)]
-      when profileChanged $ do
-        currentTs <- liftIO getCurrentTime
-        withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
+      snd <$> sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
+    sendProfileUpdate = unless (null members) $ do
+      gsr <- sendProfile_ members
+      currentTs <- liftIO getCurrentTime
+      withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
       unless (useRelays' gInfo) $ recordKeyStatus gsr
+    sendProfileAndKey members' = unless (null members') $ do
+      gsr <- sendProfile_ members'
+      recordKeyStatus gsr
     recordKeyStatus GroupSndResult {sentTo, pending, forwarded, failed} =
       withStore' $ \db -> do
         unless (null sentIds) $ setMembersKeyStatus db KSSent sentIds
