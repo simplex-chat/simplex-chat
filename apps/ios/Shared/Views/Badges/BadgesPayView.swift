@@ -100,11 +100,11 @@ struct BadgesPayView: View {
                     .scaledToFit()
                     .frame(width: 32, height: 32)
                     .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
-                    .padding(.top, 20)
+                    .padding(.top, 30)
                 Text(period.label)
                     .font(.title3)
                     .fontWeight(.bold)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 30)
             }
             .frame(maxWidth: .infinity)
             .background(Color(uiColor: .secondarySystemGroupedBackground))

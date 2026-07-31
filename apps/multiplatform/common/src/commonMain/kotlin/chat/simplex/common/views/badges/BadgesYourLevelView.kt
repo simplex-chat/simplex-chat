@@ -111,8 +111,10 @@ fun BadgesYourLevelView() {
       )
     }
 
+    Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
+
     Row(
-      Modifier.fillMaxWidth().padding(top = 8.dp),
+      Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       LevelCard(BadgeLevel.Supporter, selectedLevel, Modifier.weight(1f)) { selectedLevel = it }

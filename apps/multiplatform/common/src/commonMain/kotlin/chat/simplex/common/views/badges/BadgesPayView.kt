@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -70,8 +71,10 @@ fun BadgesPayView(level: BadgeLevel) {
       modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
     )
 
+    Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
+
     Row(
-      Modifier.fillMaxWidth().padding(top = 12.dp),
+      Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       PeriodCard(BadgePeriod.OneMonth, selectedPeriod, Modifier.weight(1f)) { selectedPeriod = it }
@@ -80,19 +83,24 @@ fun BadgesPayView(level: BadgeLevel) {
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
-    // Plain Text (not TextButtonBelowOnboardingButton) because the billing footer is informational,
-    // not an action — using TextButtonBelowOnboardingButton would force a Medium-weight bold look.
-    // 15.5dp top padding matches the visual gap the TextButtonBelowOnboardingButton produces on
-    // the other two badges views (7.5dp Modifier + 8dp TextButton chip inner padding).
+    // Replicates TextButtonBelowOnboardingButton's exact structure (TextButton chip + 7.5dp outer
+    // Modifier padding + 5dp Text vertical padding) so Pay's action-button-to-supporting-text
+    // spacing matches Support Simplex and Your Level to the pixel. onClick = {} + no fontWeight
+    // keeps it non-interactive-feeling and normal weight (not Medium/bold).
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, selectedPeriod)
-      Text(
-        stringResource(billingFooter(selectedPeriod)),
-        style = MaterialTheme.typography.body2,
-        color = MaterialTheme.colors.secondary,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(top = 15.5.dp)
-      )
+      TextButton(
+        onClick = {},
+        modifier = Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).clip(CircleShape)
+      ) {
+        Text(
+          stringResource(billingFooter(selectedPeriod)),
+          Modifier.padding(vertical = 5.dp),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center
+        )
+      }
     }
   }
 }
@@ -108,7 +116,7 @@ private fun PeriodCard(period: BadgePeriod, selectedPeriod: BadgePeriod, modifie
       .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f), shape)
       .border(2.dp, borderColor, shape)
       .clickable { onSelect(period) }
-      .padding(vertical = 20.dp, horizontal = 12.dp),
+      .padding(vertical = 30.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
