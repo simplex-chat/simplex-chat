@@ -125,7 +125,7 @@ All automation is in core; nothing is app-driven. Alternatives were an app-side 
 Core engine, triggered by chat start, foreground, network restore, profile switch, and its own timers (renewal/expiry/weekly Monday boundaries):
 
 1. resume/claim: unclaimed settled payments, subscription renewals after `renews_at`, monthly re-issue while the ledger balance is positive and the badge is not paused, unfinished crypto invoices;
-2. ledger recording: at each claim/re-issue, record elapsed unpaused months as `lapse` entries and the issued month as an `issue` entry (deduction is determined when recorded — §3);
+2. ledger recording: `account(now)` at each claim — `lapse` rows for elapsed unissued months, a `consume` row + issuance for the current month (§3);
 3. presentation: on/after Monday (UTC), broadcast profile updates — fresh proofs for renewed badges and arrived `use_from`, removal updates for badges that expired unrenewed (2.11);
 4. alert derivation per 2.4 and `CEvtBadgeAlert` emission;
 5. sync: store charges and ledger entries after the `since` cursor from each claim/status response (§3 ledger).
@@ -185,7 +185,7 @@ Tier 2 — **how you buy it**. `offers`: `offer_id` PK · `product_id` → produ
 
 `payment_id` PK · `user_id` · `badge_id` → badges · `offer_id` → offers (the exact variant bought) · `months`, `amount`, `currency` (copied from the offer at purchase — offers are append-only (§ catalog), the copies keep payment history self-contained) · `provider` (`apple|google|stripe|btc|xmr|code`) · `provider_ref` (Apple original transaction id / Google purchase token / Stripe intent ref / BTCPay invoice id / code hash) · `invoice_url` (Stripe link / BTCPay checkout link) · `evidence` (Apple JWS / Google token, kept to re-claim) · `status` (`new|invoiced|pending|settled|failed|expired`) · `renews_at` (subscriptions) · `cancelled` (bot-confirmed renewal-off) · timestamps
 
-One row per act: purchase, subscribe, upgrade, resubscribe, each crypto invoice, code redemption. Abandoned attempts stay as history. Settlement runs `credit` (§3 ledger), which appends the grant and moves `badges.paid_through`. The two dates are tracked separately from the months accounting: `paid_through` is written only by `credit`/`debit`, `badge_expiry` only by `account`'s issuance; both cache pure functions of the entry list (ledger property 4) — the balance yields no dates.
+One row per act: purchase, subscribe, upgrade, resubscribe, each crypto invoice, code redemption. Abandoned attempts stay as history. Settlement runs `account` then `grant` (§3 ledger). The two dates are tracked separately and each is one row read: `paidThrough` = `addMonths months start` of the last ledger row; `badge_expiry` = `expiry` of the last issuance row.
 
 ### `charges` — provider-initiated billing events
 
@@ -193,94 +193,93 @@ One row per act: purchase, subscribe, upgrade, resubscribe, each crypto invoice,
 
 Multi-currency by nature: stores bill in the storefront's local currency and report it in the evidence (StoreKit 2 JWS `price`/`currency`, Play `priceCurrencyCode`); rows store amounts as reported. Populated from bot status/claim responses via the `since` cursor (§3 ledger): the bot returns all later charges plus the latest credential. Canonical provider sources: Stripe invoices listed by subscription; Apple Get Transaction History by original transaction id; Google per-renewal order ids. The first charge of a subscription is also a row. Each settled charge posts a ledger grant of its period length in months — +1 for monthly, +12 for annual.
 
-### `badge_ledger` — specification
+Charges are not ledger rows, for the same reason payments are not: the ledger references money facts, it does not contain them. A charge does not always grant — webhook replays (deduped by the unique key, checked before any grant), charges discovered via provider history for periods already consumed, refunded, or owned by a previous order after re-bind — and a late-discovered charge is recorded with its provider timestamp while its grant appends at the ledger's end, now: the two timelines differ.
 
-The ledger is the ordered entry list; every other quantity is a pure function of it. The bot is the only writer; the client replica appends entries verbatim from `claim`/`status` responses (`since` cursor = last entry id held). Two `badges` columns — `paid_through`, `badge_expiry` — cache two of the functions below and must equal them under replay.
+### `badge_ledger` + `issuances`
 
-```haskell
-data LedgerEntry
-  = LGrant {from :: UTCTime, months :: Int, source :: GrantSource}
-  | LDebit {months :: Int, reason :: DebitReason}
-  | LIssue {period :: Period}
-  | LLapse {period :: Period}
+**Operations to support:**
 
-data Period = Period {start :: UTCTime, end :: UTCTime}     -- end = addMonths 1 start
-data GrantSource = GSPayment PaymentId | GSCharge ChargeId | GSGoodwill Text | GSTransferIn BadgeId
-data DebitReason = DRRefund | DRConversion | DRTransferOut BadgeId | DRCorrection
+| # | operation | months | credential |
+|---|---|---|---|
+| O1 | prepaid settlement (Stripe/BTCPay) | +N | — |
+| O2 | subscription charge settled | +1 monthly / +12 annual | — |
+| O3 | code redemption | +N | — |
+| O4 | goodwill grant | +N | — |
+| O5 | transfer in | +M | — |
+| O6 | refund / chargeback | −balance | issued credential stands |
+| O7 | upgrade conversion | −balance | — |
+| O8 | transfer out | −balance | — |
+| O9 | correction (code abuse) | −balance | — |
+| O10 | issue a month | −1 | new credential |
+| O11 | lapse a month | −1 | — |
+| O12 | repeat claim, same month | none | cached credential, no rows anywhere |
+| O13 | lifetime issuance (investor) | none — no ledger | new credential |
+| O14 | pause / resume (post-MVP) | 0 | — |
+
+**Ledger state** — two values; every row stores the state after it; **the last row is the state**:
+
+- `months` — unused months.
+- `start` — the date the unused balance starts. Grants do not change it (while `months > 0`); consumption (`consume`/`lapse`) advances it by one month.
+
+Coverage = `[start, addMonths months start)`. `paidThrough = addMonths months start` — read from the last row alone; not a `badges` column.
+
+**Row:** `entry_id` PK · `badge_id` · `op` (`grant(source) | debit(reason) | consume | lapse | resume`) · `delta` · `months` · `start` · ref (`payment_id` / `charge_id`) · `created_at`. Append protocol: lock the badge's ledger → read the last row → compute the next → insert. The client mirrors rows verbatim (`since` cursor = last `entry_id` held) and can re-verify each row from its predecessor.
+
+**Transitions** — from the last row `(start, months)`; **`account t` runs before every grant and debit** (otherwise a grant stacked behind stale unconsumed months would lapse together with them):
+
+```
+account t:
+  while months > 0 && addMonths 1 start <= t:
+    append (lapse, −1, months − 1, addMonths 1 start)                        -- O11
+  if months > 0 && start <= t:
+    append (consume, −1, months − 1, addMonths 1 start)                      -- O10
+    new issuance for [start, addMonths 1 start), expiry sundayAfter (addMonths 1 start)
+  else if period of last issuance contains t: cached credential              -- O12
+  else: no coverage
+
+grant t n src:                                    -- O1–O5; t = settlement time,
+  months == 0 → append (grant src, +n, n, max start t)      -- provider period start for O2
+  months > 0  → append (grant src, +n, months + n, start)
+
+debit reason:  append (debit reason, −months, 0, start)     -- O6–O9
+
+resume t:      append (resume, 0, months, max start t)      -- O14, post-MVP; pause writes no row
 ```
 
-DB row: `entry_id` PK · `badge_id` · tag (`grant|debit|issue|lapse`) · `months` · `from` · `period_start` · source/reason refs · `created_at`. Append-only; unique (`badge_id`, `period_start`) over issue/lapse.
+**Issuances** — separate table. Not every ledger row issues (`grant`, `debit`, `lapse`), and not every issuance writes a ledger row (lifetime O13; cached O12 writes nothing):
 
-Derived values:
+`issuance_id` PK · `badge_id` · `period_start`, `period_end` (NULL for lifetime) · `expiry` = `sundayAfter period_end` (NULL for lifetime) · `entry_id` → the `consume` row (NULL for lifetime) · `created_at`
 
-```haskell
-paidPeriods :: [LedgerEntry] -> [Period]
-paidPeriods = foldl apply []
-  where
-    apply ps LGrant {from, months} = ps <> monthlyPeriods from months
-    apply ps LDebit {months} = dropEnd months ps
-    apply ps _ = ps
+`badgeExpiry` = `expiry` of the last issuance — the credential's disclosed field. The current credential is stored in the badge row's credential columns; issuances are the history and the O12 dedup check.
 
-pendingPeriods es = drop (count isAccounting es) (paidPeriods es)   -- isAccounting: LIssue or LLapse
-balance = length . pendingPeriods                                    -- == sum of signed months
-paidThrough = fmap (.end) . lastMay . paidPeriods
-badgeExpiry es = lastMay [sundayAfter p.end | LIssue p <- es]        -- sundayAfter: next Monday 00:00 UTC
-```
+**Properties:**
 
-Operations — each computes the entries to append:
+1. Each row's `(months, start)` equals the transition applied to its predecessor — client-verifiable per row.
+2. `months ≥ 0`; `delta` sums to `months`; `start` is non-decreasing.
+3. `consume` rows ↔ period issuances are 1:1 (`issuances.entry_id`).
+4. Re-running `account t` immediately appends nothing and returns the cached credential or no-coverage.
 
-```haskell
-credit :: UTCTime -> Int -> GrantSource -> [LedgerEntry] -> LedgerEntry
-credit t n src es = LGrant {from = maybe t (max t) (paidThrough es), months = n, source = src}
-```
+**Example** — buy 3 months Tue Mar 10, 2026; app off Apr 5 – May 20; claim May 20:
 
-`t` = settlement time (prepaid, code, goodwill, transfer_in) or provider period start (subscription charge; `n` = 1 monthly, 12 annual). Storing `from` makes coverage concrete and intervals disjoint by construction: a top-up extends coverage (`from` = old `paidThrough`), a purchase after a gap starts at `t`, a subscription charge over prepaid leftover extends past the provider period — the leftover is consumed last.
+| # | op | delta | months | start | note |
+|---|---|---|---|---|---|
+| 1 | grant(payment) | +3 | 3 | Mar 10 | paidThrough = Jun 10 |
+| 2 | consume | −1 | 2 | Apr 10 | issuance: Mar 10–Apr 10, expiry Sun Apr 12 (Apr 10 is a Friday) |
+| 3 | lapse | −1 | 1 | May 10 | Apr 10–May 10 passed unissued; recorded May 20 |
+| 4 | consume | −1 | 0 | Jun 10 | issuance: May 10–Jun 10, expiry Sun Jun 14 (Jun 10 is a Wednesday) |
 
-```haskell
-data Accounting = Accounting {lapses :: [LedgerEntry], outcome :: Outcome}
-data Outcome = IssueNew Period | AlreadyIssued Period | NoCoverage
-
-account :: UTCTime -> [LedgerEntry] -> Accounting
-account now es = Accounting {lapses = LLapse <$> missed, outcome}
-  where
-    (missed, rest) = span (\p -> p.end <= now) (pendingPeriods es)
-    outcome
-      | Just p <- find (`contains` now) (issuedPeriods es) = AlreadyIssued p
-      | p : _ <- rest, p.start <= now = IssueNew p
-      | otherwise = NoCoverage
-```
-
-`account` runs first in every `claim`/`status`. `IssueNew p`: append lapses + `LIssue p`, sign the credential with expiry `sundayAfter p.end`, set `badges.badge_expiry`. `AlreadyIssued`: append lapses, return the cached credential — the idempotency path. `NoCoverage`: append lapses only. A period containing `now` can never be lapsed (lapse requires `p.end <= now`), so `AlreadyIssued` always refers to a signed credential.
-
-```haskell
-debit :: UTCTime -> DebitReason -> [LedgerEntry] -> [LedgerEntry]
-debit now reason es = acct <> [LDebit {months = balance (es <> acct), reason}]
-  where acct = appendedEntries (account now es)
-```
-
-Refund/chargeback, upgrade conversion, transfer_out: account first, then remove the entire remaining balance. Post-state: `balance = 0`; `paidThrough` = end of the last accounted period — the month in progress stands, as does its credential (irrevocable).
-
-Pause (post-MVP): two further constructors (`LPause`, `LResume`); `paidPeriods` shifts periods after the pause point by the pause duration; no months entries.
-
-Properties (test suite):
-
-1. `balance es == sum signedMonths` (grant `+n`, debit `−n`, issue/lapse `−1`), and `balance es >= 0`.
-2. `paidPeriods es` is strictly ordered and disjoint — by the `max` in `credit`.
-3. After appending `account now` entries: no pending period ends ≤ `now`; a second `account now` appends nothing and returns `AlreadyIssued` or `NoCoverage`.
-4. Replay audit: `badges.paid_through == paidThrough entries`, `badges.badge_expiry == badgeExpiry entries`.
-
-**Example.** `credit(3, Tue Mar 10 2026)` → `LGrant {from = Mar 10, months = 3}`; `paidPeriods` = Mar 10–Apr 10, Apr 10–May 10, May 10–Jun 10; `paidThrough` = Jun 10. Same call, `account(Mar 10)` → `IssueNew P₁`: credential expiry Sun **Apr 12** (Apr 10 is a Friday); balance 2. App off Apr 5 – May 20. `account(May 20)` → lapses `[P₂]`, `IssueNew P₃`: expiry Sun **Jun 14** (Jun 10 is a Wednesday); balance 0. ~Jun 7: prepaid-ending alert (`paid_through` − 3d). Jun 10: sender-side perks stop. Sun Jun 14: credential expires. Mon Jun 15: removal update. `paidThrough` never moved after the credit. A top-up `credit(3, Jun 5)` would produce `LGrant {from = Jun 10, months = 3}` — `max paidThrough t` — so `paidThrough` = Sep 10, periods continuing Jun 10–Jul 10, …
+`paidThrough` after every row = Jun 10 — constant; the date told to the user held. ~Jun 7: prepaid-ending alert. Jun 10: sender-side perks stop. Sun Jun 14: credential expires. Mon Jun 15: removal update. Top-up +3 on Jun 5: `months = 0`, so `start' = max(Jun 10, Jun 5) = Jun 10` → row (grant, +3, 3, Jun 10), `paidThrough` = Sep 10.
 
 **Adjustment catalog** (the cases a paid service hits; all become rows, not schema changes):
 
 | Case | Entries |
 |---|---|
-| refund / chargeback (Apple refunds users directly — `REFUND` notification; Google voided purchases; Stripe disputes) | `debit DRRefund`; issued credentials stand to expiry (BBS, irrevocable) — accepted overhang |
-| goodwill / outage compensation (issuance failed on the bot, badge visibly lapsed) | `credit n GSGoodwill` with reason text |
-| upgrade conversion (2.10) | `debit DRConversion` on the supporter badge; money-side discount on the legend invoice |
-| overpaid / duplicate crypto invoice (BTCPay marks these) | `credit n GSGoodwill` or refund per support resolution |
-| balance transfer after profile loss (new order key; support-verified) | `debit DRTransferOut` on the old badge / `credit m GSTransferIn` on the new |
-| leaked/abused code batch | `debit DRCorrection` on affected badges |
+| refund / chargeback (Apple refunds users directly — `REFUND` notification; Google voided purchases; Stripe disputes) | `debit(refund)`; issued credentials stand to expiry (BBS, irrevocable) — accepted overhang |
+| goodwill / outage compensation (issuance failed on the bot, badge visibly lapsed) | `grant(goodwill) +N` with reason text |
+| upgrade conversion (2.10) | `debit(conversion)` on the supporter badge; money-side discount on the legend invoice |
+| overpaid / duplicate crypto invoice (BTCPay marks these) | `grant(goodwill) +N` or refund per support resolution |
+| balance transfer after profile loss (new order key; support-verified) | `debit(transfer_out)` on the old badge / `grant(transfer_in) +M` on the new |
+| leaked/abused code batch | `debit(correction)` on affected badges |
 
 ### Recovery and balance transfer (no-backup loss)
 
@@ -295,10 +294,10 @@ Normal path: `order_priv_key` and `master_key` are in the profile backup — res
 
 ### `badges` — one row per order
 
-`badge_id` PK · `user_id` · `order_key` (unique — the identity), `order_priv_key`, `master_key` · `badge_type` · `product_id` · `payment_id` (current entitling payment) · `status` (`acquiring|issued|superseded|failed`) · `paid_through` (the user-facing date — credit-event-driven, § ledger) · credential columns (`key_idx`, `signature`, `badge_expiry` — `BadgeRow` conventions; investor: `badge_expiry` NULL = lifetime; the two dates are deliberately separate columns) · `shown` (bool) · `use_from` (presentation start — 2.5) · `paused_at` (2.13) · `alert_acked_episode`, `alert_snooze_until` (2.4) · timestamps
+`badge_id` PK · `user_id` · `order_key` (unique — the identity), `order_priv_key`, `master_key` · `badge_type` · `product_id` · `payment_id` (current entitling payment) · `status` (`acquiring|issued|superseded|failed`) · credential columns (`key_idx`, `signature`, `badge_expiry` — `BadgeRow` conventions; investor: `badge_expiry` NULL = lifetime) · `shown` (bool) · `use_from` (presentation start — 2.5) · `paused_at` (2.13) · `alert_acked_episode`, `alert_snooze_until` (2.4) · timestamps. `paid_through` is not a column — it is the last ledger row (§ ledger).
 
 - Manual acts create rows; **subscription renewal and prepaid monthly re-issue update the credential in place**, appending `charges` and ledger entries. Dispute history lives in payments + charges + ledger, not in old credentials.
-- Expiry/active *status* is never stored — derived at load from the stored dates (existing `mkBadgeStatus`). The current alert is likewise derived, never stored (2.4). Remaining months are the ledger balance; the dates themselves are the two stored columns (`paid_through`, `badge_expiry`), not ledger derivations.
+- Expiry/active *status* is never stored — derived at load (existing `mkBadgeStatus`). The current alert is likewise derived, never stored (2.4). Remaining months and `paidThrough`: last ledger row; `badge_expiry`: credential columns / last issuance.
 - Get-or-create current badge is concurrency-safe: per-user in-process lock (controller `TMap`, as calls) + single store transaction + partial unique index as backstop: one live (`acquiring|issued`) row per (`user_id`, slot), slot = investor vs paid.
 - `shown`: at most one per user (partial unique index); presentation waits for `use_from`; switching updates the `contact_profiles` presentation columns via `setUserBadge`.
 
