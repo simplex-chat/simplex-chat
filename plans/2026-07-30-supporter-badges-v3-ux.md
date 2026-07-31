@@ -37,7 +37,11 @@ Store builds display store-fetched localized prices; catalog prices apply to Str
 - Store builds: no method UI. One-time 1 month; monthly/annual subscriptions.
 - Non-store builds: method selector (Card / Bitcoin / Monero), all multi-month prepaid; no card subscriptions (§6.11). Plan screen copy: "payments don't renew — you choose how many months to pay for".
 - Durations 1 / 3 / 12 months; prices 1× / 2× / 6× monthly (§6.12). Duration selector — new design.
-- Crypto payment screen (new design): amount, one-off address, QR, copy, open-in-wallet, countdown (BTCPay fixes the fiat rate at invoice creation; the invoice expires in ~15–60 min). States: waiting → processing (transaction seen, unconfirmed) → settled; expired → "Invoice expired" + new invoice (new payment row). Fiat-first display. Partial payment: the BTCPay marked state is shown; the user is directed to support.
+- Crypto payment screen (new design):
+  - amount, one-off address, QR, copy, open-in-wallet, countdown (BTCPay fixes the fiat rate at invoice creation; the invoice expires in ~15–60 min);
+  - states: waiting → processing (transaction seen, unconfirmed) → settled; expired → "Invoice expired" + new invoice (new payment row);
+  - fiat-first display;
+  - partial payment: the BTCPay marked state is shown; the user is directed to support.
 - After settlement the claim response contains a receipt code (§3 recovery); one-time save prompt at checkout ("keep your receipt — it recovers unused months if you lose this device"); receipts are shown in payment history (2.6).
 - Stripe: payment link opened in the system browser; "Waiting for payment…" + open-link-again; the link is stored in the payment row.
 
@@ -150,31 +154,75 @@ Issued credentials are not pausable (expiry is signed); re-issuance is. Pause su
 
 ### `products` + `offers` — two-tier catalog
 
-Tier 1 — `products`: `product_id` PK · `product_type` (`badge`) · `badge_type` (`supporter|legend|investor`) · `active`. All builds use it for product structure; display names and localization are app resources.
+Tier 1 — `products`. All builds use it for product structure; display names and localization are app resources.
 
-Tier 2 — `offers`: `offer_id` PK · `product_id` → products · `plan` (`one_time|monthly|annual`) · `months` (1/3/12 for one-time; NULL for subscriptions) · `apple_product_id`, `google_product_id` (store offers) · `price`, `currency` (non-store offers) · `state` (`active|deprecated|disabled`)
+- `product_id` PK
+- `product_type` — `badge`
+- `badge_type` — `supporter|legend|investor`
+- `active`
 
-- Offers are append-only: repricing = new offer row + deprecation of the old. Lifecycle: `active` (rendered + accepted) → `deprecated` (hidden; accepted by `invoice`; window length is operator policy) → `disabled` (`invoice` rejects with a refresh-catalog error). State is checked at invoice creation only; the amount of an existing invoice does not change; `claim` on a settled payment is always honored. For store offers the state controls display only; their sale lifecycle is managed in the store consoles.
+Tier 2 — `offers`:
+
+- `offer_id` PK
+- `product_id` → products
+- `plan` — `one_time|monthly|annual`
+- `months` — 1/3/12 for one-time; NULL for subscriptions
+- `apple_product_id`, `google_product_id` — store offers
+- `price`, `currency` — non-store offers
+- `state` — `active|deprecated|disabled`
+
+Rules:
+
+- Offers are append-only: repricing = new offer row + deprecation of the old.
+- Lifecycle: `active` (rendered + accepted) → `deprecated` (hidden; accepted by `invoice`; window length is operator policy) → `disabled` (`invoice` rejects with a refresh-catalog error).
+- State is checked at invoice creation only; the amount of an existing invoice does not change; `claim` on a settled payment is always honored.
+- For store offers the state controls display only; their sale lifecycle is managed in the store consoles.
 - `catalog` response: `active` + `deprecated` offers with state; `disabled` omitted. The client renders `active`, retains `deprecated`, may delete offers absent from the response unless referenced by a payment row.
 - The duration selector (2.1) is built from active one-time offers; discounts are per-duration prices.
 - Store one-time is 1 month only (§6.12). Seeded from app config; server-authoritative on the bot; one catalog version covers both tiers.
 - Forward compatibility: entries with unknown `product_type`/`badge_type` are stored, not rendered, no error. New product types require an app release; new offers of known products do not.
 
-Prices: the amount at invoice creation is authoritative — BTCPay fixes the fiat amount, the Stripe page shows the charge, the final amount is confirmed at checkout. Display prices: the unsigned `catalog` op on purchase-screen open (non-store builds; non-blocking — the screen is rendered from the stored catalog and updated from the response), plus a catalog version field in `claim`/`status` responses. The catalog shipped with the app is the offline fallback; store builds read prices from StoreKit/Play Billing. Repricing applies to future purchases only.
+Prices:
+
+- The amount at invoice creation is authoritative: BTCPay fixes the fiat amount, the Stripe page shows the charge, the final amount is confirmed at checkout.
+- Display prices: the unsigned `catalog` op on purchase-screen open (non-store builds; non-blocking — the screen is rendered from the stored catalog and updated from the response), plus a catalog version field in `claim`/`status` responses.
+- The catalog shipped with the app is the offline fallback; store builds read prices from StoreKit/Play Billing.
+- Repricing applies to future purchases only.
 
 ### `payments` — user-initiated acts
 
-`payment_id` PK · `user_id` · `badge_id` → badges · `offer_id` → offers · `months`, `amount`, `currency` (copied from the offer at purchase) · `provider` (`apple|google|stripe|btc|xmr|code`) · `provider_ref` (Apple original transaction id / Google purchase token / Stripe intent ref / BTCPay invoice id / code hash) · `invoice_url` · `evidence` (Apple JWS / Google token, stored for repeat claims) · `status` (`new|invoiced|pending|settled|failed|expired`) · `renews_at` (subscriptions) · `cancelled` (bot-confirmed renewal-off) · timestamps
+- `payment_id` PK
+- `user_id`
+- `badge_id` → badges
+- `offer_id` → offers
+- `months`, `amount`, `currency` — copied from the offer at purchase
+- `provider` — `apple|google|stripe|btc|xmr|code`
+- `provider_ref` — Apple original transaction id / Google purchase token / Stripe intent ref / BTCPay invoice id / code hash
+- `invoice_url`
+- `evidence` — Apple JWS / Google token, stored for repeat claims
+- `status` — `new|invoiced|pending|settled|failed|expired`
+- `renews_at` — subscriptions
+- `cancelled` — bot-confirmed renewal-off
+- `created_at`, `updated_at`
 
 One row per act: purchase, subscribe, upgrade, resubscribe, each crypto invoice, code redemption. Abandoned attempts remain as history. On settlement the bot runs `account` then `grant` (§ ledger). `paidThrough` = last ledger row; `badge_expiry` = last issuance.
 
 ### `charges` — provider-initiated billing events
 
-`charge_id` PK · `payment_id` → payments · `provider_charge_ref` (Stripe invoice id / Apple transaction id / Google order id) · `period_start`, `period_end` · `amount`, `currency` (as reported by the provider) · `charged_at` · unique (`payment_id`, `provider_charge_ref`)
+- `charge_id` PK
+- `payment_id` → payments
+- `provider_charge_ref` — Stripe invoice id / Apple transaction id / Google order id
+- `period_start`, `period_end`
+- `amount`, `currency` — as reported by the provider
+- `charged_at`
+- unique (`payment_id`, `provider_charge_ref`)
 
-Sources: Stripe invoices by subscription; Apple Get Transaction History by original transaction id; Google per-renewal order ids. The first charge of a subscription is also a row. Synced to the client via the `since` cursor. For each settled charge the bot records a `grant` of the charge's period length: +1 monthly, +12 annual.
+Rules:
 
-Charges are money facts referenced by grants, not ledger rows: a grant is not recorded for every charge (webhook replays are rejected by the unique key before any grant; charges from provider history for consumed, refunded, or re-bound periods are recorded without grants), and `charged_at` differs from the accounting time.
+- Sources: Stripe invoices by subscription; Apple Get Transaction History by original transaction id; Google per-renewal order ids. The first charge of a subscription is also a row.
+- Synced to the client via the `since` cursor.
+- For each settled charge the bot records a `grant` of the charge's period length: +1 monthly, +12 annual.
+- Charges are money facts referenced by grants, not ledger rows: a grant is not recorded for every charge (webhook replays are rejected by the unique key before any grant; charges from provider history for consumed, refunded, or re-bound periods are recorded without grants), and `charged_at` differs from the accounting time.
 
 ### `badge_ledger` + `issuances`
 
@@ -204,7 +252,18 @@ Charges are money facts referenced by grants, not ledger rows: a grant is not re
 
 Coverage = `[start, addMonths months start)`. `paidThrough = addMonths months start` — read from the last row alone; not a `badges` column.
 
-**Row:** `entry_id` PK · `badge_id` · `op` (`grant(source) | debit(reason) | consume | lapse | resume`) · `delta` · `months` · `start` · ref (`payment_id` / `charge_id`) · `created_at`. Append protocol: lock the badge's ledger → read the last row → compute the next → insert. The client stores rows verbatim from responses (`since` cursor = last `entry_id` held) and can re-verify each row from its predecessor.
+**Row:**
+
+- `entry_id` PK
+- `badge_id`
+- `op` — `grant(source) | debit(reason) | consume | lapse | resume`
+- `delta` — signed months change
+- `months` — state: unused months after this row
+- `start` — state: balance start after this row
+- ref — `payment_id` / `charge_id` (grants)
+- `created_at`
+
+Append protocol: lock the badge's ledger → read the last row → compute the next → insert. The client stores rows verbatim from responses (`since` cursor = last `entry_id` held) and can re-verify each row from its predecessor.
 
 **Transitions** — from the last row `(start, months)`; `account t` is run before every grant and debit:
 
@@ -229,7 +288,12 @@ resume t:      append (resume, 0, months, max start t)      -- O14; no row is wr
 
 **Issuances** — separate table; no credential is issued for `grant`/`debit`/`lapse` rows, and no ledger rows are written for lifetime (O13) and cached (O12) issuance events:
 
-`issuance_id` PK · `badge_id` · `period_start`, `period_end` (NULL for lifetime) · `expiry` = `sundayAfter period_end` (NULL for lifetime) · `entry_id` → the `consume` row (NULL for lifetime) · `created_at`
+- `issuance_id` PK
+- `badge_id`
+- `period_start`, `period_end` — NULL for lifetime
+- `expiry` — `sundayAfter period_end`; NULL for lifetime
+- `entry_id` → the `consume` row; NULL for lifetime
+- `created_at`
 
 `badgeExpiry` = `expiry` of the last issuance — the credential's disclosed field. The current credential is stored in the badge row's credential columns; the issuance rows are the history; the O12 check reads the last issuance's period.
 
@@ -273,7 +337,20 @@ resume t:      append (resume, 0, months, max start t)      -- O14; no row is wr
 
 ### `badges` — one row per order
 
-`badge_id` PK · `user_id` · `order_key` (unique — the identity), `order_priv_key`, `master_key` · `badge_type` · `product_id` · `payment_id` (current entitling payment) · `status` (`acquiring|issued|superseded|failed`) · credential columns (`key_idx`, `signature`, `badge_expiry` — `BadgeRow` conventions; investor: `badge_expiry` NULL) · `shown` (bool) · `use_from` (2.5) · `paused_at` (2.13) · `alert_acked_episode`, `alert_snooze_until` (2.4) · timestamps
+- `badge_id` PK
+- `user_id`
+- `order_key` — unique; the order identity
+- `order_priv_key`, `master_key`
+- `badge_type`
+- `product_id` → products
+- `payment_id` → payments — current entitling payment
+- `status` — `acquiring|issued|superseded|failed`
+- credential columns — `key_idx`, `signature`, `badge_expiry` (`BadgeRow` conventions; investor: `badge_expiry` NULL)
+- `shown` — bool
+- `use_from` — presentation start (2.5)
+- `paused_at` (2.13)
+- `alert_acked_episode`, `alert_snooze_until` (2.4)
+- `created_at`, `updated_at`
 
 - A row is created per manual act (purchase, upgrade, resubscribe, redeem); on subscription renewal and prepaid re-issue the credential is updated in place, with charge and ledger rows added.
 - Status is derived at load (`mkBadgeStatus`); the current alert is derived (2.4). Months and `paidThrough`: last ledger row. `badge_expiry`: credential columns / last issuance.
@@ -297,7 +374,11 @@ Every request is signed with the badge's order key; the verified signer key is t
 
 - `catalog`: the only unsigned op — products, prices, discount tiers; requested on purchase intent.
 - `invoice` (stripe/btc/xmr): payment link or address for an `active`/`deprecated` offer; `disabled` → refresh-catalog error. Idempotent: an unsettled invoice is returned again.
-- `claim`: verify payment (Apple: offline JWS; Google: Publisher API; Stripe/BTCPay: webhook/API state — the request contains no evidence, the signer key identifies the order); match the offer (stores: SKU ↔ store product id; non-store: amount/currency ↔ offer price); run `account(now)`; respond with credential + status + charges and ledger rows after `since` + receipt for new settlements. Idempotent.
+- `claim` (idempotent):
+  - verify payment — Apple: offline JWS; Google: Publisher API; Stripe/BTCPay: webhook/API state (the request contains no evidence; the signer key identifies the order);
+  - match the offer — stores: SKU ↔ store product id; non-store: amount/currency ↔ offer price;
+  - run `account(now)` (§3);
+  - respond with credential + status + charges and ledger rows after `since` + receipt for new settlements.
 - `status`: same response shape without issuance intent.
 - `pause` / `resume`: prepaid only (2.13).
 - `redeem`: code → badge type + credential + granted months.
@@ -347,8 +428,12 @@ Non-store payments at MVP are multi-month prepaid purchases: one flow (invoice �
 
 - Tiers: supporter + legend. Store: monthly and annual subscriptions + one-time 1 month. Stripe/BTC/XMR: one-time 1/3/12 months (§6.12).
 - Ops: `catalog` | `invoice` | `claim` | `status`. Receipts in claim responses; catalog version field in `claim`/`status` responses.
-- Store cancellation: the Cancel button opens the store management sheet; the engine sends `status` on return; the client renders cancelled-active from local renewal state (StoreKit 2 `RenewalInfo.willAutoRenew`, Play Billing `Purchase.isAutoRenewing`); the bot reads cancellation from the provider on every `claim`/`status` (App Store Server API `autoRenewStatus`, Play `subscriptionsv2`) and from store notifications.
-- Bot-side provider notifications, required: Stripe webhooks, BTCPay webhooks, App Store Server Notifications V2, Play RTDN (cancellations, grace/on-hold, refunds/voided purchases). On a notification the bot updates its records and re-reads provider state; credentials are never issued from a notification payload; nothing is pushed to the client.
+- Store cancellation:
+  - the Cancel button opens the store management sheet; the engine sends `status` on return;
+  - the client renders cancelled-active from local renewal state (StoreKit 2 `RenewalInfo.willAutoRenew`, Play Billing `Purchase.isAutoRenewing`);
+  - the bot reads cancellation from the provider on every `claim`/`status` (App Store Server API `autoRenewStatus`, Play `subscriptionsv2`) and from store notifications.
+- Bot-side provider notifications, required: Stripe webhooks, BTCPay webhooks, App Store Server Notifications V2, Play RTDN (cancellations, grace/on-hold, refunds/voided purchases).
+  - On a notification the bot updates its records and re-reads provider state; credentials are never issued from a notification payload; nothing is pushed to the client.
 - Tables: `products`, `offers`, `payments`, `charges`, `badge_ledger`, `issuances`, `badges` (without `shown`, `use_from`, `paused_at`).
 - Engine per 2.9: claims, monthly re-issue, `account` recording, Monday presentation incl. removal updates, alert derivation.
 - Alerts: the full 2.4 set (renewal approaching: store subscriptions only); opt-out toggle.
