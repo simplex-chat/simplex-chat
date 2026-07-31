@@ -104,7 +104,9 @@ fun SettingsLayout(
     SectionDividerSpaced()
 
     SectionView {
-      SectionItemView(click = showSettingsModal { BadgesSupportSimplexView() }) {
+      // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
+      // a gray top bar / back button that badges views don't want (they have their own inline titles).
+      SectionItemView(click = { ModalManager.start.showModal { BadgesSupportSimplexView() } }) {
         Image(painterResource(MR.images.badge_supporter), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
         TextIconSpaced()
         Text(stringResource(MR.strings.supporter_perks))
