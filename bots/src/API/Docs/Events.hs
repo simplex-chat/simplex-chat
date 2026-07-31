@@ -133,7 +133,6 @@ chatEventsDocsData =
         ("CEvtContactConnecting", "Contact confirmed connection.\n\nSent when contact started connecting via bot's 1-time invitation link or when bot connects to another SimpleX address."), -- CONF
         ("CEvtBusinessLinkConnecting", "Contact confirmed connection.\n\nSent when bot connects to another business address."), -- CONF
         ("CEvtJoinedGroupMemberConnecting", "Group member is announced to the group and will be connecting to bot."), -- MSG
-        ("CEvtSentGroupInvitation", "Sent when another user joins group via bot's link."), -- INV
         ("CEvtGroupLinkConnecting", "Sent when bot joins group via another user link.") -- CONF
       ],
       []

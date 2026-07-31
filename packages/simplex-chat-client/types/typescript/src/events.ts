@@ -46,7 +46,6 @@ export type ChatEvent =
   | CEvt.ContactConnecting
   | CEvt.BusinessLinkConnecting
   | CEvt.JoinedGroupMemberConnecting
-  | CEvt.SentGroupInvitation
   | CEvt.GroupLinkConnecting
   | CEvt.HostConnected
   | CEvt.HostDisconnected
@@ -101,7 +100,6 @@ export namespace CEvt {
     | "contactConnecting"
     | "businessLinkConnecting"
     | "joinedGroupMemberConnecting"
-    | "sentGroupInvitation"
     | "groupLinkConnecting"
     | "hostConnected"
     | "hostDisconnected"
@@ -431,14 +429,6 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     hostMember: T.GroupMember
-    member: T.GroupMember
-  }
-
-  export interface SentGroupInvitation extends Interface {
-    type: "sentGroupInvitation"
-    user: T.User
-    groupInfo: T.GroupInfo
-    contact: T.Contact
     member: T.GroupMember
   }
 

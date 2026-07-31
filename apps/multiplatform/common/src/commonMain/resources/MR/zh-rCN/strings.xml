@@ -2889,7 +2889,7 @@
     <string name="get_simplex_name_beta">获得 SimpleX 名称 (测试)</string>
     <string name="message_signatures_are_not_required">不要求消息签名。</string>
     <string name="message_signatures_are_required">要求消息签名。</string>
-    <string name="register_test_name">注册测试名</string>
+    <string name="register_test_name">如何注册测试名</string>
     <string name="remove_name">删除名称</string>
     <string name="require_message_signatures">要求消息签名。</string>
     <string name="save_simplex_name_question">保存 SimpleX 名称?</string>
@@ -2913,8 +2913,8 @@
     <string name="v7_0_channels_previews">创建 web 预览。</string>
     <string name="v7_0_channels_wider_messages">更易阅读。</string>
     <string name="v7_0_channels_relays">管理你的中继。</string>
-    <string name="v7_0_simplex_names_descr">你的频道或企业的名称。</string>
-    <string name="v7_0_simplex_names">SimpleX 名称 (测试)</string>
+    <string name="v7_0_simplex_names_descr">你的频道或企业的公开名称。</string>
+    <string name="v7_0_simplex_names">SimpleX 公开名称 (测试)</string>
     <string name="info_row_file_servers">文件服务器</string>
     <string name="share_text_file_servers">文件服务器：%s</string>
 </resources>

@@ -61,7 +61,6 @@ This file is generated automatically.
 - [ContactConnecting](#contactconnecting)
 - [BusinessLinkConnecting](#businesslinkconnecting)
 - [JoinedGroupMemberConnecting](#joinedgroupmemberconnecting)
-- [SentGroupInvitation](#sentgroupinvitation)
 - [GroupLinkConnecting](#grouplinkconnecting)
 
 [Network connection events](#network-connection-events)
@@ -700,20 +699,6 @@ Group member is announced to the group and will be connecting to bot.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - hostMember: [GroupMember](./TYPES.md#groupmember)
-- member: [GroupMember](./TYPES.md#groupmember)
-
----
-
-
-### SentGroupInvitation
-
-Sent when another user joins group via bot's link.
-
-**Record type**:
-- type: "sentGroupInvitation"
-- user: [User](./TYPES.md#user)
-- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-- contact: [Contact](./TYPES.md#contact)
 - member: [GroupMember](./TYPES.md#groupmember)
 
 ---

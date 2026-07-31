@@ -1693,8 +1693,8 @@ processChatCommand cxt nm = \case
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
             lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
               Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
-              Just (agentV, _) -> do
-                let chatV = agentToChatVersion agentV
+              Just _ -> do
+                let chatV = initialChatVersion
                 subMode <- chatReadVar subscriptionMode
                 connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
                 conn@Connection {connId = testCId} <- withFastStore $ \db ->
@@ -3319,7 +3319,7 @@ processChatCommand cxt nm = \case
     unless (groupFeatureUserAllowed SGFDirectMessages g) $ throwCmdError "direct messages not allowed"
     case memberConn m of
       Just mConn@Connection {peerChatVRange} -> do
-        unless (maxVersion peerChatVRange >= groupDirectInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
+        unless (maxVersion peerChatVRange >= initialChatVersion) $ throwChatError CEPeerChatVRangeIncompatible
         when (isJust $ memberContactId m) $ throwCmdError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
         -- TODO PQ should negotitate contact connection with PQSupportOn?
@@ -3763,15 +3763,15 @@ processChatCommand cxt nm = \case
         lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
           Nothing -> throwChatError CEInvalidConnReq
           -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
-          Just (agentV, pqSup') -> do
-            let chatV = agentToChatVersion agentV
+          Just (_, pqSup') -> do
+            let chatV = initialChatVersion
             withFastStore' (\db -> getConnectionEntityByConnReq db cxt user cReqs) >>= \case
               Nothing -> joinNewConn chatV
               Just (RcvDirectMsgConnection conn@Connection {connStatus, contactConnInitiated, customUserProfileId} _ct_)
                 | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV -- own connection link
                 | connStatus == ConnPrepared -> do -- retrying join after error
                     localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
-                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile) chatV
+                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile)
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
               joinNewConn chatV = do
@@ -3780,10 +3780,10 @@ processChatCommand cxt nm = \case
                 connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
-                joinPreparedConn conn incognitoProfile chatV
-              joinPreparedConn conn incognitoProfile chatV = do
+                joinPreparedConn conn incognitoProfile
+              joinPreparedConn conn incognitoProfile = do
                 profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user incognitoProfile Nothing True
-                dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+                dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
                 sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3925,14 +3925,14 @@ processChatCommand cxt nm = \case
       -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
       lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
-        Just (agentV, _) -> do
-          let chatV = agentToChatVersion agentV
+        Just _ -> do
+          let chatV = initialChatVersion
           connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
           pure (connId, chatV)
     mkXContactId :: Maybe XContactId -> CM XContactId
     mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
     joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfo) -> Maybe MemberId -> PQSupport -> CM Connection
-    joinContact user conn@Connection {connChatVersion = chatV} cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
+    joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
       -- gInfo_ is Maybe (Maybe GroupInfo), where Just Nothing means "some unknown group", e.g. when joining via link without profile
       profileToSend <-
         presentUserBadge user incognitoProfile $ case gInfo_ of
@@ -3942,7 +3942,7 @@ processChatCommand cxt nm = \case
         Just (Just gInfo) | useRelays' gInfo -> case relayMemberId_ of
           Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
           Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
-        _ -> encodeConnInfoPQ pqSup chatV $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
+        _ -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined
@@ -4253,8 +4253,8 @@ processChatCommand cxt nm = \case
           (_, _, cReq) <- getShortLinkConnReq nm user address
           lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
-            Just (agentV, _) -> do
-              let chatV = agentToChatVersion agentV
+            Just _ -> do
+              let chatV = initialChatVersion
               gVar <- asks random
               subMode <- chatReadVar subscriptionMode
               connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff

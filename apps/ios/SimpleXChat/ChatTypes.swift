@@ -2137,6 +2137,14 @@ public func sameChatScope(_ scope1: GroupChatScope, _ scope2: GroupChatScope) ->
     }
 }
 
+public func draftChatId(_ chatId: ChatId?, _ scope: GroupChatScope?) -> ChatId? {
+    guard let chatId, let scope else { return chatId }
+    return switch scope {
+    case let .memberSupport(groupMemberId_): "\(chatId) support:\(groupMemberId_?.description ?? "")"
+    case .reports: "\(chatId) reports"
+    }
+}
+
 public enum GroupChatScopeInfo: Decodable, Hashable {
     case memberSupport(groupMember_: GroupMember?)
     case reports // surrogate scope used for matching new items to opened Reports "chat scope" in UI, this type is not present in backend
