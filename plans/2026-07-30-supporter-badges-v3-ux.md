@@ -479,8 +479,9 @@ Non-store payments at MVP are multi-month prepaid purchases: one flow (invoice �
 
 ### Launch set
 
-- Tiers: supporter + legend. Store: monthly and annual subscriptions + one-time 1 month. Stripe/BTC/XMR: one-time 1/3/12 months (§6.12).
-- Ops: `catalog` | `invoice` | `claim` | `status`. Receipts in claim responses; catalog version field in `claim`/`status` responses.
+- Tiers: supporter + legend + investor (redeem codes, 2.8). Store: monthly and annual subscriptions + one-time 1 month. Stripe/BTC/XMR: one-time 1/3/12 months (§6.12).
+- Redeem codes for all badge types (2.8) — the reward mechanism; code generation is operator tooling, required at MVP. Held badges with switching (2.7) — a switch takes effect immediately at MVP (`use_from` deferred).
+- Ops: `catalog` | `invoice` | `claim` | `status` | `redeem`. Receipts in claim responses; catalog version field in `claim`/`status` responses.
 - Store cancellation:
   - the Cancel button opens the store management sheet; the engine sends `status` on return;
   - the client renders cancelled-active from local renewal state (StoreKit 2 `RenewalInfo.willAutoRenew`, Play Billing `Purchase.isAutoRenewing`);
@@ -498,11 +499,11 @@ Non-store payments at MVP are multi-month prepaid purchases: one flow (invoice �
   - `charges`
   - `badge_ledger`
   - `issuances`
-  - `badges` — without `shown`, `use_from`, `paused_at`
+  - `badges` — without `use_from`, `paused_at`
 - Engine per 2.9: claims, monthly re-issue, `advance`/`issue` recording, Monday presentation incl. removal updates, alert derivation.
 - Alerts: the full 2.4 set (renewal approaching: store subscriptions only); opt-out toggle.
 - Receipts for every Stripe/crypto payment with the checkout save prompt; `transfer` op deferred — support executes recovery manually against a presented receipt.
-- Entry points: chat-list banner, Settings "Supporter perks" row, whats-new. Management screen without Paused and held-badges switching; `charges` recorded from the first release, history UI deferred.
+- Entry points: chat-list banner, Settings "Supporter perks" row, whats-new. Management screen without the Paused state; `charges` recorded from the first release, history UI deferred.
 - New designs:
   - management screen
   - method + duration selector
@@ -526,7 +527,6 @@ Non-store payments at MVP are multi-month prepaid purchases: one flow (invoice �
 | `transfer` op | phase 2 | receipts exist from the first release; support transfers manually until then |
 | pause / resume | phase 2 | ledger `resume` transition + `paused_at` column |
 | charge history UI | phase 2 | `charges` recorded from the first release |
-| investor + redeem codes + held-badges switching (`shown`, `use_from`, slots) | phase 2/3 | one badge per profile at MVP; investors via existing `/badge add`; columns and slot rules additive |
 | upgrades (2.10) | phase 2 | store subscription group in place (item 4 above); bot SKU-change mapping + conversion debits |
-| start-sharing question + "Show advanced privacy questions" | phase 3 | immediate presentation at MVP |
+| start-sharing question + "Show advanced privacy questions" (`use_from`) | phase 3 | immediate presentation and switching at MVP |
 | user-picker badge presence | phase 2 | the Settings row is the entry point until then |
