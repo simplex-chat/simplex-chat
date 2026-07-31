@@ -53,7 +53,7 @@ struct BadgesPayView: View {
 
                     Text(level.tagline)
                         .font(.body)
-                        .foregroundColor(theme.colors.secondary)
+                        .foregroundColor(theme.colors.onBackground)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 4)
@@ -66,15 +66,17 @@ struct BadgesPayView: View {
 
                     Spacer(minLength: 20)
 
-                    payButton()
-
-                    Text(billingFooter)
-                        .font(.footnote)
-                        .foregroundColor(theme.colors.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 4)
-                        .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
+                    VStack(spacing: 10) {
+                        payButton()
+                            .padding(.vertical, 10)
+                        Text(billingFooter)
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(height: 22)
+                    }
+                    .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
                 .padding(.horizontal, 25)
                 .padding(.top, 8)

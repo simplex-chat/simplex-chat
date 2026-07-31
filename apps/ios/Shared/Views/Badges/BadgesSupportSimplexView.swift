@@ -14,7 +14,7 @@ import SimpleXChat
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @State private var showWhySimpleX = false
+    @State private var whyBuiltActive = false
     @State private var chooseLevelActive = false
     @State private var redeemCodeActive = false
 
@@ -34,10 +34,7 @@ struct BadgesSupportSimplexView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Button { showWhySimpleX = true } label: {
-                    Label("Why SimpleX is built.", systemImage: "info.circle")
-                        .font(.headline)
-                }
+                whyBuiltButton()
 
                 Spacer(minLength: 0)
 
@@ -47,11 +44,14 @@ struct BadgesSupportSimplexView: View {
 
                 Spacer(minLength: 0)
 
-                chooseLevelButton()
-
-                redeemCodeButton()
-                    .padding(.top, 4)
-                    .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
+                // Onboarding pattern: nested VStack(spacing: 10) + action button vertical padding 10.
+                VStack(spacing: 10) {
+                    chooseLevelButton()
+                        .padding(.vertical, 10)
+                    redeemCodeButton()
+                        .frame(height: 22)
+                }
+                .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
             .padding(.horizontal, 25)
             .padding(.top, 28)
@@ -63,8 +63,22 @@ struct BadgesSupportSimplexView: View {
         .frame(maxHeight: .infinity)
         .modifier(ThemedBackground())
         .navigationBarHidden(true)
-        .sheet(isPresented: $showWhySimpleX) {
-            WhySimpleX(onboarding: false, titleColor: theme.colors.primary, createProfileNavLinkActive: .constant(false))
+    }
+
+    private func whyBuiltButton() -> some View {
+        ZStack {
+            Button { whyBuiltActive = true } label: {
+                Label("Why SimpleX is built.", systemImage: "info.circle")
+                    .font(.headline)
+            }
+            NavigationLink(isActive: $whyBuiltActive) {
+                WhySimpleX(onboarding: false, titleColor: theme.colors.primary, createProfileNavLinkActive: .constant(false))
+                    .modifier(ThemedBackground())
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
     }
 

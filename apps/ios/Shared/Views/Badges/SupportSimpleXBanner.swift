@@ -53,7 +53,8 @@ struct SupportSimpleXBanner: View {
                 }
                 .padding(.leading, cardLeadingPadding)
                 .padding(.trailing, cardTrailingPadding)
-                .frame(height: cardHeight)
+                .padding(.vertical, 12)
+                .frame(minHeight: cardHeight)
                 .background(gradientBackground())
                 .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
             }

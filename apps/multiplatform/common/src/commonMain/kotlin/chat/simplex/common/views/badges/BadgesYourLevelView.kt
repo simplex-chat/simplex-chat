@@ -20,6 +20,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
 // Draft levels used by the badges UI while the API/state machine is still being designed. TODO [badges]:
@@ -88,7 +89,7 @@ fun BadgesYourLevelView() {
   var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
 
   ColumnWithScrollBar(
-    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     maxIntrinsicSize = true,
@@ -120,9 +121,16 @@ fun BadgesYourLevelView() {
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
-    ContinueButton(selectedLevel)
-
-    HowItWorksButton(Modifier.padding(top = 4.dp))
+    // Nested Column with no spacing so the TextButtonBelowOnboardingButton sits directly under
+    // the action button (matches onboarding pattern where its own 7.5dp top padding is the gap).
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      ContinueButton(selectedLevel)
+      TextButtonBelowOnboardingButton(
+        text = stringResource(MR.strings.badges_how_it_works_button),
+        icon = painterResource(MR.images.ic_info),
+        onClick = { ModalManager.start.showModal { BadgesHowItWorksView() } }
+      )
+    }
   }
 }
 
@@ -137,7 +145,7 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
       .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f), shape)
       .border(2.dp, borderColor, shape)
       .clickable { onSelect(level) }
-      .padding(vertical = 20.dp),
+      .padding(vertical = 20.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
@@ -147,9 +155,9 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
       contentScale = ContentScale.Fit,
       modifier = Modifier.size(60.dp)
     )
-    Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold)
-    Text(stringResource(level.filesDescription), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary)
-    Text(stringResource(level.monthlyPrice), style = MaterialTheme.typography.body1)
+    Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    Text(stringResource(level.filesDescription), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+    Text(stringResource(level.monthlyPrice), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
   }
 }
 
@@ -165,15 +173,3 @@ private fun ContinueButton(selectedLevel: BadgeLevel) {
   )
 }
 
-@Composable
-private fun HowItWorksButton(modifier: Modifier = Modifier) {
-  TextButton(
-    onClick = { ModalManager.start.showModal { BadgesHowItWorksView() } },
-    modifier = modifier
-  ) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-      Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
-      Text(stringResource(MR.strings.badges_how_it_works_button), color = MaterialTheme.colors.primary, fontWeight = FontWeight.Medium)
-    }
-  }
-}

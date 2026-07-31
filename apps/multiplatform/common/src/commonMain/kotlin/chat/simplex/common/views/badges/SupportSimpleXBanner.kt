@@ -32,9 +32,10 @@ import chat.simplex.res.MR
 @Composable
 fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
   val cardCornerRadius = 16.dp
-  // grows with system font but never shrinks below the default so small-font users see the same
-  // banner as today; hero image stays fixed so its above-card overhang shrinks at very large fonts
-  val cardHeight = (72.dp * fontSizeSqrtMultiplier).coerceAtLeast(72.dp)
+  // grows linearly with system font but never shrinks below the default so small-font users see the
+  // same baseline; the card Row uses heightIn(min = cardHeight) and grows further when 2-line text
+  // wraps at very large fonts. Hero stays fixed so its above-card overhang shrinks at very large fonts.
+  val cardHeight = (72.dp * fontSizeMultiplier).coerceAtLeast(72.dp)
   // matches OneHandUICard's segment icon leading so the text aligns with it in the list
   val cardLeadingPadding = 16.dp
   val cardTrailingPadding = 8.dp
@@ -49,36 +50,66 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
   var cardSize by remember { mutableStateOf(IntSize.Zero) }
   val brush = remember(isDark, cardSize) { gradientBrush(isDark, cardSize) }
 
-  // Root Box is sized to the card; hero and X are children so they can render outside the card's
-  // rounded-corner clip. Hero anchors bottom-end and its 108dp height extends 36dp above the card top.
-  Box(Modifier.fillMaxWidth().height(cardHeight)) {
-    Row(
-      Modifier
-        .fillMaxSize()
-        .clip(RoundedCornerShape(cardCornerRadius))
-        .background(brush)
-        .clickable(onClick = onTap)
-        .onSizeChanged { cardSize = it }
-        .padding(start = cardLeadingPadding, end = cardTrailingPadding + heroWidth + heroTrailingPadding + textToHeroGap),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-          generalGetString(MR.strings.badges_banner_title),
-          style = MaterialTheme.typography.body1,
-          fontWeight = FontWeight.SemiBold,
-          color = MaterialTheme.colors.primary,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis
-        )
-        Text(
-          generalGetString(MR.strings.badges_banner_subtitle),
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.onBackground,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis
-        )
+  // Two-Box structure so text can grow (2-line wrapping at large fonts) while X stays anchored to
+  // the card's top-right, not the outer wrapper's top-right (which would drift up into hero overhang).
+  // Outer Box takes max(inner card, hero); inner Box wraps the card Row + X together and aligns to
+  // Outer bottom so hero overhangs above.
+  Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+    Box(Modifier.fillMaxWidth()) {
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .heightIn(min = cardHeight)
+          .clip(RoundedCornerShape(cardCornerRadius))
+          .background(brush)
+          .clickable(onClick = onTap)
+          .onSizeChanged { cardSize = it }
+          .padding(
+            start = cardLeadingPadding,
+            end = cardTrailingPadding + heroWidth + heroTrailingPadding + textToHeroGap,
+            top = 12.dp,
+            bottom = 12.dp
+          ),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          Text(
+            generalGetString(MR.strings.badges_banner_title),
+            style = MaterialTheme.typography.body1,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colors.primary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+          )
+          Text(
+            generalGetString(MR.strings.badges_banner_subtitle),
+            style = MaterialTheme.typography.body2,
+            color = MaterialTheme.colors.onBackground,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+          )
+        }
       }
+
+      // Same X pattern as OneHandUICard: circle-clipped clickable region with inner padding for hit area.
+      Icon(
+        painterResource(MR.images.ic_close),
+        contentDescription = generalGetString(MR.strings.icon_descr_close_button),
+        tint = MaterialTheme.colors.secondary,
+        modifier = Modifier
+          .align(Alignment.TopEnd)
+          .padding(end = 4.dp, top = 4.dp)
+          .clip(CircleShape)
+          .clickable {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.badges_banner_title),
+              text = generalGetString(MR.strings.badges_banner_dismiss_message),
+              onConfirm = onDismiss
+            )
+          }
+          .padding(8.dp)
+          .size(16.dp)
+      )
     }
 
     HeroThumbnail(
@@ -87,26 +118,6 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
       cardHeight = cardHeight,
       trailingPadding = heroTrailingPadding,
       modifier = Modifier.align(Alignment.BottomEnd)
-    )
-
-    // Same X pattern as OneHandUICard: circle-clipped clickable region with inner padding for hit area.
-    Icon(
-      painterResource(MR.images.ic_close),
-      contentDescription = generalGetString(MR.strings.icon_descr_close_button),
-      tint = MaterialTheme.colors.secondary,
-      modifier = Modifier
-        .align(Alignment.TopEnd)
-        .padding(end = 4.dp, top = 4.dp)
-        .clip(CircleShape)
-        .clickable {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.badges_banner_title),
-            text = generalGetString(MR.strings.badges_banner_dismiss_message),
-            onConfirm = onDismiss
-          )
-        }
-        .padding(8.dp)
-        .size(16.dp)
     )
   }
 }
