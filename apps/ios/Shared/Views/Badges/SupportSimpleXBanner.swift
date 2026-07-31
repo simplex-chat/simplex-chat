@@ -104,19 +104,20 @@ struct SupportSimpleXBanner: View {
     }
 
     private func gradientBackground() -> some View {
-        // Geometry-driven axis (80° with aspect correction) is nearly vertical for a wide banner so
-        // warm stops run along the top edge, tilted to the right. Larger scale than OnboardingCardView
-        // pushes the whitest stops just past the top so only a right-side accent of warm is visible.
+        // Asymmetric scale: start (dark end) pushed further below the card than the end (warm) is
+        // above, so the card's middle lands at the bright/mid-transition stop instead of the dark
+        // navy region. Keeps the small warm accent at top-right.
         GeometryReader { geo in
             let aspect = max(geo.size.height, 1) / max(geo.size.width, 1)
-            let gp = OnboardingCardView.gradientPoints(
-                aspectRatio: aspect,
-                scale: colorScheme == .light ? 1.7 : 2.1
-            )
-            LinearGradient(
+            let startScale: CGFloat = colorScheme == .light ? 2.5 : 3.0
+            let endScale: CGFloat = colorScheme == .light ? 1.7 : 2.1
+            let gp = OnboardingCardView.gradientPoints(aspectRatio: aspect, scale: 1.0)
+            let start = UnitPoint(x: 0.5 + (gp.start.x - 0.5) * startScale, y: 0.5 + (gp.start.y - 0.5) * startScale)
+            let end = UnitPoint(x: 0.5 + (gp.end.x - 0.5) * endScale, y: 0.5 + (gp.end.y - 0.5) * endScale)
+            return LinearGradient(
                 stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
-                startPoint: gp.start,
-                endPoint: gp.end
+                startPoint: start,
+                endPoint: end
             )
         }
     }
