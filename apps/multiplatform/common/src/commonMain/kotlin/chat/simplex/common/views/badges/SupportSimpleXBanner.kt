@@ -25,6 +25,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.darkStops
+import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.res.MR
 
@@ -152,26 +153,17 @@ private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, 
   }
 }
 
-// light: 2-color end-to-end (lightStops' 0.0–0.5 blue plateau would read as all-blue here).
-// dark: full 5-stop darkStops — the intermediate blue-to-navy transitions land nicely.
+// Same geometry-aware gradient as OnboardingCardView / ConnectBannerCard: aspect drives the
+// start/end points along a fixed 80° axis so the full 5-stop palette lands correctly at any size.
 private fun gradientBrush(isDark: Boolean, size: IntSize): Brush {
-  if (size.width == 0 || size.height == 0) {
-    return if (isDark) Brush.linearGradient(colorStops = darkStops)
-    else Brush.linearGradient(colors = listOf(lightStops.first().second, lightStops.last().second))
-  }
+  val stops = if (isDark) darkStops else lightStops
+  if (size.width == 0 || size.height == 0) return Brush.linearGradient(colorStops = stops)
   val w = size.width.toFloat()
   val h = size.height.toFloat()
-  return if (isDark) {
-    Brush.linearGradient(
-      colorStops = darkStops,
-      start = Offset(0f, h),
-      end = Offset(w, 0f)
-    )
-  } else {
-    Brush.linearGradient(
-      colors = listOf(lightStops.first().second, lightStops.last().second),
-      start = Offset(0f, h),
-      end = Offset(w, 0f)
-    )
-  }
+  val gp = gradientPoints(h / w, if (isDark) 1.5f else 1.2f)
+  return Brush.linearGradient(
+    colorStops = stops,
+    start = Offset(gp.startX * w, gp.startY * h),
+    end = Offset(gp.endX * w, gp.endY * h)
+  )
 }
