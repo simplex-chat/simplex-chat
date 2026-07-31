@@ -46,9 +46,11 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.fullscreen.closeModal() })
         TextButtonBelowOnboardingButton("", null)
       }
-    } else if (appPlatform.isAndroid) {
-      // no button below → add nav-bar-inset spacer so text doesn't run under system gesture bar
-      Spacer(Modifier.navigationBarsPadding())
+    } else {
+      // No button below — add breathing room at the bottom on both platforms.
+      // Android also gets nav-bar inset so content doesn't run under the gesture bar.
+      Spacer(Modifier.height(DEFAULT_PADDING))
+      if (appPlatform.isAndroid) Spacer(Modifier.navigationBarsPadding())
     }
   }
 }
