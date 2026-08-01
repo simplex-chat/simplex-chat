@@ -404,7 +404,7 @@ fun createProfileFromForm(chatModel: ChatModel, displayName: String, shortDescr:
 
 fun createProfileInNoProfileSetup(displayName: String, image: String? = null, close: () -> Unit) {
   withBGApi {
-    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null, image)) ?: return@withBGApi
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null, image = image)) ?: return@withBGApi
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
