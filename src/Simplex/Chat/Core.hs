@@ -90,7 +90,7 @@ runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> C
 runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, headless, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
-      a1 <- runReaderT (startChatController True True) cc
+      a1 <- runReaderT (startChatController True True False) cc
       when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer headless
       forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
@@ -175,7 +175,7 @@ askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} server_ h
     promptCreate = do
       ok <- if headless then pure True else onOffPrompt "Create relay address" True
       when ok $
-        execChatCommand' (APICreateMyAddress userId server_) 0 `runReaderT` cc >>= \case
+        execChatCommand' (APICreateMyAddress userId server_ Nothing) 0 `runReaderT` cc >>= \case
           Right (CRUserContactLinkCreated _ address) -> do
             putStrLn "Chat relay address is created:"
             putStrLn $ addressStr address
