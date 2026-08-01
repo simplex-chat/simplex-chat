@@ -30,6 +30,8 @@ interface PlatformInterface {
   fun androidCreateActiveCallState(): Closeable = Closeable { }
   fun androidIsXiaomiDevice(): Boolean = false
   val androidApiLevel: Int? get() = null
+  // The build distributed via Google Play, which has to follow its policies
+  val androidIsPlayStoreBuild: Boolean get() = false
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
   @Composable fun desktopShowAppUpdateNotice() {}
