@@ -22,14 +22,9 @@ Product decisions from the discussion, baked into this plan:
   confirm" double opt-in (it is a spam vector, like any mailing-list signup). "Submitter ≠ owner"
   is handled not by letting non-owners submit, but by giving the owner's tooling a way to send (the
   support-bot entry point that would cover the headless case is deferred — §B.4).
-- **The directory does NOT connect to / join these addresses.** They are not groups. It verifies
-  the signature via a link-data *fetch* (not a connection) and records the address in a new table.
-- **One table for both businesses and bots** — they are all contact `/a` addresses. The MVP types
-  each accepted registration by `peerType`: a **bot** requires `peerType == CPTBot`; a **business**
-  requires `peerType ∈ {CPTHuman, CPTBusiness}` (an unset `peerType` counts as `CPTHuman`); an
-  unrecognized `CPTUnknown` is rejected. The admin then manually verifies a business before
-  approving — as for channels.
-- **Listing type = `ChatPeerType`.** Extend `ChatPeerType` (today `CPTHuman | CPTBot`, `Types.hs:710`)
+- **The directory prepares an unconnected entity; it does not open a conversation.** On a verified card it calls `APIPrepareContact` to create a prepared contact or, for a business-chat address, a prepared business group, from the fetched `ContactShortLinkData`, and stores a registration referencing it. The periodic loop re-runs `APIConnectPlan … PRMAll` on the address link; under `PRMAll` a new `resolveKnownContact` (contact) or `resolveKnownGroup` (business group) refreshes the entity's profile and domain verification via `updateContactFromLinkData`/`updateGroupFromLinkData` — the analog of `deGroupLinkCheck` for channels (core change, §A/§C.3). No connection is established.
+- **One table for both businesses and bots** — all are contact `/a` addresses. The registration is typed by the fetched profile's `peerType`: a **bot** from `CPTBot`; a **business** from `CPTHuman` or `CPTBusiness` (unset ≙ `CPTHuman`), stored `CPTBusiness`; `CPTUnknown` is rejected. An admin verifies a business before approving, as for channels.
+- **Listing type = `ChatPeerType`.** `ChatPeerType` (`Types.hs:711`, now `CPTHuman | CPTBot | CPTBusiness | CPTUnknown Text` — implemented)
   with **`CPTBusiness`** and **`CPTUnknown Text`** (forward-compat, like `GTUnknown`), and make the
   decoder **lenient** (unknown tag → `CPTUnknown`) so this version won't choke on future tags.
   **Wire-compat caveat (verified):** `ChatPeerType` decodes strictly today
@@ -82,46 +77,44 @@ Operator's client                         Directory bot
                         chatBinding <> connLink) }   ── card ──▶  DEChatLinkReceived (MCLContact, ownerSig)
                                                                     -> APIConnectPlan (PLAN only, no connect)
                                                                        fetches link data (opaque) + verifies sig
-                                                                       => CPContactAddress (CAPOk {ownerVerification})
+                                                                       => CPContactAddress (CAPOk {contactSLinkData_})
                                                                     -> if OVVerified:
-                                                                         addContactReg (bot if CPTBot,
+                                                                         APIPrepareContact, then addContactReg (bot if CPTBot,
                                                                            else business), status pending
                                                                          notify admins with profile (admin verifies)
 admins: /approve ...                                              -> status active -> listingsUpdated
                                                                     -> web listing.json + bot search include it
 ```
 
-Nothing is connected or joined. The only network action on the directory side is a one-time,
-opaque link-data fetch for signature verification (consistent with the established rule that
-the directory may fetch link data, only name *resolution* leaks membership).
+No conversation is opened. The prepared address contact holds the profile without a connection; the directory's only network action is the opaque link-data fetch performed by `APIConnectPlan` at registration and on each refresh.
 
 ## 3. What already exists (reuse map)
 
 All grounded in the current tree:
 
 - **Chat-link card type** — `MCLContact {connLink :: ShortLinkContact, profile :: Profile, business :: Bool}`
-  already exists (`src/Simplex/Chat/Protocol.hs:769`). `MCChat {text, chatLink, ownerSig}` and
-  `LinkOwnerSig {ownerId, chatBinding, ownerSig}` at `Protocol.hs:764,774`.
+  already exists (`src/Simplex/Chat/Protocol.hs:731`). `MCChat {text, chatLink, ownerSig}` and
+  `LinkOwnerSig {ownerId, chatBinding, ownerSig}` at `Protocol.hs:726,736`.
 - **Owner-signature verification for contact addresses is already wired.** `connectPlan`'s
   `CTShortContact CCTContact` path fetches `FixedLinkData {rootKey}` + `UserContactData {owners}`
   and computes `ov = verifyLinkOwner rootKey owners l' sig_`, surfaced as
   `CPContactAddress (CAPOk {contactSLinkData_, ownerVerification})`
-  (`src/Simplex/Chat/Library/Commands.hs:4287-4289,4518-4527`; `Controller.hs:1114-1121,1139-1142`).
+  (`src/Simplex/Chat/Library/Commands.hs:4356-4389`, `verifyLinkOwner` def `4634`; `Controller.hs:1104,1116-1124`).
   For plain/business addresses `owners == []`, so `ownerId = Nothing` and verification uses the
   link **root key** (`verifyLinkOwner` fallback).
 - **The directory already receives any `MCChat` card as `DEChatLinkReceived`** — `Directory/Events.hs:108`
   turns `(MCChat {chatLink, ownerSig}, Nothing)` into `DEChatLinkReceived`. Today `deChatLinkReceived`
   only matches `MCLGroup` and otherwise replies "Only channels can be added to directory via link."
-  (`Directory/Service.hs:964-979`). We add an `MCLContact` case.
+  (`Directory/Service.hs:965-979`). We add an `MCLContact` case.
 - **Card-sharing UI + API + signing** — `/share chat #g @to` → `SharePublicGroup`
-  (`Commands.hs:2437-2449`, parser `Commands.hs:5551`) → `APIShareChatMsgContent`
-  (`Commands.hs:1136-1170`) which builds the `MCChat` and signs with `mkLinkOwnerSig` +
+  (`Commands.hs:2492`, parser `Commands.hs:5670`) → `APIShareChatMsgContent`
+  (`Commands.hs:1185`) which builds the `MCChat` and signs with `mkLinkOwnerSig` +
   `shareChatBinding` (binds the card to the recipient connection, anti-replay).
 - **Address key + business flag storage** — `link_priv_sig_key` (the address root private key,
   Ed25519) is stored in `user_contact_links` by `createUserContactLink`
   (`src/Simplex/Chat/Store/Profiles.hs:429-439`); `businessAddress` lives in `AddressSettings`
   (`Profiles.hs:497-502`) and is published as `ContactShortLinkData.business`
-  (`Commands.hs:4528-4533`, `Protocol.hs:1584-1592`). Note: `getUserAddress`/`UserContactLink`
+  (`Commands.hs:4648`, `Protocol.hs:1553`). Note: `getUserAddress`/`UserContactLink`
   do **not** currently read `link_priv_sig_key` back (`Profiles.hs:479-524`).
 - **Directory store / listing / web infra** — `sx_directory_group_regs` table
   (`Directory/Store/{SQLite,Postgres}/Migrations.hs`), `GroupReg`/`GroupRegStatus`
@@ -134,7 +127,7 @@ All grounded in the current tree:
 ### A. Protocol / types
 
 - `MCLContact` exists; no new protocol message for the card itself.
-- **Extend `ChatPeerType`** (`Types.hs:710`, today `CPTHuman | CPTBot`) with `CPTBusiness` and
+- **`ChatPeerType`** (`Types.hs:711`, implemented — now `CPTHuman | CPTBot | CPTBusiness | CPTUnknown Text`) with `CPTBusiness` and
   `CPTUnknown Text` (forward-compat, like `GTUnknown`). Update the `TextEncoding`/JSON instances
   (`Types.hs:724-731`): encode `CPTBusiness` as `"business"` and `CPTUnknown t` back to `t`
   (round-trips the original tag); make `textDecode` **lenient** — an unrecognized tag becomes
@@ -146,9 +139,9 @@ All grounded in the current tree:
   `peerType ∈ {CPTHuman, CPTBusiness}` (unset ≙ `CPTHuman`; stored as `CPTBusiness`), and **rejects
   `CPTUnknown`**. Businesses are then admin-verified — the admin is the gate, as for channels.
 - **New optional `description :: Maybe Text` on `Profile`** (`Types.hs:693`), parallel to
-  `GroupProfile.description` (`Types.hs:867`). Additive/nullable — only businesses/bots set it.
+  `GroupProfile.description` (`Types.hs:872`). Additive/nullable — only businesses/bots set it.
   It rides into the address link data automatically (`ContactShortLinkData` embeds the whole
-  `Profile`, `Protocol.hs:1584`), so the directory reads it from the fetched link data. It is
+  `Profile`, `Protocol.hs:1553`), so the directory reads it from the fetched link data. It is
   redacted per group policy in group-member profiles, on **both send and receive** (see §G). No
   version bump is needed — `Profile` is `deriveJSON`-parsed and aeson ignores unknown keys, so old
   apps just drop `description` (same as when `peerType`/`badge`/`contactDomain` were added).
@@ -157,11 +150,18 @@ All grounded in the current tree:
   drive them via `/_profile`. A small dedicated setter for the multi-line `description` is worth
   adding for CLI ergonomics. The app-UI toggle to set `peerType = CPTBusiness` is deferred (per the
   wire-compat caveat above).
+- **Core connect-plan changes for the directory refresh (§C.3).** Rename `PRMAllGroups → PRMAll`
+  (`Controller.hs:677`; uses at `Commands.hs:4419`, `Service.hs:572/834/972`) and resolve known
+  contacts under it. `updateContactFromLinkData` (`Internal.hs:1523`) returns `(Contact, Bool)` — the
+  change flag — adapting its existing call at `Commands.hs:4374`. `CAPKnown` (`Controller.hs:1121`)
+  gains `updated :: Bool` and `ownerVerification :: Maybe OwnerVerification`, so a by-link re-plan of a
+  prepared contact surfaces a change flag and ownership, as `GLPKnown` does for groups. New
+  `resolveKnownContact` mirrors `resolveKnownGroup` (`Commands.hs:4471`).
 
 ### B. Client: prepare + share the contact-address card
 
 1. **Signing key — from the agent, not the chat DB.** Sign the card with the address short-link key
-   via `getConnLinkPrivKey (aConnId addressConn)` (already in the agent, used at `Subscriber.hs:1649`;
+   via `getConnLinkPrivKey (aConnId addressConn)` (already in the agent, used at `Subscriber.hs:1597`;
    `getUserAddressConnection` gives the connection). This is the authoritative key — the private half
    of the short link's root key the directory verifies against — and it exists whenever the short link
    does, **including right after an upgrade** (`setConnShortLink` provisions it). Do **not** read the
@@ -170,7 +170,7 @@ All grounded in the current tree:
    `setMyAddressData`/`setUserContactLinkShortLink` — reading it back via `getConnLinkPrivKey` so the
    column stops being stale.)*
 2. **Card-builder API — `APIShareMyAddress {toSendRef :: SendRef}`** (Controller) + handler in
-   `Commands.hs`, mirroring the group-share case (`APIShareChatMsgContent`, `Commands.hs:1136`):
+   `Commands.hs`, mirroring the group-share case (`APIShareChatMsgContent`, `Commands.hs:1185`):
    - `getUserAddress` → `connLinkContact` (short link) + profile + `businessAddress`.
    - `getUserAddressConnection` → conn; `getConnLinkPrivKey (aConnId conn)` → `rootPrivKey`
      (`Nothing` ⇒ not upgraded → error; the UI pre-empts this via §B.5).
@@ -181,7 +181,7 @@ All grounded in the current tree:
    - return `CRChatMsgContent user (MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig})`.
    `SendRef` covers direct **and** group/channel targets.
 3. **CLI command — `ShareMyAddress {toChatName}`**, parser `/share address @to` / `/share address #to`
-   (`Commands.hs:5551` neighborhood), handler mirroring `SharePublicGroup` (`Commands.hs:2437-2449`):
+   (`Commands.hs:5670` neighborhood), handler mirroring `SharePublicGroup` (`Commands.hs:2492`):
    resolve `toChatName` → `SendRef` → `APIShareMyAddress` → `APISendMessages`. Shares to contacts and
    groups/channels alike.
 4. **Support-bot entry point — OUT OF SCOPE (deferred).** A headless business running
@@ -211,88 +211,106 @@ All grounded in the current tree:
 
 ### C. Directory: verify + store (no connect)
 
-1. **`deChatLinkReceived` — add the `MCLContact` case** (`Directory/Service.hs:964`).
-   **No new verification code** — reuse the exact plan path channels use (resolved, Q1):
-   - `deChatLinkReceived ct (MCLContact {connLink, profile, business}) (Just ownerSig)`:
-     - `APIConnectPlan userId (contact link) PRMAll (Just ownerSig)` — **plan only**, no connect
-       (rename `PRMAllGroups` → `PRMAll` and make it work for contact links too, not just groups).
-       `connectPlan`'s contact-address path already computes `ov = verifyLinkOwner rootKey owners l' sig_`
-       (`Commands.hs:4288`), identical to the channel path at `Commands.hs:4346`; for a plain/business
-       address `owners == []`, so the card's `ownerId = Nothing` makes `verifyLinkOwner` verify against
-       the link **root key**. Expect `CPContactAddress (CAPOk {contactSLinkData_ = Just csld, ownerVerification})`.
-       Use the **fetched** `csld.profile` (`peerType`, `description`, name claim, …) as authoritative
-       — the card's copies are display-only / potentially stale; `csld.business` is not used for
-       typing.
-     - `OVVerified` → type from the fetched profile's `peerType`: **bot** if `CPTBot`, **business**
-       if `CPTHuman`/`CPTBusiness` (unset ≙ `CPTHuman`; stored as `CPTBusiness`) → `addContactReg`
-       status pending; **reject `CPTUnknown`** ("unsupported account type"). A business is then
-       admin-verified before approving (as for channels). `OVFailed reason` → "ownership verification
-       failed". `CAPKnown`/other → appropriate message.
-   - The fetch is intrinsic (the root public key isn't in the card, same as channels) and is an
-     opaque link-data read, not a connection — consistent with the established directory rule.
+1. **`deChatLinkReceived` — add the `MCLContact` case** (`Directory/Service.hs:965`).
+   - `deChatLinkReceived ct (MCLContact {connLink, business}) (Just ownerSig)`:
+     - `APIConnectPlan userId (contact link) PRMAll (Just ownerSig)` — plan only (rename `PRMAllGroups` → `PRMAll`, extend to contact links). Returns `CPContactAddress (CAPOk {contactSLinkData_ = Just csld, ownerVerification})`. `verifyLinkOwner rootKey owners l' sig_` runs on this path (`Commands.hs:4379`, def `4634`); a plain/business address has `owners == []` and card `ownerId = Nothing`, so verification uses the link root key.
+     - `OVVerified`:
+       - resolved `peerType` from `csld.profile`: `CPTBot` → bot; `CPTHuman`/`CPTBusiness` (unset ≙ `CPTHuman`) → business, stored `CPTBusiness`; `CPTUnknown` → reject ("unsupported account type").
+       - `APIPrepareContact userId ccLink verifiedDomain csld` → the prepared entity: `Contact` (`business = False`, `createPreparedContact` → `SCTDirect`) or business `GroupInfo` (`business = True`, `createPreparedGroup` → `SCTGroup`) (`Commands.hs:2129`) — `business` is a link-data flag, orthogonal to `peerType`.
+       - `addContactRegStore` referencing that entity (`contact_id` or `group_id`), resolved `peerType`, status `GRSProposed`.
+       - notify admins with the profile and the approve command.
+     - `OVFailed reason` → "ownership verification failed".
+     - `CAPKnown`/`GLPKnown` (already prepared) → re-registration path (§C.3), matched via `getContactRegByEntity`.
    - Keep the existing `MCLGroup` and fall-through cases unchanged.
-2. **New store: `sx_directory_contact_regs`.** Add a migration to
-   `Directory/Store/SQLite/Migrations.hs` and `Directory/Store/Postgres/Migrations.hs` (new named
-   migration appended to `schemaMigrations`). Proposed columns:
+2. **New store table `sx_directory_contact_regs`** — named migration in `Directory/Store/SQLite/Migrations.hs` and `Directory/Store/Postgres/Migrations.hs`. The prepared entity is a contact (direct/bot) or a business group (`business = True`), so the row references one or the other.
+
+   ```sql
+   CREATE TABLE sx_directory_contact_regs(
+     contact_reg_id INTEGER PRIMARY KEY AUTOINCREMENT,
+     contact_id INTEGER REFERENCES contacts(contact_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+     group_id INTEGER REFERENCES groups(group_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+     user_contact_reg_id INTEGER NOT NULL,
+     submitter_contact_id INTEGER NOT NULL REFERENCES contacts(contact_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+     peer_type TEXT NOT NULL,
+     contact_reg_status TEXT NOT NULL,
+     contact_promoted INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL DEFAULT(datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+     CHECK ((contact_id IS NULL) <> (group_id IS NULL))
+   );
+   CREATE UNIQUE INDEX idx_sx_directory_contact_regs_contact_id ON sx_directory_contact_regs(contact_id);
+   CREATE UNIQUE INDEX idx_sx_directory_contact_regs_group_id ON sx_directory_contact_regs(group_id);
+   CREATE UNIQUE INDEX idx_sx_directory_contact_regs_submitter_user_reg_id ON sx_directory_contact_regs(submitter_contact_id, user_contact_reg_id);
    ```
-   contact_reg_id       PK autoincrement
-   user_contact_reg_id  INTEGER            -- per-submitter sequence (cf. user_group_reg_id)
-   submitter_contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE
-   conn_short_link      TEXT    NOT NULL    -- the contact link; the LISTING IDENTITY (stable for
-                                            --   contacts). A link change ⇒ unlist + re-register.
-                                            --   Must be present in the fetched profile (contactLink).
-   display_name         TEXT    NOT NULL
-   full_name            TEXT
-   short_descr          TEXT
-   description          TEXT                -- long description (Profile.description)
-   image                TEXT                -- base64, optional
-   peer_type            TEXT    NOT NULL    -- resolved listing type: "bot" or "business" (ChatPeerType)
-   simplex_name         TEXT                -- verified SimpleX name, optional (see Q5)
-   reg_status           TEXT    NOT NULL
-   promoted             INTEGER NOT NULL DEFAULT 0
-   created_at, updated_at TEXT
-   UNIQUE(conn_short_link); UNIQUE(submitter_contact_id, user_contact_reg_id)
+
+   Column roles (Postgres mirrors with `BIGSERIAL` + `TIMESTAMPTZ`):
+   - `contact_reg_id` — global PK; the admin/superuser id.
+   - `contact_id` / `group_id` — the prepared entity, exactly one set (`CHECK`): `contact_id` for a direct/bot address (`createPreparedContact`), `group_id` for a business-chat address (`createPreparedGroup`, `business = True`, `Commands.hs:2129`). Both `UNIQUE`; SQLite and Postgres treat NULLs as distinct, so the many-null side is unconstrained. Profile/`contactLink`/`contactDomain`/verification are read from the joined contact or group.
+   - `user_contact_reg_id` — the user-facing id, from the shared per-submitter sequence (below).
+   - `submitter_contact_id` — the submitter (forwarded the card); FK `contacts`, `ON DELETE CASCADE`; this is `dbContactId`, checked by `isOwner`.
+   - `peer_type` — resolved listing type (`bot`/`business`); not recoverable from the profile (`peerType = human` for a business, §A).
+   - `contact_reg_status` reuses the `GroupRegStatus` encoding (Q3); `contact_promoted` as `group_promoted`.
+
+   **Shared per-submitter sequence.** `user_contact_reg_id` and `user_group_reg_id` draw from one per-submitter series, so `/list` numbers channels + bots + businesses uniquely. Allocated as `1 + MAX over both tables for the submitter` (COALESCE each sub-max to 0); race-free — inserts run only in the sequential event loop (`Service.hs:175-181`). `addGroupRegStore` (`Store.hs:252`) gains the second sub-select against `sx_directory_contact_regs`.
+
+   Types + functions in `Directory/Store.hs`; the joined entity is a contact or a business group, so queries return `(DirectoryContactEntity, ContactReg)`:
+
+   ```haskell
+   type ContactRegId = Int64
+   type UserContactRegId = Int64
+
+   data DirectoryContactEntity = DCEContact Contact | DCEGroup GroupInfo
+
+   data ContactReg = ContactReg
+     { contactRegId :: ContactRegId,
+       dbContactId :: ContactId,
+       userContactRegId :: UserContactRegId,
+       contactId :: Maybe ContactId,
+       groupId :: Maybe GroupId,
+       peerType :: ChatPeerType,
+       contactRegStatus :: GroupRegStatus,
+       promoted :: Bool,
+       createdAt :: UTCTime
+     }
+
+   addContactRegStore    :: ChatController -> Contact -> DirectoryContactEntity -> ChatPeerType -> GroupRegStatus -> IO (Either String ContactReg)
+   getContactAndReg      :: ChatController -> User -> ContactRegId -> IO (Either String (DirectoryContactEntity, ContactReg))
+   getUserContactReg     :: ChatController -> User -> ContactId -> UserContactRegId -> IO (Either String (DirectoryContactEntity, ContactReg))
+   getUserContactRegs    :: ChatController -> User -> ContactId -> IO (Either String [(DirectoryContactEntity, ContactReg)])
+   getContactRegByEntity :: ChatController -> DirectoryContactEntity -> IO (Either String (Maybe ContactReg))
+   setContactRegStatus   :: ChatController -> ContactRegId -> GroupRegStatus -> IO (Either String (GroupRegStatus, ContactReg))
+   setContactPromoted    :: ChatController -> ContactRegId -> Bool -> IO (Either String (DirectoryStatus, Bool))
+   deleteContactReg      :: ChatController -> ContactRegId -> IO (Either String ())
+   getAllListedContacts  :: ChatController -> User -> IO (Either String [(DirectoryContactEntity, ContactReg)])
    ```
-   Records store the profile inline (`display_name`, `description`, `image`, `peerType`, …) —
-   self-contained, no FK to a joined contact, since we never connect. Reuse **`GroupRegStatus`**
-   (resolved, Q3) for `reg_status` — same states as channels. New `Directory/Store.hs` data +
-   functions mirroring the `GroupReg` ones: `ContactReg`, `addContactReg`, `setContactRegStatus`,
-   `deleteContactReg`, `getContactRegBy{Id,Link}`, `getAllListedContacts`, and a search query.
-3. **Registration lifecycle mirrors channels.** `proposed → pending approval → active`, plus
-   `suspended/removed`. On submission, notify admins with the profile + an approve command. The
-   directory **re-reads the address links in the same periodic loop as channels** (resolved, Q6 —
-   `deGroupLinkCheck`, `Service.hs:832`): re-fetch the link data, refresh the stored profile, and
-   a profile change triggers **re-approval** (hidden until re-approved), exactly like a channel
-   profile change (`reapprove`, `Service.hs:858`). The loop is the same as channels; a contact
-   address has a single key and no group membership, so the channel `checkValidOwner` owner-list
-   re-check has no analog and doesn't run — which also means the empty-`linkOwners` false-delist bug
-   can't arise, and `UNIQUE(conn_short_link)` (below) prevents the duplicate-row class that triggered
-   it. **Re-submission of an already-registered link (to research + propose):** mirror the channel
-   re-registration path (`deReregistration`) — upsert the existing reg and send it back to admin
-   review on any change, rather than erroring.
-4. **Admin & user commands — same commands, extended with a chat type** (resolved, Q4). Reuse the
-   existing command constructors and syntax; carry a chat-type discriminator on the id token — `#`
-   for a group (existing), `@` for a contact address — e.g. `/approve @<id>:<name> <version>`,
-   `/list @...`, `/suspend @...`, mirroring the group forms. The `@`/`#` prefix disambiguates the
-   overlapping id spaces (a `group_id` and a `contact_reg_id` both start at 1), so no parallel
-   command names are needed. Extend the command constructors with the chat type, extend
-   `Directory/Events.hs` `directoryCmdP` to parse the prefix, and branch on it in `Service.hs`
-   `deSuperUserCommand`/`deUserCommand`.
-5. **Link identity + verified SimpleX names (resolved).** The contact **link is the listing
-   identity** (for contacts the link is expected to be stable). Two conditions:
-   - **Link present in the profile.** For listing, the fetched profile must declare this link —
-     `Profile.contactLink` present and equal to the registered link. If the link **changes** (or the
-     profile stops declaring it), the address is **unlisted** and must be re-registered — the link is
-     the anchor, not a mutable attribute.
-   - **Name↔link consistency, verified inline.** If the profile claims a SimpleX name
-     (`Profile.contactDomain`), resolve that name and confirm it points to **this** link, comparing
-     inline — the reverse direction of the existing by-name plan path (`Commands.hs:4272-4281`,
-     `contactDomain`/`nameResolvesTo`). A **name change** re-runs this check. On success, populate
-     `sx_directory_contact_regs.simplex_name` → flows to `DirectoryEntry.simplexName` and bot/web
-     search. Reuse `plans/2026-06-25-name-resolution.md` and the group-names work.
-   *(To research + propose: how the directory detects a link change on re-read, whether an address's
-   published profile actually carries `contactLink == its own link`, and the exact resolve-and-compare
-   call for the link → name-claim → link round-trip.)*
+
+   `getContactRegByEntity` resolves re-registration — `getContactWithoutConnViaShortAddress` for a contact, `getGroupViaShortLinkToConnect` for a business group. `deleteContactReg` also deletes the prepared entity. `contact_reg_status` reuses `GroupRegStatus` including `GRSPendingApproval GroupApprovalId`, so the approval-version check is unchanged. Open decision: contacts as DB-only vs mirrored `CR*` append-only log records (`Store.hs:475`); the live read path uses the DB (`getAllListedGroups_`).
+3. **Registration lifecycle mirrors channels.** `proposed → pending approval → active`, plus `suspended/removed`. On submission, notify admins with the profile and an approve command.
+
+   Refresh requires core changes (§A). The `CCTContact` plan path (`Commands.hs:4362`) does **not** refresh a known entity today: `refreshContact` runs `updateContactFromLinkData` only for a by-name plan (`planDomain = Just`, `4372`), and there is no `resolveKnownContact`. Add, under `resolveMode == PRMAll`: `CAPKnown ct -> resolveKnownContact ct` (new, mirrors `resolveKnownGroup`, `4471`), and — for a business group found via the contact link (`getGroupToConnect`, `4402`) — `GLPKnown g -> resolveKnownGroup g` (existing). The periodic loop (`deGroupLinkCheck` analog, `Service.hs:828`) runs `APIConnectPlan … PRMAll` on each registered address link and refreshes the prepared contact or business group.
+
+   Re-approval on change: `updateContactFromLinkData` (`Internal.hs:1523`) gains a change `Bool` (returns `(Contact, Bool)`, mirroring `updateGroupFromLinkData`), and `CAPKnown` carries it plus `ownerVerification` (§A) — the current constructor carries only `Contact`. A change transitions the registration to pending approval (hidden until re-approved), as `reapprove` (`Service.hs:858`) for channels. The channel `checkValidOwner` owner-list re-check has no contact analog.
+
+   Re-submission of an already-prepared address routes through the same plan (`CAPKnown`/`GLPKnown`, matched via `getContactRegByEntity`) and re-verifies ownership from the plan's `ownerVerification` (`deReregistration` analog).
+4. **Admin & user commands — shared commands take a `ChatRef`; group-only commands unchanged** (Q4, from the full `Service.hs` read).
+
+   The directory id resolves **by caller role**, not a fixed type: user-run commands use the per-user local id via `getUserGroupReg` (`deUserCommand:1158` — `if isAdmin then withGroupAndReg else withUserGroupReg`), admin/superuser commands the global id via `getGroupAndReg`, and listings print `if isAdmin then groupId else userGroupRegId` (`:1504`). This split is preserved verbatim for contacts, against the contact table.
+
+   **Shared commands switch their id field to `ChatRef`** (`Directory/Events.hs`, `DirectoryCmd` GADT):
+   - `DCApproveGroup {groupId,..}` → `DCApprove {chatRef :: ChatRef, displayName :: Text, approvalId :: GroupApprovalId, promote :: Maybe Bool}`
+   - `DCRejectGroup` → `DCReject ChatRef Text`; `DCSuspendGroup` → `DCSuspend ChatRef Text`; `DCResumeGroup` → `DCResume ChatRef Text`
+   - `DCDeleteGroup` → `DCDelete ChatRef Text`; `DCConfirmDuplicateGroup` → `DCConfirmDuplicate ChatRef Text`
+   - `DCSendToGroupOwner` → `DCSendToOwner ChatRef Text Text`; `DCPromoteGroup` → `DCPromote ChatRef Text Bool`
+   - `DCListUserGroups` keeps no id; its handler lists group + contact regs together (merged last/pending too).
+
+   **Group-only commands are not modified** — they keep the bare group-id parser (`gc`/`gc_`): `DCMemberRole`, `DCGroupFilter`, `DCShowUpgradeGroupLink`, `DCInviteOwnerToGroup`. A `@` id there is not a valid decimal, so it falls through to `DCCommandError` — parser-level rejection, no handler type check.
+
+   **Parser** (`directoryCmdP`): a ref parser `('@' $> CTDirect) <|> ('#' $> CTGroup) <|> pure CTGroup` then `A.decimal`, building `ChatRef {chatType, chatId, chatScope = Nothing}`; used only by the shared commands. Bare = `CTGroup`, so `/approve 5:Name 1`, `/delete 5:Name` are unchanged.
+
+   **Handlers** (`de{User,Admin,SuperUser}Command`): each shared command branches on `chatType chatRef` — `CTGroup` = existing group logic with `chatId chatRef` (per-role `getUserGroupReg`/`getGroupAndReg`); `CTDirect` = mirrored contact logic (`getUserContactReg`/`getContactReg`); any other `chatType` = error. The `if isAdmin` local/global choice is shared, unchanged.
+
+   **Emitted command strings** carry the prefix — `/approve @<contactRegId>:<name> <n>` for contacts (bare for groups; `sendToApprove:822`), and `/list`/pending shows `@<id>` for contact rows (`sendGroupsInfo:1504`).
+5. **Listing identity + verified SimpleX names.** The listing identity is the prepared entity (`contact_id` or `group_id`), 1:1 with the link. Name↔link verification is inherited from the core: `updateContactFromLinkData` (contact) / `updateGroupFromLinkData` (business group) reconciles the domain claim and sets the verified flag on each refresh (`Internal.hs:1524`); no directory-side resolve-and-compare. The verified name is read from the joined entity (when verified) into `DirectoryEntry.simplexName` and bot/web search. A link that stops resolving to the claimed name clears the verified flag through the same path.
 
 ### D. Listing + web
 
@@ -300,12 +318,7 @@ All grounded in the current tree:
    `taggedObjectJSON`/`dropPrefix "DET"` derivation already emits `{"type":"contact", ...}` for a new
    constructor for free (single→multi constructor is transparent); `peerType` serializes as
    `"business"`/`"bot"`/etc.
-2. **`contactDirectoryEntry`** builder (analogue of `groupDirectoryEntry`, `Listing.hs:100`), from a
-   `ContactReg` row: `DirectoryEntry {entryType = DETContact peerType, displayName, simplexName,
-   groupLink = PublicLink Nothing (Just connShortLink), shortDescr` (from `Profile.shortDescr`)`,
-   welcomeMessage` (from the new `Profile.description`)`, imageFile, activeAt, createdAt}`.
-   `PublicLink` already models contact links (`Listing.hs:63-68`). Store the profile fields (incl.
-   `description`, `peerType`) on the reg row at registration so the entry is self-contained.
+2. **`contactDirectoryEntry`** builder (analogue of `groupDirectoryEntry`, `Listing.hs:100`), from `(DirectoryContactEntity, ContactReg)`: `DirectoryEntry {entryType = DETContact peerType, displayName, simplexName, groupLink = PublicLink Nothing (Just connShortLink), shortDescr, welcomeMessage, imageFile, activeAt, createdAt}`. Profile fields (`displayName`, `shortDescr`, `description` → `welcomeMessage`, `image`), the link, and the domain → `simplexName` are read from the joined entity — a `Contact`'s `Profile` (`DCEContact`) or a business group's `GroupProfile` (`DCEGroup`); `peerType` from the `ContactReg`. `PublicLink` already models contact links (`Listing.hs:63-68`).
 3. **`generateListing`** (`Listing.hs:148`): merge group entries + contact entries into the single
    `DirectoryListing`. Feed the contact rows from `getAllListedContacts` (status active); build
    `DirectoryEntry`s from both sources and serialize together. `listingsUpdated` triggers stay as-is,
@@ -346,15 +359,15 @@ separate contact search); match on display name and SimpleX name.
 per the group's policy — the same treatment `shortDescr` gets today** (not removed wholesale):
 links and SimpleX names are stripped when the group prohibits them.
 
-1. **Send side** — in `redactedMemberProfile` (`Internal.hs:1266-1277`, which already redacts
+1. **Send side** — in `redactedMemberProfile` (`Internal.hs:1259`, which already redacts
    `shortDescr`/`contactLink`/name-proof under the group's `SGFSimplexLinks`/`SGFDirectMessages`),
    also redact `description` — with a **new inline-strip helper** (per G.3), not `shortDescr`'s
    drop-whole `removeSimplexLink`. Adding `description` to `Profile` forces this output record to be
-   rebuilt here anyway. (Used on every member-profile-out path — `Internal.hs:1254,1262`,
-   `Subscriber.hs:851,3273`, `Commands.hs:4134`.)
+   rebuilt here anyway. (Used on every member-profile-out path — `Internal.hs:1247,1255`,
+   `Subscriber.hs:803,3220`, `Commands.hs:4230`.)
 2. **Receive side** — apply the same redaction when ingesting a member profile from the network, so
    a peer can't inject a link/name-laden description. Chokepoints: `updateMemberProfile`
-   (`Store/Groups.hs:3407`) and member creation (`Store/Groups.hs:2510`, `1395`); prefer a single
+   (`Store/Groups.hs:3388`) and member creation (`Store/Groups.hs:2510`, `1395`); prefer a single
    helper mirroring the send-side redaction.
 3. **Redaction granularity (RESOLVED).** **Inline-strip links and names** — drop the
    `Uri`/`HyperLink`/`SimplexLink`/`SimplexName` (the `isLink` set, `Markdown.hs:184`) and `Mention`
@@ -381,7 +394,7 @@ directory. That is the reason to fill them in; the directory is a bonus channel.
   briefcase when **either** the address `business` flag or `peerType == CPTBusiness`, bot cube from
   `peerType`, else person (see §1). The alert holds no description (too small — `AlertManager.kt:289`).
 - Chat list (`chatlist/ChatPreviewView.kt:188`, `isBot`) and the chat banner
-  (`chat/ChatView.kt:2227` `ChatBannerView`, which already has per-type captions — bot / business /
+  (`chat/ChatView.kt:2234` `ChatBannerView`, which already has per-type captions — bot / business /
   contact) — extend to a business marker from `peerType`.
 
 **`description` — shown via a "Read more" affordance, NOT inline** (the alert and the in-chat link
@@ -391,15 +404,11 @@ surfaces: the chat banner (`ChatBannerView`) and the contact info page (`ChatInf
   `shortDescr` is absent → show the first line of `description` truncated to 100 chars with ellipsis
   (up to the first line break), then **"Read more"**. "Read more" appears only when a `description`
   exists to reveal.
-- **"Read more" is a general, extensible `Modal` markdown element.** Add an inline `Format` variant
-  `Modal {modalName :: Text}` to `Markdown.hs:51` (sibling to `Command`/`Mention`/`SimplexLink`) —
-  **no `showText`**: the app resolves both the tappable label and the modal content from the current
-  chat by `modalName` (e.g. `modalName = "description"` → renders "Read more", opens the contact's
-  `description`). `Format`'s existing `Unknown` fallback (`parseJSON … <|> pure (Unknown v)`,
-  `Markdown.hs:533`) makes it forward-compat — old apps decode it as `Unknown`. The **teaser is built
-  app-side** from the profile fields (d3), so the Haskell core just adds the variant + JSON so the
-  app's mirrored enum matches; each client renders the tap (iOS sheet / Android modal), reusing the
-  existing tappable-markdown mechanism (no iOS multiline-hit-test hack).
+- **"Read more" is a client-only `Format` span (Phase 1, implemented).** The `Modal {modalName}`
+  variant lives only in the app's mirrored `Format` enum (Kotlin/Swift); it is **not** in Haskell
+  `Markdown.hs`. The teaser is built app-side from the profile fields, and each client resolves the
+  label and modal content from the current chat by `modalName`, rendering the tap (iOS sheet / Android
+  modal). No Haskell core change.
 - This is NOT the welcome/auto-reply message (`AddressSettings.autoReply`, a transient on-connect
   message), and NOT shown in the pre-connect alert or the shared-link card.
 
@@ -415,7 +424,7 @@ page; in-app it is the banner/info "Read more" once the (prepared) chat is open.
 
 - `src/Simplex/Chat/Types.hs` — extend `ChatPeerType` (`CPTBusiness`, `CPTUnknown`, lenient decode);
   add `Profile.description`; JSON/TextEncoding derivations.
-- `src/Simplex/Chat/Markdown.hs` — add the `Modal {modalName}` `Format` variant + JSON (§H).
+- `src/Simplex/Chat/Controller.hs` / `Library/Commands.hs` / `Library/Internal.hs` — refresh core changes (§A/§C.3): `PRMAllGroups → PRMAll` + `resolveKnownContact`, `CAPKnown` gains `updated`/`ownerVerification`, `updateContactFromLinkData → (Contact, Bool)`.
 - App views (Phase 1, §B.5/§H) — `UserAddressView.kt` ("Share via chat" button + upgrade branch),
   `ChatInfoView.kt` + `ChatView.kt` `ChatBannerView` (description teaser + `Modal` "Read more"), the
   Kotlin/Swift `Format` mirror (`Modal` case + tap → sheet/alert) (+ iOS equivalents). The `peerType`
@@ -473,10 +482,7 @@ Resolved:
   directly.
 - **Q3 — Reg status type (RESOLVED: reuse the group/channel type).** Use the same `GroupRegStatus`
   the channel registrations use — no separate `ContactRegStatus`. The lifecycle mirrors channels.
-- **Q6 — Updates (RESOLVED: re-read in the same loop as channels).** The directory re-reads the
-  registered address links in the same periodic link-check loop it runs for channels
-  (`deGroupLinkCheck`, `Service.hs:832`), re-fetching the address link data to pick up profile/link
-  changes and re-verify the name. Opaque fetch, no connection.
+- **Q6 — Updates (RESOLVED: prepared contact refreshed on the channel loop).** The periodic loop runs `APIConnectPlan … PRMAll` on each registered address link (`deGroupLinkCheck` analog, `Service.hs:828`); under `PRMAll` a new `resolveKnownContact` (mirroring `resolveKnownGroup`) invokes `updateContactFromLinkData` to refresh the prepared contact and reconcile `contactDomain`/`contactDomainVerified`; a business group refreshes via `resolveKnownGroup`. No connection (§A/§C.3).
 - **Q7 — Description screening (RESOLVED: two surfaces, two mechanisms).** *Directory page:* admin
   approval is the gate — a profile change (incl. description) triggers re-approval, hiding the
   address until re-approved, exactly like a channel profile change; no separate automatic content
@@ -500,9 +506,8 @@ land).**
 
 **Phase 2 — directory (only after Phase 1).**
 
-5. Directory store: migration + `ContactReg` model/queries (link-keyed).
-6. `deChatLinkReceived` `MCLContact` case (verify + derive type + link-in-profile check +
-   `addContactReg`) + name↔link verification + admin approval + directory test through to "listed".
+5. Directory store: migration (two nullable ids + `CHECK`) + `ContactReg` model/queries + shared per-submitter sequence.
+6. Core refresh changes (§A: `PRMAll`/`resolveKnownContact`, `CAPKnown.ownerVerification`, `updateContactFromLinkData` change flag), then `deChatLinkReceived` `MCLContact` case (verify → `APIPrepareContact` → `addContactRegStore`) + admin approval + directory test through to "listed".
 7. Listing merge (`DETContact` + `contactDirectoryEntry` + `generateListing`) + one unified
    group+contact search + website rendering.
 
