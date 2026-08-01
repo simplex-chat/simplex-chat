@@ -1219,7 +1219,7 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     -- customer can invite members too, if business allows
     biz ##> "/mr alisa alisa_1 admin"
     biz <## "#alisa: you changed the role of alisa_1 to admin (signed)"
-    alice <## "#biz: biz_1 changed your role from member to admin"
+    alice <## "#biz: biz_1 changed your role from member to admin (signed)"
     connectUsers alice bob
     alice ##> "/a #biz bob"
     alice <## "invitation to join the group #biz sent to bob"
@@ -3732,8 +3732,8 @@ testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
       bob ##> "/l #team"
       bob <## "#team: you left the group"
       bob <## "use /d #team to delete the group"
-      alice <## "#team: bob left the group"
-      cath <## "#team: bob left the group"
+      alice <## "#team: bob left the group (signed)"
+      cath <## "#team: bob left the group (signed)"
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect directly"
       void $ getTermLine bob
