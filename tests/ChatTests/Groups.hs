@@ -1805,7 +1805,7 @@ testGroupModerateOwn =
     \alice bob -> do
       createGroup2 "team" alice bob
       -- disableFullDeletion2 "team" alice bob
-      threadDelay 1000000
+      threadDelay 1250000
       alice #> "#team hello"
       bob <# "#team alice> hello"
       alice ##> "\\\\ #team @alice hello"

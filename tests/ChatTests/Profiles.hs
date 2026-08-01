@@ -1453,6 +1453,7 @@ testPlanAddressConnecting ps = do
     threadDelay 500000
     bob <## "subscribed 1 connections on server localhost"
     bob <## "alice (Alice): contact is connected"
+    threadDelay 100000
     bob @@@ [("@alice", "Audio/video calls: enabled")]
     bob ##> ("/_connect plan 1 " <> cLink)
     bob <## "contact address: known contact alice"
