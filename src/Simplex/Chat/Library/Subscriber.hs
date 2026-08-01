@@ -477,7 +477,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
                   Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend Nothing
+              case gInfo_ of
+                Just gInfo | Just gks <- groupKeys gInfo, maxVersion (peerChatVRange conn'') >= relayWebCapVersion -> do
+                  dm <- encodeSignedGroupConnInfo gInfo gks $ XInfo profileToSend (groupMemberKey gInfo)
+                  allowAgentConnectionInfo user conn'' confId dm
+                _ -> allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend Nothing
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
           void $ saveConnInfo conn connInfo
@@ -594,9 +598,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
+              g <- asks random
+              memberKeys <- liftIO $ atomically $ C.generateKeyPair g
               (gInfo, host) <- withStore $ \db -> do
                 liftIO $ deleteContactCardKeepConn db connId ct
-                createGroupInvitedViaLink db cxt user conn'' glInv
+                createGroupInvitedViaLink db cxt user conn'' memberKeys glInv
               void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
@@ -747,9 +753,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         case memberCategory m of
           GCInviteeMember ->
             case chatMsgEvent of
-              XGrpAcpt memId
+              XGrpAcpt memId mKey
                 | sameMemberId memId m -> do
                     withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                    forM_ mKey $ \(MemberKey k) -> withStore' $ \db -> setMemberPubKey db (groupMemberId' m) k
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
@@ -2607,13 +2614,15 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
             when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
             -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
-            (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId
+            g <- asks random
+            memberKeys <- liftIO $ atomically $ C.generateKeyPair g
+            (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId memberKeys
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId, memberId = membershipMemId} = membership
             if sameGroupLinkId groupLinkId groupLinkId'
               then do
                 subMode <- chatReadVar subscriptionMode
-                dm <- encodeConnInfo $ XGrpAcpt membershipMemId
+                dm <- encodeConnInfo $ XGrpAcpt membershipMemId (groupMemberKey gInfo)
                 connIds@(cmdId, acId) <- prepareAgentJoin user Nothing True connRequest
                 withStore' $ \db -> do
                   setViaGroupLinkUri db groupId connId
@@ -3072,11 +3081,15 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
-          (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db cxt user conn' glInv
+          g <- asks random
+          memberKeys <- liftIO $ atomically $ C.generateKeyPair g
+          (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db cxt user conn' memberKeys glInv
           toView $ CEvtGroupLinkConnecting user gInfo host
           pure (conn', Just gInfo)
         XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
-          (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db cxt user conn' glRjct
+          g <- asks random
+          memberKeys <- liftIO $ atomically $ C.generateKeyPair g
+          (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db cxt user conn' memberKeys glRjct
           toView $ CEvtGroupLinkConnecting user gInfo host
           toViewTE $ TEGroupLinkRejected user gInfo rejectionReason
           pure (conn', Just gInfo)
