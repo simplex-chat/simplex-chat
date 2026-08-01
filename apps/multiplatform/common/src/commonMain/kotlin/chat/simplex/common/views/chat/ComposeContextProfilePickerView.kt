@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.createProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.IncognitoOptionImage
 import chat.simplex.common.views.usersettings.IncognitoView
@@ -40,6 +41,8 @@ fun ComposeContextProfilePickerView(
   val incognitoDefault = chatModel.controller.appPrefs.incognito.get()
   val users = chatModel.users.map { it.user }.filter { u -> u.activeUser || !u.hidden }
   val listExpanded = remember { mutableStateOf(false) }
+  // Not rememberSaveable, and hoisted out of the lazy item: either strands it true.
+  val creatingProfile = remember { mutableStateOf(false) }
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val isVisible = remember { mutableStateOf(false) }
@@ -108,6 +111,11 @@ fun ComposeContextProfilePickerView(
           viewPwd = null,
           keepingChatId = chat.id
         )
+        // Reopen the chat under the new profile. keepingChatId only preserves its
+        // place in the reloaded list, so without this the switch lands on the chat
+        // list of the new profile rather than the invitation it was chosen for.
+        // The id is unchanged by the reassignment - it is the contact/group id.
+        chatModel.chatId.value = chat.id
         if (chatModel.currentUser.value?.userId != newUser.userId) {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.switching_profile_error_title),
@@ -229,6 +237,36 @@ fun ComposeContextProfilePickerView(
   }
 
   @Composable
+  fun NewProfileOption() {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
+        .clickable(onClick = { createProfileForInvitation(rhId, creatingProfile) { changeProfile(it) } })
+        .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(Modifier.size(USER_ROW_AVATAR_SIZE), contentAlignment = Alignment.Center) {
+        Icon(
+          painterResource(MR.images.ic_manage_accounts),
+          contentDescription = null,
+          Modifier.size(24.dp),
+          tint = MaterialTheme.colors.primary,
+        )
+      }
+      TextIconSpaced(false)
+      Text(
+        stringResource(MR.strings.users_add),
+        modifier = Modifier.align(Alignment.CenterVertically),
+        color = MaterialTheme.colors.primary,
+      )
+
+      Spacer(Modifier.weight(1f))
+    }
+  }
+
+  @Composable
   fun ProfilePicker() {
     LazyColumnWithScrollBarNoAppBar(
       Modifier
@@ -272,6 +310,13 @@ fun ComposeContextProfilePickerView(
           )
         )
         ProfilePickerUserOption(user)
+      }
+
+      // Emitted last, so with reverseLayout it renders at the top of the expanded
+      // list - furthest from the compose box, with the current selection nearest.
+      item {
+        Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
+        NewProfileOption()
       }
     }
   }

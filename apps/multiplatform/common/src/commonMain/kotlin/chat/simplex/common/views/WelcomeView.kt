@@ -347,6 +347,50 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
+// Creates a profile for an invitation and hands it to onCreated, which moves the
+// invitation onto it. The profile is created *without* becoming active: the reassignment
+// APIs resolve the prepared chat or connection under the active user, so the profile that
+// owns the invitation has to stay active until onCreated has run.
+fun createProfileForInvitation(rhId: Long?, creating: MutableState<Boolean>, onCreated: (User) -> Unit) {
+  // Two taps before the modal renders would otherwise stack two modals sharing one id,
+  // after which close() could dismiss the wrong one.
+  if (ModalManager.center.hasModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
+  ModalManager.center.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
+    CreateProfile { displayName, shortDescr, image ->
+      if (creating.value) return@CreateProfile
+      creating.value = true
+      withBGApi {
+        try {
+          val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
+          val newUser = controller.apiCreateProfileKeepingActive(rhId, profile) ?: return@withBGApi
+          if (newUser.activeUser) {
+            // The core did not honour keepActiveUser and activated the profile - an older
+            // remote host ignoring the unknown field. Reassigning would now fail, so resync
+            // to what the host actually did and report it. Not switching_profile_error_message:
+            // that says the invitation was moved, and on this path it was not.
+            controller.changeActiveUser(newUser.remoteHostId, newUser.userId, null)
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+            return@withBGApi
+          }
+          // Keep chatModel.users current even if onCreated's reassignment fails - it only
+          // refreshes when it actually switches. listUsers throws and withBGApi does not
+          // catch, so this cosmetic refresh is guarded.
+          runCatching { controller.listUsers(rhId) }.getOrNull()?.let { updatedUsers ->
+            chatModel.users.clear()
+            chatModel.users.addAll(updatedUsers)
+          }
+          if (ModalManager.center.isLastModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) {
+            close()
+          }
+          onCreated(newUser)
+        } finally {
+          creating.value = false
+        }
+      }
+    }
+  }
+}
+
 // The two ordinary "add a profile" paths, where the new profile becomes the active
 // one. Creating one for an invitation takes neither, which is why the form itself
 // no longer chooses.
