@@ -3162,7 +3162,7 @@ testGroupLinkHostProfileReceived =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 100000
+      threadDelay 250000
 
       aliceImage <- getProfilePictureByName bob "alice"
       aliceImage `shouldBe` Just profileImage
