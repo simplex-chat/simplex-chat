@@ -155,8 +155,7 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest ps =
 
 signedSuffix :: TestCC -> String
 signedSuffix cc
-  | v >= groupMemberKeyVersion = " (signed)"
-  | v >= relayWebCapVersion = " (signed, no key to verify)"
+  | v >= relayWebCapVersion = " (signed)"
   | otherwise = ""
   where
     ChatController {config} = chatController cc
