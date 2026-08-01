@@ -153,6 +153,8 @@ shortLinkTests = do
   it "connect to prepared contact incognito (via address)" testShortLinkAddressConnectPreparedContactIncognito
   it "change prepared contact user" testShortLinkChangePreparedContactUser
   it "change prepared contact user, new user has contact with the same name" testShortLinkChangePreparedContactUserDuplicate
+  it "create user keeping active user, then change prepared contact user" testCreateUserKeepingActiveUser
+  it "create user without keepActiveUser activates it" testCreateUserWithoutKeepActiveUser
   it "connect to prepared group incognito" testShortLinkConnectPreparedGroupIncognito
   it "change prepared group user" testShortLinkChangePreparedGroupUser
   it "change prepared group user, new user has group with the same name" testShortLinkChangePreparedGroupUserDuplicate
@@ -3988,6 +3990,60 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
       showActiveUser bob "bob (Bob)"
       bob @@@ []
       bob `hasContactProfiles` ["bob"]
+
+-- Creating a profile to accept an invitation must not switch the active user,
+-- because the prepared contact is resolved under the active user by
+-- APIChangePreparedContactUser - so the profile that owns it has to stay active
+-- until the reassignment is done.
+testCreateUserKeepingActiveUser :: HasCallStack => TestParams -> IO ()
+testCreateUserKeepingActiveUser = testChat2 aliceProfile bobProfile test
+  where
+    test alice bob = do
+      bob ##> "/_create user {\"profile\":{\"displayName\":\"robert\",\"fullName\":\"\"},\"pastTimestamp\":false,\"keepActiveUser\":true}"
+      -- the response carries the created user, not the active one
+      showActiveUser bob "robert"
+      -- ... and the active user is unchanged, with no switch back needed
+      bob ##> "/u"
+      showActiveUser bob "bob (Bob)"
+
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+
+      -- the reassignment works because bob is still active and owns the prepared contact
+      bob ##> "/_set contact user @4 2"
+      bob <## "contact alice changed from user bob to user robert"
+
+      bob ##> "/user robert"
+      showActiveUser bob "robert"
+
+      bob ##> "/_connect contact @4 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      alice <# "robert> hello"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "robert: contact is connected")
+
+      alice <##> bob
+      alice `hasContactProfiles` ["alice", "robert"]
+
+-- Regression guard: clients that do not send keepActiveUser at all (iOS, CLI)
+-- must still parse and must still get the new user activated.
+testCreateUserWithoutKeepActiveUser :: HasCallStack => TestParams -> IO ()
+testCreateUserWithoutKeepActiveUser = testChat aliceProfile test
+  where
+    test alice = do
+      alice ##> "/_create user {\"profile\":{\"displayName\":\"alisa\",\"fullName\":\"\"},\"pastTimestamp\":false}"
+      showActiveUser alice "alisa"
+      alice ##> "/u"
+      showActiveUser alice "alisa"
 
 testShortLinkChangePreparedContactUserDuplicate :: HasCallStack => TestParams -> IO ()
 testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProfile test
