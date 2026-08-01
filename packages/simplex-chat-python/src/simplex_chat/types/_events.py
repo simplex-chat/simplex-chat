@@ -281,13 +281,6 @@ class JoinedGroupMemberConnecting(TypedDict):
     hostMember: "T.GroupMember"
     member: "T.GroupMember"
 
-class SentGroupInvitation(TypedDict):
-    type: Literal["sentGroupInvitation"]
-    user: "T.User"
-    groupInfo: "T.GroupInfo"
-    contact: "T.Contact"
-    member: "T.GroupMember"
-
 class GroupLinkConnecting(TypedDict):
     type: Literal["groupLinkConnecting"]
     user: "T.User"
@@ -309,6 +302,17 @@ class SubscriptionStatus(TypedDict):
     server: str
     subscriptionStatus: "T.SubscriptionStatus"
     connections: list[str]
+
+class ServiceRequest(TypedDict):
+    type: Literal["serviceRequest"]
+    user: "T.User"
+    requestId: str
+    signerKey: NotRequired[str]
+    requestData: dict[str, object]
+
+class ServiceReplySent(TypedDict):
+    type: Literal["serviceReplySent"]
+    connectionId: str
 
 class MessageError(TypedDict):
     type: Literal["messageError"]
@@ -367,17 +371,18 @@ ChatEvent = (
     | ContactConnecting
     | BusinessLinkConnecting
     | JoinedGroupMemberConnecting
-    | SentGroupInvitation
     | GroupLinkConnecting
     | HostConnected
     | HostDisconnected
     | SubscriptionStatus
+    | ServiceRequest
+    | ServiceReplySent
     | MessageError
     | ChatError
     | ChatErrors
 )
 
-ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "sentGroupInvitation", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "messageError", "chatError", "chatErrors"]
+ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "serviceRequest", "serviceReplySent", "messageError", "chatError", "chatErrors"]
 
 
 class OnEventDecorator(Protocol):
@@ -641,12 +646,6 @@ class OnEventDecorator(Protocol):
     ]: ...
 
     @overload
-    def __call__(self, event: Literal["sentGroupInvitation"], /) -> Callable[
-        [Callable[["SentGroupInvitation"], Awaitable[None]]],
-        Callable[["SentGroupInvitation"], Awaitable[None]],
-    ]: ...
-
-    @overload
     def __call__(self, event: Literal["groupLinkConnecting"], /) -> Callable[
         [Callable[["GroupLinkConnecting"], Awaitable[None]]],
         Callable[["GroupLinkConnecting"], Awaitable[None]],
@@ -668,6 +667,18 @@ class OnEventDecorator(Protocol):
     def __call__(self, event: Literal["subscriptionStatus"], /) -> Callable[
         [Callable[["SubscriptionStatus"], Awaitable[None]]],
         Callable[["SubscriptionStatus"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["serviceRequest"], /) -> Callable[
+        [Callable[["ServiceRequest"], Awaitable[None]]],
+        Callable[["ServiceRequest"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["serviceReplySent"], /) -> Callable[
+        [Callable[["ServiceReplySent"], Awaitable[None]]],
+        Callable[["ServiceReplySent"], Awaitable[None]],
     ]: ...
 
     @overload

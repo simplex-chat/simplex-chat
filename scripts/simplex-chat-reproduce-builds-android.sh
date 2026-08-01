@@ -118,9 +118,14 @@ check_apk() {
 verify_apk() {
   apk_name="$1"
 
+  # Release APKs are packaged by AGP (gradle :android:assembleRelease; AGP version is
+  # gradle.plugin.version in apps/multiplatform/gradle.properties), which zero-pads ZIP
+  # alignment. Do NOT add --pad-like-apksigner (standalone apksigner >= 35.0.0-rc1 uses
+  # the 0xd935 extra-field padding) unless AGP is bumped to a packager that uses it —
+  # otherwise apksigcopier aborts with "APK Signing Block offset < central directory offset".
   # https://github.com/obfusk/apksigcopier?tab=readme-ov-file#what-about-signatures-made-by-apksigner-from-build-tools--3500-rc1
-  docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --pad-like-apksigner --replace "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}" \
-                                                                                                   "${DOCKER_PATH_VERIFY}/${apk_name}.aligned"
+  docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --replace "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}" \
+                                                                              "${DOCKER_PATH_VERIFY}/${apk_name}.aligned"
   docker exec "${CONTAINER_NAME}" mv "${DOCKER_PATH_VERIFY}/${apk_name}.aligned" \
                                      "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}"
 

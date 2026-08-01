@@ -13,10 +13,11 @@ from . import _responses as CR
 # Network usage: interactive.
 class APICreateMyAddress(TypedDict):
     userId: int  # int64
+    pqRatchet: NotRequired[bool]
 
 
 def APICreateMyAddress_cmd_string(self: APICreateMyAddress) -> str:
-    return '/_address ' + str(self['userId'])
+    return '/_address ' + str(self['userId']) + ((' pq_ratchet=' + ('on' if self.get('pqRatchet') else 'off')) if self.get('pqRatchet') is not None else '')
 
 APICreateMyAddress_Response = CR.UserContactLinkCreated | CR.ChatCmdError
 
@@ -62,11 +63,12 @@ APISetProfileAddress_Response = CR.UserProfileUpdated | CR.ChatCmdError
 # Network usage: interactive.
 class APISetAddressSettings(TypedDict):
     userId: int  # int64
+    pqRatchet: NotRequired[bool]
     settings: "T.AddressSettings"
 
 
 def APISetAddressSettings_cmd_string(self: APISetAddressSettings) -> str:
-    return '/_address_settings ' + str(self['userId']) + ' ' + json.dumps(self['settings'])
+    return '/_address_settings ' + str(self['userId']) + ((' pq_ratchet=' + ('on' if self.get('pqRatchet') else 'off')) if self.get('pqRatchet') is not None else '') + ' ' + json.dumps(self['settings'])
 
 APISetAddressSettings_Response = CR.UserContactLinkUpdated | CR.ChatCmdError
 
@@ -493,6 +495,7 @@ APIAcceptContact_Response = CR.AcceptingContactRequest | CR.ChatCmdError
 # Network usage: no.
 class APIRejectContact(TypedDict):
     contactReqId: int  # int64
+    notify: bool
 
 
 def APIRejectContact_cmd_string(self: APIRejectContact) -> str:
@@ -689,6 +692,23 @@ def APISetContactPrefs_cmd_string(self: APISetContactPrefs) -> str:
 APISetContactPrefs_Response = CR.ContactPrefsUpdated | CR.ChatCmdError
 
 
+# Service commands
+# Bots with a double ratchet address can answer service requests.
+
+# Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.
+# Network usage: background.
+class APISendServiceResponse(TypedDict):
+    userId: int  # int64
+    requestId: str
+    responseData: dict[str, object]
+
+
+def APISendServiceResponse_cmd_string(self: APISendServiceResponse) -> str:
+    return '/_service_response ' + str(self['userId']) + ' ' + self['requestId'] + ' ' + json.dumps(self['responseData'])
+
+APISendServiceResponse_Response = CR.ServiceReplyAccepted | CR.ChatCmdError
+
+
 # Chat management
 # These commands should not be used with CLI-based bots
 
@@ -697,10 +717,11 @@ APISetContactPrefs_Response = CR.ContactPrefsUpdated | CR.ChatCmdError
 class StartChat(TypedDict):
     mainApp: bool
     enableSndFiles: bool
+    serviceRequests: bool
 
 
 def StartChat_cmd_string(self: StartChat) -> str:
-    return '/_start'
+    return '/_start' + ' main=' + ('on' if self['mainApp'] else 'off') + (' snd_files=off' if not self['enableSndFiles'] else '') + (' service_requests=on' if self['serviceRequests'] else '')
 
 StartChat_Response = CR.ChatStarted | CR.ChatRunning
 
