@@ -153,15 +153,6 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest ps =
       withNewTestChatCfg ps cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
 
-signedSuffix :: TestCC -> String
-signedSuffix cc
-  | v >= relayWebCapVersion = " (signed)"
-  | otherwise = ""
-  where
-    ChatController {config} = chatController cc
-    ChatConfig {chatVRange} = config
-    v = maxVersion chatVRange
-
 withRelay :: HasCallStack => TestParams -> (TestCC -> IO ()) -> IO ()
 withRelay ps = withNewTestChatOpts ps relayTestOpts "relay" chatRelayProfile
 

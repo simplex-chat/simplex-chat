@@ -430,8 +430,8 @@ testGroupShared alice bob cath checkMessages = do
   alice ##> "/mr team bob observer"
   concurrentlyN_
     [ alice <## "#team: you changed the role of bob to observer (signed)",
-      bob <## ("#team: alice changed your role from admin to observer" <> signedSuffix bob),
-      cath <## ("#team: alice changed the role of bob from admin to observer" <> signedSuffix cath)
+      bob <## "#team: alice changed your role from admin to observer (signed)",
+      cath <## "#team: alice changed the role of bob from admin to observer (signed)"
     ]
   bob ##> "#team hello"
   bob <## "#team: you don't have permission to send messages"
@@ -440,8 +440,8 @@ testGroupShared alice bob cath checkMessages = do
   alice ##> "/mr team bob admin"
   concurrentlyN_
     [ alice <## "#team: you changed the role of bob to admin (signed)",
-      bob <## ("#team: alice changed your role from observer to admin" <> signedSuffix bob),
-      cath <## ("#team: alice changed the role of bob from observer to admin" <> signedSuffix cath)
+      bob <## "#team: alice changed your role from observer to admin (signed)",
+      cath <## "#team: alice changed the role of bob from observer to admin (signed)"
     ]
   -- delete contact
   alice ##> "/d bob"
