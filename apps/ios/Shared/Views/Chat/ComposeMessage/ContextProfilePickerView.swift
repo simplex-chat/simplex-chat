@@ -21,6 +21,8 @@ struct ContextProfilePickerView: View {
     @State private var listExpanded = false
     @State private var expandedListReady = false
     @State private var showIncognitoSheet = false
+    @State private var showAddProfile = false
+    @State private var creatingProfile = false
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
@@ -79,6 +81,12 @@ struct ContextProfilePickerView: View {
                 if expandedListReady {
                     let scroll = ScrollView {
                         LazyVStack(spacing: 0) {
+                            addProfileOption()
+                                .contentShape(Rectangle())
+                            Divider()
+                                .padding(.leading)
+                                .padding(.leading, 48)
+
                             let otherUsers = users
                                 .filter { u in u.userId != selectedUser.userId }
                                 .sorted(using: KeyPathComparator<User>(\.activeOrder))
@@ -113,7 +121,7 @@ struct ContextProfilePickerView: View {
                             }
                         }
                     }
-                        .frame(maxHeight: USER_ROW_SIZE * min(MAX_VISIBLE_USER_ROWS, CGFloat(users.count + 1))) // + 1 for incognito
+                        .frame(maxHeight: USER_ROW_SIZE * min(MAX_VISIBLE_USER_ROWS, CGFloat(users.count + 2))) // + 1 for incognito, + 1 for "Add profile"
                         .onAppear {
                             DispatchQueue.main.async {
                                 withAnimation(nil) {
@@ -140,6 +148,17 @@ struct ContextProfilePickerView: View {
                             }
                         }
                 }
+            }
+        }
+        // Attached to the picker, not to the row: the row lives in a lazy container that
+        // may dispose it, taking the presented sheet with it. Not the root either - two
+        // .sheet modifiers on the same view conflict, and body already presents
+        // IncognitoHelp.
+        .sheet(isPresented: $showAddProfile) {
+            NavigationView {
+                CreateProfile(onSubmit: { displayName, shortDescr, image in
+                    try await createProfileForChat(displayName, shortDescr, image)
+                })
             }
         }
     }
@@ -193,6 +212,65 @@ struct ContextProfilePickerView: View {
         }
     }
 
+    private func addProfileOption() -> some View {
+        Button {
+            showAddProfile = true
+        } label: {
+            HStack {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 38, height: 38)
+                    .foregroundColor(theme.colors.primary)
+                Text("Add profile")
+                    .foregroundColor(theme.colors.primary)
+                    .lineLimit(1)
+
+                Spacer()
+            }
+            .padding(.leading, 12)
+            .padding(.trailing)
+            .frame(height: USER_ROW_SIZE)
+        }
+        .disabled(creatingProfile)
+    }
+
+    // Creates a profile to use for this invitation. It is created without becoming
+    // active, because changeProfile below reassigns the prepared chat and the API
+    // resolves that chat under the currently active user - so the profile that owns the
+    // invitation has to stay active until the chat has been moved.
+    private func createProfileForChat(_ displayName: String, _ shortDescr: String?, _ image: String?) async throws {
+        // Atomic check-and-set on the main actor: a plain check-then-set leaves a window
+        // where two submits both pass, and @State must not be read off the main actor.
+        let alreadyCreating = await MainActor.run { () -> Bool in
+            if creatingProfile { return true }
+            creatingProfile = true
+            return false
+        }
+        if alreadyCreating { return }
+        defer { Task { @MainActor in creatingProfile = false } }
+        let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
+        let newUser = try apiCreateProfileKeepingActive(profile)
+        let users = try? listUsers()
+        await MainActor.run {
+            if let users = users { chatModel.users = users }
+        }
+        if newUser.activeUser {
+            // The core did not honour keepActiveUser and activated the profile - an older
+            // remote host ignoring the unknown field. Reassigning would now fail, so
+            // resync to what the host actually did and report it.
+            try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+            // The form stays open, as it does for any other failure, so the alert is not
+            // presented while a sheet is dismissing - it would be swallowed.
+            await MainActor.run {
+                showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
+            }
+            return
+        }
+        await MainActor.run { showAddProfile = false }
+        changeProfile(newUser)
+    }
+
     private func changeProfile(_ newUser: User) {
         Task {
             do {
@@ -215,6 +293,10 @@ struct ContextProfilePickerView: View {
                 }
                 do {
                     try await changeActiveUserAsync_(newUser.userId, viewPwd: nil, keepingChatId: chat.id)
+                    // Reopen the chat under the new profile: keepingChatId only preserves
+                    // its place in the reloaded list, so without this the switch lands on
+                    // the chat list rather than the invitation it was chosen for.
+                    await MainActor.run { chatModel.chatId = chat.id }
                 } catch {
                     await MainActor.run {
                         showAlert(
