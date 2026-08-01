@@ -29,6 +29,10 @@ enum UserProfileAlert: Identifiable {
 let MAX_BIO_LENGTH_BYTES = 160
 
 struct CreateProfile: View {
+    // When set, replaces the default create-and-activate action, so the same form can be
+    // used to create a profile for an invitation (which must not switch the active user
+    // until the prepared chat has been reassigned). Errors are still shown by this view.
+    var onSubmit: ((_ displayName: String, _ shortDescr: String?, _ image: String?) async throws -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
@@ -162,6 +166,20 @@ struct CreateProfile: View {
     private func createProfile() {
         hideKeyboard()
         let shortDescr: String? = if profileBio.isEmpty { nil } else { profileBio }
+        if let onSubmit = onSubmit {
+            let name = displayName.trimmingCharacters(in: .whitespaces)
+            let image = profileImage
+            Task {
+                do {
+                    try await onSubmit(name, shortDescr, image)
+                } catch let error {
+                    await MainActor.run {
+                        showCreateProfileAlert(showAlert: { alert = $0 }, error)
+                    }
+                }
+            }
+            return
+        }
         let profile = Profile(
             displayName: displayName.trimmingCharacters(in: .whitespaces),
             fullName: "",
