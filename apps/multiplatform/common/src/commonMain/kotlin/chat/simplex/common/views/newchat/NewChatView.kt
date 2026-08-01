@@ -39,6 +39,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.createProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.BuildConfigCommon
@@ -293,6 +294,8 @@ fun ActiveProfilePicker(
   showIncognito: Boolean = true
 ) {
   val switchingProfile = remember { mutableStateOf(false) }
+  // Not rememberSaveable, and hoisted out of the lazy item: either strands it true.
+  val creatingProfile = remember { mutableStateOf(false) }
   val incognito = remember {
     chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
   }
@@ -357,6 +360,26 @@ fun ActiveProfilePicker(
         switchingProfile.value = false
       }
     }
+  }
+
+  @Composable
+  fun NewProfileOption() {
+    ProfilePickerOption(
+      title = stringResource(MR.strings.users_add),
+      disabled = switchingProfile.value || creatingProfile.value,
+      selected = false,
+      onSelected = { createProfileForInvitation(rhId, creatingProfile) { selectProfile(it) } },
+      image = {
+        Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
+          Icon(
+            painterResource(MR.images.ic_manage_accounts),
+            contentDescription = null,
+            Modifier.size(24.dp),
+            tint = MaterialTheme.colors.primary,
+          )
+        }
+      }
+    )
   }
 
   @Composable
@@ -453,6 +476,15 @@ fun ActiveProfilePicker(
           }
           itemsIndexed(filteredProfiles) { _, p ->
             ProfilePickerUserOption(p)
+          }
+        }
+        // Outside the branch above: inside it, the row would disappear whenever the
+        // active profile is filtered out by the search text. Only offered when there
+        // is a connection to move to the new profile - in the share list there is
+        // nothing for a brand new profile to share into.
+        if (contactConnection != null) {
+          item {
+            NewProfileOption()
           }
         }
         item {
