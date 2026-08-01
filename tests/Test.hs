@@ -97,12 +97,12 @@ main = do
     createdDropDb =
       before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
         . after_ (dropDatabaseAndUser testDBConnectInfo)
-    testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = True}
+    testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
 #else
     testBracket chatQueryStats agentQueryStats test =
-      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = True}
+      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
     tmpTestBracket chatQueryStats agentQueryStats test =
-      tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = True}
+      tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
 #endif
     tmpBracket test = do
       t <- getSystemTime
