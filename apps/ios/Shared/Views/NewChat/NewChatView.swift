@@ -397,6 +397,8 @@ private struct ActiveProfilePicker: View {
     @State private var searchTextOrPassword = ""
     @State private var showIncognitoSheet = false
     @State private var incognitoFirst: Bool = false
+    @State private var showAddProfile = false
+    @State private var creatingProfile = false
     @State var selectedProfile: User
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
@@ -558,6 +560,61 @@ private struct ActiveProfilePicker: View {
         }
     }
 
+    private var addProfileOption: some View {
+        Button {
+            showAddProfile = true
+        } label: {
+            HStack {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .resizable().scaledToFit().frame(width: 38, height: 38)
+                    .foregroundColor(theme.colors.primary)
+                Text("Add profile")
+                    .foregroundColor(theme.colors.primary)
+                Spacer()
+            }
+        }
+        .disabled(creatingProfile || switchingProfileByTimeout)
+    }
+
+    // Creates a profile for this invitation without activating it, then routes through
+    // the same selectedProfile path as picking an existing profile, so the connection
+    // change and the switch cannot drift apart.
+    private func createProfileForConnection(_ displayName: String, _ shortDescr: String?, _ image: String?) async throws {
+        // Atomic check-and-set on the main actor: a plain check-then-set leaves a window
+        // where two submits both pass, and @State must not be read off the main actor.
+        let alreadyCreating = await MainActor.run { () -> Bool in
+            if creatingProfile { return true }
+            creatingProfile = true
+            return false
+        }
+        if alreadyCreating { return }
+        defer { Task { @MainActor in creatingProfile = false } }
+        let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
+        let newUser = try apiCreateProfileKeepingActive(profile)
+        let users = try? listUsers()
+        await MainActor.run {
+            if let users = users { chatModel.users = users }
+            profiles = chatModel.users.map { $0.user }
+        }
+        if newUser.activeUser {
+            // Older core ignored keepActiveUser and switched instead - resync rather than
+            // attempting a connection change that would now fail.
+            try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+            await MainActor.run {
+                alert = SomeAlert(
+                    alert: Alert(title: Text("Error changing chat profile")),
+                    id: "createProfileActivatedError"
+                )
+            }
+            return
+        }
+        await MainActor.run {
+            showAddProfile = false
+            selectedProfile = newUser
+            profileSwitchStatus = .switchingUser
+        }
+    }
+
     @ViewBuilder private func profilePicker() -> some View {
         let incognitoOption = Button {
             if !incognitoEnabled {
@@ -610,8 +667,26 @@ private struct ActiveProfilePicker: View {
                     profilerPickerUserOption(p)
                 }
             }
+
+            // Outside the branch above: inside it the row would disappear whenever the
+            // active profile is filtered out by the search text. Only offered when there
+            // is a connection to move to the new profile.
+            if contactConnection != nil {
+                addProfileOption
+            }
         }
         .opacity(switchingProfileByTimeout ? 0.4 : 1)
+        // Attached to the picker, not to the row: the row lives in a lazy container that
+        // may dispose it, taking the presented sheet with it. Not the root either - two
+        // .sheet modifiers on the same view conflict, and body already presents
+        // IncognitoHelp.
+        .sheet(isPresented: $showAddProfile) {
+            NavigationView {
+                CreateProfile(onSubmit: { displayName, shortDescr, image in
+                    try await createProfileForConnection(displayName, shortDescr, image)
+                })
+            }
+        }
     }
 }
 
