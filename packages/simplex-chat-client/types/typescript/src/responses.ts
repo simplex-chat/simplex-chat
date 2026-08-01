@@ -48,6 +48,7 @@ export type ChatResponse =
   | CR.SentConfirmation
   | CR.SentGroupInvitation
   | CR.SentInvitation
+  | CR.ServiceReplyAccepted
   | CR.SndFileCancelled
   | CR.UserAcceptedGroupSent
   | CR.UserContactLink
@@ -106,6 +107,7 @@ export namespace CR {
     | "sentConfirmation"
     | "sentGroupInvitation"
     | "sentInvitation"
+    | "serviceReplyAccepted"
     | "sndFileCancelled"
     | "userAcceptedGroupSent"
     | "userContactLink"
@@ -234,6 +236,7 @@ export namespace CR {
     user: T.User
     groupInfo: T.GroupInfo
     msgSigned: boolean
+    localDeletion: boolean
   }
 
   export interface GroupLink extends Interface {
@@ -407,6 +410,12 @@ export namespace CR {
     user: T.User
     connection: T.PendingContactConnection
     customUserProfile?: T.Profile
+  }
+
+  export interface ServiceReplyAccepted extends Interface {
+    type: "serviceReplyAccepted"
+    user: T.User
+    connectionId: string
   }
 
   export interface SndFileCancelled extends Interface {

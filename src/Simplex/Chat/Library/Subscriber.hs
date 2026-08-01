@@ -107,6 +107,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.STM
+import qualified Data.Aeson as J
 
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
@@ -127,6 +128,8 @@ processAgentMessage _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
   eToView $ chatErrorAgent e
+processAgentMessage _ connId (SSENT _ _) =
+  toView $ CEvtServiceReplySent (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
@@ -519,7 +522,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           withCompletedCommand conn agentMsg $ \_ ->
             case cReq of
               CRInvitationUri _ _ -> withStore' $ \db -> setConnConnReqInv db user connId cReq
-              CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
+              CRContactUri _ _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
+        RJCT reason -> do
+          ct' <- withStore' $ \db -> updateContactStatus db user ct CSRejected
+          toView $ CEvtContactRequestRejected user ct' (either (const Nothing) Just $ strDecode reason)
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
@@ -746,7 +752,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   getHostConnId db user groupId
                 sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
-            CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
+            CRContactUri _ _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         conn' <- updatePeerChatVRange conn chatVRange
@@ -1194,7 +1200,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             forM_ mc_ $ \mc -> do
               connReq_ <- withStore' $ \db -> getBusinessContactRequest db user groupId
               sendGroupAutoReply mc connReq_
-      LDATA FixedLinkData {linkConnReq = cReq, rootKey = relayKey, linkEntityId} cData ->
+      LDATA FixedLinkData {rootKey = relayKey, linkEntityId} cData cReq ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
             CFGetRelayDataJoin -> do
@@ -1206,14 +1212,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   pure $ MemberId entityId
                 _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
               case cReq of
-                CRContactUri crData@ConnReqUriData {crClientData} -> do
+                CRContactUri crData@ConnReqUriData {crClientData} e2e -> do
                   let pqSup = PQSupportOff
                   lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
                     Nothing -> throwChatError CEInvalidConnReq
                     Just _ -> do
                       let chatV = initialChatVersion
                           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-                          cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
+                          cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
                       -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
@@ -1361,16 +1367,24 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
-      REQ invId pqSupport _ connInfo -> do
+      REQ invId pqSupport _ connInfo rejectionSupported -> do
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         case chatMsgEvent of
-          XContact p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ pqSupport
+          XContact p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ pqSupport rejectionSupported
           XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
-          XInfo p _ -> profileContactRequest invId chatVRange p Nothing Nothing Nothing Nothing pqSupport
+          XInfo p _ -> profileContactRequest invId chatVRange p Nothing Nothing Nothing Nothing pqSupport rejectionSupported
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
           XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
           -- TODO show/log error, other events in contact request
           _ -> pure ()
+      SREQ invId sigKey_ payload ->
+        chatReadVar processServiceRequests >>= \case
+          True -> case J.eitherDecodeStrict' payload of
+            Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
+            Left _ -> dropSReq
+          False -> dropSReq
+        where
+          dropSReq = withAgent $ \a -> rejectServiceRequest a NRMBackground (aUserId user) invId Nothing
       LINK _link auData ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
@@ -1432,8 +1446,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe MemberKey -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName} memberKey_ xContactId_ welcomeMsgId_ requestMsg_ reqPQSup = do
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe MemberKey -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> Bool -> CM ()
+        profileContactRequest invId chatVRange p@Profile {displayName} memberKey_ xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported = do
           (ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           let v = maxVersion chatVRange
           case gLinkInfo_ of
@@ -1443,7 +1457,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   AddressSettings {autoAccept} = addressSettings
                   isSimplexTeam = sameConnReqContact connReq adminContactReq
               gVar <- asks random
-              withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup) >>= \case
+              withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported) >>= \case
                 RSAcceptedRequest _ucr re -> case re of
                   REContact ct ->
                     -- TODO [short links] update request msg
@@ -3210,7 +3224,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       void $ withStore $ \db -> do
                         reMember <- createIntroReMember db cxt user gInfo memInfo memRestrictions
                         createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
-                      withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff subMode
+                      withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> CM ()
@@ -4420,7 +4434,7 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
-              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink
+              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners}), _) <- getShortLinkConnReq' NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
@@ -4450,15 +4464,15 @@ runRelayRequestWorker a Worker {doWork} = do
                   sigKeys <- liftIO $ atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
-                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData) Nothing
+                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData) CR.IKPQOff False Nothing
                   ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
                   sLnk <- case connShortLink' ccLink' of
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
                   let userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile p}
-                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
                   -- create connection with prepared link (single network call)
-                  connId <- withAgent $ \a' -> createConnectionForLink a' NRMBackground (aUserId user) True ccLink preparedParams userLinkData CR.IKPQOff subMode
+                  connId <- withAgent $ \a' -> createConnectionForLink a' NRMBackground (aUserId user) True ccLink preparedParams userLinkData subMode
                   -- TODO [relays] starting role should be communicated in protocol from owner to relays
                   subRole <- asks $ channelSubscriberRole . config
                   void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId subRole subMode

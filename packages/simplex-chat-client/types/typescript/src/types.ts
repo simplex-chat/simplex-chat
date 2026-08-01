@@ -188,6 +188,42 @@ export namespace AgentErrorType {
   }
 }
 
+export type AgentServiceError = 
+  | AgentServiceError.Rejected
+  | AgentServiceError.Timeout
+  | AgentServiceError.NoPendingRequest
+  | AgentServiceError.NotDRAddress
+  | AgentServiceError.BadSignature
+
+export namespace AgentServiceError {
+  export type Tag = "rejected" | "timeout" | "noPendingRequest" | "notDRAddress" | "badSignature"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Rejected extends Interface {
+    type: "rejected"
+    rejectReason: string
+  }
+
+  export interface Timeout extends Interface {
+    type: "timeout"
+  }
+
+  export interface NoPendingRequest extends Interface {
+    type: "noPendingRequest"
+  }
+
+  export interface NotDRAddress extends Interface {
+    type: "notDRAddress"
+  }
+
+  export interface BadSignature extends Interface {
+    type: "badSignature"
+  }
+}
+
 export interface AutoAccept {
   acceptIncognito: boolean
 }
@@ -1644,6 +1680,7 @@ export namespace ChatListQuery {
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
+  Business = "business",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
@@ -2021,6 +2058,7 @@ export interface Contact {
   chatTs?: string // ISO-8601 timestamp
   preparedContact?: PreparedContact
   contactRequestId?: number // int64
+  contactRequest?: UserContactRequestRef
   contactGroupMemberId?: number // int64
   contactGrpInvSent: boolean
   groupDirectInv?: GroupDirectInvitation
@@ -2093,6 +2131,7 @@ export enum ContactStatus {
   Active = "active",
   Deleted = "deleted",
   DeletedByUser = "deletedByUser",
+  Rejected = "rejected",
 }
 
 export type ContactUserPref = ContactUserPref.Contact | ContactUserPref.User
@@ -3963,6 +4002,7 @@ export type SMPAgentError =
   | SMPAgentError.A_CRYPTO
   | SMPAgentError.A_DUPLICATE
   | SMPAgentError.A_QUEUE
+  | SMPAgentError.A_SERVICE
 
 export namespace SMPAgentError {
   export type Tag = 
@@ -3973,6 +4013,7 @@ export namespace SMPAgentError {
     | "A_CRYPTO"
     | "A_DUPLICATE"
     | "A_QUEUE"
+    | "A_SERVICE"
 
   interface Interface {
     type: Tag
@@ -4009,6 +4050,11 @@ export namespace SMPAgentError {
   export interface A_QUEUE extends Interface {
     type: "A_QUEUE"
     queueErr: string
+  }
+
+  export interface A_SERVICE extends Interface {
+    type: "A_SERVICE"
+    serviceError: AgentServiceError
   }
 }
 
@@ -5080,6 +5126,12 @@ export interface UserContactRequest {
   pqSupport: boolean
   welcomeSharedMsgId?: string
   requestSharedMsgId?: string
+  rejectionSupported: boolean
+}
+
+export interface UserContactRequestRef {
+  contactRequestId: number // int64
+  rejectionSupported: boolean
 }
 
 export interface UserInfo {

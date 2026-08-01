@@ -139,6 +139,32 @@ AgentErrorType = (
 
 AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FILE", "NO_NAME_SERVERS", "PROXY", "RCP", "BROKER", "AGENT", "NOTICE", "INTERNAL", "CRITICAL", "INACTIVE"]
 
+class AgentServiceError_rejected(TypedDict):
+    type: Literal["rejected"]
+    rejectReason: str
+
+class AgentServiceError_timeout(TypedDict):
+    type: Literal["timeout"]
+
+class AgentServiceError_noPendingRequest(TypedDict):
+    type: Literal["noPendingRequest"]
+
+class AgentServiceError_notDRAddress(TypedDict):
+    type: Literal["notDRAddress"]
+
+class AgentServiceError_badSignature(TypedDict):
+    type: Literal["badSignature"]
+
+AgentServiceError = (
+    AgentServiceError_rejected
+    | AgentServiceError_timeout
+    | AgentServiceError_noPendingRequest
+    | AgentServiceError_notDRAddress
+    | AgentServiceError_badSignature
+)
+
+AgentServiceError_Tag = Literal["rejected", "timeout", "noPendingRequest", "notDRAddress", "badSignature"]
+
 class AutoAccept(TypedDict):
     acceptIncognito: bool
 
@@ -1149,7 +1175,7 @@ ChatListQuery = ChatListQuery_filters | ChatListQuery_search
 
 ChatListQuery_Tag = Literal["filters", "search"]
 
-ChatPeerType = Literal["human", "bot"]
+ChatPeerType = Literal["human", "bot", "business"]
 
 # Used in API commands. Chat scope can only be passed with groups.
 
@@ -1420,6 +1446,7 @@ class Contact(TypedDict):
     chatTs: NotRequired[str]  # ISO-8601 timestamp
     preparedContact: NotRequired["PreparedContact"]
     contactRequestId: NotRequired[int]  # int64
+    contactRequest: NotRequired["UserContactRequestRef"]
     contactGroupMemberId: NotRequired[int]  # int64
     contactGrpInvSent: bool
     groupDirectInv: NotRequired["GroupDirectInvitation"]
@@ -1469,7 +1496,7 @@ class ContactShortLinkData(TypedDict):
     business: bool
     localBadge: NotRequired["LocalBadge"]
 
-ContactStatus = Literal["active", "deleted", "deletedByUser"]
+ContactStatus = Literal["active", "deleted", "deletedByUser", "rejected"]
 
 class ContactUserPref_contact(TypedDict):
     type: Literal["contact"]
@@ -2788,6 +2815,10 @@ class SMPAgentError_A_QUEUE(TypedDict):
     type: Literal["A_QUEUE"]
     queueErr: str
 
+class SMPAgentError_A_SERVICE(TypedDict):
+    type: Literal["A_SERVICE"]
+    serviceError: "AgentServiceError"
+
 SMPAgentError = (
     SMPAgentError_A_MESSAGE
     | SMPAgentError_A_PROHIBITED
@@ -2796,9 +2827,10 @@ SMPAgentError = (
     | SMPAgentError_A_CRYPTO
     | SMPAgentError_A_DUPLICATE
     | SMPAgentError_A_QUEUE
+    | SMPAgentError_A_SERVICE
 )
 
-SMPAgentError_Tag = Literal["A_MESSAGE", "A_PROHIBITED", "A_VERSION", "A_LINK", "A_CRYPTO", "A_DUPLICATE", "A_QUEUE"]
+SMPAgentError_Tag = Literal["A_MESSAGE", "A_PROHIBITED", "A_VERSION", "A_LINK", "A_CRYPTO", "A_DUPLICATE", "A_QUEUE", "A_SERVICE"]
 
 class SecurityCode(TypedDict):
     securityCode: str
@@ -3564,6 +3596,11 @@ class UserContactRequest(TypedDict):
     pqSupport: bool
     welcomeSharedMsgId: NotRequired[str]
     requestSharedMsgId: NotRequired[str]
+    rejectionSupported: bool
+
+class UserContactRequestRef(TypedDict):
+    contactRequestId: int  # int64
+    rejectionSupported: bool
 
 class UserInfo(TypedDict):
     user: "User"
