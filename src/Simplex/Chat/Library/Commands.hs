@@ -415,7 +415,7 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 processChatCommand :: StoreCxt -> NetworkRequestMode -> ChatCommand -> CM ChatResponse
 processChatCommand cxt nm = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay, clientService} -> do
+  CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay, clientService, keepActiveUser} -> do
     forM_ profile $ \p@Profile {displayName, image} -> do
       checkValidName displayName
       checkProfileImageSize image
@@ -427,17 +427,21 @@ processChatCommand cxt nm = \case
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
       when (isTrue userChatRelay && isTrue userChatRelay') $ throwChatError CEChatRelayExists
-    (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
+    curUser_ <- readTVarIO u
+    (uss, (smp', xftp')) <- chooseServers curUser_
     let service = isTrue clientService
+        -- keepActiveUser can only be honoured when there is a user to keep,
+        -- otherwise it would leave no active user at all.
+        activateNewUser = isNothing curUser_ || not (isTrue keepActiveUser)
     auId <- withAgent $ \a -> createUser a service smp' xftp'
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
-      user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p True ts
+      user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p activateNewUser ts
       mapM_ (setUserServers db user ts) uss
       createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
       pure user
-    atomically . writeTVar u $ Just user
+    when activateNewUser $ atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
       createPresetContactCards :: DB.Connection -> User -> ExceptT StoreError IO ()
@@ -5907,7 +5911,7 @@ chatCommandP =
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
       let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
-      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service, keepActiveUser = BoolDef False}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
       service <- ("service=" *> onOffP <* A.space) <|> pure False
@@ -5916,7 +5920,7 @@ chatCommandP =
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
           profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
-      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service, keepActiveUser = BoolDef False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
