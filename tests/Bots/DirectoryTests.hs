@@ -1353,7 +1353,7 @@ testCapthaScreening ps =
         cath <## "use /d #privacy to delete the group"
         bob <## "#privacy: cath left the group (signed)"
         cath ##> "/d #privacy"
-        cath <## "#privacy: you deleted the group (signed)"
+        cath <## "#privacy: you deleted your local copy of the group"
         -- change default role to observer
         bob #> "@'SimpleX Directory' /role 1 observer"
         bob <# "'SimpleX Directory'> > /role 1 observer"
