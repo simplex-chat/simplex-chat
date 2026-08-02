@@ -153,10 +153,7 @@ The initiator broadcasts `x.grp.gov.enable` carrying a random 256-bit `governanc
    owned-group rule would be vacuously satisfied by an unsigned certificate; without this check an attacker could
    re-genesis at will, resetting the parameters and the version chain. An identical repeat is a no-op; a different
    genesis for a governed group is surfaced, not applied;
-2. the authorising set matches the rule above and is non-empty. It does **not** additionally require that the receiver
-   be connected to each signer: that requirement is dropped here for the same reason it is dropped from vote counting
-   below, since introductions are admin-controlled and so being connected is not evidence of anything, and here it
-   would also make genesis fail for a receiver that simply has not been introduced to an owner yet;
+2. the authorising set matches the rule above and is non-empty;
 3. the parameters are within bounds: `7 ≤ maxReferendumDays ≤ 30`, `24 ≤ challengeHours ≤ 168`. Both ends bind. An
    unbounded window would make every non-unconditional referendum unresolvable; a one-day period with a one-hour
    window would let two confederates replace the admin set inside a day, irreversibly;
@@ -192,35 +189,27 @@ role and `blockedByAdmin`, since both are levers incumbents control.
 
 **The set is whatever the admins have said it is, and tier 1 does not pretend otherwise.** An admin can announce
 members who do not exist, at any time including mid-referendum, and vote with them: `E + 1` fabricated identities give
-an instant unconditional certificate, and fewer make any live proposal dead. An earlier draft tried to blunt this by
-counting votes only from members the receiver had itself connected to. That rule is dropped, because it does not work:
-in p2p every member-to-member connection is created automatically by the introduction flow with no user involvement,
-and admins control introductions, so an admin can have every victim "connect to" a scripted identity within minutes. A
-rule that looks like a Sybil defence and is not is worse than none, because it invites reliance. The honest statement
-is that fabrication is prevented at tier 2 and merely *visible* at tier 1.
+an instant unconditional certificate, and fewer make any live proposal dead. Adding them mid-referendum pays twice,
+since `2(A + k) > E + k` reduces to `2A + k > E`, so each fabricated aye also lowers the bar. Counting only votes from
+members the receiver has itself connected to does not help: in p2p, connections are created automatically by the
+introduction flow and admins control introductions, so a victim can be made to "connect to" a scripted identity within
+minutes, and a rule that looks like a Sybil defence and is not is worse than none. Neither does an authenticated
+membership log, because the log's own genesis must still be validated against the same admin-asserted list. Only
+out-of-band verification closes it, which is [tier 2](#tier-2-verification-gated-enfranchisement); at tier 1
+fabrication is merely *visible*.
 
-The same lever runs in the other direction and is quieter. Because `E` is what the *receiver* recorded, an admin that
-simply never relays some member-added events to a chosen receiver leaves that receiver with a small `E`, so a
-certificate that is a minority of the real group is unconditional and instantly ripe there. Inflation needs fabricated
-identities that everyone can see arrive; deflation needs only silence, and the victim's view is indistinguishable from
-a small group. Divergent `E` across members is visible in the applied-attestations of rule 5 below, which is detection
-after the fact rather than prevention. Tier 2 does not close this either: it gates *enfranchisement*, and a member
-never told about is a member never enfranchised.
+Deflation is the same lever run backwards, and quieter. Because `E` is what the *receiver* recorded, an admin that
+never relays some member-added events to a chosen receiver leaves it with a small `E`, so a certificate that is a
+minority of the real group is unconditional and instantly ripe there. Inflation needs identities everyone can see
+arrive; deflation needs only silence, and the victim's view is indistinguishable from a small group. Divergent `E` is
+visible in the applied-certificate announcements of step 8, whose tally reveals a receiver that treated a small aye
+count as unconditional, which is detection rather than prevention.
+[Tier 2](#tier-2-verification-gated-enfranchisement) repairs it.
 
-**Eligibility is read at counting time, not anchored to first sight.** An earlier revision anchored both the voter set
-and `E` to what the receiver recorded when it first saw the proposal, to stop mid-referendum packing: adding `k`
-identities that vote aye satisfies `2(A + k) > E + k`, which reduces to `2A + k > E`, so each one also lowers the bar.
-Anchoring is withdrawn, for two reasons. It contradicts the running maximum below, which exists because a denominator
-that can be made too small passes fraudulent certificates; with an anchored `E` an admin need not withhold member-adds
-at all, only *deliver the proposal first*, and a receiver that anchors `E = 10` in a group of forty accepts six ayes as
-unconditional and instantly ripe. Reordering is cheap, transient and leaves nothing behind; withholding is neither. And
-anchoring makes vote validity receiver-relative, so a member that joins legitimately mid-referendum is an elector at
-some receivers and not others and the same certificate bytes yield different tallies, which is divergence with no
-attacker present.
-
-The packing it was meant to stop is therefore left as what it is: an instance of fabrication, which tier 1 concedes it
-cannot prevent and only makes visible, and which tier 2 closes at the root, since an identity added mid-referendum is
-not enfranchised and so neither votes nor counts in `E`.
+Eligibility and `E` are read at counting time and never frozen at first sight. Freezing them would let an admin
+manufacture a small `E` without withholding anything, merely by delivering the proposal ahead of the outstanding
+member-adds, and would make a member that joins legitimately mid-referendum an elector at some receivers and not
+others, so the same certificate bytes would yield different tallies.
 
 **An action may name only members that the receiver recorded when it first saw the proposal.** Evaluating candidacy at
 apply time instead would hand any incumbent a one-message veto over every election: remove one named candidate before
@@ -251,12 +240,6 @@ the opposite of that.
 proposal. A denominator that can be made too small passes fraudulent certificates, which is fatal; one made too large
 only delays honest ones, which is recoverable.
 
-**The electorate is admin-curated, and this design does not fix that.** Membership in a p2p group is whatever each
-member's admins have told them, so an admin can announce members who do not exist, or withhold real ones, and the
-electorate inherits both. An earlier draft proposed an authenticated membership log to close this. It is cut: its own
-genesis still had to be validated against the same admin-asserted list, and enfranchisement within it depended on
-admin-brokered introductions, so it gated the electorate on the very lever it was meant to remove while roughly
-doubling the size of the design. See limitations and future work.
 
 ### Referendum protocol
 
@@ -305,12 +288,10 @@ marking the connection inactive. Serving is additionally bound to the connection
 marks a possible gap, triggering one rate-limited request with backoff. Multiple proposals may coexist at a version; a
 client retains the first from each proposer and ignores that proposer's later ones, so nobody can refresh a deferral
 timer by re-proposing. `prevProposalHash` is validated on every path, not only during catch-up: it must name a
-proposal the receiver **holds** at the previous version, or the genesis hash. Holds, not applied, and the schema
-comment saying "applied" is wrong. Version skipping is permitted and same-version supersede means members legitimately
-apply different proposals at one version, so an applied-reading would permanently fail every later proposal for any
-member that skipped a version or took the superseded branch, since the chain would run through something it never
-applied. Catch-up supplies the proposals a member holds without requiring it to have
-applied them. Left unvalidated it is a free 32-byte nonce,
+proposal the receiver **holds** at the previous version, or the genesis hash. Holds, not applied: version skipping is
+permitted and same-version supersede means members legitimately apply different proposals at one version, so requiring
+the chain to run through what a member applied would fail every later proposal for anyone that skipped a version or
+took the superseded branch. Left unvalidated it is a free 32-byte nonce,
 and since it sits inside `proposalHash` an attacker could grind the mandate-order tie-break at will.
 
 Every signature binds a `groupIdentity`, so a member key cannot be replayed across groups; `governanceId` is chosen by
@@ -343,25 +324,20 @@ bytes per vote, groups beyond ~120 members need the chunked-blob transport alrea
    generally, including the per-member send limits of `2025-02-17-member-send-limits.md`: those are set by a member of
    equal or higher role, so leaving them in force would give an admin a throttle on a proposer's governance traffic.
 3. Governance events must not be placed behind the `memberCanSend` role gate (`Subscriber.hs:1705-1713`), which drops
-   *received* messages from any member at `GRObserver`. This is a prohibition rather than an exemption: the gate is not
-   general, it is applied at five call sites covering `XMsgNew`, `XMsgUpdate` and `XGrpDirectInv` only
-   (`Subscriber.hs:1073, 1080, 1115, 3902, 3908`), so new event types are ungated by default and nothing has to be
-   carved out. It is stated because the alternative is fatal to rule 4: an admin demoting a proposer to observer would
-   not merely mark it, it would make every recipient silently discard that member's proposals and votes.
+   *received* messages from any member at `GRObserver`. The gate covers only `XMsgNew`, `XMsgUpdate` and
+   `XGrpDirectInv` today, so this costs nothing to honour, but it is fatal to rule 4 if overlooked: an admin demoting a
+   proposer to observer would not merely mark it, it would make every recipient silently discard that member's
+   proposals and votes.
 4. Demotion and blocking never affect voting, since eligibility depends only on membership, and given the exemptions
    above they do not affect delivery either.
 5. **Removal deferral.** In a governed group, `XGrpMemDel` for a member does not tear down that member's connections
    for `maxReferendumDays`, and `x.grp.gov.*` continues to flow over them in both directions. Deferral is armed by the
-   group being governed, *not* by holding a proposal. An earlier rule armed it on holding an unresolved proposal, which
-   an incumbent defeats by ordering: purge first, and the victims lose their connections before any proposal exists, so
-   they can neither receive it nor return a vote, while still counting in `E` and thereby raising the bar for the
-   referendum against the purger. Deferral lasts `2 × maxReferendumDays`, not one period: a member removed at `t` is
-   within the recency allowance of any referendum first seen before `t + maxReferendumDays`, and that referendum can
-   resolve as late as `t + 2 × maxReferendumDays`. A one-period deferral would leave a window in which the removed
-   member still counts in `E`, and so still raises the bar, with no connection over which to vote, which is the exact
-   failure this rule exists to prevent. Deferral does not apply to a member removed *by certificate*, consistent with
-   those removals taking effect at once; arming on governedness alone would give a member the group voted out a live
-   moderation-exempt channel for a further two periods.
+   group being governed, *not* by holding a proposal, since arming on an unresolved proposal is defeated by ordering:
+   purge first and the victims lose their connections before any proposal exists, so they can neither receive it nor
+   vote, while still counting in `E`. Deferral lasts `2 × maxReferendumDays`, because a member removed at `t` is within
+   the recency allowance of any referendum first seen before `t + maxReferendumDays`, which can resolve as late as
+   `t + 2 × maxReferendumDays`. It does not apply to a member removed *by certificate*, consistent with those removals
+   taking effect at once.
 
 ### Tally: majority of votes cast
 
@@ -549,8 +525,8 @@ some members and not others, permanently.
 
 **Enfranchisement is evaluated once and does not lapse.** A member enfranchised when the electorate was ten stays
 enfranchised when it is forty, even though its original supporters are no longer a majority. Recomputing against the
-live electorate would make the predicate self-referential, since the electorate is what it defines, and this design
-has twice been bitten by exactly that: the certificate is applied once, like any other, and the result is stored.
+live electorate would make the predicate self-referential, since the electorate is what it defines. The certificate is
+applied once, like any other, and the result is stored.
 
 What this buys is precise. Fabricated identities cannot vote, cannot be counted in `E`, cannot propose, and cannot be
 named by an action, so the whole family of attacks in which an admin manufactures an electorate disappears rather than
@@ -560,45 +536,37 @@ mattering. This is where the tier-1 prerequisite that a key be pinned from the d
 introducer is superseded rather than relied on: an agreeing majority of claims is itself a stronger pinning path than
 either, and a tier-2 client takes it as authoritative.
 
-**Tier 2 therefore repairs a deflated electorate, which tier 1 cannot.** If an admin withholds a member-added event
-for X from receiver R, R at tier 1 has no way to learn X's key, because keys arrive only in admin-originated
-member-adds; `expectedForwarder` (`Subscriber.hs:3891-3894`) accepts another admin's forward only from R's host or X's
-inviter, and while an unknown author is auto-created on any admin's forward, `createNewUnknownGroupMember`
-(`Groups.hs:3483-3502`) writes no key, so R gains a name it cannot verify a signature against. At tier 2 the claims
-themselves carry `subjectKey` and are signed by members R already knows, and they travel as ordinary governance events,
-forwardable by any member. R can therefore reconstruct both X's key and X's enfranchisement over a path incumbents do
-not control. Deflation is a tier-1 limitation, not a tier-2 one.
+**Tier 2 therefore repairs a deflated electorate, which tier 1 cannot.** At tier 1 a receiver never told about X has
+no way to learn X's key, because keys arrive only in admin-originated member-adds, and the unknown-member record
+created when another admin forwards X's traffic (`createNewUnknownGroupMember`, `Groups.hs:3483-3502`) carries no key.
+At tier 2 the claims themselves carry `subjectKey`, are signed by members the receiver already knows, and travel as
+ordinary governance events forwardable by anyone, so both X's key and X's enfranchisement can be reconstructed over a
+path incumbents do not control.
 
 What it costs is equally precise, and it is not small.
 
 Verification is manual, and a majority is a lot of it: admitting one member to the electorate of a thirty-member group
-means sixteen people each comparing a code with the newcomer out of band. In practice the electorate closes as the
-group grows, and a tier-2 group should expect to enfranchise in occasional deliberate rounds rather than continuously.
-Whether that is a defect or the point is a judgement about the group: it is the same threshold the group uses for every
-other decision, and an electorate that admits members more cheaply than it makes decisions is the weaker link.
+means sixteen people each comparing a fingerprint with the newcomer out of band. In practice the electorate closes as
+the group grows, and a tier-2 group should expect to enfranchise in occasional deliberate rounds rather than
+continuously. Whether that is a defect or the point is a judgement about the group: it is the same threshold the group
+uses for every other decision, and an electorate that admits members more cheaply than it makes decisions is the
+weaker link. Keys are also per group, so the same human must be verified again in every tier-2 group shared with them,
+which follows from the unlinkability the key design exists to preserve.
 
-The primitive does not exist yet, and the implementation sketch has to say so. The only key-derived code today is
-`channelMemberCode` (`Types.hs:1912-1920`), which is *pairwise*, over `(ownKey, peerKey)`, and reachable only under
-`useRelays'`; the p2p code is `verificationCode <$> getConnectionRatchetAdHash` (`Commands.hs:3684-3685`), the
-double-ratchet AD hash, which has no relationship to any signing key. Tier 2 needs a single-member fingerprint over
-the governance key, comparison UI that presents it as a property of the person rather than of the session, and a
-p2p-writable store column; `group_members.member_security_code` exists but is written only from the channel arm.
-
-Member keys are per group, so verification does not transfer between groups: the same human must be verified again in
-every tier-2 group shared with them. That follows from the unlinkability the key design exists to preserve, and it is
-a real cost to state rather than a defect to fix.
+The primitive does not exist yet. The only key-derived code today is `channelMemberCode` (`Types.hs:1912-1920`), which
+is pairwise and channel-only; p2p uses the double-ratchet AD hash, unrelated to any signing key. Tier 2 needs a
+single-member fingerprint over the governance key, comparison UI presenting it as a property of the person rather than
+of the session, and a p2p-writable store column.
 
 A member that joins after enabling cannot reconstruct the founding enfranchised set. Genesis carries `memberSetHash`,
 not the member set, and members present at enabling are enfranchised without verification, so a joiner takes that set
-from its host, which is an admin. Its `E`, its vote validation and its `2A > E` are all admin-asserted, which is the
-thing tier 2 exists to remove. Later enfranchisements are self-authenticating through their claims, so the exposure
-shrinks as the group turns over, but it never reaches zero for a joiner that cannot check the founding set out of band.
-Carrying the member set, rather than its hash, in the genesis event would close it and is the obvious v2 change.
+from an admin and its `E` is admin-asserted, which is the thing tier 2 exists to remove. Later enfranchisements are
+self-authenticating through their claims, so the exposure shrinks as the group turns over without reaching zero.
+Carrying the member set itself in the genesis event would close it and is the obvious v2 change.
 
-The trusted setup is load-bearing. Members present at enabling are enfranchised without verification, so tier 2's
-guarantee is only as good as the founding membership; a genesis sealed over identities an owner fabricated inherits
-them permanently, and no later verification undoes it. The security of the whole tier reduces to the honesty of the
-group at the moment it opts in, which is why the enabling limitation below matters more at tier 2 than at tier 1.
+The trusted setup is load-bearing, for the same reason. Members present at enabling are enfranchised unverified, so a
+genesis sealed over identities an owner fabricated inherits them permanently and no later verification undoes it. The
+security of the whole tier reduces to the honesty of the group at the moment it opts in.
 
 It can produce cliques, where a well-connected subgroup is enfranchised and a peripheral one is not, which is a
 fairness problem and not merely a usability one. An admin can also shrink the electorate by removing enfranchised
@@ -607,12 +575,10 @@ allowance, but it is a real path and it is not closed here. And none of this tou
 recruits `n` real people, or verifies with `n` humans it controls, enrols `n` genuine voters. That residual is
 irreducible without a central authority, and is the same one every democracy has.
 
-Tiers are per group and chosen at enabling, and v1 offers no way to change tier afterwards. An earlier sentence here
-claimed a group could move from tier 1 to tier 2 later "since raising the bar only shrinks the electorate": that is
-wrong in both halves. No mechanism exists, governance parameters are fixed at enabling by design, and shrinking the
-electorate makes `2A > E` *easier* and ripeness *shorter*, so a switch would hand whichever clique had verified each
-other an instant unconditional certificate. A tier change is a parameter change and belongs with `GAChangeGovernance`
-in future work.
+Tiers are per group and chosen at enabling, and v1 offers no way to change tier afterwards. Switching is not merely
+unimplemented: moving to tier 2 shrinks the electorate, which makes `2A > E` *easier* and ripeness *shorter*, so it
+would hand whichever clique had verified each other an instant unconditional certificate. A tier change is a parameter
+change and belongs with `GAChangeGovernance` in future work.
 
 ## Threat model
 
@@ -682,21 +648,20 @@ authored by admins, so a colluding admin reaches any majority it likes.
 ## Limitations
 
 - **At tier 1 the electorate is admin-asserted, and that is the design's defining limitation.** An admin can put
-  identities into the electorate that do not exist, hold their keys and vote with them; it can also withhold real
-  members from others' rosters. Concretely, an admin of a group of *n* can announce and introduce *n* scripted
-  identities, have every member's client auto-connect to them, and carry any referendum outright, including one that
-  removes everyone else. No rule in tier 1 prevents this. What tier 1 offers instead is that each step is observable
-  by every member: the fabricated accounts arrive as ordinary member-added events, the introductions are visible, the
-  votes and certificate are signed and attributable, and the outcome can be inspected afterwards. That is a real
-  property for a group whose admins are trusted and occasionally wrong, and no property at all against an admin that
-  is hostile from the start. Tier 2 is the answer; classic Sybil, where an attacker enrols real confederates, is not
-  solvable here at either tier (Douceur) and is left to future work.
+  identities into the electorate that do not exist, hold their keys and vote with them, and can withhold real members
+  from others' rosters. An admin of a group of *n* can announce *n* scripted identities and carry any referendum
+  outright, including one removing everyone else. What tier 1 offers instead is that each step is observable: the
+  accounts arrive as ordinary member-added events, and the votes and certificate are signed and attributable. That is
+  a real property for a group whose admins are trusted and occasionally wrong, and none at all against one hostile from
+  the start. Tier 2 is the answer; classic Sybil, where an attacker enrols real confederates, is not solvable here at
+  either tier (Douceur) and is left to future work. An admin facing removal can also spend the referendum period
+  building a majority for the *next* one; accounts added mid-referendum get no recency protection and can be purged
+  the moment it resolves, but nothing touches accounts seeded before any proposal exists.
 - **Member keys are only as good as the introduction that carried them.** Tier 1 pins a member's key from the direct
-  handshake rather than the introducer's assertion, but the introducer relays the invitation for that handshake and
-  can substitute it, which the group threat model already grants as an admin capability. An admin that MITMs an
-  introduction holds the key both sides pin, and can then sign a conflicting vote in that member's name and have the
-  member's genuine vote annulled. First-seen pinning also has an ordering hazard, since the introducer's asserted copy
-  arrives before the handshake. Out-of-band verification is the only fix, which is to say tier 2.
+  handshake rather than the introducer's assertion, but the introducer relays the invitation for that handshake and can
+  substitute it, which the group threat model already grants as an admin capability. An admin that MITMs an
+  introduction holds the key both sides pin, and can sign a conflicting vote in that member's name to have the genuine
+  one annulled. Out-of-band verification is the only fix, which is to say tier 2.
 - **Enabling is the moment of maximum exposure, and joiners cannot check it at all.** Genesis is validated against
   local knowledge, so an owner that has equivocated membership beforehand can seal a skewed electorate. Worse, a
   member who joins *after* enabling can never satisfy check 4, because `memberSetHash` is frozen at the enabling-time
@@ -708,23 +673,16 @@ authored by admins, so a colluding admin reaches any majority it likes.
   referendum period; after that the removals stand. That buys the group `maxReferendumDays` to answer with a
   referendum the purged can vote in, not immunity, and an incumbent who repeats the purge each period wins by
   attrition against a group that stops paying attention.
-- **An admin can answer a referendum by manufacturing an electorate.** Adding accounts is an admin power, votes count
-  from any member the receiver has met, and an admin controls introductions, so an admin facing removal can spend the
-  referendum period building a majority for the next one. Two rules bound it: accounts added after a member first saw
-  the proposal get no recency protection, so they can be purged the instant the referendum resolves, and a referendum
-  can itself remove members. Neither helps against accounts seeded before any proposal exists, which is the
-  admin-curated electorate limitation above and the strongest argument for solving membership authentication.
 - **Equivocated votes are a partition tool, not just an accident.** A confederate votes aye, lets a certificate apply
   at half the group, then sends its conflicting nay only to the other half, whose tally now fails. Catch-up cannot
-  repair it, because it "cannot force a member to accept a tally its own held votes contradict". Repeating this on
-  each referendum keeps a chosen subset permanently out of step at the cost of one identity and no admin powers.
-  Retaining both signatures makes the equivocation provable and re-servable, which is attribution rather than
-  prevention.
+  repair it, since it cannot force a member to accept a tally its own held votes contradict, so repeating this keeps a
+  chosen subset permanently out of step at the cost of one identity and no admin powers. Retaining both signatures
+  makes the equivocation provable, which is attribution rather than prevention.
 - **Deferral hands a removed member a channel the status quo does not.** Removals do not sever connections for
   `maxReferendumDays`, and governance events over them are exempt from every moderation lever, so a harasser removed
-  today keeps a live queue to a targeted member for weeks and can fill it against the 128-message quota. Today that
-  member is disconnected in seconds. This is a capability the feature creates, not a tuning parameter, and it is the
-  clearest respect in which enabling governance is worse than not.
+  today keeps a live queue to a targeted member for weeks and can fill it against the 128-message quota, where today
+  that member is disconnected in seconds. This is a capability the feature creates, and the clearest respect in which
+  enabling governance is worse than not.
 - **Omission is the unhandled class.** The design is built around making positive acts signed, ordered and
   attributable, and it does that. It has no answer to an admin that acts by not acting. Because admins are the sole
   forwarders for pairs that have not yet connected, withholding is a per-receiver, per-message capability, and every
