@@ -2303,12 +2303,6 @@ encodeXMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys}
        in encodeSignedConnInfo signing xMemberEvt
     Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
 
-encodeSignedGroupConnInfo :: MsgEncodingI e => GroupInfo -> GroupKeys -> ChatMsgEvent e -> CM ByteString
-encodeSignedGroupConnInfo GroupInfo {membership = GroupMember {memberId}} gks@GroupKeys {memberPrivKey} chatMsgEvent =
-  let bindingData = groupBindingData (Just gks) memberId (C.publicKey memberPrivKey)
-      signing = MsgSigning CBGroup bindingData KRMember memberPrivKey
-   in encodeSignedConnInfo signing chatMsgEvent
-
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
@@ -2912,9 +2906,14 @@ joinAgentConnectionAsync :: CommandId -> Bool -> ConnId -> Bool -> ConnectionReq
 joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
   withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
-allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
-allowAgentConnectionAsync user conn@Connection {pqSupport} confId msg = do
-  dm <- encodeConnInfoPQ pqSupport msg
+allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> Maybe GroupInfo -> ChatMsgEvent e -> CM ()
+allowAgentConnectionAsync user conn@Connection {pqSupport} confId gInfo_ msg = do
+  let signing_ = case gInfo_ of
+        Just gInfo | useRelays' gInfo || maxVersion (peerChatVRange conn) >= relayWebCapVersion -> groupMsgSigning False gInfo msg
+        _ -> Nothing
+  dm <- case signing_ of
+    Just signing -> encodeSignedConnInfo signing msg
+    Nothing -> encodeConnInfoPQ pqSupport msg
   allowAgentConnectionInfo user conn confId dm
 
 allowAgentConnectionInfo :: User -> Connection -> ConfirmationId -> ByteString -> CM ()

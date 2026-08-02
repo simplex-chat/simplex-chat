@@ -480,11 +480,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
                   Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-              case gInfo_ of
-                Just gInfo | Just gks <- groupKeys gInfo, maxVersion (peerChatVRange conn'') >= relayWebCapVersion -> do
-                  dm <- encodeSignedGroupConnInfo gInfo gks $ XInfo profileToSend (groupMemberKey gInfo)
-                  allowAgentConnectionInfo user conn'' confId dm
-                _ -> allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend Nothing
+              allowAgentConnectionAsync user conn'' confId gInfo_ $ XInfo profileToSend (groupMemberKey =<< gInfo_)
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
           void $ saveConnInfo conn connInfo
@@ -594,13 +590,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- TODO check member ID
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-              allowAgentConnectionAsync user conn'' confId XOk
+              allowAgentConnectionAsync user conn'' confId Nothing XOk
             XInfo profile _ -> do
               ct' <- processContactProfileUpdate ct profile False `catchAllErrors` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
               p <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
-              allowAgentConnectionAsync user conn'' confId $ XInfo p Nothing
+              allowAgentConnectionAsync user conn'' confId Nothing $ XInfo p Nothing
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
@@ -613,7 +609,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
               profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend Nothing
+              allowAgentConnectionAsync user conn'' confId (Just gInfo) $ XInfo profileToSend (groupMemberKey gInfo)
               toView $ CEvtBusinessLinkConnecting user gInfo host ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO pqSupport connInfo -> do
@@ -764,7 +760,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
                     forM_ mKey $ \(MemberKey k) -> withStore' $ \db -> setMemberPubKey db (groupMemberId' m) k
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                    allowAgentConnectionAsync user conn' confId XOk
+                    allowAgentConnectionAsync user conn' confId (Just gInfo) XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt relayLink relayCap
                 | memberRole' membership == GROwner && isRelay m -> do
@@ -784,7 +780,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       liftIO $ updateGroupMemberStatus db userId m GSMemLeft
                       pure (relay', m {memberStatus = GSMemLeft})
                     -- complete the contact handshake so the relay receives INFO and cleans up its transient bookkeeping
-                    allowAgentConnectionAsync user conn' confId XOk
+                    allowAgentConnectionAsync user conn' confId (Just gInfo) XOk
                     toView $ CEvtGroupRelayUpdated user gInfo m' relay'
                     toViewTE $ TERelayRejected user gInfo reason
                 | otherwise -> messageError "x.grp.relay.reject: only owner should receive relay rejection"
@@ -801,11 +797,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     -- [incognito] send saved profile
                     incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
                     profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo' (fromLocalProfile <$> incognitoProfile)
-                    case groupKeys gInfo' of
-                      Just gks | maxVersion chatVRange >= relayWebCapVersion -> do
-                        dm <- encodeSignedGroupConnInfo gInfo' gks $ XInfo profileToSend (groupMemberKey gInfo')
-                        allowAgentConnectionInfo user conn' confId dm
-                      _ -> allowAgentConnectionAsync user conn' confId $ XInfo profileToSend Nothing
+                    allowAgentConnectionAsync user conn' confId (Just gInfo') $ XInfo profileToSend (groupMemberKey gInfo')
                     toView $ CEvtGroupLinkConnecting user gInfo' m'
                 | otherwise -> messageError "x.grp.link.inv: publicGroupId mismatch"
               XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
@@ -821,7 +813,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                    allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
+                    allowAgentConnectionAsync user conn' confId (Just gInfo) $ XGrpMemInfo membershipMemId membershipProfile
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO _pqSupport connInfo -> do
@@ -1240,7 +1232,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
                     (m', relay) <- setRelayLinkAccepted db cxt user m (MemberKey relayKey) relayProfile
                     pure (confId, m', relay)
-                  allowAgentConnectionAsync user conn confId XOk
+                  allowAgentConnectionAsync user conn confId (Just gInfo) XOk
                   toView $ CEvtGroupRelayUpdated user gInfo m' relay
                 else
                   -- TODO [relays] owner: TBC failed RelayStatus?
