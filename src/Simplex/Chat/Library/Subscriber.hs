@@ -2856,7 +2856,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
-            toView $ CEvtGroupUpdated user g g' (Just m) Nothing
+            toView $ CEvtGroupUpdated user g g' (Just m) ((\(RcvMessage {msgSigned}, _) -> msgSigned) =<< msgTs_)
           _ -> pure ()
         isMainBusinessMember BusinessChatInfo {chatType, businessId, customerId} GroupMember {memberId} = case chatType of
           BCBusiness -> businessId == memberId
