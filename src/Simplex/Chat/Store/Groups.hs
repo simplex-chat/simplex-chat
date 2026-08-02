@@ -376,8 +376,8 @@ setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CC
   pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True}
 
 -- | creates completely new group with a single member - the current user
-createNewGroup :: DB.Connection -> StoreCxt -> User -> GroupProfile -> Maybe Profile -> Bool -> MemberId -> C.KeyPairEd25519 -> Maybe PublicGroupKeys -> Maybe Int64 -> ExceptT StoreError IO GroupInfo
-createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays memberId memberKeys publicGroupKeys publicMemberCount_ = ExceptT $ do
+createNewGroup :: DB.Connection -> StoreCxt -> User -> GroupProfile -> Maybe Profile -> Bool -> MemberId -> Maybe GroupKeys -> Maybe Int64 -> ExceptT StoreError IO GroupInfo
+createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays memberId groupKeys publicMemberCount_ = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission} = groupProfile
       (groupType_, groupLink_, publicGroupId_) = case publicGroup of
         Just PublicGroupProfile {groupType, groupLink, publicGroupId} -> (Just groupType, Just groupLink, Just publicGroupId)
@@ -387,12 +387,15 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
-    let (rootPrivKey_, rootPubKey_) = case publicGroupKeys of
-          Just PublicGroupKeys {groupRootKey} -> case groupRootKey of
-            GRKPrivate pk -> (Just pk, Nothing)
-            GRKPublic k -> (Nothing, Just k)
-          Nothing -> (Nothing, Nothing)
-        memberPrivKey_ = snd memberKeys
+    let (rootPrivKey_, rootPubKey_, memberPrivKey_) = case groupKeys of
+          Nothing -> (Nothing, Nothing, Nothing)
+          Just GroupKeys {publicGroupKeys, memberPrivKey} ->
+            let (rpk, rpub) = case publicGroupKeys of
+                  Just PublicGroupKeys {groupRootKey} -> case groupRootKey of
+                    GRKPrivate pk -> (Just pk, Nothing)
+                    GRKPublic k -> (Nothing, Just k)
+                  Nothing -> (Nothing, Nothing)
+             in (rpk, rpub, Just memberPrivKey)
     groupId <- liftIO $ do
       DB.execute
         db
@@ -420,7 +423,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
             :. (rootPrivKey_, rootPubKey_, memberPrivKey_, publicMemberCount_, rosterVersion0)
         )
       insertedRowId db
-    let memberPubKey = Just $ fst memberKeys
+    let memberPubKey = C.publicKey . memberPrivKey <$> groupKeys
     membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole memberId GROwner) GCUserMember GSMemCreator IBUser customUserProfileId memberPubKey currentTs (vr cxt)
     let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
     pure
@@ -448,7 +451,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
           customData = Nothing,
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing,
-          groupKeys = Just GroupKeys {publicGroupKeys, memberPrivKey = snd memberKeys},
+          groupKeys,
           groupDomainVerified = Nothing
         }
 

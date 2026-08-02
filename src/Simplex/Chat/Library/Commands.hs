@@ -2675,15 +2675,15 @@ processChatCommand cxt nm = \case
   APINewGroup userId incognito gProfile -> withUserId userId $ \user -> do
     g <- asks random
     memberId <- liftIO $ MemberId <$> encodedRandomBytes g 12
-    memberKeys <- liftIO $ atomically $ C.generateKeyPair g
-    gInfo <- newGroup user incognito gProfile False memberId memberKeys Nothing Nothing
+    (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair g
+    gInfo <- newGroup user incognito gProfile False memberId (Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}) Nothing
     createNewGroupItems user gInfo
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APINewGroup userId incognito gProfile
   APINewPublicGroup userId incognito relayIds groupProfile -> withUserId userId $ \user -> do
-    (gProfile', memberId, GroupKeys {publicGroupKeys, memberPrivKey}, setupLink) <- prepareGroupLink user
-    gInfo <- newGroup user incognito gProfile' True memberId (C.publicKey memberPrivKey, memberPrivKey) publicGroupKeys (Just 1)
+    (gProfile', memberId, groupKeys, setupLink) <- prepareGroupLink user
+    gInfo <- newGroup user incognito gProfile' True memberId (Just groupKeys) (Just 1)
     (gLink, results) <- setupLink gInfo `catchAllErrors` \e -> do
       deleteInProgressGroup user gInfo
       throwError e
@@ -4218,14 +4218,14 @@ processChatCommand cxt nm = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
-    newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> MemberId -> C.KeyPairEd25519 -> Maybe PublicGroupKeys -> Maybe Int64 -> CM GroupInfo
-    newGroup user incognito gProfile@GroupProfile {displayName, image} useRelays memberId memberKeys publicGroupKeys publicMemberCount_ = do
+    newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> MemberId -> Maybe GroupKeys -> Maybe Int64 -> CM GroupInfo
+    newGroup user incognito gProfile@GroupProfile {displayName, image} useRelays memberId groupKeys_ publicMemberCount_ = do
       checkValidName displayName
       checkProfileImageSize image
       checkGroupProfileSize gProfile
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-      withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile useRelays memberId memberKeys publicGroupKeys publicMemberCount_
+      withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile useRelays memberId groupKeys_ publicMemberCount_
     createNewGroupItems :: User -> GroupInfo -> CM ()
     createNewGroupItems user gInfo = do
       let cd = CDGroupSnd gInfo Nothing
