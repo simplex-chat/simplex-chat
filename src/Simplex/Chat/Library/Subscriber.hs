@@ -2635,8 +2635,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
                   updateGroupMemberStatusById db userId hostId GSMemAccepted
                   updateGroupMemberStatus db userId membership GSMemAccepted
-                  forM_ (groupMemberKey gInfo) $ \_ ->
-                    when (maxVersion peerChatVRange >= groupMemberKeyVersion) $ setMemberKeyStatus db KSSent hostId
+                  when (isJust (groupMemberKey gInfo) && maxVersion peerChatVRange >= groupMemberKeyVersion) $ setMemberKeyStatus db KSSent hostId
                 joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
                 toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
               else do
