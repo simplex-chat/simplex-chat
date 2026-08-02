@@ -2466,17 +2466,11 @@ sendGroupSignedMessages user gInfo' scope asGroup members signedEvents = do
   sendGroupSignedMessages_ gInfo members signedEvents
 
 sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
-sendGroupProfileUpdate user gInfo scope asGroup members
-  | shouldSendProfileUpdate = sendProfileUpdate `catchAllErrors` eToView
-  | not (useRelays' gInfo) = sendProfileAndKey (filter memberNeedsKey members) `catchAllErrors` eToView
-  | otherwise = pure ()
+sendGroupProfileUpdate user gInfo scope asGroup members =
+  when shouldSendProfileUpdate $ sendProfileUpdate `catchAllErrors` eToView
   where
     User {userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
-    memberNeedsKey m = m `supportsVersion` groupMemberKeyVersion && case userMemberKeyStatus m of
-      KSAttempts n -> n < maxKeySendAttempts
-      _ -> False
-    maxKeySendAttempts = 5 :: Int
     shouldSendProfileUpdate
       | asGroup = False
       | isJust scope = False -- why not sending profile updates to scopes?
@@ -2486,42 +2480,12 @@ sendGroupProfileUpdate user gInfo scope asGroup members
             (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
             (Nothing, Just _) -> True
             _ -> False
-    sendProfile_ members' = do
+    sendProfileUpdate = unless (null members) $ do
       let incognitoProfile = incognitoMembershipProfile gInfo
       profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-      snd <$> sendGroupMessages_ user gInfo members' False [XInfo profile (groupMemberKey gInfo)]
-    sendProfileUpdate = unless (null members) $ do
-      gsr <- sendProfile_ members
+      void $ sendGroupMessages_ user gInfo members False [XInfo profile (groupMemberKey gInfo)]
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
-      unless (useRelays' gInfo) $ recordKeyStatus gsr
-    sendProfileAndKey members' = unless (null members') $ do
-      gsr <- sendProfile_ members'
-      recordKeyStatus gsr
-    recordKeyStatus GroupSndResult {sentTo, pending, forwarded, failed} =
-      withStore' $ \db -> do
-        setMembersKeyStatus db KSSent $ deliveredIds <> [groupMemberId' m | (m, BMBinary) <- forwarded, memberNeedsKey m]
-        setMembersKeyStatus db KSFailed $ map groupMemberId' (filter memberNeedsKey failed)
-        incMembersKeyAttempts db retriableIds
-        forM_ finalErrs $ \(mId, e) -> setMemberKeyStatus db (KSError $ tshow e) mId
-      where
-        (deliveredIds, retriableIds, finalErrs) = foldr addResult (foldr addResult ([], [], []) pending) sentTo
-          where
-            addResult :: (GroupMember, a, Either ChatError b) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)]) -> ([GroupMemberId], [GroupMemberId], [(GroupMemberId, ChatError)])
-            addResult (m@GroupMember {groupMemberId = mId}, _, r) acc@(delivered, retriable, final)
-              | memberNeedsKey m = case r of
-                  Right _ -> (mId : delivered, retriable, final)
-                  Left e
-                    | finalError e -> (delivered, retriable, (mId, e) : final)
-                    | otherwise -> (delivered, mId : retriable, final)
-              | otherwise = acc
-    finalError = \case
-      ChatErrorAgent {agentError} -> case agentError of
-        CONN SIMPLEX _ -> True
-        CONN NOT_FOUND _ -> True
-        NO_USER -> True
-        _ -> False
-      _ -> False
 
 data GroupSndResult = GroupSndResult
   { sentTo :: [(GroupMember, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],

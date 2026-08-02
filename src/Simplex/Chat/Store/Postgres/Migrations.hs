@@ -46,7 +46,6 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
 import Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
 import Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
 import Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
-import Simplex.Chat.Store.Postgres.Migrations.M20260727_member_key_sent
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -92,8 +91,7 @@ schemaMigrations =
     ("20260715_profile_description", m20260715_profile_description, Just down_m20260715_profile_description),
     ("20260716_signed_history", m20260716_signed_history, Just down_m20260716_signed_history),
     ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles),
-    ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection),
-    ("20260727_member_key_sent", m20260727_member_key_sent, Just down_m20260727_member_key_sent)
+    ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection)
   ]
 
 -- | The list of migrations in ascending order by date

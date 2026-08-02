@@ -2829,7 +2829,6 @@ processChatCommand cxt nm = \case
           withFastStore' $ \db -> do
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
-            when (isJust (groupMemberKey g) && maxVersion peerChatVRange >= groupMemberKeyVersion) $ setMemberKeyStatus db KSSent (groupMemberId' fromMember)
             -- MFAll is default for new groups
             unless (enableNtfs == MFAll) $ updateGroupSettings db user groupId chatSettings {enableNtfs}
           void (withAgent $ \a -> joinConnection a nm (aUserId user) agentConnId (enableNtfs /= MFNone) connRequest dm PQSupportOff subMode)
@@ -4245,8 +4244,6 @@ processChatCommand cxt nm = \case
                 groupSize = Just currentMemCount
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
-      when (isJust (groupMemberKey gInfo) && m `supportsVersion` groupMemberKeyVersion) $
-        withStore' $ \db -> setMemberKeyStatus db KSSent groupMemberId
       let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
       timed_ <- contactCITimed ct
       ci <- saveSndChatItem' user (CDDirectSnd ct) msg content Nothing Nothing Nothing timed_ False

@@ -309,7 +309,6 @@ chatTypesDocsData =
     (sti @InlineFileMode, STEnum, "IFM", [], "", ""),
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
-    (sti @KeySendStatus, STUnion, "KS", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
@@ -538,7 +537,6 @@ deriving instance Generic HandshakeError
 deriving instance Generic InlineFileMode
 deriving instance Generic InvitationLinkPlan
 deriving instance Generic InvitedBy
-deriving instance Generic KeySendStatus
 deriving instance Generic JSONBadge
 deriving instance Generic JSONChatInfo
 deriving instance Generic JSONCIContent

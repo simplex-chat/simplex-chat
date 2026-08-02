@@ -125,7 +125,6 @@ This file is generated automatically.
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
-- [KeySendStatus](#keysendstatus)
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
@@ -2483,7 +2482,6 @@ UpdateRequired:
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - memberPubKey: string?
-- userMemberKeyStatus: [KeySendStatus](#keysendstatus)
 - relayLink: string?
 - memberVerifiedCode: [SecurityCode](#securitycode)?
 
@@ -2740,27 +2738,6 @@ User:
 
 Unknown:
 - type: "unknown"
-
-
----
-
-## KeySendStatus
-
-**Discriminated union type**:
-
-Sent:
-- type: "sent"
-
-Failed:
-- type: "failed"
-
-Error:
-- type: "error"
-- sendError: string
-
-Attempts:
-- type: "attempts"
-- sendAttempts: int
 
 
 ---
