@@ -54,8 +54,6 @@ module Directory.Store
   )
 where
 
-import Control.Applicative ((<|>))
-import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Data.Aeson ((.:), (.=))
@@ -63,18 +61,12 @@ import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.List (sortOn)
-import Data.Map (Map)
-import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Data.Time.Clock.System (systemEpochDay)
 import Directory.Search
 import Directory.Util
 import Simplex.Chat.Controller
@@ -90,7 +82,6 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (eitherToMaybe, firstRow, maybeFirstRow', safeDecodeUtf8)
-import System.IO (Handle)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
