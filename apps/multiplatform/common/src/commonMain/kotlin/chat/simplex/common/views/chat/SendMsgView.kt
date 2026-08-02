@@ -69,7 +69,17 @@ fun SendMsgView(
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
   val desktopDensity = remember { appPrefs.desktopChatDensity.state }.value.tokens()
   val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(vertical = desktopDensity.composerVerticalPadding)
-  Box(Modifier.padding(padding)) {
+  val composerShape = RoundedCornerShape(18.dp)
+  val composerModifier = Modifier.padding(padding).then(
+    if (appPlatform.isDesktop) {
+      Modifier
+        .clip(composerShape)
+        .background(MaterialTheme.colors.surface.copy(alpha = 0.96f))
+        .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), composerShape)
+        .padding(horizontal = 10.dp, vertical = 2.dp)
+    } else Modifier
+  )
+  Box(composerModifier) {
     val cs = composeState.value
     val showVoiceButton = !nextConnect && cs.message.text.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started) && (cs.contextItem !is ComposeContextItem.ReportedItem)

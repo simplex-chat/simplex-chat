@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -36,6 +37,10 @@ fun ComposeAttachmentsView(
   move: (Int, Int) -> Unit,
   clear: () -> Unit,
 ) {
+  val desktop = appPlatform.isDesktop
+  val cardWidth = if (desktop) 126.dp else 154.dp
+  val previewHeight = if (desktop) 52.dp else 62.dp
+  val controlSize = if (desktop) 26.dp else 30.dp
   Row(
     Modifier
       .fillMaxWidth()
@@ -51,7 +56,7 @@ fun ComposeAttachmentsView(
         var dragDistance by remember(attachment.id) { mutableFloatStateOf(0f) }
         Surface(
           modifier = Modifier
-            .width(154.dp)
+            .width(cardWidth)
             .clip(RoundedCornerShape(10.dp))
             .focusable(enabled)
             .onPreviewKeyEvent { event ->
@@ -85,7 +90,7 @@ fun ComposeAttachmentsView(
                 Image(
                   bitmap = base64ToBitmap(preview),
                   contentDescription = "Preview of ${attachment.fileName}",
-                  modifier = Modifier.fillMaxWidth().height(62.dp).clip(RoundedCornerShape(7.dp)),
+                  modifier = Modifier.fillMaxWidth().height(previewHeight).clip(RoundedCornerShape(7.dp)),
                   contentScale = ContentScale.Crop
                 )
                 if (attachment.kind == PendingAttachmentKind.Video) {
@@ -93,7 +98,7 @@ fun ComposeAttachmentsView(
                 }
               }
             } else {
-              Box(Modifier.fillMaxWidth().height(62.dp), contentAlignment = Alignment.Center) {
+              Box(Modifier.fillMaxWidth().height(previewHeight), contentAlignment = Alignment.Center) {
                 Icon(painterResource(MR.images.ic_draft), null, Modifier.size(30.dp), tint = MaterialTheme.colors.secondary)
               }
             }
@@ -105,13 +110,13 @@ fun ComposeAttachmentsView(
               style = MaterialTheme.typography.caption
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-              IconButton(onClick = { move(index, index - 1) }, enabled = enabled && index > 0, modifier = Modifier.size(30.dp)) {
+              IconButton(onClick = { move(index, index - 1) }, enabled = enabled && index > 0, modifier = Modifier.size(controlSize)) {
                 Icon(Icons.Default.KeyboardArrowLeft, "Move ${attachment.fileName} left")
               }
-              IconButton(onClick = { remove(attachment.id) }, enabled = enabled, modifier = Modifier.size(30.dp)) {
+              IconButton(onClick = { remove(attachment.id) }, enabled = enabled, modifier = Modifier.size(controlSize)) {
                 Icon(painterResource(MR.images.ic_close), "Remove ${attachment.fileName}")
               }
-              IconButton(onClick = { move(index, index + 1) }, enabled = enabled && index < attachments.lastIndex, modifier = Modifier.size(30.dp)) {
+              IconButton(onClick = { move(index, index + 1) }, enabled = enabled && index < attachments.lastIndex, modifier = Modifier.size(controlSize)) {
                 Icon(Icons.Default.KeyboardArrowRight, "Move ${attachment.fileName} right")
               }
             }

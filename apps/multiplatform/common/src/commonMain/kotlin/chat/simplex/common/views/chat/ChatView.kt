@@ -1617,7 +1617,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
-      horizontalAlignment = Alignment.CenterHorizontally
+      horizontalAlignment = if (appPlatform.isDesktop) Alignment.Start else Alignment.CenterHorizontally
     ) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         if ((cInfo as? ChatInfo.Direct)?.contact?.verified == true) {

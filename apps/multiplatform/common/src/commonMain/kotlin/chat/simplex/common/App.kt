@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -26,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -428,7 +430,30 @@ fun CenterPartOfScreen() {
             .background(MaterialTheme.colors.background),
           contentAlignment = Alignment.Center
         ) {
-          Text(stringResource(if (chatModel.desktopNoUserNoRemote) MR.strings.no_connected_mobile else MR.strings.no_selected_chat))
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Surface(
+              modifier = Modifier.size(64.dp),
+              shape = RoundedCornerShape(18.dp),
+              color = MaterialTheme.colors.onBackground.copy(alpha = 0.06f),
+              elevation = 0.dp,
+            ) {
+              Box(contentAlignment = Alignment.Center) {
+                Icon(
+                  painterResource(MR.images.ic_chat),
+                  contentDescription = null,
+                  modifier = Modifier.size(30.dp),
+                  tint = MaterialTheme.colors.secondary.copy(alpha = 0.72f),
+                )
+              }
+            }
+            Spacer(Modifier.height(18.dp))
+            Text(
+              stringResource(if (chatModel.desktopNoUserNoRemote) MR.strings.no_connected_mobile else MR.strings.no_selected_chat),
+              style = MaterialTheme.typography.h3,
+              fontWeight = FontWeight.Medium,
+              color = MaterialTheme.colors.secondary,
+            )
+          }
         }
       } else {
         ModalManager.center.showInView()
@@ -493,6 +518,14 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
     }
 
     if (sidebarVisible) {
+      Box(
+        Modifier
+          .offset(x = sidebarWidth - 0.5.dp)
+          .width(1.dp)
+          .fillMaxHeight()
+          .zIndex(3f)
+          .background(MaterialTheme.colors.onBackground.copy(alpha = 0.12f))
+      )
       val updateSidebarWidth: (Float) -> Boolean = { requested ->
         val clamped = requested.coerceIn(DesktopLayoutState.MIN_SIDEBAR_WIDTH, maxSidebarWidth.value)
         DesktopLayoutState.setSidebarWidth(clamped)
@@ -538,7 +571,6 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
             )
             setProgress { updateSidebarWidth(it) }
           }
-          .background(MaterialTheme.colors.onBackground.copy(alpha = 0.14f))
       )
     }
 

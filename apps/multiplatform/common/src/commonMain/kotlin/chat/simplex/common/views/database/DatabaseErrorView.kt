@@ -4,7 +4,9 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -78,8 +80,28 @@ fun DatabaseErrorView(
     Text(String.format(generalGetString(MR.strings.database_migrations), ms.joinToString(", ")))
   }
 
-  ColumnWithScrollBarNoAppBar(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
-    val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
+  val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
+  val currentStatus = chatDbStatus.value
+  if (appPlatform.isDesktop && currentStatus is DBMigrationResult.ErrorNotADatabase) {
+    DesktopDatabaseUnlockView(
+      status = currentStatus,
+      dbKey = dbKey,
+      buttonEnabled = buttonEnabled,
+      wrongPassphrase = useKeychain && !storedDBKey.isNullOrEmpty(),
+      savePassphrase = useKeychain,
+      openChat = if (useKeychain) ::saveAndRunChatOnClick else { { callRunChat() } },
+      restoreAvailable = restoreDbFromBackup.value,
+      restore = {
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.restore_database_alert_title),
+          text = generalGetString(MR.strings.restore_database_alert_desc),
+          confirmText = generalGetString(MR.strings.restore_database_alert_confirm),
+          onConfirm = { restoreDb(restoreDbFromBackup, appPreferences) },
+          destructive = true,
+        )
+      }
+    )
+  } else ColumnWithScrollBarNoAppBar(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
     when (val status = chatDbStatus.value) {
       is DBMigrationResult.ErrorNotADatabase ->
         if (useKeychain && !storedDBKey.isNullOrEmpty()) {
@@ -207,6 +229,89 @@ fun DatabaseErrorView(
         color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
+    }
+  }
+}
+
+@Composable
+private fun DesktopDatabaseUnlockView(
+  status: DBMigrationResult.ErrorNotADatabase,
+  dbKey: MutableState<String>,
+  buttonEnabled: Boolean,
+  wrongPassphrase: Boolean,
+  savePassphrase: Boolean,
+  openChat: () -> Unit,
+  restoreAvailable: Boolean,
+  restore: () -> Unit,
+) {
+  Box(
+    Modifier.fillMaxSize().padding(horizontal = 40.dp, vertical = 56.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    Surface(
+      modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+      shape = RoundedCornerShape(18.dp),
+      color = MaterialTheme.colors.surface,
+      contentColor = MaterialTheme.colors.onSurface,
+      border = BorderStroke(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.10f)),
+      elevation = 8.dp,
+    ) {
+      Column(Modifier.padding(horizontal = 32.dp, vertical = 30.dp)) {
+        Surface(
+          modifier = Modifier.size(48.dp),
+          shape = RoundedCornerShape(14.dp),
+          color = MaterialTheme.colors.primary.copy(alpha = 0.12f),
+          elevation = 0.dp,
+        ) {
+          Box(contentAlignment = Alignment.Center) {
+            Icon(
+              painterResource(MR.images.ic_lock),
+              contentDescription = null,
+              modifier = Modifier.size(23.dp),
+              tint = MaterialTheme.colors.primary,
+            )
+          }
+        }
+        Spacer(Modifier.height(22.dp))
+        Text(
+          generalGetString(if (wrongPassphrase) MR.strings.wrong_passphrase else MR.strings.encrypted_database),
+          style = MaterialTheme.typography.h2,
+          fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+          generalGetString(if (wrongPassphrase) MR.strings.passphrase_is_different else MR.strings.database_passphrase_is_required),
+          style = MaterialTheme.typography.body1,
+          color = MaterialTheme.colors.secondary,
+        )
+        Spacer(Modifier.height(22.dp))
+        DatabaseKeyField(dbKey, buttonEnabled, openChat)
+        Spacer(Modifier.height(18.dp))
+        Button(
+          onClick = openChat,
+          modifier = Modifier.fillMaxWidth().heightIn(min = 42.dp),
+          enabled = buttonEnabled,
+          shape = RoundedCornerShape(10.dp),
+          elevation = ButtonDefaults.elevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
+        ) {
+          Text(generalGetString(if (savePassphrase) MR.strings.save_passphrase_and_open_chat else MR.strings.open_chat))
+        }
+        if (wrongPassphrase) {
+          Spacer(Modifier.height(14.dp))
+          Text(
+            status.dbFile.substringAfterLast(File.separator),
+            style = MaterialTheme.typography.caption,
+            color = MaterialTheme.colors.secondary,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+          )
+        }
+        if (restoreAvailable) {
+          Spacer(Modifier.height(10.dp))
+          TextButton(onClick = restore, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text(generalGetString(MR.strings.restore_database), color = MaterialTheme.colors.error)
+          }
+        }
+      }
     }
   }
 }

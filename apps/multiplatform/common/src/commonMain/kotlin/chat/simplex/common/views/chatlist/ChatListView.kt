@@ -760,7 +760,14 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 
 @Composable
 private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>) {
-  Box {
+  val desktopSearchShape = RoundedCornerShape(10.dp)
+  val searchContainerModifier = if (appPlatform.isDesktop) {
+    Modifier
+      .padding(horizontal = 10.dp, vertical = 7.dp)
+      .clip(desktopSearchShape)
+      .background(MaterialTheme.colors.onBackground.copy(alpha = 0.07f))
+  } else Modifier
+  Box(searchContainerModifier) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
       val focusRequester = remember { FocusRequester() }
       var focused by remember { mutableStateOf(false) }
@@ -773,7 +780,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       Icon(
         painterResource(MR.images.ic_search),
         contentDescription = null,
-        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
+        Modifier.padding(start = if (appPlatform.isDesktop) 10.dp else DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
         tint = MaterialTheme.colors.secondary
       )
       SearchTextField(
@@ -860,7 +867,9 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       }
     }
     val oneHandUI = remember { appPrefs.oneHandUI.state }
-    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
+    if (!appPlatform.isDesktop) {
+      Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
+    }
   }
 }
 
