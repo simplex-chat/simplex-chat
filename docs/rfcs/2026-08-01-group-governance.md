@@ -62,12 +62,18 @@ collection of signatures and a deterministic local tally.
 A group can opt in to **governed mode**. Enabling converts all owners to admins; a governed group has no owners, and
 governed clients reject any event that would create or promote one. Governance parameters are fixed at enabling.
 
-**The admin set then changes only by referendum.** No admin may promote a member to admin, demote an admin, or remove
-one. This is the core of the design, and it also closes a regression the design would otherwise introduce. The
-existing receiver check permits acting on a member of *equal* role (`senderRole < memberRole` is strict), so unilateral
-removal already reaches peers; what bounds it today is that only owners can touch owners, and most groups have one or
-two. Abolishing owners without this rule would widen that power from the owner set to every admin, leaving a rogue
-admin able to remove all its colleagues and then the membership.
+**No member becomes an admin except by certificate.** That covers four verbs, not three: no admin may promote a member
+to admin, demote an admin, remove an admin, or **admit a new member at admin role or above**. The last is the one an
+enumeration naturally misses, and it is not theoretical: `checkHostRole` is `memberRole < GRAdmin || memberRole <
+memRole` (`Subscriber.hs:3578-3580`), both comparisons strict, so an equal-role admission passes today and an admin
+can introduce accounts already carrying `GRAdmin` through `xGrpMemNew`, `xGrpMemIntro` or `xGrpMemFwd`. A governed
+client therefore caps any admitted or assigned role at `GRModerator`. Tier 2 does not close this, because
+enfranchisement gates voting and `E` rather than the role, so packed admins would keep forwarding, introduction and
+removal powers in a tier-2 group. This is the core of the design, and it also closes a regression the design would
+otherwise introduce. The existing receiver check permits acting on a member of *equal* role (`senderRole < memberRole`
+is strict), so unilateral removal already reaches peers; what bounds it today is that only owners can touch owners,
+and most groups have one or two. Abolishing owners without this rule would widen that power from the owner set to
+every admin, leaving a rogue admin able to remove all its colleagues and then the membership.
 
 Any member may propose a new admin set. Members vote aye or nay with Ed25519 signatures over the proposal hash, sent
 over their direct connections. Anyone can assemble the votes into a **certificate**, a self-authenticating proof that
@@ -331,7 +337,8 @@ bytes per vote, groups beyond ~120 members need the chunked-blob transport alrea
 4. Demotion and blocking never affect voting, since eligibility depends only on membership, and given the exemptions
    above they do not affect delivery either.
 5. **Removal deferral.** In a governed group, `XGrpMemDel` for a member does not tear down that member's connections
-   for `maxReferendumDays`, and `x.grp.gov.*` continues to flow over them in both directions. Deferral is armed by the
+   for `2 × maxReferendumDays`, and `x.grp.gov.*` continues to flow over them in both directions. Deferral is armed by
+   the
    group being governed, *not* by holding a proposal, since arming on an unresolved proposal is defeated by ordering:
    purge first and the victims lose their connections before any proposal exists, so they can neither receive it nor
    vote, while still counting in `E`. Deferral lasts `2 × maxReferendumDays`, because a member removed at `t` is within
@@ -402,7 +409,7 @@ applies or finally rejects a certificate, further votes for that proposal are ig
 On receiving `x.grp.gov.cert`, a member:
 
 1. fetches the referenced proposal if it lacks it, and validates it: signature, `prevProposalHash`, and an action
-   naming only electorate members;
+   naming only members the receiver recorded at `firstSeenAt`;
 2. verifies every vote signature and discards annulled votes;
 3. checks `govVersion` **greater than** the stored version. A stale version is ignored as replay, except that a
    same-version certificate for a *different* proposal supersedes the applied one if it ranks higher in **mandate
@@ -413,8 +420,11 @@ On receiving `x.grp.gov.cert`, a member:
 4. for a version gap greater than one, requires a **witness chain**: one bundle per intervening version whose
    certificate passes the tally on its own vote set, each linked by `prevProposalHash`. This is a cheap check and is
    not load-bearing; what binds is step 6;
-5. waits until `ripeAt`, then, unless the certificate is unconditional, runs the challenge window and re-evaluates
-   over the union;
+5. waits until `ripeAt`, then runs the challenge window and re-evaluates over the union, unless the certificate is
+   unconditional **and** its action is `GAReplaceAdmins`. `GARemoveMembers` and `GAEnfranchise` are required to be
+   unconditional by step 7, so exempting unconditional certificates in general would mean the two irreversible actions
+   never open a window at all; the window is where annulment evidence arrives, and at `2A = E + 1` one annulment flips
+   the tally;
 6. if the certificate is stale, meaning for a version the receiver has already passed, or arrived by catch-up,
    requires **attestations**: `min(3, |non-aye members|)` distinct members, outside the certificate's aye set, must
    have signed `smpEncode ("SXGS", groupIdentity, governanceId, govVersion, proposalHash)` for *that proposal*, and a
@@ -437,7 +447,12 @@ On receiving `x.grp.gov.cert`, a member:
    a display-only hint that peers verify by fetching the certificate. It exists because a same-version disagreement
    produces no version gap and so no catch-up trigger, and without it two halves of a group would never compare.
 
-Because the action names a complete set rather than a delta, application is idempotent and order-independent. Clients
+`GAReplaceAdmins` names a complete set rather than a delta, so applying it is idempotent and order-independent.
+`GARemoveMembers` is neither: it is a delta with no inverse, so a receiver that applied a removal before a
+higher-ranked same-version `GAReplaceAdmins` superseded it keeps the members removed, while a receiver that saw them in
+the other order never removes them, and no action exists to reconcile. **An applied removal is therefore final and is
+not undone by supersede**, and clients state it that way rather than claiming order-independence they do not have.
+Clients
 should surface a "contested result" state while two same-version certificates are in play, and new admins should avoid
 destructive actions until their certificate's window has closed unchallenged.
 
@@ -611,7 +626,8 @@ anyone proposes is not bounded by anything here.
 since membership is admin-asserted; hold the key of any member whose introduction it MITMed, and annul that member's
 vote by signing a conflicting one. Both are visible to members but not prevented, and both are what tier 2 closes.
 
-*cannot:* change the admin set outside a referendum, so it cannot remove its colleagues, pack the set, or entrench
+*cannot:* change the admin set outside a referendum, so it cannot remove its colleagues, pack the set by promotion or
+by admitting new members at admin role, or entrench
 itself; veto a referendum by procedure, since no admin signature appears in propose, vote or apply and candidacy is
 judged as of each receiver's first sight of the proposal; censor one, since governance events are forwardable by any
 member; silence a voter by demotion or blocking, or by removal within the recency period; rush a result, since speed
@@ -679,7 +695,7 @@ authored by admins, so a colluding admin reaches any majority it likes.
   chosen subset permanently out of step at the cost of one identity and no admin powers. Retaining both signatures
   makes the equivocation provable, which is attribution rather than prevention.
 - **Deferral hands a removed member a channel the status quo does not.** Removals do not sever connections for
-  `maxReferendumDays`, and governance events over them are exempt from every moderation lever, so a harasser removed
+  `2 × maxReferendumDays`, and governance events over them are exempt from every moderation lever, so a harasser removed
   today keeps a live queue to a targeted member for weeks and can fill it against the 128-message quota, where today
   that member is disconnected in seconds. This is a capability the feature creates, and the clearest respect in which
   enabling governance is worse than not.
@@ -731,8 +747,9 @@ authored by admins, so a colluding admin reaches any majority it likes.
   (checks 1 to 4); proposal validation including `prevProposalHash` on every path; ripeness from a persisted
   per-proposal `first_seen_at`, with `E` as a per-proposal running maximum; the challenge-window worker with late
   voting; the apply procedure above; catch-up serving with per-requester bounds; forwarder and `blockedByAdmin`
-  exemptions; removal deferral; certificate removals applied without the recency allowance; **rejection of any admin-set
-  change outside a certificate**, and of owner-role members in `xGrpMemNew`/`xGrpMemIntro`/`xGrpMemFwd`/`xGrpMemRole`.
+  exemptions; removal deferral; certificate removals applied without the recency allowance; **capping any admitted or
+  assigned role at `GRModerator`**; **rejection of any admin-set change outside a certificate**, and of owner-role
+  members in `xGrpMemNew`/`xGrpMemIntro`/`xGrpMemFwd`/`xGrpMemRole`.
 - `Commands.hs`: relax the `GROwner` assertions for governed groups, not only the one in `runUpdateGroupProfile`.
   The sweep is `Commands.hs:1192` (root key), `1338-1341` (`APIDeleteChat`), `1911`, `2718` (`APIAddGroupRelays`),
   `4020` (`runUpdateGroupProfile`), `4088`, and `checkSendAsGroup` (`Subscriber.hs:1065-1067`). Channel-only sites are
