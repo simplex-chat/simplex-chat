@@ -84,9 +84,10 @@ because participation thresholds reward abstention: an opponent defeats a quorum
 it than by voting against it, which is the opposite of the behaviour a group wants. The protection against a small
 minority passing a referendum unopposed is therefore not the tally rule but the *voting period* during which anyone can
 cast a nay, so receivers validate the period structurally, and every member is guaranteed an objection window between
-seeing a result and applying it (see "Timing"). A certificate whose ayes exceed half the whole electorate cannot be
-changed by any vote still outstanding, so it is immune to vote-withholding and applies immediately; every other
-certificate applies only after a challenge window (see "Certificate soundness").
+seeing a result and applying it (see "Timing"). The rule is paired with a duration that falls as support rises: a certificate
+may only be evaluated after `maxReferendumDays × (1 − 2A/E)`, so weak support waits and a majority of the whole
+electorate is ripe at once, immune to any outstanding vote and exempt from the challenge window (see "Duration" and
+"Certificate soundness").
 
 Incumbents cannot block a referendum in progress because: governance events are self-authenticating and accepted from
 *any* member or forwarder (exempt from the single-`expectedForwarder` rule); voting rights are fixed at proposal time,
@@ -162,7 +163,7 @@ The initiator then broadcasts the genesis certificate as `x.grp.gov.enable`:
 
 - mint a random 256-bit `governanceId`, a group-scoped identifier that exists only inside e2e-encrypted messages (see
   metadata note under limitations);
-- `params`: `{referendumDays (default 7), challengeHours (default 24), witnessCount (default 2)}`;
+- `params`: `{maxReferendumDays (default 30), challengeHours (default 24), witnessCount (default 2)}`;
 - the initial electorate (list and hash, as defined in the next section);
 - signed bytes: `smpEncode ("SXGG", governanceId, params, genesisLogHash)`, signed by every current owner, where
   `genesisLogHash` is the hash of the sealed initial membership log (see "Authenticated membership").
@@ -178,8 +179,8 @@ Receivers validate, fail-closed on any failure, that:
 2. the authorising set matches the rule above, is non-empty, and every signer is connected to the receiver: exactly the
    recorded `GROwner` members for an owned group, or a strict majority of the recorded current members for an
    ownerless one;
-3. the parameters lie within protocol-defined bounds: `3 ≤ referendumDays ≤ 30`, `24 ≤ challengeHours ≤
-   24·referendumDays`, `1 ≤ witnessCount ≤ 5`. Both ends bind. An unbounded window would make every
+3. the parameters lie within protocol-defined bounds: `7 ≤ maxReferendumDays ≤ 30`, `24 ≤ challengeHours ≤ 168`,
+   `1 ≤ witnessCount ≤ 5`. Both ends bind. An unbounded window would make every
    non-unconditional referendum unresolvable, silently reducing governance to strict-majority-of-electorate forever;
    at the other end a one-day period with a one-hour window would let two confederates replace the admin set inside a
    day, which a dormant membership routinely misses, and enabling is irreversible so the group could never undo it.
@@ -285,7 +286,7 @@ enfranchisement in sparse groups where a joiner connects slowly.
 New chat protocol events (JSON, version-gated): `x.grp.gov.enable` (above), and:
 
 - `x.grp.gov.propose`
-  `{governanceId, govVersion, action, logFrontier, prevProposalHash, proposedAt, expiresAt, proposer, sig}`,
+  `{governanceId, govVersion, action, logFrontier, prevProposalHash, proposedAt, proposer, sig}`,
   from any electorate member. `prevProposalHash` is the `proposalHash` of the referendum whose certificate the proposer
   applied at the previous version (the genesis certificate's hash at `govVersion = 2`), chaining each referendum to the
   state it was proposed against. It names the *proposal*, not the certificate, because certificates are not canonical:
@@ -294,7 +295,7 @@ New chat protocol events (JSON, version-gated): `x.grp.gov.enable` (above), and:
   proposed member IDs sorted. `proposer` is the proposer's `MemberId`, carried explicitly so that forwarded copies can
   be verified without trusting the forwarder's sender claim. `proposalHash` = SHA-256 of the deterministic binary
   encoding
-  `smpEncode ("SXGP", governanceId, govVersion, action, logFrontier, prevProposalHash, proposedAt, expiresAt, proposer)`;
+  `smpEncode ("SXGP", governanceId, govVersion, action, logFrontier, prevProposalHash, proposedAt, proposer)`;
   `sig` is the proposer's signature over it. `govVersion` must be the receiver's stored governance version + 1 for full
   processing; a proposal claiming a higher version is not retained and only marks a possible version gap, triggering at
   most one rate-limited `x.grp.gov.request` with backoff (otherwise a single forged-version proposal would stampede the
@@ -335,7 +336,7 @@ Transport rules (the anti-censorship core):
 4. **Removal deferral**, in two tiers. (i) While a client holds an unresolved proposal, it defers the connection
    deletion normally triggered by `XGrpMemDel` (both for itself when removed and toward removed third parties) for
    members of that proposal's electorate (removals of non-electorate members proceed normally), until no live challenge
-   window for the proposal can remain open: `expiresAt` + the certificate freshness horizon + the maximum window (terms
+   window for the proposal can remain open: `latestClose` + the certificate freshness horizon + the maximum window (terms
    defined under "Certificate soundness" and "Applying a certificate"). (ii) A client that has only seen governance
    traffic (votes, a certificate, an announcement) *referencing* a proposal it does not hold (a member behind on
    versions must still be protected) cannot know the electorate, so it defers **all** removals, but under bounds that
@@ -366,36 +367,77 @@ curve the number of ayes required moves as votes arrive, so "how many more do we
 can raise the bar for the ayes; under `A > B` each vote moves the result by exactly one, in the direction the voter
 chose.
 
-The rule's weakness is the mirror image of its simplicity: with no nays, a single aye passes. Nothing in the arithmetic
-distinguishes a genuine unopposed proposal from one nobody noticed, so the entire defence of a silent electorate is
-procedural: the enforced referendum period, the challenge window, and the fact that one nay is enough to force a real
-contest. This is a deliberate trade against a minimum-support floor (see open questions), and it is why the period is
-validated as a security property rather than a liveness convenience.
+Taken alone the rule has an obvious weakness: with no nays, a single aye passes, and nothing in the arithmetic
+distinguishes a genuinely unopposed proposal from one nobody noticed. The design answers that with time rather than
+with a higher threshold, in the next section.
+
+### Duration: weak support waits
+
+A referendum has no fixed length. Instead a certificate becomes **ripe**, meaning it may be evaluated at all, only
+after a delay determined by how much of the electorate has actually endorsed it:
+
+```
+ripeAt = proposedAt + maxReferendumDays × max(0, 1 − 2A/E)
+```
+
+So support buys speed and nothing else. A proposal carrying half the electorate as ayes is ripe at once; one carrying a
+quarter waits half the maximum; one carrying a single vote waits almost the full 30 days. `latestClose = proposedAt +
+maxReferendumDays` is the corresponding worst case, and is the term the deferral, freshness and chain rules key off.
+
+The endpoint is not a special case bolted on: at `2A ≥ E` the delay reaches exactly zero, which is the same threshold
+as the unconditional test, so "a majority of the whole electorate passes immediately" is simply where this curve meets
+the axis. Above it (`2A > E`) the certificate is additionally immune to any outstanding vote, so it also skips the
+challenge window. Symmetrically, a proposal is **dead** once `2B ≥ E`, since the ayes can no longer catch up even if
+every remaining member votes aye; there is no reason to keep it open.
+
+Three properties make this behave predictably.
+
+*Only ayes move the clock.* Nays are neutral for timing and decisive only in the tally. A member who objects must never
+hasten the outcome they are objecting to, and an opposition bloc must never be able to accelerate a vote by turning up.
+
+*The clock only ever moves earlier.* `A` is monotone, so the ripeness time is monotone decreasing and every member
+computes the same value from the same certificate: it is a function of the certificate's own contents, not of a live
+local tally, which is what keeps it canonical across members who have seen different vote sets. The one exception is
+annulment of an equivocated aye, which moves ripeness later, bounded by the cap.
+
+*A late surge cannot snipe.* Because ripeness is per-certificate rather than a shared deadline, a bloc that votes at
+the last moment produces a certificate that is ripe immediately, but the challenge window still runs from receipt, so
+every member retains its objection period. Only a genuine majority of the electorate, which nothing outstanding can
+overturn, skips that.
+
+The effect on the single-aye case is the point of the design. In a group of 20 one aye ripens after 27 days, in a group
+of 100 after 29, and throughout that time a single nay defeats it, since `A > B` fails at 1–1. Passing a referendum
+that nobody supports now requires a month of total inattention from every other member, which is a defensible reading
+of consent by silence, rather than a week of ordinary distraction. A group that wants a hard floor instead of a slow
+clock can still have one; see open questions.
 
 ### Timing
 
 There is no shared clock, so timing is enforced structurally where possible and with tolerances elsewhere:
 
-- **Structural check (always):** `expiresAt − proposedAt = referendumDays` exactly. Both fields are inside
-  `proposalHash` and signed, so this is verifiable by anyone at any time, including during catch-up.
+- **Only one timestamp is on the wire.** The proposal carries `proposedAt` and nothing else; ripeness, `latestClose`
+  and the freshness horizon are all derived from it and from the genesis parameters, which are fixed and signed. This
+  is deliberate: an earlier draft let the proposer state its own expiry, which let a forward-dated proposal pin removal
+  deferral on the whole electorate for months. A proposer can now only lie in one direction, about when it started.
 - **Plausibility check (directly received proposals only):** `proposedAt` must be within a skew allowance (suggested:
   24h) of the message's broker timestamp. Broker timestamps are set when the message reaches the receiving queue, not
   when the client reads it, so this check is robust for offline receivers. Forwarded copies are not timing-checked: a
   forwarder's claimed timestamp proves nothing, and late delivery is indistinguishable from backdating; receivers of
-  forwarded copies are protected by the challenge window instead.
-- Voters vote while their local clock is before `expiresAt`, with one addition: a member that *first receives* a
-  proposal at or after `expiresAt` (via forwards of a withheld or delayed proposal, or via catch-up delivery) may still
-  cast its vote until its own challenge window closes, and broadcasts it normally. Such late votes are counted by every
-  member whose window is still open and ignored by members already at local finality, which is exactly what turns a
-  withheld-proposal attempt into a visible contested result instead of silent capture (see limitations). Receivers do
-  not otherwise verify vote timing: a "late" vote is still that member's genuine vote, and expiry exists for liveness,
-  not security; after local finality (below), late votes on that proposal are ignored.
-- Receivers do not evaluate certificates before their local `expiresAt`, with one exception: an **unconditional**
-  certificate (defined next) may be applied immediately, since no further vote can change its outcome.
+  forwarded copies are protected by the challenge window instead. Backdating only shortens the attacker's own runway,
+  since ripeness is measured from `proposedAt`, and is bounded by the freshness horizon.
+- Voting stays open until the member applies or finally rejects a certificate; there is no separate voting deadline to
+  miss. A member that first sees a proposal late, via a forward of a withheld one or via catch-up, votes on the same
+  terms as everyone else. Late votes are counted by every member whose challenge window is still open and ignored by
+  members already at local finality, which is what turns a withheld-proposal attempt into a visible contested result
+  instead of silent capture (see limitations).
+- Receivers do not evaluate a certificate before its `ripeAt` (see "Duration"), which is computed from the
+  certificate's own aye count, so every member agrees on when a given certificate may be judged without needing a
+  shared clock for the referendum as a whole.
 
-The invariant these rules produce: every member gets at least `challengeHours` between seeing a non-unconditional result
-and applying it, no matter how the proposal reached them; and a proposal cannot pass "quietly fast" among members who
-received it honestly, because directly distributed proposals carry a verifiable period.
+The invariant these rules produce: every member gets at least `challengeHours` between seeing a non-unconditional
+result and applying it, no matter how the proposal reached them; and a proposal cannot pass quickly without the support
+that earns speed, because the delay is a function of the ayes in the certificate itself rather than of anything the
+proposer asserts.
 
 ### Certificate soundness: unconditional certificates and the challenge window
 
@@ -410,12 +452,12 @@ to selective inclusion:
   of the tally rule: it asks whether any outstanding vote could change the outcome, so it survives unchanged if the
   rule is later replaced.
 - Any other valid certificate starts a local **challenge window** (`challengeHours`) beginning at
-  `max(certificate receipt, local expiresAt)`. The receiving member rebroadcasts the certificate, any member holding
+  `max(certificate receipt, ripeAt)`. The receiving member rebroadcasts the certificate, any member holding
   valid votes absent from it (in particular, nay voters themselves) resends them, and members who first saw the proposal
   late may cast *new* votes under the late-voting rule above; `x.grp.gov.vote` is idempotent, so no new event is needed.
   The window close is extension-aware and MUST be computed uniformly: the window closes `challengeHours` after the most
   recent previously-unseen valid nay for the proposal (or after the window start, if none arrived), capped at one
-  `referendumDays` beyond the initial close (the **maximum window**, `challengeHours + referendumDays`, is thus the
+  `maxReferendumDays` beyond the initial close (the **maximum window**, `challengeHours + maxReferendumDays`, is thus the
   longest a window can stay open); this lets objection cohorts that learn of a result at different times aggregate
   instead of being evaluated piecemeal, and a drip-feed of nays cannot stall resolution past the cap. At window expiry
   the member evaluates the condition over the **union** of certificate votes and locally held votes, and applies iff it
@@ -468,9 +510,9 @@ requires:
   same-version race (see mandate order below) from turning a transient contested result into deadlock. Note also that
   the value is self-asserted and public (announcements broadcast the referendum's identity), so it proves only that the
   author knew the preceding referendum, not that they applied it;
-- temporal consistency: each proposal's `proposedAt` after the preceding version's `expiresAt`; at version 1 the anchor
+- temporal consistency: each proposal's `proposedAt` after the preceding version's `latestClose`; at version 1 the anchor
   is the later of the genesis certificate's broker timestamp (already recorded as its `proposedAt` stand-in) and the
-  client's own record of applying it, since genesis is not a referendum and has no expiry; and the target's `expiresAt`
+  client's own record of applying it, since genesis is not a referendum and has no expiry; and the target's `latestClose`
   in the past, since no referendum can have concluded in the future;
 - a **frontier bound**: the target version may exceed by at most one the highest version attested (`SXGS`) by *several
   distinct* eligible members, outside the target certificate's aye set, and attesting through a path not controlled by
@@ -503,8 +545,8 @@ taken by admins of the losing certificate during the overlap are invalid in the 
 "contested result" state, and new admins should avoid destructive actions until their certificate's window (including
 extensions) has closed unchallenged.
 
-**Certificate freshness.** The **freshness horizon** is a duration of one `referendumDays` following a proposal's
-`expiresAt`. A certificate is fresh if it reached the receiver within the horizon, anchored like proposal timing (see
+**Certificate freshness.** The **freshness horizon** is a duration of one `maxReferendumDays` following a proposal's
+`latestClose`. A certificate is fresh if it reached the receiver within the horizon, anchored like proposal timing (see
 "Timing"): broker timestamp for directly received certificates (robust for offline readers), local first sight for
 forwarded copies. A fresh certificate is processed as above. A stale one is only a catch-up hint: it may be adopted
 solely through the corroborated catch-up path (see "Catch-up and recovery"). The same-version supersede exception in
@@ -553,8 +595,8 @@ machinery this design generalizes):
   votes for that proposal, without a challenge window; the member is judging evidence of an outcome already final
   elsewhere, and *that* premise must be established, not assumed: before adopting a bundle (or a stale certificate
   routed here) that would advance or supersede its state, the client MUST apply the two load-bearing witnessed-chain
-  conditions: the **temporal link** (the target's `proposedAt` after the `expiresAt` of the referendum it applied at
-  its stored version, and the target's `expiresAt` in the past, both checkable from its own records) and the **frontier
+  conditions: the **temporal link** (the target's `proposedAt` after the `latestClose` of the referendum it applied at
+  its stored version, and the target's `latestClose` in the past, both checkable from its own records) and the **frontier
   bound** (several distinct eligible attesters, as defined there), *regardless of gap size*. A single-version step is
   not exempt: without this, a two-member conspiracy could walk a victim forward one version at a time through this
   window-free path, indefinitely, never presenting a gap greater than one. Attestations are signed as
@@ -599,9 +641,11 @@ to trust in the introducing host, as with all pre-join group state.
 - **Rig the electorate**: the electorate is derived from the membership log at the frontier the proposal cites, so it is
   identical at every member and cannot be conjured, shrunk, or selectively disclosed without forking the log and leaving
   signed evidence; role changes and blocks never affect eligibility.
-- **Rush the vote**: the referendum period is structurally bound into the signed proposal; directly received proposals
-  are plausibility-checked against broker timestamps; and every member gets at least the challenge window between seeing
-  a non-unconditional result and applying it.
+- **Rush the vote**: speed must be bought with support. A certificate cannot be evaluated before
+  `maxReferendumDays × (1 − 2A/E)` has elapsed, a quantity computed from its own ayes rather than asserted by anyone,
+  so a thinly supported proposal stays in the open for weeks; directly received proposals are additionally
+  plausibility-checked against broker timestamps; and every member gets at least the challenge window between seeing a
+  non-unconditional result and applying it.
 - **Mint an owner or pre-empt by deletion**: introduced roles are capped at the introducer's, and governed clients
   reject owner-role members outright, so `XGrpDel` and other owner-gated events have no valid sender.
 - **Turn governance off or re-run genesis**: parameters have no update path, and a second `x.grp.gov.enable` for an
@@ -715,8 +759,9 @@ See "Related work" at the end of this document for how these choices sit against
   unreachable, and *safe* only where opponents reliably vote; those hold together in token governance, which has a
   standing class of monitoring delegates, and not in a private group, where would-be objectors are drawn from the same
   attention distribution as everyone else. It also imposes a threshold that moves as votes arrive, which cannot be
-  rendered honestly in a UI. Note the trade is not free: at low turnout AQB is *stricter* than `A > B`, so dropping it
-  weakens minority-capture resistance and shifts that burden onto the voting period and challenge window.
+  rendered honestly in a UI. Note the trade is not free: at low turnout AQB is *stricter* than `A > B`. That
+  strictness is recovered on a different axis, by making weak support wait rather than clear a higher bar (see
+  "Duration"), which keeps the tally rule predictable while still charging thin support a cost.
 - **Fixed majority of the electorate** (`2A > E`). Retained, but as the test for applying a certificate *immediately*
   rather than as the pass condition; as a pass condition it is unreachable in groups where the transport itself
   suppresses turnout (an offline member's queue stalls at `defaultMsgQueueQuota = 128` messages, so members away from
@@ -851,12 +896,12 @@ CREATE TABLE group_referendum_votes
 7. Should certificate *acceptance* be made a pure function of the certificate, as ranking already is? It is currently
    the design's one deviation from strong eventual consistency and the direct cause of knife-edge divergence; see
    "Related work".
-8. Should the tally carry a minimum-support floor, e.g. `A > B` and `A ≥ max(3, ⌈E/3⌉)`? Plain majority of votes cast
-   means one aye passes an unnoticed referendum, and the only thing preventing that is whether anyone is paying
-   attention during the period. A floor closes it, stays reachable at realistic turnout, and unlike a turnout quorum
-   creates no incentive to boycott. The argument against is that it adds a second clause to a rule whose whole value is
-   that a member can state it from memory, and that it can deadlock a group whose active population has fallen below
-   the floor. This is the most consequential open question in the document.
+8. Is the support-scaled duration a sufficient answer to the single-aye case, or should the tally also carry a
+   minimum-support floor (`A ≥ max(3, ⌈E/3⌉)`)? The clock makes an unsupported proposal wait roughly a month during
+   which one nay defeats it, which is a strong deterrent but still resolves in favour of a lone proposer if literally
+   nobody looks. A floor would make that outcome impossible, at the cost of a second clause in the rule and of
+   deadlocking a group whose active population has fallen below it. The clock is preferred here because it degrades
+   gracefully where a floor fails hard.
 
 ## Related work
 
