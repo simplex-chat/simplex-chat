@@ -1300,6 +1300,8 @@
   <string name="a_plus_b">a + b</string>
   <string name="colored_text">colored</string>
   <string name="secret_text">secret</string>
+  <string name="small_text">small</string>
+  <string name="link_text">link</string>
 
   <!-- CICallStatus - in chat items -->
   <string name="callstatus_calling">calling…</string>
