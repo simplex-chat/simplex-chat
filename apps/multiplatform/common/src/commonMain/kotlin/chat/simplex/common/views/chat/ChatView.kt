@@ -57,6 +57,8 @@ import kotlin.math.*
 @Stable
 data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
 
+internal val chatSearchRequest = mutableIntStateOf(0)
+
 @Composable
 fun ConnectInProgressView(s: String) {
   Surface(color = MaterialTheme.colors.background) {
@@ -102,6 +104,12 @@ fun ChatView(
   onComposed: suspend (chatId: String) -> Unit
 ) {
   val showSearch = rememberSaveable { mutableStateOf(false) }
+  val searchRequest = chatSearchRequest.intValue
+  LaunchedEffect(searchRequest) {
+    if (searchRequest > 0 && appPlatform.isDesktop) {
+      showSearch.value = true
+    }
+  }
   val chat = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }
   // They have their own iterator inside for a reason to prevent crash "Reading a state that was created after the snapshot..."
   val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }

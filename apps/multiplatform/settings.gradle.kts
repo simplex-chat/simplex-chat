@@ -18,4 +18,9 @@ pluginManagement {
 
 rootProject.name = "app"
 
-include(":android", ":desktop", ":common")
+val desktopOnly = providers.gradleProperty("desktopOnly").map(String::toBoolean).getOrElse(false)
+
+include(":desktop", ":common")
+if (!desktopOnly) {
+    include(":android")
+}

@@ -18,7 +18,12 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
+import chat.simplex.common.views.chat.chatSearchRequest
+import chat.simplex.common.views.chatlist.chatListSearchFocusRequest
+import chat.simplex.common.views.chatlist.showChatSettings
+import chat.simplex.common.views.chatlist.showNewChatSheet
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -123,12 +128,9 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     Window(state = windowState, visible = simplexWindowState.windowVisible.value, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { handleCloseRequest(closedByError) }, onKeyEvent = {
-      if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
-        simplexWindowState.backstack.lastOrNull()?.invoke() != null
-      } else {
-        false
-      }
+      handleDesktopKeyEvent(it)
     }, title = "SimpleX") {
+      SimplexMenuBar()
 //      val hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
       AppScreen()
@@ -230,6 +232,102 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
     }
   }
 }
+
+@Composable
+private fun FrameWindowScope.SimplexMenuBar() {
+  MenuBar {
+    Menu("File") {
+      Item(
+        text = generalGetString(MR.strings.new_chat),
+        shortcut = desktopShortcut(Key.N),
+        onClick = ::openNewChatFromDesktop
+      )
+    }
+    Menu("Edit") {
+      Item(
+        text = generalGetString(MR.strings.search_verb),
+        shortcut = desktopShortcut(Key.F),
+        onClick = ::focusCurrentSearch
+      )
+      Item(
+        text = generalGetString(MR.strings.your_chats),
+        shortcut = desktopShortcut(Key.K),
+        onClick = ::focusChatSearch
+      )
+    }
+    Menu("SimpleX") {
+      Item(
+        text = generalGetString(MR.strings.settings_section_title_settings),
+        shortcut = desktopShortcut(Key.Comma),
+        onClick = ::showSettingsFromDesktop
+      )
+    }
+  }
+}
+
+private fun handleDesktopKeyEvent(event: KeyEvent): Boolean {
+  val commandPressed = if (desktopPlatform.isMac()) event.isMetaPressed else event.isCtrlPressed
+  if (event.type == KeyEventType.KeyDown && commandPressed) {
+    return when (event.key) {
+      Key.N -> {
+        openNewChatFromDesktop()
+        true
+      }
+      Key.F -> {
+        focusCurrentSearch()
+        true
+      }
+      Key.K -> {
+        focusChatSearch()
+        true
+      }
+      Key.Comma -> {
+        showSettingsFromDesktop()
+        true
+      }
+      else -> false
+    }
+  }
+  return event.key == Key.Escape && event.type == KeyEventType.KeyUp &&
+      simplexWindowState.backstack.lastOrNull()?.invoke() != null
+}
+
+private fun desktopShortcut(key: Key) = KeyShortcut(
+  key,
+  meta = desktopPlatform.isMac(),
+  ctrl = !desktopPlatform.isMac()
+)
+
+private fun openNewChatFromDesktop() {
+  if (desktopCommandsAvailable() && chatModel.chatRunning.value == true && !chatModel.desktopNoUserNoRemote()) {
+    showNewChatSheet(ChatController.appPrefs.oneHandUI.state)
+  }
+}
+
+private fun focusChatSearch() {
+  if (!desktopCommandsAvailable()) return
+  ModalManager.start.closeModals()
+  chatListSearchFocusRequest.intValue++
+}
+
+private fun focusCurrentSearch() {
+  if (!desktopCommandsAvailable()) return
+  if (chatModel.chatId.value == null) {
+    focusChatSearch()
+  } else {
+    chatSearchRequest.intValue++
+  }
+}
+
+private fun showSettingsFromDesktop() {
+  if (desktopCommandsAvailable()) {
+    showChatSettings()
+  }
+}
+
+private fun desktopCommandsAvailable() =
+  AppLock.userAuthorized.value == true &&
+      ChatController.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
 
 // Not invoked for macOS Cmd+Q — that goes through AWT's default QuitHandler and
 // exits the process directly. Intentional: Cmd+Q is canonical "always quit" on macOS.

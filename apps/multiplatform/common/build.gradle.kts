@@ -1,11 +1,18 @@
+import com.android.build.api.dsl.LibraryExtension
+
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
-  id("com.android.library")
+  id("com.android.library") apply false
   id("org.jetbrains.kotlin.plugin.serialization")
   id("org.jetbrains.kotlin.plugin.compose")
   id("dev.icerock.mobile.multiplatform-resources")
   id("com.github.gmazzo.buildconfig") version "5.3.5"
+}
+
+val desktopOnly = providers.gradleProperty("desktopOnly").map(String::toBoolean).getOrElse(false)
+if (!desktopOnly) {
+  apply(plugin = "com.android.library")
 }
 
 group = "chat.simplex"
@@ -37,7 +44,9 @@ if (simplexAssetsDir != null) {
 }
 
 kotlin {
-  androidTarget()
+  if (!desktopOnly) {
+    androidTarget()
+  }
   jvm("desktop")
   applyDefaultHierarchyTemplate()
   sourceSets {
@@ -95,45 +104,47 @@ kotlin {
         implementation(kotlin("test-annotations-common"))
       }
     }
-    val androidMain by getting {
-      kotlin.srcDir("build/generated/moko/androidMain/src")
-      dependencies {
-        implementation("androidx.activity:activity-compose:1.9.1")
-        val workVersion = "2.9.1"
-        implementation("androidx.work:work-runtime-ktx:$workVersion")
+    if (!desktopOnly) {
+      val androidMain by getting {
+        kotlin.srcDir("build/generated/moko/androidMain/src")
+        dependencies {
+          implementation("androidx.activity:activity-compose:1.9.1")
+          val workVersion = "2.9.1"
+          implementation("androidx.work:work-runtime-ktx:$workVersion")
 
-        // Video support
-        implementation("com.google.android.exoplayer:exoplayer:2.19.1")
+          // Video support
+          implementation("com.google.android.exoplayer:exoplayer:2.19.1")
 
-        // Biometric authentication
-        implementation("androidx.biometric:biometric:1.2.0-alpha05")
+          // Biometric authentication
+          implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
-        //Barcode
-        implementation("org.boofcv:boofcv-android:1.1.3")
+          //Barcode
+          implementation("org.boofcv:boofcv-android:1.1.3")
 
-        //Camera Permission
-        implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+          //Camera Permission
+          implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
-        implementation("androidx.webkit:webkit:1.11.0")
+          implementation("androidx.webkit:webkit:1.11.0")
 
-        // GIFs support
-        implementation("io.coil-kt:coil-compose:2.6.0")
-        implementation("io.coil-kt:coil-gif:2.6.0")
+          // GIFs support
+          implementation("io.coil-kt:coil-compose:2.6.0")
+          implementation("io.coil-kt:coil-gif:2.6.0")
 
-        // Emojis
-        implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
+          // Emojis
+          implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
 
-        implementation("com.jakewharton:process-phoenix:3.0.0")
+          implementation("com.jakewharton:process-phoenix:3.0.0")
 
-        // https://issuetracker.google.com/issues/351313880
-        val cameraXVersion = "1.5.1"
-        implementation("androidx.camera:camera-core:${cameraXVersion}")
-        implementation("androidx.camera:camera-camera2:${cameraXVersion}")
-        implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
-        implementation("androidx.camera:camera-view:${cameraXVersion}")
+          // https://issuetracker.google.com/issues/351313880
+          val cameraXVersion = "1.5.1"
+          implementation("androidx.camera:camera-core:${cameraXVersion}")
+          implementation("androidx.camera:camera-camera2:${cameraXVersion}")
+          implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
+          implementation("androidx.camera:camera-view:${cameraXVersion}")
 
-        // Calls lifecycle listener
-        implementation("androidx.lifecycle:lifecycle-process:2.8.4")
+          // Calls lifecycle listener
+          implementation("androidx.lifecycle:lifecycle-process:2.8.4")
+        }
       }
     }
     val desktopMain by getting {
@@ -157,23 +168,25 @@ kotlin {
   }
 }
 
-android {
-  namespace = "chat.simplex.common"
-  compileSdk = 35
-  sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-  defaultConfig {
-    minSdk = 26
-  }
-  testOptions.targetSdk = 34
-  lint.targetSdk = 34
-  val isAndroid = gradle.startParameter.taskNames.find {
-    val lower = it.lowercase()
-    lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
-  } != null
-  if (isAndroid) {
-    // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
-    // No other ways to exclude a file work, but it's large and should be excluded
-    kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
+if (!desktopOnly) {
+  extensions.configure<LibraryExtension> {
+    namespace = "chat.simplex.common"
+    compileSdk = 35
+    sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
+    defaultConfig {
+      minSdk = 26
+    }
+    testOptions.targetSdk = 34
+    lint.targetSdk = 34
+    val isAndroid = gradle.startParameter.taskNames.find {
+      val lower = it.lowercase()
+      lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
+    } != null
+    if (isAndroid) {
+      // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
+      // No other ways to exclude a file work, but it's large and should be excluded
+      kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
+    }
   }
 }
 

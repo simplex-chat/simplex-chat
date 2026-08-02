@@ -62,7 +62,7 @@ sealed class ActiveFilter {
   data object Unread: ActiveFilter()
 }
 
-private fun showNewChatSheet(oneHandUI: State<Boolean>) {
+internal fun showNewChatSheet(oneHandUI: State<Boolean>) {
   connectProgressManager.cancelConnectProgress()
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
@@ -89,6 +89,16 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
     }
   }
 }
+
+internal fun showChatSettings() {
+  ModalManager.start.closeModals()
+  ModalManager.end.closeModals()
+  ModalManager.start.showModalCloseable(cardScreen = true) { close ->
+    SettingsView(chatModel, AppLock::setPerformLA, close)
+  }
+}
+
+internal val chatListSearchFocusRequest = mutableIntStateOf(0)
 
 @Composable
 fun ToggleChatListCard() {
@@ -751,6 +761,12 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
       val focusRequester = remember { FocusRequester() }
       var focused by remember { mutableStateOf(false) }
+      val searchFocusRequest = chatListSearchFocusRequest.intValue
+      LaunchedEffect(searchFocusRequest) {
+        if (searchFocusRequest > 0 && appPlatform.isDesktop) {
+          focusRequester.requestFocus()
+        }
+      }
       Icon(
         painterResource(MR.images.ic_search),
         contentDescription = null,

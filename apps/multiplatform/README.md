@@ -15,11 +15,14 @@ This is the **Kotlin Multiplatform (KMP)** mobile and desktop client for SimpleX
 # Android release APK
 ./gradlew assembleRelease
 
-# Desktop distribution (current OS)
-./gradlew :desktop:packageDistributionForCurrentOS
+# Compile the desktop UI without configuring Android SDK/NDK projects
+./gradlew -PdesktopOnly=true :common:compileKotlinDesktop
+
+# Desktop distribution (current OS, without configuring Android SDK/NDK projects)
+./gradlew -PdesktopOnly=true :desktop:packageDistributionForCurrentOS
 
 # Run desktop/JVM tests
-./gradlew desktopTest
+./gradlew -PdesktopOnly=true desktopTest
 
 # Run Android instrumented tests (requires connected device/emulator)
 ./gradlew connectedAndroidTest
