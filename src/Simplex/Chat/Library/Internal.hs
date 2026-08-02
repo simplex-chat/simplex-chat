@@ -2215,8 +2215,7 @@ createUserMemberKey :: GroupInfo -> CM GroupInfo
 createUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}
   | useRelays' gInfo || isJust groupKeys = pure gInfo
   | otherwise = do
-      g <- asks random
-      (_, memberPrivKey) <- atomically $ C.generateKeyPair g
+      (_, memberPrivKey) <- atomically . C.generateKeyPair =<< asks random
       withStore' $ \db -> setUserMemberKey db groupId (groupMemberId' membership) memberPrivKey
       pure gInfo {groupKeys = Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}}
 

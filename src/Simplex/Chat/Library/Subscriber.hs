@@ -600,8 +600,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
-              g <- asks random
-              memberKeys <- atomically $ C.generateKeyPair g
+              memberKeys <- atomically . C.generateKeyPair =<< asks random
               (gInfo, host) <- withStore $ \db -> do
                 liftIO $ deleteContactCardKeepConn db connId ct
                 createGroupInvitedViaLink db cxt user conn'' memberKeys glInv
@@ -2620,8 +2619,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
             when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
             -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
-            g <- asks random
-            memberKeys <- atomically $ C.generateKeyPair g
+            memberKeys <- atomically . C.generateKeyPair =<< asks random
             (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId memberKeys
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId, memberId = membershipMemId} = membership
@@ -3088,14 +3086,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
-          g <- asks random
-          memberKeys <- atomically $ C.generateKeyPair g
+          memberKeys <- atomically . C.generateKeyPair =<< asks random
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db cxt user conn' memberKeys glInv
           toView $ CEvtGroupLinkConnecting user gInfo host
           pure (conn', Just gInfo)
         XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
-          g <- asks random
-          memberKeys <- atomically $ C.generateKeyPair g
+          memberKeys <- atomically . C.generateKeyPair =<< asks random
           (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db cxt user conn' memberKeys glRjct
           toView $ CEvtGroupLinkConnecting user gInfo host
           toViewTE $ TEGroupLinkRejected user gInfo rejectionReason

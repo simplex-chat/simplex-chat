@@ -2288,8 +2288,7 @@ processChatCommand cxt nm = \case
         -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
-        gVar <- asks random
-        (_, memberPrivKey) <- atomically $ C.generateKeyPair gVar
+        (_, memberPrivKey) <- atomically . C.generateKeyPair =<< asks random
         gInfo' <- withFastStore $ \db -> do
           gInfo' <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey memberPrivKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
@@ -2431,8 +2430,7 @@ processChatCommand cxt nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    gVar <- asks random
-    rootKey@(rootPubKey, rootPrivKey) <- atomically $ C.generateKeyPair gVar
+    rootKey@(rootPubKey, rootPrivKey) <- atomically . C.generateKeyPair =<< asks random
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
     -- TODO [address DR] remove this option and switch to IKUsePQ True
     let (pqInitKeys, useDR) = case pqRatchet_ of
