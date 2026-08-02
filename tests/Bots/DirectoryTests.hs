@@ -19,9 +19,7 @@ import Directory.Captcha
 import Directory.Listing
 import Directory.Options
 import Directory.Service
-import Directory.Store
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
-import System.IO (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
@@ -137,8 +135,6 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       profileNameLimit = maxBound,
       captchaGenerator = Nothing,
       voiceCaptchaGenerator = Nothing,
-      directoryLog = Just $ ps </> "directory_service.log",
-      migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
       clientService = True,
       runCLI = False,
@@ -1802,11 +1798,10 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
       test superUser dsLink
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
-runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
-  st <- openDirectoryLog directoryLog
-  t <- forkIO $ directoryService st opts cfg
+runDirectory cfg opts action = do
+  t <- forkIO $ directoryService opts cfg
   threadDelay 500000
-  action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
+  action `finally` killThread t
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1

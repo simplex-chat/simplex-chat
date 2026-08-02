@@ -1538,7 +1538,7 @@ updateKnownContactFromLink :: User -> Contact -> CM (Contact, Bool)
 updateKnownContactFromLink user ct@Contact {profile = LocalProfile {contactLink}} =
   case contactLink of
     Just (CLShort sl) -> do
-      (_, cData) <- getShortLinkConnReq' NRMBackground user sl
+      (_, cData, _) <- getShortLinkConnReq' NRMBackground user sl
       liftIO (decodeLinkUserData cData) >>= \case
         Just csld -> do
           ContactShortLinkData {profile = linkProfile} <- linkDataBadge csld

@@ -11,8 +11,7 @@
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Directory.Store
-  ( DirectoryLog (..),
-    GroupReg (..),
+  ( GroupReg (..),
     GroupRegStatus (..),
     UserGroupRegId,
     GroupApprovalId,
@@ -20,9 +19,6 @@ module Directory.Store
     DirectoryMemberAcceptance (..),
     DirectoryStatus (..),
     ProfileCondition (..),
-    DirectoryLogRecord (..),
-    openDirectoryLog,
-    readDirectoryLogData,
     addGroupRegStore,
     insertGroupReg,
     delGroupReg,
@@ -67,15 +63,9 @@ module Directory.Store
     strongJoinFilter,
     newGroupJoinFilter,
     groupDBError,
-    logGCreate,
-    logGDelete,
-    logGUpdateOwner,
-    logGUpdateStatus,
-    logGUpdatePromotion,
   )
 where
 
-import Control.Applicative ((<|>))
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -84,18 +74,12 @@ import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.List (sortOn)
-import Data.Map (Map)
-import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Data.Time.Clock.System (systemEpochDay)
 import Directory.Search
 import Directory.Util
 import Simplex.Chat.Controller
@@ -112,7 +96,6 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (eitherToMaybe, firstRow, maybeFirstRow', safeDecodeUtf8)
-import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -121,10 +104,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
-
-data DirectoryLog = DirectoryLog
-  { directoryLogFile :: Maybe Handle
-  }
 
 data GroupReg = GroupReg
   { dbGroupId :: GroupId,
@@ -626,89 +605,6 @@ groupReqQuery = groupInfoQueryFields <> groupRegFields <> groupInfoQueryFrom <> 
     groupRegFields = ", r.group_id, r.user_group_reg_id, r.contact_id, r.owner_member_id, r.group_reg_status, r.group_promoted, r.created_at "
     groupRegFromCond = " JOIN sx_directory_group_regs r ON r.group_id = g.group_id WHERE g.user_id = ? AND mu.contact_id = ? "
 
-data DirectoryLogRecord
-  = GRCreate GroupReg
-  | GRDelete GroupId
-  | GRUpdateStatus GroupId GroupRegStatus
-  | GRUpdatePromotion GroupId Bool
-  | GRUpdateOwner GroupId GroupMemberId
-
-data DLRTag
-  = GRCreate_
-  | GRDelete_
-  | GRUpdateStatus_
-  | GRUpdatePromotion_
-  | GRUpdateOwner_
-
-logDLR :: DirectoryLog -> DirectoryLogRecord -> IO ()
-logDLR st r = forM_ (directoryLogFile st) $ \h -> B.hPutStrLn h (strEncode r)
-
-logGCreate :: DirectoryLog -> GroupReg -> IO ()
-logGCreate st = logDLR st . GRCreate
-
-logGDelete :: DirectoryLog -> GroupId -> IO ()
-logGDelete st = logDLR st . GRDelete
-
-logGUpdateStatus :: DirectoryLog -> GroupId -> GroupRegStatus -> IO ()
-logGUpdateStatus st gId = logDLR st . GRUpdateStatus gId
-
-logGUpdatePromotion :: DirectoryLog -> GroupId -> Bool -> IO ()
-logGUpdatePromotion st gId = logDLR st . GRUpdatePromotion gId
-
-logGUpdateOwner :: DirectoryLog -> GroupId -> GroupMemberId -> IO ()
-logGUpdateOwner st gId = logDLR st . GRUpdateOwner gId
-
-instance StrEncoding DLRTag where
-  strEncode = \case
-    GRCreate_ -> "GCREATE"
-    GRDelete_ -> "GDELETE"
-    GRUpdateStatus_ -> "GSTATUS"
-    GRUpdatePromotion_ -> "GPROMOTE"
-    GRUpdateOwner_ -> "GOWNER"
-  strP =
-    A.takeTill (== ' ') >>= \case
-      "GCREATE" -> pure GRCreate_
-      "GDELETE" -> pure GRDelete_
-      "GSTATUS" -> pure GRUpdateStatus_
-      "GPROMOTE" -> pure GRUpdatePromotion_
-      "GOWNER" -> pure GRUpdateOwner_
-      _ -> fail "invalid DLRTag"
-
-instance StrEncoding DirectoryLogRecord where
-  strEncode = \case
-    GRCreate gr -> strEncode (GRCreate_, gr)
-    GRDelete gId -> strEncode (GRDelete_, gId)
-    GRUpdateStatus gId grStatus -> strEncode (GRUpdateStatus_, gId, grStatus)
-    GRUpdatePromotion gId promoted -> strEncode (GRUpdatePromotion_, gId, promoted)
-    GRUpdateOwner gId grOwnerId -> strEncode (GRUpdateOwner_, gId, grOwnerId)
-  strP =
-    strP_ >>= \case
-      GRCreate_ -> GRCreate <$> strP
-      GRDelete_ -> GRDelete <$> strP
-      GRUpdateStatus_ -> GRUpdateStatus <$> A.decimal <*> _strP
-      GRUpdatePromotion_ -> GRUpdatePromotion <$> A.decimal <*> _strP
-      GRUpdateOwner_ -> GRUpdateOwner <$> A.decimal <* A.space <*> A.decimal
-
-instance StrEncoding GroupReg where
-  strEncode GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted} =
-    B.unwords $
-      [ "group_id=" <> strEncode dbGroupId,
-        "user_group_id=" <> strEncode userGroupRegId,
-        "contact_id=" <> strEncode dbContactId,
-        "owner_member_id=" <> strEncode dbOwnerMemberId,
-        "status=" <> strEncode groupRegStatus
-      ]
-        <> ["promoted=" <> strEncode promoted | promoted]
-  strP = do
-    dbGroupId <- "group_id=" *> strP_
-    userGroupRegId <- "user_group_id=" *> strP_
-    dbContactId <- "contact_id=" *> strP_
-    dbOwnerMemberId <- "owner_member_id=" *> strP_
-    groupRegStatus <- "status=" *> strP
-    promoted <- (" promoted=" *> strP) <|> pure False
-    let createdAt = UTCTime systemEpochDay 0
-    pure GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt}
-
 instance StrEncoding GroupRegStatus where
   strEncode = \case
     GRSPendingConfirmation -> "pending_confirmation"
@@ -734,40 +630,3 @@ instance StrEncoding GroupRegStatus where
 instance ToField GroupRegStatus where toField = toField . safeDecodeUtf8 . strEncode
 
 instance FromField GroupRegStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
-
-openDirectoryLog :: Maybe FilePath -> IO DirectoryLog
-openDirectoryLog = \case
-  Just f -> DirectoryLog . Just <$> openLogFile f
-  Nothing -> pure $ DirectoryLog Nothing
-  where
-    openLogFile f = do
-      h <- openFile f AppendMode
-      hSetBuffering h LineBuffering
-      pure h
-
-readDirectoryLogData :: FilePath -> IO [GroupReg]
-readDirectoryLogData f =
-  sortOn dbGroupId . M.elems
-    <$> (foldM processDLR M.empty . B.lines =<< B.readFile f)
-  where
-    processDLR :: Map GroupId GroupReg -> ByteString -> IO (Map GroupId GroupReg)
-    processDLR m l = case strDecode l of
-      Left e -> m <$ putStrLn ("Error parsing log record: " <> e <> ", " <> B.unpack (B.take 80 l))
-      Right r -> case r of
-        GRCreate gr@GroupReg {dbGroupId = gId} -> do
-          when (isJust $ M.lookup gId m) $
-            putStrLn $
-              "Warning: duplicate group with ID " <> show gId <> ", group replaced."
-          pure $ M.insert gId gr m
-        GRDelete gId -> case M.lookup gId m of
-          Just _ -> pure $ M.delete gId m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", deletion ignored.")
-        GRUpdateStatus gId groupRegStatus -> case M.lookup gId m of
-          Just gr -> pure $ M.insert gId gr {groupRegStatus} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", status update ignored.")
-        GRUpdatePromotion gId promoted -> case M.lookup gId m of
-          Just gr -> pure $ M.insert gId gr {promoted} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", promotion update ignored.")
-        GRUpdateOwner gId grOwnerId -> case M.lookup gId m of
-          Just gr -> pure $ M.insert gId gr {dbOwnerMemberId = Just grOwnerId} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", owner update ignored.")
