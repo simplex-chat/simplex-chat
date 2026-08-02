@@ -1520,18 +1520,31 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
     newClaim = groupClaim groupProfile
     verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
 
-updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
+updateContactFromLinkData :: User -> Contact -> Profile -> CM (Contact, Bool)
 updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
-      withFastStore $ \db -> do
+      ct' <- withFastStore $ \db -> do
         ct' <- updateContactProfile db cxt user ct linkProfile
         if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
-  | otherwise = pure ct
+      pure (ct', profileChanged)
+  | otherwise = pure (ct, False)
   where
     profileChanged = fromLocalProfile profile /= linkProfile
     claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
     verifyChanged = contactDomainVerified /= Just True || claimChanged
+
+updateKnownContactFromLink :: User -> Contact -> CM (Contact, Bool)
+updateKnownContactFromLink user ct@Contact {profile = LocalProfile {contactLink}} =
+  case contactLink of
+    Just (CLShort sl) -> do
+      (_, cData) <- getShortLinkConnReq' NRMBackground user sl
+      liftIO (decodeLinkUserData cData) >>= \case
+        Just csld -> do
+          ContactShortLinkData {profile = linkProfile} <- linkDataBadge csld
+          updateContactFromLinkData user ct linkProfile
+        Nothing -> pure (ct, False)
+    _ -> pure (ct, False)
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)

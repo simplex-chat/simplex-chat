@@ -113,7 +113,7 @@ saveGroupListingFiles opts cfg = case webFolder opts of
   Just dir ->
     withChatStore opts $ \st -> withActiveUser st $ \user ->
       withTransaction st $ \db ->
-        getAllListedGroups_ db (mkStoreCxt cfg) user >>= generateListing dir
+        getAllListedGroups_ db (mkStoreCxt cfg) user >>= \gs -> generateListing dir gs []
 
 verifyGroupRegistration :: StoreCxt -> DB.Connection -> User -> GroupReg -> IO Bool
 verifyGroupRegistration cxt db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus} =

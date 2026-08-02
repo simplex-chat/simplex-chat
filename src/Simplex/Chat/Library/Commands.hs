@@ -4371,7 +4371,7 @@ processChatCommand cxt nm = \case
                     linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
                     planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
                     refreshContact ct' = case (planDomain, linkProfile_) of
-                      (Just _, Just p) -> updateContactFromLinkData user ct' p
+                      (Just _, Just p) -> fst <$> updateContactFromLinkData user ct' p
                       _ -> pure ct'
                 forM_ planDomain $ \nameDomain ->
                   unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain

@@ -44,6 +44,18 @@ module Directory.Store
     getAllListedGroups_,
     searchListedGroups,
     verifiedGroupDomain,
+    ContactReg (..),
+    ContactRegId,
+    addContactRegStore,
+    getContactReg,
+    getContactRegByContactId,
+    setContactRegStatusStore,
+    setContactPromotedStore,
+    deleteContactReg,
+    getAllListedContacts,
+    getAllContactRegs,
+    searchListedContacts,
+    verifiedContactDomain,
     groupRegStatusText,
     pendingApproval,
     groupRemoved,
@@ -78,7 +90,7 @@ import Data.Int (Int64)
 import Data.List (sortOn)
 import Data.Map (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -90,6 +102,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom)
 import Simplex.Chat.Types
@@ -235,6 +248,103 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)
 $(JQ.deriveJSON defaultJSON ''DirectoryMemberAcceptance)
 
 $(JQ.deriveJSON defaultJSON ''DirectoryGroupData)
+
+type ContactRegId = Int64
+
+data ContactReg = ContactReg
+  { contactRegId :: ContactRegId,
+    crContactId :: Maybe ContactId,
+    peerType :: ChatPeerType,
+    contactRegStatus :: GroupRegStatus,
+    contactPromoted :: Bool,
+    crCreatedAt :: UTCTime
+  }
+
+contactRegQuery :: Query
+contactRegQuery =
+  [sql|
+    SELECT contact_reg_id, contact_id, peer_type, contact_reg_status, contact_promoted, created_at
+    FROM sx_directory_contact_regs
+  |]
+
+rowToContactReg :: (ContactRegId, Maybe ContactId, ChatPeerType, GroupRegStatus, BoolInt, UTCTime) -> ContactReg
+rowToContactReg (contactRegId, crContactId, peerType, contactRegStatus, BI contactPromoted, crCreatedAt) =
+  ContactReg {contactRegId, crContactId, peerType, contactRegStatus, contactPromoted, crCreatedAt}
+
+addContactRegStore :: ChatController -> Contact -> ChatPeerType -> GroupRegStatus -> IO (Either String ContactReg)
+addContactRegStore cc Contact {contactId = ctId} peerType contactRegStatus =
+  withDB "addContactRegStore" cc $ \db -> do
+    createdAt <- liftIO getCurrentTime
+    liftIO $
+      DB.execute
+        db
+        [sql|
+          INSERT INTO sx_directory_contact_regs
+            (contact_id, peer_type, contact_reg_status, contact_promoted, created_at, updated_at)
+          VALUES (?,?,?,?,?,?)
+        |]
+        (ctId, peerType, contactRegStatus, BI False, createdAt, createdAt)
+    getContactReg_ db ctId
+
+getContactReg_ :: DB.Connection -> ContactId -> ExceptT String IO ContactReg
+getContactReg_ db ctId =
+  ExceptT $ firstRow rowToContactReg "contact registration not found" $
+    DB.query db (contactRegQuery <> " WHERE contact_id = ?") (Only ctId)
+
+getContactReg :: ChatController -> User -> ContactId -> IO (Either String (Contact, ContactReg))
+getContactReg cc user ctId =
+  withDB "getContactReg" cc $ \db -> do
+    cr <- getContactReg_ db ctId
+    ct <- withExceptT show $ getContact db (storeCxt cc) user ctId
+    pure (ct, cr)
+
+getContactRegByContactId :: ChatController -> ContactId -> IO (Either String (Maybe ContactReg))
+getContactRegByContactId cc ctId =
+  withDB' "getContactRegByContactId" cc $ \db ->
+    maybeFirstRow' Nothing (Just . rowToContactReg) $
+      DB.query db (contactRegQuery <> " WHERE contact_id = ?") (Only ctId)
+
+setContactRegStatusStore :: ChatController -> ContactId -> GroupRegStatus -> IO (Either String (GroupRegStatus, ContactReg))
+setContactRegStatusStore cc ctId crStatus' =
+  withDB "setContactRegStatusStore" cc $ \db -> do
+    cr <- getContactReg_ db ctId
+    ts <- liftIO getCurrentTime
+    liftIO $ DB.execute db "UPDATE sx_directory_contact_regs SET contact_reg_status = ?, updated_at = ? WHERE contact_id = ?" (crStatus', ts, ctId)
+    pure (contactRegStatus cr, cr {contactRegStatus = crStatus'})
+
+setContactPromotedStore :: ChatController -> ContactId -> Bool -> IO (Either String (DirectoryStatus, Bool))
+setContactPromotedStore cc ctId promoted' =
+  withDB "setContactPromotedStore" cc $ \db -> do
+    ContactReg {contactRegStatus, contactPromoted} <- getContactReg_ db ctId
+    ts <- liftIO getCurrentTime
+    liftIO $ DB.execute db "UPDATE sx_directory_contact_regs SET contact_promoted = ?, updated_at = ? WHERE contact_id = ?" (BI promoted', ts, ctId)
+    pure (grDirectoryStatus contactRegStatus, contactPromoted)
+
+deleteContactReg :: ChatController -> ContactId -> IO (Either String ())
+deleteContactReg cc ctId =
+  withDB' "deleteContactReg" cc $ \db ->
+    DB.execute db "DELETE FROM sx_directory_contact_regs WHERE contact_id = ?" (Only ctId)
+
+getAllListedContacts :: ChatController -> User -> IO (Either String [(Contact, ContactReg)])
+getAllListedContacts cc user =
+  withDB' "getAllListedContacts" cc $ \db ->
+    loadContactRegs cc user db =<< DB.query db (contactRegQuery <> " WHERE contact_reg_status = ?") (Only GRSActive)
+
+getAllContactRegs :: ChatController -> User -> IO (Either String [(Contact, ContactReg)])
+getAllContactRegs cc user =
+  withDB' "getAllContactRegs" cc $ \db ->
+    loadContactRegs cc user db =<< DB.query_ db contactRegQuery
+
+loadContactRegs :: ChatController -> User -> DB.Connection -> [(ContactRegId, Maybe ContactId, ChatPeerType, GroupRegStatus, BoolInt, UTCTime)] -> IO [(Contact, ContactReg)]
+loadContactRegs cc user db rows =
+  fmap catMaybes $ forM (map rowToContactReg rows) $ \cr@ContactReg {crContactId} -> case crContactId of
+    Just ctId -> fmap (,cr) . eitherToMaybe <$> runExceptT (getContact db (storeCxt cc) user ctId)
+    Nothing -> pure Nothing
+
+verifiedContactDomain :: Contact -> Maybe SimplexDomain
+verifiedContactDomain Contact {profile = LocalProfile {contactDomain, contactDomainVerified}}
+  | contactDomainVerified == Just True = claimDomain <$> contactDomain
+  | otherwise = Nothing
 
 fromCustomData :: Maybe CustomData -> DirectoryGroupData
 fromCustomData cd_ =
@@ -422,6 +532,50 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           OR (LOWER(gp.group_domain) LIKE '%' || ? || '%' AND g.group_domain_verified = 1)
         )
       |]
+
+searchListedContacts :: ChatController -> User -> ChatPeerType -> SearchType -> Maybe ContactRegId -> Int -> IO (Either String ([(Contact, ContactReg)], Int))
+searchListedContacts cc user peerType searchType lastReg_ pageSize =
+  withDB' "searchListedContacts" cc $ \db -> do
+    rows <- case searchType of
+      STSearch search ->
+        let s = T.toLower search
+         in case lastReg_ of
+              Nothing -> DB.query db (baseQ <> searchCond <> order) (GRSActive, peerType, s, s, s, pageSize)
+              Just crId -> DB.query db (baseQ <> cursorCond <> searchCond <> order) ((GRSActive, peerType, crId, s, s, s) :. Only pageSize)
+      _ -> case lastReg_ of
+        Nothing -> DB.query db (baseQ <> order) (GRSActive, peerType, pageSize)
+        Just crId -> DB.query db (baseQ <> cursorCond <> order) (GRSActive, peerType, crId, pageSize)
+    crs <- loadContactRegs cc user db rows
+    n <- case searchType of
+      STSearch search -> let s = T.toLower search in count $ DB.query db (countQ <> searchCond) (GRSActive, peerType, s, s, s)
+      _ -> count $ DB.query db countQ (GRSActive, peerType)
+    pure (crs, n)
+  where
+    count = maybeFirstRow' 0 fromOnly
+    baseQ =
+      [sql|
+        SELECT r.contact_reg_id, r.contact_id, r.peer_type, r.contact_reg_status, r.contact_promoted, r.created_at
+        FROM sx_directory_contact_regs r
+        JOIN contacts ct ON ct.contact_id = r.contact_id
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE r.contact_reg_status = ? AND r.peer_type = ?
+      |]
+    countQ =
+      [sql|
+        SELECT COUNT(1)
+        FROM sx_directory_contact_regs r
+        JOIN contacts ct ON ct.contact_id = r.contact_id
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE r.contact_reg_status = ? AND r.peer_type = ?
+      |]
+    cursorCond = " AND r.contact_reg_id > ? "
+    searchCond =
+      [sql|
+        AND (LOWER(cp.display_name) LIKE '%' || ? || '%'
+          OR LOWER(cp.short_descr) LIKE '%' || ? || '%'
+          OR LOWER(cp.description) LIKE '%' || ? || '%')
+      |]
+    order = " ORDER BY r.contact_reg_id ASC LIMIT ? "
 
 getAllGroupRegs_ :: DB.Connection -> StoreCxt -> User -> IO [(GroupInfo, GroupReg)]
 getAllGroupRegs_ db cxt user@User {userId, userContactId} = do
