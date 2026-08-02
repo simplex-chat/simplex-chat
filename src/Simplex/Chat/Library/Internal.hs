@@ -2467,9 +2467,11 @@ sendGroupSignedMessages user gInfo' scope asGroup members signedEvents = do
 
 sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
 sendGroupProfileUpdate user gInfo scope asGroup members =
-  when shouldSendProfileUpdate $ sendProfileUpdate `catchAllErrors` eToView
+  -- TODO [knocking] send current profile to pending member after approval?
+  when shouldSendProfileUpdate $
+    sendProfileUpdate `catchAllErrors` eToView
   where
-    User {userMemberProfileUpdatedAt} = user
+    User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
     shouldSendProfileUpdate
       | asGroup = False
@@ -2480,10 +2482,10 @@ sendGroupProfileUpdate user gInfo scope asGroup members =
             (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
             (Nothing, Just _) -> True
             _ -> False
-    sendProfileUpdate = unless (null members) $ do
-      let incognitoProfile = incognitoMembershipProfile gInfo
-      profile <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-      void $ sendGroupMessages_ user gInfo members False [XInfo profile (groupMemberKey gInfo)]
+    sendProfileUpdate = do
+      -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
+      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
+      void $ sendGroupMessage' user gInfo members $ XInfo profileUpdate (groupMemberKey gInfo)
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
