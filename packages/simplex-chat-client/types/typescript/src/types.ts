@@ -1680,6 +1680,7 @@ export namespace ChatListQuery {
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
+  Business = "business",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
