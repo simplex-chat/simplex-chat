@@ -1,0 +1,195 @@
+{
+  "metadata": {
+    "description": "JTD schema for badge service RPC requests and responses, see badges-rpc.md."
+  },
+  "definitions": {
+    "base64url": {
+      "type": "string",
+      "metadata": {"format": "base64url encoded string"}
+    },
+    "purchaseKey": {
+      "ref": "base64url",
+      "metadata": {"comment": "must match the RPC transport key"}
+    },
+    "badgeInfo": {
+      "properties": {
+        "badgeType": {"type": "string"},
+        "badgeExtra": {"type": "string"}
+      },
+      "optionalProperties": {
+        "badgeExpiry": {"type": "timestamp"}
+      }
+    },
+    "badgeRequest": {
+      "properties": {
+        "masterKey": {"ref": "base64url"},
+        "badgeInfo": {"ref": "badgeInfo"}
+      }
+    },
+    "credential": {
+      "properties": {
+        "badgeKeyIdx": {"type": "uint16"},
+        "masterKey": {"ref": "base64url"},
+        "signature": {"ref": "base64url"},
+        "badgeInfo": {"ref": "badgeInfo"}
+      }
+    },
+    "paymentVia": {
+      "discriminator": "type",
+      "mapping": {
+        "card": {
+          "properties": {"provider": {"enum": ["stripe"]}}
+        },
+        "crypto": {
+          "properties": {"currency": {"enum": ["btc", "xmr"]}}
+        }
+      }
+    },
+    "paymentTo": {
+      "discriminator": "type",
+      "mapping": {
+        "card": {
+          "properties": {
+            "provider": {"enum": ["stripe"]},
+            "url": {"type": "string"}
+          }
+        },
+        "crypto": {
+          "properties": {
+            "currency": {"enum": ["btc", "xmr"]},
+            "address": {"type": "string"},
+            "cryptoAmount": {"type": "string"}
+          }
+        }
+      }
+    },
+    "payment": {
+      "discriminator": "type",
+      "mapping": {
+        "apple": {
+          "properties": {"jws": {"type": "string"}}
+        },
+        "google": {
+          "properties": {"token": {"type": "string"}}
+        },
+        "invoice": {
+          "properties": {"invoiceId": {"type": "string"}}
+        },
+        "code": {
+          "properties": {"code": {"type": "string"}}
+        }
+      }
+    },
+    "catalog": {},
+    "statement": {},
+    "balance": {},
+    "request": {
+      "properties": {
+        "version": {"type": "uint16"},
+        "request": {"ref": "command"}
+      },
+      "optionalProperties": {
+        "purchaseKey": {"ref": "purchaseKey"}
+      }
+    },
+    "command": {
+      "discriminator": "type",
+      "mapping": {
+        "getBadgeCatalog": {
+          "optionalProperties": {}
+        },
+        "getBadgeInvoice": {
+          "properties": {
+            "offerId": {"type": "string"},
+            "badgeInfo": {"ref": "badgeInfo"},
+            "paymentVia": {"ref": "paymentVia"}
+          },
+          "optionalProperties": {
+            "balance": {"ref": "balance"}
+          }
+        },
+        "purchaseBadge": {
+          "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
+            "payment": {"ref": "payment"}
+          }
+        },
+        "issueBadge": {
+          "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
+            "balance": {"ref": "balance"}
+          }
+        },
+        "pauseBadge": {
+          "optionalProperties": {}
+        },
+        "transferBadge": {
+          "properties": {
+            "receipt": {"type": "string"}
+          }
+        }
+      }
+    },
+    "response": {
+      "discriminator": "type",
+      "mapping": {
+        "badgeCatalog": {
+          "properties": {
+            "catalog": {"ref": "catalog"}
+          }
+        },
+        "badgeInvoice": {
+          "properties": {
+            "invoiceId": {"type": "string"},
+            "badgeType": {"type": "string"},
+            "months": {"type": "uint8"},
+            "price": {"type": "uint32"},
+            "amount": {"type": "uint32", "metadata": {"comment": "price - discount - credit"}},
+            "currency": {"type": "string"},
+            "expiresAt": {"type": "timestamp"},
+            "paymentTo": {"ref": "paymentTo"}
+          },
+          "optionalProperties": {
+            "discount": {"type": "uint32"},
+            "credit": {"type": "uint32"}
+          }
+        },
+        "newBadge": {
+          "properties": {
+            "credential": {"ref": "credential"},
+            "statement": {"ref": "statement"}
+          },
+          "optionalProperties": {
+            "receipt": {"type": "string"}
+          }
+        },
+        "badgeCredential": {
+          "properties": {
+            "statement": {"ref": "statement"}
+          },
+          "optionalProperties": {
+            "credential": {"ref": "credential"}
+          }
+        },
+        "error": {
+          "properties": {
+            "code": {
+              "enum": [
+                "bad_request", "unsupported_version", "unknown_purchase_key",
+                "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable",
+                "payment_not_entitled", "payment_pending", "provider_unavailable", "rate_limited",
+                "code_invalid", "code_used", "code_expired",
+                "receipt_invalid", "receipt_used",
+                "internal"
+              ]
+            }
+          },
+          "optionalProperties": {
+            "message": {"type": "string"},
+            "retryAfter": {"type": "uint32"}
+          }
+        }
+      }
+    }
+  }
+}
