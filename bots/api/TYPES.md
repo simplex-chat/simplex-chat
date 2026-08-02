@@ -1448,6 +1448,7 @@ Search:
 **Enum type**:
 - "human"
 - "bot"
+- "business"
 
 
 ---
