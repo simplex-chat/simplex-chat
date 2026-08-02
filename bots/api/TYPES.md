@@ -2756,11 +2756,11 @@ Failed:
 
 Error:
 - type: "error"
-- : string
+- sendError: string
 
 Attempts:
 - type: "attempts"
-- : int
+- sendAttempts: int
 
 
 ---

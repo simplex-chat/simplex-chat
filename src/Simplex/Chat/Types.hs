@@ -1150,7 +1150,11 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
 
 type GroupMemberId = Int64
 
-data KeySendStatus = KSSent | KSFailed | KSError Text | KSAttempts Int
+data KeySendStatus
+  = KSSent
+  | KSFailed
+  | KSError {sendError :: Text}
+  | KSAttempts {sendAttempts :: Int}
   deriving (Eq, Show)
 
 -- memberProfile's profileId is COALESCE(member_profile_id, contact_profile_id), member_profile_id is non null

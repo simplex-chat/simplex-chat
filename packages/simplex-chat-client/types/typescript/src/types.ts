@@ -3020,12 +3020,12 @@ export namespace KeySendStatus {
 
   export interface Error extends Interface {
     type: "error"
-    : string
+    sendError: string
   }
 
   export interface Attempts extends Interface {
     type: "attempts"
-    : number // int
+    sendAttempts: number // int
   }
 }
 

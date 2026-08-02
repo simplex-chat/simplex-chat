@@ -2102,11 +2102,11 @@ class KeySendStatus_failed(TypedDict):
 
 class KeySendStatus_error(TypedDict):
     type: Literal["error"]
-    : str
+    sendError: str
 
 class KeySendStatus_attempts(TypedDict):
     type: Literal["attempts"]
-    : int  # int
+    sendAttempts: int  # int
 
 KeySendStatus = (
     KeySendStatus_sent
