@@ -15,6 +15,8 @@ This file is generated automatically.
 - [APIDeleteChatItem](#apideletechatitem)
 - [APIDeleteMemberChatItem](#apideletememberchatitem)
 - [APIChatItemReaction](#apichatitemreaction)
+- [APIShareMyAddress](#apisharemyaddress)
+- [APIShareChatMsgContent](#apisharechatmsgcontent)
 
 [File commands](#file-commands)
 - [ReceiveFile](#receivefile)
@@ -35,6 +37,7 @@ This file is generated automatically.
 - [APIAddGroupRelays](#apiaddgrouprelays)
 - [APIAllowRelayGroup](#apiallowrelaygroup)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
+- [APIVerifyGroupDomain](#apiverifygroupdomain)
 
 [Group link commands](#group-link-commands)
 - [APICreateGroupLink](#apicreategrouplink)
@@ -485,6 +488,73 @@ ChatItemReaction: Message reaction.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIShareMyAddress
+
+Share user address card
+
+*Network usage*: no.
+
+**Parameters**:
+- toSendRef: [ChatRef](./TYPES.md#chatref)
+
+**Syntax**:
+
+```
+/_share address<str(toSendRef)>
+```
+
+```javascript
+'/_share address' + ChatRef.cmdString(toSendRef) // JavaScript
+```
+
+```python
+'/_share address' + ChatRef_cmd_string(toSendRef) # Python
+```
+
+**Response**:
+
+ChatMsgContent: Chat card content that can be sent.
+- type: "chatMsgContent"
+- user: [User](./TYPES.md#user)
+- msgContent: [MsgContent](./TYPES.md#msgcontent)
+
+---
+
+
+### APIShareChatMsgContent
+
+Share channel address
+
+*Network usage*: no.
+
+**Parameters**:
+- shareChatRef: [ChatRef](./TYPES.md#chatref)
+- toSendRef: [ChatRef](./TYPES.md#chatref)
+
+**Syntax**:
+
+```
+/_share chat content <str(shareChatRef)> <str(toSendRef)>
+```
+
+```javascript
+'/_share chat content ' + ChatRef.cmdString(shareChatRef) + ' ' + ChatRef.cmdString(toSendRef) // JavaScript
+```
+
+```python
+'/_share chat content ' + ChatRef_cmd_string(shareChatRef) + ' ' + ChatRef_cmd_string(toSendRef) # Python
+```
+
+**Response**:
+
+ChatMsgContent: Chat card content that can be sent.
+- type: "chatMsgContent"
+- user: [User](./TYPES.md#user)
+- msgContent: [MsgContent](./TYPES.md#msgcontent)
 
 ---
 
@@ -1161,6 +1231,40 @@ GroupUpdated: Group updated.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIVerifyGroupDomain
+
+Verify group domain
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_verify domain #<groupId>
+```
+
+```javascript
+'/_verify domain #' + groupId // JavaScript
+```
+
+```python
+'/_verify domain #' + str(groupId) # Python
+```
+
+**Response**:
+
+GroupDomainVerified: Group domain verified.
+- type: "groupDomainVerified"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- verificationFailure: string?
 
 ---
 

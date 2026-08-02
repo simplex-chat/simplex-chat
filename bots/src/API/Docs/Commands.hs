@@ -97,7 +97,9 @@ chatCommandsDocsData =
         ),
         ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"),
         ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),
-        ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction", "CRChatCmdError"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction")
+        ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction", "CRChatCmdError"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction"),
+        ("APIShareMyAddress", [], "Share user address card", ["CRChatMsgContent"], [], Nothing, "/_share address" <> Param "toSendRef"),
+        ("APIShareChatMsgContent", [], "Share channel address", ["CRChatMsgContent"], [], Nothing, "/_share chat content " <> Param "shareChatRef" <> " " <> Param "toSendRef")
       ]
     ),
     ( "File commands",
@@ -121,7 +123,8 @@ chatCommandsDocsData =
         ("APIGetGroupRelays", [], "Get group relays.", ["CRGroupRelays", "CRChatCmdError"], [], Nothing, "/_get relays #" <> Param "groupId"),
         ("APIAddGroupRelays", [], "Add relays to group.", ["CRGroupRelaysAdded", "CRGroupRelaysAddFailed", "CRChatCmdError"], [], Just UNInteractive, "/_add relays #" <> Param "groupId" <> " " <> Join ',' "relayIds"),
         ("APIAllowRelayGroup", [], "Clear relay rejection for a channel (relay operator).", ["CRRelayGroupAllowed", "CRChatCmdError"], [], Just UNBackground, "/_relay allow #" <> Param "groupId"),
-        ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
+        ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile"),
+        ("APIVerifyGroupDomain", [], "Verify group domain", ["CRGroupDomainVerified"], [], Just UNInteractive, "/_verify domain #" <> Param "groupId")
       ]
     ),
     ( "Group link commands",
@@ -426,8 +429,6 @@ undocumentedCommands =
     "APISetUserDomain",
     "APISetUserServers",
     "APISetUserUIThemes",
-    "APIShareChatMsgContent",
-    "APIShareMyAddress",
     "APIStandaloneFileInfo",
     "APIStorageEncryption",
     "APISuspendChat",
@@ -446,7 +447,6 @@ undocumentedCommands =
     "APIVerifyContact",
     "APIVerifyContactDomain",
     "APIVerifyGroupMember",
-    "APIVerifyGroupDomain",
     "APIVerifyToken",
     "CheckChatRunning",
     "ConfirmRemoteCtrl",
