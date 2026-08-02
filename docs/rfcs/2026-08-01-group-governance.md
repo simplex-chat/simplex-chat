@@ -165,7 +165,6 @@ The initiator then broadcasts the genesis certificate as `x.grp.gov.enable`:
 - mint a random 256-bit `governanceId`, a group-scoped identifier that exists only inside e2e-encrypted messages (see
   metadata note under limitations);
 - `params`: `{maxReferendumDays (default 30), challengeHours (default 24), witnessCount (default 2)}`;
-- the initial electorate (list and hash, as defined in the next section);
 - signed bytes: `smpEncode ("SXGG", governanceId, params, genesisLogHash)`, signed by every current owner, where
   `genesisLogHash` is the hash of the sealed initial membership log (see "Authenticated membership").
 
@@ -229,8 +228,8 @@ disclosure is as damaging without any forgery: announce one real member to some 
 list can ever satisfy every honest receiver again. **v1 therefore requires an authenticated membership log; the
 referendum machinery is not safe to ship over admin-asserted membership.**
 
-**The log.** Each governed group has an append-only, hash-linked log of membership facts. Each entry is
-`{parents :: [Hash], action, subject :: MemberId, author :: MemberId, ts, sig}` where `action` is one of `Added`
+**The log.** Each governed group has an append-only, hash-linked log of membership facts. Each entry is `{parents ::
+  [Hash], action, subject :: MemberId, key?, keyProof?, author :: MemberId, ts, sig}` where `action` is one of `Added`
 (carrying the subject's `MemberKey`), `Removed`, `Left`, `RoleChanged`, or `Confirmed` (below), `parents` are the
 hashes of the
 entries the author had when writing, and the entry's own hash covers all of it. The log is a DAG rather than a
@@ -238,33 +237,52 @@ sequence, because p2p groups have no total order; concurrent entries are sibling
 Entries are gossiped like any other governance event, forwardable by anyone under transport rule 1, and every member
 retains the whole log. It is small: its size is proportional to membership *changes*, not to messages.
 
-**Key uniqueness.** A log entry adding a member whose `MemberKey` already appears for a different member is invalid.
-Without this, one signature verifies as two votes whenever an attacker controls two member records, which costs
-nothing once it controls either. A member's key binding is also immutable: an `Added` entry carrying a key different
-from the one already bound to that `MemberId` is invalid, whether or not the subject was removed in between, and where
-two additions race, the binding is the one whose key the subject has itself signed for. Proof of possession is
-necessary here rather than a hash comparison: `ts` is advisory and unvalidated, so a hash tie-break is free grinding
-material, and an admin watching a join could publish a competing `Added` for that `MemberId` under a key it generated,
-winning the binding and thereafter signing in the new member's name. Without both rules a
-re-`Added` subject has no well-defined key in a DAG, and an admin can re-announce a dissident under a key it controls,
-silently invalidating that member's votes and signing in their name.
+**Who may author what.** `Left` is valid only from its own subject. `Confirmed` is valid from any member of the
+electorate. `Added` and `Removed` are valid from a member that is an admin *at the receiver's current frontier*, and
+`RoleChanged` likewise, except that no entry from any author may add, demote or remove an admin, which only a
+certificate can do. Authority is deliberately read at the receiver's current frontier and not at the entry's parents:
+parents are author-chosen, so an ousted admin could otherwise anchor at a pre-ouster frontier and keep writing
+authoritative membership entries forever, which would make the atomic admin replacement non-binding on the very log
+the electorate is derived from.
+
+**Every key binding is proved by the key itself.** An `Added` entry carries `keyProof`, a signature *by the key being
+bound* over `smpEncode ("SXGK", governanceId, subject, key)`. An entry without a valid `keyProof` is invalid.
+
+This one rule carries the whole key model, and nothing weaker works. A member's binding is immutable, so an `Added`
+naming a key different from the one already bound to that `MemberId` is invalid whether or not the subject was removed
+in between; and a key may not be bound to two different members, since otherwise one signature verifies as two votes.
+Both rules need a tie-break in a DAG, where "already bound" has no arrival order, and every tie-break that reasons
+about the entries rather than the key is exploitable: hashes are grindable because `ts` is advisory and unvalidated,
+and "whichever the subject signed for" does not help when the attacker controls the subject. `keyProof` removes the
+question instead of answering it. An admin who watches a join learns the new member's *public* key, from `MemberInfo`,
+and can publish a competing `Added` binding that key to a subject it controls; it cannot produce a signature by that
+key, so the competing entry is invalid everywhere, and the honest binding stands at every receiver regardless of
+arrival order. Without this the group could split permanently into members holding incompatible bindings for the same
+person, with the victim unable to pick any key that is valid everywhere.
 
 Note this cannot be delegated to the existing client behaviour: p2p groups do not populate `memberPubKey` today, and
 the code path that handles announced members overwrites `member_pub_key` unconditionally rather than pinning it. TOFU
 pinning for p2p is part of the prerequisite work, not something the log can assume.
 
 **Enfranchisement.** A member joins the electorate only when its `Added` entry has been countersigned by
-`min(witnessCount, |E(parents)| − 1)` distinct already-enfranchised members other than the author, each publishing a
-`Confirmed` entry recording that it completed a connection handshake with the subject. `E(parents)` is the electorate
-at the `Added` entry's own parent frontier, evaluated once and never revisited, and the `− 1` term is a bootstrap
-allowance without which the rule is unsatisfiable in a group smaller than `witnessCount + 1`.
+`min(witnessCount, H − 1)` distinct already-enfranchised members other than the author, each publishing a `Confirmed`
+entry recording that it completed a connection handshake with the subject. `H` is the **high-water mark** of the
+electorate: the largest it has been at any point in the receiver's log.
 
-Freezing the threshold at the entry's parents is not a detail. Written against the live electorate the rule would be
-self-referential and non-monotone, since enfranchising anyone raises the bar for everyone else: it would have no
-fixpoint, two members with byte-identical logs could derive different electorates depending on evaluation order, and a
-member already enfranchised on one confirmation could be silently *dis*enfranchised by an unrelated later addition.
-Evaluated at its parents, an entry's requirement is fixed when it is written, and enfranchisement once achieved holds
-at every descendant frontier.
+The choice of `H` is load-bearing, and the two obvious alternatives both fail. Against the *live* electorate the rule
+would be self-referential and non-monotone, since enfranchising anyone raises the bar for everyone else: no fixpoint,
+order-dependent results from byte-identical logs, and a member already enfranchised on one confirmation could be
+silently *dis*enfranchised by an unrelated later addition. Against the electorate at the entry's own *parents*, as an
+earlier draft had it, the threshold becomes an attacker parameter, because parents are author-chosen and the
+per-author chain rule compels only the inclusion of one of the author's own earlier entries: anchoring at a frontier
+where the group had a single member yields `min(witnessCount, 0) = 0`, so an ordinary member of a large settled group
+could enfranchise identities freely and forever, with no confirmations at all.
+
+`H` has neither problem. It is monotone by construction, so enfranchisement once achieved holds at every descendant
+frontier and no later addition can raise anyone's bar retroactively; and it is a maximum over the whole log rather
+than a reading at one frontier, so no choice of parents can shrink it. A group that has ever exceeded `witnessCount`
+members requires the full `witnessCount` confirmations from then on, and the `− 1` term survives only as a bootstrap
+allowance for a group that has never yet been that large.
 
 The rule needs no new handshake: the mesh already emits `x.grp.mem.con` when two members connect, so `Confirmed` is
 that existing signal, signed and logged. Its effect is that enfranchisement cannot be asserted unilaterally: a phantom
@@ -287,11 +305,12 @@ under future work, or a deliberate user-visible confirmation step in place of th
 enfranchisement latency for a real vouch.
 
 **Deriving the electorate.** The electorate at a log frontier is computed deterministically: every member with an
-enfranchising `Added` (per above) and no later `Removed`, regardless of role and regardless of `blockedByAdmin`,
-excluding only `GRRelay`. Eligibility deliberately does not depend on role or restriction, since those are levers
-incumbents control. Because the derivation is a pure function of the log, every member holding the same frontier
-computes the same `E`, and the per-client `settled_at` observation that previous drafts relied on disappears, together
-with its skew tolerances.
+enfranchising `Added` (per above) and neither a `Left` nor a `Removed` older than the recency allowance, regardless of
+role and regardless of `blockedByAdmin`, excluding only `GRRelay`. Eligibility deliberately does not depend on role or
+restriction, since those are levers incumbents control. The derivation reads the log plus one local observation, the
+receiver's first sight of each `Removed` entry, and nothing else: the per-client `settled_at` guesswork that earlier
+drafts relied on is gone, and what remains is a bounded skew in when members stop counting a departure rather than an
+open-ended disagreement about who belongs.
 
 Concurrent `Added` and `Removed` for the same subject are resolved as removal-wins within a frontier, and a re-`Added`
 subject is enfranchised again: this is the flickering the design already accepts elsewhere, and it is what keeps the
@@ -320,18 +339,23 @@ chooses the frontier: citing an ancient one either shrank the denominator or sil
 the union of cited and current sets fixed those at the cost of letting long-departed identities vote while not
 counting toward `E`. The rule is now the simplest one available:
 
-> The **franchise** is the set of members enfranchised, and neither departed nor removed, at the receiver's own
-> current frontier. A member may vote if and only if it is in the franchise. The **denominator** `E` is the franchise
-> plus those removed within the last `maxReferendumDays` (see "Recent removals" below).
+> The **electorate** is the set of members enfranchised at the receiver's own current frontier, excluding those who
+> have departed, and including those removed within the last `maxReferendumDays`. A member may vote if and only if it
+> is in that set, and `E` is its size.
 
-The two sets differ only by that recency term, and only in the safe direction: a recently removed member is counted
-but cannot vote, so an admin cannot purge its way to a smaller `E`, and no departed identity can ever cast a vote.
-Everything else in the design that says "in the electorate" means the franchise: proposer eligibility, the members an
-action may name, the eligible attesters of the frontier bound, and the members whose removal transport rule 4 defers.
-Only the tally's denominator uses the larger set.
+One set decides everything: who may vote, the denominator of the unconditional test and the ripeness delay, who may
+propose, who may be named by an action, and who counts as an eligible attester. An earlier draft split the franchise
+from the denominator, counting a recently removed member without letting it vote, and that gap was the flaw rather
+than a safeguard: `E` does not appear in the pass condition `A > B`, so removing a member subtracted a vote while
+leaving the denominator untouched, and purging *lowered* the bar a purger had to clear instead of raising it.
+Including recent removals in the vote as well as the count is what actually makes a purge futile.
 
-Crucially there is nothing here for a proposer to choose: `x.grp.gov.propose` carries no frontier at all, and both
-sets are read from the receiver's own log.
+A removed member therefore keeps its say in governance for one referendum period, which is deliberate: the group is
+deciding, among other things, whether the removal was legitimate. Departure by `Left` is different and takes effect at
+once, because nobody is forced out by their own choice.
+
+Crucially there is nothing here for a proposer to choose: `x.grp.gov.propose` carries no frontier at all, and the set
+is read from the receiver's own log.
 
 **Members behind on the log catch up rather than failing.** A receiver evaluates against whatever it holds, fetching
 entries it lacks when a vote or certificate references a member it does not know. Validation is therefore repairable,
@@ -351,16 +375,22 @@ receiver's current frontier, a member removed during a referendum would otherwis
 Transport rule 4 already prevents that: while a referendum is live, removals of electorate members are deferred, so
 the voter remains in the set for as long as it matters. This is why the union rule is unnecessary as well as unsafe.
 
-**Recent removals still count.** A member removed within the last `maxReferendumDays` counts toward `E` although it
-cannot vote. Without this, a single admin could author removals for most of the group in one log write and immediately
-propose against the remnant: ninety removals in a hundred-member group would leave `E = 10`, and six confederate ayes
-would be unconditional. With it, purging is counterproductive, because it raises the very threshold the purger has to
-clear, and the group has a full referendum period in which to respond. Recency is measured by the receiver's own first
-sight of the `Removed` entry, never by anything the entry's author writes.
+**Recent removals still vote.** Without the allowance, a single admin could author removals for most of the group in
+one log write and immediately propose against the remnant: ninety removals in a hundred-member group would leave ten
+voters, and six confederate ayes would carry it. With it, those ninety keep both their vote and their weight in the
+denominator for a full referendum period, so the purge changes nothing except to advertise itself, and the group has
+that period in which to answer with a referendum the purged can vote in.
+
+Recency is measured by the receiver's own first sight of the `Removed` entry, never by anything the entry's author
+writes, and is keyed to the subject's first removal so that re-announcing cannot restart the clock. Note this makes
+`E` depend on a local observation rather than on the log alone: two members with identical logs can briefly compute
+different denominators. That is acceptable because `E` is already local and feeds only local decisions, and it buys a
+protection that does not depend on message arrival order, unlike deferral.
 
 A `Left` entry is valid only if `author == subject`. Nobody may announce another member's departure, because `Left`
-is exempt from the recency allowance below and an admin able to author it for others could drop ninety of a hundred
-members out of `E` instantly, which is precisely the purge that allowance exists to stop. A member that vanishes
+  takes effect at once with no recency allowance, so an admin able to author it for others could drop ninety of a
+  hundred members out of the electorate instantly, which is exactly the purge the allowance exists to stop. A member
+  that vanishes
 without publishing one stays in the electorate until removed, which is the safe direction.
 
 A member who leaves of their own accord exits the electorate at once, via `Left`, with no recency allowance: the
@@ -394,38 +424,39 @@ enfranchisement in sparse groups where a joiner connects slowly.
 
 New chat protocol events (JSON, version-gated): `x.grp.gov.enable` (above), and:
 
-- `x.grp.gov.propose` `{governanceId, govVersion, action, prevProposalHash, proposer, sig}`,
-  from any electorate member. `prevProposalHash` is the `proposalHash` of the referendum whose certificate the proposer
-  applied at the previous version (the genesis certificate's hash at `govVersion = 2`), chaining each referendum to the
-  state it was proposed against. It names the *proposal*, not the certificate, because certificates are not canonical:
-  each member re-serves its own as-applied vote set (see "Catch-up and recovery"), so honest members at the same version
-  would otherwise compute different chain values. `action = {type: "replaceAdmins", admins: [MemberId]}` with the
-  proposed member IDs sorted, non-empty, and every named member in the receiver's electorate; a receiver rejects the
-  proposal otherwise, since `admins: []`
-  would otherwise be a valid one-aye proposal leaving the group with no admins at all, and therefore no invitations, no
-  moderation and no forwarding, recoverable only by another referendum that an attacker can answer with another
-  abolition at every version. `proposer` is the proposer's `MemberId`, carried explicitly so that forwarded copies can
-  be verified without trusting the forwarder's sender claim. `proposalHash` = SHA-256 of the deterministic binary
-  encoding `smpEncode ("SXGP", governanceId, govVersion, action, prevProposalHash, proposer)`;
-  `sig` is the proposer's signature over it. `govVersion` must be the receiver's stored governance version + 1 for full
-  processing; a proposal claiming a higher version is not retained and only marks a possible version gap, triggering at
-  most one rate-limited `x.grp.gov.request` with backoff (otherwise a single forged-version proposal would stampede the
-  whole group into catch-up). Multiple proposals may coexist at the same version; clients retain up to one valid
-  proposal per proposer per version (needed to validate competing certificates, bounded against floods by the electorate
-  size) and members may vote on each independently, so flooding decoy proposals cannot lock anyone out of voting on the
-  genuine one. - `x.grp.gov.vote` `{governanceId, proposalHash, voter, vote, sig}`: `vote ∈ {aye, nay}`; `voter` is the
-  voter's `MemberId` (for key lookup in forwarded copies; the binding is the signature itself); `sig` over `smpEncode
-  ("SXGV", governanceId, proposalHash, vote)`. Sent by the voter to all members over direct connections (normal group
-  fan-out). One vote per member per proposal; **conflicting signed votes from the same member on the same proposal annul
-  that member's vote on it** (excluded from both tallies), a deterministic rule under vote-set union, so equivocating
-  voters cannot make different members tally differently. - `x.grp.gov.cert` `{governanceId, proposalHash, votes}`, the
-  certificate: the full vote list `[(memberId, vote, sig)]`, assembled and broadcast by any member once it holds the votes. A
-  certificate is validated against the retained proposal it references; a client that lacks the proposal requests it
-  (below) before judging the certificate. An **announcement form** with `votes` omitted and `{certHash, tally}` present
-  is used for the post-apply announcement (see "Applying a certificate"); peers that lack the full certificate request
-  it. At ~100 bytes per vote, groups beyond ~120 members need the chunked-blob transport already used for roster blobs.
-  - `x.grp.gov.request` `{governanceId, haveVersion, proposalHash?}`, catch-up by version, or, with `proposalHash`
-  present, a request for that specific proposal + certificate; see "Catch-up and recovery".
+- `x.grp.gov.propose` `{governanceId, govVersion, action, prevProposalHash, proposer, sig}`, from any electorate member.
+  `prevProposalHash` is the `proposalHash` of the referendum whose certificate the proposer applied at the previous
+  version (the genesis certificate's hash at `govVersion = 2`), chaining each referendum to the state it was proposed
+  against. It names the *proposal*, not the certificate, because certificates are not canonical: each member re-serves
+  its own as-applied vote set (see "Catch-up and recovery"), so honest members at the same version would otherwise
+  compute different chain values. `action = {type: "replaceAdmins", admins: [MemberId]}` with the proposed member IDs
+  sorted, non-empty, and every named member in the receiver's electorate; a receiver rejects the proposal otherwise,
+  since `admins: []` would otherwise be a valid one-aye proposal leaving the group with no admins at all, and therefore
+  no invitations, no moderation and no forwarding, recoverable only by another referendum that an attacker can answer
+  with another abolition at every version. `proposer` is the proposer's `MemberId`, carried explicitly so that forwarded
+  copies can be verified without trusting the forwarder's sender claim. `proposalHash` = SHA-256 of the deterministic
+  binary encoding `smpEncode ("SXGP", governanceId, govVersion, action, prevProposalHash, proposer)`; `sig` is the
+  proposer's signature over it. `govVersion` must be the receiver's stored governance version + 1 for full processing; a
+  proposal claiming a higher version is not retained and only marks a possible version gap, triggering at most one
+  rate-limited `x.grp.gov.request` with backoff (otherwise a single forged-version proposal would stampede the whole
+  group into catch-up). Multiple proposals may coexist at the same version; clients retain the *first* valid proposal
+  from each proposer at each version and ignore that proposer's later ones rather than replacing the stored one, so a
+  proposer cannot refresh a deferral timer by re-proposing (needed to validate competing certificates, bounded against
+  floods by the electorate size) and members may vote on each independently, so flooding decoy proposals cannot lock
+  anyone out of voting on the genuine one. - `x.grp.gov.vote` `{governanceId, proposalHash, voter, vote, sig}`: `vote ∈
+  {aye, nay}`; `voter` is the voter's `MemberId` (for key lookup in forwarded copies; the binding is the signature
+  itself); `sig` over `smpEncode ("SXGV", governanceId, proposalHash, vote)`. Sent by the voter to all members over
+  direct connections (normal group fan-out). One vote per member per proposal; **conflicting signed votes from the same
+  member on the same proposal annul that member's vote on it** (excluded from both tallies), a deterministic rule under
+  vote-set union, so equivocating voters cannot make different members tally differently. - `x.grp.gov.cert`
+  `{governanceId, proposalHash, votes}`, the certificate: the full vote list `[(memberId, vote, sig)]`, assembled and
+  broadcast by any member once it holds the votes. A certificate is validated against the retained proposal it
+  references; a client that lacks the proposal requests it (below) before judging the certificate. An **announcement
+  form** with `votes` omitted and `{certHash, tally}` present is used for the post-apply announcement (see "Applying a
+  certificate"); peers that lack the full certificate request it. At ~100 bytes per vote, groups beyond ~120 members
+  need the chunked-blob transport already used for roster blobs. - `x.grp.gov.request` `{governanceId, haveVersion,
+  proposalHash?}`, catch-up by version, or, with `proposalHash` present, a request for that specific proposal +
+  certificate; see "Catch-up and recovery".
 
 Signatures are detached application-payload signatures over deterministic binary encodings, so they can be re-aggregated
 into certificates by third parties. This is a new pattern relative to shipped message signing:
@@ -443,11 +474,13 @@ Transport rules (the anti-censorship core):
    `blockedByAdmin`, so an incumbent cannot strip a vote by demoting its caster to observer or blocking it for all.
    Removal is handled by rule 4 rather than here. Receivers keep removed-member records, so an already-cast vote
    remains verifiable.
-4. **Removal deferral**, in two tiers. Deferral suspends the *electorate effect* of a removal as well as its
-   connection teardown: while a referendum is live the removed member remains in the franchise for that referendum, so
-   a vote it has already cast stays valid and its right to cast one survives. Without that, an incumbent facing an
-   ouster could simply remove its opponents and watch their nays become invalid at every receiver that had processed
-   the removal. (i) While a client holds an unresolved proposal, it defers the connection deletion normally triggered
+4. **Removal deferral**, in two tiers. Its job is now only to keep a removed member *reachable*: the recency allowance
+   above already keeps that member in the electorate, so its vote survives whether or not any deferral fires. This
+   matters because deferral depends on which message a client happens to hold first, and in a p2p group the admin is
+   often the forwarder that decides that: an incumbent could withhold a proposal from a member while pushing the
+   removals ahead of it, so that no tier applied. Recency does not depend on arrival order, so the vote is protected
+   even where deferral is not. (i) While a client holds an unresolved proposal, it defers the connection deletion
+   normally triggered
    by `XGrpMemDel` (both for itself when removed and toward removed third parties) for
    members of that proposal's electorate (removals of non-electorate members proceed normally), until no live challenge
    window for the proposal can remain open: `latestClose` + the maximum window (terms
@@ -558,9 +591,11 @@ There is no shared clock and, after this revision, no clock on the wire either. 
   everyone else, and its clock starts when it learns of the referendum. Late votes are counted by every member whose
   challenge window is still open and ignored by members already at local finality.
 
-The invariant these rules produce: every member gets at least `challengeHours` between seeing a non-unconditional
-result and applying it, and at least `delay(A)` from learning of a referendum before any certificate for it can be
-applied, no matter how it reached them and no matter what anyone claims about when it began.
+The invariant these rules produce, **on the live path**: every member gets at least `challengeHours` between seeing a
+non-unconditional result and applying it, and at least `delay(A)` from learning of a referendum before any certificate
+for it can be applied, whatever anyone claims about when it began. The catch-up path deliberately has neither, because
+it judges an outcome the group has already settled rather than racing a clock; what stands in their place there is the
+frontier bound, which requires several eligible members to have attested the very proposal being adopted.
 
 ### Certificate soundness: unconditional certificates and the challenge window
 
@@ -637,12 +672,15 @@ requires:
   same-version race (see mandate order below) from turning a transient contested result into deadlock. Note also that
   the value is self-asserted and public (announcements broadcast the referendum's identity), so it proves only that the
   author knew the preceding referendum, not that they applied it;
-- a **frontier bound**: the target version may not exceed the highest version attested (`SXGS`) by *several distinct*
-  eligible members. Attesters must therefore have applied the target itself; an earlier draft allowed the target to be
-  one version above the highest attested, which meant honest members sitting at version V would satisfy the bound for a
-  target at V+1 that nobody had attested at all, letting a single member walk any well-connected victim forward one
-  version per round. The attesters must be outside the target certificate's aye set, and attesting through a path not
-  controlled by the presenter. A single attester is not enough (one abstaining confederate is outside the aye set and
+- a **frontier bound**: *several distinct* eligible members must have attested (`SXGS`) **the target certificate's own
+  proposal**, not merely its version number. This is the whole of the condition, and the proposal binding is what makes
+  it mean anything. `SXGS` signs `(governanceId, govVersion, proposalHash)`, but a check that compared only versions
+  would be satisfied by honest members' attestations for the *legitimate* referendum at that version, letting an
+  attacker fabricate a rival certificate at the same version and have the honest attestations authorise it at any
+  member that had not yet applied. An earlier draft made the proposal binding a special case for same-version
+  competitors and justified it by the returning-member scenario, which is precisely the case the special case did not
+  cover. The attesters must be outside the target certificate's aye set, and attesting through a path not controlled by
+  the presenter. A single attester is not enough (one abstaining confederate is outside the aye set and
   can attest anything, the same weakness the stale-mandate limitation already concedes for corroboration), so the
   threshold is what converts fabrication from a one-member trick into a conspiracy of that size. The requirement is
   `max(2, min(3, |eligible|))`, evaluated over members eligible at the *receiver's own current* frontier, and is never
@@ -656,14 +694,11 @@ requires:
   for the legitimate certificate satisfy the check for a rival one proposed in the same round, which is precisely how a
   two-aye certificate could capture a returning member.
 
-Conditions 1 and 2 are gap-only; the frontier bound applies to *every* stale adoption, gap 1
-included (see "Catch-up and recovery"). The first three are cheap independent checks but are not individually
-load-bearing: fabricating intermediate bundles costs only signatures (with zero nays any non-empty aye set passes the
-tally (see "Tally"), and witnesses are not electorate-validated), while the timestamps in a fabricated chain are
-attacker-chosen and unchecked on the catch-up path (the plausibility test of "Timing" applies only to directly received
-proposals). The temporal rule bounds a leap by the time since the *group's* last completed referendum, not since the
-member's own absence, so in a group that rarely holds referenda it permits a long chain; it is a cost-raiser, not the
-guarantee.
+Conditions 1 and 2 are gap-only; the frontier bound applies to *every* stale adoption, gap 1 included (see "Catch-up
+and recovery"). The first two are cheap independent checks and neither is load-bearing: fabricating intermediate
+bundles costs only signatures, since with zero nays any non-empty aye set passes the tally (see "Tally") and witnesses
+are not electorate-validated. The frontier bound is what binds, and after the deletion of the wire timestamps it is
+the only thing that does.
 
 What binds is the frontier bound, which anchors acceptance to state independently observed by several members with no
 stake in the target certificate. Genuine long-absence catch-up is unaffected (honest peers attest the real frontier),
@@ -685,9 +720,9 @@ taken by admins of the losing certificate during the overlap are invalid in the 
 extensions) has closed unchallenged.
 
 **Certificate freshness.** A certificate is **current** if its `govVersion` is exactly one above the receiver's stored
-version, and **stale** if the receiver has already passed that version (see
-"Timing"): broker timestamp for directly received certificates (robust for offline readers), local first sight for
-forwarded copies. A fresh certificate is processed as above. A stale one is only a catch-up hint: it may be adopted
+version, and **stale** if the receiver has already passed that version (see "Timing"). A certificate more than one
+version above the receiver's is neither: it is a version *gap*, handled by the witnessed chain rather than by either
+path here. A current certificate is processed as above. A stale one is only a catch-up hint: it may be adopted
 solely through the corroborated catch-up path (see "Catch-up and recovery"). The same-version supersede exception in
 step 1 follows the same rule (live for a fresh competitor, corroborated-catch-up-only for a stale one), which keeps
 tiebreak convergence alive for members that were offline or partitioned during the race. The hard bound on withheld
@@ -700,9 +735,22 @@ contest at most that one round; under mandate order it prevails only with a cate
 and corroboration make late enactment slow, loud, and attributable rather than impossible (see the stale-mandate
 limitation).
 
-Day-to-day admin powers are otherwise unchanged in governed groups: admins add/remove members, appoint moderators, and
-may even promote additional admins between referenda; packing the admin set is pointless when a referendum can replace
-the whole set at any time.
+**The admin set is referendum-only.** In a governed group no admin may promote a member to admin, demote another
+admin, or remove one, by `XGrpMemRole`, `XGrpMemDel`, or a log entry; receivers reject all of it, and a `Removed` or
+`RoleChanged` entry whose subject is an admin is invalid unless it arrives as part of an applied certificate. An admin
+may still leave by authoring its own `Left`.
+
+This closes a regression the feature would otherwise introduce. Genesis demotes every owner to admin, and the existing
+receiver check permits acting on a member of equal role (`senderRole >= GRAdmin && senderRole >= memberRole`), so an
+owner-free group in which admins could remove admins would let any one of them remove all the others and then the
+membership at large. Today the owner role is removal-proof and no such capability exists; a design that abolishes
+owners must put the admin set out of unilateral reach or it makes a rogue admin strictly more dangerous than before.
+Confining changes to referenda also removes the need to argue that packing is harmless, and matches the premise: in a
+governed group the admin set is the governed object.
+
+Day-to-day admin powers are otherwise unchanged: admins add and remove ordinary members, appoint and remove
+moderators, and moderate content. An abusive admin is removed by referendum, which a genuine majority can make
+immediate.
 
 ### Catch-up and recovery
 
@@ -728,16 +776,14 @@ machinery this design generalizes):
   any active proposals at the requester's new current version + 1 (full proposals are fetched on demand by
   `proposalHash`, keeping responses bounded; retention allows up to one proposal per proposer), so that a member
   advancing via catch-up regains the ability to vote in the live referendum instead of being silently disenfranchised.
-- The catching-up member validates each bundle: the structural timing check, signatures, and the electorate derived from
-  its own electorate at the time it judges the bundle (fetching any log entries it lacks),
-  skipping the live plausibility check. The tally is evaluated over the bundle's votes **union** its own locally held
-  votes for that proposal, without a challenge window; the member is judging evidence of an outcome already final
-  elsewhere, and *that* premise must be established, not assumed: before adopting a bundle (or a stale certificate
-  routed here) that would advance or supersede its state, the client MUST apply the two load-bearing witnessed-chain
-  condition: the **frontier
-  bound** (several distinct eligible attesters, as defined there), *regardless of gap size*. A single-version step is
-  not exempt: without this, a two-member conspiracy could walk a victim forward one version at a time through this
-  window-free path, indefinitely, never presenting a gap greater than one. Attestations are signed as
+- The catching-up member validates each bundle: signatures, and the electorate computed from its own log at the time it
+  judges the bundle (fetching any entries it lacks). The tally is evaluated over the bundle's votes **union** its own
+  locally held votes for that proposal, without a challenge window; the member is judging evidence of an outcome already
+  final elsewhere, and *that* premise must be established rather than assumed: before adopting a bundle (or a stale
+  certificate routed here) that would advance or supersede its state, the client MUST satisfy the **frontier bound**
+  (several distinct eligible members attesting that very proposal, as defined there), *regardless of gap size*. A
+  single-version step is not exempt: without this, a two-member conspiracy could walk a victim forward one version at a
+  time through this window-free path, indefinitely, never presenting a gap greater than one. Attestations are signed as
   `{attester :: MemberId, sig}` with `sig` over `smpEncode ("SXGS", governanceId, govVersion, proposalHash)` (keyed on
   the canonical proposal, not on a certificate, for the reason given under `prevProposalHash`), with the attester's
   `MemberId` carried for key lookup as with votes. They are served in catch-up responses and relayable by anyone other
@@ -748,11 +794,10 @@ machinery this design generalizes):
   third-party-verifiable record of who vouched for enacting the result. For a genuinely enacted certificate, nay voters
   and abstainers applied it too and can attest; for a withheld one, an attester must out itself. Both conditions are
   waived only for certificates whose aye set is a strict majority both of the proposal's electorate and of the
-  receiver's electorate at its current log frontier; a banked majority that has since eroded gets no waiver, and a one-vote
-  fabrication never qualifies. Falling short, the client does not apply, surfaces the pending state, and MAY offer
-  user-confirmed adoption as a fallback. Version skipping means a member that cannot validate version N can still adopt
-  N+1 directly, provided it holds N's bundle as a witness (step 1), served alongside N+1's in the same catch-up
-  response.
+  receiver's current electorate; a banked majority that has since eroded gets no waiver, and a one-vote fabrication
+  never qualifies. Falling short, the client does not apply, surfaces the pending state, and MAY offer user-confirmed
+  adoption as a fallback. Version skipping means a member that cannot validate version N can still adopt N+1 directly,
+  provided it holds N's bundle as a witness (step 1), served alongside N+1's in the same catch-up response.
 
 What recovery can and cannot do: it repairs version lag and divergence caused by *missing information*: a bundle can
 carry ayes the rejecter lacked, so a rejecter may accept on re-evaluation. It cannot force a member to accept a tally
@@ -838,6 +883,8 @@ are specific to governed groups. Roles are given at the point in a group's life 
 
 *cannot:*
 
+- change the admin set at all outside a referendum: promoting to admin, demoting an admin and removing an admin are
+  all rejected, so no admin can remove its colleagues, pack the set with confederates, or entrench itself.
 - forge a result. A certificate carries signatures from enfranchised members and admins do not hold their keys.
 
 - veto one. No admin signature or cooperation appears anywhere in propose, vote or apply, and flooding decoy proposals
@@ -846,15 +893,16 @@ are specific to governed groups. Roles are given at the point in a group's life 
 - censor one. Governance events are self-authenticating and forwardable by any member, exempt from the
   single-forwarder rule and from `blockedByAdmin` suppression.
 
-- silence voters once a referendum is under way. Demotion and blocking never affect eligibility, and removal deferral
-  suspends both the teardown and the electorate effect of a removal, so a removed member keeps its vote on the
-  referendum in progress.
+- silence voters. Demotion and blocking never affect eligibility, and a removed member stays in the electorate for a
+  full referendum period, so its vote survives a purge whatever order the messages arrive in.
 
-- shrink the electorate by purging, since `E` is the receiver's own count and recent removals still weigh in it, nor by
-  naming a frontier, since proposals name none. An admin *can* still starve a member of log entries, which shrinks that
-  member's `E`, and *can* still grow the roll with confirmed puppets; the log records both rather than preventing them.
+- shrink the electorate by purging, since the removed keep both their vote and their weight for a full referendum
+  period, nor by naming a frontier, since proposals name none. An admin *can* still starve a member of log entries,
+  which shrinks that member's `E`, and *can* still grow the roll with confirmed puppets; the log records both rather
+  than preventing them.
 
-- enfranchise an identity with no confirmations at all, once the group is larger than `witnessCount`. Note this is a
+- enfranchise an identity with no confirmations at all, once the group has *ever* been larger than `witnessCount`,
+  since the threshold reads a monotone high-water mark rather than any frontier the author can choose. Note this is a
   weak barrier: confirmations are emitted automatically on connection, so an admin adding puppets through the ordinary
   flow collects them from honest members' clients.
 
@@ -919,7 +967,8 @@ are specific to governed groups. Roles are given at the point in a group's life 
 
 - park a reserve certificate above the frontier the group can reach, or reset the version chain.
 
-- satisfy the frontier bound with the certificate's own supporters, or with a single confederate.
+- satisfy the frontier bound with the certificate's own supporters, with a single confederate, or with honest
+  members' attestations for a different proposal, since attestations bind the proposal rather than the version.
 
 #### A member removed while a referendum is in progress
 
@@ -1018,7 +1067,7 @@ are specific to governed groups. Roles are given at the point in a group's life 
   since acceptance beyond a one-version gap is bounded by the frontier independently attested by several members from
   outside the certificate's aye set, and a completed referendum retires every reserve strictly below its version. A
   banked competitor at the *same* version can contest only that one round; under mandate order it prevails only by
-  out-polling the live certificate on margin (equal margins fall through to aye count, then the hash), which a minority
+  out-polling the live certificate on aye count (ties fall through to the proposal hash), which a minority
   cannot do against a well-supported **reaffirmation referendum** (proposing the current admin set, already expressible
   as `GAReplaceAdmins`). Clients should offer reaffirmation; flushing all suspected reserves takes at most two
   successive referenda. Version-based staleness and the attestation requirement do not make late enactment impossible
@@ -1096,10 +1145,12 @@ See "Related work" at the end of this document for how these choices sit against
 
 - `Protocol.hs`: `GovAction`, enable/proposal/vote/cert/request types plus the membership-log entry type and a
   `x.grp.gov.log` event carrying entries and frontier requests, six event tags (+ `isForwardedGroupMsg`); deterministic
-  binary encodings with domain-separation tags (`SXGG`/`SXGP`/`SXGV`, `SXGL` for log entries, plus `SXGS` state
-  attestations served in catch-up responses).
-- Membership log: entry validation (parent hashes present, author enfranchised and permitted, signature), DAG merge and
-  frontier computation, enfranchisement evaluation (`witnessCount` confirmations), fork detection on frontier compare,
+  binary encodings with domain-separation tags (`SXGG`/`SXGP`/`SXGV`, `SXGL` for log entries, `SXGK` for key proofs,
+  plus `SXGS` state attestations, which bind the proposal and not merely the version).
+- Membership log: entry validation (parent hashes present, author in the electorate, author authorised for the action
+  at the *receiver's current* frontier rather than at the entry's parents, signature), DAG merge and
+  frontier computation, the electorate high-water mark `H`, enfranchisement evaluation (`min(witnessCount, H − 1)`
+  confirmations), `keyProof` verification, fork detection on frontier compare,
   and derivation of the electorate at a frontier. `Confirmed` entries are emitted from the existing `x.grp.mem.con`
   path, signed; the connection event that already exists becomes the enfranchising witness.
 - Key management: per-group member keypair for p2p governed groups (`group_members.member_pub_key` exists; add p2p
@@ -1111,7 +1162,9 @@ See "Related work" at the end of this document for how these choices sit against
   optional field on `XGrpMemNew`), which is the catch-up trigger for members with no other governance traffic.
 - `Subscriber.hs`: **the `xGrpMemIntro` role cap (prerequisite, applies to all p2p groups, not only governed ones)**;
   handlers for the six events; genesis validation (already-governed rejection, non-empty authorising set, signer
-  connectedness, parameter bounds on both ends); proposal validation (non-empty admin set naming enfranchised members,
+  connectedness, parameter bounds on both ends); **rejection of any admin-set change outside a certificate in governed
+  groups** (`XGrpMemRole` to or from `GRAdmin`, `XGrpMemDel` of an admin, and the log equivalents); proposal validation
+  (non-empty admin set naming enfranchised members,
   no wire timestamps to validate); ripeness evaluated as `firstSeenAt + delay(A, E)` with `firstSeenAt` persisted per
   proposal, and `E` kept as a per-proposal running maximum; proposal validation and
   per-proposer retention cap; certificate validation + challenge-window worker with late-voting support; version-gated
@@ -1141,6 +1194,7 @@ CREATE TABLE group_membership_log
     action       TEXT    NOT NULL, -- added / removed / left / role_changed / confirmed
     subject_id   BLOB    NOT NULL,
     subject_key  BLOB,             -- MemberKey, on `added`
+    key_proof    BLOB,             -- signature by that key over ("SXGK", governanceId, subject, key)
     author_id    BLOB    NOT NULL,
     entry_ts     TEXT    NOT NULL,
     entry_sig    BLOB    NOT NULL,
