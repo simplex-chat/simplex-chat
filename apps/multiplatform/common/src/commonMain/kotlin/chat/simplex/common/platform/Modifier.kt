@@ -19,12 +19,26 @@ expect fun Modifier.desktopOnExternalDrag(
   enabled: Boolean = true,
   onFiles: (List<File>) -> Unit = {},
   onImage: (File) -> Unit = {},
-  onText: (String) -> Unit = {}
+  onText: (String) -> Unit = {},
+  onDragging: (Boolean) -> Unit = {},
 ): Modifier
 
 expect fun Modifier.onRightClick(action: () -> Unit): Modifier
 
 expect fun Modifier.desktopPointerHoverIconHand(): Modifier
+
+expect fun Modifier.desktopPointerHoverIconResize(): Modifier
+
+expect val macOSWindowVibrancyAvailable: Boolean
+
+expect fun openSystemNotificationSettings()
+
+@Composable
+expect fun Modifier.desktopMessageSelection(
+  enabled: Boolean,
+  onToggle: () -> Unit,
+  onRange: () -> Unit,
+): Modifier
 
 expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
 

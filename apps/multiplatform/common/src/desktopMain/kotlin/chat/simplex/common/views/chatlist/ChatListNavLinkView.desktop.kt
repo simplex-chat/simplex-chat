@@ -7,10 +7,21 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import chat.simplex.common.tokens
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.helpers.*
 
@@ -34,10 +45,38 @@ actual fun ChatListNavLinkLayout(
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
 ) {
-  var modifier = Modifier.fillMaxWidth()
+  val density = remember { appPrefs.desktopChatDensity.state }.value.tokens()
+  val focusManager = LocalFocusManager.current
+  var focused by remember { mutableStateOf(false) }
+  var modifier = Modifier
+    .padding(horizontal = 6.dp, vertical = 1.dp)
+    .fillMaxWidth()
+    .clip(RoundedCornerShape(8.dp))
+    .background(
+      when {
+        selectedChat.value -> MaterialTheme.colors.primary.copy(alpha = 0.16f)
+        focused -> MaterialTheme.colors.onBackground.copy(alpha = 0.08f)
+        else -> Color.Transparent
+      }
+    )
   if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }
+    .onFocusChanged { focused = it.isFocused }
+    .focusable()
+    .onPreviewKeyEvent { event ->
+      if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+      when (event.key) {
+        Key.Enter, Key.NumPadEnter, Key.Spacebar -> {
+          click()
+          true
+        }
+        Key.DirectionUp -> focusManager.moveFocus(FocusDirection.Up)
+        Key.DirectionDown -> focusManager.moveFocus(FocusDirection.Down)
+        else -> false
+      }
+    }
+    .semantics { selected = selectedChat.value }
   CompositionLocalProvider(
     LocalIndication provides if (selectedChat.value && !disabled) NoIndication else LocalIndication.current
   ) {
@@ -45,13 +84,10 @@ actual fun ChatListNavLinkLayout(
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
+          .padding(start = 8.dp, top = density.chatRowVerticalPadding, end = 12.dp, bottom = density.chatRowVerticalPadding),
         verticalAlignment = Alignment.Top
       ) {
         chatLinkPreview()
-      }
-      if (selectedChat.value) {
-        Box(Modifier.matchParentSize().background(MaterialTheme.colors.onBackground.copy(0.05f)))
       }
       if (dropdownMenuItems != null) {
         DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)

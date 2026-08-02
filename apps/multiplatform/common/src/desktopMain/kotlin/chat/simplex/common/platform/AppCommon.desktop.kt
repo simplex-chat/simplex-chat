@@ -24,12 +24,13 @@ fun initApp() {
     override fun hasNotificationsForChat(chatId: String): Boolean = chat.simplex.common.model.NtfManager.hasNotificationsForChat(chatId)
     override fun cancelNotificationsForChat(chatId: String) = chat.simplex.common.model.NtfManager.cancelNotificationsForChat(chatId)
     override fun cancelNotificationsForUser(userId: Long) = chat.simplex.common.model.NtfManager.cancelNotificationsForUser(userId)
-    override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
+    override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>, remoteHostId: Long?, messageId: Long?) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions, remoteHostId, messageId)
     override fun androidCreateNtfChannelsMaybeShowAlert() {}
     override fun cancelCallNotification() {}
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
     override fun showMessage(title: String, text: String) = chat.simplex.common.model.NtfManager.showMessage(title, text)
   }
+  chat.simplex.common.model.NtfManager.initializeNativeNotifications()
   applyAppLocale()
   deleteOldChatArchive()
   if (DatabaseUtils.ksSelfDestructPassword.get() == null) {

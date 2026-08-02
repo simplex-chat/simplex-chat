@@ -26,6 +26,13 @@ fun NotificationsSettingsView(
 ) {
   NotificationsSettingsLayout(
     notificationsMode = remember { chatModel.controller.appPrefs.notificationsMode.state },
+    notificationSound = remember { chatModel.controller.appPrefs.desktopNotificationSound.state },
+    notificationPreviewMode = remember { chatModel.notificationPreviewMode },
+    setNotificationSound = { chatModel.controller.appPrefs.desktopNotificationSound.set(it) },
+    setNotificationPreviewMode = {
+      chatModel.controller.appPrefs.notificationPreviewMode.set(it.name)
+      chatModel.notificationPreviewMode.value = it
+    },
     showNotificationsMode = {
       ModalManager.start.showModalCloseable(true) {
         NotificationsModeView(chatModel.controller.appPrefs.notificationsMode.state) { changeNotificationsMode(it, chatModel) }
@@ -37,6 +44,10 @@ fun NotificationsSettingsView(
 @Composable
 fun NotificationsSettingsLayout(
   notificationsMode: State<NotificationsMode>,
+  notificationSound: State<Boolean>,
+  notificationPreviewMode: State<NotificationPreviewMode>,
+  setNotificationSound: (Boolean) -> Unit,
+  setNotificationPreviewMode: (NotificationPreviewMode) -> Unit,
   showNotificationsMode: () -> Unit,
 ) {
   val modes = remember { notificationModes() }
@@ -53,6 +64,22 @@ fun NotificationsSettingsLayout(
             color = MaterialTheme.colors.secondary
           )
         }
+      } else if (appPlatform.isDesktop) {
+        val previewModes = remember { notificationPreviewModes() }
+        SettingsActionItemWithContent(null, "Notification previews", click = {
+          ModalManager.start.showModalCloseable(true) {
+            NotificationPreviewView(notificationPreviewMode, setNotificationPreviewMode)
+          }
+        }) {
+          Text(
+            previewModes.firstOrNull { it.value == notificationPreviewMode.value }?.title ?: "",
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colors.secondary,
+          )
+        }
+        PreferenceToggle("Play notification sounds", checked = notificationSound.value, onChange = setNotificationSound)
+        SettingsActionItemWithContent(null, "Open Mac Notification Settings", click = { openSystemNotificationSettings() }) {}
       }
     }
     if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {

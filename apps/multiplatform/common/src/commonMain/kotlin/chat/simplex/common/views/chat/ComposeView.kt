@@ -17,6 +17,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -64,7 +65,29 @@ sealed class ComposePreview {
   @Serializable class MediaPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
   @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: URI): ComposePreview()
+  @Serializable data class AttachmentsPreview(val attachments: List<PendingAttachment>): ComposePreview()
 }
+
+@Serializable
+enum class PendingAttachmentKind { Image, AnimatedImage, Video, File }
+
+@Serializable
+data class PendingAttachment(
+  val id: String,
+  val uri: URI,
+  val fileName: String,
+  val kind: PendingAttachmentKind,
+  val previewImage: String? = null,
+  val durationSeconds: Int = 0,
+)
+
+internal fun reorderPendingAttachments(attachments: List<PendingAttachment>, from: Int, to: Int): List<PendingAttachment> {
+  if (from !in attachments.indices || to !in attachments.indices || from == to) return attachments
+  return attachments.toMutableList().apply { add(to, removeAt(from)) }
+}
+
+internal fun pendingAttachmentsAfterFailure(attachments: List<PendingAttachment>, failedIndex: Int): List<PendingAttachment> =
+  attachments.drop(failedIndex.coerceIn(0, attachments.size))
 
 @Serializable
 sealed class ComposeContextItem {
@@ -173,6 +196,7 @@ data class ComposeState(
         is ComposePreview.VoicePreview -> true
         is ComposePreview.ChatLinkPreview -> true
         is ComposePreview.FilePreview -> true
+        is ComposePreview.AttachmentsPreview -> preview.attachments.isNotEmpty()
         else -> !whitespaceOnly || forwarding || liveMessage != null || submittingValidReport
       }
       hasContent && !inProgress
@@ -187,6 +211,7 @@ data class ComposeState(
         is ComposePreview.MediaPreview -> false
         is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
+        is ComposePreview.AttachmentsPreview -> false
         else -> useLinkPreviews
       }
   val linkPreview: LinkPreview?
@@ -202,6 +227,7 @@ data class ComposeState(
       return when (preview) {
         ComposePreview.NoPreview -> false
         is ComposePreview.CLinkPreview -> false
+        is ComposePreview.AttachmentsPreview -> false
         else -> true
       }
     }
@@ -214,6 +240,7 @@ data class ComposeState(
       is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
       is ComposePreview.VoicePreview -> false
       is ComposePreview.FilePreview -> true
+      is ComposePreview.AttachmentsPreview -> preview.attachments.isNotEmpty()
     }
 
   val placeholder: String
@@ -285,13 +312,14 @@ expect fun AttachmentSelection(
 )
 
 fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
-  val groups = uris.groupBy { isImage(it) || isVideoUri(it) }
-  val media = groups[true] ?: emptyList()
-  val files = groups[false] ?: emptyList()
-  if (media.isNotEmpty()) {
-    CoroutineScope(Dispatchers.IO).launch { processPickedMedia(media, null) }
-  } else if (files.isNotEmpty()) {
-    processPickedFile(uris.first(), null)
+  CoroutineScope(Dispatchers.IO).launch {
+    uris.forEach { uri ->
+      if (isImage(uri) || isVideoUri(uri)) {
+        processPickedMedia(listOf(uri), null)
+      } else {
+        processPickedFile(uri, null)
+      }
+    }
   }
 }
 
@@ -308,7 +336,16 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
     if (fileSize != null && fileSize <= maxFileSize) {
       val fileName = getFileName(uri)
       if (fileName != null) {
-        value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.FilePreview(fileName, uri))
+        if (appPlatform.isDesktop) {
+          appendPendingAttachments(
+            listOf(PendingAttachment(uri.toString(), uri, fileName, PendingAttachmentKind.File)),
+            text
+          )
+        } else {
+          value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.FilePreview(fileName, uri))
+        }
+      } else {
+        showWrongUriAlert()
       }
     } else if (fileSize != null) {
       AlertManager.shared.showAlertMsg(
@@ -325,6 +362,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   val maxFileSize = value.maxFileSize
   val content = ArrayList<UploadContent>()
   val imagesPreview = ArrayList<String>()
+  val pendingAttachments = ArrayList<PendingAttachment>()
   uris.forEach { uri ->
     var bitmap: ImageBitmap?
     val uploadContent: UploadContent? = when {
@@ -365,7 +403,23 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
     // Only pair them when a preview bitmap exists; otherwise skip the media entirely.
     if (bitmap != null && uploadContent != null) {
       content.add(uploadContent)
-      imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
+      val previewImage = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+      imagesPreview.add(previewImage)
+      val kind = when (uploadContent) {
+        is UploadContent.SimpleImage -> PendingAttachmentKind.Image
+        is UploadContent.AnimatedImage -> PendingAttachmentKind.AnimatedImage
+        is UploadContent.Video -> PendingAttachmentKind.Video
+      }
+      pendingAttachments.add(
+        PendingAttachment(
+          id = uri.toString(),
+          uri = uri,
+          fileName = getFileName(uri) ?: "Attachment",
+          kind = kind,
+          previewImage = previewImage,
+          durationSeconds = (uploadContent as? UploadContent.Video)?.duration ?: 0,
+        )
+      )
     } else if (uploadContent is UploadContent.Video && !AlertManager.shared.hasAlertsShown()) {
       // A corrupted/undecodable video can yield a null preview frame without throwing, so
       // getBitmapFromVideo shows no alert. Skip it (other picked media still send) and tell
@@ -376,8 +430,20 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
     }
   }
   if (imagesPreview.isNotEmpty()) {
-    value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
+    if (appPlatform.isDesktop) {
+      appendPendingAttachments(pendingAttachments, text)
+    } else {
+      value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
+    }
   }
+}
+
+private fun MutableState<ComposeState>.appendPendingAttachments(attachments: List<PendingAttachment>, text: String?) {
+  val current = (value.preview as? ComposePreview.AttachmentsPreview)?.attachments.orEmpty()
+  value = value.copy(
+    message = if (text != null) ComposeMessage(text) else value.message,
+    preview = ComposePreview.AttachmentsPreview((current + attachments).distinctBy { it.id })
+  )
 }
 
 // Spec: spec/client/compose.md#ComposeView
@@ -821,6 +887,7 @@ fun ComposeView(
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
+      var failedAttachmentPreparationIndex: Int? = null
       val remoteHost = chatModel.currentRemoteHost.value
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
@@ -899,13 +966,37 @@ fun ComposeView(
             msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) msgText else ""))
           }
         }
+        is ComposePreview.AttachmentsPreview -> {
+          for ((index, attachment) in preview.attachments.withIndex()) {
+            val file = when (attachment.kind) {
+              PendingAttachmentKind.Image -> if (remoteHost == null) saveImage(attachment.uri) else desktopSaveImageInTmp(attachment.uri)
+              PendingAttachmentKind.AnimatedImage -> if (remoteHost == null) saveAnimImage(attachment.uri) else CryptoFile.desktopPlain(attachment.uri)
+              PendingAttachmentKind.Video -> if (remoteHost == null) saveFileFromUri(attachment.uri, cs.maxFileSize, hiddenFileNamePrefix = "video") else CryptoFile.desktopPlain(attachment.uri)
+              PendingAttachmentKind.File -> if (remoteHost == null) saveFileFromUri(attachment.uri, cs.maxFileSize) else CryptoFile.desktopPlain(attachment.uri)
+            }
+            if (file != null) {
+              files.add(file)
+              val caption = if (preview.attachments.lastIndex == index) msgText else ""
+              msgs.add(
+                when (attachment.kind) {
+                  PendingAttachmentKind.Image, PendingAttachmentKind.AnimatedImage -> MsgContent.MCImage(caption, attachment.previewImage ?: "")
+                  PendingAttachmentKind.Video -> MsgContent.MCVideo(caption, attachment.previewImage ?: "", attachment.durationSeconds)
+                  PendingAttachmentKind.File -> MsgContent.MCFile(caption)
+                }
+              )
+            } else {
+              failedAttachmentPreparationIndex = index
+              break
+            }
+          }
+        }
       }
       val quotedItemId: Long? = when (cs.contextItem) {
         is ComposeContextItem.QuotedItem -> cs.contextItem.chatItem.id
         else -> null
       }
-      sent = null
-      msgs.forEachIndexed { index, content ->
+      val sentItems = mutableListOf<ChatItem>()
+      for ((index, content) in msgs.withIndex()) {
         if (index > 0) delay(100)
         var file = files.getOrNull(index)
         if (remoteHost != null && file != null) {
@@ -921,13 +1012,29 @@ fun ComposeView(
           mentions = cs.memberMentions,
           sign = sign
         )
-        sent = if (sendResult != null) listOf(sendResult) else null
-        if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {
-          constructFailedMessage(cs)
-          // it's the last message in the series so if it fails, restore it in ComposeView for editing
-          lastMessageFailedToSend = constructFailedMessage(cs)
+        if (sendResult != null) {
+          sentItems.add(sendResult)
+        } else if (cs.liveMessage == null) {
+          lastMessageFailedToSend = if (cs.preview is ComposePreview.AttachmentsPreview) {
+            cs.copy(
+              inProgress = false,
+              preview = ComposePreview.AttachmentsPreview(pendingAttachmentsAfterFailure(cs.preview.attachments, index))
+            )
+          } else {
+            constructFailedMessage(cs)
+          }
+          break
         }
       }
+      if (lastMessageFailedToSend == null && cs.preview is ComposePreview.AttachmentsPreview) {
+        failedAttachmentPreparationIndex?.let { failedIndex ->
+          lastMessageFailedToSend = cs.copy(
+            inProgress = false,
+            preview = ComposePreview.AttachmentsPreview(pendingAttachmentsAfterFailure(cs.preview.attachments, failedIndex)),
+          )
+        }
+      }
+      sent = sentItems.ifEmpty { null }
     }
     val wasForwarding = cs.forwarding
     val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItems)?.fromChatInfo?.id
@@ -1152,6 +1259,24 @@ fun ComposeView(
         preview.fileName,
         ::cancelFile,
         cancelEnabled = !composeState.value.editing && !composeState.value.inProgress
+      )
+      is ComposePreview.AttachmentsPreview -> ComposeAttachmentsView(
+        attachments = preview.attachments,
+        enabled = !composeState.value.inProgress,
+        remove = { id ->
+          val remaining = preview.attachments.filterNot { it.id == id }
+          composeState.value = composeState.value.copy(
+            preview = if (remaining.isEmpty()) ComposePreview.NoPreview else ComposePreview.AttachmentsPreview(remaining)
+          )
+        },
+        move = { from, to ->
+          if (from in preview.attachments.indices && to in preview.attachments.indices) {
+            composeState.value = composeState.value.copy(
+              preview = ComposePreview.AttachmentsPreview(reorderPendingAttachments(preview.attachments, from, to))
+            )
+          }
+        },
+        clear = { composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview) }
       )
     }
   }
@@ -1594,7 +1719,22 @@ fun ComposeView(
 
   val relayListExpanded = remember { mutableStateOf(false) }
 
-  Column {
+  val escapeModifier = if (appPlatform.isDesktop) Modifier.onPreviewKeyEvent { event ->
+    if (event.type != KeyEventType.KeyDown || event.key != Key.Escape) return@onPreviewKeyEvent false
+    when {
+      showCommandsMenu.value -> showCommandsMenu.value = false
+      attachmentOption.value != null -> attachmentOption.value = null
+      composeState.value.preview is ComposePreview.AttachmentsPreview ->
+        composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+      composeState.value.contextItem is ComposeContextItem.EditingItem -> clearState()
+      composeState.value.contextItem != ComposeContextItem.NoContextItem ->
+        composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
+      else -> return@onPreviewKeyEvent false
+    }
+    true
+  } else Modifier
+
+  Column(escapeModifier) {
     val currentUser = chatModel.currentUser.value
     if (chat.chatInfo.nextConnectPrepared && !composeState.value.inProgress && currentUser != null) {
       ComposeContextProfilePickerView(
@@ -2115,4 +2255,3 @@ private data class SubscriberRelayState(
 
 private fun relayMemberRemoved(status: GroupMemberStatus?): Boolean =
   status in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
-

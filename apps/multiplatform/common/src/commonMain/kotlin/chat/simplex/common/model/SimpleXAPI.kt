@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.DesktopChatDensity
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
@@ -108,6 +109,8 @@ class AppPreferences {
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
   val closeBehavior: SharedPreference<CloseBehavior> = mkSafeEnumPreference(SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR, CloseBehavior.default)
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
+  val desktopNotificationSound = mkBoolPreference(SHARED_PREFS_DESKTOP_NOTIFICATION_SOUND, true)
+  val desktopNotificationExplanationShown = mkBoolPreference(SHARED_PREFS_DESKTOP_NOTIFICATION_EXPLANATION_SHOWN, false)
   val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
@@ -243,6 +246,7 @@ class AppPreferences {
   val chatItemTail = mkBoolPreference(SHARED_PREFS_CHAT_ITEM_TAIL, true)
   val fontScale = mkFloatPreference(SHARED_PREFS_FONT_SCALE, 1f)
   val densityScale = mkFloatPreference(SHARED_PREFS_DENSITY_SCALE, 1f)
+  val desktopChatDensity = mkSafeEnumPreference(SHARED_PREFS_DESKTOP_CHAT_DENSITY, DesktopChatDensity.default)
   val inAppBarsDefaultAlpha = if (deviceSupportsBlur) 0.875f else 0.975f
   val inAppBarsAlpha = mkFloatPreference(SHARED_PREFS_IN_APP_BARS_ALPHA, inAppBarsDefaultAlpha)
 
@@ -388,6 +392,8 @@ class AppPreferences {
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
     private const val SHARED_PREFS_NOTIFICATION_PREVIEW_MODE = "NotificationPreviewMode"
+    private const val SHARED_PREFS_DESKTOP_NOTIFICATION_SOUND = "DesktopNotificationSound"
+    private const val SHARED_PREFS_DESKTOP_NOTIFICATION_EXPLANATION_SHOWN = "DesktopNotificationExplanationShown"
     private const val SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS = "CanAskToEnableNotifications"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
@@ -492,6 +498,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_ITEM_TAIL = "ChatItemTail"
     private const val SHARED_PREFS_FONT_SCALE = "FontScale"
     private const val SHARED_PREFS_DENSITY_SCALE = "DensityScale"
+    private const val SHARED_PREFS_DESKTOP_CHAT_DENSITY = "DesktopChatDensity"
     private const val SHARED_PREFS_IN_APP_BARS_ALPHA = "InAppBarsAlpha"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"

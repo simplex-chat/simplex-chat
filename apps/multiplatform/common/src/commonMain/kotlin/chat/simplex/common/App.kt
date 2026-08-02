@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -15,9 +17,18 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -48,7 +59,7 @@ import kotlinx.coroutines.flow.*
 fun AppScreen() {
   AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
   SimpleXTheme {
-    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+    Surface(color = if (macOSWindowVibrancyAvailable) Color.Transparent else MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
       // This padding applies to landscape view only taking care of navigation bar and holes in screen in status bar area
       // (because nav bar and holes located on vertical sides of screen in landscape view)
       val direction = LocalLayoutDirection.current
@@ -424,42 +435,117 @@ fun EndPartOfScreen() {
 // Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
-  Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-    StartPartOfScreen(userPickerState)
-    tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
-    }
-  }
-  Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-    ModalManager.start.showInView()
-    SwitchingUsersView()
-  }
-  Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-    Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-      CenterPartOfScreen()
-    }
-    if (ModalManager.end.hasModalsOpen()) {
-      VerticalDivider()
-    }
-    Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-      EndPartOfScreen()
-    }
-  }
-  if (userPickerState.collectAsState().value.isVisible() || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
-    Box(
-      Modifier
-        .fillMaxSize()
-        .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
-          if (chatModel.centerPanelBackgroundClickHandler == null || chatModel.centerPanelBackgroundClickHandler?.invoke() == false) {
-            ModalManager.start.closeModals()
-            userPickerState.value = AnimatedViewState.HIDING
-          }
-        })
+  BoxWithConstraints(Modifier.fillMaxSize()) {
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    val savedSidebarWidth = DesktopLayoutState.sidebarWidth.floatValue.dp
+    val maxSidebarWidth = minOf(
+      DesktopLayoutState.MAX_SIDEBAR_WIDTH.dp,
+      (maxWidth - 520.dp).coerceAtLeast(DesktopLayoutState.MIN_SIDEBAR_WIDTH.dp)
     )
+    val sidebarWidth = savedSidebarWidth.coerceIn(DesktopLayoutState.MIN_SIDEBAR_WIDTH.dp, maxSidebarWidth)
+    val autoCollapsed = maxWidth < DesktopLayoutState.MIN_SIDEBAR_WIDTH.dp + 520.dp
+    val sidebarVisible = !DesktopLayoutState.sidebarCollapsed.value && !autoCollapsed
+    val visibleSidebarWidth = if (sidebarVisible) sidebarWidth else 0.dp
+
+    if (sidebarVisible) {
+      Box(Modifier.width(sidebarWidth).fillMaxHeight()) {
+        Box(Modifier.fillMaxSize().padding(top = if (macOSWindowVibrancyAvailable) 28.dp else 0.dp)) {
+          StartPartOfScreen(userPickerState)
+          tryOrShowError("UserPicker", error = {}) {
+            UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
+          }
+        }
+      }
+      Box(Modifier.widthIn(max = sidebarWidth).fillMaxHeight()) {
+        ModalManager.start.showInView()
+        SwitchingUsersView()
+      }
+    }
+
+    Row(
+      Modifier
+        .padding(start = visibleSidebarWidth)
+        .fillMaxSize()
+        .clipToBounds()
+        .background(MaterialTheme.colors.background)
+    ) {
+      Box(Modifier.widthIn(min = 520.dp).weight(1f)) {
+        CenterPartOfScreen()
+      }
+      if (ModalManager.end.hasModalsOpen()) {
+        VerticalDivider()
+      }
+      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+        EndPartOfScreen()
+      }
+    }
+
+    if (sidebarVisible) {
+      val updateSidebarWidth: (Float) -> Boolean = { requested ->
+        val clamped = requested.coerceIn(DesktopLayoutState.MIN_SIDEBAR_WIDTH, maxSidebarWidth.value)
+        DesktopLayoutState.setSidebarWidth(clamped)
+        true
+      }
+      Box(
+        Modifier
+          .offset(x = sidebarWidth - 3.dp)
+          .width(6.dp)
+          .fillMaxHeight()
+          .zIndex(4f)
+          .desktopPointerHoverIconResize()
+          .pointerInput(maxSidebarWidth, direction) {
+            detectDragGestures { change, dragAmount ->
+              change.consume()
+              val dragDp = with(density) { dragAmount.x.toDp().value }
+              val signedDrag = if (direction == LayoutDirection.Ltr) dragDp else -dragDp
+              updateSidebarWidth(DesktopLayoutState.sidebarWidth.floatValue + signedDrag)
+            }
+          }
+          .pointerInput(Unit) {
+            detectTapGestures(onDoubleTap = { DesktopLayoutState.resetSidebarWidth() })
+          }
+          .focusable()
+          .onPreviewKeyEvent { event ->
+            if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            val delta = when (event.key) {
+              Key.DirectionLeft -> if (direction == LayoutDirection.Ltr) -8f else 8f
+              Key.DirectionRight -> if (direction == LayoutDirection.Ltr) 8f else -8f
+              Key.Enter, Key.NumPadEnter -> {
+                DesktopLayoutState.resetSidebarWidth()
+                return@onPreviewKeyEvent true
+              }
+              else -> return@onPreviewKeyEvent false
+            }
+            updateSidebarWidth(DesktopLayoutState.sidebarWidth.floatValue + delta)
+          }
+          .semantics {
+            contentDescription = "Resize conversations sidebar"
+            progressBarRangeInfo = ProgressBarRangeInfo(
+              DesktopLayoutState.sidebarWidth.floatValue,
+              DesktopLayoutState.MIN_SIDEBAR_WIDTH..maxSidebarWidth.value
+            )
+            setProgress { updateSidebarWidth(it) }
+          }
+          .background(MaterialTheme.colors.onBackground.copy(alpha = 0.14f))
+      )
+    }
+
+    if (userPickerState.collectAsState().value.isVisible() || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
+      Box(
+        Modifier
+          .fillMaxSize()
+          .padding(start = visibleSidebarWidth)
+          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
+            if (chatModel.centerPanelBackgroundClickHandler == null || chatModel.centerPanelBackgroundClickHandler?.invoke() == false) {
+              ModalManager.start.closeModals()
+              userPickerState.value = AnimatedViewState.HIDING
+            }
+          })
+      )
+    }
+    ModalManager.fullscreen.showInView()
   }
-  VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
-  ModalManager.fullscreen.showInView()
 }
 
 @Composable

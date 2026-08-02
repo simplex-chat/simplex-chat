@@ -9,6 +9,7 @@ import androidx.compose.ui.draganddrop.*
 import androidx.compose.ui.draganddrop.DragData
 import androidx.compose.ui.input.pointer.*
 import java.awt.Image
+import java.awt.Cursor
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
 import java.awt.image.BufferedImage
@@ -20,11 +21,18 @@ actual fun Modifier.desktopOnExternalDrag(
   enabled: Boolean,
   onFiles: (List<File>) -> Unit,
   onImage: (File) -> Unit,
-  onText: (String) -> Unit
+  onText: (String) -> Unit,
+  onDragging: (Boolean) -> Unit,
 ): Modifier {
-  val callback = remember {
+  val callback = remember(enabled, onFiles, onImage, onText, onDragging) {
     object : DragAndDropTarget {
+      override fun onStarted(event: DragAndDropEvent) { onDragging(enabled) }
+      override fun onEntered(event: DragAndDropEvent) { onDragging(enabled) }
+      override fun onExited(event: DragAndDropEvent) { onDragging(false) }
+      override fun onEnded(event: DragAndDropEvent) { onDragging(false) }
+
       override fun onDrop(event: DragAndDropEvent): Boolean {
+        if (!enabled) return false
         when (val data = event.dragData()) {
           // data.readFiles() returns filePath in URI format (where spaces replaces with %20). But it's an error-prone idea to work later
           // with such format when everywhere we use absolutePath in File() format
@@ -54,7 +62,7 @@ actual fun Modifier.desktopOnExternalDrag(
       }
     }
   }
-  return dragAndDropTarget(shouldStartDragAndDrop = { true }, target = callback)
+  return dragAndDropTarget(shouldStartDragAndDrop = { enabled }, target = callback)
 }
 
 // Copied from AwtDragData and modified
@@ -80,6 +88,27 @@ private class DragDataImageImpl(private val transferable: Transferable) {
 actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpenDetector { action() }
 
 actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+
+actual fun Modifier.desktopPointerHoverIconResize(): Modifier =
+  this then Modifier.pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)))
+
+actual val macOSWindowVibrancyAvailable: Boolean = desktopPlatform.isMac()
+
+actual fun openSystemNotificationSettings() {
+  if (desktopPlatform.isMac()) chat.simplex.common.model.MacOSNotifications.openSettings()
+}
+
+@Composable
+actual fun Modifier.desktopMessageSelection(enabled: Boolean, onToggle: () -> Unit, onRange: () -> Unit): Modifier =
+  if (!enabled) this else this.then(
+    Modifier.onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
+      val modifiers = event.keyboardModifiers
+      if (modifiers.isShiftPressed || modifiers.isMetaPressed) {
+        event.changes.forEach { it.consume() }
+        if (modifiers.isShiftPressed) onRange() else onToggle()
+      }
+    }
+  )
 
 actual fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier =
   this then Modifier

@@ -53,6 +53,13 @@ add_library( # Sets the name of the library.
     # Provides a relative path to your source file(s).
     simplex-api.c)
 
+if(APPLE)
+    enable_language(OBJC)
+    target_sources(app-lib PRIVATE macos-platform.m)
+    find_library(APPKIT_FRAMEWORK AppKit REQUIRED)
+    find_library(USER_NOTIFICATIONS_FRAMEWORK UserNotifications REQUIRED)
+endif()
+
 add_library( simplex SHARED IMPORTED )
 FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/libsimplex.${OS_LIB_EXT})
 if(WIN32)
@@ -73,7 +80,7 @@ else()
 	FILE(GLOB RTSLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/libHSrts*_thr-*.${OS_LIB_EXT})
 	set_target_properties( rts PROPERTIES IMPORTED_LOCATION ${RTSLIB})
 
-	target_link_libraries(app-lib rts simplex)
+	target_link_libraries(app-lib rts simplex ${APPKIT_FRAMEWORK} ${USER_NOTIFICATIONS_FRAMEWORK})
 endif()
 
 if(APPLE)

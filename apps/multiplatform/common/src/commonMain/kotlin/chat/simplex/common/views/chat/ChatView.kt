@@ -14,11 +14,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.foundation.text.appendInlineContent
@@ -28,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
+import chat.simplex.common.tokens
 import chat.simplex.common.model.*
 import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
@@ -56,6 +61,20 @@ import kotlin.math.*
 
 @Stable
 data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
+
+internal fun desktopRangeSelection(
+  orderedItems: List<Pair<Long, Boolean>>,
+  anchorId: Long,
+  targetId: Long,
+): Set<Long> {
+  val anchorIndex = orderedItems.indexOfFirst { it.first == anchorId }
+  val targetIndex = orderedItems.indexOfFirst { it.first == targetId }
+  if (anchorIndex < 0 || targetIndex < 0) return emptySet()
+  return orderedItems
+    .subList(minOf(anchorIndex, targetIndex), maxOf(anchorIndex, targetIndex) + 1)
+    .filter { it.second }
+    .mapTo(linkedSetOf()) { it.first }
+}
 
 internal val chatSearchRequest = mutableIntStateOf(0)
 
@@ -965,6 +984,7 @@ fun ChatLayout(
   val chatInfo = remember { derivedStateOf { chat.value?.chatInfo } }
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
+  var externalDragActive by remember { mutableStateOf(false) }
   Box(
     Modifier
       .fillMaxWidth()
@@ -976,6 +996,7 @@ fun ChatLayout(
           // Need to parse HTML in order to correctly display the content
           //composeState.value = composeState.value.copy(message = composeState.value.message + it)
         },
+        onDragging = { externalDragActive = it },
       )
   ) {
     ModalBottomSheetLayout(
@@ -1174,6 +1195,26 @@ fun ChatLayout(
                 SupportChatsCountToolbar(chatInfo, reportsCount, supportUnreadCount, withStatusBar = false, showReports, showSupportChats)
               }
             }
+          }
+        }
+      }
+    }
+    if (externalDragActive) {
+      Box(
+        Modifier
+          .fillMaxSize()
+          .zIndex(20f)
+          .padding(18.dp)
+          .clip(RoundedCornerShape(18.dp))
+          .background(MaterialTheme.colors.primary.copy(alpha = 0.16f))
+          .border(2.dp, MaterialTheme.colors.primary, RoundedCornerShape(18.dp)),
+        contentAlignment = Alignment.Center
+      ) {
+        Surface(shape = RoundedCornerShape(12.dp), elevation = 4.dp) {
+          Row(Modifier.padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(MR.images.ic_attach_file_filled), "Attach files", tint = MaterialTheme.colors.primary)
+            Spacer(Modifier.width(10.dp))
+            Text("Drop files to attach", style = MaterialTheme.typography.h6)
           }
         }
       }
@@ -1806,6 +1847,28 @@ fun BoxScope.ChatItemsList(
     }
   }
   val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
+  val selectionAnchorId = remember(chatInfo.id) { mutableStateOf<Long?>(null) }
+
+  fun toggleDesktopMessageSelection(item: ChatItem, revealed: State<Boolean>) {
+    val selected = selectedChatItems.value.orEmpty()
+    selectUnselectChatItem(!selected.contains(item.id), item, revealed, selectedChatItems, reversedChatItems)
+    selectionAnchorId.value = item.id
+  }
+
+  fun selectDesktopMessageRange(item: ChatItem, revealed: State<Boolean>) {
+    val anchor = selectionAnchorId.value
+    if (anchor == null) {
+      toggleDesktopMessageSelection(item, revealed)
+      return
+    }
+    val items = reversedChatItems.value
+    val rangeIds = desktopRangeSelection(items.map { it.id to it.canBeDeletedForSelf }, anchor, item.id)
+    if (rangeIds.isEmpty()) {
+      toggleDesktopMessageSelection(item, revealed)
+      return
+    }
+    selectedChatItems.value = rangeIds
+  }
   val reportsCount = reportsCount(chatInfo.id)
   val supportUnreadCount = supportUnreadCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(
@@ -1922,6 +1985,7 @@ fun BoxScope.ChatItemsList(
   ) {
     val itemScope = rememberCoroutineScope()
     val viewConfiguration = LocalViewConfiguration.current
+    val focusManager = LocalFocusManager.current
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
       // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view.
@@ -1955,7 +2019,10 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = {
+            selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems)
+            selectionAnchorId.value = cItem.id
+          }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
         }
       }
 
@@ -1984,15 +2051,18 @@ fun BoxScope.ChatItemsList(
 
         @Composable
         fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
+          val densityTokens = remember { appPrefs.desktopChatDensity.state }.value.tokens()
+          val compactGap = if (appPlatform.isDesktop) densityTokens.groupedMessageGap else 1.dp
+          val largeGap = if (appPlatform.isDesktop) densityTokens.messageVerticalPadding else 4.dp
           Box(
             modifier = modifier.padding(
               bottom = if (itemSeparation.largeGap) {
                 if (itemAtZeroIndexInWholeList) {
-                  8.dp
+                  largeGap * 2
                 } else {
-                  4.dp
+                  largeGap
                 }
-              } else 1.dp, top = if (previousItemSeparationLargeGap) 4.dp else 1.dp
+              } else compactGap, top = if (previousItemSeparationLargeGap) largeGap else compactGap
             ),
             contentAlignment = Alignment.CenterStart
           ) {
@@ -2223,11 +2293,39 @@ fun BoxScope.ChatItemsList(
               }
             }
           }
+          val keyboardMessageNavigation = if (appPlatform.isDesktop) {
+            Modifier
+              .focusable()
+              .semantics { selected = selectedChatItems.value?.contains(cItem.id) == true }
+              .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                  Key.DirectionUp -> focusManager.moveFocus(FocusDirection.Up)
+                  Key.DirectionDown -> focusManager.moveFocus(FocusDirection.Down)
+                  Key.Spacebar -> {
+                    toggleDesktopMessageSelection(cItem, revealed)
+                    true
+                  }
+                  else -> false
+                }
+              }
+          } else Modifier
           if (selectionVisible) {
-            Box(Modifier.matchParentSize().clickable {
+            Box(Modifier.matchParentSize().then(keyboardMessageNavigation).clickable {
               val checked = selectedChatItems.value?.contains(cItem.id) == true
               selectUnselectChatItem(select = !checked, cItem, revealed, selectedChatItems, reversedChatItems)
             })
+          } else if (appPlatform.isDesktop && cItem.canBeDeletedForSelf) {
+            Box(
+              Modifier
+                .matchParentSize()
+                .then(keyboardMessageNavigation)
+                .desktopMessageSelection(
+                  enabled = true,
+                  onToggle = { toggleDesktopMessageSelection(cItem, revealed) },
+                  onRange = { selectDesktopMessageRange(cItem, revealed) }
+                )
+            )
           }
         }
       }
@@ -2371,7 +2469,50 @@ fun BoxScope.ChatItemsList(
   }
 
   val manager = LocalSelectionManager.current
-  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, revealedItems, linkMode) else Modifier
+  val clipboard = LocalClipboardManager.current
+  val desktopSelectionKeys = if (appPlatform.isDesktop) {
+    Modifier.onPreviewKeyEvent { event ->
+      if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+      val command = event.isMetaPressed || event.isCtrlPressed
+      when {
+        command && event.key == Key.A -> {
+          selectedChatItems.value = reversedChatItems.value.filter { it.canBeDeletedForSelf }.mapTo(mutableSetOf()) { it.id }
+          selectionAnchorId.value = reversedChatItems.value.firstOrNull { it.canBeDeletedForSelf }?.id
+          true
+        }
+        command && event.key == Key.C && selectedChatItems.value != null -> {
+          val selected = selectedChatItems.value.orEmpty()
+          val copied = chatsCtx.chatItems.value
+            .filter { selected.contains(it.id) }
+            .joinToString("\n\n") { it.content.text }
+          clipboard.setText(AnnotatedString(copied))
+          true
+        }
+        event.key == Key.Escape && selectedChatItems.value != null -> {
+          selectedChatItems.value = null
+          selectionAnchorId.value = null
+          true
+        }
+        (event.key == Key.Delete || event.key == Key.Backspace) && selectedChatItems.value?.isNotEmpty() == true -> {
+          val ids = selectedChatItems.value.orEmpty().sorted()
+          deleteMessagesAlertDialog(
+            ids,
+            questionText = generalGetString(MR.strings.delete_messages_cannot_be_undone_warning),
+            forAll = false,
+            deleteMessages = { selectedIds, _ ->
+              deleteMessages(selectedIds)
+              selectedChatItems.value = null
+              selectionAnchorId.value = null
+            }
+          )
+          true
+        }
+        else -> false
+      }
+    }
+  } else Modifier
+  val textSelectionModifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, revealedItems, linkMode) else Modifier
+  val modifier = textSelectionModifier.then(desktopSelectionKeys)
 
   LazyColumnWithScrollBar(
     modifier.align(Alignment.BottomCenter),

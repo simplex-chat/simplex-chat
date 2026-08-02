@@ -17,7 +17,7 @@ class CallManager(val chatModel: ChatModel) {
           activeCallInvitation.value = invitation
         } else {
           val contact = invitation.contact
-          ntfManager.displayNotification(user = invitation.user, chatId = contact.id, displayName = contact.displayName, msgText = invitation.callTypeText)
+          ntfManager.displayNotification(user = invitation.user, chatId = contact.id, displayName = contact.displayName, msgText = invitation.callTypeText, remoteHostId = invitation.remoteHostId)
         }
       }
     }

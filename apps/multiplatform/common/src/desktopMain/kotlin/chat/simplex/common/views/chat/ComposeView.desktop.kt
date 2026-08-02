@@ -18,8 +18,8 @@ actual fun AttachmentSelection(
   val videoLauncher = rememberFileChooserMultipleLauncher {
     processPickedMedia(it, null)
   }
-  val filesLauncher = rememberFileChooserLauncher(true) {
-    if (it != null) processPickedFile(it, null)
+  val filesLauncher = rememberFileChooserMultipleLauncher {
+    it.forEach { uri -> processPickedFile(uri, null) }
   }
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {

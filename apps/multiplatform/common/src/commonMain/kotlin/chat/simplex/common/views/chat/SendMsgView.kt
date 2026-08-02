@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
+import chat.simplex.common.tokens
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
@@ -65,7 +67,8 @@ fun SendMsgView(
   focusRequester: FocusRequester? = null,
   ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
-  val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
+  val desktopDensity = remember { appPrefs.desktopChatDensity.state }.value.tokens()
+  val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(vertical = desktopDensity.composerVerticalPadding)
   Box(Modifier.padding(padding)) {
     val cs = composeState.value
     val showVoiceButton = !nextConnect && cs.message.text.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
@@ -317,7 +320,7 @@ private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) 
     { composeState.value = composeState.value.copy(message = ComposeMessage()) },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
-    Icon(painterResource(MR.images.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_close), "Clear message", Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
   }
 }
 

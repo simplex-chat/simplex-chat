@@ -95,7 +95,12 @@ fun showApp() {
 @Composable
 private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   // Creates file if not exists; comes with proper defaults
-  val state = getStoredWindowState()
+  val state = remember { getStoredWindowState() }
+  remember(state) {
+    DesktopLayoutState.setSidebarWidth(state.sidebarWidth)
+    DesktopLayoutState.sidebarCollapsed.value = state.sidebarCollapsed
+    true
+  }
   val windowState: WindowState = rememberWindowState(
     placement = WindowPlacement.Floating,
     width = state.width.dp,
@@ -108,7 +113,9 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
     windowState.position.x.value,
     windowState.position.y.value,
     windowState.size.width.value,
-    windowState.size.height.value
+    windowState.size.height.value,
+    DesktopLayoutState.sidebarWidth.floatValue,
+    DesktopLayoutState.sidebarCollapsed.value,
   ) {
     storingJob.value.cancel()
     storingJob.value = launch {
@@ -118,7 +125,9 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
           x = windowState.position.x.value.toInt(),
           y = windowState.position.y.value.toInt(),
           width = windowState.size.width.value.toInt(),
-          height = windowState.size.height.value.toInt()
+          height = windowState.size.height.value.toInt(),
+          sidebarWidth = DesktopLayoutState.sidebarWidth.floatValue,
+          sidebarCollapsed = DesktopLayoutState.sidebarCollapsed.value,
         )
       )
     }
@@ -133,6 +142,10 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       SimplexMenuBar()
 //      val hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
+      DisposableEffect(window) {
+        if (desktopPlatform.isMac()) configureMacOSWindow(window)
+        onDispose {}
+      }
       AppScreen()
       if (simplexWindowState.openDialog.isAwaiting) {
         FileDialogChooser(
@@ -255,6 +268,15 @@ private fun FrameWindowScope.SimplexMenuBar() {
         onClick = ::focusChatSearch
       )
     }
+    if (desktopPlatform.isMac()) {
+      Menu("View") {
+        Item(
+          text = if (DesktopLayoutState.sidebarCollapsed.value) "Show Sidebar" else "Hide Sidebar",
+          shortcut = KeyShortcut(Key.S, meta = true, ctrl = true),
+          onClick = DesktopLayoutState::toggleSidebar
+        )
+      }
+    }
     Menu("SimpleX") {
       Item(
         text = generalGetString(MR.strings.settings_section_title_settings),
@@ -266,6 +288,13 @@ private fun FrameWindowScope.SimplexMenuBar() {
 }
 
 private fun handleDesktopKeyEvent(event: KeyEvent): Boolean {
+  if (
+    desktopPlatform.isMac() && event.type == KeyEventType.KeyDown &&
+    event.isMetaPressed && event.isCtrlPressed && event.key == Key.S
+  ) {
+    DesktopLayoutState.toggleSidebar()
+    return true
+  }
   val commandPressed = if (desktopPlatform.isMac()) event.isMetaPressed else event.isCtrlPressed
   if (event.type == KeyEventType.KeyDown && commandPressed) {
     return when (event.key) {

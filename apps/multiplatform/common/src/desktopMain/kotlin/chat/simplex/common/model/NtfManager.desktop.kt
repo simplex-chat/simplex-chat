@@ -10,18 +10,26 @@ import chat.simplex.res.MR
 import com.sshtools.twoslices.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.awt.*
-import java.awt.TrayIcon.MessageType
 import java.io.File
 import javax.imageio.ImageIO
 
 object NtfManager {
   private val prevNtfs = arrayListOf<Pair<Pair<Long, ChatId>, Slice>>()
   private val prevNtfsMutex: Mutex = Mutex()
+  private val nativeRoutes = mutableSetOf<NotificationRoute>()
+
+  fun initializeNativeNotifications() {
+    if (desktopPlatform.isMac()) MacOSNotifications.initialize()
+  }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
-    if (simplexWindowState.windowFocused.value) return false
     val contactId = invitation.contact.id
+    if (
+      simplexWindowState.windowFocused.value &&
+      chatModel.currentUser.value?.userId == invitation.user.userId &&
+      chatModel.remoteHostId() == invitation.remoteHostId &&
+      chatModel.chatId.value == contactId
+    ) return false
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
     val text = generalGetString(
@@ -45,19 +53,33 @@ object NtfManager {
       generalGetString(MR.strings.accept) to { ntfManager.acceptCallAction(invitation.contact.id) },
       generalGetString(MR.strings.reject) to { ChatModel.callManager.endCall(invitation = invitation) }
     )
-    displayNotificationViaLib(invitation.user.userId, contactId, title, text, prepareIconPath(largeIcon), actions) {
-      ntfManager.openChatAction(invitation.user.userId, contactId)
+    if (desktopPlatform.isMac()) {
+      val route = NotificationRoute(invitation.user.userId, invitation.remoteHostId, contactId)
+      deliverMacNotification(route, title, text, DesktopNotificationCategory.INCOMING_CALL, prepareIconPath(largeIcon))
+    } else {
+      displayNotificationViaLib(invitation.user.userId, contactId, title, text, prepareIconPath(largeIcon), actions) {
+        ntfManager.openChatAction(invitation.user.userId, contactId)
+      }
     }
     return true
   }
 
   fun showMessage(title: String, text: String) {
-    displayNotificationViaLib(-1, "MESSAGE", title, text, null, emptyList()) {}
+    if (desktopPlatform.isMac()) {
+      deliverMacNotification(NotificationRoute(null, null, "MESSAGE"), title, text, DesktopNotificationCategory.MESSAGE, null)
+    } else {
+      displayNotificationViaLib(-1, "MESSAGE", title, text, null, emptyList()) {}
+    }
   }
 
-  fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
+  fun hasNotificationsForChat(chatId: ChatId) = if (desktopPlatform.isMac()) synchronized(nativeRoutes) { nativeRoutes.any { it.chatId == chatId } } else false
 
   fun cancelNotificationsForChat(chatId: ChatId) {
+    if (desktopPlatform.isMac()) {
+      val matches = synchronized(nativeRoutes) { nativeRoutes.filter { it.chatId == chatId }.also(nativeRoutes::removeAll) }
+      matches.forEach { MacOSNotifications.removeChat(it.userId, it.remoteHostId, it.chatId) }
+      return
+    }
     withBGApi {
       prevNtfsMutex.withLock {
         val ntf = prevNtfs.firstOrNull { (userChat) -> userChat.second == chatId }
@@ -75,6 +97,11 @@ object NtfManager {
   }
 
   fun cancelNotificationsForUser(userId: Long) {
+    if (desktopPlatform.isMac()) {
+      synchronized(nativeRoutes) { nativeRoutes.removeAll { it.userId == userId } }
+      MacOSNotifications.removeUser(userId)
+      return
+    }
     withBGApi {
       prevNtfsMutex.withLock {
         prevNtfs.filter { (userChat) -> userChat.first == userId }.forEach {
@@ -85,6 +112,11 @@ object NtfManager {
   }
 
   fun cancelAllNotifications() {
+    if (desktopPlatform.isMac()) {
+      synchronized(nativeRoutes) { nativeRoutes.clear() }
+      MacOSNotifications.removeAll()
+      return
+    }
 //    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { Log.e(TAG, "Failed to close notification: ${e
     //    .stackTraceToString()}") } }
     withBGApi {
@@ -94,21 +126,53 @@ object NtfManager {
     }
   }
 
-  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
+  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>, remoteHostId: Long?, messageId: Long?) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
-    val previewMode = appPreferences.notificationPreviewMode.get()
-    val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(MR.strings.notification_preview_somebody) else displayName
-    val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(MR.strings.notification_preview_new_message) else msgText
+    val previewMode = runCatching {
+      NotificationPreviewMode.valueOf(appPreferences.notificationPreviewMode.get() ?: NotificationPreviewMode.default.name)
+    }.getOrDefault(NotificationPreviewMode.default)
+    val preview = desktopNotificationPreview(
+      previewMode,
+      displayName,
+      msgText,
+      generalGetString(MR.strings.notification_preview_somebody),
+      generalGetString(MR.strings.notification_preview_new_message),
+    )
     val largeIcon = when {
       actions.isEmpty() -> null
-      image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> MR.images.icon_foreground_common.image.toComposeImageBitmap()
+      image == null || previewMode == NotificationPreviewMode.HIDDEN -> MR.images.icon_foreground_common.image.toComposeImageBitmap()
       else -> base64ToBitmap(image)
     }
 
-    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
-      ntfManager.openChatAction(user.userId, chatId)
+    if (desktopPlatform.isMac()) {
+      val category = if (actions.any { it.first == NotificationAction.ACCEPT_CONTACT_REQUEST }) DesktopNotificationCategory.CONTACT_REQUEST else DesktopNotificationCategory.MESSAGE
+      deliverMacNotification(NotificationRoute(user.userId, remoteHostId, chatId, messageId), preview.title, preview.body, category, prepareIconPath(largeIcon))
+    } else {
+      displayNotificationViaLib(user.userId, chatId, preview.title, preview.body, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
+        ntfManager.openChatAction(user.userId, chatId)
+      }
     }
+  }
+
+  private fun deliverMacNotification(
+    route: NotificationRoute,
+    title: String,
+    content: String,
+    category: DesktopNotificationCategory,
+    imagePath: String?,
+  ) {
+    val identifier = desktopNotificationIdentifier(route, System.currentTimeMillis())
+    val payload = DesktopNotificationPayload(
+      identifier = identifier,
+      route = route,
+      title = title,
+      preview = content,
+      category = category,
+      playSound = appPreferences.desktopNotificationSound.get(),
+      imagePath = imagePath,
+    )
+    if (MacOSNotifications.deliver(payload)) synchronized(nativeRoutes) { nativeRoutes.add(route) }
   }
 
   private fun displayNotificationViaLib(
@@ -159,35 +223,4 @@ object NtfManager {
     }
   } else null
 
-  private fun displayNotification(title: String, text: String, icon: ImageBitmap?) = when (desktopPlatform) {
-    DesktopPlatform.LINUX_X86_64, DesktopPlatform.LINUX_AARCH64 -> linuxDisplayNotification(title, text, prepareIconPath(icon))
-    DesktopPlatform.WINDOWS_X86_64 -> windowsDisplayNotification(title, text, icon)
-    DesktopPlatform.MAC_X86_64, DesktopPlatform.MAC_AARCH64 -> macDisplayNotification(title, text, prepareIconPath(icon))
-  }
-
-  private fun linuxDisplayNotification(title: String, text: String, iconPath: String?) {
-    if (iconPath != null) {
-      Runtime.getRuntime().exec(arrayOf("notify-send", "-i", iconPath, title, text))
-    } else {
-      Toast.toast(ToastType.INFO, title, text)
-      Runtime.getRuntime().exec(arrayOf("notify-send", title, text))
-    }
-  }
-
-  private fun windowsDisplayNotification(title: String, text: String, icon: ImageBitmap?) {
-    if (SystemTray.isSupported()) {
-      val tray = SystemTray.getSystemTray()
-      tray.remove(tray.trayIcons.firstOrNull { it.toolTip == "SimpleX" })
-      val trayIcon = TrayIcon(icon?.toAwtImage(), "SimpleX")
-      trayIcon.isImageAutoSize = true
-      tray.add(trayIcon)
-      trayIcon.displayMessage(title, text, MessageType.INFO)
-    } else {
-      Log.e(TAG, "System tray not supported!")
-    }
-  }
-
-  private fun macDisplayNotification(title: String, text: String, iconPath: String?) {
-    Runtime.getRuntime().exec(arrayOf("osascript", "-e", """display notification "${text.replace("\"", "\\\"")}" with title "${title.replace("\"", "\\\"")}""""))
-  }
 }

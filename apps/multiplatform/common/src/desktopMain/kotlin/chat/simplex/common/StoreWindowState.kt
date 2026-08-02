@@ -12,6 +12,8 @@ data class WindowPositionSize(
   val height: Int = 768,
   val x: Int = 0,
   val y: Int = 0,
+  val sidebarWidth: Float = DesktopLayoutState.DEFAULT_SIDEBAR_WIDTH,
+  val sidebarCollapsed: Boolean = false,
 )
 
 fun getStoredWindowState(): WindowPositionSize =

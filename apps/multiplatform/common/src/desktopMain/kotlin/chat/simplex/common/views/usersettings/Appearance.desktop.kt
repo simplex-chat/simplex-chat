@@ -8,6 +8,7 @@ import SectionView
 import itemHPadding
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -17,7 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.*
+import chat.simplex.common.DesktopChatDensity
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.CloseBehavior
@@ -87,10 +90,44 @@ fun AppearanceScope.AppearanceLayout(
     FontScaleSection()
 
     SectionDividerSpaced()
+    DesktopChatDensitySection()
+
+    SectionDividerSpaced()
     DensityScaleSection()
 
     SectionBottomSpacer()
   }
+}
+
+@Composable
+private fun DesktopChatDensitySection() {
+  val preference = appPrefs.desktopChatDensity
+  val selected = remember { preference.state }
+  SectionView("Chat density", contentPadding = PaddingValues(horizontal = CARD_PADDING, vertical = 4.dp)) {
+    DesktopChatDensity.entries.forEach { density ->
+      val title = when (density) {
+        DesktopChatDensity.Compact -> "Compact"
+        DesktopChatDensity.Comfortable -> "Comfortable"
+        DesktopChatDensity.Spacious -> "Spacious"
+      }
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .selectable(
+            selected = selected.value == density,
+            role = Role.RadioButton,
+            onClick = { preference.set(density) }
+          )
+          .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        RadioButton(selected = selected.value == density, onClick = null)
+        Spacer(Modifier.width(10.dp))
+        Text(title, style = MaterialTheme.typography.body1)
+      }
+    }
+  }
+  SectionTextFooter("Changes spacing without changing text size.")
 }
 
 @Composable

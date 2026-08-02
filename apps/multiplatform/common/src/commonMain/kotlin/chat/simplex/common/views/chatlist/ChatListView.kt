@@ -244,6 +244,9 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
       }
     }
   }
+  if (appPlatform.isDesktop && chatModel.chatRunning.value == true) {
+    SetNotificationsModeAdditions()
+  }
   if (appPlatform.isAndroid) {
     val wasAllowedToSetupNotifications = rememberSaveable { mutableStateOf(false) }
     val canEnableNotifications = remember { derivedStateOf { chatModel.chatRunning.value == true } }
@@ -983,7 +986,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             }
             IntOffset(0, y)
           }
-          .background(MaterialTheme.colors.background)
+          .background(if (macOSWindowVibrancyAvailable) Color.Transparent else MaterialTheme.colors.background)
         ) {
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {

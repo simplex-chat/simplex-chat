@@ -110,7 +110,7 @@ actual fun PlatformTextField(
       }
     },
     textStyle = textStyle.value,
-    maxLines = 16,
+    maxLines = 8,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,
       autoCorrectEnabled = true
