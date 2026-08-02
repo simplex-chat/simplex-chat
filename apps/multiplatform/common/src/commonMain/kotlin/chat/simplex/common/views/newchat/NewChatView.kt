@@ -412,7 +412,7 @@ fun ActiveProfilePicker(
     ) {
       LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent(false)), userScrollEnabled = !switchingProfile.value) {
         item {
-          val oneHandUI = remember { appPrefs.oneHandUI.state }
+          val oneHandUI = rememberOneHandUIState()
           if (oneHandUI.value) {
             Spacer(Modifier.padding(top = DEFAULT_PADDING + 5.dp))
           }

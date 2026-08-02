@@ -33,7 +33,7 @@ fun GroupReportsAppBar(
   close: () -> Unit,
   onSearchValueChanged: (String) -> Unit
 ) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val showSearch = rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
     if (!showSearch.value) {

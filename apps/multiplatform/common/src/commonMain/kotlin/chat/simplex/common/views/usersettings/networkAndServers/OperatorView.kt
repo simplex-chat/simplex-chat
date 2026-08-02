@@ -840,7 +840,7 @@ private fun ConditionsAppliedToOtherOperatorsText(userServers: List<UserOperator
 fun ConditionsLinkButton() {
   val showMenu = remember { mutableStateOf(false) }
   val uriHandler = LocalUriHandler.current
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   Column {
     DefaultDropdownMenu(showMenu, offset = if (oneHandUI.value) DpOffset(0.dp, -AppBarHeight * fontSizeSqrtMultiplier * 3) else DpOffset.Zero) {
       val commit = chatModel.conditions.value.currentConditions.conditionsCommit

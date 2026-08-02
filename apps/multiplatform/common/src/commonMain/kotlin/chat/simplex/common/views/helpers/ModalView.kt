@@ -40,7 +40,8 @@ fun ModalView(
   if (showClose && showAppBar) {
     BackHandler(enabled = enableClose, onBack = close)
   }
-  val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
+  val oneHandUIPreference = rememberOneHandUIState()
+  val oneHandUI = remember { derivedStateOf { appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete && oneHandUIPreference.value } }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     val bgOverride = if (cardScreen) canvasColorForCurrentTheme() else if (background != Color.Unspecified) background else null
     CompositionLocalProvider(LocalCardScreen provides cardScreen) {

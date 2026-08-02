@@ -549,7 +549,7 @@ fun ModalData.GroupChatInfoLayout(
     }
   }
   Box {
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val oneHandUI = rememberOneHandUIState()
     val selectedItemsBarHeight = if (selectedItems.value != null) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
@@ -861,7 +861,7 @@ fun ModalData.GroupChatInfoLayout(
 
 @Composable
 private fun BoxScope.SelectedItemsButtonsToolbar(chat: Chat, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>, activeMembers: State<List<GroupMember>>) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   Column(Modifier.align(Alignment.BottomCenter)) {
     AnimatedVisibility(selectedItems.value != null) {
       SelectedItemsMembersToolbar(

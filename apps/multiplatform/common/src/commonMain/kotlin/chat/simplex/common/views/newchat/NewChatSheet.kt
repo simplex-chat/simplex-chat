@@ -47,7 +47,7 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
     }
   }
 
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
 
   Box {
     val closeAll = { ModalManager.start.closeModals() }
@@ -116,7 +116,7 @@ private fun ModalData.NewChatSheetLayout(
   createChannel: () -> Unit,
   close: () -> Unit,
 ) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val listState = remember { appBarHandler.listState }
   // This is workaround of an issue when position of a list is not restored (when going back to that screen) when a header exists.
   // Upon returning back, this code returns correct index and position if number of items is the same
@@ -667,7 +667,7 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 
 @Composable
 private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   Box {
     val listState = remember { appBarHandler.listState }
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }

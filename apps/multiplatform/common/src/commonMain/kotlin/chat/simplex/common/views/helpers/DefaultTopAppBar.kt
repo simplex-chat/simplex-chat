@@ -15,10 +15,15 @@ import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CenteredRowLayout
 import chat.simplex.res.MR
 import kotlin.math.absoluteValue
+
+@Composable
+fun rememberOneHandUIState(): State<Boolean> =
+  remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
 
 @Composable
 fun DefaultAppBar(

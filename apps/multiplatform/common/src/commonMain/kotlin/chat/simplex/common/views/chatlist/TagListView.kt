@@ -46,7 +46,7 @@ import kotlinx.coroutines.*
 @Composable
 fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean) {
   val userTags = remember { chatModel.userTags }
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
   val saving = remember { mutableStateOf(false) }
   val chatTagIds = derivedStateOf { chat?.chatInfo?.chatTags ?: emptyList() }
@@ -179,7 +179,7 @@ fun ModalData.TagListEditor(
   close: () -> Unit
 ) {
   val userTags = remember { chatModel.userTags }
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val newEmoji = remember { stateGetOrPutNullable("chatTagEmoji") { emoji } }
   val newName = remember { stateGetOrPut("chatTagName") { name } }
   val saving = remember { mutableStateOf<Boolean?>(null) }

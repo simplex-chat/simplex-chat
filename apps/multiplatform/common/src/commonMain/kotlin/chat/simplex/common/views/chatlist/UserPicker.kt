@@ -139,7 +139,7 @@ fun UserPicker(
     }
   }
 
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val iconColor = MaterialTheme.colors.secondaryVariant
   val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface
   PlatformUserPicker(

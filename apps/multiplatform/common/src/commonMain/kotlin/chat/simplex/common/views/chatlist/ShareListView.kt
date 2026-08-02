@@ -24,7 +24,7 @@ import chat.simplex.res.MR
 @Composable
 fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   Box(Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
     val sharedContent = chatModel.sharedContent.value
     var isMediaOrFileAttachment = false
@@ -194,7 +194,7 @@ private fun ShareList(
   isVoice: Boolean,
   hasSimplexLink: Boolean,
 ) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val chats by remember(search) {
     derivedStateOf {
       val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready && it.chatInfo.sendMsgEnabled && !((chatModel.sharedContent.value is SharedContent.ChatLink || chatModel.sharedContent.value is SharedContent.MyAddress) && it.chatInfo is ChatInfo.Local) }.sortedByDescending { it.chatInfo is ChatInfo.Local }

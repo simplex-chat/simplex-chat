@@ -102,7 +102,7 @@ internal val chatListSearchFocusRequest = mutableIntStateOf(0)
 
 @Composable
 fun ToggleChatListCard() {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val onClose = {
     appPrefs.oneHandUICardShown.set(true)
     AlertManager.shared.showAlertMsg(
@@ -187,7 +187,7 @@ private fun ToolbarSegment(
 // Spec: spec/client/chat-list.md#ChatListView
 @Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
 
   LaunchedEffect(Unit) {
     val showWhatsNew = shouldShowWhatsNew(chatModel)
@@ -437,7 +437,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
 
 @Composable
 private fun AndroidOnboardingCards() {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val topPad = topPaddingToContent(false)
   val bottomPad = if (oneHandUI.value) {
     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
@@ -496,7 +496,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
-  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
 
   if (updatingProgress != null) {
     barButtons.add {
@@ -876,7 +876,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
           }
       }
     }
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val oneHandUI = rememberOneHandUIState()
     if (!appPlatform.isDesktop) {
       Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
     }
@@ -945,7 +945,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
-  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val activeFilter = remember { chatModel.activeChatTagFilter }

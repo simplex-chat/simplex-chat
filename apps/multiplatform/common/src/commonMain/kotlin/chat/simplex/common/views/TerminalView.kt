@@ -75,7 +75,7 @@ fun TerminalLayout(
   fun onMessageChange(s: ComposeMessage) {
     composeState.value = composeState.value.copy(message = s)
   }
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   Box(Modifier.fillMaxSize()) {
     val composeViewHeight = remember { mutableStateOf(0.dp) }
     AdaptingBottomPaddingLayout(Modifier, CONSOLE_COMPOSE_LAYOUT_ID, composeViewHeight) {

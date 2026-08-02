@@ -1016,7 +1016,7 @@ fun ChatLayout(
         val remoteHostId = remember { remoteHostId }.value
         val chat = remember { chat }.value
         val chatInfo = chat?.chatInfo
-        val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
+        val oneHandUI = rememberOneHandUIState()
         val chatBottomBar = remember { appPrefs.chatBottomBar.state }
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
@@ -1459,7 +1459,7 @@ fun BoxScope.ChatInfoToolbar(
       }
     }
   }
-  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val chatBottomBar = remember { appPrefs.chatBottomBar.state }
   val searchTrailingContent: @Composable (() -> Unit)? = if (showContentFilterButton) {{
     IconButton({ showContentFilterMenu.value = true }) {
@@ -3001,7 +3001,7 @@ private fun TopEndFloatingButton(
 
 @Composable
 fun topPaddingToContent(chatView: Boolean, additionalTopBar: Boolean = false): Dp {
-  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val chatBottomBar = remember { appPrefs.chatBottomBar.state }
   val reportsPadding = if (additionalTopBar) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
   return if (oneHandUI.value && (!chatView || chatBottomBar.value)) {
@@ -3013,7 +3013,7 @@ fun topPaddingToContent(chatView: Boolean, additionalTopBar: Boolean = false): D
 
 @Composable
 private fun numberOfBottomAppBars(): Int {
-  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
+  val oneHandUI = rememberOneHandUIState()
   val chatBottomBar = remember { appPrefs.chatBottomBar.state }
   return if (oneHandUI.value && chatBottomBar.value) {
     2
