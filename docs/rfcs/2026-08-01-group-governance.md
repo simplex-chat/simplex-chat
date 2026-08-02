@@ -248,19 +248,27 @@ member is provisional and re-evaluated as membership settles.
 
 Naming a member that is no longer present is then tolerated rather than void, since the action changes roles rather
 than presence, and presence is repaired where an incumbent removed it: **applying `GAReplaceAdmins` first reinstates
-as current members any named members the receiver removed after that proposal's `firstSeenAt`, other than by an
-applied certificate.** Their rows still exist and their connections are still live, because a governed group defers
-teardown (transport rule 5). Without reinstatement the anchor buys nothing: an incumbent that cannot void the action
-by removing one candidate removes every candidate instead, each named member is then absent, setting an absent member
-to `GRAdmin` is a no-op while demoting every incumbent is not, and the abort below fires, one message per candidate
-and repeatable against every proposal. Reinstatement is bounded to members this receiver itself removed during this
-referendum, so it cannot introduce anyone the receiver has not already recorded, and once applied the reinstated
-member is an admin, so no remaining admin may remove it again. **What remains is a backstop: apply aborts if the
-resulting admin set would still be empty after reinstatement**, which covers the one case the group cannot be
-protected from, a candidate that left of its own accord. An
-ownerless, adminless p2p group cannot forward for unconnected pairs (`isUserGrpFwdRelay`, `Subscriber.hs:3694`), admit
-anyone (`Subscriber.hs:3223`), or remove anyone (`Subscriber.hs:3674-3675`), and the referendum needed to recover has
-no forwarder.
+as current members any named members the receiver itself removed, other than by an applied certificate, at any time
+from `maxReferendumDays` before that proposal's `firstSeenAt` onwards**, equivalently exactly the named members that
+are in this proposal's electorate but that the receiver does not record as current. Their rows still exist and their
+connections are still live, because a governed group defers teardown for `2 × maxReferendumDays`, which is sized for
+precisely this cohort (transport rule 5). Without reinstatement the anchor buys nothing: an incumbent that cannot void
+the action by removing one candidate removes every candidate instead, each named member is then absent, setting an
+absent member to `GRAdmin` is a no-op while demoting every incumbent is not, and the abort below fires, one message
+per candidate and repeatable against every proposal. Anchoring reinstatement at `firstSeenAt` instead of at the
+recency window would leave that attack open in its easier form: `firstSeenAt` is per-receiver and the incumbent is a
+forwarder, so purging candidates before anyone proposes, or withholding the proposal until the removals have landed,
+puts every removal before every receiver's `firstSeenAt` and the abort fires everywhere. It also fires unevenly, so
+receivers that saw the proposal first advance a version while the rest re-abort on every catch-up, which is a
+permanent split of the certified admin set rather than a veto. Tying reinstatement to the electorate closes both forms
+for one referendum period and no longer. Reinstatement is therefore bounded to members this receiver itself removed
+while they were still electors, so it cannot introduce anyone the receiver has not already recorded, cannot resurrect
+a member that left of its own accord, and cannot undo a certificate removal; once applied the reinstated member is an
+admin, so no remaining admin may remove it again. **What remains is a backstop: apply aborts if the resulting admin
+set would still be empty after reinstatement**, which covers the one case the group cannot be protected from, a
+candidate that left of its own accord. An ownerless, adminless p2p group cannot forward for unconnected pairs
+(`isUserGrpFwdRelay`, `Subscriber.hs:3694`), admit anyone (`Subscriber.hs:3223`), or remove anyone
+(`Subscriber.hs:3674-3675`), and the referendum needed to recover has no forwarder.
 
 **Removed members still vote, if they were members when the referendum reached the receiver.** Because `E` does not
 appear in the pass condition `A > B`, a removal that only shrank the denominator would *lower* the bar a purger has to
@@ -270,12 +278,19 @@ referendum resolves. Keeping the removed in the vote as well as the count is wha
 referendum period and gives the group that period to answer with a referendum the purged can vote in. Recency is
 measured by the receiver's own record of the removal, never by anything an author writes.
 
-Two conditions bound it. The allowance applies only to members the receiver already recorded when it first saw the
-proposal, so identities added *during* a referendum get none: otherwise an admin facing an ouster could add accounts
-while the vote ran, lose it, and still have those accounts protected from the incoming admins for a further month,
-which is long enough to carry a second referendum reinstating them. And it does not apply to removals enacted by
-certificate, which take effect at once, because the allowance exists to blunt unilateral action and a certificate is
-the opposite of that.
+Two conditions bound it, and both are narrower than they look. The allowance applies only to members the receiver
+already recorded when it first saw the proposal, so identities added *during* a referendum get none *in that
+referendum*: they were not current at its `firstSeenAt`, and if they are removed before it resolves they are not
+current at counting time either. And it does not apply to removals enacted by certificate, which take effect at once,
+because the allowance exists to blunt unilateral action and a certificate is the opposite of that.
+
+What neither condition gives is a lapse. The allowance reads only the receiver's record of *when* a member was
+removed, never of when it was added, so an ordinary removal never disenfranchises anyone for the following
+`maxReferendumDays`, in the next referendum any more than in this one. An admin that packs accounts during an ouster
+and loses therefore keeps them as electors in the next referendum even after the incoming admins purge them; the only
+removal that strips them at once is a `GARemoveMembers` certificate, which must itself be unconditional against an `E`
+that already counts them. Making the allowance lapse would require recording when each member was added and which
+referenda were live then, which v1 does not do; it states the consequence instead.
 
 **`E` never decreases within a referendum.** A receiver keeps the largest electorate it has computed for a given
 proposal. A denominator that can be made too small passes fraudulent certificates, which is fatal; one made too large
@@ -483,7 +498,9 @@ On receiving `x.grp.gov.cert`, a member:
    multiplier against a small conspiracy, not a bound against a
    determined one;
 7. applies atomically. For `GAReplaceAdmins`, first reinstate as current members any named members the receiver
-   removed after that proposal's `firstSeenAt` other than by an applied certificate, then set every named member to
+   itself removed, other than by an applied certificate, at any time from `maxReferendumDays` before that proposal's
+   `firstSeenAt` onwards, equivalently the named members in this proposal's electorate that it does not record as
+   current, then set every named member to
    `GRAdmin` and demote every other current `GRAdmin` to `GRMember`. For `GARemoveMembers`, remove every named
    member, effective on the electorate at once and
    with no recency allowance; **a removal certificate must be unconditional (`2A > E`) *and* must observe the challenge
@@ -671,9 +688,13 @@ moderators at any time; announce members who do not exist, or withhold real ones
 *can also:* slow any referendum, and deny unconditionality outright, by announcing members nobody has met, since
 those count in `E` even though their votes do not, and since inflating `E` lengthens the very delay the admin needs;
 silence a member permanently by purging it and repeating the purge each referendum period; and, facing an ouster,
-manufacture a future majority by adding accounts and connecting them while the vote runs. That last path is bounded
-rather than closed: accounts added during a referendum get no recency protection, so the incoming admins can purge
-them the moment they win, and a referendum may itself name members for removal. An admin who seeds accounts *before*
+manufacture a future majority by adding accounts and connecting them while the vote runs. That path is barely bounded.
+The accounts get no recency allowance in the referendum they were added during, but an ordinary removal does not
+disenfranchise them afterwards, so the incoming admins purging them the moment they win leaves them voting for a
+further `maxReferendumDays`, long enough to carry a second referendum restoring the ousted admin. The only removal
+that strips them at once is a `GARemoveMembers` certificate, which must be unconditional against an `E` that already
+counts them, so a group that ousted an admin by a bare majority may not be able to reach it. An admin who seeds
+accounts *before*
 anyone proposes is not bounded by anything here.
 
 *can also, at tier 1:* fabricate members and vote with them, up to and including carrying any referendum outright,
@@ -681,18 +702,17 @@ since membership is admin-asserted; hold the key of any member whose introductio
 vote by signing a conflicting one. Both are visible to members but not prevented, and both are what tier 2 closes.
 
 *cannot:* change the admin set outside a referendum, so it cannot remove its colleagues, pack the set by promotion or
-by admitting new members at admin role, or entrench
-itself; veto a referendum by procedure, since no admin signature appears in propose, vote or apply, candidacy is
-judged as of each receiver's first sight of the proposal or later, and a candidate removed while the referendum runs
-is reinstated by the certificate that names it; censor one, since governance events are forwardable by any
-member; silence a voter by demotion or blocking, by removal within the recency period, or by removal at any point
-after that receiver first saw the proposal, since a member current at `firstSeenAt` stays in that referendum's
-electorate however it is removed later; rush a result, since speed
-must be bought with votes and no timestamp a proposer writes is read by any rule; empty the group with a thin
-referendum, since removal certificates must be unconditional. It *can* reach the same end in two steps, by passing a
-thin `GAReplaceAdmins` that installs cooperating admins and having those admins remove members with ordinary admin
-powers, which governance does not touch. The unconditional rule bounds what a certificate does, not what the admins a
-certificate installs may then do.
+by admitting new members at admin role, or entrench itself; veto a referendum by procedure, since no admin signature
+appears in propose, vote or apply, candidacy is judged as of each receiver's first sight of the proposal or later, and
+a candidate the incumbent removed, whether while the referendum runs or in the `maxReferendumDays` before a receiver
+first saw the proposal, is reinstated by the certificate that names it; censor one, since governance events are
+forwardable by any member; silence a voter by demotion or blocking, by removal within the recency period, or by
+removal at any point after that receiver first saw the proposal, since a member current at `firstSeenAt` stays in that
+referendum's electorate however it is removed later; rush a result, since speed must be bought with votes and no
+timestamp a proposer writes is read by any rule; empty the group with a thin referendum, since removal certificates
+must be unconditional. It *can* reach the same end in two steps, by passing a thin `GAReplaceAdmins` that installs
+cooperating admins and having those admins remove members with ordinary admin powers, which governance does not touch.
+The unconditional rule bounds what a certificate does, not what the admins a certificate installs may then do.
 
 #### A group member, in a governed group
 
@@ -729,8 +749,10 @@ authored by admins, so a colluding admin reaches any majority it likes.
   a real property for a group whose admins are trusted and occasionally wrong, and none at all against one hostile from
   the start. Tier 2 is the answer; classic Sybil, where an attacker enrols real confederates, is not solvable here at
   either tier (Douceur) and is left to future work. An admin facing removal can also spend the referendum period
-  building a majority for the *next* one; accounts added mid-referendum get no recency protection and can be purged
-  the moment it resolves, but nothing touches accounts seeded before any proposal exists.
+  building a majority for the *next* one; accounts added mid-referendum get no recency allowance in that referendum,
+  but purging them afterwards by ordinary admin action does not disenfranchise them for a further
+  `maxReferendumDays`, so unseating them inside that window needs a `GARemoveMembers` certificate that is
+  unconditional against an `E` that counts them. Nothing touches accounts seeded before any proposal exists.
 - **Member keys are only as good as the introduction that carried them.** Tier 1 pins a member's key from the direct
   handshake rather than the introducer's assertion, but the introducer relays the invitation for that handshake and can
   substitute it, which the group threat model already grants as an admin capability. An admin that MITMs an
@@ -771,8 +793,10 @@ authored by admins, so a colluding admin reaches any majority it likes.
   near-unanimous certificate. Two or more members that are all behind, whose non-aye set consists only of each other,
   still cannot attest for one another and stay pending until one receives the certificate as ordinary live traffic
   rather than in a catch-up bundle.
-- **A voluntary departure can still void an election.** Reinstatement repairs candidates an incumbent removed, but
-  not a candidate that left of its own accord, so a certificate naming only such candidates aborts on the empty-admin
+- **A voluntary departure can still void an election.** Reinstatement repairs candidates an incumbent removed while
+they were
+  still electors, but not a candidate that left of its own accord, nor one removed more than `maxReferendumDays`
+  before the receiver first saw the proposal, so a certificate naming only such candidates aborts on the empty-admin
   backstop and the incumbents keep their roles.
 - **Governance traffic is unsuppressible.** The exemptions that make censorship hard mean no moderation lever closes
   that channel; a per-peer budget is needed at implementation time. The factor that should set the constant is
