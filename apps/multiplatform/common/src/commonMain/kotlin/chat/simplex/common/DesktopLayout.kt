@@ -15,6 +15,9 @@ enum class DesktopChatDensity {
 
 data class DesktopDensityTokens(
   val chatRowVerticalPadding: Dp,
+  val sidebarAvatarSize: Dp,
+  val sidebarPreviewMinHeight: Dp,
+  val sidebarPreviewMaxLines: Int,
   val messageVerticalPadding: Dp,
   val groupedMessageGap: Dp,
   val conversationGap: Dp,
@@ -22,9 +25,9 @@ data class DesktopDensityTokens(
 )
 
 fun DesktopChatDensity.tokens(): DesktopDensityTokens = when (this) {
-  DesktopChatDensity.Compact -> DesktopDensityTokens(6.dp, 4.dp, 2.dp, 8.dp, 6.dp)
-  DesktopChatDensity.Comfortable -> DesktopDensityTokens(8.dp, 7.dp, 4.dp, 12.dp, 9.dp)
-  DesktopChatDensity.Spacious -> DesktopDensityTokens(12.dp, 10.dp, 7.dp, 16.dp, 12.dp)
+  DesktopChatDensity.Compact -> DesktopDensityTokens(5.dp, 44.dp, 20.dp, 1, 4.dp, 2.dp, 8.dp, 6.dp)
+  DesktopChatDensity.Comfortable -> DesktopDensityTokens(7.dp, 50.dp, 24.dp, 1, 7.dp, 4.dp, 12.dp, 9.dp)
+  DesktopChatDensity.Spacious -> DesktopDensityTokens(10.dp, 58.dp, 36.dp, 2, 10.dp, 7.dp, 16.dp, 12.dp)
 }
 
 object DesktopLayoutState {

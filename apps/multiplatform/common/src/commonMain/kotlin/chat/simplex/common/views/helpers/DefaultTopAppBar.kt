@@ -32,6 +32,7 @@ fun DefaultAppBar(
   searchPlaceholder: String? = null,
   onSearchValueChanged: (String) -> Unit = {},
   searchTrailingContent: @Composable (() -> Unit)? = null,
+  centeredTitle: Boolean? = null,
   buttons: @Composable RowScope.() -> Unit = {},
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
@@ -102,7 +103,7 @@ fun DefaultAppBar(
         },
         navigationIcon = navigationButton,
         buttons = if (!showSearch) buttons else {{}},
-        centered = !showSearch && (title != null || !onTop),
+        centered = !showSearch && (centeredTitle ?: (title != null || !onTop)),
         onTop = onTop,
       )
       AppBarDivider(onTop, title != null || fixedTitleText != null, connection)

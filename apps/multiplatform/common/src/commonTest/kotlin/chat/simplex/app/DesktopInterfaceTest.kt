@@ -31,6 +31,10 @@ class DesktopInterfaceTest {
     val spacious = DesktopChatDensity.Spacious.tokens()
     assertTrue(compact.chatRowVerticalPadding < comfortable.chatRowVerticalPadding)
     assertTrue(comfortable.chatRowVerticalPadding < spacious.chatRowVerticalPadding)
+    assertTrue(compact.sidebarAvatarSize < comfortable.sidebarAvatarSize)
+    assertTrue(comfortable.sidebarAvatarSize < spacious.sidebarAvatarSize)
+    assertTrue(compact.sidebarPreviewMinHeight < spacious.sidebarPreviewMinHeight)
+    assertTrue(compact.sidebarPreviewMaxLines <= spacious.sidebarPreviewMaxLines)
     assertTrue(compact.messageVerticalPadding < comfortable.messageVerticalPadding)
     assertTrue(comfortable.composerVerticalPadding < spacious.composerVerticalPadding)
   }

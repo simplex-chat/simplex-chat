@@ -505,6 +505,7 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
         .fillMaxSize()
         .clipToBounds()
         .background(MaterialTheme.colors.background)
+        .padding(top = if (macOSWindowVibrancyAvailable) 28.dp else 0.dp)
     ) {
       Box(Modifier.widthIn(min = 520.dp).weight(1f)) {
         CenterPartOfScreen()

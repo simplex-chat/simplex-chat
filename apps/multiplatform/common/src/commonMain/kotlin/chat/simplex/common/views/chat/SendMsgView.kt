@@ -68,7 +68,11 @@ fun SendMsgView(
   ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
   val desktopDensity = remember { appPrefs.desktopChatDensity.state }.value.tokens()
-  val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(vertical = desktopDensity.composerVerticalPadding)
+  val padding = if (appPlatform.isAndroid) {
+    PaddingValues(vertical = 8.dp)
+  } else {
+    PaddingValues(horizontal = 12.dp, vertical = desktopDensity.composerVerticalPadding)
+  }
   val composerShape = RoundedCornerShape(18.dp)
   val composerModifier = Modifier.padding(padding).then(
     if (appPlatform.isDesktop) {

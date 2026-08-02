@@ -187,7 +187,7 @@ private fun ToolbarSegment(
 // Spec: spec/client/chat-list.md#ChatListView
 @Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
 
   LaunchedEffect(Unit) {
     val showWhatsNew = shouldShowWhatsNew(chatModel)
@@ -230,7 +230,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
           setPerformLA,
         )
       }
-      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+      if (appPlatform.isAndroid && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         NewChatSheetFloatingButton(oneHandUI, stopped)
       }
     }
@@ -496,7 +496,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
 
   if (updatingProgress != null) {
     barButtons.add {
@@ -540,7 +540,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
       }
     }
 
-    if (oneHandUI.value) {
+    if (appPlatform.isDesktop || oneHandUI.value) {
       val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
 
       if (appPlatform.isDesktop && oneHandUI.value) {
@@ -562,18 +562,27 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
             showNewChatSheet(oneHandUI)
           },
         ) {
-          Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-              .background(MaterialTheme.colors.primary, shape = CircleShape)
-              .size(33.dp * fontSizeSqrtMultiplier)
-          ) {
+          if (appPlatform.isDesktop) {
             Icon(
               painterResource(MR.images.ic_edit_filled),
               stringResource(MR.strings.add_contact_or_create_group),
-              Modifier.size(sp16),
-              tint = Color.White
+              Modifier.size(21.dp),
+              tint = MaterialTheme.colors.primary
             )
+          } else {
+            Box(
+              contentAlignment = Alignment.Center,
+              modifier = Modifier
+                .background(MaterialTheme.colors.primary, shape = CircleShape)
+                .size(33.dp * fontSizeSqrtMultiplier)
+            ) {
+              Icon(
+                painterResource(MR.images.ic_edit_filled),
+                stringResource(MR.strings.add_contact_or_create_group),
+                Modifier.size(sp16),
+                tint = Color.White
+              )
+            }
           }
         }
       }
@@ -634,6 +643,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
     onTop = !oneHandUI.value,
     onSearchValueChanged = {},
+    centeredTitle = !appPlatform.isDesktop,
     buttons = { barButtons.forEach { it() } }
   )
 }
@@ -681,7 +691,7 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       Box {
         ProfileImage(
           image = image,
-          size = 37.dp * fontSizeSqrtMultiplier,
+          size = (if (appPlatform.isDesktop) 30.dp else 37.dp) * fontSizeSqrtMultiplier,
           color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
         )
         if (!allRead) {
@@ -935,7 +945,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = remember { if (appPlatform.isDesktop) mutableStateOf(false) else appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val activeFilter = remember { chatModel.activeChatTagFilter }
@@ -1014,14 +1024,14 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           // top toolbar: search bar above, so on desktop the connect row goes above the tags
           TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
-            Divider()
+            if (!appPlatform.isDesktop) Divider()
             TagsView(searchText)
           }
-          Divider()
+          if (!appPlatform.isDesktop) Divider()
         }
       }
     }
-    if (!oneHandUICardShown.value) {
+    if (!oneHandUICardShown.value && !appPlatform.isDesktop) {
       item {
         ToggleChatListCard()
       }
@@ -1032,7 +1042,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!addressCreationCardShown.value) {
+    if (!addressCreationCardShown.value && !appPlatform.isDesktop) {
       item {
         ChatListFeatureCards()
       }

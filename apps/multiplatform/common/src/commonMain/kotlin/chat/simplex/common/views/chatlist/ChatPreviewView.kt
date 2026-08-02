@@ -29,6 +29,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.GroupInfo
+import chat.simplex.common.tokens
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.planAndConnect
@@ -51,6 +52,15 @@ fun ChatPreviewView(
   defaultClickAction: () -> Unit
 ) {
   val cInfo = chat.chatInfo
+  val desktop = appPlatform.isDesktop
+  val desktopDensity = remember { appPrefs.desktopChatDensity.state }.value.tokens()
+  val hasUnread = chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  val titleWeight = if (desktop) {
+    if (hasUnread) FontWeight.SemiBold else FontWeight.Medium
+  } else {
+    FontWeight.Bold
+  }
+  val previewMaxLines = if (desktop) desktopDensity.sidebarPreviewMaxLines else 2
 
   @Composable
   fun inactiveIcon() {
@@ -88,7 +98,7 @@ fun ChatPreviewView(
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       style = MaterialTheme.typography.h3,
-      fontWeight = FontWeight.Bold,
+      fontWeight = titleWeight,
       color = color
     )
   }
@@ -158,7 +168,7 @@ fun ChatPreviewView(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.h3,
-            fontWeight = FontWeight.Bold,
+            fontWeight = titleWeight,
             color = color
           )
         }
@@ -235,7 +245,7 @@ fun ChatPreviewView(
         formattedText,
         toggleSecrets = false,
         linkMode = linkMode,
-        maxLines = 2,
+        maxLines = previewMaxLines,
         overflow = TextOverflow.Ellipsis,
         style = TextStyle(
           fontFamily = Inter,
@@ -289,7 +299,7 @@ fun ChatPreviewView(
         toggleSecrets = false,
         linkMode = linkMode,
         senderBold = true,
-        maxLines = 2,
+        maxLines = previewMaxLines,
         overflow = TextOverflow.Ellipsis,
         style = TextStyle(
           fontFamily = Inter,
@@ -397,12 +407,12 @@ fun ChatPreviewView(
   Box(contentAlignment = Alignment.Center) {
     Row {
       Box(contentAlignment = Alignment.BottomEnd) {
-        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
-        Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
+        ChatInfoImage(cInfo, size = (if (desktop) desktopDensity.sidebarAvatarSize else 72.dp) * fontSizeSqrtMultiplier)
+        Box(Modifier.padding(end = if (desktop) 2.dp else 6.sp.toDp(), bottom = if (desktop) 2.dp else 6.sp.toDp())) {
           chatPreviewImageOverlayIcon()
         }
       }
-      Spacer(Modifier.width(8.dp))
+      Spacer(Modifier.width(if (desktop) 10.dp else 8.dp))
       Column(Modifier.weight(1f)) {
         Row {
           Box(Modifier.weight(1f)) {
@@ -412,8 +422,8 @@ fun ChatPreviewView(
           val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
           ChatListTimestampView(ts)
         }
-        Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
-          Row(Modifier.padding(top = 3.sp.toDp()).weight(1f)) {
+        Row(Modifier.heightIn(min = if (desktop) desktopDensity.sidebarPreviewMinHeight else 46.sp.toDp()).fillMaxWidth()) {
+          Row(Modifier.padding(top = if (desktop) 1.dp else 3.sp.toDp()).weight(1f)) {
             val activeVoicePreview: MutableState<(ActiveVoicePreview)?> = remember(chat.id) { mutableStateOf(null) }
             val chat = activeVoicePreview.value?.chat ?: chat
             val ci = activeVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
@@ -450,9 +460,9 @@ fun ChatPreviewView(
             }
           }
 
-          Spacer(Modifier.width(8.sp.toDp()))
+          Spacer(Modifier.width(if (desktop) 5.dp else 8.sp.toDp()))
 
-          Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
+          Box(Modifier.widthIn(min = if (desktop) 24.dp else 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
             val n = chat.chatStats.unreadCount
             val ntfsMode = chat.chatInfo.chatSettings?.enableNtfs
             val showNtfsIcon = !chat.chatInfo.ntfsEnabled(false) && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
@@ -515,7 +525,7 @@ fun ChatPreviewView(
               )
             }
             Box(
-              Modifier.offset(y = 28.sp.toDp()),
+              Modifier.offset(y = if (desktop) 18.dp else 28.sp.toDp()),
               contentAlignment = Alignment.Center
             ) {
               chatStatusImage()
@@ -529,7 +539,8 @@ fun ChatPreviewView(
 
 @Composable
 private fun SmallContentPreview(borderColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.12f), content: @Composable BoxScope.() -> Unit) {
-  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(0.5.dp, borderColor, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
+  val size = if (appPlatform.isDesktop) 30.dp else 36.sp.toDp()
+  Box(Modifier.padding(top = if (appPlatform.isDesktop) 0.dp else 2.sp.toDp(), end = 8.sp.toDp()).size(size).border(0.5.dp, borderColor, CircleShape).clip(CircleShape)) {
     content()
   }
 }
@@ -617,7 +628,7 @@ fun unreadCountStr(n: Int): String {
     )
     Text(
       ts,
-      Modifier.padding(bottom = 5.sp.toDp()).offset(x = if (appPlatform.isDesktop) 1.5.sp.toDp() else 0.dp),
+      Modifier.padding(bottom = if (appPlatform.isDesktop) 3.dp else 5.sp.toDp()).offset(x = if (appPlatform.isDesktop) 1.5.sp.toDp() else 0.dp),
       color = MaterialTheme.colors.secondary,
       style = MaterialTheme.typography.body2.copy(fontSize = 13.sp),
     )
