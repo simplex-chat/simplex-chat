@@ -3,6 +3,7 @@ package chat.simplex.common.platform
 import androidx.compose.foundation.contextMenuOpenDetector
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.*
 import androidx.compose.ui.draganddrop.*
@@ -92,7 +93,14 @@ actual fun Modifier.desktopPointerHoverIconHand(): Modifier = Modifier.pointerHo
 actual fun Modifier.desktopPointerHoverIconResize(): Modifier =
   this then Modifier.pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)))
 
-actual val macOSWindowVibrancyAvailable: Boolean = desktopPlatform.isMac()
+private val macOSWindowVibrancyState = mutableStateOf(false)
+
+actual val macOSWindowVibrancyAvailable: Boolean
+  get() = macOSWindowVibrancyState.value
+
+internal fun setMacOSWindowVibrancyAvailable(available: Boolean) {
+  macOSWindowVibrancyState.value = desktopPlatform.isMac() && available
+}
 
 actual fun openSystemNotificationSettings() {
   if (desktopPlatform.isMac()) chat.simplex.common.model.MacOSNotifications.openSettings()

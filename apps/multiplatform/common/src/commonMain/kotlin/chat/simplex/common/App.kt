@@ -145,11 +145,22 @@ fun MainScreen() {
     }
   }
 
-  Box {
-    val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
-    val onboarding by remember { chatModel.controller.appPrefs.onboardingStage.state }
-    val localUserCreated = chatModel.localUserCreated.value
-    var showInitializationView by remember { mutableStateOf(false) }
+  val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
+  val onboarding by remember { chatModel.controller.appPrefs.onboardingStage.state }
+  val localUserCreated = chatModel.localUserCreated.value
+  var showInitializationView by remember { mutableStateOf(false) }
+  val desktopChatVisible = appPlatform.isDesktop &&
+      onboarding == OnboardingStage.OnboardingComplete &&
+      chatModel.chatDbStatus.value == DBMigrationResult.OK &&
+      remember { chatModel.chatDbEncrypted }.value != null &&
+      localUserCreated != null
+  val windowBackground = if (macOSWindowVibrancyAvailable && desktopChatVisible) {
+    Color.Transparent
+  } else {
+    MaterialTheme.colors.background
+  }
+
+  Box(Modifier.fillMaxSize().background(windowBackground)) {
     when {
       onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
         // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
