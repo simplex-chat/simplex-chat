@@ -652,7 +652,7 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
 createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Maybe SimplexDomain -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
 createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ verifiedDomain = do
   currentTs <- liftIO getCurrentTime
-  (memberPubKey, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+  (memberPubKey, memberPrivKey) <- atomically $ C.generateKeyPair gVar
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
   (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ (Just memberPrivKey) currentTs
   hostMemberId_ <-
@@ -2187,7 +2187,7 @@ createBusinessRequestGroup
     pure (groupInfo, clientMember)
     where
       insertGroup_ currentTs = do
-        (memberPubKey, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        (memberPubKey, memberPrivKey) <- atomically $ C.generateKeyPair gVar
         liftIO $
           DB.execute
             db

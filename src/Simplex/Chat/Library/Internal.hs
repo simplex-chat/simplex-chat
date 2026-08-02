@@ -2211,12 +2211,12 @@ groupBindingData gks memberId memberKey = case gks >>= publicGroupKeys of
   Just PublicGroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)
   Nothing -> smpEncode (memberId, memberKey)
 
-ensureUserMemberKey :: GroupInfo -> CM GroupInfo
-ensureUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}
+createUserMemberKey :: GroupInfo -> CM GroupInfo
+createUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}
   | useRelays' gInfo || isJust groupKeys = pure gInfo
   | otherwise = do
       g <- asks random
-      (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair g
+      (_, memberPrivKey) <- atomically $ C.generateKeyPair g
       withStore' $ \db -> setUserMemberKey db groupId (groupMemberId' membership) memberPrivKey
       pure gInfo {groupKeys = Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}}
 
@@ -2455,14 +2455,14 @@ sendRelayCapIfNeeded user gInfo = do
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo' scope asGroup members sign events = do
-  gInfo <- ensureUserMemberKey gInfo'
+  gInfo <- createUserMemberKey gInfo'
   sendGroupProfileUpdate user gInfo scope asGroup members
   sendGroupMessages_ user gInfo members sign events
 
 -- per-item signer variant of sendGroupMessages (used for per-item delete signing); preserves the profile-update prelude
 sendGroupSignedMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupSignedMessages user gInfo' scope asGroup members signedEvents = do
-  gInfo <- ensureUserMemberKey gInfo'
+  gInfo <- createUserMemberKey gInfo'
   sendGroupProfileUpdate user gInfo scope asGroup members
   sendGroupSignedMessages_ gInfo members signedEvents
 

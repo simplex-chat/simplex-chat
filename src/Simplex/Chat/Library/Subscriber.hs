@@ -601,7 +601,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
               g <- asks random
-              memberKeys <- liftIO $ atomically $ C.generateKeyPair g
+              memberKeys <- atomically $ C.generateKeyPair g
               (gInfo, host) <- withStore $ \db -> do
                 liftIO $ deleteContactCardKeepConn db connId ct
                 createGroupInvitedViaLink db cxt user conn'' memberKeys glInv
@@ -793,7 +793,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   useRelays' gInfo == isJust rcvPG && pgId rcvPG == pgId curPG -> do
                     -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
                     (gInfo'', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db cxt user gInfo m glInv
-                    gInfo' <- ensureUserMemberKey gInfo''
+                    gInfo' <- createUserMemberKey gInfo''
                     -- [incognito] send saved profile
                     incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
                     profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo' (fromLocalProfile <$> incognitoProfile)
@@ -933,7 +933,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
             where
               sendXGrpLinkMem gInfo''' m' = do
-                gInfo'' <- ensureUserMemberKey gInfo'''
+                gInfo'' <- createUserMemberKey gInfo'''
                 let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
                 profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo'' (fromIncognitoProfile <$> incognitoProfile)
                 sendGroupMemberMessages user gInfo'' conn [XGrpLinkMem profileToSend (groupMemberKey gInfo'')]
@@ -2621,7 +2621,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
             -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
             g <- asks random
-            memberKeys <- liftIO $ atomically $ C.generateKeyPair g
+            memberKeys <- atomically $ C.generateKeyPair g
             (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId memberKeys
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId, memberId = membershipMemId} = membership
@@ -3089,13 +3089,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
           g <- asks random
-          memberKeys <- liftIO $ atomically $ C.generateKeyPair g
+          memberKeys <- atomically $ C.generateKeyPair g
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db cxt user conn' memberKeys glInv
           toView $ CEvtGroupLinkConnecting user gInfo host
           pure (conn', Just gInfo)
         XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
           g <- asks random
-          memberKeys <- liftIO $ atomically $ C.generateKeyPair g
+          memberKeys <- atomically $ C.generateKeyPair g
           (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db cxt user conn' memberKeys glRjct
           toView $ CEvtGroupLinkConnecting user gInfo host
           toViewTE $ TEGroupLinkRejected user gInfo rejectionReason
@@ -4383,7 +4383,7 @@ runRelayRequestWorker a Worker {doWork} = do
             r -> pure r
         scheduleRequest :: GroupId -> NominalDiffTime -> CM ()
         scheduleRequest groupId delay = do
-          v_ <- liftIO $ atomically $
+          v_ <- atomically $
             ifM
               (isNothing <$> TM.lookup groupId delayThreads)
               (newEmptyTMVar >>= \v -> TM.insert groupId v delayThreads $> Just v)
@@ -4394,7 +4394,7 @@ runRelayRequestWorker a Worker {doWork} = do
               atomically $ TM.delete groupId delayThreads
               void $ atomically $ tryPutTMVar doWork ()
             weakTId <- liftIO $ mkWeakThreadId tId
-            liftIO $ atomically $ putTMVar v weakTId
+            atomically $ putTMVar v weakTId
         retryTmpError :: (Int, NominalDiffTime) -> GroupId -> RelayRequestData -> ChatError -> CM ()
         retryTmpError (retriesThreshold, ttl) groupId RelayRequestData {reqDelay, reqRetries, reqCreatedAt} = \case
           ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
@@ -4454,7 +4454,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   gVar <- asks random
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
-                  sigKeys <- liftIO $ atomically $ C.generateKeyPair gVar
+                  sigKeys <- atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
                   (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData) CR.IKPQOff False Nothing
