@@ -2831,6 +2831,8 @@ processChatCommand cxt nm = \case
           withFastStore' $ \db -> do
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
+            forM_ (groupMemberKey g) $ \_ ->
+              when (maxVersion peerChatVRange >= groupMemberKeyVersion) $ setMemberKeyStatus db KSSent (groupMemberId' fromMember)
             -- MFAll is default for new groups
             unless (enableNtfs == MFAll) $ updateGroupSettings db user groupId chatSettings {enableNtfs}
           void (withAgent $ \a -> joinConnection a nm (aUserId user) agentConnId (enableNtfs /= MFNone) connRequest dm PQSupportOff subMode)
@@ -4231,7 +4233,7 @@ processChatCommand cxt nm = \case
       createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
       createGroupFeatureItems user cd CISndGroupFeature gInfo
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
-    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} m@GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
           GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
@@ -4246,6 +4248,9 @@ processChatCommand cxt nm = \case
                 groupSize = Just currentMemCount
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
+      forM_ (groupMemberKey gInfo) $ \_ ->
+        when (m `supportsVersion` groupMemberKeyVersion) $
+          withStore' $ \db -> setMemberKeyStatus db KSSent groupMemberId
       let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
       timed_ <- contactCITimed ct
       ci <- saveSndChatItem' user (CDDirectSnd ct) msg content Nothing Nothing Nothing timed_ False
