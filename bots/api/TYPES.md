@@ -9,6 +9,7 @@ This file is generated automatically.
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
+- [AgentServiceError](#agentserviceerror)
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
@@ -206,6 +207,7 @@ This file is generated automatically.
 - [UserContact](#usercontact)
 - [UserContactLink](#usercontactlink)
 - [UserContactRequest](#usercontactrequest)
+- [UserContactRequestRef](#usercontactrequestref)
 - [UserInfo](#userinfo)
 - [UserProfileUpdateSummary](#userprofileupdatesummary)
 - [UserPwdHash](#userpwdhash)
@@ -358,6 +360,29 @@ CRITICAL:
 
 INACTIVE:
 - type: "INACTIVE"
+
+
+---
+
+## AgentServiceError
+
+**Discriminated union type**:
+
+Rejected:
+- type: "rejected"
+- rejectReason: string
+
+Timeout:
+- type: "timeout"
+
+NoPendingRequest:
+- type: "noPendingRequest"
+
+NotDRAddress:
+- type: "notDRAddress"
+
+BadSignature:
+- type: "badSignature"
 
 
 ---
@@ -1782,6 +1807,7 @@ Error:
 - chatTs: UTCTime?
 - preparedContact: [PreparedContact](#preparedcontact)?
 - contactRequestId: int64?
+- contactRequest: [UserContactRequestRef](#usercontactrequestref)?
 - contactGroupMemberId: int64?
 - contactGrpInvSent: bool
 - groupDirectInv: [GroupDirectInvitation](#groupdirectinvitation)?
@@ -1841,6 +1867,7 @@ ContactViaAddress:
 - "active"
 - "deleted"
 - "deletedByUser"
+- "rejected"
 
 
 ---
@@ -3585,6 +3612,10 @@ A_QUEUE:
 - type: "A_QUEUE"
 - queueErr: string
 
+A_SERVICE:
+- type: "A_SERVICE"
+- serviceError: [AgentServiceError](#agentserviceerror)
+
 
 ---
 
@@ -4397,6 +4428,16 @@ Handshake:
 - pqSupport: bool
 - welcomeSharedMsgId: string?
 - requestSharedMsgId: string?
+- rejectionSupported: bool
+
+
+---
+
+## UserContactRequestRef
+
+**Record type**:
+- contactRequestId: int64
+- rejectionSupported: bool
 
 
 ---
