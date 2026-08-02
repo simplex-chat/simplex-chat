@@ -1960,7 +1960,6 @@ class GroupMember(TypedDict):
     updatedAt: str  # ISO-8601 timestamp
     supportChat: NotRequired["GroupSupportChat"]
     memberPubKey: NotRequired[str]
-    userMemberKeyStatus: "KeySendStatus"
     relayLink: NotRequired[str]
     memberVerifiedCode: NotRequired["SecurityCode"]
 
@@ -2093,29 +2092,6 @@ class InvitedBy_unknown(TypedDict):
 InvitedBy = InvitedBy_contact | InvitedBy_user | InvitedBy_unknown
 
 InvitedBy_Tag = Literal["contact", "user", "unknown"]
-
-class KeySendStatus_sent(TypedDict):
-    type: Literal["sent"]
-
-class KeySendStatus_failed(TypedDict):
-    type: Literal["failed"]
-
-class KeySendStatus_error(TypedDict):
-    type: Literal["error"]
-    sendError: str
-
-class KeySendStatus_attempts(TypedDict):
-    type: Literal["attempts"]
-    sendAttempts: int  # int
-
-KeySendStatus = (
-    KeySendStatus_sent
-    | KeySendStatus_failed
-    | KeySendStatus_error
-    | KeySendStatus_attempts
-)
-
-KeySendStatus_Tag = Literal["sent", "failed", "error", "attempts"]
 
 class LinkContent_page(TypedDict):
     type: Literal["page"]

@@ -2784,7 +2784,6 @@ export interface GroupMember {
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
   memberPubKey?: string
-  userMemberKeyStatus: KeySendStatus
   relayLink?: string
   memberVerifiedCode?: SecurityCode
 }
@@ -2994,38 +2993,6 @@ export namespace InvitedBy {
 
   export interface Unknown extends Interface {
     type: "unknown"
-  }
-}
-
-export type KeySendStatus = 
-  | KeySendStatus.Sent
-  | KeySendStatus.Failed
-  | KeySendStatus.Error
-  | KeySendStatus.Attempts
-
-export namespace KeySendStatus {
-  export type Tag = "sent" | "failed" | "error" | "attempts"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Sent extends Interface {
-    type: "sent"
-  }
-
-  export interface Failed extends Interface {
-    type: "failed"
-  }
-
-  export interface Error extends Interface {
-    type: "error"
-    sendError: string
-  }
-
-  export interface Attempts extends Interface {
-    type: "attempts"
-    sendAttempts: number // int
   }
 }
 
