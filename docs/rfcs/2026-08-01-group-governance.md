@@ -232,6 +232,11 @@ sequence, because p2p groups have no total order; concurrent entries are sibling
 Entries are gossiped like any other governance event, forwardable by anyone under transport rule 1, and every member
 retains the whole log. It is small: its size is proportional to membership *changes*, not to messages.
 
+**Key uniqueness.** A log entry adding a member whose `MemberKey` already appears for a different member is invalid.
+Without this, one signature verifies as two votes whenever an attacker controls two member records, which costs
+nothing once it controls either. Keys are already TOFU-pinned per member; the log makes them checkable across members
+as well.
+
 **Enfranchisement.** A member joins the electorate only when its `Added` entry has been countersigned by at least
 `witnessCount` (default 2) distinct already-enfranchised members other than the author, each publishing a `Confirmed`
 entry attesting that it completed a connection handshake with the subject. This is the load-bearing rule, and it needs
@@ -292,7 +297,11 @@ New chat protocol events (JSON, version-gated): `x.grp.gov.enable` (above), and:
   state it was proposed against. It names the *proposal*, not the certificate, because certificates are not canonical:
   each member re-serves its own as-applied vote set (see "Catch-up and recovery"), so honest members at the same version
   would otherwise compute different chain values. `action = {type: "replaceAdmins", admins: [MemberId]}` with the
-  proposed member IDs sorted. `proposer` is the proposer's `MemberId`, carried explicitly so that forwarded copies can
+  proposed member IDs sorted, non-empty, and every named member enfranchised at the cited frontier; a receiver rejects
+  the proposal otherwise, since `admins: []` would otherwise be a valid one-aye proposal leaving the group with no
+  admins at all, and therefore no invitations, no moderation and no forwarding, recoverable only by another referendum
+  that an attacker can answer with another abolition at every version. `proposer` is the proposer's `MemberId`, carried
+  explicitly so that forwarded copies can
   be verified without trusting the forwarder's sender claim. `proposalHash` = SHA-256 of the deterministic binary
   encoding
   `smpEncode ("SXGP", governanceId, govVersion, action, logFrontier, prevProposalHash, proposedAt, proposer)`;
@@ -419,20 +428,31 @@ There is no shared clock, so timing is enforced structurally where possible and 
   and the freshness horizon are all derived from it and from the genesis parameters, which are fixed and signed. This
   is deliberate: an earlier draft let the proposer state its own expiry, which let a forward-dated proposal pin removal
   deferral on the whole electorate for months. A proposer can now only lie in one direction, about when it started.
-- **Plausibility check (directly received proposals only):** `proposedAt` must be within a skew allowance (suggested:
-  24h) of the message's broker timestamp. Broker timestamps are set when the message reaches the receiving queue, not
-  when the client reads it, so this check is robust for offline receivers. Forwarded copies are not timing-checked: a
-  forwarder's claimed timestamp proves nothing, and late delivery is indistinguishable from backdating; receivers of
-  forwarded copies are protected by the challenge window instead. Backdating only shortens the attacker's own runway,
-  since ripeness is measured from `proposedAt`, and is bounded by the freshness horizon.
+- **Not-in-the-future check (always, every path):** a proposal whose `proposedAt` is more than a skew allowance
+  (suggested: 24h) ahead of the receiver's clock is rejected. This needs no trust in anyone, since a local clock is
+  enough to see that a referendum claims to have started tomorrow, and it is what stops a forward-dated proposal from
+  pinning `latestClose`, and with it removal deferral, months into the future.
+- **Plausibility check (directly received proposals only):** `proposedAt` must additionally be within the skew
+  allowance of the message's broker timestamp, which is set when the message reaches the receiving queue rather than
+  when the client reads it, so the check holds for offline receivers. Forwarded copies cannot be checked this way: a
+  forwarder's claimed timestamp proves nothing, and late delivery is indistinguishable from backdating. Crucially, the
+  sender chooses which path to use, so this check must never be the only thing standing between a backdated proposal
+  and an early result. It is not; see the anchoring rule below.
 - Voting stays open until the member applies or finally rejects a certificate; there is no separate voting deadline to
   miss. A member that first sees a proposal late, via a forward of a withheld one or via catch-up, votes on the same
   terms as everyone else. Late votes are counted by every member whose challenge window is still open and ignored by
   members already at local finality, which is what turns a withheld-proposal attempt into a visible contested result
   instead of silent capture (see limitations).
-- Receivers do not evaluate a certificate before its `ripeAt` (see "Duration"), which is computed from the
-  certificate's own aye count, so every member agrees on when a given certificate may be judged without needing a
-  shared clock for the referendum as a whole.
+- **Ripeness is anchored locally as well as by the proposal:**
+  `ripeAt = max(proposedAt, firstSeenAt) + delay(A)`, where `firstSeenAt` is when this member first saw the proposal.
+  Taking the later of the two makes the clock robust in both directions. Backdating cannot shorten anyone's objection
+  period, because a member who has just met the proposal starts its delay now regardless of what the proposal claims;
+  forward-dating only postpones the proposer's own result. A member who saw the proposal on day one is unaffected,
+  since `proposedAt` dominates for them. This means ripeness is a local quantity, which is correct: the guarantee it
+  provides ("I get time to object") is inherently about the member holding it, and the quantities that must be
+  identical everywhere, the tally and the mandate ordering, do not depend on it. Catch-up is exempt, because a stale
+  certificate is judged as evidence of a settled outcome rather than raced against a clock; otherwise a member
+  returning after a long absence would have to wait out a fresh delay for a referendum the group finished weeks ago.
 
 The invariant these rules produce: every member gets at least `challengeHours` between seeing a non-unconditional
 result and applying it, no matter how the proposal reached them; and a proposal cannot pass quickly without the support
@@ -452,7 +472,10 @@ to selective inclusion:
   of the tally rule: it asks whether any outstanding vote could change the outcome, so it survives unchanged if the
   rule is later replaced.
 - Any other valid certificate starts a local **challenge window** (`challengeHours`) beginning at
-  `max(certificate receipt, ripeAt)`. The receiving member rebroadcasts the certificate, any member holding
+  `max(local first processing of the certificate, ripeAt)`. "First processing" is when this client actually decoded
+  and validated it, deliberately not the broker timestamp used for freshness: anchoring the window on delivery would
+  give a member who was offline for a month a window that closed before they ever saw the result, which is the
+  opposite of what the window is for. The receiving member rebroadcasts the certificate, any member holding
   valid votes absent from it (in particular, nay voters themselves) resends them, and members who first saw the proposal
   late may cast *new* votes under the late-voting rule above; `x.grp.gov.vote` is idempotent, so no new event is needed.
   The window close is extension-aware and MUST be computed uniformly: the window closes `challengeHours` after the most
@@ -516,10 +539,21 @@ requires:
   in the past, since no referendum can have concluded in the future;
 - a **frontier bound**: the target version may exceed by at most one the highest version attested (`SXGS`) by *several
   distinct* eligible members, outside the target certificate's aye set, and attesting through a path not controlled by
-  the presenter (recommended: three, or every reachable eligible member if fewer). A single attester is not enough (one
-  abstaining confederate is outside the aye set and can attest anything, the same weakness the stale-mandate limitation
-  already concedes for corroboration), so the threshold is what converts fabrication from a one-member trick into a
-  conspiracy of that size.
+  the presenter. A single attester is not enough (one abstaining confederate is outside the aye set and can attest
+  anything, the same weakness the stale-mandate limitation already concedes for corroboration), so the threshold is
+  what converts fabrication from a one-member trick into a conspiracy of that size. The requirement is
+  `min(3, |eligible|)` and is **never zero**: with no eligible attester reachable the certificate is not applied and
+  the member stays pending. An earlier draft's "or every reachable eligible member if fewer" was fail-open in exactly
+  the isolated-victim case it was meant to cover, because an attacker who has shrunk a victim's reachable set to
+  nothing thereby satisfies a requirement of zero. Groups too small to field two eligible attesters cannot use the
+  stale path and must wait for a live certificate or a later version.
+- **for a same-version competitor**, attestations must name *that certificate's* proposal, not merely its version.
+  `SXGS` binds `proposalHash`, but a bound that compares version numbers alone would let honest members' attestations
+  for the legitimate certificate satisfy the check for a rival one proposed in the same round, which is precisely how a
+  two-aye certificate could capture a returning member. Same-version supersede is also exempt from the temporal link
+  below: that rule exists to stop a fabricated *chain* of versions, and a competitor at the version already held is not
+  advancing the chain. Without the exemption the honest certificate could never supersede a rival adopted first, since
+  both were proposed in the same round and neither postdates the other's close.
 
 Conditions 1 and 2 are gap-only; the temporal link and the frontier bound apply to *every* stale adoption, gap 1
 included (see "Catch-up and recovery"). The first three are cheap independent checks but are not individually
@@ -540,7 +574,10 @@ can compel.
 
 Mandate order makes same-version arbitration substantive: a certificate can displace only one with a weaker showing, and
 margins cannot be ground (they are real member signatures), so the attacker-influenced `proposalHash` decides only ties
-between certificates of identical mandate strength. It still cannot elevate an unpassed proposal. Known race: actions
+between certificates of identical mandate strength. It still cannot elevate an unpassed proposal, though in small
+groups identical margins are common rather than exceptional, so the grindable tie-break decides more often there than
+the wording suggests; what it decides between is always two certificates that each passed on real votes. Known race:
+actions
 taken by admins of the losing certificate during the overlap are invalid in the winners' view; clients should surface a
 "contested result" state, and new admins should avoid destructive actions until their certificate's window (including
 extensions) has closed unchallenged.
@@ -795,7 +832,9 @@ See "Related work" at the end of this document for how these choices sit against
   optional field on `XGrpMemNew`), which is the catch-up trigger for members with no other governance traffic.
 - `Subscriber.hs`: **the `xGrpMemIntro` role cap (prerequisite, applies to all p2p groups, not only governed ones)**;
   handlers for the six events; genesis validation (already-governed rejection, non-empty authorising set, signer
-  connectedness, parameter bounds on both ends); proposal timing validation and
+  connectedness, parameter bounds on both ends); proposal validation (non-empty admin set naming enfranchised members,
+  `proposedAt` not in the future on every path, broker-timestamp plausibility on direct receipt); ripeness evaluated as
+  `max(proposedAt, firstSeenAt) + delay(A)` with `firstSeenAt` persisted per proposal; proposal timing validation and
   per-proposer retention cap; certificate validation + challenge-window worker with late-voting support; version-gated
   apply with witnessed-chain version skipping, the same-version mandate-order exception, and the post-apply compact
   announcement; catch-up serving from stored bundles with per-requester served-version bound and rate limiting;
@@ -839,6 +878,7 @@ CREATE TABLE group_referenda
     log_frontier       BLOB    NOT NULL, -- cited membership-log heads; electorate derived from it
     prev_proposal_hash BLOB    NOT NULL,
     proposed_at        TEXT    NOT NULL,
+    first_seen_at      TEXT    NOT NULL, -- local anchor for ripeness; not from the wire
     expires_at         TEXT    NOT NULL,
     proposer_member_id BLOB    NOT NULL,
     proposal_sig       BLOB    NOT NULL,
