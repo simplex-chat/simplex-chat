@@ -736,6 +736,97 @@ private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
 }
 
 @MainActor
+@Test func eventRefreshSkipsItsTranscriptWhenASendStartsDuringChatListLoading() async throws {
+    // Given
+    let chatsProbe = DelayedValue(NativePreviewData.chats)
+    let originalMessages = NativePreviewData.messages(for: "@1")
+    let transcriptProbe = ConversationRefreshProbe(messages: originalMessages)
+    let sendFailure = "The delayed send failed."
+    let sendProbe = DelayedTextSendProbe(failureMessage: sendFailure)
+    let model = AppModel(
+        previewMode: false,
+        sendTextOperation: { _, _, _ in try await sendProbe.send() },
+        loadMessagesOperation: { _, aroundMessageID in
+            await transcriptProbe.load(around: aroundMessageID)
+        },
+        loadChatsOperation: { _ in await chatsProbe.load() }
+    )
+    model.phase = .ready
+    model.profile = NativePreviewData.profile
+    model.chats = NativePreviewData.chats
+    model.selectedChatID = "@1"
+    model.messages = originalMessages
+    model.draft = "Send owns the transcript"
+
+    // When: an event is loading chats and a send starts before its transcript phase.
+    let eventRefresh = Task { await model.refreshAfterEvent() }
+    await chatsProbe.waitUntilRequested()
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await sendProbe.waitUntilRequested()
+    await chatsProbe.release()
+    await eventRefresh.value
+
+    // Then: the event does not start a competing transcript reload.
+    #expect(await transcriptProbe.recordedRequests().isEmpty)
+    #expect(model.messages == originalMessages)
+    #expect(model.isSendingSelectedChat)
+
+    // Cleanup.
+    await sendProbe.release()
+    await send.value
+    #expect(model.phase == .failed(sendFailure))
+}
+
+@MainActor
+@Test func cancelledEventAnchorCannotEraseANewerLoadedQuote() async throws {
+    // Given
+    let originalMessages = NativePreviewData.messages(for: "@1")
+    let oldTarget = try #require(originalMessages.first)
+    let newerTarget = try #require(originalMessages.dropFirst().first)
+    let probe = ConversationRefreshProbe(messages: originalMessages, delayFirstRequest: true)
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { _, aroundMessageID in await probe.load(around: aroundMessageID) },
+        loadChatsOperation: { _ in NativePreviewData.chats }
+    )
+    model.phase = .ready
+    model.profile = NativePreviewData.profile
+    model.chats = NativePreviewData.chats
+    model.selectedChatID = "@1"
+    model.messages = originalMessages
+    let oldQuote = NativeQuote(
+        messageID: oldTarget.id,
+        text: oldTarget.text,
+        sent: oldTarget.sent,
+        author: oldTarget.author
+    )
+    #expect(model.openQuotedMessage(oldQuote, from: 913) == nil)
+    #expect(model.conversationAnchorMessageID == oldTarget.id)
+
+    // When: the anchored event load starts, then a newer loaded quote wins.
+    let eventRefresh = Task { await model.refreshAfterEvent() }
+    await probe.waitUntilFirstRequested()
+    let newerQuote = NativeQuote(
+        messageID: newerTarget.id,
+        text: newerTarget.text,
+        sent: newerTarget.sent,
+        author: newerTarget.author
+    )
+    #expect(model.openQuotedMessage(newerQuote, from: 914) == nil)
+    #expect(model.conversationAnchorMessageID == newerTarget.id)
+    await probe.releaseFirstRequest()
+    await eventRefresh.value
+
+    // Then: the failed old load cannot trigger a latest-page fallback over the newer intent.
+    #expect(await probe.recordedRequests() == [oldTarget.id])
+    #expect(model.messages == originalMessages)
+    #expect(model.conversationAnchorMessageID == newerTarget.id)
+    #expect(model.targetMessageID == newerTarget.id)
+    #expect(model.quoteNavigationError == nil)
+}
+
+@MainActor
 @Test func liveEventRefreshPreservesTheActiveQuoteNavigationAnchor() async throws {
     // Given
     let target = NativePreviewData.messages(for: "@1")[0]

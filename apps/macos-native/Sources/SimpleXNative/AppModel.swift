@@ -1157,7 +1157,7 @@ final class AppModel: ObservableObject {
         guard let userID = profile?.userID else { return }
         do {
             chats = try await loadChats(userID: userID)
-            if let chatID = selectedChatID, !isLoadingConversation {
+            if let chatID = selectedChatID, canRefreshConversation {
                 let anchor = conversationAnchorMessageID
                 let loaded = await loadConversation(
                     chatID: chatID,
@@ -1166,7 +1166,9 @@ final class AppModel: ObservableObject {
                     reportFailure: anchor == nil
                 )
                 if !loaded, anchor != nil, !Task.isCancelled,
-                   selectedChatID == chatID, !isLoadingConversation {
+                   selectedChatID == chatID,
+                   conversationAnchorMessageID == anchor,
+                   !isLoadingConversation {
                     conversationAnchorMessageID = nil
                     _ = await loadConversation(chatID: chatID, showProgress: false)
                 }
