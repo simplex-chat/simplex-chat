@@ -83,6 +83,7 @@ final class AppModel: ObservableObject {
     private var replyTargetNavigationTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
+    private var presentedChatOperationErrorChatID: NativeChat.ID?
     private var pendingQuoteNavigationErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
     private var pendingSendStatusMessages: [NativeChat.ID: String] = [:]
@@ -269,6 +270,7 @@ final class AppModel: ObservableObject {
         guard !previewMode else { return }
         guard canRefreshConversation else { return }
         guard let userID = profile?.userID else { return }
+        let refreshChatID = selectedChatID
         refreshTask?.cancel()
         isRefreshing = true
         refreshTask = Task {
@@ -288,7 +290,11 @@ final class AppModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                phase = .failed(error.localizedDescription)
+                if let refreshChatID {
+                    presentChatOperationFailure(error.localizedDescription, in: refreshChatID)
+                } else {
+                    presentGlobalFailure(error.localizedDescription)
+                }
             }
         }
     }
@@ -899,11 +905,7 @@ final class AppModel: ObservableObject {
 
     private func finishMessageDeletionFailure(_ message: String, in chatID: NativeChat.ID) {
         clearDeletionState()
-        if selectedChatID == chatID {
-            phase = .failed(message)
-        } else {
-            pendingChatOperationErrors[chatID] = message
-        }
+        presentChatOperationFailure(message, in: chatID)
         consumePendingNotificationRoutes()
     }
 
@@ -983,6 +985,7 @@ final class AppModel: ObservableObject {
             if let previousChatID = selectedChatID {
                 saveComposerState(for: previousChatID)
                 saveConversationNotices(for: previousChatID)
+                savePresentedChatOperationFailure(for: previousChatID)
             }
             quoteNavigationError = nil
             replyContextError = nil
@@ -996,7 +999,7 @@ final class AppModel: ObservableObject {
             conversationSearchText = ""
             conversationSearchPresented = false
             if let id, let message = pendingChatOperationErrors.removeValue(forKey: id) {
-                phase = .failed(message)
+                presentChatOperationFailure(message, in: id)
             }
             if let id {
                 quoteNavigationError = pendingQuoteNavigationErrors.removeValue(forKey: id)
@@ -1032,6 +1035,14 @@ final class AppModel: ObservableObject {
         if let sendStatusMessage {
             pendingSendStatusMessages[chatID] = sendStatusMessage
         }
+    }
+
+    private func savePresentedChatOperationFailure(for chatID: NativeChat.ID) {
+        guard presentedChatOperationErrorChatID == chatID else { return }
+        defer { presentedChatOperationErrorChatID = nil }
+        guard case let .failed(message) = phase else { return }
+        pendingChatOperationErrors[chatID] = message
+        phase = .ready
     }
 
     private func saveComposerState(for chatID: NativeChat.ID) {
@@ -1168,11 +1179,21 @@ final class AppModel: ObservableObject {
     }
 
     private func finishSendFailure(_ message: String, in chatID: NativeChat.ID) {
+        presentChatOperationFailure(message, in: chatID)
+    }
+
+    private func presentChatOperationFailure(_ message: String, in chatID: NativeChat.ID) {
         if selectedChatID == chatID {
+            presentedChatOperationErrorChatID = chatID
             phase = .failed(message)
         } else {
             pendingChatOperationErrors[chatID] = message
         }
+    }
+
+    private func presentGlobalFailure(_ message: String) {
+        presentedChatOperationErrorChatID = nil
+        phase = .failed(message)
     }
 
     private func finishPostSendRefreshFailure(_ detail: String, in chatID: NativeChat.ID) {
@@ -1260,7 +1281,7 @@ final class AppModel: ObservableObject {
             if let navigationFailureMessage {
                 quoteNavigationError = navigationFailureMessage
             } else if reportFailure {
-                phase = .failed(error.localizedDescription)
+                presentChatOperationFailure(error.localizedDescription, in: chatID)
             }
             return false
         }
@@ -1319,7 +1340,7 @@ final class AppModel: ObservableObject {
         } catch is CancellationError {
             return
         } catch {
-            phase = .failed(error.localizedDescription)
+            presentGlobalFailure(error.localizedDescription)
         }
     }
 

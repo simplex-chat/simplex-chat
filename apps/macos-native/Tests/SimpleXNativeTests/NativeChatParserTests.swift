@@ -2443,6 +2443,35 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     #expect(model.phase == .failed(failure))
     #expect(model.draft == "Retry this reply")
     #expect(model.replyingTo?.id == original.id)
+
+    // When: a notification opens another chat before the send error is dismissed.
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "#2",
+        messageID: nil
+    ))
+
+    // Then: the reply failure leaves with its draft and does not leak into the new chat.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.phase == .ready)
+    model.selectChat("@1")
+    #expect(model.phase == .failed(failure))
+    #expect(model.draft == "Retry this reply")
+    #expect(model.replyingTo?.id == original.id)
+}
+
+@MainActor
+@Test func globalFailureRemainsVisibleAcrossChatTransitions() {
+    // Given
+    let model = AppModel(previewMode: true)
+    model.phase = .failed("The profile connection is unavailable.")
+
+    // When
+    model.selectChat("#2")
+
+    // Then: failures without a chat owner stay global.
+    #expect(model.phase == .failed("The profile connection is unavailable."))
 }
 
 @MainActor
