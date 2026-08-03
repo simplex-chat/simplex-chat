@@ -9,8 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-// Entry point for badges management. Subsequent screens push via NavigationLink; the enclosing
-// NavigationView (settings or the chat-list banner sheet) provides the sliding animation.
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
@@ -130,8 +128,6 @@ struct BadgesSupportSimplexView: View {
     }
 }
 
-// Hero image reused across badges views and WhatsNewView v7.1. Fallback (no SIMPLEX_ASSETS) is a
-// gradient card carrying the small supporter badge glyph.
 struct PhoneSupporterHero: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme

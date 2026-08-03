@@ -12,8 +12,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 
-// Draft explanation of how private badges work. TODO [badges]: replace lorem ipsum with the real
-// copy once the badge protocol and privacy properties are documented.
+// TODO [badges]: replace lorem ipsum with the real copy once the badge protocol and privacy properties are documented.
 @Composable
 fun BadgesHowItWorksView() {
   ColumnWithScrollBar(
