@@ -1868,13 +1868,17 @@ private actor DelayedTextSendProbe {
 private func makeSendTestModel(
     sendTextOperation: SendTextOperation? = nil,
     sendAttachmentOperation: SendAttachmentOperation? = nil,
-    loadMessageOperation: LoadMessageOperation? = nil
+    loadMessageOperation: LoadMessageOperation? = nil,
+    loadMessagesOperation: LoadMessagesOperation? = nil,
+    loadChatsOperation: LoadChatsOperation? = nil
 ) -> AppModel {
     let model = AppModel(
         previewMode: true,
         sendTextOperation: sendTextOperation,
         sendAttachmentOperation: sendAttachmentOperation,
-        loadMessageOperation: loadMessageOperation
+        loadMessageOperation: loadMessageOperation,
+        loadMessagesOperation: loadMessagesOperation,
+        loadChatsOperation: loadChatsOperation
     )
     return model
 }
@@ -1982,6 +1986,40 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     #expect(model.replyingTo == nil)
     #expect(model.replyContextError == "Your message was sent, but SimpleX could not link it to the original message.")
     #expect(model.phase == .ready)
+    #expect(!model.isSending)
+}
+
+@MainActor
+@Test func committedReplyIsNotRestoredWhenOnlyTheRefreshFails() async throws {
+    // Given
+    let refreshFailure = "The newest messages are temporarily unavailable."
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let model = makeSendTestModel(
+        sendTextOperation: { _, quotedItemID, _ in
+            #expect(quotedItemID == original.id)
+            return .confirmed
+        },
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            #expect(aroundMessageID == nil)
+            throw NativeChatError.unavailable(refreshFailure)
+        }
+    )
+    model.messages = [original]
+    model.draft = "Send this once"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await send.value
+
+    // Then: the committed message is not restored for a duplicate retry.
+    #expect(model.draft.isEmpty)
+    #expect(model.replyingTo == nil)
+    #expect(model.phase == .failed(
+        "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(refreshFailure)"
+    ))
     #expect(!model.isSending)
 }
 
@@ -3120,7 +3158,7 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
         let createdUser = try sendCoreCommand(
             #"/_create user {"profile":null,"pastTimestamp":false,"userChatRelay":false,"clientService":false}"#
         )
-        _ = try NativeChatParser.profile(from: createdUser)
+        let profile = try NativeChatParser.profile(from: createdUser)
         let started = try sendCoreCommand("/_start main=on snd_files=on")
         try NativeChatParser.validateCommandResponse(started)
         let localSend = try sendCoreCommand(
@@ -3131,6 +3169,55 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
             expectedType: "newChatItems",
             requireChatItems: true
         )
+
+        let createdGroup = try sendCoreCommand(
+            #"/_group \#(profile.userID) {"displayName":"Native Reply Check","fullName":""}"#
+        )
+        let groupRoot = try #require(
+            JSONSerialization.jsonObject(with: createdGroup) as? [String: Any]
+        )
+        let groupResult = try #require(groupRoot["result"] as? [String: Any])
+        #expect(groupResult["type"] as? String == "groupCreated")
+        let groupInfo = try #require(groupResult["groupInfo"] as? [String: Any])
+        let groupID = try #require(groupInfo["groupId"] as? NSNumber).int64Value
+        let group = NativeChat(
+            id: "#\(groupID)",
+            apiID: groupID,
+            kind: .group,
+            displayName: "Native Reply Check",
+            image: nil,
+            preview: "",
+            timestamp: nil,
+            unreadCount: 0,
+            sendAsGroup: false
+        )
+        let firstMessage = SimpleXCore.composedMessage(
+            messageContent: ["type": "text", "text": "Original bundled-core message"],
+            quotedItemID: nil
+        )
+        let firstSend = try sendCoreCommand(SimpleXCore.sendCommand(message: firstMessage, to: group))
+        try NativeChatParser.validateCommandResponse(
+            firstSend,
+            expectedType: "newChatItems",
+            requireChatItems: true
+        )
+        let firstRoot = try #require(JSONSerialization.jsonObject(with: firstSend) as? [String: Any])
+        let firstResult = try #require(firstRoot["result"] as? [String: Any])
+        let firstItems = try #require(firstResult["chatItems"] as? [[String: Any]])
+        let firstItem = try #require(firstItems.first?["chatItem"] as? [String: Any])
+        let firstMeta = try #require(firstItem["meta"] as? [String: Any])
+        let firstItemID = try #require(firstMeta["itemId"] as? NSNumber).int64Value
+
+        let replyMessage = SimpleXCore.composedMessage(
+            messageContent: ["type": "text", "text": "Bundled-core reply"],
+            quotedItemID: firstItemID
+        )
+        let replySend = try sendCoreCommand(SimpleXCore.sendCommand(message: replyMessage, to: group))
+        let replyReceipt = try NativeChatParser.validateSendResponse(
+            replySend,
+            quotedItemID: firstItemID
+        )
+        #expect(replyReceipt.replyContextConfirmed)
 
         let originalURL = temporaryDirectory.appendingPathComponent("original.jpg")
         let encryptedURL = temporaryDirectory.appendingPathComponent("encrypted.jpg")

@@ -341,6 +341,8 @@ final class AppModel: ObservableObject {
         let sendTextOperation = sendTextOperation
         let sendAttachmentOperation = sendAttachmentOperation
         let loadMessageOperation = loadMessageOperation
+        let loadMessagesOperation = loadMessagesOperation
+        let loadChatsOperation = loadChatsOperation
         sendTask = Task { [weak self] in
             var draftWasSent = false
             var quoteCommitResolved = false
@@ -421,14 +423,24 @@ final class AppModel: ObservableObject {
                         try Task.checkCancellation()
                     }
                 }
-                let sentMessages = try await core.loadMessages(chatID: chat.id)
+                let sentMessages: [NativeMessage]
+                if let loadMessagesOperation {
+                    sentMessages = try await loadMessagesOperation(chat.id, nil)
+                } else {
+                    sentMessages = try await core.loadMessages(chatID: chat.id)
+                }
                 try Task.checkCancellation()
                 if self?.selectedChatID == chat.id {
                     self?.conversationAnchorMessageID = nil
                     self?.messages = sentMessages
                 }
                 if let userID = self?.profile?.userID {
-                    let loadedChats = try await core.loadChats(userID: userID)
+                    let loadedChats: [NativeChat]
+                    if let loadChatsOperation {
+                        loadedChats = try await loadChatsOperation(userID)
+                    } else {
+                        loadedChats = try await core.loadChats(userID: userID)
+                    }
                     try Task.checkCancellation()
                     self?.chats = loadedChats
                 }
@@ -439,8 +451,12 @@ final class AppModel: ObservableObject {
                 if !draftWasSent { self?.restoreFailedDraft(text, in: chat.id) }
                 self?.invalidateReplyContext(in: chat.id)
             } catch {
-                if !draftWasSent { self?.restoreFailedDraft(text, in: chat.id) }
-                self?.finishSendFailure(error.localizedDescription, in: chat.id)
+                if draftWasSent {
+                    self?.finishPostSendRefreshFailure(error.localizedDescription, in: chat.id)
+                } else {
+                    self?.restoreFailedDraft(text, in: chat.id)
+                    self?.finishSendFailure(error.localizedDescription, in: chat.id)
+                }
             }
         }
     }
@@ -1101,6 +1117,11 @@ final class AppModel: ObservableObject {
         } else {
             pendingChatOperationErrors[chatID] = message
         }
+    }
+
+    private func finishPostSendRefreshFailure(_ detail: String, in chatID: NativeChat.ID) {
+        let message = "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(detail)"
+        finishSendFailure(message, in: chatID)
     }
 
     @discardableResult
