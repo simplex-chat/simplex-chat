@@ -209,7 +209,11 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-  Box(Modifier.fillMaxSize()) {
+  Box(
+    Modifier
+      .fillMaxSize()
+      .then(if (appPlatform.isDesktop) Modifier.background(MaterialTheme.colors.background) else Modifier)
+  ) {
     if (oneHandUI.value) {
       ChatListWithLoadingScreen(searchText, listState)
       Column(Modifier.align(Alignment.BottomCenter)) {
