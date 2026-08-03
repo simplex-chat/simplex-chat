@@ -65,6 +65,49 @@ import Testing
 }
 
 @MainActor
+@Test func selectionBarActionsWorkAfterTranscriptLosesFocus() throws {
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first)
+
+    model.selectMessage(original.id, modifiers: [])
+    model.transcriptFocused = false
+    model.replyToSelectedMessage()
+
+    #expect(model.replyingTo?.id == original.id)
+    #expect(model.selectedMessageIDs.isEmpty)
+
+    model.cancelReply()
+    model.selectMessage(original.id, modifiers: [])
+    model.transcriptFocused = false
+    model.requestDeleteSelectedMessages()
+
+    #expect(model.showingDeleteConfirmation)
+}
+
+@MainActor
+@Test func cancellingReplyPreservesTheDraftAndAttachments() throws {
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first)
+    let attachment = PendingAttachment(
+        id: UUID(),
+        url: URL(fileURLWithPath: "/tmp/reply-photo.jpg"),
+        fileName: "reply-photo.jpg",
+        kind: .image,
+        byteCount: 10,
+        previewImage: nil
+    )
+    model.draft = "Keep this draft"
+    model.pendingAttachments = [attachment]
+    model.beginReply(to: original)
+
+    model.cancelReply()
+
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep this draft")
+    #expect(model.pendingAttachments == [attachment])
+}
+
+@MainActor
 @Test func notificationChatTransitionCannotLeakAReplyIntoAnotherConversation() throws {
     // Given
     let model = AppModel(previewMode: true)

@@ -214,6 +214,21 @@ struct ConversationView: View {
 
     private func composer(chat: NativeChat) -> some View {
         VStack(spacing: 0) {
+            if !model.selectedMessageIDs.isEmpty {
+                MessageSelectionBar(
+                    count: model.selectedMessageIDs.count,
+                    canReply: model.selectedMessagesInTranscriptOrder.count == 1
+                        && chat.kind.canReply
+                        && !model.isSending,
+                    canDelete: model.canDeleteSelectedMessages,
+                    reply: model.replyToSelectedMessage,
+                    copy: model.copySelectedMessages,
+                    delete: model.requestDeleteSelectedMessages,
+                    clear: model.clearMessageSelection
+                )
+                Divider()
+            }
+
             if let message = model.replyingTo {
                 ReplyContextBar(message: message, chat: chat, cancel: model.cancelReply)
                 Divider()
@@ -282,6 +297,48 @@ struct ConversationView: View {
             .padding(12)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+private struct MessageSelectionBar: View {
+    let count: Int
+    let canReply: Bool
+    let canDelete: Bool
+    let reply: () -> Void
+    let copy: () -> Void
+    let delete: () -> Void
+    let clear: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("\(count) selected")
+                .font(.callout.weight(.medium))
+
+            Spacer(minLength: 8)
+
+            if canReply {
+                Button(action: reply) {
+                    Label("Reply", systemImage: "arrowshape.turn.up.left")
+                }
+            }
+
+            Button(action: copy) {
+                Label("Copy", systemImage: "doc.on.doc")
+            }
+
+            Button(role: .destructive, action: delete) {
+                Label("Delete", systemImage: "trash")
+            }
+            .disabled(!canDelete)
+
+            Button("Done", action: clear)
+        }
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .accessibilityElement(children: .contain)
     }
 }
 

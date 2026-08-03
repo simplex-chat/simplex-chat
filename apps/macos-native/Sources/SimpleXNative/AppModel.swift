@@ -450,14 +450,14 @@ final class AppModel: ObservableObject {
     }
 
     func copySelectedMessages() {
-        guard transcriptFocused, !selectedMessageIDs.isEmpty else { return }
+        guard !selectedMessageIDs.isEmpty else { return }
         let text = selectedMessagesInTranscriptOrder.map(\.text).joined(separator: "\n\n")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }
 
     func requestDeleteSelectedMessages() {
-        guard transcriptFocused, canDeleteSelectedMessages else { return }
+        guard canDeleteSelectedMessages else { return }
         showingDeleteConfirmation = true
     }
 
