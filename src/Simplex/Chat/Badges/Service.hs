@@ -18,17 +18,24 @@ module Simplex.Chat.Badges.Service
     ServicePaymentDestination (..),
     BadgeServiceErrorCode (..),
     BadgeCatalog,
-    BadgeStatement,
-    BadgeBalance,
+    BadgeStatement (..),
+    BadgeBalance (..),
+    StatementEntry (..),
+    StatementEntryType (..),
+    StatementCreditType (..),
+    StatementDebitType (..),
   ) where
 
+import qualified Data.Aeson as J
+import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8, Word16, Word32)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Store
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Version (Version (..), VersionScope)
+import Simplex.Messaging.Version (VersionScope)
+import Simplex.Messaging.Version.Internal (Version (..))
 
 data BadgeServiceVersion
 
@@ -41,7 +48,7 @@ pattern VersionBadgeService v = Version v
 
 data BadgeServiceRequest = BadgeServiceRequest
   { version :: VersionBadgeService,
-    purchaseKey :: Maybe C.PublicKeyEd25519, -- absent for BSCGetBadgeCatalog, required for other commands
+    purchaseKey :: Maybe C.PublicKeyEd25519, -- optional for BSCGetBadgeCatalog, required for other commands
     request :: BadgeServiceCommand
   }
 
@@ -104,7 +111,8 @@ data BadgeUpgrade = BadgeUpgrade
 
 data BadgeServiceResponse
   = BSPBadgeCatalog
-      { catalog :: BadgeCatalog
+      { catalog :: BadgeCatalog,
+        badgeStatement :: Maybe BadgeStatement -- for signed getBadgeCatalog
       }
   | BSPBadgeInvoice
       { invoiceId :: InvoiceId,
@@ -118,13 +126,9 @@ data BadgeServiceResponse
         expiresAt :: UTCTime,
         paymentTo :: ServicePaymentDestination
       }
-  | BSPNewBadge
-      { credential :: BadgeCredential,
-        receipt :: Maybe Text, -- not provided for lifetime badges
-        statement :: BadgeStatement
-      }
   | BSPBadgeCredential
-      { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause/transfer
+      { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause
+        receipt :: Maybe Text, -- not provided for lifetime badges
         statement :: BadgeStatement
       }
   | BSPError
@@ -147,9 +151,50 @@ data ServicePaymentDestination
 
 data BadgeCatalog
 
-data BadgeStatement
+data BadgeStatement = BadgeStatement
+  { entries :: [StatementEntry],
+    previousEntryId :: Maybe Text -- matches the client's asserted entryId, absent for the full ledger
+  }
+  deriving (Show)
 
-data BadgeBalance
+data BadgeBalance = BadgeBalance
+  { lastEntry :: StatementEntry
+  }
+  deriving (Show)
+
+data StatementEntry = StatementEntry
+  { entryId :: Text,
+    changeMonths :: Int,
+    balanceMonths :: Int,
+    balanceStartTs :: UTCTime,
+    balanceBadgeType :: BadgeType,
+    wasPausedSince :: Maybe UTCTime,
+    createdAt :: UTCTime,
+    entryType :: StatementEntryType
+  }
+  deriving (Show)
+
+data StatementEntryType = SECredit {credit :: StatementCreditType} | SEDebit {debit :: StatementDebitType}
+  deriving (Show)
+
+data StatementCreditType
+  = SCPayment {invoiceId :: Maybe InvoiceId} -- absent for store and code payments
+  | SCCharge {chargeId :: Int64}
+  | SCSupport
+  | SCTransferIn {fromPurchaseKey :: C.PublicKeyEd25519}
+  | SCOpening
+  | SCUnknown {tag :: Text, json :: J.Object}
+  deriving (Show)
+
+data StatementDebitType
+  = SDRefund
+  | SDUpgrade {toPurchaseKey :: C.PublicKeyEd25519}
+  | SDTransferOut {toPurchaseKey :: C.PublicKeyEd25519}
+  | SDSupport
+  | SDBadge
+  | SDLapse
+  | SDUnknown {tag :: Text, json :: J.Object}
+  deriving (Show)
 
 data BadgeServiceErrorCode
   = BSEBadRequest

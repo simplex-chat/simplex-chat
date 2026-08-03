@@ -10,7 +10,7 @@ A request is an envelope: `version` — the client's protocol version; `purchase
 
 ## Identity
 
-Each purchase runs under a fresh Ed25519 key pair; `purchaseKey` is its public part and identifies the badge. The service cannot link purchases of one user; the exceptions are the declared upgrades below. `getBadgeCatalog` is the one unsigned command and omits `purchaseKey`; every other command is signed with the key. The agent delivers the verified signer key alongside the request; the service rejects a `purchaseKey` that differs from it with `bad_request`, and a key it holds no record of with `unknown_purchase_key`.
+Each purchase runs under a fresh Ed25519 key pair; `purchaseKey` is its public part and identifies the badge. The service cannot link purchases of one user; the exceptions are the declared upgrades below. `getBadgeCatalog` may omit `purchaseKey`: unsigned, it returns the catalog alone; signed, its response adds the purchase's `badgeStatement` — a client holding a lapsed badge checks for grants in the same request that prices a new purchase, and buys under a fresh key only when the statement shows none. Every other command requires the key and is signed with it. The agent delivers the verified signer key alongside the request; the service rejects a `purchaseKey` that differs from it with `bad_request`, and a key it holds no record of with `unknown_purchase_key`.
 
 A purchase record is created by `getBadgeInvoice`, or by `purchaseBadge` funded with `apple`, `google`, or `code`; `transferBadge` creates the receiving one (post-MVP).
 
@@ -19,7 +19,7 @@ A purchase record is created by `getBadgeInvoice`, or by `purchaseBadge` funded 
 A timeout hides the outcome, so the client repeats the identical signed request at its next trigger, never on a poll timer.
 
 - `getBadgeInvoice` — returns the open invoice again; a new invoice is created only when none is open.
-- `purchaseBadge` — a payment already granted returns the same `newBadge` and writes nothing.
+- `purchaseBadge` — a payment already granted returns the same `badgeCredential` and writes nothing.
 - `upgradeBadgeSubscription` — evidence already applied returns the same result and writes nothing.
 - `issueBadge` — repeated within an issued period, returns the cached credential and writes nothing.
 - `transferBadge` — a receipt used by the same key returns the same result; used by another key, `receipt_used`.
@@ -28,13 +28,13 @@ A timeout hides the outcome, so the client repeats the identical signed request 
 
 `purchaseBadge`, `upgradeBadgeSubscription`, and `issueBadge` carry `badgeRequest`, the signer's input (`BadgeRequest`, `Simplex.Chat.Badges`): the service signs exactly this content or rejects the command. The proposed `badgeExpiry` is capped by the funded coverage (`sundayAfter`, model §3); its absence requests a lifetime credential; `badgeExtra` is reserved and must be empty.
 
-- `getBadgeCatalog` → `badgeCatalog`.
+- `getBadgeCatalog` → `badgeCatalog` — the products and offers; signed, also the purchase's `badgeStatement`.
 - `getBadgeInvoice` → `badgeInvoice` — prices the offer for `badgeInfo` and `paymentVia` (`card` — Stripe; `crypto` — btc, xmr): `badgeType`, `months`, `price`, `discount`, the upgrade `credit`, `amount` = price − discount − credit, `expiresAt`, and `paymentTo` — `url` for card; `address` and `cryptoAmount` for crypto. Offer state is checked here only: `deprecated` is still accepted, `disabled` is rejected, an inactive product yields `product_unavailable`.
-- `purchaseBadge` → `newBadge` — verifies the funding (`apple` JWS offline; `google` token via the Publisher API; `invoice` against webhook-confirmed settlement, `payment_pending` until it lands; `code`), records the grant, and issues the first credential, in one round trip. `receipt` is the recovery bearer secret (model § recovery); the service stores its hash; lifetime badges receive none.
+- `purchaseBadge` → `badgeCredential` — verifies the funding (`apple` JWS offline; `google` token via the Publisher API; `invoice` against webhook-confirmed settlement, `payment_pending` until it lands; `code`), records the grant, and issues the first credential, in one round trip. `receipt` is the recovery bearer secret (model § recovery); the service stores its hash; lifetime badges receive none.
 - `upgradeBadgeSubscription` → `badgeCredential` — the app-led store subscription change, on the same key: verifies the store evidence of the replaced subscription and records the new plan; an immediate upgrade returns the new credential, a deferred change returns none.
 - `issueBadge` → `badgeCredential` — issues the next period from the balance, the only source of issuance. The ledger is advanced first; the credential is signed before the consume and issuance rows are written, in one transaction. An exhausted balance yields no `credential`; the `statement` shows why. Issuing on a paused badge resumes it (model 2.13).
 - `pauseBadge` (post-MVP) → `badgeCredential` — suspends issuance and lapse (model 2.13).
-- `transferBadge` (post-MVP) → `newBadge` — the receipt moves the remaining balance and the provider binding to the signing key; the transferred period's re-issue consumes a month, and the response carries a fresh receipt, retiring the presented one. Lifetime badges are not transferable by the op — support handles them.
+- `transferBadge` (post-MVP) → `badgeCredential` — the receipt moves the remaining balance and the provider binding to the signing key; the transferred period's re-issue consumes a month, and the response carries a fresh receipt, retiring the presented one. Lifetime badges are not transferable by the op — support handles them.
 
 ## Upgrades
 

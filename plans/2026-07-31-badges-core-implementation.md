@@ -24,12 +24,59 @@
   - `grace_until` — the provider grace/hold deadline (UX 2.4 payment failed; 2.6 state 5)
   - `exception` — the provider exception state: partial or over payment (UX 2.1)
 - The badge–user match for `users.shown_badge_id` is enforced in code.
-- `badge_ledger.entry_type` uses the service `badge_ledger.entry_type` values (CHECK in the service schema).
+- `badge_ledger` has one definition — the `badgeLedgerTable` constant in the client migration; the service schema re-uses it literally.
 - Settings (reminders opt-out; "Show new badges from Monday", post-MVP) are app settings, not schema.
+
+### `badge_ledger`
+
+A verbatim replica of the service ledger: the service is the only author; rows arrive in statements; the last row is the balance; each row is verifiable from its predecessor.
+
+| column | meaning |
+|---|---|
+| `entry_id` | local autoincrement; PK; never on the wire |
+| `entry_uuid` | service-assigned UUIDv7; sent both ways; UNIQUE index |
+| `badge_purchase_id` | FK → `badge_purchases` |
+| `change_months` | months added or removed: `+3` credit, `−1` debit |
+| `balance_months` | unused months after this entry |
+| `balance_start_ts` | start of the unused balance, after this entry |
+| `balance_badge_type` | the type of the unused balance, after this entry |
+| `was_paused_since` | set on the entry ending a pause: paused from this time until this entry |
+| `service_created_at` | service time of the entry |
+| `created_at` | local time the row was stored |
+| `entry_type` | `credit` \| `debit` |
+| `entry_credit_type` | the `type` tag of the `credit` value — any string, known or not |
+| `entry_debit_type` | the `type` tag of the `debit` value — any string, known or not |
+| `entry_type_unknown` | client only, added via ALTER TABLE after the shared table: 1 when the tag is beyond the client's version; the typed reference columns stay NULL |
+| `entry_type_value` | client only, added via ALTER TABLE: the credit/debit object JSON, verbatim; present only for unknown tags; re-decoded after upgrade |
+| `invoice_id` | field of `credit(payment)`; FK → `payments` |
+| `charge_id` | field of `credit(charge)`; FK → `charges` |
+| `from_purchase_id` | field of `credit(transferIn)`; FK → `badge_purchases`, nullable — the source may not exist locally |
+| `to_purchase_id` | field of `debit(upgrade)` / `debit(transferOut)`; FK → `badge_purchases` |
+
+| kind | type | meaning | when |
+|---|---|---|---|
+| credit | `payment` | months credited: a settled non-recurring payment — card, crypto, code, store one-time | MVP |
+| credit | `charge` | months credited: one subscription charge, the first included | MVP |
+| credit | `support` | months credited by support — compensation, gift | MVP |
+| credit | `transferIn` | months arriving via transfer | post-MVP |
+| credit | `opening` | balance restated: the ledger is reset to the stated amount, no relation to the previous row | MVP |
+| debit | `refund` | balance removed: refund or chargeback | MVP |
+| debit | `upgrade` | balance converted into an upgrade's credit | post-MVP |
+| debit | `transferOut` | balance transferred out | post-MVP |
+| debit | `support` | balance removed by support — leaked code batch | MVP |
+| debit | `badge` | one month spent on the badge — a credential issued | MVP |
+| debit | `lapse` | elapsed unissued months removed | MVP |
+
+```
+entry = credit — creditType: payment {invoiceId} | charge {chargeId} | support | transferIn {fromPurchaseKey} | opening
+      | debit  — debitType: refund | upgrade {toPurchaseKey} | transferOut {toPurchaseKey} | support | badge | lapse
+```
+
+The protocol entry (`StatementEntry`, §4): `entryId`, `changeMonths`, `balanceMonths`, `balanceStartTs`, `balanceBadgeType`, `wasPausedSince`?, `createdAt`, `entryType` — the same sum with wire references.
 
 ## 2. Badge RPC service schema
 
-`plans/2026-07-31-badges-service-schema.sql` — Postgres; the bot schema, extended with the purchase/ledger layer.
+`plans/2026-07-31-badges-service-schema.sql` — SQLite, like the client (the Postgres variant is written when the schema is final); the bot schema, extended with the purchase/ledger layer.
 
 ## 3. Client types
 
@@ -58,14 +105,14 @@ Enums:
 - `BadgeProvider`
 - `BadgePaymentStatus`
 - `BadgePurchaseStatus`
-- `GrantSource`
-- `DebitReason`
 - `BadgeAlertKind`
 
 Tagged sums:
 
 - `BadgeProductType` — text with an unknown-tag catch-all, the `BadgeType` shape
-- `BadgeLedgerEntryType` — the composite `badge_ledger.entry_type` text (§2)
+- `LedgerEntryType` — `entry_type` with `credit_type` / `debit_type` (§2)
+- `LedgerCreditType`
+- `LedgerDebitType`
 
 Reused from `Simplex.Chat.Badges`:
 
@@ -89,8 +136,12 @@ Protocol types — `src/Simplex/Chat/Badges/Service.hs`, one constructor/field p
 - `ServicePaymentDestination`
 - `BadgeServiceErrorCode`
 - `BadgeCatalog` — undefined
-- `BadgeStatement` — undefined
-- `BadgeBalance` — undefined
+- `BadgeStatement`
+- `BadgeBalance`
+- `StatementEntry`
+- `StatementEntryType`
+- `StatementCreditType`
+- `StatementDebitType`
 
 Instances — added at implementation; enums follow the `BadgeType` conventions (Badges.hs:114); the unions encode the JTD discriminator `type`:
 
@@ -102,20 +153,24 @@ Instances — added at implementation; enums follow the `BadgeType` conventions 
 
 `docs/protocol/badges-rpc.schema.json` — the JTD schema (definitions `request` and `response`); `docs/protocol/badges-rpc.md` — the protocol description (identity, idempotency, op semantics, statement, errors).
 
-A request is an envelope: `version`; `purchaseKey`? (absent only for `getBadgeCatalog`; the command is signed with it); `request` — the command, discriminated on `type`. Responses discriminate on `type`; response types are badge-namespaced, fields inside are plain.
+A request is an envelope: `version`; `purchaseKey`? (optional for `getBadgeCatalog` — signed, the response adds the purchase's `statement`; required for other commands, which are signed with it); `request` — the command, discriminated on `type`. Responses discriminate on `type`; response types are badge-namespaced, fields inside are plain.
 
 | request `type` | request fields (beyond `purchaseKey`, `version`) | response `type` | response fields |
 |---|---|---|---|
-| `getBadgeCatalog` (unsigned) | — | `badgeCatalog` | `catalog` |
+| `getBadgeCatalog` (signature optional) | — | `badgeCatalog` | `catalog`<br>`badgeStatement`? (for signed requests) |
 | `getBadgeInvoice` | `offerId`<br>`badgeInfo {badgeType, badgeExpiry?, badgeExtra}`<br>`paymentVia` — `card`: `provider`; `crypto`: `currency`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeInvoice` | `invoiceId`<br>`badgeType`<br>`months`<br>`price`<br>`discount`?<br>`credit`?<br>`amount` (= price − discount − credit)<br>`currency`<br>`expiresAt`<br>`paymentTo` — `card`: `provider`, `url`; `crypto`: `currency`, `address`, `cryptoAmount` |
-| `purchaseBadge` | `badgeRequest` — `masterKey`, `badgeInfo`<br>`payment` — `apple`: `jws`; `google`: `token`; `invoice`: `invoiceId`; `code`: `code`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `newBadge` | `credential`<br>`receipt`? (not provided for lifetime badges)<br>`statement` |
+| `purchaseBadge` | `badgeRequest` — `masterKey`, `badgeInfo`<br>`payment` — `apple`: `jws`; `google`: `token`; `invoice`: `invoiceId`; `code`: `code`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeCredential` | `credential`<br>`receipt`? (not provided for lifetime badges)<br>`statement` |
 | `upgradeBadgeSubscription` | `badgeRequest`<br>`payment` — `apple`: `jws`; `google`: `token`<br>`balance` | `badgeCredential` | `credential`?<br>`statement` |
 | `issueBadge` | `badgeRequest`<br>`balance` | `badgeCredential` | `credential`? (absent when the balance is exhausted)<br>`statement` |
 | `pauseBadge` (post-MVP) | — | `badgeCredential` | `credential`?<br>`statement` |
-| `transferBadge` (post-MVP) | `badgeRequest`<br>`receipt` | `newBadge` | `credential`<br>`receipt`?<br>`statement` |
+| `transferBadge` (post-MVP) | `badgeRequest`<br>`receipt` | `badgeCredential` | `credential`<br>`receipt`?<br>`statement` |
 | any, on failure | — | `error` | `code` (incl. `payment_pending`, `code_invalid` / `code_used` / `code_expired`)<br>`message`?<br>`retryAfter`? |
 
-Undefined, pending design: `catalog`, `statement`, `balance`.
+`statement` — record: `entries` — ledger entries; `previousEntryId`? — matches the client's asserted entryId, absent for the full ledger.
+
+`balance` — record: `lastEntry` — the client's last ledger entry.
+
+Undefined, pending design: `catalog`.
 
 ## 5. Commands and events
 

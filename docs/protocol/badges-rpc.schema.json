@@ -93,8 +93,95 @@
       }
     },
     "catalog": {},
-    "statement": {},
-    "balance": {},
+    "statement": {
+      "properties": {
+        "entries": {"elements": {"ref": "ledgerEntry"}}
+      },
+      "optionalProperties": {
+        "previousEntryId": {
+          "type": "string",
+          "metadata": {"comment": "matches the client's asserted entryId, absent for the full ledger"}
+        }
+      }
+    },
+    "balance": {
+      "properties": {
+        "lastEntry": {"ref": "ledgerEntry"}
+      }
+    },
+    "ledgerEntry": {
+      "properties": {
+        "entryId": {"type": "string"},
+        "changeMonths": {"type": "int16"},
+        "balanceMonths": {"type": "uint16"},
+        "balanceStartTs": {"type": "timestamp"},
+        "balanceBadgeType": {"type": "string"},
+        "createdAt": {"type": "timestamp"},
+        "entryType": {"ref": "ledgerEntryType"}
+      },
+      "optionalProperties": {
+        "wasPausedSince": {"type": "timestamp"}
+      }
+    },
+    "ledgerEntryType": {
+      "discriminator": "type",
+      "mapping": {
+        "credit": {
+          "properties": {"credit": {"ref": "ledgerCredit"}}
+        },
+        "debit": {
+          "properties": {"debit": {"ref": "ledgerDebit"}}
+        }
+      }
+    },
+    "ledgerCredit": {
+      "discriminator": "type",
+      "mapping": {
+        "payment": {
+          "optionalProperties": {
+            "invoiceId": {
+              "type": "string",
+              "metadata": {"comment": "absent for store and code payments"}
+            }
+          }
+        },
+        "charge": {
+          "properties": {"chargeId": {"type": "string"}}
+        },
+        "support": {
+          "optionalProperties": {}
+        },
+        "transferIn": {
+          "properties": {"fromPurchaseKey": {"ref": "base64url"}}
+        },
+        "opening": {
+          "optionalProperties": {}
+        }
+      }
+    },
+    "ledgerDebit": {
+      "discriminator": "type",
+      "mapping": {
+        "refund": {
+          "optionalProperties": {}
+        },
+        "upgrade": {
+          "properties": {"toPurchaseKey": {"ref": "base64url"}}
+        },
+        "transferOut": {
+          "properties": {"toPurchaseKey": {"ref": "base64url"}}
+        },
+        "support": {
+          "optionalProperties": {}
+        },
+        "badge": {
+          "optionalProperties": {}
+        },
+        "lapse": {
+          "optionalProperties": {}
+        }
+      }
+    },
     "request": {
       "properties": {
         "version": {"type": "uint16"},
@@ -103,7 +190,7 @@
       "optionalProperties": {
         "purchaseKey": {
           "ref": "purchaseKey",
-          "metadata": {"comment": "absent for getBadgeCatalog, required for other commands"}
+          "metadata": {"comment": "optional for getBadgeCatalog, required for other commands"}
         }
       }
     },
@@ -171,6 +258,12 @@
         "badgeCatalog": {
           "properties": {
             "catalog": {"ref": "catalog"}
+          },
+          "optionalProperties": {
+            "badgeStatement": {
+              "ref": "statement",
+              "metadata": {"comment": "for signed getBadgeCatalog"}
+            }
           }
         },
         "badgeInvoice": {
@@ -198,18 +291,6 @@
             }
           }
         },
-        "newBadge": {
-          "properties": {
-            "credential": {"ref": "credential"},
-            "statement": {"ref": "statement"}
-          },
-          "optionalProperties": {
-            "receipt": {
-              "type": "string",
-              "metadata": {"comment": "not provided for lifetime badges"}
-            }
-          }
-        },
         "badgeCredential": {
           "properties": {
             "statement": {"ref": "statement"}
@@ -217,7 +298,11 @@
           "optionalProperties": {
             "credential": {
               "ref": "credential",
-              "metadata": {"comment": "Nothing when no balance to issueBadge or no current credential for pause/transfer"}
+              "metadata": {"comment": "absent when no balance to issueBadge or no current credential for pause"}
+            },
+            "receipt": {
+              "type": "string",
+              "metadata": {"comment": "not provided for lifetime badges"}
             }
           }
         },
