@@ -13,5 +13,7 @@ const char *sx_core_encrypt_file(void *controller, const char *from_path, const 
 const char *sx_core_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
 const char *sx_core_close_store(void *controller);
 void sx_core_free(const char *value);
+bool sx_try_lock_file(int file_descriptor);
+void sx_unlock_file(int file_descriptor);
 
 #endif

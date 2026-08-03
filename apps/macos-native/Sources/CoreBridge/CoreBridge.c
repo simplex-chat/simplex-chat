@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
 
 typedef void (*hs_init_with_rtsopts_fn)(int *, char ***);
 typedef char *(*chat_migrate_init_fn)(const char *, const char *, const char *, void **);
@@ -101,4 +102,12 @@ const char *sx_core_close_store(void *controller) {
 
 void sx_core_free(const char *value) {
     free((void *)value);
+}
+
+bool sx_try_lock_file(int file_descriptor) {
+    return flock(file_descriptor, LOCK_EX | LOCK_NB) == 0;
+}
+
+void sx_unlock_file(int file_descriptor) {
+    flock(file_descriptor, LOCK_UN);
 }

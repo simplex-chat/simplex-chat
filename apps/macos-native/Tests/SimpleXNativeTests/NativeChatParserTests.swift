@@ -3,6 +3,21 @@ import Foundation
 import Testing
 @testable import SimpleXNative
 
+@Test func processLockAllowsOnlyOneNativeFrontend() throws {
+    // Given
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let lockURL = directory.appendingPathComponent("simplex-native.lock")
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    // When / Then
+    var firstGuard = SingleInstanceGuard(lockURL: lockURL)
+    #expect(firstGuard != nil)
+    #expect(SingleInstanceGuard(lockURL: lockURL) == nil)
+    firstGuard = nil
+    #expect(SingleInstanceGuard(lockURL: lockURL) != nil)
+}
+
 @Test func parsesDesktopChatListResponse() throws {
     let json = #"{"result":{"type":"apiChats","user":{"userId":7},"chats":[{"chatInfo":{"type":"direct","contact":{"contactId":42,"localDisplayName":"Alice","profile":{"displayName":"Alice"}}},"chatItems":[{"meta":{"itemText":"Hello","itemTs":"2026-08-02T20:00:00Z"}}],"chatStats":{"unreadCount":2}}]}}"#
     let chats = try NativeChatParser.chats(from: Data(json.utf8))

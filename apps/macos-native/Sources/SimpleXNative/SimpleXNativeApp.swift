@@ -3,10 +3,16 @@ import SwiftUI
 
 @main
 struct SimpleXNativeApp: App {
+    private let instanceGuard: SingleInstanceGuard
     @StateObject private var model: AppModel
     @StateObject private var notifications: NativeNotificationManager
 
     init() {
+        guard let instanceGuard = SingleInstanceGuard() else {
+            SingleInstanceGuard.activateExistingApplication()
+            Darwin.exit(EXIT_SUCCESS)
+        }
+        self.instanceGuard = instanceGuard
         let notifications = NativeNotificationManager()
         _notifications = StateObject(wrappedValue: notifications)
         _model = StateObject(wrappedValue: AppModel(notificationManager: notifications))

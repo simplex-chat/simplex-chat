@@ -35,6 +35,7 @@ plutil -insert CFBundlePackageType -string APPL ${APP_DIR}/Contents/Info.plist
 plutil -insert CFBundleShortVersionString -string 7.0.0 ${APP_DIR}/Contents/Info.plist
 plutil -insert CFBundleVersion -string 1 ${APP_DIR}/Contents/Info.plist
 plutil -insert LSApplicationCategoryType -string public.app-category.social-networking ${APP_DIR}/Contents/Info.plist
+plutil -insert LSMultipleInstancesProhibited -bool YES ${APP_DIR}/Contents/Info.plist
 plutil -insert LSMinimumSystemVersion -string 14.0 ${APP_DIR}/Contents/Info.plist
 plutil -insert NSHighResolutionCapable -bool YES ${APP_DIR}/Contents/Info.plist
 plutil -insert NSHumanReadableCopyright -string "Copyright © 2020-2026 SimpleX Chat" ${APP_DIR}/Contents/Info.plist
