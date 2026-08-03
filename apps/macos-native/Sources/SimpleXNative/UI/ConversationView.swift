@@ -258,6 +258,7 @@ struct ConversationView: View {
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     .focused($composerFocused)
+                    .accessibilityIdentifier("composer.message")
                     .padding(.horizontal, 12)
                     .padding(.vertical, model.density.tokens.composerPadding)
                     .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
@@ -291,6 +292,7 @@ struct ConversationView: View {
                 .help("Send Message")
                 .accessibilityLabel("Send Message") // [VERIFY] Matches the visible tooltip.
                 .accessibilityInputLabels(["Send Message", "Send"])
+                .accessibilityIdentifier("composer.send")
             }
             .padding(12)
         }
@@ -318,6 +320,7 @@ private struct MessageSelectionBar: View {
                 Button(action: reply) {
                     Label("Reply", systemImage: "arrowshape.turn.up.left")
                 }
+                .accessibilityIdentifier("selection.reply")
             }
 
             Button(action: copy) {
@@ -537,6 +540,7 @@ private struct MessageRow: View {
                             .help("Reply")
                             .accessibilityLabel("Reply") // [VERIFY] Matches the visible tooltip.
                             .accessibilityInputLabels(["Reply", "Quote Message"])
+                            .accessibilityIdentifier("message.\(message.id).reply")
                         }
                     }
                     .contentShape(bubbleShape)
@@ -578,6 +582,7 @@ private struct MessageRow: View {
                 Button("Delete…", role: .destructive, action: delete)
             }
         }
+        .accessibilityIdentifier("message.\(message.id)")
     }
 
     private var bubbleBackground: Color {
@@ -657,6 +662,7 @@ private struct ReplyContextBar: View {
             .help("Show Original Message")
             .accessibilityHint("Moves to the message being replied to in this conversation.")
             .accessibilityInputLabels(["Replying to \(sender)", "Show Original Message"]) // [VERIFY] The first label matches visible text.
+            .accessibilityIdentifier("composer.replyContext")
 
             Spacer(minLength: 8)
 
@@ -668,6 +674,7 @@ private struct ReplyContextBar: View {
             .help("Cancel Reply")
             .accessibilityLabel("Cancel Reply") // [VERIFY] Matches the visible tooltip.
             .accessibilityInputLabels(["Cancel Reply", "Cancel"])
+            .accessibilityIdentifier("composer.cancelReply")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -799,6 +806,7 @@ private struct MessageContentView: View {
                     quote: quote,
                     chatName: chatName,
                     outgoing: message.sent,
+                    containingMessageID: message.id,
                     open: { openQuote(quote) }
                 )
             }
@@ -938,6 +946,7 @@ private struct QuotedMessagePreview: View {
     let quote: NativeQuote
     let chatName: String
     let outgoing: Bool
+    let containingMessageID: Int64
     let open: () -> Void
 
     var body: some View {
@@ -946,6 +955,7 @@ private struct QuotedMessagePreview: View {
             .help("Show Quoted Message")
             .accessibilityHint("Moves to the original message in this conversation.")
             .accessibilityInputLabels([quote.text, "Quoted Message"]) // [VERIFY] The first label matches visible quote text.
+            .accessibilityIdentifier("message.\(containingMessageID).quote")
     }
 
     private var content: some View {
