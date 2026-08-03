@@ -110,9 +110,7 @@ struct ConversationView: View {
                             startsGroup: startsGroup(at: index),
                             endsGroup: endsGroup(at: index),
                             openingAttachment: model.openingAttachmentIDs.contains(message.id),
-                            canReply: chat.kind.canReply
-                                && message.replyable
-                                && !model.isSendingSelectedChat
+                            canReply: model.canReply(to: message)
                         ) {
                             transcriptFocused = true
                             model.selectMessage(message.id, modifiers: NSApp.currentEvent?.modifierFlags ?? [])
@@ -221,6 +219,7 @@ struct ConversationView: View {
                     message: message,
                     chat: chat,
                     canCancel: !model.isSendingSelectedChat,
+                    open: { model.openReplyTarget() },
                     cancel: model.cancelReply
                 )
                 Divider()
@@ -622,25 +621,35 @@ private struct ReplyContextBar: View {
     let message: NativeMessage
     let chat: NativeChat
     let canCancel: Bool
+    let open: () -> Void
     let cancel: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
-            Rectangle()
-                .fill(.tint)
-                .frame(width: 4)
-                .accessibilityHidden(true)
+            Button(action: open) {
+                HStack(spacing: 8) {
+                    Rectangle()
+                        .fill(.tint)
+                        .frame(width: 4)
+                        .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Replying to \(sender)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tint)
-                Text(preview)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Replying to \(sender)")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tint)
+                        Text(preview)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .accessibilityElement(children: .combine)
+            .buttonStyle(.plain)
+            .help("Show Original Message")
+            .accessibilityHint("Moves to the message being replied to in this conversation.")
+            .accessibilityInputLabels(["Replying to \(sender)", "Show Original Message"]) // [VERIFY] The first label matches visible text.
 
             Spacer(minLength: 8)
 

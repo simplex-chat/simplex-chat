@@ -350,6 +350,51 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
 }
 
 @MainActor
+@Test func replyContextNavigatesBackToItsOriginalMessage() throws {
+    // Given
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first)
+    model.beginReply(to: original)
+    model.targetMessageID = nil
+
+    // When
+    let navigation = model.openReplyTarget()
+
+    // Then
+    #expect(navigation == nil)
+    #expect(model.targetMessageID == original.id)
+    #expect(model.replyingTo?.id == original.id)
+}
+
+@MainActor
+@Test func offscreenReplyContextLoadsItsOriginalMessageBeforeScrolling() async throws {
+    // Given
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let probe = DelayedValue([original])
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            #expect(aroundMessageID == original.id)
+            return await probe.load()
+        }
+    )
+    model.beginReply(to: original)
+    model.messages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+
+    // When
+    let navigation = try #require(model.openReplyTarget())
+    await probe.waitUntilRequested()
+    await probe.release()
+    await navigation.value
+
+    // Then
+    #expect(model.messages == [original])
+    #expect(model.targetMessageID == original.id)
+    #expect(model.replyingTo?.id == original.id)
+}
+
+@MainActor
 @Test func deletedOffscreenQuoteShowsLocalErrorWithoutBreakingConversation() async throws {
     // Given
     let quote = NativeQuote(messageID: 902, text: "Deleted original", sent: false, author: "Maya")
@@ -413,6 +458,50 @@ private actor DelayedValue<Value: Sendable> {
     func release() {
         released = true
     }
+}
+
+@MainActor
+@Test func switchingChatsClearsStaleMessagesBeforeTheNewTranscriptLoads() async throws {
+    // Given
+    let oldMessages = NativePreviewData.messages(for: "@1")
+    let newMessages = NativePreviewData.messages(for: "#2")
+    let probe = DelayedValue(newMessages)
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "#2")
+            #expect(aroundMessageID == nil)
+            return await probe.load()
+        }
+    )
+    model.phase = .ready
+    model.profile = NativePreviewData.profile
+    model.chats = NativePreviewData.chats
+    model.selectedChatID = "@1"
+    model.messages = oldMessages
+    let staleReplyTarget = try #require(oldMessages.first)
+
+    // When: the new conversation has not loaded yet.
+    model.selectChat("#2")
+
+    // Then: no message from the previous conversation remains interactive.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.messages.isEmpty)
+    #expect(!model.canReply(to: staleReplyTarget))
+    model.beginReply(to: staleReplyTarget)
+    #expect(model.replyingTo == nil)
+
+    // When: the new transcript arrives.
+    await probe.waitUntilRequested()
+    await probe.release()
+    for _ in 0..<1_000 {
+        if model.messages == newMessages { break }
+        await Task.yield()
+    }
+
+    // Then
+    #expect(model.messages == newMessages)
+    #expect(model.selectedChatID == "#2")
 }
 
 @MainActor

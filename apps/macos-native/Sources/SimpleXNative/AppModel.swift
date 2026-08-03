@@ -176,10 +176,7 @@ final class AppModel: ObservableObject {
     var canReplyToSelectedMessage: Bool {
         guard selectedMessagesInTranscriptOrder.count == 1,
               let message = selectedMessagesInTranscriptOrder.first else { return false }
-        return message.replyable
-            && selectedChat?.kind.canReply == true
-            && !isSendingSelectedChat
-            && !deletionIncludesMessage(message.id, in: selectedChatID)
+        return canReply(to: message)
     }
 
     var canDismissNearestState: Bool {
@@ -442,15 +439,22 @@ final class AppModel: ObservableObject {
     }
 
     func beginReply(to message: NativeMessage) {
-        guard let chat = selectedChat, chat.kind.canReply,
+        guard let chat = selectedChat, canReply(to: message),
               let currentMessage = messages.first(where: { $0.id == message.id }),
-              currentMessage.replyable,
-              !isSendingSelectedChat,
-              !deletionIncludesMessage(currentMessage.id, in: chat.id) else { return }
+              currentMessage.replyable else { return }
         replyingTo = currentMessage
         replyingChatID = chat.id
         clearMessageSelection()
         composerFocusRequest &+= 1
+    }
+
+    func canReply(to message: NativeMessage) -> Bool {
+        guard let chat = selectedChat,
+              chat.kind.canReply,
+              !isSendingSelectedChat,
+              let currentMessage = messages.first(where: { $0.id == message.id }) else { return false }
+        return currentMessage.replyable
+            && !deletionIncludesMessage(currentMessage.id, in: chat.id)
     }
 
     func replyToSelectedMessage() {
@@ -463,6 +467,22 @@ final class AppModel: ObservableObject {
         guard !isSendingSelectedChat else { return }
         replyingTo = nil
         replyingChatID = nil
+    }
+
+    @discardableResult
+    func openReplyTarget() -> Task<Void, Never>? {
+        guard let message = replyingTo,
+              let chatID = selectedChatID,
+              replyingChatID == chatID else { return nil }
+        return openQuotedMessage(
+            NativeQuote(
+                messageID: message.id,
+                text: message.replyPreview,
+                sent: message.sent,
+                author: message.author
+            ),
+            from: message.id
+        )
     }
 
     @discardableResult
@@ -808,6 +828,7 @@ final class AppModel: ObservableObject {
                 saveComposerState(for: previousChatID)
             }
             selectedChatID = id
+            messages = []
             clearMessageSelection()
             restoreComposerState(for: id)
             targetMessageID = nil
