@@ -2848,6 +2848,11 @@ private actor DelayedDeletionProbe {
     #expect(DesktopChatDensity.compact.tokens.avatarSize < DesktopChatDensity.spacious.tokens.avatarSize)
 }
 
+@Test func composerReturnSendsWhileShiftReturnInsertsANewline() {
+    #expect(ComposerKeyboard.returnAction(shiftPressed: false) == .send)
+    #expect(ComposerKeyboard.returnAction(shiftPressed: true) == .insertNewline)
+}
+
 @Test func conversationSearchFindsCaseInsensitiveTextAndWrapsResults() {
     let messages = [
         NativeMessage(id: 1, text: "First PHOTO", timestamp: nil, sent: false, author: nil, deletable: true, content: .text),

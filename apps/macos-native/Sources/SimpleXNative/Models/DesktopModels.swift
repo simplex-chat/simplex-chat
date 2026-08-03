@@ -37,6 +37,17 @@ struct DesktopDensityTokens: Equatable, Sendable {
     let composerPadding: CGFloat
 }
 
+enum ComposerReturnAction: Equatable, Sendable {
+    case send
+    case insertNewline
+}
+
+enum ComposerKeyboard {
+    static func returnAction(shiftPressed: Bool) -> ComposerReturnAction {
+        shiftPressed ? .insertNewline : .send
+    }
+}
+
 enum PendingAttachmentKind: String, Sendable {
     case image
     case video

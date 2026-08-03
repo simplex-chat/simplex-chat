@@ -273,7 +273,17 @@ struct ConversationView: View {
                                 lineWidth: composerFocused ? 2 : 1
                             )
                     }
-                    .onSubmit(model.sendDraft)
+                    .onKeyPress(.return, phases: .down) { keyPress in
+                        switch ComposerKeyboard.returnAction(
+                            shiftPressed: keyPress.modifiers.contains(.shift)
+                        ) {
+                        case .send:
+                            model.sendDraft()
+                            return .handled
+                        case .insertNewline:
+                            return .ignored
+                        }
+                    }
 
                 Button(action: model.sendDraft) {
                     ZStack {
