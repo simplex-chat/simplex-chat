@@ -282,6 +282,7 @@ private final class RemoteCtrlLiveActivityManager {
 
     private var activity: Activity<RemoteCtrlActivityAttributes>?
     private var lifecycleTask: Task<Void, Never>?
+    private var updatingBackgroundTask = UIBackgroundTaskIdentifier.invalid
     private var endingBackgroundTask = UIBackgroundTaskIdentifier.invalid
     private var generation = 0
 
@@ -289,7 +290,7 @@ private final class RemoteCtrlLiveActivityManager {
 
     func start(desktopName: String) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        if activity != nil {
+        if activity != nil || !Activity<RemoteCtrlActivityAttributes>.activities.isEmpty {
             update(reconnecting: false)
             return
         }
@@ -336,10 +337,18 @@ private final class RemoteCtrlLiveActivityManager {
     }
 
     private func update(reconnecting: Bool) {
+        if !reconnecting {
+            beginUpdatingBackgroundTask()
+        }
         let requestedGeneration = generation
         let previousTask = lifecycleTask
         lifecycleTask = Task {
             await previousTask?.value
+            defer {
+                if !reconnecting {
+                    endUpdatingBackgroundTask()
+                }
+            }
             guard requestedGeneration == generation else { return }
             let activities = Activity<RemoteCtrlActivityAttributes>.activities
             activity = activities.first
@@ -352,6 +361,22 @@ private final class RemoteCtrlLiveActivityManager {
                 await activeActivity.update(using: state)
             }
         }
+    }
+
+    private func beginUpdatingBackgroundTask() {
+        guard UIApplication.shared.applicationState != .active,
+              updatingBackgroundTask == .invalid else { return }
+        updatingBackgroundTask = UIApplication.shared.beginBackgroundTask {
+            Task { @MainActor in
+                self.endUpdatingBackgroundTask()
+            }
+        }
+    }
+
+    private func endUpdatingBackgroundTask() {
+        guard updatingBackgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(updatingBackgroundTask)
+        updatingBackgroundTask = .invalid
     }
 
     private func beginEndingBackgroundTask() {

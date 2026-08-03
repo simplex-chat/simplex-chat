@@ -88,6 +88,7 @@ struct SimpleXApp: App {
                         if appState != .stopped {
                             startChatAndActivate {
                                 if chatModel.chatRunning == true {
+                                    RemoteCtrlBGKeepAlive.shared.start()
                                     Task { @MainActor in
                                         RemoteCtrlReconnect.shared.resume()
                                     }
