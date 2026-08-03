@@ -5,8 +5,11 @@ import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -2081,6 +2084,7 @@ fun BoxScope.ChatItemsList(
         }
 
         Box {
+          val memberImageSize = if (appPlatform.isDesktop) 30.dp else MEMBER_IMAGE_SIZE
           val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
           val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
           val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
@@ -2113,7 +2117,7 @@ fun BoxScope.ChatItemsList(
                         memberNames(member, prevMember, memCount),
                         if (prevMember == null && memCount == 1) member.nameBadge else null,
                         Modifier
-                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .padding(start = (memberImageSize * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
@@ -2170,7 +2174,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (memberImageSize * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -2195,7 +2199,7 @@ fun BoxScope.ChatItemsList(
                       Text(
                         chatInfo.groupInfo.chatViewName,
                         Modifier
-                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .padding(start = (memberImageSize * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
@@ -2225,7 +2229,7 @@ fun BoxScope.ChatItemsList(
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         Box(Modifier.clickable { showChatInfo() }) {
                           ProfileImage(
-                            MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier,
+                            memberImageSize * fontSizeSqrtMultiplier,
                             chatInfo.groupInfo.image,
                             chatInfo.groupInfo.chatIconName,
                             backgroundColor = MaterialTheme.colors.background
@@ -2253,7 +2257,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (memberImageSize * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -2826,7 +2830,7 @@ fun BoxScope.FloatingButtons(
   }
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
-  val fabSize = 56.dp
+  val fabSize = if (appPlatform.isDesktop) 34.dp else 56.dp
   val topUnreadCount = remember { derivedStateOf {
     if (bottomUnreadCount.value >= 0) (unreadCount.value - bottomUnreadCount.value).coerceAtLeast(0) else 0 }
   }
@@ -2850,10 +2854,11 @@ fun BoxScope.FloatingButtons(
 
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).align(Alignment.TopEnd)) {
     val density = LocalDensity.current
-    val width = remember { mutableStateOf(250.dp) }
+    val minimumMenuWidth = if (appPlatform.isDesktop) 180.dp else 250.dp
+    val width = remember { mutableStateOf(minimumMenuWidth) }
     DefaultDropdownMenu(
       showDropDown,
-      modifier = Modifier.onSizeChanged { with(density) { width.value = it.width.toDp().coerceAtLeast(250.dp) } },
+      modifier = Modifier.onSizeChanged { with(density) { width.value = it.width.toDp().coerceAtLeast(minimumMenuWidth) } },
       offset = DpOffset(-DEFAULT_PADDING - width.value, 24.dp + fabSize + topPaddingToContent)
     ) {
       ItemAction(
@@ -2965,7 +2970,8 @@ val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
+  val imageSize = if (appPlatform.isDesktop) 30.dp else MEMBER_IMAGE_SIZE
+  MemberProfileImage(imageSize * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable
@@ -2979,6 +2985,24 @@ private fun TopEndFloatingButton(
 ) {
   if (remember { derivedStateOf { unreadCount.value > 0 && !animatedScrollingInProgress.value } }.value) {
     val interactionSource = interactionSourceWithDetection(onClick, onLongClick)
+    if (appPlatform.isDesktop) {
+      DesktopTranscriptButton(
+        modifier = modifier.onRightClick(onLongClick),
+        interactionSource = interactionSource,
+      ) {
+        if (requestedTopScroll.value) {
+          LoadingProgressIndicator()
+        } else {
+          Text(
+            unreadCountStr(unreadCount.value),
+            color = MaterialTheme.colors.primary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+          )
+        }
+      }
+      return
+    }
     FloatingActionButton(
       {}, // no action here
       modifier.size(48.dp).onRightClick(onLongClick),
@@ -3110,9 +3134,14 @@ private fun FloatingDate(
             color = MaterialTheme.colors.secondaryVariant,
             RoundedCornerShape(25.dp)
           )
-          .padding(vertical = 4.dp, horizontal = 8.dp)
+          .border(
+            if (appPlatform.isDesktop) 1.dp else 0.dp,
+            MaterialTheme.colors.onSurface.copy(alpha = if (appPlatform.isDesktop) 0.1f else 0f),
+            RoundedCornerShape(25.dp)
+          )
+          .padding(vertical = if (appPlatform.isDesktop) 3.dp else 4.dp, horizontal = 8.dp)
           .clip(RoundedCornerShape(25.dp)),
-        fontSize = 14.sp,
+        fontSize = if (appPlatform.isDesktop) 12.sp else 14.sp,
         fontWeight = FontWeight.Medium,
         textAlign = TextAlign.Center,
         color = MaterialTheme.colors.secondary
@@ -3193,8 +3222,10 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 private fun DateSeparator(date: Instant) {
   Text(
     text = getTimestampDateText(date),
-    Modifier.padding(vertical = DEFAULT_PADDING_HALF + 4.dp, horizontal = DEFAULT_PADDING_HALF).fillMaxWidth(),
-    fontSize = 14.sp,
+    Modifier
+      .padding(vertical = if (appPlatform.isDesktop) 10.dp else DEFAULT_PADDING_HALF + 4.dp, horizontal = DEFAULT_PADDING_HALF)
+      .fillMaxWidth(),
+    fontSize = if (appPlatform.isDesktop) 12.sp else 14.sp,
     fontWeight = FontWeight.Medium,
     textAlign = TextAlign.Center,
     color = MaterialTheme.colors.secondary
@@ -3395,6 +3426,24 @@ private fun BoxScope.BottomEndFloatingButton(
 ) {
   when {
     showButtonWithCounter.value && !animatedScrollingInProgress.value -> {
+      if (appPlatform.isDesktop) {
+        DesktopTranscriptButton(
+          modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd),
+          onClick = onClick
+        ) {
+          if (requestedBottomScroll.value) {
+            LoadingProgressIndicator()
+          } else {
+            Text(
+              unreadCountStr(unreadCount.value),
+              color = MaterialTheme.colors.primary,
+              fontSize = 12.sp,
+              fontWeight = FontWeight.Medium
+            )
+          }
+        }
+        return
+      }
       FloatingActionButton(
         onClick = onClick,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
@@ -3413,6 +3462,24 @@ private fun BoxScope.BottomEndFloatingButton(
       }
     }
     showButtonWithArrow.value && !animatedScrollingInProgress.value -> {
+      if (appPlatform.isDesktop) {
+        DesktopTranscriptButton(
+          modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd),
+          onClick = onClick
+        ) {
+          if (requestedBottomScroll.value) {
+            LoadingProgressIndicator()
+          } else {
+            Icon(
+              painter = painterResource(MR.images.ic_keyboard_arrow_down),
+              contentDescription = null,
+              modifier = Modifier.size(18.dp),
+              tint = MaterialTheme.colors.primary
+            )
+          }
+        }
+        return
+      }
       FloatingActionButton(
         onClick = onClick,
         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
@@ -3432,6 +3499,31 @@ private fun BoxScope.BottomEndFloatingButton(
     }
     else -> {}
   }
+}
+
+@Composable
+private fun DesktopTranscriptButton(
+  modifier: Modifier,
+  interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+  onClick: () -> Unit = {},
+  content: @Composable BoxScope.() -> Unit
+) {
+  val hovered = interactionSource.collectIsHoveredAsState().value
+  Box(
+    modifier
+      .size(34.dp)
+      .shadow(if (hovered) 4.dp else 2.dp, CircleShape)
+      .background(MaterialTheme.colors.surface.copy(alpha = 0.96f), CircleShape)
+      .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), CircleShape)
+      .clip(CircleShape)
+      .clickable(
+        interactionSource = interactionSource,
+        indication = LocalIndication.current,
+        onClick = onClick
+      ),
+    contentAlignment = Alignment.Center,
+    content = content
+  )
 }
 
 @Composable
@@ -3464,7 +3556,7 @@ private fun LoadingProgressIndicator() {
     contentAlignment = Alignment.Center
   ) {
     CircularProgressIndicator(
-      Modifier.size(30.dp),
+      Modifier.size(if (appPlatform.isDesktop) 18.dp else 30.dp),
       color = MaterialTheme.colors.secondary,
       strokeWidth = 2.dp
     )

@@ -247,6 +247,26 @@ fun ChatItemView(
       val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
 
       val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
+      if (appPlatform.isDesktop) {
+        IconButton(
+          onClick,
+          Modifier
+            .padding(start = if (alignStart) 0.dp else 7.dp, end = if (alignStart) 7.dp else 0.dp)
+            .alpha(if (fullyVisible) 1f else 0f)
+            .background(MaterialTheme.colors.surface.copy(alpha = 0.96f), CircleShape)
+            .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), CircleShape)
+            .size(28.dp),
+          interactionSource = buttonInteractionSource
+        ) {
+          Icon(
+            painterResource(icon),
+            null,
+            Modifier.size(iconSize.coerceAtMost(16.dp)),
+            tint = MaterialTheme.colors.secondary
+          )
+        }
+        return
+      }
       val mixAlpha = 0.6f
       val mixedBackgroundColor = if (fullyVisible) {
         if (MaterialTheme.colors.isLight) {
@@ -301,7 +321,10 @@ fun ChatItemView(
       }
     }
 
-    Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+    Column(
+      modifier = if (appPlatform.isDesktop) Modifier.widthIn(max = 680.dp) else Modifier,
+      horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start
+    ) {
       val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
           cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
       Box {
