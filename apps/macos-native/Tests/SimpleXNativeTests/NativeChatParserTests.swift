@@ -205,6 +205,31 @@ private func messageBodyHeight(_ text: String) -> CGFloat {
     #expect(message.quotedItem == NativeQuote(messageID: 7, text: "Original message", sent: true, author: nil))
 }
 
+@Test func parsesLinkPreviewAsOneClickableVideoCard() throws {
+    let url = "https://youtu.be/ishgn7-NLIU?t=24"
+    let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":24,"itemText":"https://youtu.be/ishgn7-NLIU?t=24"},"content":{"type":"rcvMsgContent","msgContent":{"type":"link","text":"https://youtu.be/ishgn7-NLIU?t=24","preview":{"uri":"https://youtu.be/ishgn7-NLIU?t=24","title":"Video title","description":"Video description","image":"data:image/jpeg;base64,AA==","content":{"type":"video","duration":24}}}}}]}}}"#
+    let message = try #require(NativeChatParser.messages(from: Data(json.utf8)).first)
+    let preview = try #require({
+        if case let .link(preview) = message.content { return preview }
+        return nil
+    }())
+
+    #expect(message.text == url)
+    #expect(preview.uri == url)
+    #expect(preview.title == "Video title")
+    #expect(preview.description == "Video description")
+    #expect(preview.videoDuration == 24)
+    #expect(preview.durationLabel == "0:24")
+    #expect(preview.destination?.absoluteString == url)
+}
+
+@Test func standaloneMessageLinksRequireOneCompleteWebURL() {
+    #expect(NativeMessageLink.standaloneURL(in: " https://youtu.be/ishgn7-NLIU?t=24 \n") != nil)
+    #expect(NativeMessageLink.standaloneURL(in: "See https://simplex.chat") == nil)
+    #expect(NativeMessageLink.standaloneURL(in: "simplex.chat") == nil)
+    #expect(NativeMessageLink.standaloneURL(in: "file:///tmp/private") == nil)
+}
+
 @Test func groupMessagesAndQuotesPreferLocallyDisambiguatedMemberNames() throws {
     // Given
     let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"groupRcv","groupMember":{"localDisplayName":"Maya (work)","memberProfile":{"displayName":"Maya"}}},"meta":{"itemId":9,"itemText":"Reply","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Reply"}},"quotedItem":{"chatDir":{"type":"groupRcv","groupMember":{"localDisplayName":"Jordan (cycling)","memberProfile":{"displayName":"Jordan"}}},"itemId":7,"sentAt":"2026-08-02T19:59:00Z","content":{"type":"text","text":"Original message"}}}]}}}"#

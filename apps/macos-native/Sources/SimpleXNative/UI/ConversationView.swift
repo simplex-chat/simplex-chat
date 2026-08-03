@@ -935,6 +935,12 @@ private struct MessageContentView: View {
             switch message.content {
             case .text:
                 messageText
+            case .link(let preview):
+                linkPreview(preview)
+                if message.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    != preview.uri.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    messageText
+                }
             case .image(let preview, let fileName):
                 mediaPreview(preview: preview, fileName: fileName ?? "Image", video: false)
                 if !message.text.isEmpty { messageText }
@@ -984,6 +990,69 @@ private struct MessageContentView: View {
 
     private var messageText: some View {
         MessageBodyText(text: message.text)
+    }
+
+    @ViewBuilder
+    private func linkPreview(_ preview: NativeLinkPreview) -> some View {
+        if let destination = preview.destination {
+            Link(destination: destination) {
+                linkPreviewContent(preview)
+            }
+            .buttonStyle(.plain)
+            .help("Open \(preview.uri)")
+            .accessibilityHint("Opens in your default browser")
+        } else {
+            linkPreviewContent(preview)
+        }
+    }
+
+    private func linkPreviewContent(_ preview: NativeLinkPreview) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let image = NativeChatParser.image(from: preview.image) {
+                ZStack(alignment: .bottomTrailing) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .accessibilityHidden(true)
+                        .accessibilityIgnoresInvertColors()
+
+                    if let duration = preview.durationLabel {
+                        Text(duration)
+                            .font(.caption.monospacedDigit())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.black.opacity(0.72), in: Capsule())
+                            .foregroundStyle(.white)
+                            .padding(8)
+                    }
+                }
+                .frame(maxWidth: 420, maxHeight: 236)
+                .clipped()
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                if !preview.title.isEmpty {
+                    Text(preview.title)
+                        .font(.headline)
+                        .lineLimit(2)
+                }
+                if !preview.description.isEmpty {
+                    Text(preview.description)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                }
+                Text(preview.displayHost)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(12)
+        }
+        .frame(maxWidth: 420, alignment: .leading)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
@@ -1066,10 +1135,21 @@ struct MessageBodyText: View {
     let text: String
 
     var body: some View {
-        Text(text)
-            .lineLimit(nil)
-            .fixedSize(horizontal: false, vertical: true)
-            .textSelection(.enabled)
+        Group {
+            if let destination = NativeMessageLink.standaloneURL(in: text) {
+                Link(destination: destination) {
+                    Text(text)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+                .help("Open \(destination.absoluteString)")
+            } else {
+                Text(text)
+            }
+        }
+        .lineLimit(nil)
+        .fixedSize(horizontal: false, vertical: true)
+        .textSelection(.enabled)
     }
 }
 

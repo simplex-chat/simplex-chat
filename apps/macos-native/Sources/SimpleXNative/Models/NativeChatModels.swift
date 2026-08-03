@@ -115,6 +115,7 @@ struct NativeMessage: Identifiable, Hashable, Sendable {
 
 enum NativeMessageContent: Hashable, Sendable {
     case text
+    case link(NativeLinkPreview)
     case image(preview: String?, fileName: String?)
     case video(preview: String?, fileName: String?)
     case voice(fileName: String?, duration: Int?)
@@ -123,13 +124,13 @@ enum NativeMessageContent: Hashable, Sendable {
     var opensInQuickLook: Bool {
         switch self {
         case .image, .video: true
-        case .text, .voice, .file: false
+        case .text, .link, .voice, .file: false
         }
     }
 
     var replyContextVisual: NativeReplyContextVisual? {
         switch self {
-        case .text: nil
+        case .text, .link: nil
         case let .image(preview, _): .image(preview)
         case let .video(preview, _): .video(preview)
         case .voice: .voice
@@ -139,7 +140,7 @@ enum NativeMessageContent: Hashable, Sendable {
 
     var attachmentDescription: String? {
         switch self {
-        case .text: nil
+        case .text, .link: nil
         case let .image(_, fileName): Self.description(fileName, fallback: "Photo")
         case let .video(_, fileName): Self.description(fileName, fallback: "Video")
         case let .voice(_, duration): Self.voiceDescription(duration: duration)
@@ -149,7 +150,7 @@ enum NativeMessageContent: Hashable, Sendable {
 
     var fileName: String? {
         switch self {
-        case .text: nil
+        case .text, .link: nil
         case let .image(_, fileName), let .video(_, fileName), let .voice(fileName, _), let .file(fileName):
             fileName
         }
@@ -163,6 +164,38 @@ enum NativeMessageContent: Hashable, Sendable {
     private static func voiceDescription(duration: Int?) -> String {
         guard let duration, duration > 0 else { return "Voice message" }
         return "Voice message, \(Duration.seconds(Double(duration)).formatted(.time(pattern: .minuteSecond)))"
+    }
+}
+
+struct NativeLinkPreview: Hashable, Sendable {
+    let uri: String
+    let title: String
+    let description: String
+    let image: String?
+    let videoDuration: Int?
+
+    var destination: URL? {
+        NativeMessageLink.standaloneURL(in: uri)
+    }
+
+    var displayHost: String {
+        destination?.host(percentEncoded: false) ?? uri
+    }
+
+    var durationLabel: String? {
+        guard let videoDuration, videoDuration > 0 else { return nil }
+        return Duration.seconds(Double(videoDuration)).formatted(.time(pattern: .minuteSecond))
+    }
+}
+
+enum NativeMessageLink {
+    static func standaloneURL(in text: String) -> URL? {
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty,
+              let components = URLComponents(string: normalized),
+              ["http", "https"].contains(components.scheme?.lowercased() ?? ""),
+              components.host?.isEmpty == false else { return nil }
+        return components.url
     }
 }
 
@@ -475,6 +508,21 @@ enum NativeChatParser {
         let nativeFileSource = filePath.map { NativeCryptoFile(filePath: $0, cryptoArgs: cryptoArgs) }
         let content: NativeMessageContent
         switch string(messageContent?["type"]) {
+        case "link":
+            if let preview = messageContent?["preview"] as? [String: Any] {
+                let linkContent = preview["content"] as? [String: Any]
+                content = .link(NativeLinkPreview(
+                    uri: string(preview["uri"]) ?? string(messageContent?["text"]) ?? "",
+                    title: string(preview["title"]) ?? "",
+                    description: string(preview["description"]) ?? "",
+                    image: string(preview["image"]),
+                    videoDuration: string(linkContent?["type"]) == "video"
+                        ? int(linkContent?["duration"])
+                        : nil
+                ))
+            } else {
+                content = .text
+            }
         case "image":
             content = .image(preview: string(messageContent?["image"]), fileName: fileName)
         case "video":
