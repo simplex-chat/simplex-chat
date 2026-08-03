@@ -4,6 +4,8 @@ import Foundation
 typealias DeleteMessagesOperation = @Sendable ([Int64], NativeChat) async throws -> [NativeMessage]
 typealias SendTextOperation = @Sendable (String, Int64?, NativeChat) async throws -> Void
 typealias SendAttachmentOperation = @Sendable (PendingAttachment, String, Int64?, NativeChat) async throws -> Void
+typealias LoadMessageOperation = @Sendable (NativeChat.ID, Int64) async throws -> NativeMessage?
+typealias OpenAttachmentOperation = @Sendable (NativeCryptoFile, String?) async throws -> Void
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -43,6 +45,7 @@ final class AppModel: ObservableObject {
     @Published var pendingAttachments: [PendingAttachment] = []
     @Published var attachmentError: String?
     @Published var attachmentOpenError: String?
+    @Published var quoteNavigationError: String?
     @Published var openingAttachmentIDs: Set<Int64> = []
     @Published var replyingTo: NativeMessage?
     @Published var composerFocusRequest = 0
@@ -61,18 +64,22 @@ final class AppModel: ObservableObject {
     private let deleteMessagesOperation: DeleteMessagesOperation?
     private let sendTextOperation: SendTextOperation?
     private let sendAttachmentOperation: SendAttachmentOperation?
+    private let loadMessageOperation: LoadMessageOperation?
+    private let openAttachmentOperation: OpenAttachmentOperation?
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
     private var conversationLoadTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private(set) var sendTask: Task<Void, Never>?
     private var deleteTask: Task<Void, Never>?
+    private(set) var quoteNavigationTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var selectionAnchor: Int64?
     private var replyingChatID: NativeChat.ID?
     private var conversationLoadRevision: UInt64 = 0
+    private var quoteNavigationRevision: UInt64 = 0
     private static let densityKey = "desktopChatDensity"
 
     init(
@@ -81,7 +88,9 @@ final class AppModel: ObservableObject {
         previewMode: Bool? = nil,
         deleteMessagesOperation: DeleteMessagesOperation? = nil,
         sendTextOperation: SendTextOperation? = nil,
-        sendAttachmentOperation: SendAttachmentOperation? = nil
+        sendAttachmentOperation: SendAttachmentOperation? = nil,
+        loadMessageOperation: LoadMessageOperation? = nil,
+        openAttachmentOperation: OpenAttachmentOperation? = nil
     ) {
         self.previewMode = previewMode
             ?? (ProcessInfo.processInfo.environment["SIMPLEX_NATIVE_UI_PREVIEW"] == "1")
@@ -89,6 +98,8 @@ final class AppModel: ObservableObject {
         self.deleteMessagesOperation = deleteMessagesOperation
         self.sendTextOperation = sendTextOperation
         self.sendAttachmentOperation = sendAttachmentOperation
+        self.loadMessageOperation = loadMessageOperation
+        self.openAttachmentOperation = openAttachmentOperation
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
         ) as? Bool == true
@@ -114,6 +125,7 @@ final class AppModel: ObservableObject {
         refreshTask?.cancel()
         sendTask?.cancel()
         deleteTask?.cancel()
+        quoteNavigationTask?.cancel()
     }
 
     var selectedChat: NativeChat? {
@@ -404,29 +416,96 @@ final class AppModel: ObservableObject {
         replyingChatID = nil
     }
 
-    func openQuotedMessage(_ messageID: Int64) {
-        if messages.contains(where: { $0.id == messageID }) {
-            targetMessageID = messageID
-            return
+    @discardableResult
+    func openQuotedMessage(_ quote: NativeQuote, from containingMessageID: Int64) -> Task<Void, Never>? {
+        guard let chatID = selectedChatID else { return nil }
+        if let messageID = quote.messageID {
+            navigateToMessage(messageID, in: chatID)
+            return nil
         }
-        conversationLoadTask?.cancel()
-        guard let chatID = selectedChatID else { return }
-        scheduleConversationLoad(chatID: chatID, around: messageID, scrollTo: messageID)
+
+        quoteNavigationTask?.cancel()
+        quoteNavigationRevision &+= 1
+        let revision = quoteNavigationRevision
+        let operation = loadMessageOperation
+        let task = Task {
+            defer {
+                if quoteNavigationRevision == revision {
+                    quoteNavigationTask = nil
+                }
+            }
+            do {
+                let refreshedMessage: NativeMessage?
+                if let operation {
+                    refreshedMessage = try await operation(chatID, containingMessageID)
+                } else {
+                    refreshedMessage = try await core.loadMessage(
+                        chatID: chatID,
+                        itemID: containingMessageID
+                    )
+                }
+                guard !Task.isCancelled, selectedChatID == chatID,
+                      quoteNavigationRevision == revision else { return }
+                guard let refreshedMessage,
+                      let quotedMessageID = refreshedMessage.quotedItem?.messageID else {
+                    quoteNavigationError = "The original quoted message is no longer available in this conversation."
+                    return
+                }
+                if let index = messages.firstIndex(where: { $0.id == containingMessageID }) {
+                    messages[index] = refreshedMessage
+                }
+                navigateToMessage(quotedMessageID, in: chatID)
+            } catch is CancellationError {
+                return
+            } catch {
+                guard selectedChatID == chatID, quoteNavigationRevision == revision else { return }
+                quoteNavigationError = error.localizedDescription
+            }
+        }
+        quoteNavigationTask = task
+        return task
     }
 
-    func openAttachment(_ message: NativeMessage) {
-        guard let source = message.fileSource,
-              !openingAttachmentIDs.contains(message.id) else { return }
+    @discardableResult
+    func openAttachment(_ message: NativeMessage) -> Task<Void, Never>? {
+        guard let initialSource = message.fileSource,
+              !openingAttachmentIDs.contains(message.id) else { return nil }
+        let chatID = selectedChatID
+        let loadMessageOperation = loadMessageOperation
+        let openAttachmentOperation = openAttachmentOperation
         openingAttachmentIDs.insert(message.id)
-        Task {
+        let task = Task {
             defer { openingAttachmentIDs.remove(message.id) }
             do {
-                let url = try await core.openableURL(
-                    for: source,
-                    fileName: message.content.attachmentDescription
-                )
-                guard NSWorkspace.shared.open(url) else {
-                    throw NativeChatError.unavailable("macOS could not open this attachment.")
+                var source = initialSource
+                if source.cryptoArgs == nil, let chatID {
+                    let refreshedMessage: NativeMessage?
+                    if let loadMessageOperation {
+                        refreshedMessage = try await loadMessageOperation(chatID, message.id)
+                    } else {
+                        refreshedMessage = try await core.loadMessage(chatID: chatID, itemID: message.id)
+                    }
+                    try Task.checkCancellation()
+                    if let refreshedMessage, let refreshedSource = refreshedMessage.fileSource {
+                        source = refreshedSource
+                        if selectedChatID == chatID,
+                           let index = messages.firstIndex(where: { $0.id == message.id }) {
+                            messages[index] = refreshedMessage
+                        }
+                    }
+                }
+
+                if let openAttachmentOperation {
+                    try await openAttachmentOperation(source, message.content.attachmentDescription)
+                } else {
+                    let url = try await core.openableURL(
+                        for: source,
+                        fileName: message.content.attachmentDescription
+                    )
+                    try Task.checkCancellation()
+                    guard NSWorkspace.shared.open(url) else {
+                        throw NativeChatError.unavailable("macOS could not open this attachment.")
+                    }
                 }
             } catch is CancellationError {
                 return
@@ -434,6 +513,17 @@ final class AppModel: ObservableObject {
                 attachmentOpenError = error.localizedDescription
             }
         }
+        return task
+    }
+
+    private func navigateToMessage(_ messageID: Int64, in chatID: NativeChat.ID) {
+        guard selectedChatID == chatID else { return }
+        if messages.contains(where: { $0.id == messageID }) {
+            targetMessageID = messageID
+            return
+        }
+        conversationLoadTask?.cancel()
+        scheduleConversationLoad(chatID: chatID, around: messageID, scrollTo: messageID)
     }
 
     func selectMessage(_ id: Int64, modifiers: NSEvent.ModifierFlags) {
@@ -608,6 +698,10 @@ final class AppModel: ObservableObject {
         guard changedChat || messageID != nil || scrollTarget != nil else { return }
 
         if changedChat {
+            quoteNavigationTask?.cancel()
+            quoteNavigationTask = nil
+            quoteNavigationRevision &+= 1
+            quoteNavigationError = nil
             if let previousChatID = selectedChatID {
                 saveComposerState(for: previousChatID)
             }

@@ -44,8 +44,29 @@ actor SimpleXCore {
     }
 
     func loadMessages(chatID: String, around messageID: Int64? = nil) throws -> [NativeMessage] {
-        let pagination = messageID.map { "around=\($0) count=75" } ?? "count=75"
-        return try NativeChatParser.messages(from: send("/_get chat \(chatID) \(pagination)"))
+        try NativeChatParser.messages(from: send(Self.chatPageCommand(
+            chatID: chatID,
+            around: messageID,
+            count: 75
+        )))
+    }
+
+    func loadMessage(chatID: String, itemID: Int64) throws -> NativeMessage? {
+        let messages = try NativeChatParser.messages(from: send(Self.chatPageCommand(
+            chatID: chatID,
+            around: itemID,
+            count: 0
+        )))
+        return messages.first(where: { $0.id == itemID }) ?? messages.first
+    }
+
+    nonisolated static func chatPageCommand(
+        chatID: String,
+        around messageID: Int64?,
+        count: Int
+    ) -> String {
+        let pagination = messageID.map { "around=\($0) count=\(count)" } ?? "count=\(count)"
+        return "/_get chat \(chatID) \(pagination)"
     }
 
     func sendText(_ text: String, quotedItemID: Int64?, to chat: NativeChat) throws {
@@ -106,12 +127,15 @@ actor SimpleXCore {
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
             throw NativeChatError.unavailable("The attachment is no longer stored on this Mac.")
         }
-        guard let cryptoArgs = source.cryptoArgs else { return sourceURL }
+        guard let cryptoArgs = source.cryptoArgs else {
+            try Self.validateImageHeader(at: sourceURL, fileName: fileName)
+            return sourceURL
+        }
 
         try loadIfNeeded()
         let directory = decryptedFilesDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let safeName = URL(fileURLWithPath: fileName ?? source.filePath).lastPathComponent
+        let safeName = Self.openedFileName(preferredName: fileName, sourcePath: source.filePath)
         let destination = directory.appendingPathComponent(safeName.isEmpty ? "Attachment" : safeName)
         let result = sourceURL.path.withCString { fromPath in
             cryptoArgs.fileKey.withCString { key in
@@ -136,7 +160,59 @@ actor SimpleXCore {
             try? FileManager.default.removeItem(at: directory)
             throw NativeChatError.unavailable("SimpleX decrypted the attachment without creating a readable file.")
         }
+        do {
+            try Self.validateImageHeader(at: destination, fileName: fileName)
+        } catch {
+            try? FileManager.default.removeItem(at: directory)
+            throw error
+        }
         return destination
+    }
+
+    nonisolated static func imageHeaderIsReadable(_ data: Data, fileName: String?) -> Bool {
+        let fileExtension = URL(fileURLWithPath: fileName ?? "").pathExtension.lowercased()
+        switch fileExtension {
+        case "jpg", "jpeg":
+            return data.starts(with: [0xff, 0xd8, 0xff])
+        case "png":
+            return data.starts(with: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+        case "gif":
+            return data.starts(with: Data("GIF87a".utf8)) || data.starts(with: Data("GIF89a".utf8))
+        case "tif", "tiff":
+            return data.starts(with: [0x49, 0x49, 0x2a, 0x00])
+                || data.starts(with: [0x4d, 0x4d, 0x00, 0x2a])
+        case "bmp":
+            return data.starts(with: Data("BM".utf8))
+        case "webp":
+            return data.count >= 12
+                && data.prefix(4) == Data("RIFF".utf8)
+                && data.dropFirst(8).prefix(4) == Data("WEBP".utf8)
+        case "heic", "heif", "avif":
+            return data.count >= 12 && data.dropFirst(4).prefix(4) == Data("ftyp".utf8)
+        default:
+            return true
+        }
+    }
+
+    nonisolated static func openedFileName(preferredName: String?, sourcePath: String) -> String {
+        let preferred = URL(fileURLWithPath: preferredName ?? "").lastPathComponent
+        let source = URL(fileURLWithPath: sourcePath).lastPathComponent
+        if preferred.isEmpty { return source }
+        if URL(fileURLWithPath: preferred).pathExtension.isEmpty,
+           !URL(fileURLWithPath: source).pathExtension.isEmpty {
+            return source
+        }
+        return preferred
+    }
+
+    private nonisolated static func validateImageHeader(at url: URL, fileName: String?) throws {
+        let header = try Data(contentsOf: url, options: .mappedIfSafe).prefix(16)
+        let resolvedName = openedFileName(preferredName: fileName, sourcePath: url.path)
+        guard imageHeaderIsReadable(Data(header), fileName: resolvedName) else {
+            throw NativeChatError.unavailable(
+                "SimpleX could not decode this image. Its stored copy may still be encrypted or incomplete."
+            )
+        }
     }
 
     nonisolated static func composedMessage(

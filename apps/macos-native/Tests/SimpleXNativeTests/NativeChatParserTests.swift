@@ -111,6 +111,199 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(ordinary["quotedItemId"] == nil)
 }
 
+@Test func singleMessageReloadUsesTheCoreQuoteResolutionPagination() {
+    // Given / When
+    let command = SimpleXCore.chatPageCommand(chatID: "@42", around: 91, count: 0)
+
+    // Then
+    #expect(command == "/_get chat @42 around=91 count=0")
+}
+
+@Test func encryptedBytesAreNotMistakenForAPlainJPEG() {
+    // Given
+    let encryptedHeader = Data([0x6a, 0xbd, 0xf4, 0x48, 0x36, 0x31, 0xf0, 0x54])
+    let jpegHeader = Data([0xff, 0xd8, 0xff, 0xe0])
+
+    // When / Then
+    #expect(!SimpleXCore.imageHeaderIsReadable(encryptedHeader, fileName: "photo.jpg"))
+    #expect(SimpleXCore.imageHeaderIsReadable(jpegHeader, fileName: "photo.jpg"))
+}
+
+@Test func attachmentFallbackNamesKeepTheStoredFileExtension() {
+    // Given / When / Then
+    #expect(SimpleXCore.openedFileName(
+        preferredName: "Photo",
+        sourcePath: "IMG_20260802_145258.jpg"
+    ) == "IMG_20260802_145258.jpg")
+    #expect(SimpleXCore.openedFileName(
+        preferredName: "holiday.jpg",
+        sourcePath: "encrypted.bin"
+    ) == "holiday.jpg")
+}
+
+@Test func encryptedJPEGWithoutMetadataIsRejectedBeforeOpeningPreview() async throws {
+    // Given
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let sourceURL = directory.appendingPathComponent("photo.jpg")
+    try Data([0x6a, 0xbd, 0xf4, 0x48, 0x36, 0x31, 0xf0, 0x54]).write(to: sourceURL)
+    let source = NativeCryptoFile(filePath: sourceURL.path, cryptoArgs: nil)
+
+    // When / Then
+    do {
+        _ = try await SimpleXCore().openableURL(for: source, fileName: "photo.jpg")
+        Issue.record("Ciphertext should not be handed to Preview as a JPEG.")
+    } catch let error as NativeChatError {
+        #expect(error.localizedDescription.contains("still be encrypted or incomplete"))
+    }
+}
+
+@MainActor
+@Test func unresolvedQuoteReloadsItsContainingMessageBeforeNavigating() async throws {
+    // Given
+    let target = NativePreviewData.messages(for: "@1")[0]
+    let unresolvedQuote = NativeQuote(messageID: nil, text: target.text, sent: target.sent, author: target.author)
+    let containingMessage = NativeMessage(
+        id: 90,
+        text: "Reply",
+        timestamp: nil,
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text,
+        quotedItem: unresolvedQuote
+    )
+    let refreshedMessage = NativeMessage(
+        id: containingMessage.id,
+        text: containingMessage.text,
+        timestamp: containingMessage.timestamp,
+        sent: containingMessage.sent,
+        author: containingMessage.author,
+        deletable: containingMessage.deletable,
+        content: containingMessage.content,
+        quotedItem: NativeQuote(
+            messageID: target.id,
+            text: target.text,
+            sent: target.sent,
+            author: target.author
+        )
+    )
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { chatID, itemID in
+            #expect(chatID == "@1")
+            #expect(itemID == containingMessage.id)
+            return refreshedMessage
+        }
+    )
+    model.messages = [target, containingMessage]
+
+    // When
+    let navigation = try #require(model.openQuotedMessage(unresolvedQuote, from: containingMessage.id))
+    await navigation.value
+
+    // Then
+    #expect(model.messages.last?.quotedItem?.messageID == target.id)
+    #expect(model.targetMessageID == target.id)
+    #expect(model.quoteNavigationError == nil)
+}
+
+@MainActor
+@Test func missingQuotedMessageShowsAUsefulError() async throws {
+    // Given
+    let unresolvedQuote = NativeQuote(messageID: nil, text: "Gone", sent: false, author: "Maya")
+    let containingMessage = NativeMessage(
+        id: 91,
+        text: "Reply",
+        timestamp: nil,
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text,
+        quotedItem: unresolvedQuote
+    )
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { _, _ in containingMessage }
+    )
+    model.messages = [containingMessage]
+
+    // When
+    let navigation = try #require(model.openQuotedMessage(unresolvedQuote, from: containingMessage.id))
+    await navigation.value
+
+    // Then
+    #expect(model.targetMessageID == nil)
+    #expect(model.quoteNavigationError == "The original quoted message is no longer available in this conversation.")
+}
+
+private actor AttachmentOpenProbe {
+    private var openedSource: NativeCryptoFile?
+
+    func open(_ source: NativeCryptoFile) {
+        openedSource = source
+    }
+
+    func source() -> NativeCryptoFile? {
+        openedSource
+    }
+}
+
+@MainActor
+@Test func attachmentOpenRefreshesMissingEncryptionMetadata() async throws {
+    // Given
+    let plainSource = NativeCryptoFile(filePath: "photo.jpg", cryptoArgs: nil)
+    let encryptedSource = NativeCryptoFile(
+        filePath: "photo.jpg",
+        cryptoArgs: NativeCryptoFileArgs(fileKey: "key", fileNonce: "nonce")
+    )
+    let original = NativeMessage(
+        id: 92,
+        text: "Photo",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .image(preview: nil, fileName: "photo.jpg"),
+        fileSource: plainSource
+    )
+    let refreshed = NativeMessage(
+        id: original.id,
+        text: original.text,
+        timestamp: original.timestamp,
+        sent: original.sent,
+        author: original.author,
+        deletable: original.deletable,
+        content: original.content,
+        fileSource: encryptedSource
+    )
+    let probe = AttachmentOpenProbe()
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { chatID, itemID in
+            #expect(chatID == "@1")
+            #expect(itemID == original.id)
+            return refreshed
+        },
+        openAttachmentOperation: { source, _ in
+            await probe.open(source)
+        }
+    )
+    model.messages = [original]
+
+    // When
+    let opening = try #require(model.openAttachment(original))
+    await opening.value
+
+    // Then
+    #expect(await probe.source() == encryptedSource)
+    #expect(model.messages.first?.fileSource == encryptedSource)
+    #expect(model.attachmentOpenError == nil)
+    #expect(model.openingAttachmentIDs.isEmpty)
+}
+
 @MainActor
 @Test func replyComposerSendsAndClearsQuotedContext() throws {
     let model = AppModel(previewMode: true)

@@ -45,21 +45,20 @@ struct ConversationView: View {
                 } message: {
                     Text("This removes the selected messages from this Mac. It does not delete them for other people.")
                 }
-                .alert("Couldn’t Add Attachment", isPresented: Binding(
-                    get: { model.attachmentError != nil },
-                    set: { if !$0 { model.attachmentError = nil } }
-                )) {
+                .alert("Couldn’t Add Attachment", isPresented: attachmentErrorPresented) {
                     Button("OK") { model.attachmentError = nil }
                 } message: {
                     Text(model.attachmentError ?? "")
                 }
-                .alert("Couldn’t Open Attachment", isPresented: Binding(
-                    get: { model.attachmentOpenError != nil },
-                    set: { if !$0 { model.attachmentOpenError = nil } }
-                )) {
+                .alert("Couldn’t Open Attachment", isPresented: attachmentOpenErrorPresented) {
                     Button("OK") { model.attachmentOpenError = nil }
                 } message: {
                     Text(model.attachmentOpenError ?? "")
+                }
+                .alert("Couldn’t Find Quoted Message", isPresented: quoteNavigationErrorPresented) {
+                    Button("OK") { model.quoteNavigationError = nil }
+                } message: {
+                    Text(model.quoteNavigationError ?? "")
                 }
             } else {
                 ContentUnavailableView {
@@ -78,6 +77,27 @@ struct ConversationView: View {
         .onChange(of: model.composerFocusRequest) { _, _ in
             composerFocused = true
         }
+    }
+
+    private var attachmentErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.attachmentError != nil },
+            set: { if !$0 { model.attachmentError = nil } }
+        )
+    }
+
+    private var attachmentOpenErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.attachmentOpenError != nil },
+            set: { if !$0 { model.attachmentOpenError = nil } }
+        )
+    }
+
+    private var quoteNavigationErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.quoteNavigationError != nil },
+            set: { if !$0 { model.quoteNavigationError = nil } }
+        )
     }
 
     @ToolbarContentBuilder
@@ -140,8 +160,8 @@ struct ConversationView: View {
                         } reply: {
                             model.beginReply(to: message)
                             composerFocused = true
-                        } openQuote: { messageID in
-                            model.openQuotedMessage(messageID)
+                        } openQuote: { quote in
+                            model.openQuotedMessage(quote, from: message.id)
                         } openAttachment: {
                             model.openAttachment(message)
                         }
@@ -429,7 +449,7 @@ private struct MessageRow: View {
     let copy: () -> Void
     let delete: () -> Void
     let reply: () -> Void
-    let openQuote: (Int64) -> Void
+    let openQuote: (NativeQuote) -> Void
     let openAttachment: () -> Void
 
     var body: some View {
@@ -508,6 +528,9 @@ private struct MessageRow: View {
             .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
             .accessibilityActions {
                 Button(selected ? "Deselect Message" : "Select Message", action: select)
+                if let quote = message.quotedItem {
+                    Button("Show Quoted Message") { openQuote(quote) }
+                }
                 if canReply {
                     Button("Reply", action: reply)
                 }
@@ -729,7 +752,7 @@ private struct MessageContentView: View {
     let message: NativeMessage
     let chatName: String
     let openingAttachment: Bool
-    let openQuote: (Int64) -> Void
+    let openQuote: (NativeQuote) -> Void
     let openAttachment: () -> Void
 
     var body: some View {
@@ -739,7 +762,7 @@ private struct MessageContentView: View {
                     quote: quote,
                     chatName: chatName,
                     outgoing: message.sent,
-                    open: openQuote
+                    open: { openQuote(quote) }
                 )
             }
 
@@ -844,19 +867,14 @@ private struct QuotedMessagePreview: View {
     let quote: NativeQuote
     let chatName: String
     let outgoing: Bool
-    let open: (Int64) -> Void
+    let open: () -> Void
 
     var body: some View {
-        Group {
-            if let messageID = quote.messageID {
-                Button { open(messageID) } label: { content }
-                    .buttonStyle(.plain)
-                    .help("Show Quoted Message")
-                    .accessibilityHint("Moves to the original message in this conversation.")
-            } else {
-                content
-            }
-        }
+        Button(action: open) { content }
+            .buttonStyle(.plain)
+            .help("Show Quoted Message")
+            .accessibilityHint("Moves to the original message in this conversation.")
+            .accessibilityInputLabels([quote.text, "Quoted Message"]) // [VERIFY] The first label matches visible quote text.
     }
 
     private var content: some View {
