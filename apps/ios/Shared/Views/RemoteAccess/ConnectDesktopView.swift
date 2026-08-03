@@ -67,13 +67,12 @@ struct ConnectDesktopView: View {
                 case .searching: searchingDesktopView()
                 case let .found(rc, compatible): foundDesktopView(session, rc, compatible)
                 case let .connecting(rc_): connectingDesktopView(session, rc_)
+                case let .reconnecting(rc_): connectingDesktopView(session, rc_, title: "Reconnecting to desktop")
                 case let .pendingConfirmation(rc_, sessCode):
-                    if confirmRemoteSessions || rc_ == nil {
-                        verifySessionView(session, rc_, sessCode)
+                    if RemoteCtrlReconnect.shared.shouldVerifyAutomatically(rc_, invitation: session.invitation) {
+                        connectingDesktopView(session, rc_, title: "Reconnecting to desktop")
                     } else {
-                        connectingDesktopView(session, rc_).onAppear {
-                            verifyDesktopSessionCode(sessCode)
-                        }
+                        verifySessionView(session, rc_, sessCode)
                     }
                 case let .connected(rc, _): activeSessionView(session, rc)
                 }
@@ -89,11 +88,7 @@ struct ConnectDesktopView: View {
             setDeviceName(deviceName)
             updateRemoteCtrls()
             showConnectScreen = !useMulticast
-            if m.remoteCtrlSession != nil {
-                if !m.activeRemoteCtrl {
-                    disconnectDesktop()
-                }
-            } else if useMulticast {
+            if m.remoteCtrlSession == nil, useMulticast, getRemoteCtrlReconnectTarget() == nil {
                 findKnownDesktop()
             }
             // The hack below prevents camera freezing when exiting linked devices view.
@@ -103,12 +98,6 @@ struct ConnectDesktopView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                 firstAppearance = false
                 showQRCodeScanner = true
-            }
-        }
-        .onDisappear {
-            if scenePhase == .active, m.remoteCtrlSession != nil {
-                showConnectScreen = false
-                disconnectDesktop()
             }
         }
         .onChange(of: deviceName) {
@@ -166,10 +155,10 @@ struct ConnectDesktopView: View {
         .modifier(ThemedBackground(grouped: true))
     }
 
-    private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> some View {
+    private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?, title: LocalizedStringKey = "Connecting to desktop") -> some View {
         ZStack {
             List {
-                Section(header: Text("Connecting to desktop").foregroundColor(theme.colors.secondary)) {
+                Section(header: Text(title).foregroundColor(theme.colors.secondary)) {
                     ctrlDeviceNameText(session, rc)
                     ctrlDeviceVersionText(session)
                 }
@@ -184,7 +173,7 @@ struct ConnectDesktopView: View {
                     disconnectButton()
                 }
             }
-            .navigationTitle("Connecting to desktop")
+            .navigationTitle(Text(title))
 
             ProgressView().scaleEffect(2)
         }
@@ -440,25 +429,23 @@ struct ConnectDesktopView: View {
     }
 
     private func connectDesktopAddress(_ addr: String) {
-        connectDesktop_ {
+        connectDesktop_(invitation: addr) {
             try await connectRemoteCtrl(desktopAddress: addr)
         }
     }
 
-    private func connectDesktop_(_ connect: @escaping () async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String)) {
+    private func connectDesktop_(invitation: String? = nil, _ connect: @escaping () async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String, Int)) {
+        guard let generation = RemoteCtrlReconnect.shared.beginSession(invitation: invitation) else { return }
         Task {
             do {
-                let (rc_, ctrlAppInfo, v) = try await connect()
+                let (rc_, ctrlAppInfo, v, sessionSeq) = try await connect()
                 await MainActor.run {
+                    guard RemoteCtrlReconnect.shared.finishSessionRequest(generation, remoteCtrl: rc_, ctrlAppInfo: ctrlAppInfo, version: v, sessionSeq: sessionSeq) else { return }
                     sessionAddress = ""
-                    m.remoteCtrlSession = RemoteCtrlSession(
-                        ctrlAppInfo: ctrlAppInfo,
-                        appVersion: v,
-                        sessionState: .connecting(remoteCtrl_: rc_)
-                    )
                 }
             } catch let e {
                 await MainActor.run {
+                    guard RemoteCtrlReconnect.shared.failSessionRequest(generation) else { return }
                     switch e as? ChatError {
                     case .errorRemoteCtrl(.badInvitation): alert = .badInvitationError
                     case .error(.commandError): alert = .badInvitationError
@@ -473,22 +460,11 @@ struct ConnectDesktopView: View {
     }
 
     private func verifyDesktopSessionCode(_ sessCode: String) {
-        Task {
-            do {
-                let rc = try await verifyRemoteCtrlSession(sessCode)
-                await MainActor.run {
-                    m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: rc, sessionCode: sessCode))
-                    RemoteCtrlBGKeepAlive.shared.start()
-                }
-                await MainActor.run {
-                    updateRemoteCtrls()
-                }
-            } catch let error {
-                await MainActor.run {
-                    errorAlert(error)
-                }
-            }
-        }
+        RemoteCtrlReconnect.shared.verifySession(
+            sessCode,
+            onConnected: updateRemoteCtrls,
+            onError: errorAlert
+        )
     }
 
     private func disconnectButton(_ label: LocalizedStringKey = "Disconnect") -> some View {
@@ -501,13 +477,21 @@ struct ConnectDesktopView: View {
 
     private func disconnectDesktop(_ action: UserDisconnectAction? = nil) {
         Task {
+            let stopping = await MainActor.run {
+                RemoteCtrlReconnect.shared.stop()
+            }
+            guard stopping else { return }
             var disconnectError: Error?
             do {
                 try await stopRemoteCtrl()
             } catch let e {
-                disconnectError = e
+                switch e as? ChatError {
+                case .errorRemoteCtrl(.inactive): ()
+                default: disconnectError = e
+                }
             }
             await MainActor.run {
+                RemoteCtrlReconnect.shared.stopCompleted()
                 if case .connected = m.remoteCtrlSession?.sessionState {
                     switchToLocalSession()
                 } else {
@@ -531,6 +515,7 @@ struct ConnectDesktopView: View {
             do {
                 try await deleteRemoteCtrl(rc.remoteCtrlId)
                 await MainActor.run {
+                    RemoteCtrlReconnect.shared.unlink(rc.remoteCtrlId)
                     remoteCtrls.removeAll(where: { $0.remoteCtrlId == rc.remoteCtrlId })
                 }
             } catch let e {

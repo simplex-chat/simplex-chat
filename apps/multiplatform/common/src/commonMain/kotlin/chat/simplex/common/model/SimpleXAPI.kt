@@ -46,6 +46,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -59,6 +60,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
@@ -518,6 +520,20 @@ private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
   private var chatCtrl: ChatCtrl? = -1
+  private data class RemoteHostSelection(val generation: Long, val remoteHostId: Long?)
+  private val remoteHostSelection = AtomicReference(RemoteHostSelection(0, null))
+  private val remoteHostSelectionMutex = Mutex()
+  private val remoteHostStateMutex = Mutex()
+  private val remoteHostStopMutex = Mutex()
+  private val remoteHostAttempts = mutableMapOf<Int, Long?>()
+  private val pendingRemoteHostEvents = mutableListOf<API>()
+  private var remoteHostStartsInFlight = 0
+  private var remoteHostReplayQueued = false
+  private val reconnectingRemoteHosts = mutableSetOf<Long>()
+  private val stoppedRemoteHosts = mutableSetOf<Long>()
+  private val remoteHostStopOperations = mutableMapOf<Long, Long>()
+  private val remoteHostStartOperations = mutableMapOf<Long, Pair<Long, Boolean>>()
+  private var remoteHostStopGeneration = 0L
   // Spec: spec/state.md#appPrefs
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
@@ -1065,9 +1081,12 @@ object ChatController {
     if (r is API.Result && r.res is CR.ApiChat) return if (rh == null) r.res.chat to r.res.navInfo else r.res.chat.copy(remoteHostId = rh) to r.res.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     val e = (r as? API.Error)?.err
+    val reconnectingRemoteHost = e is ChatError.ChatErrorRemoteHost &&
+        (e.remoteHostError is RemoteHostError.BadState || e.remoteHostError is RemoteHostError.Disconnected) &&
+        chatModel.currentRemoteHost.value?.let { it.remoteHostId == rh && it.sessionState is RemoteHostSessionState.Connecting } == true
     if (pagination is ChatPagination.Around && e is ChatError.ChatErrorStore && e.storeError is StoreError.ChatItemNotFound) {
       showQuotedItemDoesNotExistAlert()
-    } else {
+    } else if (!reconnectingRemoteHost) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
     }
     return null
@@ -2532,11 +2551,90 @@ object ChatController {
     chatModel.remoteHosts.addAll(hosts)
   }
 
+  private suspend fun beginRemoteHostStop(rhId: Long): Long = remoteHostStateMutex.withLock {
+    val operation = ++remoteHostStopGeneration
+    reconnectingRemoteHosts.remove(rhId)
+    stoppedRemoteHosts.add(rhId)
+    remoteHostStopOperations[rhId] = operation
+    if (chatModel.remoteHostPairing.value?.first?.remoteHostId == rhId) chatModel.remoteHostPairing.value = null
+    operation
+  }
+
+  private suspend fun finishRemoteHostStop(rhId: Long, operation: Long, stopped: Boolean) {
+    remoteHostStateMutex.withLock {
+      if (remoteHostStopOperations[rhId] == operation) {
+        remoteHostStopOperations.remove(rhId)
+        if (!stopped) stoppedRemoteHosts.remove(rhId)
+      }
+    }
+  }
+
+  private suspend fun beginRemoteHostStart(rhId: Long?): Long? = remoteHostStateMutex.withLock {
+    remoteHostStartsInFlight += 1
+    if (rhId == null) {
+      null
+    } else {
+      val operation = ++remoteHostStopGeneration
+      val wasStopped = stoppedRemoteHosts.remove(rhId)
+      reconnectingRemoteHosts.remove(rhId)
+      remoteHostStopOperations.remove(rhId)
+      remoteHostStartOperations[rhId] = operation to wasStopped
+      operation
+    }
+  }
+
+  private suspend fun finishRemoteHostStart(
+    rhId: Long?,
+    operation: Long?,
+    started: CR.RemoteHostStarted?
+  ): Boolean = remoteHostStateMutex.withLock {
+    val currentStart = rhId == null || operation == null || remoteHostStartOperations[rhId]?.first == operation
+    val stoppedAfterStart = rhId != null && (
+      stoppedRemoteHosts.contains(rhId) || operation != null && (remoteHostStopOperations[rhId] ?: Long.MIN_VALUE) > operation
+    )
+    if (rhId != null && operation != null) {
+      val current = remoteHostStartOperations[rhId]
+      if (current?.first == operation) {
+        remoteHostStartOperations.remove(rhId)
+        if (started == null && current.second) stoppedRemoteHosts.add(rhId)
+      }
+    }
+    if (started != null && currentStart && !stoppedAfterStart) {
+      val remoteHostId = started.remoteHost_?.remoteHostId ?: rhId
+      remoteHostAttempts.entries.removeAll { it.value == remoteHostId }
+      remoteHostAttempts[started.sessionSeq] = remoteHostId
+      started.remoteHost_?.remoteHostId?.let { startedRemoteHostId ->
+        reconnectingRemoteHosts.remove(startedRemoteHostId)
+        stoppedRemoteHosts.remove(startedRemoteHostId)
+        remoteHostStopOperations.remove(startedRemoteHostId)
+        remoteHostStartOperations.remove(startedRemoteHostId)
+      }
+    }
+    remoteHostStartsInFlight -= 1
+    if (remoteHostStartsInFlight == 0 && !remoteHostReplayQueued && (started != null || pendingRemoteHostEvents.isNotEmpty())) {
+      remoteHostReplayQueued = true
+      true
+    } else {
+      false
+    }
+  }
+
   suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = true, address: RemoteCtrlAddress?, port: Int?): CR.RemoteHostStarted? {
-    val r = sendCmd(null, CC.StartRemoteHost(rhId, multicast, address, port))
-    if (r is API.Result && r.res is CR.RemoteHostStarted) return r.res
-    apiErrorAlert("startRemoteHost", generalGetString(MR.strings.error_alert_title), r)
-    return null
+    val operation = beginRemoteHostStart(rhId)
+    var started: CR.RemoteHostStarted? = null
+    try {
+      val r = sendCmd(null, CC.StartRemoteHost(rhId, multicast, address, port))
+      if (r is API.Result && r.res is CR.RemoteHostStarted) {
+        started = r.res
+        return started
+      }
+      apiErrorAlert("startRemoteHost", generalGetString(MR.strings.error_alert_title), r)
+      return null
+    } finally {
+      if (finishRemoteHostStart(rhId, operation, started)) {
+        withBGApi { replayRemoteHostEvents() }
+      }
+    }
   }
 
   suspend fun switchRemoteHost (rhId: Long?): RemoteHostInfo? {
@@ -2546,20 +2644,42 @@ object ChatController {
     return null
   }
 
-  suspend fun stopRemoteHost(rhId: Long?): Boolean = sendCommandOkResp(null, CC.StopRemoteHost(rhId))
+  suspend fun stopRemoteHost(rhId: Long?): Boolean {
+    if (rhId == null) return sendCommandOkResp(null, CC.StopRemoteHost(null))
+    return remoteHostStopMutex.withLock {
+      val operation = beginRemoteHostStop(rhId)
+      val stopped = sendCommandOkResp(null, CC.StopRemoteHost(rhId))
+      finishRemoteHostStop(rhId, operation, stopped)
+      stopped
+    }
+  }
 
   fun stopRemoteHostAndReloadHosts(h: RemoteHostInfo, switchToLocal: Boolean) {
     withBGApi {
-      stopRemoteHost(h.remoteHostId)
-      if (switchToLocal) {
-        switchUIRemoteHost(null)
-      } else {
+      val stopped = stopRemoteHost(h.remoteHostId)
+      val selection = remoteHostSelection.get()
+      val switchSelection =
+        if (stopped && selection.remoteHostId == h.remoteHostId && (switchToLocal || chatModel.remoteHostId() == h.remoteHostId)) selection
+        else null
+      if (switchSelection == null || !switchUIRemoteHostIfSelection(switchSelection, null)) {
         reloadRemoteHosts()
       }
     }
   }
 
-  suspend fun deleteRemoteHost(rhId: Long): Boolean = sendCommandOkResp(null, CC.DeleteRemoteHost(rhId))
+  suspend fun deleteRemoteHost(rhId: Long): Boolean {
+    val deleted = remoteHostStopMutex.withLock {
+      val operation = beginRemoteHostStop(rhId)
+      val deleted = sendCommandOkResp(null, CC.DeleteRemoteHost(rhId))
+      finishRemoteHostStop(rhId, operation, deleted)
+      deleted
+    }
+    val selection = remoteHostSelection.get()
+    if (deleted && chatModel.remoteHostId() == rhId && selection.remoteHostId == rhId) {
+      switchUIRemoteHostIfSelection(selection, null)
+    }
+    return deleted
+  }
 
   suspend fun storeRemoteFile(rhId: Long, storeEncrypted: Boolean?, localPath: String): CryptoFile? {
     val r = sendCmd(null, CC.StoreRemoteFile(rhId, storeEncrypted, localPath))
@@ -2784,12 +2904,36 @@ object ChatController {
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
+  private fun acceptRemoteHostEventLocked(msg: API, sessionSeq: Int, replayed: Boolean): Boolean {
+    if (remoteHostStartsInFlight > 0 || (remoteHostReplayQueued && !replayed)) {
+      if (replayed) pendingRemoteHostEvents.add(0, msg) else pendingRemoteHostEvents.add(msg)
+      return false
+    }
+    return remoteHostAttempts.containsKey(sessionSeq)
+  }
+
+  private suspend fun replayRemoteHostEvents() {
+    while (true) {
+      val msg = remoteHostStateMutex.withLock {
+        if (remoteHostStartsInFlight > 0 || pendingRemoteHostEvents.isEmpty()) {
+          remoteHostReplayQueued = false
+          null
+        } else {
+          pendingRemoteHostEvents.removeAt(0)
+        }
+      } ?: return
+      processReceivedMsg(msg, replayedEvent = true)
+    }
+  }
+
   // Spec: spec/api.md#processReceivedMsg
-  private suspend fun processReceivedMsg(msg: API) {
-    lastMsgReceivedTimestamp = System.currentTimeMillis()
+  private suspend fun processReceivedMsg(msg: API, replayedEvent: Boolean = false) {
+    if (!replayedEvent) {
+      lastMsgReceivedTimestamp = System.currentTimeMillis()
+      chatModel.addTerminalItem(TerminalItem.resp(msg.rhId, msg))
+    }
     val rhId = msg.rhId
     fun active(user: UserLike): Boolean = activeUser(rhId, user)
-    chatModel.addTerminalItem(TerminalItem.resp(rhId, msg))
     val r = msg.result
     when (r) {
       is CR.ContactDeletedByContact -> {
@@ -3327,13 +3471,62 @@ object ChatController {
           }
         }
       is CR.RemoteHostSessionCode -> {
-        chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
+        var accepted = false
+        var reloadHosts = false
+        remoteHostStateMutex.withLock {
+          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent)) {
+            accepted = true
+            val remoteHostId = r.remoteHost_?.remoteHostId
+            if (remoteHostId != null) remoteHostAttempts[r.sessionSeq] = remoteHostId
+            if (remoteHostId != null) remoteHostStartOperations.remove(remoteHostId)
+            if (remoteHostId != null && stoppedRemoteHosts.contains(remoteHostId)) {
+              reconnectingRemoteHosts.remove(remoteHostId)
+              chatModel.remoteHostPairing.value = null
+              reloadHosts = true
+            } else {
+              chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
+            }
+          }
+        }
+        if (accepted && reloadHosts) reloadRemoteHosts()
       }
       is CR.RemoteHostConnected -> {
-        // TODO needs to update it instead in sessions
-        chatModel.currentRemoteHost.value = r.remoteHost
-        ModalManager.start.closeModals()
-        switchUIRemoteHost(r.remoteHost.remoteHostId)
+        var accepted = false
+        var stopped = false
+        var reconnecting = false
+        var selection: RemoteHostSelection? = null
+        val remoteHostId = r.remoteHost.remoteHostId
+        remoteHostStateMutex.withLock {
+          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent)) {
+            accepted = true
+            remoteHostAttempts.entries.removeAll { it.key != r.sessionSeq && it.value == remoteHostId }
+            remoteHostAttempts[r.sessionSeq] = remoteHostId
+            remoteHostStartOperations.remove(remoteHostId)
+            reconnecting = reconnectingRemoteHosts.remove(remoteHostId)
+            stopped = stoppedRemoteHosts.contains(remoteHostId)
+            if (!stopped) {
+              selection =
+                if (reconnecting) remoteHostSelection.get().takeIf { it.remoteHostId == remoteHostId }
+                else remoteHostSelection.updateAndGet { RemoteHostSelection(it.generation + 1, remoteHostId) }
+            }
+          }
+        }
+        if (accepted) {
+          if (stopped) {
+            reloadRemoteHosts()
+          } else if (!reconnecting && selection != null) {
+            ModalManager.start.closeModals()
+            switchUIRemoteHost(remoteHostId, selection!!)
+          } else if (reconnecting && chatModel.remoteHostId() == remoteHostId && selection != null) {
+            val currentSelection = selection!!
+            switchUIRemoteHost(remoteHostId, currentSelection)
+            if (remoteHostSelection.get() == currentSelection && chatModel.remoteHostId() == remoteHostId) {
+              ModalManager.start.closeModals()
+            }
+          } else {
+            reloadRemoteHosts()
+          }
+        }
       }
       is CR.ContactDisabled -> {
         if (active(r.user)) {
@@ -3343,41 +3536,84 @@ object ChatController {
         }
       }
       is CR.RemoteHostStopped -> {
-        val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
-        chatModel.remoteHostPairing.value = null
-        if (disconnectedHost != null) {
-          val deviceName = disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() }
-          when (r.rhStopReason) {
-            is RemoteHostStopReason.ConnectionFailed -> {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.remote_host_was_disconnected_title),
-                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
-                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
-                } else {
-                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
-                }
-              )
-            }
-            is RemoteHostStopReason.Crashed -> {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.remote_host_was_disconnected_title),
-                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
-                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
-                } else {
-                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
-                }
-              )
-            }
-            is RemoteHostStopReason.Disconnected -> {
-              if (r.rhsState is RemoteHostSessionState.Connected || r.rhsState is RemoteHostSessionState.Confirmed) {
-                showToast(generalGetString(MR.strings.remote_host_was_disconnected_toast).format(deviceName))
+        var accepted = false
+        var explicitlyStopped = false
+        var reconnecting = false
+        remoteHostStateMutex.withLock {
+          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent)) {
+            accepted = true
+            explicitlyStopped = r.remoteHostId_?.let { stoppedRemoteHosts.contains(it) } == true
+            if (explicitlyStopped) {
+              remoteHostAttempts.remove(r.sessionSeq)
+              r.remoteHostId_?.let {
+                reconnectingRemoteHosts.remove(it)
+                remoteHostStopOperations.remove(it)
               }
+            } else {
+              reconnecting = r.rhStopReason is RemoteHostStopReason.Disconnected && r.rhsState is RemoteHostSessionState.Connecting
+              if (!reconnecting) remoteHostAttempts.remove(r.sessionSeq)
+              r.remoteHostId_?.let { remoteHostId ->
+                if (reconnecting) {
+                  reconnectingRemoteHosts.add(remoteHostId)
+                } else {
+                  reconnectingRemoteHosts.remove(remoteHostId)
+                  stoppedRemoteHosts.add(remoteHostId)
+                }
+              }
+              chatModel.remoteHostPairing.value = null
             }
           }
         }
-        if (chatModel.remoteHostId() == r.remoteHostId_) {
-          chatModel.currentRemoteHost.value = null
-          switchUIRemoteHost(null)
+        if (accepted) {
+          if (explicitlyStopped) {
+            reloadRemoteHosts()
+          } else {
+            val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
+            val currentHost = chatModel.currentRemoteHost.value?.takeIf { it.remoteHostId == r.remoteHostId_ }
+            val displayedHost = disconnectedHost ?: currentHost
+            if (reconnecting && disconnectedHost != null) {
+              val i = chatModel.remoteHosts.indexOf(disconnectedHost)
+              chatModel.remoteHosts[i] = disconnectedHost.copy(sessionState = r.rhsState)
+            }
+            if (displayedHost != null) {
+              val deviceName = displayedHost.hostDeviceName.ifEmpty { displayedHost.remoteHostId.toString() }
+              when (r.rhStopReason) {
+                is RemoteHostStopReason.ConnectionFailed -> {
+                  AlertManager.shared.showAlertMsg(
+                    generalGetString(MR.strings.remote_host_was_disconnected_title),
+                    if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                      r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                    } else {
+                      generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                    }
+                  )
+                }
+                is RemoteHostStopReason.Crashed -> {
+                  AlertManager.shared.showAlertMsg(
+                    generalGetString(MR.strings.remote_host_was_disconnected_title),
+                    if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                      r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                    } else {
+                      generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                    }
+                  )
+                }
+                is RemoteHostStopReason.Disconnected -> {
+                  if (r.rhsState is RemoteHostSessionState.Connected || r.rhsState is RemoteHostSessionState.Confirmed) {
+                    showToast(generalGetString(MR.strings.remote_host_was_disconnected_toast).format(deviceName))
+                  }
+                }
+              }
+            }
+            if (reconnecting) {
+              updateRemoteHostReconnecting(r.remoteHostId_, r.rhsState)
+            } else if (chatModel.remoteHostId() == r.remoteHostId_) {
+              val selection = remoteHostSelection.get()
+              if (selection.remoteHostId == r.remoteHostId_) {
+                switchUIRemoteHostIfSelection(selection, null)
+              }
+            }
+          }
         }
       }
       is CR.RemoteCtrlFound -> {
@@ -3407,7 +3643,7 @@ object ChatController {
           ModalManager.fullscreen.closeModals()
           fun showAlert(chatError: ChatError) {
             when {
-              r.rcStopReason is RemoteCtrlStopReason.Disconnected ->
+              r.rcStopReason is RemoteCtrlStopReason.Disconnected || r.rcStopReason is RemoteCtrlStopReason.ControllerStopped ->
                 {}
               r.rcStopReason is RemoteCtrlStopReason.ConnectionFailed
                   && r.rcStopReason.chatError is ChatError.ChatErrorAgent
@@ -3448,6 +3684,7 @@ object ChatController {
             is RemoteCtrlStopReason.DiscoveryFailed -> showAlert(r.rcStopReason.chatError)
             is RemoteCtrlStopReason.ConnectionFailed -> showAlert(r.rcStopReason.chatError)
             is RemoteCtrlStopReason.SetupFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.ControllerStopped -> {}
             is RemoteCtrlStopReason.Disconnected -> {
               /*AlertManager.shared.showAlertMsg(
                 generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
@@ -3617,33 +3854,68 @@ object ChatController {
     }
   }
 
-  suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
-    // TODO lock the switch so that two switches can't run concurrently?
-    chatModel.chatId.value = null
-    ModalManager.center.closeModals()
-    ModalManager.end.closeModals()
-    AlertManager.shared.hideAllAlerts()
-    AlertManager.privacySensitive.hideAllAlerts()
-    chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
-    reloadRemoteHosts()
-    val user = apiGetActiveUser(rhId)
-    val users = listUsers(rhId)
-    chatModel.users.clear()
-    chatModel.users.addAll(users)
-    chatModel.currentUser.value = user
-    if (user == null) {
-      withContext(Dispatchers.Main) {
-        chatModel.chatsContext.chatItems.clearAndNotify()
-        chatModel.chatsContext.chats.clear()
-        chatModel.chatsContext.popChatCollector.clear()
-      }
-      withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.chatItems?.clearAndNotify()
-        chatModel.secondaryChatsContext.value?.chats?.clear()
-        chatModel.secondaryChatsContext.value?.popChatCollector?.clear()
+  suspend fun switchUIRemoteHost(rhId: Long?) {
+    val selection = remoteHostSelection.updateAndGet { RemoteHostSelection(it.generation + 1, rhId) }
+    switchUIRemoteHost(rhId, selection)
+  }
+
+  private suspend fun switchUIRemoteHostIfSelection(selection: RemoteHostSelection, rhId: Long?): Boolean {
+    val nextSelection = RemoteHostSelection(selection.generation + 1, rhId)
+    if (!remoteHostSelection.compareAndSet(selection, nextSelection)) return false
+    switchUIRemoteHost(rhId, nextSelection)
+    return true
+  }
+
+  private suspend fun updateRemoteHostReconnecting(rhId: Long?, state: RemoteHostSessionState) {
+    if (rhId == null) return
+    val selection = remoteHostSelection.get()
+    if (selection.remoteHostId != rhId) return
+    remoteHostSelectionMutex.withLock {
+      if (remoteHostSelection.get() != selection) return@withLock
+      val currentHost = chatModel.currentRemoteHost.value
+      if (currentHost?.remoteHostId == rhId) {
+        chatModel.currentRemoteHost.value = currentHost.copy(sessionState = state)
       }
     }
-    getUserChatData(rhId)
+  }
+
+  private suspend fun switchUIRemoteHost(rhId: Long?, selection: RemoteHostSelection) {
+    if (remoteHostSelection.get() != selection) return
+    remoteHostSelectionMutex.withLock {
+      if (remoteHostSelection.get() != selection) return@withLock
+      showProgressIfNeeded switch@{
+        if (remoteHostSelection.get() != selection) return@switch
+        chatModel.chatId.value = null
+        ModalManager.center.closeModals()
+        ModalManager.end.closeModals()
+        AlertManager.shared.hideAllAlerts()
+        AlertManager.privacySensitive.hideAllAlerts()
+        val remoteHost = switchRemoteHost(rhId)
+        if (remoteHostSelection.get() != selection) return@switch
+        chatModel.currentRemoteHost.value = remoteHost
+        reloadRemoteHosts()
+        if (remoteHostSelection.get() != selection) return@switch
+        val user = apiGetActiveUser(rhId)
+        val users = listUsers(rhId)
+        if (remoteHostSelection.get() != selection) return@switch
+        chatModel.users.clear()
+        chatModel.users.addAll(users)
+        chatModel.currentUser.value = user
+        if (user == null) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.chatItems.clearAndNotify()
+            chatModel.chatsContext.chats.clear()
+            chatModel.chatsContext.popChatCollector.clear()
+          }
+          withContext(Dispatchers.Main) {
+            chatModel.secondaryChatsContext.value?.chatItems?.clearAndNotify()
+            chatModel.secondaryChatsContext.value?.chats?.clear()
+            chatModel.secondaryChatsContext.value?.popChatCollector?.clear()
+          }
+        }
+        getUserChatData(rhId)
+      }
+    }
   }
 
   suspend fun showProgressIfNeeded(block: suspend () -> Unit) {
@@ -6689,19 +6961,19 @@ sealed class CR {
   // remote events (desktop)
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
   @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
-  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String, val localAddrs: List<RemoteCtrlAddress>, val ctrlPort: String): CR()
-  @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String): CR()
+  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String, val localAddrs: List<RemoteCtrlAddress>, val ctrlPort: String, val sessionSeq: Int): CR()
+  @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String, val sessionSeq: Int): CR()
   @Serializable @SerialName("newRemoteHost") class NewRemoteHost(val remoteHost: RemoteHostInfo): CR()
-  @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()
-  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId_: Long?, val rhsState: RemoteHostSessionState, val rhStopReason: RemoteHostStopReason): CR()
+  @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo, val sessionSeq: Int): CR()
+  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId_: Long?, val rhsState: RemoteHostSessionState, val rhStopReason: RemoteHostStopReason, val sessionSeq: Int): CR()
   @Serializable @SerialName("remoteFileStored") class RemoteFileStored(val remoteHostId: Long, val remoteFileSource: CryptoFile): CR()
   // remote events (mobile)
   @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
   @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrlInfo, val ctrlAppInfo_: CtrlAppInfo?, val appVersion: String, val compatible: Boolean): CR()
-  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl_: RemoteCtrlInfo?, val ctrlAppInfo: CtrlAppInfo, val appVersion: String): CR()
-  @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): CR()
+  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl_: RemoteCtrlInfo?, val ctrlAppInfo: CtrlAppInfo, val appVersion: String, val sessionSeq: Int): CR()
+  @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String, val sessionSeq: Int): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
-  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(val rcsState: RemoteCtrlSessionState, val rcStopReason: RemoteCtrlStopReason): CR()
+  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(val rcsState: RemoteCtrlSessionState, val rcStopReason: RemoteCtrlStopReason, val sessionSeq: Int): CR()
   // pq
   @Serializable @SerialName("contactPQAllowed") class ContactPQAllowed(val user: UserRef, val contact: Contact, val pqEncryption: Boolean): CR()
   @Serializable @SerialName("contactPQEnabled") class ContactPQEnabled(val user: UserRef, val contact: Contact, val pqEnabled: Boolean): CR()

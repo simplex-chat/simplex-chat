@@ -459,6 +459,10 @@ final class ChatModel: ObservableObject {
         remoteCtrlSession?.active ?? false
     }
 
+    var retainedRemoteCtrl: Bool {
+        remoteCtrlSession?.retained ?? false
+    }
+
     var addressShortLinkDataSet: Bool {
         userAddress?.shortLinkDataSet ?? true
     }
@@ -1430,13 +1434,22 @@ struct RemoteCtrlSession {
     var ctrlAppInfo: CtrlAppInfo?
     var appVersion: String
     var sessionState: UIRemoteCtrlSessionState
+    var invitation: String? = nil
 
     func updateState(_ state: UIRemoteCtrlSessionState) -> RemoteCtrlSession {
-        RemoteCtrlSession(ctrlAppInfo: ctrlAppInfo, appVersion: appVersion, sessionState: state)
+        RemoteCtrlSession(ctrlAppInfo: ctrlAppInfo, appVersion: appVersion, sessionState: state, invitation: invitation)
     }
 
     var active: Bool {
         if case .connected = sessionState { true } else { false }
+    }
+
+    var retained: Bool {
+        switch sessionState {
+        case .connected: true
+        case .connecting, .reconnecting, .pendingConfirmation: invitation != nil
+        default: false
+        }
     }
 
     var discovery: Bool {
@@ -1450,6 +1463,16 @@ struct RemoteCtrlSession {
         default: nil
         }
     }
+
+    var remoteCtrl: RemoteCtrlInfo? {
+        switch sessionState {
+        case let .connecting(remoteCtrl_): remoteCtrl_
+        case let .reconnecting(remoteCtrl_): remoteCtrl_
+        case let .pendingConfirmation(remoteCtrl_, _): remoteCtrl_
+        case let .connected(remoteCtrl, _): remoteCtrl
+        default: nil
+        }
+    }
 }
 
 enum UIRemoteCtrlSessionState {
@@ -1457,6 +1480,29 @@ enum UIRemoteCtrlSessionState {
     case searching
     case found(remoteCtrl: RemoteCtrlInfo, compatible: Bool)
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
+    case reconnecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
+}
+
+struct RemoteCtrlReconnectTarget: Codable {
+    let remoteCtrlId: Int64
+    let invitation: String
+}
+
+private let remoteCtrlReconnectTargetKey = "remoteCtrlReconnectTarget"
+
+func getRemoteCtrlReconnectTarget() -> RemoteCtrlReconnectTarget? {
+    guard let data = UserDefaults.standard.data(forKey: remoteCtrlReconnectTargetKey) else { return nil }
+    return try? JSONDecoder().decode(RemoteCtrlReconnectTarget.self, from: data)
+}
+
+func setRemoteCtrlReconnectTarget(_ target: RemoteCtrlReconnectTarget) {
+    if let data = try? JSONEncoder().encode(target) {
+        UserDefaults.standard.set(data, forKey: remoteCtrlReconnectTargetKey)
+    }
+}
+
+func clearRemoteCtrlReconnectTarget() {
+    UserDefaults.standard.removeObject(forKey: remoteCtrlReconnectTargetKey)
 }

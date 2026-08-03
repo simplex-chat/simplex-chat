@@ -12,6 +12,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 4. [File Transfer (RULE-14 through RULE-15)](#4-file-transfer)
 5. [Notification Delivery (RULE-16 through RULE-17)](#5-notification-delivery)
 6. [Call Integrity (RULE-18)](#6-call-integrity)
+7. [Remote Desktop Integrity (RULE-19)](#7-remote-desktop-integrity)
 
 ---
 
@@ -251,3 +252,22 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 - `common/src/commonMain/kotlin/chat/simplex/common/views/call/WebRTC.kt`
 - Android: `android/src/main/java/chat/simplex/app/CallService.kt`, `android/src/main/java/chat/simplex/app/views/call/CallActivity.kt`
 - Desktop: `common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt`
+
+---
+
+## 7. Remote Desktop Integrity
+
+### RULE-19: A retained host uses one verified invitation
+
+**Invariant:** A remote host that loses its transport MUST keep the original signed invitation and paired identity active. It MUST show connecting state and accept only the paired mobile identity. iOS MUST reconnect directly with that retained invitation on Wi-Fi or Ethernet and MUST NOT use discovery, reconstruct an endpoint, or use a fallback. The reconnect MUST verify the saved pairing without a user prompt. With an active authenticated transport, iOS Disconnect MUST close the macOS listener, and macOS Stop MUST clear the iOS retry target. Without that transport, each side can stop only its local intent.
+
+**Enforcement:** The host-session supervisor in `Remote.hs` retains the listener, validates the paired mobile identity fingerprint, and sends explicit stop signals in both directions. `SimpleXAPI.kt` serializes host state, correlates host-session lifecycle events that carry a session sequence, records explicit-stop tombstones, and protects each host selection with a generation, target ID, and mutex. Late events cannot restore a stopped host or override a later user selection. `ConnectMobileView.kt` disables duplicate start actions and provides an explicit stop button.
+
+**Location:**
+- `src/Simplex/Chat/Remote.hs`
+- `src/Simplex/Chat/Library/Commands.hs`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/remote/ConnectMobileView.kt`
+
+**Spec:** [spec/architecture.md](../spec/architecture.md#8-remote-desktop-reconnect)

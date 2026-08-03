@@ -359,10 +359,13 @@ Events handled in `processReceivedMsg` include:
 | `SndFileStart` / `SndFileComplete` / `SndFileError` | File send progress |
 | `CallInvitation` / `CallOffer` / `CallAnswer` / `CallEnded` | Call signaling events |
 | `ContactPQEnabled` | Post-quantum encryption status changed |
-| `RemoteHostStopped` / `RemoteCtrlStopped` | Remote access session ended |
+| `RemoteHostStopped` | Remote-host transport stopped; `Disconnected` with `Connecting` keeps the host intent and listener active |
+| `RemoteCtrlStopped` | Remote-controller session ended; `ControllerStopped` is an expected authenticated stop from the host |
 | `SubscriptionStatusEvt` | Connection subscription status changed |
 
 Each event triggers updates to `ChatModel` (reactive Compose state) and optionally fires platform notifications via `ntfManager`.
+
+[`RemoteCtrlStopReason.ControllerStopped`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L5468) decodes the `controllerStopped` tag. It means the host sent the authenticated `/_stop remote ctrl` command over the encrypted remote transport. The event handler closes the controller UI without an error alert. The remote-host start response and `SessionCode`, `Connected`, and `Stopped` events and asynchronous controller `SessionCode` and `Stopped` events include a session sequence.
 
 ---
 

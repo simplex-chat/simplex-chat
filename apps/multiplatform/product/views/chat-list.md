@@ -125,6 +125,10 @@ Each chat type provides specific dropdown menu items:
 | No filtered chats | "No chats in list [tag name]" or "No unread chats" with clickable filter reset |
 | No search results | "No chats found" centered text |
 
+### Remote Host Reconnect
+
+On desktop, a reconnecting remote host blocks chat interaction and shows a reconnect dialog with a Disconnect action. Its toolbar and device row show reconnecting state, and remote-host chat rows are disabled until the session reconnects or the user disconnects.
+
 ## Source Files
 
 | File | Path |

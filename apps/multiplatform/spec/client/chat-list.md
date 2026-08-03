@@ -218,6 +218,8 @@ Routes each chat to the appropriate click action and context menu based on `chat
 
 On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) receives a highlight background. `nextChatSelected` state is used to suppress the bottom divider when the next chat in the list is selected.
 
+When the selected remote host is reconnecting, its chat rows are disabled. The toolbar shows reconnecting state and keeps the Disconnect action available; the root desktop view blocks other interaction until reconnect or explicit disconnect.
+
 ---
 
 ## 7. Tag System

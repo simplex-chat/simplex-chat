@@ -11,20 +11,28 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Logger.Simple
 import Control.Monad
+import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
-import Simplex.Chat.Library.Commands (parseChatCommand)
+import qualified Data.Text as T
+import Data.Word (Word16)
+import qualified Network.Socket as NS
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatHooks (..), defaultChatHooks, versionNumber)
 import qualified Simplex.Chat.Controller as Controller
+import Simplex.Chat.Library.Commands (execChatCommand, parseChatCommand)
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote (remoteFilesFolder)
+import Simplex.Chat.Remote (cancelRemoteCtrlSession, cleanupRemoteHostTransport, remoteFilesFolder, stopRemoteCtrlByController)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
-import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import qualified Simplex.Messaging.Transport.HTTP2.Client as H2
 import Simplex.Messaging.Util
+import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -40,6 +48,30 @@ remoteTests = describe "Remote" $ do
         `shouldSatisfy` \case
           Right (StartRemoteHost Nothing (Just (RCCtrlAddress _ "Ethernet 2")) (Just 12345)) -> True
           _ -> False
+  describe "/_abort remote ctrl parser" $ do
+    it "parses the exact session sequence" $ \_ ->
+      parseChatCommand "/_abort remote ctrl 42"
+        `shouldSatisfy` \case
+          Right (APIAbortRemoteCtrl 42) -> True
+          _ -> False
+  describe "reconnect compatibility" $ do
+    it "closes the transport without waiting for blocked cleanup" $ \_ -> do
+      transportClosed <- newEmptyTMVarIO
+      cleanupStarted <- newEmptyTMVarIO
+      cleanupRelease <- newEmptyTMVarIO
+      cleanupFinished <- newEmptyTMVarIO
+      let cleanup =
+            uninterruptibleMask_ (atomically (putTMVar cleanupStarted ()) >> atomically (takeTMVar cleanupRelease))
+              `finally` atomically (putTMVar cleanupFinished ())
+      ( do
+          timeout 1000000 (cleanupRemoteHostTransport (atomically $ putTMVar transportClosed ()) cleanup) `shouldReturn` Just ()
+          timeout 1000000 (atomically $ takeTMVar transportClosed) `shouldReturn` Just ()
+          timeout 1000000 (atomically $ takeTMVar cleanupStarted) `shouldReturn` Just ()
+          atomically (tryReadTMVar cleanupFinished) `shouldReturn` Nothing
+        )
+        `finally` do
+          atomically $ void $ tryPutTMVar cleanupRelease ()
+          void $ timeout 1000000 $ atomically $ takeTMVar cleanupFinished
   xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
@@ -51,9 +83,15 @@ runRemoteTests = do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
+    it "drops the controller transport without stopping the pairing" remoteCtrlTransportDropTest
+    it "reconnects with the same invitation after transport loss" remoteHandshakeReconnectTest
     xitMacCI "connects with multicast discovery" remoteHandshakeDiscoverTest
     it "refuses invalid client cert" remoteHandshakeRejectTest
     it "connects with stored server bindings" storedBindingsTest
+  describe "controller attempt teardown" $ do
+    it "returns the session sequence while the network handshake is blocked" remoteCtrlAsyncStartTest
+    it "reports a network failure after accepting the connection attempt" remoteCtrlAsyncFailureTest
+    it "aborts only the matching start attempt without a stop event" remoteCtrlExactAbortTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
@@ -65,7 +103,7 @@ runRemoteTests = do
 -- * Chat commands
 
 remoteHandshakeTest :: HasCallStack => Bool -> ((Bool, Bool), TestParams) -> IO ()
-remoteHandshakeTest viaDesktop = testRemote $ \compress mobile desktop -> do
+remoteHandshakeTest viaDesktop = testRemoteWithEvents $ \events compress mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
   mobile ##> "/list remote ctrls"
@@ -81,7 +119,16 @@ remoteHandshakeTest viaDesktop = testRemote $ \compress mobile desktop -> do
   mobile <## "Remote controllers:"
   mobile <## "1. My desktop (connected)"
 
-  if viaDesktop then stopDesktop mobile desktop else stopMobile mobile desktop
+  if viaDesktop
+    then do
+      stopDesktop mobile desktop
+      expectRemoteCtrlStopReason events $ \case
+        Controller.RCSRControllerStopped -> True
+        _ -> False
+      readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+        Nothing -> pure ()
+        Just _ -> expectationFailure "Remote controller session should be stopped"
+    else stopMobile mobile desktop
 
   desktop ##> "/delete remote host 1"
   desktop <## "ok"
@@ -113,6 +160,238 @@ remoteHandshakeStoredTest = testRemote $ \compress mobile desktop -> do
   logNote "Starting stored session again"
   startRemoteStored compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
+
+remoteCtrlTransportDropTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteCtrlTransportDropTest = testRemoteWithEvents $ \events compress mobile desktop -> do
+  inv <- startRemoteInvitation compress mobile desktop
+  (oldSessionSeq, oldSessionState, oldStopRequested) <-
+    readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+      Just (sseq, session@Controller.RCSessionConnected {remoteStopRequested}) -> pure (sseq, Controller.rcsSessionState session, remoteStopRequested)
+      _ -> fail "Remote controller session should be connected"
+  let oldSessionCode = case oldSessionState of
+        Controller.RCSConnected {sessionCode} -> sessionCode
+        _ -> error "Connected session should have a session code"
+
+  mobile ##> ("/_drop remote ctrl " <> T.unpack oldSessionCode)
+  mobile <## "ok"
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Nothing -> pure ()
+    Just _ -> expectationFailure "Remote controller session should be dropped"
+  expectNoRemoteCtrlStop events
+  eventually 3 $ desktop <## "remote host 1 stopped"
+
+  mobile ##> "/list remote ctrls"
+  mobile <## "Remote controllers:"
+  mobile <## "1. My desktop"
+
+  mobile ##> ("/connect remote ctrl " <> inv)
+  mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
+  desktop <## "remote host 1 connecting"
+  mobile <## "remote controller 1 connected"
+  verifyRemoteCtrl mobile desktop
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  desktop <## ("remote host 1 connected" <> compress)
+  newSessionCode <- remoteCtrlSessionCode mobile
+  newSessionCode `shouldNotBe` oldSessionCode
+
+  runReaderT (runExceptT $ cancelRemoteCtrlSession oldSessionSeq) (chatController mobile)
+    >>= either (expectationFailure . show) pure
+  remoteCtrlSessionCode mobile `shouldReturn` newSessionCode
+
+  mobile ##> ("/_drop remote ctrl " <> T.unpack oldSessionCode)
+  mobile <## "ok"
+  remoteCtrlSessionCode mobile `shouldReturn` newSessionCode
+  expectNoRemoteCtrlStop events
+
+  runReaderT (runExceptT $ stopRemoteCtrlByController oldSessionSeq oldSessionState oldStopRequested) (chatController mobile)
+    >>= either (expectationFailure . show) pure
+  eventually 3 $ mobile <## "remote controller stopped"
+  expectRemoteCtrlStopReason events $ \case
+    Controller.RCSRControllerStopped -> True
+    _ -> False
+  remoteCtrlSessionCode mobile `shouldReturn` newSessionCode
+  stopMobile mobile desktop
+
+remoteCtrlSessionCode :: TestCC -> IO T.Text
+remoteCtrlSessionCode mobile =
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Just (_, Controller.RCSessionConnected {tls}) -> pure $ tlsSessionCode tls
+    _ -> fail "Remote controller session should be connected"
+
+remoteCtrlExactAbortTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteCtrlExactAbortTest = testRemoteWithEvents $ \events _ mobile _ -> do
+  (firstAction, firstRelease, firstCancelled) <- uninterruptibleBlockedAction
+  atomically . writeTVar (Controller.remoteCtrlSession $ chatController mobile) $
+    Just (42, Controller.RCSessionStarting (Just firstAction))
+  timeout 1000000 (mobile ##> "/_abort remote ctrl 42" >> mobile <## "ok") `shouldReturn` Just ()
+  poll firstAction >>= \case
+    Nothing -> pure ()
+    Just _ -> expectationFailure "Abort waited for controller attempt cleanup"
+  atomically $ putTMVar firstRelease ()
+  timeout 1000000 (atomically $ takeTMVar firstCancelled) `shouldReturn` Just ()
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Nothing -> pure ()
+    Just _ -> expectationFailure "Matching abort did not remove the controller attempt"
+  expectNoRemoteCtrlStop events
+
+  (secondAction, secondCancelled) <- blockedAction
+  atomically . writeTVar (Controller.remoteCtrlSession $ chatController mobile) $
+    Just (43, Controller.RCSessionStarting (Just secondAction))
+  mobile ##> "/_abort remote ctrl 42"
+  mobile <## "ok"
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Just (43, _) -> pure ()
+    _ -> expectationFailure "Stale abort removed the current controller attempt"
+  poll secondAction >>= \case
+    Nothing -> pure ()
+    Just _ -> expectationFailure "Stale abort cancelled the current controller attempt"
+  mobile ##> "/_abort remote ctrl 43"
+  mobile <## "ok"
+  timeout 1000000 (atomically $ takeTMVar secondCancelled) `shouldReturn` Just ()
+  expectNoRemoteCtrlStop events
+  where
+    blockedAction = do
+      started <- newEmptyTMVarIO
+      blocked <- newEmptyTMVarIO
+      cancelled <- newEmptyTMVarIO
+      action <- async $ (atomically (putTMVar started ()) >> atomically (takeTMVar blocked)) `finally` atomically (putTMVar cancelled ())
+      atomically $ takeTMVar started
+      pure (action, cancelled)
+    uninterruptibleBlockedAction = do
+      started <- newEmptyTMVarIO
+      release <- newEmptyTMVarIO
+      cancelled <- newEmptyTMVarIO
+      action <- async $ uninterruptibleMask_ (atomically (putTMVar started ()) >> atomically (takeTMVar release)) `finally` atomically (putTMVar cancelled ())
+      atomically $ takeTMVar started
+      pure (action, release, cancelled)
+
+remoteCtrlAsyncStartTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteCtrlAsyncStartTest = testRemoteWithEvents $ \events _ mobile desktop -> do
+  (inv, port) <- stoppedRemoteInvitation desktop
+  withStalledTCPServer port $ \accepted -> do
+    response <- timeout 1000000 $ runReaderT (execChatCommand Nothing (BC.pack $ "/connect remote ctrl " <> inv) 0) (chatController mobile)
+    sessionSeq <- case response of
+      Just (Right Controller.CRRemoteCtrlConnecting {sessionSeq}) -> pure sessionSeq
+      Just r -> expectationFailure ("Unexpected connect response: " <> show r) >> fail "connect response"
+      Nothing -> expectationFailure "Connect command waited for the network handshake" >> fail "connect timeout"
+    timeout 1000000 (atomically $ takeTMVar accepted) `shouldReturn` Just ()
+    readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+      Just (currentSeq, Controller.RCSessionStarting {rcsConnectAction = Just _}) -> currentSeq `shouldBe` sessionSeq
+      Just (currentSeq, Controller.RCSessionConnecting {}) -> currentSeq `shouldBe` sessionSeq
+      _ -> expectationFailure "Controller attempt was not cancellable while starting"
+    mobile ##> ("/_abort remote ctrl " <> show sessionSeq)
+    mobile <## "ok"
+    readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+      Nothing -> pure ()
+      Just _ -> expectationFailure "Abort did not remove the blocked controller attempt"
+    expectNoRemoteCtrlStop events
+
+remoteCtrlAsyncFailureTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteCtrlAsyncFailureTest = testRemoteWithEvents $ \events _ mobile desktop -> do
+  (inv, _) <- stoppedRemoteInvitation desktop
+  response <- timeout 1000000 $ runReaderT (execChatCommand Nothing (BC.pack $ "/connect remote ctrl " <> inv) 0) (chatController mobile)
+  sessionSeq <- case response of
+    Just (Right Controller.CRRemoteCtrlConnecting {sessionSeq}) -> pure sessionSeq
+    Just r -> expectationFailure ("Unexpected connect response: " <> show r) >> fail "connect response"
+    Nothing -> expectationFailure "Connect command waited for the network failure" >> fail "connect timeout"
+  failure <- timeout 5000000 . atomically $ nextConnectionFailure events
+  failure `shouldBe` Just sessionSeq
+  mobile <## "remote controller stopped"
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Nothing -> pure ()
+    Just _ -> expectationFailure "Failed connection attempt was not removed"
+
+stoppedRemoteInvitation :: HasCallStack => TestCC -> IO (String, Word16)
+stoppedRemoteInvitation desktop = do
+  desktop ##> "/set device name My desktop"
+  desktop <## "ok"
+  desktop ##> "/start remote host new"
+  desktop <##. "new remote host started on "
+  desktop <##. "other addresses: "
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+  port <- case strDecode (BC.pack inv) of
+    Right RCSignedInvitation {invitation = RCInvitation {port}} -> pure port
+    Left err -> fail err
+  desktop ##> "/stop remote host new"
+  desktop <## "ok"
+  pure (inv, port)
+
+nextConnectionFailure :: TQueue (Either Controller.ChatError Controller.ChatEvent) -> STM SessionSeq
+nextConnectionFailure events =
+  readTQueue events >>= \case
+    Right Controller.CEvtRemoteCtrlStopped {rcStopReason = Controller.RCSRConnectionFailed {}, sessionSeq} -> pure sessionSeq
+    _ -> nextConnectionFailure events
+
+withStalledTCPServer :: Word16 -> (TMVar () -> IO a) -> IO a
+withStalledTCPServer port action = bracket open NS.close $ \listener -> do
+  accepted <- newEmptyTMVarIO
+  release <- newEmptyTMVarIO
+  withAsync (serve listener accepted release) $ \_ ->
+    action accepted `finally` atomically (void $ tryPutTMVar release ())
+  where
+    open = do
+      listener <- NS.socket NS.AF_INET NS.Stream NS.defaultProtocol
+      NS.setSocketOption listener NS.ReuseAddr 1
+      NS.bind listener $ NS.SockAddrInet (fromIntegral port) 0
+      NS.listen listener 1
+      pure listener
+    serve listener accepted release =
+      bracket (NS.accept listener) (NS.close . fst) $ \_ -> do
+        atomically $ putTMVar accepted ()
+        atomically $ takeTMVar release
+
+remoteHandshakeReconnectTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeReconnectTest = testRemoteWithBlockedUser $ \events blockCommand commandStarted commandRelease stopEventDuringCleanup compress mobile desktop ->
+  ( do
+      inv <- startRemoteInvitation compress mobile desktop
+      readTVarIO (Controller.currentRemoteHost $ chatController desktop) `shouldReturn` Just 1
+      (oldPollAction, oldHTTPAction) <-
+        readTVarIO (Controller.remoteHostSessions $ chatController desktop) >>= \sessions ->
+          case M.lookup (RHId 1) sessions of
+            Just (_, RHSessionConnected {rhClient = RemoteHostClient {httpClient}, pollAction}) -> pure (pollAction, H2.action httpClient)
+            _ -> fail "Remote host session should be connected"
+
+      atomically $ writeTVar blockCommand True
+      request <- async $ runReaderT (execChatCommand (Just 1) "/user" 0) (chatController desktop)
+      timeout 1000000 (atomically $ takeTMVar commandStarted) `shouldReturn` Just ()
+      forM_ oldHTTPAction $ \a -> void . forkIO $ cancel a
+      concurrently_
+        (eventually 3 $ mobile <## "remote controller stopped")
+        (eventually 3 $ desktop <## "remote host 1 stopped")
+      timeout 1000000 (atomically $ takeTMVar stopEventDuringCleanup) `shouldReturn` Just True
+      expectRemoteCtrlStopReason events $ \case
+        Controller.RCSRDisconnected -> True
+        _ -> False
+      readTVarIO (Controller.currentRemoteHost $ chatController desktop) `shouldReturn` Just 1
+      timeout 1000000 (waitCatch request) >>= \case
+        Just (Right (Left Controller.ChatErrorRemoteHost {})) -> pure ()
+        Just result -> expectationFailure $ "Unexpected in-flight command result: " <> show result
+        Nothing -> expectationFailure "In-flight remote command stayed blocked after transport loss"
+      atomically $ putTMVar commandRelease ()
+      timeout 5000000 (waitCatch oldPollAction) >>= \case
+        Just _ -> pure ()
+        Nothing -> expectationFailure "Remote host poll should stop after transport loss"
+      readTVarIO (Controller.remoteHostSessions $ chatController desktop) >>= \sessions ->
+        case M.lookup (RHId 1) sessions of
+          Just (_, RHSessionConnecting {invitation}) -> T.unpack invitation `shouldBe` inv
+          _ -> expectationFailure "Remote host should retain the invitation while reconnecting"
+      desktop <// 500000
+
+      mobile ##> ("/connect remote ctrl " <> inv)
+      mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
+      desktop <## "remote host 1 connecting"
+      mobile <## "remote controller 1 connected"
+      verifyRemoteCtrl mobile desktop
+      mobile <## ("remote controller 1 session started with My desktop" <> compress)
+      desktop <## ("remote host 1 connected" <> compress)
+      readTVarIO (Controller.currentRemoteHost $ chatController desktop) `shouldReturn` Just 1
+      desktop ##> "/user"
+      desktop <## "user profile: alice (Alice)"
+      desktop <## "use /p <name> [<bio>] to change it"
+      stopMobile mobile desktop
+  )
+    `finally` atomically (void $ tryPutTMVar commandRelease ())
 
 remoteHandshakeDiscoverTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteHandshakeDiscoverTest = testRemote $ \compress mobile desktop -> do
@@ -525,6 +804,72 @@ testRemote test ((mobileCompression, desktopCompression), ps) =
       let compress = " (" <> (if mobileCompression && desktopCompression then "with" else "no") <> " compression)"
        in test compress mobile desktop
   
+testRemoteWithEvents :: HasCallStack => (TQueue (Either Controller.ChatError Controller.ChatEvent) -> String -> TestCC -> TestCC -> IO ()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemoteWithEvents test ((mobileCompression, desktopCompression), ps) = do
+  events <- newTQueueIO
+  let hooks = defaultChatHooks {eventHook = Just $ \_ event -> event <$ atomically (writeTQueue events event)}
+  withNewTestChatCfg ps testCfg {remoteCompression = mobileCompression, chatHooks = hooks} "mobile" aliceProfile $ \mobile ->
+    withNewTestChatCfg ps testCfg {remoteCompression = desktopCompression} "desktop" aliceDesktopProfile $ \desktop ->
+      let compress = " (" <> (if mobileCompression && desktopCompression then "with" else "no") <> " compression)"
+       in test events compress mobile desktop
+
+testRemoteWithBlockedUser :: HasCallStack => (TQueue (Either Controller.ChatError Controller.ChatEvent) -> TVar Bool -> TMVar () -> TMVar () -> TMVar Bool -> String -> TestCC -> TestCC -> IO ()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemoteWithBlockedUser test ((mobileCompression, desktopCompression), ps) = do
+  events <- newTQueueIO
+  commandStarted <- newEmptyTMVarIO
+  commandRelease <- newEmptyTMVarIO
+  stopEventDuringCleanup <- newEmptyTMVarIO
+  blockCommand <- newTVarIO False
+  let blockUser _ cmd@ShowActiveUser = do
+        shouldBlock <- atomically $ do
+          b <- readTVar blockCommand
+          writeTVar blockCommand False
+          pure b
+        when shouldBlock $ uninterruptibleMask_ $ do
+          atomically $ putTMVar commandStarted ()
+          atomically $ takeTMVar commandRelease
+        pure $ Right cmd
+      blockUser _ cmd = pure $ Right cmd
+      hooks =
+        defaultChatHooks
+          { preCmdHook = Just blockUser,
+            eventHook = Just $ \_ event -> event <$ atomically (writeTQueue events event)
+          }
+      desktopHooks =
+        defaultChatHooks
+          { eventHook = Just $ \cc event -> do
+              case event of
+                Right Controller.CEvtRemoteHostStopped {} -> do
+                  sessions <- readTVarIO $ Controller.remoteHostSessions cc
+                  let duringCleanup = any (\case (_, RHSessionDisconnecting {}) -> True; _ -> False) $ M.elems sessions
+                  atomically $ void $ tryPutTMVar stopEventDuringCleanup duringCleanup
+                _ -> pure ()
+              pure event
+          }
+  withNewTestChatCfg ps testCfg {remoteCompression = mobileCompression, chatHooks = hooks} "mobile" aliceProfile $ \mobile ->
+    withNewTestChatCfg ps testCfg {remoteCompression = desktopCompression, chatHooks = desktopHooks} "desktop" aliceDesktopProfile $ \desktop ->
+      let compress = " (" <> (if mobileCompression && desktopCompression then "with" else "no") <> " compression)"
+       in test events blockCommand commandStarted commandRelease stopEventDuringCleanup compress mobile desktop
+
+expectRemoteCtrlStopReason :: HasCallStack => TQueue (Either Controller.ChatError Controller.ChatEvent) -> (Controller.RemoteCtrlStopReason -> Bool) -> IO ()
+expectRemoteCtrlStopReason events expected = do
+  reason_ <- timeout 5000000 . atomically $ nextStopReason
+  reason_ `shouldSatisfy` maybe False expected
+  where
+    nextStopReason =
+      readTQueue events >>= \case
+        Right (Controller.CEvtRemoteCtrlStopped _ reason _) -> pure reason
+        _ -> nextStopReason
+
+expectNoRemoteCtrlStop :: HasCallStack => TQueue (Either Controller.ChatError Controller.ChatEvent) -> IO ()
+expectNoRemoteCtrlStop events = do
+  stop_ <- timeout 1000000 . atomically $ nextStop
+  stop_ `shouldBe` Nothing
+  where
+    nextStop =
+      readTQueue events >>= \case
+        Right Controller.CEvtRemoteCtrlStopped {} -> pure ()
+        _ -> nextStop
 
 testRemote3 :: HasCallStack => (String -> TestCC -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
 testRemote3 test ps =
@@ -539,7 +884,10 @@ testRemote4 test ps =
     ps
 
 startRemote :: String -> TestCC -> TestCC -> IO ()
-startRemote compress mobile desktop = do
+startRemote compress mobile desktop = void $ startRemoteInvitation compress mobile desktop
+
+startRemoteInvitation :: String -> TestCC -> TestCC -> IO String
+startRemoteInvitation compress mobile desktop = do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
   mobile ##> "/set device name Mobile"
@@ -557,6 +905,7 @@ startRemote compress mobile desktop = do
   mobile <## ("remote controller 1 session started with My desktop" <> compress)
   desktop <## "new remote host 1 added: Mobile"
   desktop <## ("remote host 1 connected" <> compress)
+  pure inv
 
 startRemoteStored :: String -> TestCC -> TestCC -> IO ()
 startRemoteStored compress mobile desktop = do

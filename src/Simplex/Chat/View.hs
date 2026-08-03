@@ -536,7 +536,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
       plain sessionCode
     ]
   CEvtNewRemoteHost RemoteHostInfo {remoteHostId = rhId, hostDeviceName} -> ["new remote host " <> sShow rhId <> " added: " <> plain hostDeviceName]
-  CEvtRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} compression -> ["remote host " <> sShow rhId <> " connected (" <> compressStr <> " compression)"]
+  CEvtRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} compression _ -> ["remote host " <> sShow rhId <> " connected (" <> compressStr <> " compression)"]
     where
       compressStr = if compression then "with" else "no"
   CEvtRemoteHostStopped {remoteHostId_} ->

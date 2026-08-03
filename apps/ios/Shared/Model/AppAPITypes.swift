@@ -1004,7 +1004,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case connNtfMessages(receivedMsgs: [RcvNtfMsgInfo])
     // remote desktop responses
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
-    case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
+    case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String, sessionSeq: Int)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
@@ -1109,7 +1109,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .ntfConns(ntfConns): return String(describing: ntfConns)
         case let .connNtfMessages(receivedMsgs): return "receivedMsgs: \(String(describing: receivedMsgs))"
         case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
-        case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
+        case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion, _): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
         case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
         case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
         case .cmdOk: return noDetails
@@ -1196,9 +1196,9 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     // remote desktop responses
     case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
-    case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String, sessionSeq: Int)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
-    case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
+    case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason, sessionSeq: Int)
     // pq
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
 
@@ -1351,9 +1351,9 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactDisabled(u, contact): return withUser(u, String(describing: contact))
         case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
         case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
-        case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
+        case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode, _): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
         case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
-        case let .remoteCtrlStopped(rcsState, rcStopReason): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
+        case let .remoteCtrlStopped(rcsState, rcStopReason, _): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
         case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
         }
     }
@@ -1618,6 +1618,7 @@ enum RemoteCtrlStopReason: Decodable {
     case discoveryFailed(chatError: ChatError)
     case connectionFailed(chatError: ChatError)
     case setupFailed(chatError: ChatError)
+    case controllerStopped
     case disconnected
 }
 

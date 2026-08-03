@@ -107,7 +107,16 @@ data RemoteHostSession
   | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS 'TServer, rhPendingSession :: RHPendingSession}
   | RHSessionConfirmed {tls :: TLS 'TServer, rhPendingSession :: RHPendingSession}
   | RHSessionConnected
-      { rchClient :: RCHostClient,
+      { rhPendingSession :: RHPendingSession,
+        tls :: TLS 'TServer,
+        rhClient :: RemoteHostClient,
+        pollAction :: Async (),
+        hostStopRequested :: TVar Bool,
+        storePath :: FilePath
+      }
+  | RHSessionDisconnecting
+      { invitation :: Text,
+        rhPendingSession :: RHPendingSession,
         tls :: TLS 'TServer,
         rhClient :: RemoteHostClient,
         pollAction :: Async (),
@@ -129,6 +138,7 @@ rhsSessionState = \case
   RHSessionPendingConfirmation {tls} -> RHSPendingConfirmation {sessionCode = tlsSessionCode tls}
   RHSessionConfirmed {tls} -> RHSConfirmed {sessionCode = tlsSessionCode tls}
   RHSessionConnected {tls} -> RHSConnected {sessionCode = tlsSessionCode tls}
+  RHSessionDisconnecting {invitation} -> RHSConnecting {invitation}
 
 tlsSessionCode :: TLS p -> Text
 tlsSessionCode = verificationCode . tlsUniq

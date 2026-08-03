@@ -5,6 +5,7 @@ import Foundation
 struct RemoteCtrlActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         var connectedAt: Date
+        var reconnecting: Bool?
     }
 
     var desktopName: String

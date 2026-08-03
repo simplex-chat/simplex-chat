@@ -11,7 +11,7 @@ struct RemoteCtrlLiveActivity: Widget {
                 HStack(spacing: 12) {
                     simplexLogo(size: 36)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Connected to desktop")
+                        Text(context.state.reconnecting == true ? "Reconnecting to desktop" : "Connected to desktop")
                             .font(.headline)
                             .lineLimit(1)
                         Text(context.attributes.desktopName)
@@ -21,10 +21,14 @@ struct RemoteCtrlLiveActivity: Widget {
                     }
                     .layoutPriority(1)
                     Spacer(minLength: 8)
-                    connectedTimer(context.state.connectedAt)
-                        .font(.headline.monospacedDigit())
-                        .multilineTextAlignment(.trailing)
-                        .lineLimit(1)
+                    if context.state.reconnecting == true {
+                        reconnectingIcon(size: 20)
+                    } else {
+                        connectedTimer(context.state.connectedAt)
+                            .font(.headline.monospacedDigit())
+                            .multilineTextAlignment(.trailing)
+                            .lineLimit(1)
+                    }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
             }
@@ -36,22 +40,37 @@ struct RemoteCtrlLiveActivity: Widget {
                     simplexLogo(size: 24)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    connectedTimer(context.state.connectedAt)
-                        .font(.caption.monospacedDigit())
+                    if context.state.reconnecting == true {
+                        reconnectingIcon(size: 16)
+                    } else {
+                        connectedTimer(context.state.connectedAt)
+                            .font(.caption.monospacedDigit())
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Connected to \(context.attributes.desktopName)")
+                    Text(context.state.reconnecting == true
+                         ? "Reconnecting to \(context.attributes.desktopName)"
+                         : "Connected to \(context.attributes.desktopName)")
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
                 }
             } compactLeading: {
                 simplexLogo(size: 16)
             } compactTrailing: {
-                connectedTimer(context.state.connectedAt)
-                    .font(.caption2.monospacedDigit())
-                    .frame(width: 40)
+                if context.state.reconnecting == true {
+                    reconnectingIcon(size: 14)
+                        .frame(width: 40)
+                } else {
+                    connectedTimer(context.state.connectedAt)
+                        .font(.caption2.monospacedDigit())
+                        .frame(width: 40)
+                }
             } minimal: {
-                simplexLogo(size: 14)
+                if context.state.reconnecting == true {
+                    reconnectingIcon(size: 14)
+                } else {
+                    simplexLogo(size: 14)
+                }
             }
         }
     }
@@ -70,5 +89,11 @@ struct RemoteCtrlLiveActivity: Widget {
             countsDown: false,
             showsHours: true
         )
+    }
+
+    private func reconnectingIcon(size: CGFloat) -> some View {
+        Image(systemName: "arrow.clockwise")
+            .font(.system(size: size, weight: .semibold))
+            .accessibilityLabel("Reconnecting")
     }
 }

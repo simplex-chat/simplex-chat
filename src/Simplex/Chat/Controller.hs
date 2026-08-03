@@ -656,6 +656,8 @@ data ChatCommand
   | ConfirmRemoteCtrl RemoteCtrlId -- Confirm the connection with found controller
   | VerifyRemoteCtrlSession Text -- Verify remote controller session
   | ListRemoteCtrls
+  | APIAbortRemoteCtrl SessionSeq -- Abort the matching controller connection attempt
+  | APIDropRemoteCtrl Text -- Drop the matching controller transport without stopping the pairing
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
   | APIUploadStandaloneFile UserId CryptoFile
@@ -728,6 +730,8 @@ allowRemoteCommand = \case
   ConfirmRemoteCtrl _ -> False
   VerifyRemoteCtrlSession {} -> False
   ListRemoteCtrls -> False
+  APIAbortRemoteCtrl {} -> False
+  APIDropRemoteCtrl {} -> False
   StopRemoteCtrl -> False
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
@@ -903,10 +907,10 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
-  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String, localAddrs :: NonEmpty RCCtrlAddress}
+  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String, localAddrs :: NonEmpty RCCtrlAddress, sessionSeq :: SessionSeq}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
+  | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion, sessionSeq :: SessionSeq}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo, compression :: Bool}
   | CRSQLResult {rows :: [Text]}
 #if !defined(dbPostgres)
@@ -1013,13 +1017,13 @@ data ChatEvent
   | CEvtCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CEvtCallEnded {user :: User, contact :: Contact}
   | CEvtNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
-  | CEvtRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
+  | CEvtRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text, sessionSeq :: SessionSeq}
   | CEvtNewRemoteHost {remoteHost :: RemoteHostInfo}
-  | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo, compression :: Bool}
-  | CEvtRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
+  | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo, compression :: Bool, sessionSeq :: SessionSeq}
+  | CEvtRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason, sessionSeq :: SessionSeq}
   | CEvtRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
-  | CEvtRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
-  | CEvtRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
+  | CEvtRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text, sessionSeq :: SessionSeq}
+  | CEvtRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason, sessionSeq :: SessionSeq}
   | CEvtContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CEvtContactDisabled {user :: User, contact :: Contact}
   | CEvtConnectionDisabled {connectionEntity :: ConnectionEntity}
@@ -1578,6 +1582,7 @@ data RemoteCtrlStopReason
   = RCSRDiscoveryFailed {chatError :: ChatError}
   | RCSRConnectionFailed {chatError :: ChatError}
   | RCSRSetupFailed {chatError :: ChatError}
+  | RCSRControllerStopped
   | RCSRDisconnected
   deriving (Show, Exception)
 
@@ -1593,6 +1598,8 @@ instance AnyError ChatError where
 -- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession
   = RCSessionStarting
+      { rcsConnectAction :: Maybe (Async ())
+      }
   | RCSessionSearching
       { action :: Async (),
         foundCtrl :: TMVar (RemoteCtrl, RCVerifiedInvitation)
@@ -1620,6 +1627,8 @@ data RemoteCtrlSession
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
         remoteOutputQ :: TBQueue (Either ChatError ChatEvent),
+        remoteStopEvent :: TMVar (Either ChatError ChatEvent),
+        remoteStopRequested :: TVar Bool,
         ctrlAppInfo :: CtrlAppInfo
       }
 
@@ -1633,7 +1642,7 @@ data RemoteCtrlSessionState
 
 rcsSessionState :: RemoteCtrlSession -> RemoteCtrlSessionState
 rcsSessionState = \case
-  RCSessionStarting -> RCSStarting
+  RCSessionStarting {} -> RCSStarting
   RCSessionSearching {} -> RCSSearching
   RCSessionConnecting {} -> RCSConnecting
   RCSessionPendingConfirmation {tls} -> RCSPendingConfirmation {sessionCode = tlsSessionCode tls}

@@ -91,8 +91,8 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chatlist/ChatListView.kt` | PC1, PC28 | High | Main screen — chat list rendering and search |
-| `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3 | Medium | Navigation from chat list item to chat |
+| `views/chatlist/ChatListView.kt` | PC1, PC27, PC28 | High | Main screen, remote-host reconnect status, chat list rendering, and search |
+| `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3, PC27 | Medium | Navigation from chat list item to chat, disabled during remote-host reconnect |
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11 | Medium | Chat row preview rendering |
 | `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
 | `views/chatlist/UserPicker.kt` | PC19, PC21 | Medium | Multi-profile switcher overlay |
@@ -262,7 +262,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | `views/remote/ConnectDesktopView.kt` | PC27 | Medium | Connect-to-desktop flow (from mobile) |
-| `views/remote/ConnectMobileView.kt` | PC27 | Medium | Connect-to-mobile flow (from desktop) |
+| `views/remote/ConnectMobileView.kt` | PC27 | Medium | Connect-to-mobile flow and retained reconnect state (from desktop) |
 
 ### 1.13 Views — Helpers
 

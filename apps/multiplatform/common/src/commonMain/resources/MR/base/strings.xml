@@ -92,6 +92,9 @@
   <string name="display_name_requested_to_connect">requested to connect</string>
   <string name="display_name_accepted_invitation">accepted invitation</string>
   <string name="display_name_connecting">connecting…</string>
+  <string name="remote_host_reconnecting">reconnecting…</string>
+  <string name="remote_host_reconnecting_title">Reconnecting to mobile</string>
+  <string name="remote_host_reconnecting_desc">Waiting for the mobile device to reconnect.</string>
   <string name="description_you_shared_one_time_link">you shared one-time link</string>
   <string name="description_you_shared_one_time_link_incognito">you shared one-time link incognito</string>
   <string name="description_via_group_link">via group link</string>

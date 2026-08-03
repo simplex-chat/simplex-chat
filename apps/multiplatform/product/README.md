@@ -206,7 +206,7 @@ Desktop-specific functionality not present on Android.
 | VLC video playback | Desktop video playback via VLC native libraries | `common/src/desktopMain/kotlin/chat/simplex/common/platform/VideoPlayer.desktop.kt` |
 | Desktop app entry | Main function, Haskell init, VLC loading | `desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt` |
 | Desktop notification manager | Platform-native desktop notifications | `common/src/desktopMain/kotlin/chat/simplex/common/platform/Notifications.desktop.kt` |
-| Connect mobile device | Pair desktop with a mobile device for remote access | `common/src/commonMain/kotlin/chat/simplex/common/views/remote/ConnectMobileView.kt` |
+| Connect mobile device | Pair with a mobile device; keep the verified invitation active and show reconnecting after transport loss | `common/src/commonMain/kotlin/chat/simplex/common/views/remote/ConnectMobileView.kt` |
 | Desktop platform abstraction | Desktop-specific PlatformInterface implementation | `common/src/desktopMain/kotlin/chat/simplex/common/platform/AppCommon.desktop.kt` |
 | Desktop app shell | Compose Desktop window, theming, lifecycle | `common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt` |
 

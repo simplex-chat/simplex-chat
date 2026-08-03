@@ -88,6 +88,9 @@ struct SimpleXApp: App {
                         if appState != .stopped {
                             startChatAndActivate {
                                 if chatModel.chatRunning == true {
+                                    Task { @MainActor in
+                                        RemoteCtrlReconnect.shared.resume()
+                                    }
                                     if let ntfResponse = chatModel.notificationResponse {
                                         chatModel.notificationResponse = nil
                                         NtfManager.shared.processNotificationResponse(ntfResponse)

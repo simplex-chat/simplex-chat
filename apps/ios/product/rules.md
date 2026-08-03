@@ -146,3 +146,12 @@
 **Rule:** CallKit MUST be disabled in regions where it is restricted (China). The app uses in-app call UI as fallback.
 **Enforced by:** `CallController.swift` checks `useCallKit()` based on region; `ActiveCallView.swift` provides fallback UI.
 **Spec:** [spec/services/calls.md](../spec/services/calls.md)
+
+---
+
+## Remote Desktop Integrity
+
+### RULE-24: Remote reconnect uses the verified invitation
+**Rule:** After transport loss, iOS MUST retry only the exact full invitation saved after verification. It MUST retry only on Wi-Fi or Ethernet and MUST NOT use discovery or a reconstructed endpoint. Automatic reconnect MUST verify the saved pairing without a user prompt. Disconnect MUST clear the saved retry target. Unlink MUST clear it only when the unlinked controller matches the saved target. Chat suspension MUST preserve it, and database deletion MUST clear it. With an active authenticated transport, iOS Disconnect MUST stop macOS, and macOS Stop MUST stop iOS. Without that transport, each side can stop only its local intent.
+**Enforced by:** `RemoteCtrlReconnect` rejects duplicate requests and stale generations, correlates events by session sequence, and aborts a rejected late attempt by that exact sequence. `RemoteCtrlReconnectTarget` stores the controller ID and invitation together. `Remote.hs` retains the host listener, intercepts the authenticated macOS stop command, and sends explicit stop signals in both directions. `Library/Commands.hs` decodes the exact sequence-abort and transport-drop commands.
+**Spec:** [spec/architecture.md](../spec/architecture.md#7-remote-desktop-control)

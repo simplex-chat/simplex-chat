@@ -96,6 +96,9 @@ func chatSuspended() {
 private func _chatSuspended() {
     logger.debug("_chatSuspended")
     AppChatState.shared.set(.suspended)
+    DispatchQueue.main.async {
+        RemoteCtrlReconnect.shared.chatStopped()
+    }
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.stop()
     }
@@ -286,7 +289,10 @@ private final class RemoteCtrlLiveActivityManager {
 
     func start(desktopName: String) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        guard activity == nil else { return }
+        if activity != nil {
+            update(reconnecting: false)
+            return
+        }
         generation += 1
         let requestedGeneration = generation
         let previousTask = lifecycleTask
@@ -298,7 +304,7 @@ private final class RemoteCtrlLiveActivityManager {
             }
             guard requestedGeneration == generation else { return }
             do {
-                let state = RemoteCtrlActivityAttributes.ContentState(connectedAt: .now)
+                let state = RemoteCtrlActivityAttributes.ContentState(connectedAt: .now, reconnecting: false)
                 activity = try Activity.request(
                     attributes: RemoteCtrlActivityAttributes(desktopName: desktopName),
                     contentState: state,
@@ -309,6 +315,10 @@ private final class RemoteCtrlLiveActivityManager {
                 RemoteCtrlBGKeepAlive.shared.stop()
             }
         }
+    }
+
+    func reconnecting() {
+        update(reconnecting: true)
     }
 
     func stop() {
@@ -322,6 +332,25 @@ private final class RemoteCtrlLiveActivityManager {
                 await activeActivity.end(using: nil, dismissalPolicy: .immediate)
             }
             endEndingBackgroundTask()
+        }
+    }
+
+    private func update(reconnecting: Bool) {
+        let requestedGeneration = generation
+        let previousTask = lifecycleTask
+        lifecycleTask = Task {
+            await previousTask?.value
+            guard requestedGeneration == generation else { return }
+            let activities = Activity<RemoteCtrlActivityAttributes>.activities
+            activity = activities.first
+            for activeActivity in activities {
+                let previousState = activeActivity.contentState
+                let state = RemoteCtrlActivityAttributes.ContentState(
+                    connectedAt: !reconnecting && previousState.reconnecting == true ? .now : previousState.connectedAt,
+                    reconnecting: reconnecting
+                )
+                await activeActivity.update(using: state)
+            }
         }
     }
 
@@ -356,7 +385,7 @@ final class RemoteCtrlBGKeepAlive {
         // Threat model: a verified desktop, including a malicious or stalled peer,
         // can keep audio and network work active until the user disconnects here.
         // Every local termination path releases the keepalive and restores local UI.
-        guard ChatModel.shared.activeRemoteCtrl else { return }
+        guard ChatModel.shared.retainedRemoteCtrl else { return }
         if #available(iOS 16.1, *),
            let session = ChatModel.shared.remoteCtrlSession,
            case let .connected(remoteCtrl, _) = session.sessionState {
@@ -365,14 +394,21 @@ final class RemoteCtrlBGKeepAlive {
         RemoteCtrlBackgroundAudio.shared.start()
     }
 
+    func reconnecting() {
+        if #available(iOS 16.1, *) {
+            RemoteCtrlLiveActivityManager.shared.reconnecting()
+        }
+        UIApplication.shared.isIdleTimerDisabled = false
+    }
+
     func handleAppBackgrounding() {
         if !backgroundAudioActive {
             suspendChatForBackground()
         }
     }
 
-    func stop() {
-        let suspendForBackground = backgroundAudioActive && UIApplication.shared.applicationState == .background
+    func stop(suspendIfBackground: Bool = true) {
+        let suspendForBackground = suspendIfBackground && backgroundAudioActive && UIApplication.shared.applicationState == .background
         if #available(iOS 16.1, *) {
             RemoteCtrlLiveActivityManager.shared.stop()
         }

@@ -5469,6 +5469,7 @@ sealed class RemoteCtrlStopReason {
   @Serializable @SerialName("discoveryFailed") class DiscoveryFailed(val chatError: ChatError): RemoteCtrlStopReason()
   @Serializable @SerialName("connectionFailed") class ConnectionFailed(val chatError: ChatError): RemoteCtrlStopReason()
   @Serializable @SerialName("setupFailed") class SetupFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("controllerStopped") object ControllerStopped: RemoteCtrlStopReason()
   @Serializable @SerialName("disconnected") object Disconnected: RemoteCtrlStopReason()
 }
 

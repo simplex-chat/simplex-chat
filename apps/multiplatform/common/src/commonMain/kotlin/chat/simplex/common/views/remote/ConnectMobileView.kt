@@ -111,12 +111,18 @@ fun ConnectMobileLayout(
 
       for (host in remoteHosts) {
         val showMenu = rememberSaveable { mutableStateOf(false) }
-        SectionItemViewLongClickable({ connectMobileDevice(host) }, { showMenu.value = true }, disabled = connecting.value) {
+        SectionItemViewLongClickable({ connectMobileDevice(host) }, { showMenu.value = true }, disabled = connecting.value || host.sessionState is RemoteHostSessionState.Connecting) {
           Icon(painterResource(MR.images.ic_smartphone_300), host.hostDeviceName, tint = MaterialTheme.colors.secondary)
           TextIconSpaced(false)
           Text(host.hostDeviceName)
           Spacer(Modifier.weight(1f))
-          if (host.activeHost) {
+          if (host.sessionState is RemoteHostSessionState.Connecting) {
+            CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colors.secondary, strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(MR.strings.remote_host_reconnecting), color = MaterialTheme.colors.secondary, fontSize = 13.sp)
+            Spacer(Modifier.width(8.dp))
+            HostDisconnectButton { stopRemoteHostAndReloadHosts(host, host.activeHost()) }
+          } else if (host.activeHost) {
             Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
           } else if (host.sessionState is RemoteHostSessionState.Connected) {
             HostDisconnectButton { stopRemoteHostAndReloadHosts(host, false) }
@@ -435,7 +441,7 @@ private fun showConnectedMobileDevice(rh: RemoteHostInfo, disconnectHost: () -> 
     }
     Column {
       ConnectMobileViewLayout(
-        title = stringResource(MR.strings.connected_to_mobile),
+        title = stringResource(if (rh.sessionState is RemoteHostSessionState.Connecting) MR.strings.remote_host_reconnecting else MR.strings.connected_to_mobile),
         invitation = null,
         deviceName = rh.hostDeviceName,
         sessionCode = sessionCode,

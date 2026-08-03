@@ -39,7 +39,10 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
-  val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)
+  val currentRemoteHost by remember { chatModel.currentRemoteHost }
+  val disabled = chatModel.chatRunning.value == false ||
+      chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id) ||
+      currentRemoteHost?.let { it.remoteHostId == chat.remoteHostId && it.sessionState is RemoteHostSessionState.Connecting } == true
   val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
   LaunchedEffect(chat.id) {
     showMenu.value = false

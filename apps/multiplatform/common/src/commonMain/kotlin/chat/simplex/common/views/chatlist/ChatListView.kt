@@ -632,7 +632,10 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
   val scope = rememberCoroutineScope()
 
   suspend fun setSubsTotal() {
-    if (chatModel.currentUser.value != null && chatModel.controller.hasChatCtrl() && chatModel.chatRunning.value == true) {
+    if (chatModel.currentUser.value != null &&
+        chatModel.controller.hasChatCtrl() &&
+        chatModel.chatRunning.value == true &&
+        chatModel.currentRemoteHost.value?.sessionState !is RemoteHostSessionState.Connecting) {
       val r = chatModel.controller.getAgentSubsTotal(chatModel.remoteHostId())
       if (r != null) {
         subs = r.first
@@ -680,6 +683,12 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       val h by remember { chatModel.currentRemoteHost }
       if (h != null) {
         Spacer(Modifier.width(12.dp))
+        if (h!!.sessionState is RemoteHostSessionState.Connecting) {
+          CircularProgressIndicator(Modifier.size(16.dp), color = MaterialTheme.colors.secondary, strokeWidth = 2.dp)
+          Spacer(Modifier.width(8.dp))
+          Text(stringResource(MR.strings.remote_host_reconnecting), color = MaterialTheme.colors.secondary, fontSize = 13.sp)
+          Spacer(Modifier.width(8.dp))
+        }
         HostDisconnectButton {
           stopRemoteHostAndReloadHosts(h!!, true)
         }

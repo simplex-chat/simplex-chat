@@ -147,7 +147,7 @@ struct UserPickerSheetView: View {
             }
         }
         .environmentObject(ss)
-        .interactiveDismissDisabled(sheet == .useFromDesktop && chatModel.activeRemoteCtrl)
+        .interactiveDismissDisabled(sheet == .useFromDesktop && chatModel.retainedRemoteCtrl)
     }
 }
 
@@ -220,20 +220,20 @@ struct ChatListView: View {
                 }
             }
         }
-        .onChange(of: chatModel.activeRemoteCtrl) { active in
-            if active {
+        .onChange(of: chatModel.retainedRemoteCtrl) { retained in
+            if retained {
                 activeUserPickerSheet = .useFromDesktop
             } else if activeUserPickerSheet == .useFromDesktop {
                 activeUserPickerSheet = nil
             }
         }
         .onAppear {
-            if chatModel.activeRemoteCtrl {
+            if chatModel.retainedRemoteCtrl {
                 activeUserPickerSheet = .useFromDesktop
             }
         }
         .onChange(of: scenePhase) { phase in
-            if phase == .active, chatModel.activeRemoteCtrl {
+            if phase == .active, chatModel.retainedRemoteCtrl {
                 activeUserPickerSheet = .useFromDesktop
             }
         }
