@@ -71,12 +71,6 @@ enum class BadgeLevel {
       Legend -> MR.strings.badges_level_legend_tagline
     }
 
-  val badgeAsset: dev.icerock.moko.resources.ImageResource
-    get() = when (this) {
-      Supporter -> MR.images.badge_supporter
-      Legend -> MR.images.badge_legend
-    }
-
   val badgeType: BadgeType
     get() = when (this) {
       Supporter -> BadgeType.Supporter
@@ -157,7 +151,7 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
     Image(
-      painterResource(level.badgeAsset),
+      painterResource(badgeImage(level.badgeType)),
       contentDescription = null,
       contentScale = ContentScale.Fit,
       modifier = Modifier.size(60.dp)

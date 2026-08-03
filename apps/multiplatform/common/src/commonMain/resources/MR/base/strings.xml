@@ -3214,8 +3214,8 @@
   <string name="badges_level_legend_tagline">Optional profile badge\nand 5GB files</string>
   <string name="badges_period_one_month">1 month</string>
   <string name="badges_period_subscribe">Subscribe</string>
-  <string name="badges_billing_footer_subscribe">Renews on July 22, 2026. Cancel anytime.</string>
-  <string name="badges_billing_footer_one_month">Ends on August 22, 2026.</string>
+  <string name="badges_billing_footer_subscribe">Renews on %1$s. Cancel anytime.</string>
+  <string name="badges_billing_footer_one_month">Ends on %1$s.</string>
   <string name="badges_your_level_title">Your level</string>
   <string name="badges_support_simplex_title">Support SimpleX</string>
   <string name="badges_support_simplex_body">SimpleX doesn\'t sell ads or data. It\'s funded by its users and by investors who share the mission. You can support the project and show a badge on your profile.</string>

@@ -64,7 +64,6 @@ struct BadgesSupportSimplexView: View {
             .frame(height: g.size.height)
         }
         .frame(maxHeight: .infinity)
-        .modifier(ThemedBackground())
         .navigationBarTitleDisplayMode(.inline)
     }
 
