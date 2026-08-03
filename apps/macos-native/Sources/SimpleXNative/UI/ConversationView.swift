@@ -912,6 +912,8 @@ private struct AttachmentCard: View {
 }
 
 private struct MessageContentView: View {
+    @State private var playingLinkVideo = false
+
     let message: NativeMessage
     let chat: NativeChat
     let openingAttachment: Bool
@@ -994,7 +996,9 @@ private struct MessageContentView: View {
 
     @ViewBuilder
     private func linkPreview(_ preview: NativeLinkPreview) -> some View {
-        if let destination = preview.destination {
+        if let destination = preview.destination, let inlineVideoURL = preview.inlineVideoURL {
+            playableLinkPreview(preview, destination: destination, inlineVideoURL: inlineVideoURL)
+        } else if let destination = preview.destination {
             Link(destination: destination) {
                 linkPreviewContent(preview)
             }
@@ -1006,17 +1010,97 @@ private struct MessageContentView: View {
         }
     }
 
+    private func playableLinkPreview(
+        _ preview: NativeLinkPreview,
+        destination: URL,
+        inlineVideoURL: URL
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if playingLinkVideo {
+                InlineVideoPlayer(url: inlineVideoURL)
+                    .aspectRatio(16 / 9, contentMode: .fit)
+                    .frame(maxWidth: 480)
+                    .accessibilityElement(children: .contain)
+            } else {
+                Button {
+                    playingLinkVideo = true
+                } label: {
+                    linkPreviewArtwork(preview, showPlayButton: true)
+                }
+                .buttonStyle(.plain)
+                .help("Play video here")
+                .accessibilityLabel("Play \(preview.title.isEmpty ? "YouTube Video" : preview.title)") // [VERIFY] Uses the visible preview title when available.
+                .accessibilityInputLabels(["Play Video", preview.title].filter { !$0.isEmpty })
+            }
+
+            linkPreviewMetadata(preview)
+
+            HStack(spacing: 12) {
+                if playingLinkVideo {
+                    Button("Close Video") {
+                        playingLinkVideo = false
+                    }
+                }
+                Spacer(minLength: 0)
+                Link("Open in Browser", destination: destination)
+            }
+            .font(.caption)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+        .frame(maxWidth: 480, alignment: .leading)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .contain)
+        .onKeyPress(.escape) {
+            guard playingLinkVideo else { return .ignored }
+            playingLinkVideo = false
+            return .handled
+        }
+    }
+
     private func linkPreviewContent(_ preview: NativeLinkPreview) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let image = NativeChatParser.image(from: preview.image) {
-                ZStack(alignment: .bottomTrailing) {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .accessibilityHidden(true)
-                        .accessibilityIgnoresInvertColors()
+            if preview.image != nil {
+                linkPreviewArtwork(preview, showPlayButton: false)
+            }
+            linkPreviewMetadata(preview)
+        }
+        .frame(maxWidth: 480, alignment: .leading)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
+    }
 
-                    if let duration = preview.durationLabel {
+    private func linkPreviewArtwork(_ preview: NativeLinkPreview, showPlayButton: Bool) -> some View {
+        ZStack {
+            if let image = NativeChatParser.image(from: preview.image) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .accessibilityHidden(true)
+                    .accessibilityIgnoresInvertColors()
+            } else {
+                Rectangle()
+                    .fill(.quaternary)
+                    .aspectRatio(16 / 9, contentMode: .fit)
+                    .accessibilityHidden(true)
+            }
+
+            if showPlayButton {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 48))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
+                    .shadow(radius: 4)
+                    .accessibilityHidden(true)
+            }
+
+            if let duration = preview.durationLabel {
+                VStack {
+                    Spacer(minLength: 0)
+                    HStack {
+                        Spacer(minLength: 0)
                         Text(duration)
                             .font(.caption.monospacedDigit())
                             .padding(.horizontal, 8)
@@ -1026,33 +1110,32 @@ private struct MessageContentView: View {
                             .padding(8)
                     }
                 }
-                .frame(maxWidth: 420, maxHeight: 236)
-                .clipped()
             }
-
-            VStack(alignment: .leading, spacing: 4) {
-                if !preview.title.isEmpty {
-                    Text(preview.title)
-                        .font(.headline)
-                        .lineLimit(2)
-                }
-                if !preview.description.isEmpty {
-                    Text(preview.description)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                }
-                Text(preview.displayHost)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .padding(12)
         }
-        .frame(maxWidth: 420, alignment: .leading)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .accessibilityElement(children: .combine)
+        .aspectRatio(16 / 9, contentMode: .fit)
+        .frame(maxWidth: 480)
+        .clipped()
+    }
+
+    private func linkPreviewMetadata(_ preview: NativeLinkPreview) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if !preview.title.isEmpty {
+                Text(preview.title)
+                    .font(.headline)
+                    .lineLimit(2)
+            }
+            if !preview.description.isEmpty {
+                Text(preview.description)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
+            Text(preview.displayHost)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .padding(12)
     }
 
     @ViewBuilder

@@ -230,6 +230,28 @@ private func messageBodyHeight(_ text: String) -> CGFloat {
     #expect(NativeMessageLink.standaloneURL(in: "file:///tmp/private") == nil)
 }
 
+@Test func youtubeLinksBecomePrivacyEnhancedInlinePlayersAtTheirTimestamp() throws {
+    let embed = try #require(NativeMessageLink.youtubeEmbedURL(for: "https://youtu.be/ishgn7-NLIU?t=24"))
+    let components = try #require(URLComponents(url: embed, resolvingAgainstBaseURL: false))
+    let query = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).compactMap { item in
+        item.value.map { (item.name, $0) }
+    })
+
+    #expect(components.host == "www.youtube-nocookie.com")
+    #expect(components.path == "/embed/ishgn7-NLIU")
+    #expect(query["start"] == "24")
+    #expect(query["autoplay"] == "1")
+    #expect(query["playsinline"] == "1")
+
+    let longOffset = try #require(NativeMessageLink.youtubeEmbedURL(
+        for: "https://www.youtube.com/watch?v=ishgn7-NLIU&t=1m5s"
+    ))
+    #expect(URLComponents(url: longOffset, resolvingAgainstBaseURL: false)?
+        .queryItems?.first(where: { $0.name == "start" })?.value == "65")
+    #expect(NativeMessageLink.youtubeEmbedURL(for: "https://example.com/watch?v=ishgn7-NLIU") == nil)
+    #expect(NativeMessageLink.youtubeEmbedURL(for: "https://youtu.be/not-safe") == nil)
+}
+
 @Test func groupMessagesAndQuotesPreferLocallyDisambiguatedMemberNames() throws {
     // Given
     let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"groupRcv","groupMember":{"localDisplayName":"Maya (work)","memberProfile":{"displayName":"Maya"}}},"meta":{"itemId":9,"itemText":"Reply","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Reply"}},"quotedItem":{"chatDir":{"type":"groupRcv","groupMember":{"localDisplayName":"Jordan (cycling)","memberProfile":{"displayName":"Jordan"}}},"itemId":7,"sentAt":"2026-08-02T19:59:00Z","content":{"type":"text","text":"Original message"}}}]}}}"#

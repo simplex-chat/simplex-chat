@@ -178,6 +178,10 @@ struct NativeLinkPreview: Hashable, Sendable {
         NativeMessageLink.standaloneURL(in: uri)
     }
 
+    var inlineVideoURL: URL? {
+        NativeMessageLink.youtubeEmbedURL(for: uri)
+    }
+
     var displayHost: String {
         destination?.host(percentEncoded: false) ?? uri
     }
@@ -196,6 +200,81 @@ enum NativeMessageLink {
               ["http", "https"].contains(components.scheme?.lowercased() ?? ""),
               components.host?.isEmpty == false else { return nil }
         return components.url
+    }
+
+    static func youtubeEmbedURL(for text: String) -> URL? {
+        guard let destination = standaloneURL(in: text),
+              let components = URLComponents(url: destination, resolvingAgainstBaseURL: false),
+              let host = components.host?.lowercased() else { return nil }
+
+        let normalizedHost = host
+            .replacingOccurrences(of: "www.", with: "")
+            .replacingOccurrences(of: "m.", with: "")
+        let pathComponents = components.path.split(separator: "/").map(String.init)
+        let videoID: String?
+        if normalizedHost == "youtu.be" {
+            videoID = pathComponents.first
+        } else if ["youtube.com", "youtube-nocookie.com"].contains(normalizedHost) {
+            if components.path == "/watch" {
+                videoID = components.queryItems?.first(where: { $0.name == "v" })?.value
+            } else if let route = pathComponents.first,
+                      ["embed", "shorts", "live"].contains(route) {
+                videoID = pathComponents.dropFirst().first
+            } else {
+                videoID = nil
+            }
+        } else {
+            videoID = nil
+        }
+
+        guard let videoID, isYouTubeVideoID(videoID) else { return nil }
+
+        var embed = URLComponents()
+        embed.scheme = "https"
+        embed.host = "www.youtube-nocookie.com"
+        embed.path = "/embed/\(videoID)"
+        var queryItems = [
+            URLQueryItem(name: "autoplay", value: "1"),
+            URLQueryItem(name: "playsinline", value: "1"),
+            URLQueryItem(name: "rel", value: "0"),
+        ]
+        if let start = youtubeStartSeconds(in: components), start > 0 {
+            queryItems.append(URLQueryItem(name: "start", value: String(start)))
+        }
+        embed.queryItems = queryItems
+        return embed.url
+    }
+
+    private static func isYouTubeVideoID(_ value: String) -> Bool {
+        value.count == 11 && value.allSatisfy { character in
+            character.isASCII && (character.isLetter || character.isNumber || character == "-" || character == "_")
+        }
+    }
+
+    private static func youtubeStartSeconds(in components: URLComponents) -> Int? {
+        guard let value = components.queryItems?
+            .first(where: { ["t", "start"].contains($0.name.lowercased()) })?
+            .value?.lowercased() else { return nil }
+        if let seconds = Int(value) { return seconds }
+
+        var total = 0
+        var digits = ""
+        for character in value {
+            if character.isNumber {
+                digits.append(character)
+                continue
+            }
+            guard let amount = Int(digits) else { return nil }
+            switch character {
+            case "h": total += amount * 3_600
+            case "m": total += amount * 60
+            case "s": total += amount
+            default: return nil
+            }
+            digits = ""
+        }
+        if let trailing = Int(digits) { total += trailing }
+        return total > 0 ? total : nil
     }
 }
 
