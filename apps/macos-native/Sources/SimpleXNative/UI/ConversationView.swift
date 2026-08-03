@@ -90,12 +90,14 @@ struct ConversationView: View {
                     model.jumpToLatest()
                 }
                 .labelStyle(.iconOnly)
+                .disabled(!model.canNavigateConversationHistory)
                 .help("Jump to Latest")
                 .accessibilityInputLabels(["Jump to Latest", "Latest Messages"])
             }
 
             Button("Refresh Conversation", systemImage: "arrow.clockwise", action: model.refresh)
                 .labelStyle(.iconOnly)
+                .disabled(!model.canRefreshConversation)
                 .help("Refresh Conversation")
                 .accessibilityInputLabels(["Refresh Conversation", "Refresh"])
         }
@@ -117,7 +119,8 @@ struct ConversationView: View {
                             startsGroup: startsGroup(at: index),
                             endsGroup: endsGroup(at: index),
                             openingAttachment: model.openingAttachmentIDs.contains(message.id),
-                            canReply: model.canReply(to: message)
+                            canReply: model.canReply(to: message),
+                            canOpenQuote: model.canNavigateConversationHistory
                         ) {
                             transcriptFocused = true
                             model.selectMessage(message.id, modifiers: NSApp.currentEvent?.modifierFlags ?? [])
@@ -225,6 +228,7 @@ struct ConversationView: View {
                 ReplyContextBar(
                     message: message,
                     chat: chat,
+                    canOpen: model.canNavigateConversationHistory,
                     canCancel: !model.isSendingSelectedChat,
                     open: { model.openReplyTarget() },
                     cancel: model.cancelReply
@@ -475,6 +479,7 @@ private struct MessageRow: View {
     let endsGroup: Bool
     let openingAttachment: Bool
     let canReply: Bool
+    let canOpenQuote: Bool
     let select: () -> Void
     let copy: () -> Void
     let delete: () -> Void
@@ -510,6 +515,7 @@ private struct MessageRow: View {
                     message: message,
                     chatName: chat.displayName,
                     openingAttachment: openingAttachment,
+                    canOpenQuote: canOpenQuote,
                     openQuote: openQuote,
                     openAttachment: openAttachment
                 )
@@ -559,7 +565,7 @@ private struct MessageRow: View {
             .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
             .accessibilityActions {
                 Button(selected ? "Deselect Message" : "Select Message", action: select)
-                if let quote = message.quotedItem {
+                if canOpenQuote, let quote = message.quotedItem {
                     Button("Show Quoted Message") { openQuote(quote) }
                 }
                 if canReply {
@@ -632,6 +638,7 @@ private struct TranscriptDateHeader: View {
 private struct ReplyContextBar: View {
     let message: NativeMessage
     let chat: NativeChat
+    let canOpen: Bool
     let canCancel: Bool
     let open: () -> Void
     let cancel: () -> Void
@@ -659,6 +666,7 @@ private struct ReplyContextBar: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .disabled(!canOpen)
             .help("Show Original Message")
             .accessibilityHint("Moves to the message being replied to in this conversation.")
             .accessibilityInputLabels(["Replying to \(sender)", "Show Original Message"]) // [VERIFY] The first label matches visible text.
@@ -796,6 +804,7 @@ private struct MessageContentView: View {
     let message: NativeMessage
     let chatName: String
     let openingAttachment: Bool
+    let canOpenQuote: Bool
     let openQuote: (NativeQuote) -> Void
     let openAttachment: () -> Void
 
@@ -807,6 +816,7 @@ private struct MessageContentView: View {
                     chatName: chatName,
                     outgoing: message.sent,
                     containingMessageID: message.id,
+                    enabled: canOpenQuote,
                     open: { openQuote(quote) }
                 )
             }
@@ -947,11 +957,13 @@ private struct QuotedMessagePreview: View {
     let chatName: String
     let outgoing: Bool
     let containingMessageID: Int64
+    let enabled: Bool
     let open: () -> Void
 
     var body: some View {
         Button(action: open) { content }
             .buttonStyle(.plain)
+            .disabled(!enabled)
             .help("Show Quoted Message")
             .accessibilityHint("Moves to the original message in this conversation.")
             .accessibilityInputLabels([quote.text, "Quoted Message"]) // [VERIFY] The first label matches visible quote text.

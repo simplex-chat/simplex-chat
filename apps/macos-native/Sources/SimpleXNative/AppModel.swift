@@ -158,12 +158,26 @@ final class AppModel: ObservableObject {
         let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return (hasText || !pendingAttachments.isEmpty)
             && !isSending
-            && !isDeletingReplyTarget
+            && !isDeletingSelectedChat
+            && !isLoadingConversation
+            && quoteNavigationTask == nil
             && selectedChat?.kind.canSend == true
     }
 
     var isSendingSelectedChat: Bool {
         isSending && sendingChatID == selectedChatID
+    }
+
+    var isDeletingSelectedChat: Bool {
+        isDeletingMessages && deletingChatID == selectedChatID
+    }
+
+    var canNavigateConversationHistory: Bool {
+        !isSendingSelectedChat && !isDeletingSelectedChat
+    }
+
+    var canRefreshConversation: Bool {
+        canNavigateConversationHistory && !isLoadingConversation && quoteNavigationTask == nil
     }
 
     var isViewingConversationHistory: Bool {
@@ -178,6 +192,9 @@ final class AppModel: ObservableObject {
         let inFlightQuoteID = isSendingSelectedChat ? replyingTo?.id : nil
         let includesInFlightQuote = inFlightQuoteID.map(selectedMessageIDs.contains) ?? false
         return !isDeletingMessages
+            && !isSendingSelectedChat
+            && !isLoadingConversation
+            && quoteNavigationTask == nil
             && !selectedMessageIDs.isEmpty
             && selectedMessagesInTranscriptOrder.allSatisfy(\.deletable)
             && !includesInFlightQuote
@@ -242,6 +259,7 @@ final class AppModel: ObservableObject {
 
     func refresh() {
         guard !previewMode else { return }
+        guard canRefreshConversation else { return }
         guard let userID = profile?.userID else { return }
         refreshTask?.cancel()
         refreshTask = Task {
@@ -263,7 +281,8 @@ final class AppModel: ObservableObject {
 
     @discardableResult
     func jumpToLatest() -> Task<Void, Never>? {
-        guard let chatID = selectedChatID, isViewingConversationHistory else { return nil }
+        guard canNavigateConversationHistory,
+              let chatID = selectedChatID, isViewingConversationHistory else { return nil }
         quoteNavigationTask?.cancel()
         quoteNavigationTask = nil
         quoteNavigationRevision &+= 1
@@ -275,7 +294,7 @@ final class AppModel: ObservableObject {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = pendingAttachments
         guard (!text.isEmpty || !attachments.isEmpty), let chat = selectedChat,
-              !isSending, !isDeletingReplyTarget else { return }
+              canSendDraft else { return }
         let quotedMessage = replyingChatID == chat.id ? replyingTo : nil
         if replyingTo != nil, quotedMessage == nil { cancelReply() }
         if previewMode, sendTextOperation == nil, sendAttachmentOperation == nil {
@@ -521,7 +540,7 @@ final class AppModel: ObservableObject {
 
     @discardableResult
     func openQuotedMessage(_ quote: NativeQuote, from containingMessageID: Int64) -> Task<Void, Never>? {
-        guard let chatID = selectedChatID else { return nil }
+        guard canNavigateConversationHistory, let chatID = selectedChatID else { return nil }
         quoteNavigationTask?.cancel()
         quoteNavigationTask = nil
         quoteNavigationRevision &+= 1
@@ -806,11 +825,6 @@ final class AppModel: ObservableObject {
         } else {
             pendingChatOperationErrors[chatID] = message
         }
-    }
-
-    private var isDeletingReplyTarget: Bool {
-        guard let replyingTo else { return false }
-        return deletionIncludesMessage(replyingTo.id, in: replyingChatID)
     }
 
     private func deletionIncludesMessage(_ messageID: Int64, in chatID: NativeChat.ID?) -> Bool {

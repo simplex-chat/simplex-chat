@@ -1742,7 +1742,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
 }
 
 @MainActor
-@Test func inFlightReplyTargetCannotBeDeletedUntilTheSendResolves() async throws {
+@Test func inFlightSendBlocksTranscriptDeletionUntilItResolves() async throws {
     // Given
     let model = makeSendTestModel(sendTextOperation: { _, _, _ in
         try Task.checkCancellation()
@@ -1765,8 +1765,8 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     // When: an unrelated message is selected instead.
     model.selectMessage(unrelatedMessage.id, modifiers: [])
 
-    // Then: unrelated deletion remains available.
-    #expect(model.canDeleteSelectedMessages)
+    // Then: even unrelated deletion waits so its transcript reload cannot race the send reload.
+    #expect(!model.canDeleteSelectedMessages)
 
     // Cleanup.
     send.cancel()
@@ -1774,6 +1774,90 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     #expect(!model.isSending)
     model.selectMessage(replyTarget.id, modifiers: [])
     #expect(model.canDeleteSelectedMessages)
+}
+
+@MainActor
+@Test func unresolvedQuoteNavigationBlocksSendUntilItsDestinationSettles() async throws {
+    // Given
+    let target = NativePreviewData.messages(for: "@1")[0]
+    let unresolvedQuote = NativeQuote(messageID: nil, text: target.text, sent: target.sent, author: target.author)
+    let containingMessage = NativeMessage(
+        id: 908,
+        text: "Reply with delayed quote metadata",
+        timestamp: nil,
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text,
+        quotedItem: unresolvedQuote
+    )
+    let refreshedMessage = NativeMessage(
+        id: containingMessage.id,
+        text: containingMessage.text,
+        timestamp: containingMessage.timestamp,
+        sent: containingMessage.sent,
+        author: containingMessage.author,
+        deletable: containingMessage.deletable,
+        content: containingMessage.content,
+        quotedItem: NativeQuote(messageID: target.id, text: target.text, sent: target.sent, author: target.author)
+    )
+    let probe = DelayedValue<NativeMessage?>(refreshedMessage)
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { _, _ in await probe.load() }
+    )
+    model.messages = [target, containingMessage]
+
+    // When: resolving the quote metadata is still in flight.
+    let navigation = try #require(model.openQuotedMessage(unresolvedQuote, from: containingMessage.id))
+    await probe.waitUntilRequested()
+    model.draft = "Do not race this send"
+
+    // Then: Send remains disabled even before the transcript page loader begins.
+    #expect(!model.isLoadingConversation)
+    #expect(!model.canSendDraft)
+    model.sendDraft()
+    #expect(model.sendTask == nil)
+    #expect(model.draft == "Do not race this send")
+
+    // When: the destination resolves.
+    await probe.release()
+    await navigation.value
+
+    // Then
+    #expect(model.targetMessageID == target.id)
+    #expect(model.canSendDraft)
+}
+
+@MainActor
+@Test func inFlightSendBlocksQuotedHistoryNavigation() async throws {
+    // Given
+    let failure = "The delayed send failed."
+    let probe = DelayedTextSendProbe(failureMessage: failure)
+    let model = makeSendTestModel(sendTextOperation: { _, _, _ in try await probe.send() })
+    let target = try #require(model.messages.first)
+    let quote = NativeQuote(messageID: target.id, text: target.text, sent: target.sent, author: target.author)
+    model.draft = "Sending now"
+
+    // When: a send is in flight.
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await probe.waitUntilRequested()
+
+    // Then: quote navigation and transcript deletion are both rejected consistently.
+    #expect(!model.canNavigateConversationHistory)
+    #expect(!model.canRefreshConversation)
+    #expect(model.openQuotedMessage(quote, from: 909) == nil)
+    #expect(model.targetMessageID == nil)
+    #expect(model.conversationAnchorMessageID == nil)
+    model.selectMessage(target.id, modifiers: [])
+    #expect(!model.canDeleteSelectedMessages)
+
+    // Cleanup.
+    await probe.release()
+    await send.value
+    #expect(model.phase == .failed(failure))
+    #expect(model.canNavigateConversationHistory)
 }
 
 private actor DelayedDeletionProbe {
@@ -1824,6 +1908,11 @@ private actor DelayedDeletionProbe {
     // Then: the reply stays visible, but cannot be sent into the deletion race.
     #expect(model.replyingTo?.id == target.id)
     #expect(!model.canSendDraft)
+    #expect(!model.canNavigateConversationHistory)
+    #expect(!model.canRefreshConversation)
+    let quote = NativeQuote(messageID: target.id, text: target.text, sent: target.sent, author: target.author)
+    #expect(model.openQuotedMessage(quote, from: 910) == nil)
+    #expect(model.targetMessageID == nil)
     model.sendDraft()
     #expect(model.sendTask == nil)
 
