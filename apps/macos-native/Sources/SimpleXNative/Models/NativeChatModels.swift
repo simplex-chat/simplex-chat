@@ -154,9 +154,10 @@ struct NativeCryptoFileArgs: Hashable, Sendable {
 }
 
 struct NativeSendReceipt: Equatable, Sendable {
+    let committedMessages: [NativeMessage]
     let replyContextConfirmed: Bool
 
-    static let confirmed = NativeSendReceipt(replyContextConfirmed: true)
+    static let confirmed = NativeSendReceipt(committedMessages: [], replyContextConfirmed: true)
 }
 
 enum NativeChatParser {
@@ -269,16 +270,24 @@ enum NativeChatParser {
             expectedType: "newChatItems",
             requireChatItems: true
         )
-        guard let quotedItemID else { return .confirmed }
         let root = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let result = root?["result"] as? [String: Any]
         let chatItems = result?["chatItems"] as? [[String: Any]] ?? []
-        let confirmed = chatItems.contains { item in
+        let committedMessages = chatItems.compactMap { item in
             let chatItem = item["chatItem"] as? [String: Any] ?? item
-            let quote = chatItem["quotedItem"] as? [String: Any]
-            return int64(quote?["itemId"]) == quotedItemID
+            return parseMessage(chatItem)
         }
-        return NativeSendReceipt(replyContextConfirmed: confirmed)
+        let replyContextConfirmed = quotedItemID.map { quotedItemID in
+            chatItems.contains { item in
+                let chatItem = item["chatItem"] as? [String: Any] ?? item
+                let quote = chatItem["quotedItem"] as? [String: Any]
+                return int64(quote?["itemId"]) == quotedItemID
+            }
+        } ?? true
+        return NativeSendReceipt(
+            committedMessages: committedMessages,
+            replyContextConfirmed: replyContextConfirmed
+        )
     }
 
     static func image(from encoded: String?) -> NSImage? {

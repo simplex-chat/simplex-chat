@@ -351,10 +351,12 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
         expectedType: "newChatItems",
         requireChatItems: true
     )
-    #expect(try NativeChatParser.validateSendResponse(
+    let committedReplyReceipt = try NativeChatParser.validateSendResponse(
         committedReply,
         quotedItemID: 42
-    ).replyContextConfirmed)
+    )
+    #expect(committedReplyReceipt.replyContextConfirmed)
+    #expect(committedReplyReceipt.committedMessages.map(\.id) == [9])
     #expect(try !NativeChatParser.validateSendResponse(
         committed,
         quotedItemID: 42
@@ -1795,7 +1797,22 @@ private actor AttachmentSendProbe {
         if requests.count == failingRequest {
             throw NativeChatError.unavailable("The attachment could not be sent.")
         }
-        return .confirmed
+        let committedMessage = NativeMessage(
+            id: 20_000 + Int64(requests.count),
+            text: caption,
+            timestamp: nil,
+            sent: true,
+            author: nil,
+            deletable: true,
+            content: .image(preview: nil, fileName: attachment.fileName),
+            quotedItem: quotedItemID.map {
+                NativeQuote(messageID: $0, text: "Original message", sent: false, author: "Maya")
+            }
+        )
+        return NativeSendReceipt(
+            committedMessages: [committedMessage],
+            replyContextConfirmed: quotedItemID == nil || committedMessage.quotedItem?.messageID == quotedItemID
+        )
     }
 
     func recordedRequests() -> [Request] {
@@ -1970,7 +1987,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     let model = makeSendTestModel(sendTextOperation: { _, quotedItemID, _ in
         #expect(quotedItemID == original.id)
         withUnsafeCurrentTask { $0?.cancel() }
-        return NativeSendReceipt(replyContextConfirmed: false)
+        return NativeSendReceipt(committedMessages: [], replyContextConfirmed: false)
     })
     model.messages = [original]
     model.draft = "Send this once"
@@ -1994,10 +2011,37 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     // Given
     let refreshFailure = "The newest messages are temporarily unavailable."
     let original = NativePreviewData.messages(for: "@1")[0]
+    let racingEventCopy = NativeMessage(
+        id: 9_900,
+        text: "Sending reply",
+        timestamp: Date(timeIntervalSince1970: 1),
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text
+    )
+    let committedReply = NativeMessage(
+        id: racingEventCopy.id,
+        text: "Committed reply",
+        timestamp: Date(timeIntervalSince1970: 2),
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text,
+        quotedItem: NativeQuote(
+            messageID: original.id,
+            text: original.replyPreview,
+            sent: original.sent,
+            author: original.author
+        )
+    )
     let model = makeSendTestModel(
         sendTextOperation: { _, quotedItemID, _ in
             #expect(quotedItemID == original.id)
-            return .confirmed
+            return NativeSendReceipt(
+                committedMessages: [committedReply],
+                replyContextConfirmed: true
+            )
         },
         loadMessagesOperation: { chatID, aroundMessageID in
             #expect(chatID == "@1")
@@ -2005,7 +2049,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
             throw NativeChatError.unavailable(refreshFailure)
         }
     )
-    model.messages = [original]
+    model.messages = [original, racingEventCopy]
     model.draft = "Send this once"
     model.beginReply(to: original)
 
@@ -2017,6 +2061,8 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     // Then: the committed message is not restored for a duplicate retry.
     #expect(model.draft.isEmpty)
     #expect(model.replyingTo == nil)
+    #expect(model.messages == [original, committedReply])
+    #expect(model.targetMessageID == committedReply.id)
     #expect(model.phase == .failed(
         "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(refreshFailure)"
     ))
@@ -2107,6 +2153,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
         try await probe.send(attachment, caption: caption, quotedItemID: quotedItemID)
     })
     let original = try #require(model.messages.first)
+    let initialMessageCount = model.messages.count
     let attachments = ["one.jpg", "two.jpg"].map {
         PendingAttachment(
             id: UUID(),
@@ -2134,6 +2181,9 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     #expect(model.pendingAttachments == [attachments[1]])
     #expect(model.draft == "Batch caption")
     #expect(model.replyingTo == nil)
+    #expect(model.messages.count == initialMessageCount + 1)
+    #expect(model.messages.last?.content == .image(preview: nil, fileName: "one.jpg"))
+    #expect(model.messages.last?.quotedItem?.messageID == original.id)
     #expect(!model.isSending)
 }
 
@@ -2186,7 +2236,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     let model = makeSendTestModel(sendAttachmentOperation: { _, _, quotedItemID, _ in
         #expect(quotedItemID != nil)
         withUnsafeCurrentTask { $0?.cancel() }
-        return NativeSendReceipt(replyContextConfirmed: false)
+        return NativeSendReceipt(committedMessages: [], replyContextConfirmed: false)
     })
     let original = try #require(model.messages.first)
     model.pendingAttachments = [attachment]
@@ -3218,6 +3268,9 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
             quotedItemID: firstItemID
         )
         #expect(replyReceipt.replyContextConfirmed)
+        let committedReply = try #require(replyReceipt.committedMessages.first)
+        #expect(committedReply.text == "Bundled-core reply")
+        #expect(committedReply.quotedItem?.messageID == firstItemID)
 
         let originalURL = temporaryDirectory.appendingPathComponent("original.jpg")
         let encryptedURL = temporaryDirectory.appendingPathComponent("encrypted.jpg")

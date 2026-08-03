@@ -379,6 +379,11 @@ final class AppModel: ObservableObject {
                         receipt = try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
                     }
                     draftWasSent = true
+                    self?.applyCommittedMessages(
+                        receipt.committedMessages,
+                        in: chat.id,
+                        announcement: "Message sent"
+                    )
                     if let quotedItemID = quotedMessage?.id {
                         quoteCommitResolved = true
                         self?.clearReply(quotedItemID, in: chat.id)
@@ -412,6 +417,11 @@ final class AppModel: ObservableObject {
                             )
                         }
                         if index == sendSteps.index(before: sendSteps.endIndex) { draftWasSent = true }
+                        self?.applyCommittedMessages(
+                            receipt.committedMessages,
+                            in: chat.id,
+                            announcement: "Attachment \(index + 1) of \(sendSteps.count) sent"
+                        )
                         self?.removeSentAttachment(step.attachment.id, from: chat.id)
                         if let quotedItemID = step.quotedItemID {
                             quoteCommitResolved = true
@@ -1053,6 +1063,33 @@ final class AppModel: ObservableObject {
     private func removeSentAttachment(_ attachmentID: PendingAttachment.ID, from chatID: NativeChat.ID) {
         updateComposerState(for: chatID) { state in
             state.attachments.removeAll { $0.id == attachmentID }
+        }
+    }
+
+    private func applyCommittedMessages(
+        _ committedMessages: [NativeMessage],
+        in chatID: NativeChat.ID,
+        announcement: String
+    ) {
+        guard selectedChatID == chatID, !committedMessages.isEmpty else { return }
+        for message in committedMessages {
+            if let index = messages.firstIndex(where: { $0.id == message.id }) {
+                messages[index] = message
+            } else {
+                messages.append(message)
+            }
+        }
+        targetMessageID = committedMessages.last?.id
+        if let application = NSApp {
+            let userInfo: [NSAccessibility.NotificationUserInfoKey: Any] = [
+                .announcement: announcement,
+                .priority: NSNumber(value: NSAccessibilityPriorityLevel.medium.rawValue),
+            ]
+            NSAccessibility.post(
+                element: application,
+                notification: .announcementRequested,
+                userInfo: userInfo
+            )
         }
     }
 
