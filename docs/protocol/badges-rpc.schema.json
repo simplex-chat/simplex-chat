@@ -11,6 +11,10 @@
       "ref": "base64url",
       "metadata": {"comment": "must match the RPC transport key"}
     },
+    "currencyAmount": {
+      "type": "uint32",
+      "metadata": {"comment": "USD etc. are in minor units, following Stripe etc. convention"}
+    },
     "badgeInfo": {
       "properties": {
         "badgeType": {"type": "string"},
@@ -80,6 +84,14 @@
         }
       }
     },
+    "upgrade": {
+      "properties": {
+        "fromPurchaseKey": {"ref": "base64url"},
+        "receipt": {"type": "string"},
+        "receiptSignature": {"ref": "base64url"},
+        "balance": {"ref": "balance"}
+      }
+    },
     "catalog": {},
     "statement": {},
     "balance": {},
@@ -89,7 +101,10 @@
         "request": {"ref": "command"}
       },
       "optionalProperties": {
-        "purchaseKey": {"ref": "purchaseKey"}
+        "purchaseKey": {
+          "ref": "purchaseKey",
+          "metadata": {"comment": "absent for getBadgeCatalog, required for other commands"}
+        }
       }
     },
     "command": {
@@ -105,13 +120,32 @@
             "paymentVia": {"ref": "paymentVia"}
           },
           "optionalProperties": {
-            "balance": {"ref": "balance"}
+            "upgrade": {
+              "ref": "upgrade",
+              "metadata": {"comment": "upgrade non-store badge"}
+            }
           }
         },
         "purchaseBadge": {
           "properties": {
             "badgeRequest": {"ref": "badgeRequest"},
             "payment": {"ref": "payment"}
+          },
+          "optionalProperties": {
+            "upgrade": {
+              "ref": "upgrade",
+              "metadata": {"comment": "upgrade store 1-time badge"}
+            }
+          }
+        },
+        "upgradeBadgeSubscription": {
+          "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
+            "payment": {
+              "ref": "payment",
+              "metadata": {"comment": "store payments only"}
+            },
+            "balance": {"ref": "balance"}
           }
         },
         "issueBadge": {
@@ -125,6 +159,7 @@
         },
         "transferBadge": {
           "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
             "receipt": {"type": "string"}
           }
         }
@@ -143,15 +178,24 @@
             "invoiceId": {"type": "string"},
             "badgeType": {"type": "string"},
             "months": {"type": "uint8"},
-            "price": {"type": "uint32"},
-            "amount": {"type": "uint32", "metadata": {"comment": "price - discount - credit"}},
+            "price": {"ref": "currencyAmount"},
+            "amount": {
+              "ref": "currencyAmount",
+              "metadata": {"comment": "price - discount - credit"}
+            },
             "currency": {"type": "string"},
             "expiresAt": {"type": "timestamp"},
             "paymentTo": {"ref": "paymentTo"}
           },
           "optionalProperties": {
-            "discount": {"type": "uint32"},
-            "credit": {"type": "uint32"}
+            "discount": {
+              "ref": "currencyAmount",
+              "metadata": {"comment": "discount amount from monthly price"}
+            },
+            "credit": {
+              "ref": "currencyAmount",
+              "metadata": {"comment": "credit for upgrade"}
+            }
           }
         },
         "newBadge": {
@@ -160,7 +204,10 @@
             "statement": {"ref": "statement"}
           },
           "optionalProperties": {
-            "receipt": {"type": "string"}
+            "receipt": {
+              "type": "string",
+              "metadata": {"comment": "not provided for lifetime badges"}
+            }
           }
         },
         "badgeCredential": {
@@ -168,7 +215,10 @@
             "statement": {"ref": "statement"}
           },
           "optionalProperties": {
-            "credential": {"ref": "credential"}
+            "credential": {
+              "ref": "credential",
+              "metadata": {"comment": "Nothing when no balance to issueBadge or no current credential for pause/transfer"}
+            }
           }
         },
         "error": {

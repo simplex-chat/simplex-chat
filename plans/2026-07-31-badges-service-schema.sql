@@ -23,8 +23,8 @@ CREATE UNIQUE INDEX idx_offers_apple ON offers(apple_product_id) WHERE apple_pro
 
 CREATE UNIQUE INDEX idx_offers_google ON offers(google_product_id) WHERE google_product_id IS NOT NULL;
 
-CREATE TABLE orders(
-  order_key BYTEA PRIMARY KEY,
+CREATE TABLE badge_purchases(
+  purchase_key BYTEA PRIMARY KEY,
   product_id TEXT NOT NULL REFERENCES products,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL
@@ -32,7 +32,7 @@ CREATE TABLE orders(
 
 CREATE TABLE payments(
   payment_ref TEXT PRIMARY KEY,
-  order_key BYTEA NOT NULL REFERENCES orders,
+  purchase_key BYTEA NOT NULL REFERENCES badge_purchases,
   offer_id TEXT REFERENCES offers,
   provider TEXT NOT NULL CHECK (provider IN ('apple', 'google', 'stripe', 'btc', 'xmr', 'code')),
   provider_ref TEXT,
@@ -49,7 +49,7 @@ CREATE TABLE payments(
   updated_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_payments_order ON payments(order_key);
+CREATE INDEX idx_payments_purchase ON payments(purchase_key);
 
 CREATE INDEX idx_payments_provider_ref ON payments(provider, provider_ref);
 
@@ -67,32 +67,32 @@ CREATE TABLE charges(
 
 CREATE TABLE badge_ledger(
   entry_id BIGSERIAL PRIMARY KEY,
-  order_key BYTEA NOT NULL REFERENCES orders,
-  op TEXT NOT NULL CHECK (op IN (
+  purchase_key BYTEA NOT NULL REFERENCES badge_purchases,
+  entry_type TEXT NOT NULL CHECK (entry_type IN (
     'grant_payment', 'grant_charge', 'grant_goodwill', 'grant_transfer_in',
     'debit_refund', 'debit_conversion', 'debit_transfer_out', 'debit_correction',
     'consume', 'lapse', 'resume'
   )),
-  delta INT NOT NULL,
-  months INT NOT NULL CHECK (months >= 0),
-  start TIMESTAMPTZ NOT NULL,
+  change_months INT NOT NULL,
+  balance_months INT NOT NULL CHECK (balance_months >= 0),
+  balance_start_ts TIMESTAMPTZ NOT NULL,
   payment_ref TEXT,
   charge_id BIGINT,
   created_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_badge_ledger_order ON badge_ledger(order_key, entry_id DESC);
+CREATE INDEX idx_badge_ledger_purchase ON badge_ledger(purchase_key, entry_id DESC);
 
 CREATE TABLE issuances(
   issuance_id BIGSERIAL PRIMARY KEY,
-  order_key BYTEA NOT NULL REFERENCES orders,
+  purchase_key BYTEA NOT NULL REFERENCES badge_purchases,
   period_start TIMESTAMPTZ,
   period_end TIMESTAMPTZ,
   expiry TIMESTAMPTZ,
   entry_id BIGINT REFERENCES badge_ledger,
   credential BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
-  UNIQUE(order_key, period_start)
+  UNIQUE(purchase_key, period_start)
 );
 
 CREATE TABLE codes(
@@ -100,7 +100,7 @@ CREATE TABLE codes(
   badge_type TEXT NOT NULL,
   months INT,
   batch TEXT NOT NULL,
-  redeemed_order BYTEA REFERENCES orders,
+  redeemed_purchase BYTEA REFERENCES badge_purchases,
   redeemed_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL

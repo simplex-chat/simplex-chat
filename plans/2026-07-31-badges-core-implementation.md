@@ -10,7 +10,7 @@
 `src/Simplex/Chat/Store/SQLite/Migrations/M20260731_user_badges.hs` — SQLite only; the Postgres variant is written when the schema is final; registered in the migrations list and cabal at delivery step 2.
 
 - Table mapping to UX §3:
-  - `badges` → `user_badges`
+  - `badges` → `badge_purchases`
   - `issuances` → `badge_issuances`
   - `products` → `badge_products`
   - `offers` → `badge_offers`
@@ -24,20 +24,20 @@
   - `grace_until` — the provider grace/hold deadline (UX 2.4 payment failed; 2.6 state 5)
   - `exception` — the provider exception state: partial or over payment (UX 2.1)
 - The badge–user match for `users.shown_badge_id` is enforced in code.
-- `badge_ledger.op` uses the service `badge_ledger.op` values (CHECK in the service schema).
+- `badge_ledger.entry_type` uses the service `badge_ledger.entry_type` values (CHECK in the service schema).
 - Settings (reminders opt-out; "Show new badges from Monday", post-MVP) are app settings, not schema.
 
 ## 2. Badge RPC service schema
 
-`plans/2026-07-31-badges-service-schema.sql` — Postgres; the bot schema, extended with the order/ledger layer.
+`plans/2026-07-31-badges-service-schema.sql` — Postgres; the bot schema, extended with the purchase/ledger layer.
 
 ## 3. Client types
 
-Domain types — `src/Simplex/Chat/Badges.hs`. Records:
+Domain types — `src/Simplex/Chat/Badges/Store.hs`. Records:
 
 - `BadgeProduct`
 - `BadgeOffer`
-- `UserBadge`
+- `BadgePurchase`
 - `BadgePayment`
 - `BadgeLedgerEntry`
 - `BadgeCharge`
@@ -49,7 +49,7 @@ Id newtypes:
 
 - `BadgeProductId`
 - `BadgeOfferId`
-- `BotPaymentRef`
+- `InvoiceId`
 
 Enums:
 
@@ -57,7 +57,7 @@ Enums:
 - `BadgeOfferState`
 - `BadgeProvider`
 - `BadgePaymentStatus`
-- `UserBadgeStatus`
+- `BadgePurchaseStatus`
 - `GrantSource`
 - `DebitReason`
 - `BadgeAlertKind`
@@ -65,9 +65,9 @@ Enums:
 Tagged sums:
 
 - `BadgeProductType` — text with an unknown-tag catch-all, the `BadgeType` shape
-- `BadgeLedgerOp` — the composite `badge_ledger.op` text (§2)
+- `BadgeLedgerEntryType` — the composite `badge_ledger.entry_type` text (§2)
 
-Reused:
+Reused from `Simplex.Chat.Badges`:
 
 - `BadgeType`
 - `BadgeInfo`
@@ -82,7 +82,9 @@ Protocol types — `src/Simplex/Chat/Badges/Service.hs`, one constructor/field p
 - `ServicePaymentMethod`
 - `CardProvider`
 - `CryptoCurrency`
+- `CurrencyAmount`
 - `ServicePayment`
+- `BadgeUpgrade`
 - `BadgeServiceResponse`
 - `ServicePaymentDestination`
 - `BadgeServiceErrorCode`
@@ -105,12 +107,13 @@ A request is an envelope: `version`; `purchaseKey`? (absent only for `getBadgeCa
 | request `type` | request fields (beyond `purchaseKey`, `version`) | response `type` | response fields |
 |---|---|---|---|
 | `getBadgeCatalog` (unsigned) | — | `badgeCatalog` | `catalog` |
-| `getBadgeInvoice` | `offerId`; `badgeInfo {badgeType, badgeExpiry?, badgeExtra}` — the planned expiry; `paymentVia` — `card`: `provider`; `crypto`: `currency`; `balance`? (conversion credit) | `badgeInvoice` | `invoiceId`, `badgeType`, `months`, `price`, `discount`?, `credit`?, `amount` (= price − discount − credit), `currency`, `expiresAt`; `paymentTo` — `card`: `provider`, `url`; `crypto`: `currency`, `address`, `cryptoAmount` |
-| `purchaseBadge` | `badgeRequest` — `masterKey`, `badgeInfo {badgeType, badgeExpiry?, badgeExtra}`; `payment` — `apple`: `jws`; `google`: `token`; `invoice`: `invoiceId`; `code`: `code` | `newBadge` | `credential`, `receipt`? (card/crypto), `statement` |
-| `issueBadge` | `badgeRequest` — same shape; `balance` | `badgeCredential` | `credential`? (absent when the balance is exhausted), `statement` |
-| `pauseBadge` (post-MVP) | — | `badgeCredential` | `credential`?, `statement` |
-| `transferBadge` (post-MVP) | `receipt` | `badgeCredential` | `credential`?, `statement` |
-| any, on failure | — | `error` | `code` (incl. `payment_pending`, `code_invalid` / `code_used` / `code_expired`), `message`?, `retryAfter`? |
+| `getBadgeInvoice` | `offerId`<br>`badgeInfo {badgeType, badgeExpiry?, badgeExtra}`<br>`paymentVia` — `card`: `provider`; `crypto`: `currency`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeInvoice` | `invoiceId`<br>`badgeType`<br>`months`<br>`price`<br>`discount`?<br>`credit`?<br>`amount` (= price − discount − credit)<br>`currency`<br>`expiresAt`<br>`paymentTo` — `card`: `provider`, `url`; `crypto`: `currency`, `address`, `cryptoAmount` |
+| `purchaseBadge` | `badgeRequest` — `masterKey`, `badgeInfo`<br>`payment` — `apple`: `jws`; `google`: `token`; `invoice`: `invoiceId`; `code`: `code`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `newBadge` | `credential`<br>`receipt`? (not provided for lifetime badges)<br>`statement` |
+| `upgradeBadgeSubscription` | `badgeRequest`<br>`payment` — `apple`: `jws`; `google`: `token`<br>`balance` | `badgeCredential` | `credential`?<br>`statement` |
+| `issueBadge` | `badgeRequest`<br>`balance` | `badgeCredential` | `credential`? (absent when the balance is exhausted)<br>`statement` |
+| `pauseBadge` (post-MVP) | — | `badgeCredential` | `credential`?<br>`statement` |
+| `transferBadge` (post-MVP) | `badgeRequest`<br>`receipt` | `newBadge` | `credential`<br>`receipt`?<br>`statement` |
+| any, on failure | — | `error` | `code` (incl. `payment_pending`, `code_invalid` / `code_used` / `code_expired`)<br>`message`?<br>`retryAfter`? |
 
 Undefined, pending design: `catalog`, `statement`, `balance`.
 
@@ -127,7 +130,7 @@ Undefined, pending design: `catalog`, `statement`, `balance`.
 | APIGetBadgeCatalog UserId                                      -- /_badge catalog <userId>; unsigned getCatalog op
 | APIGetBadgeInvoice {userId :: UserId, offerId :: BadgeOfferId, paymentMethod :: Maybe BadgePaymentMethod}  -- /_badge invoice <userId> <offerId> [<method>]; the method is absent for store offers
 | APIPurchaseBadge {userId :: UserId, paymentId :: Int64, evidence :: PaymentEvidence}  -- /_badge purchase <userId> <paymentId> <json>
-| APISwitchShownBadge {userId :: UserId, userBadgeId :: Int64}   -- /_badge shown <userId> <userBadgeId>
+| APISwitchShownBadge {userId :: UserId, badgePurchaseId :: Int64}  -- /_badge shown <userId> <badgePurchaseId>
 | APIRedeemBadgeCode {userId :: UserId, code :: Text}            -- /_badge redeem <userId> <code>
 | APIAckBadgeAlert {userId :: UserId, kind :: BadgeAlertKind, episode :: Text, snooze :: Bool}  -- /_badge ack <userId> <kind> <episode> <snooze>
 ```
@@ -144,7 +147,7 @@ Undefined, pending design: `catalog`, `statement`, `balance`.
 
 Purchase is two commands because the store purchase runs in the app between them: StoreKit and Play Billing are app-platform APIs, which core cannot call, and the store may deliver the result late (`pending` / Ask to Buy — via `Transaction.updates`, including after a restart). The names follow digital commerce: `APIGetBadgeInvoice` obtains the invoice (the `getInvoice` op) or the store product id; after payment `APIPurchaseBadge` presents the evidence, and the worker sends `purchase` — verification, the grant, and the first delivery in one round trip. Delivery has no command — `deliver` is core-driven (UX 2.9 engine), from the balance only: settlement grants months, issuance consumes them (UX §3 ledger), so the first and every repeat delivery are the same op.
 
-- `APIGetBadgeInvoice` starts every purchase: core loads or creates the live badge row for the offer's slot (per-user lock + `idx_user_badges_live`) — a `failed` row of the same slot is reused — creates the payment row, and points the badge row's `payment_id` at it (UX §3: the current payment). For a non-store offer core sends `getInvoice` with the method chosen in the selector (UX 2.1) and responds with the invoice — the Stripe link or the crypto screen data (UX 2.1). For a store offer core responds with the store product id, and the app starts the native purchase (UX §5: the payment row precedes `Product.purchase()`). The invoice fields are stored on the payment row (§1), so pending-payment screens re-render after a restart; after invoice expiry a new `APIGetBadgeInvoice` creates a new invoice and payment row (UX 2.1).
+- `APIGetBadgeInvoice` starts every purchase: core loads or creates the live purchase row for the offer's slot (per-user lock + `idx_badge_purchases_live`) — a `failed` row of the same slot is reused — creates the payment row, and points the badge row's `payment_id` at it (UX §3: the current payment). For a non-store offer core sends `getInvoice` with the method chosen in the selector (UX 2.1) and responds with the invoice — the Stripe link or the crypto screen data (UX 2.1). For a store offer core responds with the store product id, and the app starts the native purchase (UX §5: the payment row precedes `Product.purchase()`). The invoice fields are stored on the payment row (§1), so pending-payment screens re-render after a restart; after invoice expiry a new `APIGetBadgeInvoice` creates a new invoice and payment row (UX 2.1).
 - `APIPurchaseBadge` completes a store purchase — the only payment whose result is delivered to the app: the store hands the app the evidence, and only that evidence ties the store transaction to the order, because the store flow knows neither order keys nor the bot. Core records it on the payment row; the worker sends `purchase` — the bot verifies, records the grant, and delivers in one round trip (§6). Stripe and crypto need no completion command and carry no evidence: the bot records their settlement from the provider webhook (UX §7 notifications); the worker's next `deliver` returns the delivery, or the `state` result with `reason: payment_pending` until the webhook arrives (§4).
 - `APIRedeemBadgeCode` sends `redeem` under the user lock: keys are generated first; the badge and payment rows (`provider = code`, `offer_id` NULL) are written on success in one transaction, directly `issued` — the badge type is in the response (UX 2.8). A live row of the granted slot is superseded (at most two badges per profile, UX 2.7); its unconsumed months stay on its order — orders are unlinkable, so the bot cannot move them; recovery per UX §3 (`transfer`, post-MVP). On a timeout the error is surfaced to the user; a code consumed by a lost response is restored by support (codes tooling, delivery 7).
 - `APIGetBadgeState` loads the badge state into the app model at start (and on profile switch); events only update the model afterward, so without the initial read it would hold nothing at first render — the 2.2 banner is rendered from it. The same call re-reads state when a badge screen is opened or regains focus, and signals the worker (§6); reconciliation results follow as `CEvtBadgeChanged`. Screen re-focus covers the returns that fire no core trigger: the store cancellation sheet close — UX §7 "the engine sends `status` on return"; the in-app sheet fires no foreground trigger — and return to a pending-payment screen after payment (UX 2.1), which on desktop produces no foreground event either.
@@ -221,7 +224,7 @@ flowchart TD
   W -- no --> A[load badges + payments + last ledger rows]
   A --> B[per live badge, reconcile:\nstore evidence unverified -> purchase\npayment in status new -> getInvoice re-sent\ninvoiced/pending non-store -> deliver\nsubscription past renews_at -> deliver\nbalance > 0, month unissued -> deliver\nread requested -> getState]
   B --> C[RPC op under the user lock, signed with the order key\non ASETimeout the same envelope is retried at the next signal]
-  C --> D[apply response:\nreconcile state.catalog into badge_products / badge_offers\nstore replica rows verbatim; on resync replace the replicas\nupdate payments: status, renews_at, cancelled from willRenew, grace_until, exception, receipt_code, bot_payment_ref\nverify credential -> update user_badges credential columns\nerror: terminal code -> badge failed; transient -> hold the op until retryAfter elapses]
+  C --> D[apply response:\nreconcile state.catalog into badge_products / badge_offers\nstore replica rows verbatim; on resync replace the replicas\nupdate payments: status, renews_at, cancelled from willRenew, grace_until, exception, receipt_code, invoice_id\nverify credential -> update badge_purchases credential columns\nerror: terminal code -> badge failed; transient -> hold the op until retryAfter elapses]
   D --> E[presentation:\non/after Monday 00:00 UTC, or immediately on acquisition/switch:\nshown badge credential -> setUserBadge + broadcast, fresh proof per send, incognito connections skipped\nexpired unrenewed -> setUserBadge Nothing + broadcast\npaid expired + investor held -> switch shown to investor]
   E --> F[derive alert from state\nif differs from acked/snoozed -> CEvtBadgeAlert]
   F --> G[emit CEvtBadgeChanged if state changed\nwrite next boundary to badgeBoundaries]
