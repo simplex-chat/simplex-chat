@@ -83,6 +83,11 @@ struct NativeMessage: Identifiable, Hashable, Sendable {
         self.quotedItem = quotedItem
         self.fileSource = fileSource
     }
+
+    var replyPreview: String {
+        let normalizedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalizedText.isEmpty ? (content.attachmentDescription ?? "Message") : normalizedText
+    }
 }
 
 enum NativeMessageContent: Hashable, Sendable {
@@ -94,10 +99,15 @@ enum NativeMessageContent: Hashable, Sendable {
     var attachmentDescription: String? {
         switch self {
         case .text: nil
-        case let .image(_, fileName): fileName ?? "Photo"
-        case let .video(_, fileName): fileName ?? "Video"
-        case let .file(fileName): fileName ?? "File"
+        case let .image(_, fileName): Self.description(fileName, fallback: "Photo")
+        case let .video(_, fileName): Self.description(fileName, fallback: "Video")
+        case let .file(fileName): Self.description(fileName, fallback: "File")
         }
+    }
+
+    private static func description(_ fileName: String?, fallback: String) -> String {
+        let normalizedName = fileName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return normalizedName.isEmpty ? fallback : normalizedName
     }
 }
 
@@ -322,7 +332,7 @@ enum NativeChatParser {
         let directionType = string(direction?["type"]) ?? direction?.keys.first ?? ""
         let member = direction?["groupMember"] as? [String: Any]
         let memberProfile = member?["memberProfile"] as? [String: Any]
-        let rawText = string(content["text"]) ?? ""
+        let rawText = string(content["text"])?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let text: String
         if !rawText.isEmpty {
             text = rawText

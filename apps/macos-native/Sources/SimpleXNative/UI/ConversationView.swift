@@ -619,7 +619,7 @@ private struct ReplyContextBar: View {
     }
 
     private var preview: String {
-        message.text.isEmpty ? (message.content.attachmentDescription ?? "Message") : message.text
+        message.replyPreview
     }
 }
 

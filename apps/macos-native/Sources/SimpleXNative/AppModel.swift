@@ -234,7 +234,7 @@ final class AppModel: ObservableObject {
                     quotedItem: quotedMessage.map {
                         NativeQuote(
                             messageID: $0.id,
-                            text: $0.text.isEmpty ? ($0.content.attachmentDescription ?? "Message") : $0.text,
+                            text: $0.replyPreview,
                             sent: $0.sent,
                             author: $0.author
                         )

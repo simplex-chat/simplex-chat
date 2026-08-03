@@ -33,6 +33,70 @@ import Testing
     #expect(message.quotedItem == NativeQuote(messageID: 7, text: "Original message", sent: true, author: nil))
 }
 
+private struct QuotedAttachmentCase: Sendable, CustomTestStringConvertible {
+    let contentType: String
+    let expectedPreview: String
+
+    var testDescription: String { contentType }
+}
+
+private let quotedAttachmentCases = [
+    QuotedAttachmentCase(contentType: "image", expectedPreview: "Photo"),
+    QuotedAttachmentCase(contentType: "video", expectedPreview: "Video"),
+    QuotedAttachmentCase(contentType: "voice", expectedPreview: "Voice message"),
+    QuotedAttachmentCase(contentType: "file", expectedPreview: "File"),
+]
+
+@Test(arguments: quotedAttachmentCases)
+private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: QuotedAttachmentCase) throws {
+    // Given
+    let json = """
+        {"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":9,"itemText":"Reply","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Reply"}},"quotedItem":{"chatDir":{"type":"directSnd"},"itemId":7,"sentAt":"2026-08-02T19:59:00Z","content":{"type":"\(testCase.contentType)","text":"   "}}}]}}}
+        """
+
+    // When
+    let message = try #require(NativeChatParser.messages(from: Data(json.utf8)).first)
+
+    // Then
+    #expect(message.quotedItem?.text == testCase.expectedPreview)
+}
+
+@Test func replyPreviewNormalizesCaptionsAndFallsBackForAttachments() {
+    // Given
+    let captioned = NativeMessage(
+        id: 1,
+        text: "  Keep this caption  ",
+        timestamp: nil,
+        sent: false,
+        author: nil,
+        deletable: true,
+        content: .image(preview: nil, fileName: "photo.jpg")
+    )
+    let whitespaceOnly = NativeMessage(
+        id: 2,
+        text: " \n ",
+        timestamp: nil,
+        sent: false,
+        author: nil,
+        deletable: true,
+        content: .file(fileName: "document.pdf")
+    )
+    let unnamedPhoto = NativeMessage(
+        id: 3,
+        text: "",
+        timestamp: nil,
+        sent: false,
+        author: nil,
+        deletable: true,
+        content: .image(preview: nil, fileName: "   ")
+    )
+
+    // When / Then
+    #expect(captioned.replyPreview == "Keep this caption")
+    #expect(whitespaceOnly.replyPreview == "document.pdf")
+    #expect(unnamedPhoto.replyPreview == "Photo")
+}
+
 @Test func composedMessagesIncludeAQuoteOnlyWhenReplying() {
     let reply = SimpleXCore.composedMessage(
         messageContent: ["type": "text", "text": "Reply"],
