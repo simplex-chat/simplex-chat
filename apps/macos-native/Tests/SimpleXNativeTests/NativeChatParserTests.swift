@@ -352,6 +352,10 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
         loadMessageOperation: { _, _ in containingMessage }
     )
     model.messages = [containingMessage]
+    model.beginConversationSearch()
+    model.conversationSearchText = "Reply"
+    model.updateConversationSearchSelection()
+    model.targetMessageID = nil
 
     // When
     let navigation = try #require(model.openQuotedMessage(unresolvedQuote, from: containingMessage.id))
@@ -360,6 +364,9 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     // Then
     #expect(model.targetMessageID == nil)
     #expect(model.quoteNavigationError == "The original quoted message is no longer available in this conversation.")
+    #expect(model.conversationSearchPresented)
+    #expect(model.conversationSearchText == "Reply")
+    #expect(model.selectedMessageIDs == [containingMessage.id])
 }
 
 @MainActor
@@ -411,6 +418,30 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(navigation == nil)
     #expect(model.targetMessageID == original.id)
     #expect(model.replyingTo?.id == original.id)
+}
+
+@MainActor
+@Test func quotedMessageNavigationConsumesSearchAndContainingSelection() throws {
+    // Given
+    let model = AppModel(previewMode: true)
+    let containingMessage = try #require(model.messages.first(where: { $0.quotedItem != nil }))
+    let quote = try #require(containingMessage.quotedItem)
+    let sourceID = try #require(quote.messageID)
+    model.beginConversationSearch()
+    model.conversationSearchText = "native"
+    model.updateConversationSearchSelection()
+    #expect(model.selectedMessageIDs == [containingMessage.id])
+
+    // When
+    let navigation = model.openQuotedMessage(quote, from: containingMessage.id)
+
+    // Then
+    #expect(navigation == nil)
+    #expect(!model.conversationSearchPresented)
+    #expect(model.conversationSearchText.isEmpty)
+    #expect(model.selectedMessageIDs.isEmpty)
+    #expect(model.targetMessageID == sourceID)
+    #expect(model.conversationAnchorMessageID == sourceID)
 }
 
 @MainActor

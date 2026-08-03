@@ -527,6 +527,7 @@ final class AppModel: ObservableObject {
         quoteNavigationRevision &+= 1
         quoteNavigationError = nil
         if let messageID = quote.messageID {
+            prepareForQuoteNavigation()
             return navigateToMessage(messageID, in: chatID)
         }
 
@@ -555,6 +556,7 @@ final class AppModel: ObservableObject {
                     quoteNavigationError = "The original quoted message is no longer available in this conversation."
                     return
                 }
+                prepareForQuoteNavigation()
                 if let index = messages.firstIndex(where: { $0.id == containingMessageID }) {
                     messages[index] = refreshedMessage
                 }
@@ -570,6 +572,14 @@ final class AppModel: ObservableObject {
         }
         quoteNavigationTask = task
         return task
+    }
+
+    private func prepareForQuoteNavigation() {
+        if conversationSearchPresented {
+            dismissConversationSearch()
+        } else {
+            clearMessageSelection()
+        }
     }
 
     @discardableResult
