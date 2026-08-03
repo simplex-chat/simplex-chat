@@ -84,13 +84,20 @@ struct ConversationView: View {
             .accessibilityLabel("Conversation with \(chat.displayName)")
         }
 
-        ToolbarItem(placement: .primaryAction) {
-            Button(action: model.refresh) {
-                Image(systemName: "arrow.clockwise")
+        ToolbarItemGroup(placement: .primaryAction) {
+            if model.isViewingConversationHistory {
+                Button("Jump to Latest", systemImage: "arrow.down.to.line") {
+                    model.jumpToLatest()
+                }
+                .labelStyle(.iconOnly)
+                .help("Jump to Latest")
+                .accessibilityInputLabels(["Jump to Latest", "Latest Messages"])
             }
-            .help("Refresh Conversation")
-            .accessibilityLabel("Refresh Conversation") // [VERIFY] Matches the visible tooltip.
-            .accessibilityInputLabels(["Refresh Conversation", "Refresh"])
+
+            Button("Refresh Conversation", systemImage: "arrow.clockwise", action: model.refresh)
+                .labelStyle(.iconOnly)
+                .help("Refresh Conversation")
+                .accessibilityInputLabels(["Refresh Conversation", "Refresh"])
         }
     }
 

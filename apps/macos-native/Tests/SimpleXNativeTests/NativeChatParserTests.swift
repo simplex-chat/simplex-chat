@@ -514,6 +514,24 @@ private actor FallbackRefreshProbe {
     }
 }
 
+private actor LatestNavigationProbe {
+    private let latestMessages: [NativeMessage]
+    private var requests: [Int64?] = []
+
+    init(latestMessages: [NativeMessage]) {
+        self.latestMessages = latestMessages
+    }
+
+    func load(around messageID: Int64?) -> [NativeMessage] {
+        requests.append(messageID)
+        return latestMessages
+    }
+
+    func recordedRequests() -> [Int64?] {
+        requests
+    }
+}
+
 @MainActor
 private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
     let model = AppModel(
@@ -634,6 +652,72 @@ private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
     #expect(model.messages == latestMessages)
     #expect(model.quoteNavigationError == nil)
     #expect(model.phase == .ready)
+}
+
+@MainActor
+@Test func jumpToLatestLeavesQuotedHistoryAndScrollsToTheNewestMessage() async throws {
+    // Given
+    let target = NativePreviewData.messages(for: "@1")[0]
+    let latestMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let probe = LatestNavigationProbe(latestMessages: latestMessages)
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, aroundMessageID in
+            await probe.load(around: aroundMessageID)
+        }
+    )
+    model.messages = [target]
+    let quote = NativeQuote(
+        messageID: target.id,
+        text: target.text,
+        sent: target.sent,
+        author: target.author
+    )
+    #expect(model.openQuotedMessage(quote, from: 915) == nil)
+    #expect(model.isViewingConversationHistory)
+
+    // When
+    let navigation = try #require(model.jumpToLatest())
+    await navigation.value
+
+    // Then
+    let requests = await probe.recordedRequests()
+    #expect(requests == [nil])
+    #expect(!model.isViewingConversationHistory)
+    #expect(model.conversationAnchorMessageID == nil)
+    #expect(model.messages == latestMessages)
+    #expect(model.targetMessageID == latestMessages.last?.id)
+    #expect(model.phase == .ready)
+}
+
+@MainActor
+@Test func failedJumpToLatestKeepsTheCurrentQuotedHistoryPage() async throws {
+    // Given
+    let target = NativePreviewData.messages(for: "@1")[0]
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, _ in
+            throw NativeChatError.unavailable("The newest messages could not be loaded.")
+        }
+    )
+    model.messages = [target]
+    let quote = NativeQuote(
+        messageID: target.id,
+        text: target.text,
+        sent: target.sent,
+        author: target.author
+    )
+    #expect(model.openQuotedMessage(quote, from: 916) == nil)
+
+    // When
+    let navigation = try #require(model.jumpToLatest())
+    await navigation.value
+
+    // Then
+    #expect(model.isViewingConversationHistory)
+    #expect(model.conversationAnchorMessageID == target.id)
+    #expect(model.messages == [target])
+    #expect(model.phase == .failed("The newest messages could not be loaded."))
 }
 
 @MainActor

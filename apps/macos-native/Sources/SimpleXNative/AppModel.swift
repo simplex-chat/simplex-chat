@@ -87,7 +87,7 @@ final class AppModel: ObservableObject {
     private var selectionAnchor: Int64?
     private var replyingChatID: NativeChat.ID?
     private var conversationLoadRevision: UInt64 = 0
-    private(set) var conversationAnchorMessageID: Int64?
+    @Published private(set) var conversationAnchorMessageID: Int64?
     private var quoteNavigationRevision: UInt64 = 0
     private static let densityKey = "desktopChatDensity"
 
@@ -163,6 +163,10 @@ final class AppModel: ObservableObject {
 
     var isSendingSelectedChat: Bool {
         isSending && sendingChatID == selectedChatID
+    }
+
+    var isViewingConversationHistory: Bool {
+        conversationAnchorMessageID != nil
     }
 
     var selectedMessagesInTranscriptOrder: [NativeMessage] {
@@ -254,6 +258,16 @@ final class AppModel: ObservableObject {
                 phase = .failed(error.localizedDescription)
             }
         }
+    }
+
+    @discardableResult
+    func jumpToLatest() -> Task<Void, Never>? {
+        guard let chatID = selectedChatID, isViewingConversationHistory else { return nil }
+        quoteNavigationTask?.cancel()
+        quoteNavigationTask = nil
+        quoteNavigationRevision &+= 1
+        quoteNavigationError = nil
+        return scheduleConversationLoad(chatID: chatID, scrollToLatest: true)
     }
 
     func sendDraft() {
@@ -972,7 +986,8 @@ final class AppModel: ObservableObject {
         chatID: NativeChat.ID,
         around messageID: Int64? = nil,
         scrollTo scrollTarget: Int64? = nil,
-        navigationFailureMessage: String? = nil
+        navigationFailureMessage: String? = nil,
+        scrollToLatest: Bool = false
     ) -> Task<Void, Never> {
         conversationLoadTask?.cancel()
         let task = Task {
@@ -982,7 +997,9 @@ final class AppModel: ObservableObject {
                 navigationFailureMessage: navigationFailureMessage
             )
             guard loaded, !Task.isCancelled, selectedChatID == chatID else { return }
-            if let scrollTarget {
+            if scrollToLatest, let latestMessageID = messages.last?.id {
+                targetMessageID = latestMessageID
+            } else if let scrollTarget {
                 if messages.contains(where: { $0.id == scrollTarget }) {
                     targetMessageID = scrollTarget
                 } else if let navigationFailureMessage {
