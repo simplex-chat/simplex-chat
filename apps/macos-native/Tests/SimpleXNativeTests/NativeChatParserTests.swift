@@ -983,6 +983,37 @@ private actor AttachmentOpenProbe {
 }
 
 @MainActor
+@Test func selectedMessageReplyCanReturnToItsSource() throws {
+    // Given: a transcript message is selected through the same model path as the UI.
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first)
+    model.transcriptFocused = true
+    model.selectMessage(original.id, modifiers: [])
+    #expect(model.canReplyToSelectedMessage)
+
+    // When: Reply is invoked, composed, and sent.
+    model.replyToSelectedMessage()
+    #expect(model.replyingTo?.id == original.id)
+    #expect(model.selectedMessageIDs.isEmpty)
+    model.draft = "Reply from the selected message"
+    model.sendDraft()
+
+    // Then: the new quote preserves the source identity and can navigate back to it.
+    let sent = try #require(model.messages.last)
+    let quote = try #require(sent.quotedItem)
+    #expect(quote.messageID == original.id)
+    #expect(quote.text == original.text)
+    #expect(model.replyingTo == nil)
+    #expect(model.draft.isEmpty)
+
+    let navigation = model.openQuotedMessage(quote, from: sent.id)
+    #expect(navigation == nil)
+    #expect(model.targetMessageID == original.id)
+    #expect(model.conversationAnchorMessageID == original.id)
+    #expect(model.isViewingConversationHistory)
+}
+
+@MainActor
 @Test func replyControlsRejectUnavailableItems() throws {
     // Given
     let source = try #require(NativePreviewData.messages(for: "@1").first)
