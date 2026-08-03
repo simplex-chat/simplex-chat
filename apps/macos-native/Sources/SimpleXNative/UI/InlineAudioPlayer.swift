@@ -61,8 +61,8 @@ struct InlineAudioPlayer: View {
         }
         .frame(minWidth: 280, idealWidth: 360, maxWidth: 400)
         .accessibilityElement(children: .contain)
-        .onAppear { controller.play() }
-        .onDisappear { controller.stop() }
+        .onAppear { controller.autoplayIfNeeded() }
+        .onDisappear { controller.pause() }
     }
 
     private var playPauseButton: some View {
@@ -131,6 +131,7 @@ final class InlineAudioPlayerController: NSObject, ObservableObject, AVAudioPlay
 
     private let url: URL
     private var player: AVAudioPlayer?
+    private var autoplayPolicy = AudioAutoplayPolicy()
 
     init(url: URL) {
         self.url = url
@@ -157,6 +158,11 @@ final class InlineAudioPlayerController: NSObject, ObservableObject, AVAudioPlay
         guard let player else { return }
         if player.currentTime >= player.duration { player.currentTime = 0 }
         isPlaying = player.play()
+    }
+
+    func autoplayIfNeeded() {
+        guard autoplayPolicy.shouldAutoplayOnAppear() else { return }
+        play()
     }
 
     func togglePlayback() {
@@ -193,5 +199,15 @@ enum AudioPlaybackTime {
     static func label(_ seconds: Double) -> String {
         let normalized = seconds.isFinite ? max(seconds, 0) : 0
         return Duration.seconds(normalized).formatted(.time(pattern: .minuteSecond))
+    }
+}
+
+struct AudioAutoplayPolicy {
+    private(set) var consumedInitialRequest = false
+
+    mutating func shouldAutoplayOnAppear() -> Bool {
+        guard !consumedInitialRequest else { return false }
+        consumedInitialRequest = true
+        return true
     }
 }

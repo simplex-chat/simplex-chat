@@ -239,6 +239,17 @@ private func messageBodyHeight(_ text: String) -> CGFloat {
     #expect(AudioPlaybackTime.label(65) == "1:05")
 }
 
+@Test func inlineAudioAutoplayIsConsumedAfterItsFirstAppearance() {
+    var policy = AudioAutoplayPolicy()
+    let firstAppearance = policy.shouldAutoplayOnAppear()
+    let secondAppearance = policy.shouldAutoplayOnAppear()
+    let thirdAppearance = policy.shouldAutoplayOnAppear()
+
+    #expect(firstAppearance)
+    #expect(!secondAppearance)
+    #expect(!thirdAppearance)
+}
+
 @Test func youtubeLinksBecomePrivacyEnhancedInlinePlayersAtTheirTimestamp() throws {
     let embed = try #require(NativeMessageLink.youtubeEmbedURL(for: "https://youtu.be/ishgn7-NLIU?t=24"))
     let components = try #require(URLComponents(url: embed, resolvingAgainstBaseURL: false))
