@@ -2,7 +2,15 @@ import SwiftUI
 
 struct RootView: View {
     @ObservedObject var model: AppModel
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @ObservedObject var notifications: NativeNotificationManager
+    @AppStorage("desktopSidebarCollapsed") private var sidebarCollapsed = false
+
+    private var columnVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(
+            get: { sidebarCollapsed ? .detailOnly : .all },
+            set: { sidebarCollapsed = $0 == .detailOnly }
+        )
+    }
 
     var body: some View {
         Group {
@@ -12,7 +20,7 @@ struct RootView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.background)
             case .ready, .failed:
-                NavigationSplitView(columnVisibility: $columnVisibility) {
+                NavigationSplitView(columnVisibility: columnVisibility) {
                     SidebarView(model: model)
                         .navigationSplitViewColumnWidth(min: 240, ideal: 320, max: 480)
                 } detail: {
@@ -27,6 +35,16 @@ struct RootView: View {
                     if case let .failed(message) = model.phase { Text(message) }
                 }
             }
+        }
+        .alert("Stay Updated?", isPresented: $notifications.showingPermissionExplanation) {
+            Button("Allow Notifications") {
+                notifications.respondToPermissionExplanation(requestPermission: true)
+            }
+            Button("Not Now", role: .cancel) {
+                notifications.respondToPermissionExplanation(requestPermission: false)
+            }
+        } message: {
+            Text("SimpleX can use native Mac notifications for messages, contact requests, and calls. You can choose how much message detail appears in Settings.")
         }
     }
 }

@@ -9,7 +9,7 @@ struct SidebarView: View {
             set: model.selectChat
         )) {
             ForEach(model.filteredChats) { chat in
-                ChatSidebarRow(chat: chat)
+                ChatSidebarRow(chat: chat, density: model.density)
                     .tag(chat.id)
             }
         }
@@ -28,10 +28,11 @@ struct SidebarView: View {
 
 private struct ChatSidebarRow: View {
     let chat: NativeChat
+    let density: DesktopChatDensity
 
     var body: some View {
         HStack(spacing: 12) {
-            ProfileAvatar(image: chat.image, name: chat.displayName, size: 40)
+            ProfileAvatar(image: chat.image, name: chat.displayName, size: density.tokens.avatarSize)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -63,7 +64,7 @@ private struct ChatSidebarRow: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, density.tokens.chatRowPadding)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(chat.accessibilityDescription)
     }

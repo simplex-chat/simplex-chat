@@ -20,9 +20,125 @@ import Testing
     #expect(messages.map(\.text) == ["Hi", "Hey"])
 }
 
+@Test func parsesImageMessagePreviewAndFile() throws {
+    let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":9,"itemText":"A photo","itemTs":"2026-08-02T20:00:00Z","deletable":true},"content":{"type":"rcvMsgContent","msgContent":{"type":"image","text":"A photo","image":"data:image/jpeg;base64,AA=="}},"file":{"fileName":"photo.jpg","fileSource":{"filePath":"photo.jpg","cryptoArgs":null}}}]}}}"#
+    let message = try #require(NativeChatParser.messages(from: Data(json.utf8)).first)
+    #expect(message.deletable)
+    #expect(message.content == .image(
+        preview: "data:image/jpeg;base64,AA==",
+        fileName: "photo.jpg",
+        filePath: "photo.jpg"
+    ))
+    #expect(message.content.fileURL?.lastPathComponent == "photo.jpg")
+}
+
+@Test func messageSelectionSupportsRangesAndCommandToggle() {
+    let ordered: [Int64] = [10, 20, 30, 40]
+    let first = MessageSelection.updated(
+        current: [], anchor: nil, clicked: 20, orderedIDs: ordered, command: false, shift: false
+    )
+    #expect(first.selection == [20])
+
+    let range = MessageSelection.updated(
+        current: first.selection, anchor: first.anchor, clicked: 40, orderedIDs: ordered, command: false, shift: true
+    )
+    #expect(range.selection == [20, 30, 40])
+
+    let toggled = MessageSelection.updated(
+        current: range.selection, anchor: range.anchor, clicked: 30, orderedIDs: ordered, command: true, shift: false
+    )
+    #expect(toggled.selection == [20, 40])
+}
+
+@Test func densityTokensStayOnTheMacSpacingGrid() {
+    #expect(DesktopChatDensity.compact.tokens.chatRowPadding == 4)
+    #expect(DesktopChatDensity.comfortable.tokens.transcriptGap == 12)
+    #expect(DesktopChatDensity.spacious.tokens.composerPadding == 16)
+    #expect(DesktopChatDensity.compact.tokens.avatarSize < DesktopChatDensity.spacious.tokens.avatarSize)
+}
+
+@Test func attachmentReorderingAndFailureRetentionPreserveOrder() {
+    let urls = ["one.jpg", "two.mov", "three.pdf"].map { URL(fileURLWithPath: "/tmp/\($0)") }
+    let attachments = [
+        PendingAttachment(id: UUID(), url: urls[0], fileName: "one.jpg", kind: .image, byteCount: 1, previewImage: nil),
+        PendingAttachment(id: UUID(), url: urls[1], fileName: "two.mov", kind: .video, byteCount: 2, previewImage: nil),
+        PendingAttachment(id: UUID(), url: urls[2], fileName: "three.pdf", kind: .document, byteCount: 3, previewImage: nil),
+    ]
+    let reordered = PendingAttachment.reordered(attachments, from: attachments[2].id, before: attachments[0].id)
+    #expect(reordered.map(\.fileName) == ["three.pdf", "one.jpg", "two.mov"])
+    #expect(PendingAttachment.remainingAfterFailure(reordered, at: 1).map(\.fileName) == ["one.jpg", "two.mov"])
+}
+
+@Test func parsesMessageNotificationRouteAndPrivacyModes() throws {
+    let json = #"{"remoteHostId":null,"result":{"type":"newChatItems","user":{"userId":7,"localDisplayName":"Me"},"chatItems":[{"chatInfo":{"type":"direct","contact":{"contactId":42,"localDisplayName":"Alice","profile":{"displayName":"Alice"}}},"chatItem":{"chatDir":{"type":"directRcv"},"meta":{"itemId":99,"itemText":"Secret hello"}}}]}}"#
+    let payload = try #require(NativeNotificationParser.payload(from: Data(json.utf8)))
+    #expect(payload.route.userID == 7)
+    #expect(payload.route.chatID == "@42")
+    #expect(payload.route.messageID == 99)
+    #expect(payload.route.identifier == "simplex.7.-1._42.99")
+    #expect(NativeNotificationParser.preview(for: payload, mode: .message) == .init(
+        title: "Alice", body: "Secret hello"
+    ))
+    #expect(NativeNotificationParser.preview(for: payload, mode: .contact) == .init(
+        title: "Alice", body: "New message"
+    ))
+    #expect(NativeNotificationParser.preview(for: payload, mode: .hidden) == .init(
+        title: "SimpleX Chat", body: "New message"
+    ))
+}
+
+@Test func notificationSuppressionRequiresTheExactFocusedConversation() {
+    let route = NotificationRoute(userID: 7, remoteHostID: nil, chatID: "@42", messageID: 99)
+    #expect(NativeNotificationParser.shouldSuppress(
+        windowFocused: true,
+        activeUserID: 7,
+        activeRemoteHostID: nil,
+        activeChatID: "@42",
+        route: route
+    ))
+    #expect(!NativeNotificationParser.shouldSuppress(
+        windowFocused: true,
+        activeUserID: 7,
+        activeRemoteHostID: nil,
+        activeChatID: "@43",
+        route: route
+    ))
+    #expect(!NativeNotificationParser.shouldSuppress(
+        windowFocused: false,
+        activeUserID: 7,
+        activeRemoteHostID: nil,
+        activeChatID: "@42",
+        route: route
+    ))
+}
+
+@Test func notificationRoutesQueueUntilTheInterfaceIsReady() {
+    var queue = NotificationRouteQueue()
+    let first = NotificationRoute(userID: 7, remoteHostID: nil, chatID: "@42", messageID: 1)
+    let second = NotificationRoute(userID: 7, remoteHostID: nil, chatID: "#9", messageID: 2)
+    queue.enqueue(first)
+    queue.enqueue(first)
+    queue.enqueue(second)
+    #expect(queue.consumeIfReady(false).isEmpty)
+    #expect(queue.consumeIfReady(true) == [first, second])
+    #expect(queue.consumeIfReady(true).isEmpty)
+}
+
 @Test func recognizesMigrationSuccess() {
     #expect(NativeChatParser.migrationSucceeded(Data(#"{"type":"ok"}"#.utf8)))
     #expect(NativeChatParser.migrationSucceeded(Data(#""ok""#.utf8)))
+}
+
+@Test func decodesDataURIImagePreview() {
+    let onePixelPNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    #expect(NativeChatParser.image(from: onePixelPNG) != nil)
+}
+
+@Test func recognizesCoreCommandFailure() {
+    let error = Data(#"{"remoteHostId":null,"error":{"type":"chatError","errorType":{"type":"fileSize","filePath":"huge.mov"}}}"#.utf8)
+    #expect(NativeChatParser.commandError(from: error) == "SimpleX could not complete the action (fileSize).")
+    let success = Data(#"{"remoteHostId":null,"result":{"type":"cmdOk"}}"#.utf8)
+    #expect(NativeChatParser.commandError(from: success) == nil)
 }
 
 @Test func opensTemporaryDatabaseWithBundledCore() throws {

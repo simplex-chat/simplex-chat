@@ -43,6 +43,28 @@ struct NativeMessage: Identifiable, Hashable, Sendable {
     let timestamp: Date?
     let sent: Bool
     let author: String?
+    let deletable: Bool
+    let content: NativeMessageContent
+}
+
+enum NativeMessageContent: Hashable, Sendable {
+    case text
+    case image(preview: String?, fileName: String?, filePath: String?)
+    case video(preview: String?, fileName: String?, filePath: String?)
+    case file(fileName: String?, filePath: String?)
+
+    var fileURL: URL? {
+        let path: String?
+        switch self {
+        case .text: path = nil
+        case let .image(_, _, filePath), let .video(_, _, filePath), let .file(_, filePath): path = filePath
+        }
+        guard let path, !path.isEmpty else { return nil }
+        if path.hasPrefix("/") { return URL(fileURLWithPath: path) }
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/share/simplex/simplex_v1_files", isDirectory: true)
+            .appendingPathComponent(path)
+    }
 }
 
 enum NativeChatParser {
@@ -97,6 +119,19 @@ enum NativeChatParser {
             }
         }
         return "Unable to open the database."
+    }
+
+    static func commandError(from data: Data) -> String? {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let error = root["error"] else { return nil }
+        if let error = error as? [String: Any] {
+            let type = (error["errorType"] as? [String: Any]).flatMap { string($0["type"]) }
+                ?? string(error["type"])
+                ?? error.keys.first
+                ?? "coreError"
+            return "SimpleX could not complete the action (\(type))."
+        }
+        return "SimpleX could not complete the action."
     }
 
     static func image(from encoded: String?) -> NSImage? {
@@ -184,12 +219,33 @@ enum NativeChatParser {
         let directionType = string(direction?["type"]) ?? direction?.keys.first ?? ""
         let member = direction?["groupMember"] as? [String: Any]
         let profile = member?["memberProfile"] as? [String: Any]
+        let contentContainer = object["content"] as? [String: Any]
+        let messageContent = (contentContainer?["msgContent"] as? [String: Any])
+            ?? ((contentContainer?["sndMsgContent"] as? [String: Any])?["msgContent"] as? [String: Any])
+            ?? ((contentContainer?["rcvMsgContent"] as? [String: Any])?["msgContent"] as? [String: Any])
+        let file = object["file"] as? [String: Any]
+        let fileSource = file?["fileSource"] as? [String: Any]
+        let fileName = string(file?["fileName"])
+        let filePath = string(fileSource?["filePath"])
+        let content: NativeMessageContent
+        switch string(messageContent?["type"]) {
+        case "image":
+            content = .image(preview: string(messageContent?["image"]), fileName: fileName, filePath: filePath)
+        case "video":
+            content = .video(preview: string(messageContent?["image"]), fileName: fileName, filePath: filePath)
+        case "file":
+            content = .file(fileName: fileName, filePath: filePath)
+        default:
+            content = .text
+        }
         return NativeMessage(
             id: id,
             text: string(meta["itemText"]) ?? "",
             timestamp: date(meta["itemTs"]),
             sent: directionType.hasSuffix("Snd"),
-            author: string(profile?["displayName"]) ?? string(member?["localDisplayName"])
+            author: string(profile?["displayName"]) ?? string(member?["localDisplayName"]),
+            deletable: bool(meta["deletable"]) ?? false,
+            content: content
         )
     }
 

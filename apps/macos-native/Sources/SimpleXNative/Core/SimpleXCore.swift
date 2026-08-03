@@ -24,7 +24,7 @@ actor SimpleXCore {
         }
 
         try configureFilePaths()
-        _ = try send("/_start main=on snd_files=on")
+        try ensureCommandSucceeded(send("/_start main=on snd_files=on"))
         let profile = try NativeChatParser.profile(from: send("/u"))
         let chats = try NativeChatParser.chats(from: send("/_get chats \(profile.userID) pcc=on"))
         return (profile, chats)
@@ -34,18 +34,71 @@ actor SimpleXCore {
         try NativeChatParser.chats(from: send("/_get chats \(userID) pcc=on"))
     }
 
-    func loadMessages(chatID: String) throws -> [NativeMessage] {
-        try NativeChatParser.messages(from: send("/_get chat \(chatID) count=75"))
+    func loadMessages(chatID: String, around messageID: Int64? = nil) throws -> [NativeMessage] {
+        let pagination = messageID.map { "around=\($0) count=75" } ?? "count=75"
+        return try NativeChatParser.messages(from: send("/_get chat \(chatID) \(pagination)"))
     }
 
     func sendText(_ text: String, to chat: NativeChat) throws {
         guard chat.kind.canSend else {
             throw NativeChatError.unavailable("This conversation cannot accept messages yet.")
         }
-        let content: [[String: Any]] = [[
+        try sendComposedMessage([
             "msgContent": ["type": "text", "text": text],
             "mentions": [:],
-        ]]
+        ], to: chat)
+    }
+
+    func sendAttachment(_ attachment: PendingAttachment, caption: String, to chat: NativeChat) throws {
+        guard chat.kind.canSend else {
+            throw NativeChatError.unavailable("This conversation cannot accept attachments yet.")
+        }
+        let messageContent: [String: Any]
+        switch attachment.kind {
+        case .image:
+            messageContent = [
+                "type": "image",
+                "text": caption,
+                "image": attachment.previewImage ?? "",
+            ]
+        case .video:
+            messageContent = [
+                "type": "video",
+                "text": caption,
+                "image": "",
+                "duration": 0,
+            ]
+        case .document:
+            messageContent = ["type": "file", "text": caption]
+        }
+        try sendComposedMessage([
+            "fileSource": [
+                "filePath": attachment.url.path,
+                "cryptoArgs": NSNull(),
+            ],
+            "msgContent": messageContent,
+            "mentions": [:],
+        ], to: chat)
+    }
+
+    func deleteMessages(_ messageIDs: [Int64], from chat: NativeChat) throws {
+        guard !messageIDs.isEmpty else { return }
+        let identifiers = messageIDs.map(String.init).joined(separator: ",")
+        try ensureCommandSucceeded(send("/_delete item \(chat.kind.rawValue)\(chat.apiID) \(identifiers) internal"))
+    }
+
+    func receiveEvent(timeoutMicroseconds: Int32 = 500_000) -> Data? {
+        guard let controller,
+              let pointer = sx_core_recv_msg_wait(controller, timeoutMicroseconds) else {
+            return nil
+        }
+        defer { sx_core_free(pointer) }
+        guard let response = String(validatingUTF8: pointer), !response.isEmpty else { return nil }
+        return response.data(using: .utf8)
+    }
+
+    private func sendComposedMessage(_ message: [String: Any], to chat: NativeChat) throws {
+        let content = [message]
         let data = try JSONSerialization.data(withJSONObject: content)
         guard let json = String(data: data, encoding: .utf8) else {
             throw NativeChatError.invalidResponse("The message could not be encoded.")
@@ -57,17 +110,7 @@ actor SimpleXCore {
             let asGroup = chat.sendAsGroup ? "(as_group=on)" : ""
             command = "/_send \(chat.kind.rawValue)\(chat.apiID)\(asGroup) live=off ttl=default sign=off json \(json)"
         }
-        _ = try send(command)
-    }
-
-    func waitForEvent(timeoutMicroseconds: Int32 = 500_000) -> Bool {
-        guard let controller,
-              let pointer = sx_core_recv_msg_wait(controller, timeoutMicroseconds) else {
-            return false
-        }
-        defer { sx_core_free(pointer) }
-        guard let response = String(validatingUTF8: pointer) else { return false }
-        return !response.isEmpty
+        try ensureCommandSucceeded(send(command))
     }
 
     private func loadIfNeeded() throws {
@@ -118,7 +161,7 @@ actor SimpleXCore {
         guard let json = String(data: encoded, encoding: .utf8) else {
             throw NativeChatError.invalidResponse("The app file paths could not be encoded.")
         }
-        _ = try send("/set file paths \(json)")
+        try ensureCommandSucceeded(send("/set file paths \(json)"))
     }
 
     private func send(_ command: String) throws -> Data {
@@ -127,6 +170,12 @@ actor SimpleXCore {
         }
         let result = command.withCString { sx_core_send_cmd(controller, $0, 0) }
         return try data(from: result)
+    }
+
+    private func ensureCommandSucceeded(_ response: Data) throws {
+        if let message = NativeChatParser.commandError(from: response) {
+            throw NativeChatError.core(message)
+        }
     }
 
     private func data(from pointer: UnsafePointer<CChar>?) throws -> Data {
