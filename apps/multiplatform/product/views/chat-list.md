@@ -127,7 +127,7 @@ Each chat type provides specific dropdown menu items:
 
 ### Remote Host Reconnect
 
-On desktop, a reconnecting remote host blocks chat interaction and shows a reconnect dialog with a Disconnect action. Its toolbar and device row show reconnecting state, and remote-host chat rows are disabled until the session reconnects or the user disconnects.
+On desktop, a reconnecting selected remote host replaces chat interaction with a full-window reconnect view and a Disconnect action until it reconnects or the user disconnects.
 
 ## Source Files
 

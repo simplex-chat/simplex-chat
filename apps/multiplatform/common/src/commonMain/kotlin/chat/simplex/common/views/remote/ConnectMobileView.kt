@@ -441,7 +441,7 @@ private fun showConnectedMobileDevice(rh: RemoteHostInfo, disconnectHost: () -> 
     }
     Column {
       ConnectMobileViewLayout(
-        title = stringResource(if (rh.sessionState is RemoteHostSessionState.Connecting) MR.strings.remote_host_reconnecting else MR.strings.connected_to_mobile),
+        title = stringResource(MR.strings.connected_to_mobile),
         invitation = null,
         deviceName = rh.hostDeviceName,
         sessionCode = sessionCode,
