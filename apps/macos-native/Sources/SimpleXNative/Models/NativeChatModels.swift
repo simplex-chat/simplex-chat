@@ -49,6 +49,12 @@ struct NativeChat: Identifiable, Hashable, Sendable {
         let message = preview.isEmpty ? "" : ", \(preview)"
         return "\(displayName)\(unread)\(message)"
     }
+
+    func displayedMessageAuthor(sent: Bool, author: String?) -> String {
+        if sent { return sendAsGroup ? displayName : "You" }
+        let normalizedAuthor = author?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return normalizedAuthor.isEmpty ? displayName : normalizedAuthor
+    }
 }
 
 struct NativeMessage: Identifiable, Hashable, Sendable {

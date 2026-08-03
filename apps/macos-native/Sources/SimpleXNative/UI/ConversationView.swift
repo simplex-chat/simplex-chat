@@ -550,7 +550,7 @@ private struct MessageRow: View {
 
                 MessageContentView(
                     message: message,
-                    chatName: chat.displayName,
+                    chat: chat,
                     openingAttachment: openingAttachment,
                     canOpenQuote: canOpenQuote,
                     openQuote: openQuote,
@@ -728,7 +728,7 @@ private struct ReplyContextBar: View {
     }
 
     private var sender: String {
-        message.sent ? "You" : (message.author ?? chat.displayName)
+        chat.displayedMessageAuthor(sent: message.sent, author: message.author)
     }
 
     private var preview: String {
@@ -840,7 +840,7 @@ private struct AttachmentCard: View {
 
 private struct MessageContentView: View {
     let message: NativeMessage
-    let chatName: String
+    let chat: NativeChat
     let openingAttachment: Bool
     let canOpenQuote: Bool
     let openQuote: (NativeQuote) -> Void
@@ -851,7 +851,7 @@ private struct MessageContentView: View {
             if let quote = message.quotedItem {
                 QuotedMessagePreview(
                     quote: quote,
-                    chatName: chatName,
+                    chat: chat,
                     outgoing: message.sent,
                     containingMessageID: message.id,
                     enabled: canOpenQuote,
@@ -992,7 +992,7 @@ private struct MessageContentView: View {
 
 private struct QuotedMessagePreview: View {
     let quote: NativeQuote
-    let chatName: String
+    let chat: NativeChat
     let outgoing: Bool
     let containingMessageID: Int64
     let enabled: Bool
@@ -1029,7 +1029,7 @@ private struct QuotedMessagePreview: View {
     }
 
     private var sender: String {
-        quote.author ?? (quote.sent ? "You" : chatName)
+        chat.displayedMessageAuthor(sent: quote.sent, author: quote.author)
     }
 }
 

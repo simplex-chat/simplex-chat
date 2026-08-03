@@ -334,6 +334,55 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     }
 }
 
+@Test func replyAndQuoteAuthorsRespectGroupSendingIdentity() {
+    // Given
+    let direct = NativeChat(
+        id: "@7",
+        apiID: 7,
+        kind: .direct,
+        displayName: "Maya",
+        image: nil,
+        preview: "",
+        timestamp: nil,
+        unreadCount: 0,
+        sendAsGroup: false
+    )
+    let ordinaryGroup = NativeChat(
+        id: "#8",
+        apiID: 8,
+        kind: .group,
+        displayName: "Friends",
+        image: nil,
+        preview: "",
+        timestamp: nil,
+        unreadCount: 0,
+        sendAsGroup: false
+    )
+    let channel = NativeChat(
+        id: "#9",
+        apiID: 9,
+        kind: .group,
+        displayName: "Announcements",
+        image: nil,
+        preview: "",
+        timestamp: nil,
+        unreadCount: 0,
+        sendAsGroup: true
+    )
+
+    // When / Then: outgoing direct and ordinary group messages belong to the user.
+    #expect(direct.displayedMessageAuthor(sent: true, author: "Local profile") == "You")
+    #expect(ordinaryGroup.displayedMessageAuthor(sent: true, author: "Local profile") == "You")
+
+    // Channel-owner messages use the public group identity in both reply surfaces.
+    #expect(channel.displayedMessageAuthor(sent: true, author: "Local profile") == "Announcements")
+
+    // Incoming group authors remain specific, with the conversation name as a safe fallback.
+    #expect(ordinaryGroup.displayedMessageAuthor(sent: false, author: "Jordan") == "Jordan")
+    #expect(direct.displayedMessageAuthor(sent: false, author: nil) == "Maya")
+    #expect(direct.displayedMessageAuthor(sent: false, author: "  ") == "Maya")
+}
+
 @Test func coreRejectsQuotedMessagesInNonReplyableConversations() {
     // Given
     let message = SimpleXCore.composedMessage(
