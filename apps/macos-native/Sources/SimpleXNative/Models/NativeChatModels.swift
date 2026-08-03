@@ -327,7 +327,7 @@ enum NativeChatParser {
             text: string(meta["itemText"]) ?? "",
             timestamp: date(meta["itemTs"]),
             sent: directionType.hasSuffix("Snd"),
-            author: string(profile?["displayName"]) ?? string(member?["localDisplayName"]),
+            author: string(member?["localDisplayName"]) ?? string(profile?["displayName"]),
             deletable: bool(meta["deletable"]) ?? false,
             content: content,
             replyable: replyable,
@@ -360,7 +360,7 @@ enum NativeChatParser {
             messageID: int64(object["itemId"]),
             text: text,
             sent: directionType.hasSuffix("Snd"),
-            author: string(memberProfile?["displayName"]) ?? string(member?["localDisplayName"])
+            author: string(member?["localDisplayName"]) ?? string(memberProfile?["displayName"])
         )
     }
 

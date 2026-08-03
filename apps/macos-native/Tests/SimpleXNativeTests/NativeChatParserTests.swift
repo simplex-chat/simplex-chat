@@ -33,6 +33,20 @@ import Testing
     #expect(message.quotedItem == NativeQuote(messageID: 7, text: "Original message", sent: true, author: nil))
 }
 
+@Test func groupMessagesAndQuotesPreferLocallyDisambiguatedMemberNames() throws {
+    // Given
+    let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"groupRcv","groupMember":{"localDisplayName":"Maya (work)","memberProfile":{"displayName":"Maya"}}},"meta":{"itemId":9,"itemText":"Reply","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Reply"}},"quotedItem":{"chatDir":{"type":"groupRcv","groupMember":{"localDisplayName":"Jordan (cycling)","memberProfile":{"displayName":"Jordan"}}},"itemId":7,"sentAt":"2026-08-02T19:59:00Z","content":{"type":"text","text":"Original message"}}}]}}}"#
+
+    // When
+    let message = try #require(NativeChatParser.messages(from: Data(json.utf8)).first)
+
+    // Then
+    #expect(message.author == "Maya (work)")
+    #expect(message.quotedItem?.author == "Jordan (cycling)")
+    #expect(message.quotedItem?.messageID == 7)
+    #expect(message.quotedItem?.text == "Original message")
+}
+
 private struct ReplyEligibilityCase: Sendable, CustomTestStringConvertible {
     let name: String
     let itemID: Int64
