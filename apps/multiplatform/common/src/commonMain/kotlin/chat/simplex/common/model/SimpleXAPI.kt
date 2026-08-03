@@ -521,14 +521,24 @@ private const val MESSAGE_TIMEOUT: Int = 300_000_000
 object ChatController {
   private var chatCtrl: ChatCtrl? = -1
   private data class RemoteHostSelection(val generation: Long, val remoteHostId: Long?)
+  private data class ControllerEpoch(val value: Long)
+  private data class RemoteHostStartToken(val controllerEpoch: ControllerEpoch, val operation: Long?)
+  private data class RemoteHostStartResult(val accepted: Boolean, val replayEpoch: ControllerEpoch?)
+  private data class RemoteCtrlCommandToken(val generation: Long)
   private val remoteHostSelection = AtomicReference(RemoteHostSelection(0, null))
   private val remoteHostSelectionMutex = Mutex()
   private val remoteHostStateMutex = Mutex()
   private val remoteHostStopMutex = Mutex()
+  private val remoteCtrlCommandMutex = Mutex()
+  private val remoteCtrlStateMutex = Mutex()
   private val remoteHostAttempts = mutableMapOf<Int, Long?>()
   private val pendingRemoteHostEvents = mutableListOf<API>()
+  private val pendingRemoteCtrlEvents = mutableListOf<API>()
+  private var controllerEpoch = ControllerEpoch(0)
   private var remoteHostStartsInFlight = 0
   private var remoteHostReplayQueued = false
+  private var remoteCtrlCommandGeneration = 0L
+  private var remoteCtrlCommandInFlight: RemoteCtrlCommandToken? = null
   private val reconnectingRemoteHosts = mutableSetOf<Long>()
   private val stoppedRemoteHosts = mutableSetOf<Long>()
   private val remoteHostStopOperations = mutableMapOf<Long, Long>()
@@ -548,9 +558,34 @@ object ChatController {
 
   fun getChatCtrl(): ChatCtrl? = chatCtrl
 
+  private fun resetRemoteHostState() = runBlocking {
+    remoteHostStateMutex.withLock {
+      controllerEpoch = ControllerEpoch(controllerEpoch.value + 1)
+      remoteHostSelection.updateAndGet { RemoteHostSelection(it.generation + 1, null) }
+      remoteHostAttempts.clear()
+      pendingRemoteHostEvents.clear()
+      remoteHostStartsInFlight = 0
+      remoteHostReplayQueued = false
+      reconnectingRemoteHosts.clear()
+      stoppedRemoteHosts.clear()
+      remoteHostStopOperations.clear()
+      remoteHostStartOperations.clear()
+    }
+  }
+
+  private fun resetRemoteCtrlState() = runBlocking {
+    remoteCtrlStateMutex.withLock {
+      remoteCtrlCommandGeneration += 1
+      remoteCtrlCommandInFlight = null
+      pendingRemoteCtrlEvents.clear()
+    }
+  }
+
   fun setChatCtrl(ctrl: ChatCtrl?) {
     val wasRunning = receiverJob != null
     stopReceiver()
+    resetRemoteHostState()
+    resetRemoteCtrlState()
     chatCtrl = ctrl
     if (wasRunning && ctrl != null) startReceiver()
   }
@@ -2569,9 +2604,9 @@ object ChatController {
     }
   }
 
-  private suspend fun beginRemoteHostStart(rhId: Long?): Long? = remoteHostStateMutex.withLock {
+  private suspend fun beginRemoteHostStart(rhId: Long?): RemoteHostStartToken = remoteHostStateMutex.withLock {
     remoteHostStartsInFlight += 1
-    if (rhId == null) {
+    val operation = if (rhId == null) {
       null
     } else {
       val operation = ++remoteHostStopGeneration
@@ -2581,13 +2616,16 @@ object ChatController {
       remoteHostStartOperations[rhId] = operation to wasStopped
       operation
     }
+    RemoteHostStartToken(controllerEpoch, operation)
   }
 
   private suspend fun finishRemoteHostStart(
     rhId: Long?,
-    operation: Long?,
+    startToken: RemoteHostStartToken,
     started: CR.RemoteHostStarted?
-  ): Boolean = remoteHostStateMutex.withLock {
+  ): RemoteHostStartResult = remoteHostStateMutex.withLock {
+    if (startToken.controllerEpoch != controllerEpoch) return@withLock RemoteHostStartResult(false, null)
+    val operation = startToken.operation
     val currentStart = rhId == null || operation == null || remoteHostStartOperations[rhId]?.first == operation
     val stoppedAfterStart = rhId != null && (
       stoppedRemoteHosts.contains(rhId) || operation != null && (remoteHostStopOperations[rhId] ?: Long.MIN_VALUE) > operation
@@ -2611,30 +2649,34 @@ object ChatController {
       }
     }
     remoteHostStartsInFlight -= 1
-    if (remoteHostStartsInFlight == 0 && !remoteHostReplayQueued && (started != null || pendingRemoteHostEvents.isNotEmpty())) {
+    val replayEpoch = if (remoteHostStartsInFlight == 0 && !remoteHostReplayQueued && (started != null || pendingRemoteHostEvents.isNotEmpty())) {
       remoteHostReplayQueued = true
-      true
+      controllerEpoch
     } else {
-      false
+      null
     }
+    RemoteHostStartResult(started != null && currentStart && !stoppedAfterStart, replayEpoch)
   }
 
   suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = true, address: RemoteCtrlAddress?, port: Int?): CR.RemoteHostStarted? {
-    val operation = beginRemoteHostStart(rhId)
+    val startToken = beginRemoteHostStart(rhId)
     var started: CR.RemoteHostStarted? = null
+    var accepted = false
     try {
       val r = sendCmd(null, CC.StartRemoteHost(rhId, multicast, address, port))
       if (r is API.Result && r.res is CR.RemoteHostStarted) {
         started = r.res
-        return started
+      } else {
+        apiErrorAlert("startRemoteHost", generalGetString(MR.strings.error_alert_title), r)
       }
-      apiErrorAlert("startRemoteHost", generalGetString(MR.strings.error_alert_title), r)
-      return null
     } finally {
-      if (finishRemoteHostStart(rhId, operation, started)) {
-        withBGApi { replayRemoteHostEvents() }
+      val result = finishRemoteHostStart(rhId, startToken, started)
+      accepted = result.accepted
+      result.replayEpoch?.let { replayEpoch ->
+        withBGApi { replayRemoteHostEvents(replayEpoch) }
       }
     }
+    return started.takeIf { accepted }
   }
 
   suspend fun switchRemoteHost (rhId: Long?): RemoteHostInfo? {
@@ -2690,35 +2732,118 @@ object ChatController {
 
   suspend fun getRemoteFile(rhId: Long, file: RemoteFile): Boolean = sendCmd(null, CC.GetRemoteFile(rhId, file)).result is CR.CmdOk
 
-  suspend fun connectRemoteCtrl(desktopAddress: String): Pair<SomeRemoteCtrl?, ChatError?> {
-    val r = sendCmd(null, CC.ConnectRemoteCtrl(desktopAddress))
-    return when {
-      r is API.Result && r.res is CR.RemoteCtrlConnecting -> SomeRemoteCtrl(r.res.remoteCtrl_, r.res.ctrlAppInfo, r.res.appVersion) to null
-      r is API.Error -> null to r.err
-      else -> {
-        apiErrorAlert("connectRemoteCtrl", generalGetString(MR.strings.error_alert_title), r)
-        null to null
+  private suspend fun beginRemoteCtrlCommand(): RemoteCtrlCommandToken = remoteCtrlStateMutex.withLock {
+    val token = RemoteCtrlCommandToken(++remoteCtrlCommandGeneration)
+    remoteCtrlCommandInFlight = token
+    token
+  }
+
+  private suspend fun finishRemoteCtrlCommand(token: RemoteCtrlCommandToken, responseSession: RemoteCtrlSession?) {
+    val current = remoteCtrlStateMutex.withLock {
+      if (remoteCtrlCommandInFlight != token) {
+        false
+      } else {
+        if (responseSession != null) chatModel.remoteCtrlSession.value = responseSession
+        true
+      }
+    }
+    if (!current) return
+    try {
+      while (true) {
+        val msg = remoteCtrlStateMutex.withLock {
+          if (remoteCtrlCommandInFlight != token) {
+            null
+          } else if (pendingRemoteCtrlEvents.isEmpty()) {
+            remoteCtrlCommandInFlight = null
+            null
+          } else {
+            pendingRemoteCtrlEvents.removeAt(0)
+          }
+        } ?: return
+        processReceivedMsg(msg, replayedEvent = true, remoteCtrlReplayToken = token)
+      }
+    } finally {
+      remoteCtrlStateMutex.withLock {
+        if (remoteCtrlCommandInFlight == token) {
+          remoteCtrlCommandInFlight = null
+          pendingRemoteCtrlEvents.clear()
+        }
       }
     }
   }
 
-  suspend fun findKnownRemoteCtrl(): Boolean = sendCommandOkResp(null, CC.FindKnownRemoteCtrl())
-
-  suspend fun confirmRemoteCtrl(rcId: Long): Pair<SomeRemoteCtrl?, ChatError?> {
-    val r = sendCmd(null, CC.ConfirmRemoteCtrl(remoteCtrlId = rcId))
-    return when {
-      r is API.Result && r.res is CR.RemoteCtrlConnecting -> SomeRemoteCtrl(r.res.remoteCtrl_, r.res.ctrlAppInfo, r.res.appVersion) to null
-      r is API.Error -> null to r.err
-      else -> {
-        apiErrorAlert("confirmRemoteCtrl", generalGetString(MR.strings.error_alert_title), r)
-        null to null
-      }
+  private suspend fun invalidateRemoteCtrlCommand() {
+    remoteCtrlStateMutex.withLock {
+      remoteCtrlCommandGeneration += 1
+      remoteCtrlCommandInFlight = null
+      pendingRemoteCtrlEvents.clear()
     }
   }
+
+  private suspend fun startRemoteCtrlConnection(cmd: CC): Pair<SomeRemoteCtrl?, ChatError?> = remoteCtrlCommandMutex.withLock {
+    val token = beginRemoteCtrlCommand()
+    var responseSession: RemoteCtrlSession? = null
+    try {
+      val r = sendCmd(null, cmd)
+      when {
+        r is API.Result && r.res is CR.RemoteCtrlConnecting -> {
+          val remoteCtrl = SomeRemoteCtrl(r.res.remoteCtrl_, r.res.ctrlAppInfo, r.res.appVersion, r.res.sessionSeq)
+          responseSession = RemoteCtrlSession(
+            ctrlAppInfo = remoteCtrl.ctrlAppInfo,
+            appVersion = remoteCtrl.appVersion,
+            sessionState = UIRemoteCtrlSessionState.Connecting(remoteCtrl.remoteCtrl_, remoteCtrl.sessionSeq)
+          )
+          remoteCtrl to null
+        }
+        r is API.Error -> null to r.err
+        else -> {
+          apiErrorAlert(cmd.cmdType, generalGetString(MR.strings.error_alert_title), r)
+          null to null
+        }
+      }
+    } finally {
+      withContext(NonCancellable) { finishRemoteCtrlCommand(token, responseSession) }
+    }
+  }
+
+  suspend fun connectRemoteCtrl(desktopAddress: String): Pair<SomeRemoteCtrl?, ChatError?> =
+    startRemoteCtrlConnection(CC.ConnectRemoteCtrl(desktopAddress))
+
+  suspend fun findKnownRemoteCtrl(): Boolean = remoteCtrlCommandMutex.withLock {
+    val token = beginRemoteCtrlCommand()
+    var responseSession: RemoteCtrlSession? = null
+    try {
+      val cmd = CC.FindKnownRemoteCtrl()
+      val r = sendCmd(null, cmd)
+      if (r is API.Result && r.res is CR.RemoteCtrlSearching) {
+        responseSession = RemoteCtrlSession(null, "", UIRemoteCtrlSessionState.Searching(r.res.sessionSeq))
+        true
+      } else {
+        apiErrorAlert(cmd.cmdType, generalGetString(MR.strings.error_alert_title), r)
+        false
+      }
+    } finally {
+      withContext(NonCancellable) { finishRemoteCtrlCommand(token, responseSession) }
+    }
+  }
+
+  suspend fun confirmRemoteCtrl(rcId: Long): Pair<SomeRemoteCtrl?, ChatError?> =
+    startRemoteCtrlConnection(CC.ConfirmRemoteCtrl(remoteCtrlId = rcId))
 
   suspend fun verifyRemoteCtrlSession(sessionCode: String): RemoteCtrlInfo? {
     val r = sendCmd(null, CC.VerifyRemoteCtrlSession(sessionCode))
-    if (r is API.Result && r.res is CR.RemoteCtrlConnected) return r.res.remoteCtrl
+    if (r is API.Result && r.res is CR.RemoteCtrlConnected) {
+      remoteCtrlStateMutex.withLock {
+        val session = chatModel.remoteCtrlSession.value
+        val sessionSeq = session?.sessionSeq
+        if (session?.sessionCode == sessionCode && sessionSeq != null) {
+          chatModel.remoteCtrlSession.value = session.copy(
+            sessionState = UIRemoteCtrlSessionState.Connected(r.res.remoteCtrl, sessionCode, sessionSeq)
+          )
+        }
+      }
+      return r.res.remoteCtrl
+    }
     apiErrorAlert("verifyRemoteCtrlSession", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
@@ -2730,7 +2855,10 @@ object ChatController {
     return null
   }
 
-  suspend fun stopRemoteCtrl(): Boolean = sendCommandOkResp(null, CC.StopRemoteCtrl())
+  suspend fun stopRemoteCtrl(): Boolean {
+    invalidateRemoteCtrlCommand()
+    return sendCommandOkResp(null, CC.StopRemoteCtrl())
+  }
 
   suspend fun deleteRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(null, CC.DeleteRemoteCtrl(rcId))
 
@@ -2904,7 +3032,8 @@ object ChatController {
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
-  private fun acceptRemoteHostEventLocked(msg: API, sessionSeq: Int, replayed: Boolean): Boolean {
+  private fun acceptRemoteHostEventLocked(msg: API, sessionSeq: Int, replayed: Boolean, replayEpoch: ControllerEpoch?): Boolean {
+    if (replayed && replayEpoch != controllerEpoch) return false
     if (remoteHostStartsInFlight > 0 || (remoteHostReplayQueued && !replayed)) {
       if (replayed) pendingRemoteHostEvents.add(0, msg) else pendingRemoteHostEvents.add(msg)
       return false
@@ -2912,9 +3041,19 @@ object ChatController {
     return remoteHostAttempts.containsKey(sessionSeq)
   }
 
-  private suspend fun replayRemoteHostEvents() {
+  private fun acceptRemoteCtrlEventLocked(msg: API, replayToken: RemoteCtrlCommandToken?): Boolean {
+    if (replayToken != null) return remoteCtrlCommandInFlight == replayToken
+    if (remoteCtrlCommandInFlight != null) {
+      pendingRemoteCtrlEvents.add(msg)
+      return false
+    }
+    return true
+  }
+
+  private suspend fun replayRemoteHostEvents(replayEpoch: ControllerEpoch) {
     while (true) {
       val msg = remoteHostStateMutex.withLock {
+        if (replayEpoch != controllerEpoch) return
         if (remoteHostStartsInFlight > 0 || pendingRemoteHostEvents.isEmpty()) {
           remoteHostReplayQueued = false
           null
@@ -2922,12 +3061,17 @@ object ChatController {
           pendingRemoteHostEvents.removeAt(0)
         }
       } ?: return
-      processReceivedMsg(msg, replayedEvent = true)
+      processReceivedMsg(msg, replayedEvent = true, remoteHostReplayEpoch = replayEpoch)
     }
   }
 
   // Spec: spec/api.md#processReceivedMsg
-  private suspend fun processReceivedMsg(msg: API, replayedEvent: Boolean = false) {
+  private suspend fun processReceivedMsg(
+    msg: API,
+    replayedEvent: Boolean = false,
+    remoteHostReplayEpoch: ControllerEpoch? = null,
+    remoteCtrlReplayToken: RemoteCtrlCommandToken? = null
+  ) {
     if (!replayedEvent) {
       lastMsgReceivedTimestamp = System.currentTimeMillis()
       chatModel.addTerminalItem(TerminalItem.resp(msg.rhId, msg))
@@ -3474,7 +3618,7 @@ object ChatController {
         var accepted = false
         var reloadHosts = false
         remoteHostStateMutex.withLock {
-          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent)) {
+          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent, remoteHostReplayEpoch)) {
             accepted = true
             val remoteHostId = r.remoteHost_?.remoteHostId
             if (remoteHostId != null) remoteHostAttempts[r.sessionSeq] = remoteHostId
@@ -3497,7 +3641,7 @@ object ChatController {
         var selection: RemoteHostSelection? = null
         val remoteHostId = r.remoteHost.remoteHostId
         remoteHostStateMutex.withLock {
-          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent)) {
+          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent, remoteHostReplayEpoch)) {
             accepted = true
             remoteHostAttempts.entries.removeAll { it.key != r.sessionSeq && it.value == remoteHostId }
             remoteHostAttempts[r.sessionSeq] = remoteHostId
@@ -3540,7 +3684,7 @@ object ChatController {
         var explicitlyStopped = false
         var reconnecting = false
         remoteHostStateMutex.withLock {
-          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent)) {
+          if (acceptRemoteHostEventLocked(msg, r.sessionSeq, replayedEvent, remoteHostReplayEpoch)) {
             accepted = true
             explicitlyStopped = r.remoteHostId_?.let { stoppedRemoteHosts.contains(it) } == true
             if (explicitlyStopped) {
@@ -3617,29 +3761,53 @@ object ChatController {
         }
       }
       is CR.RemoteCtrlFound -> {
-        val sess = chatModel.remoteCtrlSession.value
-        if (sess != null && sess.sessionState is UIRemoteCtrlSessionState.Searching) {
-          val state = UIRemoteCtrlSessionState.Found(remoteCtrl = r.remoteCtrl, compatible = r.compatible)
-          chatModel.remoteCtrlSession.value = RemoteCtrlSession(
-            ctrlAppInfo = r.ctrlAppInfo_,
-            appVersion = r.appVersion,
-            sessionState = state
-          )
+        remoteCtrlStateMutex.withLock {
+          if (acceptRemoteCtrlEventLocked(msg, remoteCtrlReplayToken)) {
+            val session = chatModel.remoteCtrlSession.value
+            if (session?.sessionState is UIRemoteCtrlSessionState.Searching && session.matchesSessionSeq(r.sessionSeq)) {
+              chatModel.remoteCtrlSession.value = RemoteCtrlSession(
+                ctrlAppInfo = r.ctrlAppInfo_,
+                appVersion = r.appVersion,
+                sessionState = UIRemoteCtrlSessionState.Found(r.remoteCtrl, r.compatible, r.sessionSeq)
+              )
+            }
+          }
         }
       }
       is CR.RemoteCtrlSessionCode -> {
-        val state = UIRemoteCtrlSessionState.PendingConfirmation(remoteCtrl_ = r.remoteCtrl_, sessionCode = r.sessionCode)
-        chatModel.remoteCtrlSession.value = chatModel.remoteCtrlSession.value?.copy(sessionState = state)
+        remoteCtrlStateMutex.withLock {
+          if (acceptRemoteCtrlEventLocked(msg, remoteCtrlReplayToken)) {
+            val session = chatModel.remoteCtrlSession.value
+            if (session != null && session.matchesSessionSeq(r.sessionSeq)) {
+              chatModel.remoteCtrlSession.value = session.copy(
+                sessionState = UIRemoteCtrlSessionState.PendingConfirmation(r.remoteCtrl_, r.sessionCode, r.sessionSeq)
+              )
+            }
+          }
+        }
       }
       is CR.RemoteCtrlConnected -> {
         // TODO currently it is returned in response to command, so it is redundant
-        val state = UIRemoteCtrlSessionState.Connected(remoteCtrl = r.remoteCtrl, sessionCode = chatModel.remoteCtrlSession.value?.sessionCode ?: "")
-        chatModel.remoteCtrlSession.value = chatModel.remoteCtrlSession.value?.copy(sessionState = state)
+        remoteCtrlStateMutex.withLock {
+          val session = chatModel.remoteCtrlSession.value
+          val sessionSeq = session?.sessionSeq
+          if (session != null && sessionSeq != null) {
+            val state = UIRemoteCtrlSessionState.Connected(r.remoteCtrl, session.sessionCode ?: "", sessionSeq)
+            chatModel.remoteCtrlSession.value = session.copy(sessionState = state)
+          }
+        }
       }
       is CR.RemoteCtrlStopped -> {
-        val sess = chatModel.remoteCtrlSession.value
+        val sess = remoteCtrlStateMutex.withLock {
+          if (acceptRemoteCtrlEventLocked(msg, remoteCtrlReplayToken)) {
+            chatModel.remoteCtrlSession.value?.takeIf { it.matchesSessionSeq(r.sessionSeq) }?.also {
+              chatModel.remoteCtrlSession.value = null
+            }
+          } else {
+            null
+          }
+        }
         if (sess != null) {
-          chatModel.remoteCtrlSession.value = null
           ModalManager.fullscreen.closeModals()
           fun showAlert(chatError: ChatError) {
             when {
@@ -6969,7 +7137,8 @@ sealed class CR {
   @Serializable @SerialName("remoteFileStored") class RemoteFileStored(val remoteHostId: Long, val remoteFileSource: CryptoFile): CR()
   // remote events (mobile)
   @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
-  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrlInfo, val ctrlAppInfo_: CtrlAppInfo?, val appVersion: String, val compatible: Boolean): CR()
+  @Serializable @SerialName("remoteCtrlSearching") class RemoteCtrlSearching(val sessionSeq: Int): CR()
+  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrlInfo, val ctrlAppInfo_: CtrlAppInfo?, val appVersion: String, val compatible: Boolean, val sessionSeq: Int): CR()
   @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl_: RemoteCtrlInfo?, val ctrlAppInfo: CtrlAppInfo, val appVersion: String, val sessionSeq: Int): CR()
   @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String, val sessionSeq: Int): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
@@ -7157,6 +7326,7 @@ sealed class CR {
     is RemoteHostStopped -> "remoteHostStopped"
     is RemoteFileStored -> "remoteFileStored"
     is RemoteCtrlList -> "remoteCtrlList"
+    is RemoteCtrlSearching -> "remoteCtrlSearching"
     is RemoteCtrlFound -> "remoteCtrlFound"
     is RemoteCtrlConnecting -> "remoteCtrlConnecting"
     is RemoteCtrlSessionCode -> "remoteCtrlSessionCode"
@@ -7347,6 +7517,7 @@ sealed class CR {
     is RemoteHostStopped -> "remote host ID: $remoteHostId_"
     is RemoteFileStored -> "remote host ID: $remoteHostId\nremoteFileSource:\n" + json.encodeToString(remoteFileSource)
     is RemoteCtrlList -> json.encodeToString(remoteCtrls)
+    is RemoteCtrlSearching -> "sessionSeq: $sessionSeq"
     is RemoteCtrlFound -> "remote ctrl: " + json.encodeToString(remoteCtrl) +
         "\nctrlAppInfo: " +
         (if (ctrlAppInfo_ == null) "null" else json.encodeToString(ctrlAppInfo_)) +
@@ -7705,7 +7876,8 @@ data class CoreVersionInfo(
 data class SomeRemoteCtrl(
   val remoteCtrl_: RemoteCtrlInfo?,
   val ctrlAppInfo: CtrlAppInfo,
-  val appVersion: String
+  val appVersion: String,
+  val sessionSeq: Int
 )
 
 @Serializable

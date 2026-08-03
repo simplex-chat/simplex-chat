@@ -216,7 +216,7 @@ struct ConnectDesktopView: View {
                     }
                 }
             }
-            if !compatible && !connectRemoteViaMulticastAuto {
+            if !compatible || !connectRemoteViaMulticastAuto {
                 Section {
                     disconnectButton("Cancel")
                 }
@@ -403,19 +403,17 @@ struct ConnectDesktopView: View {
     }
 
     private func findKnownDesktop() {
+        guard let generation = RemoteCtrlReconnect.shared.beginDiscovery() else { return }
+        showConnectScreen = true
         Task {
             do {
-                try await findKnownRemoteCtrl()
+                let sessionSeq = try await findKnownRemoteCtrl()
                 await MainActor.run {
-                    m.remoteCtrlSession = RemoteCtrlSession(
-                        ctrlAppInfo: nil,
-                        appVersion: "",
-                        sessionState: .searching
-                    )
-                    showConnectScreen = true
+                    _ = RemoteCtrlReconnect.shared.finishDiscovery(generation, sessionSeq: sessionSeq)
                 }
             } catch let e {
                 await MainActor.run {
+                    guard RemoteCtrlReconnect.shared.failDiscovery(generation) else { return }
                     errorAlert(e)
                 }
             }

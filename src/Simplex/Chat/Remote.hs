@@ -532,7 +532,7 @@ connectRemoteCtrlURI signedInv = do
 
 -- ** Multicast
 
-findKnownRemoteCtrl :: CM ()
+findKnownRemoteCtrl :: CM SessionSeq
 findKnownRemoteCtrl = do
   knownCtrls <- withStore' getRemoteCtrls
   pairings <- case nonEmpty knownCtrls of
@@ -552,11 +552,11 @@ findKnownRemoteCtrl = do
         Just rc -> pure rc
     atomically $ putTMVar foundCtrl (rc, inv)
     let compatible = isJust $ compatibleAppVersion hostAppVersionRange . appVersionRange =<< ctrlAppInfo_
-    toView CEvtRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo_, appVersion = currentAppVersion, compatible}
+    toView CEvtRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo_, appVersion = currentAppVersion, compatible, sessionSeq = sseq}
   updateRemoteCtrlSession sseq $ \case
     RCSessionStarting {} -> Right RCSessionSearching {action, foundCtrl}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-  atomically $ putTMVar cmdOk ()
+  sseq <$ atomically (putTMVar cmdOk ())
 
 confirmRemoteCtrl :: RemoteCtrlId -> CM (RemoteCtrlInfo, CtrlAppInfo, SessionSeq)
 confirmRemoteCtrl rcId = do
@@ -658,9 +658,13 @@ handleRemoteCommand execCC stopAction encryption remoteOutputQ remoteStopEvent H
   logDebug "handleRemoteCommand"
   liftIO (tryAllErrors' parseRequest) >>= \case
     Right (rfKN, getNext, rc) -> do
-      chatReadVar' currentUser >>= \case
-        Nothing -> replyError $ ChatError CENoActiveUser
-        Just user -> processCommand user rfKN getNext rc `catchAllErrors'` replyError
+      case rc of
+        RCSend {command, retryNumber} | isRemoteCtrlStopCommand command ->
+          (lift $ handleSend execCC stopAction command retryNumber >>= reply) `catchAllErrors'` replyError
+        _ ->
+          chatReadVar' currentUser >>= \case
+            Nothing -> replyError $ ChatError CENoActiveUser
+            Just user -> processCommand user rfKN getNext rc `catchAllErrors'` replyError
     Left e -> reply $ RRProtocolError e
   where
     parseRequest :: ExceptT RemoteProtocolError IO (C.SbKeyNonce, GetChunk, RemoteCommand)
@@ -703,7 +707,10 @@ handleSend execCC stopAction command retryNum = do
   logDebug $ "Send: " <> tshow command
   -- execCC checks for remote-allowed commands
   -- convert errors thrown in execCC into error responses to prevent aborting the protocol wrapper
-  RRChatResponse . eitherToResult <$> if command == "/_stop remote ctrl" then stopAction else execCC (encodeUtf8 command) retryNum
+  RRChatResponse . eitherToResult <$> if isRemoteCtrlStopCommand command then stopAction else execCC (encodeUtf8 command) retryNum
+
+isRemoteCtrlStopCommand :: Text -> Bool
+isRemoteCtrlStopCommand = (== "/_stop remote ctrl")
 
 handleRecv :: Int -> TBQueue (Either ChatError ChatEvent) -> TMVar (Either ChatError ChatEvent) -> IO RemoteResponse
 handleRecv time events remoteStopEvent = do

@@ -3598,7 +3598,7 @@ processChatCommand cxt nm = \case
   ConnectRemoteCtrl inv -> withUser_ $ do
     (remoteCtrl_, ctrlAppInfo, sessionSeq) <- connectRemoteCtrlURI inv
     pure CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion = currentAppVersion, sessionSeq}
-  FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl >> ok_
+  FindKnownRemoteCtrl -> withUser_ $ CRRemoteCtrlSearching <$> findKnownRemoteCtrl
   ConfirmRemoteCtrl rcId -> withUser_ $ do
     (rc, ctrlAppInfo, sessionSeq) <- confirmRemoteCtrl rcId
     pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion, sessionSeq}

@@ -291,6 +291,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
+  CRRemoteCtrlSearching {} -> ["ok"]
   CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion} ->
     [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
         <> viewRemoteCtrl ctrlAppInfo appVersion True

@@ -186,6 +186,8 @@ enum ChatCommand: ChatCmdProtocol {
     case verifyRemoteCtrlSession(sessionCode: String)
     case listRemoteCtrls
     case stopRemoteCtrl
+    case apiAbortRemoteCtrl(sessionSeq: Int)
+    case apiDropRemoteCtrl(sessionCode: String)
     case deleteRemoteCtrl(remoteCtrlId: Int64)
     case apiUploadStandaloneFile(userId: Int64, file: CryptoFile)
     case apiDownloadStandaloneFile(userId: Int64, url: String, file: CryptoFile)
@@ -406,6 +408,8 @@ enum ChatCommand: ChatCmdProtocol {
             case let .verifyRemoteCtrlSession(sessCode): return "/verify remote ctrl \(sessCode)"
             case .listRemoteCtrls: return "/list remote ctrls"
             case .stopRemoteCtrl: return "/stop remote ctrl"
+            case let .apiAbortRemoteCtrl(sessionSeq): return "/_abort remote ctrl \(sessionSeq)"
+            case let .apiDropRemoteCtrl(sessionCode): return "/_drop remote ctrl \(sessionCode)"
             case let .deleteRemoteCtrl(rcId): return "/delete remote ctrl \(rcId)"
             case let .apiUploadStandaloneFile(userId, file): return "/_upload \(userId) \(file.filePath)"
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
@@ -592,6 +596,8 @@ enum ChatCommand: ChatCmdProtocol {
             case .verifyRemoteCtrlSession: return "verifyRemoteCtrlSession"
             case .listRemoteCtrls: return "listRemoteCtrls"
             case .stopRemoteCtrl: return "stopRemoteCtrl"
+            case .apiAbortRemoteCtrl: return "apiAbortRemoteCtrl"
+            case .apiDropRemoteCtrl: return "apiDropRemoteCtrl"
             case .deleteRemoteCtrl: return "deleteRemoteCtrl"
             case .apiUploadStandaloneFile: return "apiUploadStandaloneFile"
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
@@ -1004,6 +1010,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case connNtfMessages(receivedMsgs: [RcvNtfMsgInfo])
     // remote desktop responses
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
+    case remoteCtrlSearching(sessionSeq: Int)
     case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String, sessionSeq: Int)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     // misc
@@ -1056,6 +1063,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .ntfConns: "ntfConns"
         case .connNtfMessages: "connNtfMessages"
         case .remoteCtrlList: "remoteCtrlList"
+        case .remoteCtrlSearching: "remoteCtrlSearching"
         case .remoteCtrlConnecting: "remoteCtrlConnecting"
         case .remoteCtrlConnected: "remoteCtrlConnected"
         case .versionInfo: "versionInfo"
@@ -1109,6 +1117,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .ntfConns(ntfConns): return String(describing: ntfConns)
         case let .connNtfMessages(receivedMsgs): return "receivedMsgs: \(String(describing: receivedMsgs))"
         case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
+        case let .remoteCtrlSearching(sessionSeq): return "sessionSeq: \(sessionSeq)"
         case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion, _): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
         case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
         case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
@@ -1195,7 +1204,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     // notification marker
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     // remote desktop responses
-    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
+    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool, sessionSeq: Int)
     case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String, sessionSeq: Int)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason, sessionSeq: Int)
@@ -1350,7 +1359,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .callEnded(u, contact): return withUser(u, "contact: \(contact.id)")
         case let .contactDisabled(u, contact): return withUser(u, String(describing: contact))
         case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
-        case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
+        case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible, sessionSeq): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)\nsessionSeq: \(sessionSeq)"
         case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode, _): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
         case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
         case let .remoteCtrlStopped(rcsState, rcStopReason, _): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"

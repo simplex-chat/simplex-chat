@@ -84,11 +84,13 @@ runRemoteTests = do
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
     it "drops the controller transport without stopping the pairing" remoteCtrlTransportDropTest
+    it "stops after deleting the active mobile user" remoteStopAfterUserDeletionTest
     it "reconnects with the same invitation after transport loss" remoteHandshakeReconnectTest
     xitMacCI "connects with multicast discovery" remoteHandshakeDiscoverTest
     it "refuses invalid client cert" remoteHandshakeRejectTest
     it "connects with stored server bindings" storedBindingsTest
   describe "controller attempt teardown" $ do
+    it "returns the session sequence for discovery" remoteCtrlAsyncFindTest
     it "returns the session sequence while the network handshake is blocked" remoteCtrlAsyncStartTest
     it "reports a network failure after accepting the connection attempt" remoteCtrlAsyncFailureTest
     it "aborts only the matching start attempt without a stop event" remoteCtrlExactAbortTest
@@ -212,6 +214,27 @@ remoteCtrlTransportDropTest = testRemoteWithEvents $ \events compress mobile des
   remoteCtrlSessionCode mobile `shouldReturn` newSessionCode
   stopMobile mobile desktop
 
+remoteStopAfterUserDeletionTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteStopAfterUserDeletionTest = testRemoteWithEvents $ \events compress mobile desktop -> do
+  startRemote compress mobile desktop
+  mobile ##> "/_delete user 1 del_smp=off"
+  mobile <## "ok"
+  readTVarIO (Controller.currentUser $ chatController mobile) >>= \case
+    Nothing -> pure ()
+    Just _ -> expectationFailure "Mobile should have no active user"
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Just (_, Controller.RCSessionConnected {}) -> pure ()
+    _ -> expectationFailure "Remote controller session should remain connected"
+  desktop ##> "/stop remote host 1"
+  desktop <## "ok"
+  eventually 3 $ mobile <## "remote controller stopped"
+  expectRemoteCtrlStopReason events $ \case
+    Controller.RCSRControllerStopped -> True
+    _ -> False
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Nothing -> pure ()
+    Just _ -> expectationFailure "Remote controller session should be stopped"
+
 remoteCtrlSessionCode :: TestCC -> IO T.Text
 remoteCtrlSessionCode mobile =
   readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
@@ -285,6 +308,21 @@ remoteCtrlAsyncStartTest = testRemoteWithEvents $ \events _ mobile desktop -> do
       Nothing -> pure ()
       Just _ -> expectationFailure "Abort did not remove the blocked controller attempt"
     expectNoRemoteCtrlStop events
+
+remoteCtrlAsyncFindTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteCtrlAsyncFindTest = testRemote $ \compress mobile desktop -> do
+  startRemote compress mobile desktop
+  stopMobile mobile desktop
+  response <- timeout 1000000 $ runReaderT (execChatCommand Nothing "/find remote ctrl" 0) (chatController mobile)
+  sessionSeq <- case response of
+    Just (Right Controller.CRRemoteCtrlSearching {sessionSeq}) -> pure sessionSeq
+    Just r -> expectationFailure ("Unexpected discovery response: " <> show r) >> fail "discovery response"
+    Nothing -> expectationFailure "Discovery command did not return" >> fail "discovery timeout"
+  readTVarIO (Controller.remoteCtrlSession $ chatController mobile) >>= \case
+    Just (currentSeq, Controller.RCSessionSearching {}) -> currentSeq `shouldBe` sessionSeq
+    _ -> expectationFailure "Controller discovery was not active"
+  mobile ##> ("/_abort remote ctrl " <> show sessionSeq)
+  mobile <## "ok"
 
 remoteCtrlAsyncFailureTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteCtrlAsyncFailureTest = testRemoteWithEvents $ \events _ mobile desktop -> do

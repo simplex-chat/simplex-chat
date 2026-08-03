@@ -1735,8 +1735,10 @@ func connectRemoteCtrl(desktopAddress: String) async throws -> (RemoteCtrlInfo?,
 }
 
 // Spec: spec/architecture.md#findKnownRemoteCtrl
-func findKnownRemoteCtrl() async throws {
-    try await sendCommandOkResp(.findKnownRemoteCtrl)
+func findKnownRemoteCtrl() async throws -> Int {
+    let r: ChatResponse2 = try await chatSendCmd(.findKnownRemoteCtrl)
+    if case let .remoteCtrlSearching(sessionSeq) = r { return sessionSeq }
+    throw r.unexpected
 }
 
 func confirmRemoteCtrl(_ rcId: Int64) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String, Int) {
@@ -1762,7 +1764,7 @@ func stopRemoteCtrl() async throws {
 }
 
 private func abortRemoteCtrlSession(_ sessionSeq: Int) async throws {
-    try await sendCommandOkResp(.string("/_abort remote ctrl \(sessionSeq)"))
+    try await sendCommandOkResp(.apiAbortRemoteCtrl(sessionSeq: sessionSeq))
 }
 
 func deleteRemoteCtrl(_ rcId: Int64) async throws {
@@ -1789,6 +1791,7 @@ final class RemoteCtrlReconnect {
     private var retryTaskGeneration = 0
     private var automaticReconnectTaskGeneration: Int?
     private var expectedSessionSeq: Int?
+    private var pendingFoundEvents: [Int: (remoteCtrl: RemoteCtrlInfo, ctrlAppInfo: CtrlAppInfo?, appVersion: String, compatible: Bool)] = [:]
     private var pendingSessionCodes: [Int: (RemoteCtrlInfo?, String)] = [:]
     private var pendingStopEvents: [Int: RemoteCtrlStopReason] = [:]
     private var sessionRequestInFlight = false
@@ -1884,7 +1887,7 @@ final class RemoteCtrlReconnect {
             let task = Task { [weak self] in
                 guard let self, self.sessionIsCurrent(generation) else { return }
                 do {
-                    try await sendCommandOkResp(.string("/_drop remote ctrl \(sessionCode)"))
+                    try await sendCommandOkResp(.apiDropRemoteCtrl(sessionCode: sessionCode))
                 } catch {
                     guard self.sessionIsCurrent(generation) else { return }
                     logger.error("Remote controller network drop failed: \(responseError(error))")
@@ -1927,6 +1930,36 @@ final class RemoteCtrlReconnect {
 
     func controllerStopEventMatches(_ sessionSeq: Int) -> Bool {
         stopEventMatches(sessionSeq) || retainedSessionSeqs.contains(sessionSeq)
+    }
+
+    func handleFound(
+        _ remoteCtrl: RemoteCtrlInfo,
+        ctrlAppInfo: CtrlAppInfo?,
+        appVersion: String,
+        compatible: Bool,
+        sessionSeq: Int
+    ) {
+        guard expectedSessionSeq == sessionSeq else {
+            guard expectedSessionSeq == nil,
+                  sessionRequestInFlight,
+                  let session = ChatModel.shared.remoteCtrlSession,
+                  case .searching = session.sessionState else { return }
+            pendingFoundEvents[sessionSeq] = (remoteCtrl, ctrlAppInfo, appVersion, compatible)
+            if pendingFoundEvents.count > 8, let oldest = pendingFoundEvents.keys.min() {
+                pendingFoundEvents.removeValue(forKey: oldest)
+            }
+            return
+        }
+        guard !stopping,
+              let session = ChatModel.shared.remoteCtrlSession,
+              case .searching = session.sessionState else { return }
+        let state = UIRemoteCtrlSessionState.found(remoteCtrl: remoteCtrl, compatible: compatible)
+        ChatModel.shared.remoteCtrlSession = RemoteCtrlSession(
+            ctrlAppInfo: ctrlAppInfo,
+            appVersion: appVersion,
+            sessionState: state,
+            invitation: session.invitation
+        )
     }
 
     func handleSessionCode(_ sessionCode: String, remoteCtrl: RemoteCtrlInfo?, sessionSeq: Int) {
@@ -1980,6 +2013,15 @@ final class RemoteCtrlReconnect {
             }
             return false
         }
+        if let found = pendingFoundEvents.removeValue(forKey: sessionSeq) {
+            handleFound(
+                found.remoteCtrl,
+                ctrlAppInfo: found.ctrlAppInfo,
+                appVersion: found.appVersion,
+                compatible: found.compatible,
+                sessionSeq: sessionSeq
+            )
+        }
         if let (remoteCtrl, sessionCode) = pendingSessionCodes.removeValue(forKey: sessionSeq) {
             handleSessionCode(sessionCode, remoteCtrl: remoteCtrl, sessionSeq: sessionSeq)
         }
@@ -1994,6 +2036,48 @@ final class RemoteCtrlReconnect {
             $0.invitation == invitation
         } ?? false
         return reconnecting || !UserDefaults.standard.bool(forKey: DEFAULT_CONFIRM_REMOTE_SESSIONS)
+    }
+
+    func beginDiscovery() -> Int? {
+        guard !stopping,
+              dropTask == nil,
+              abortTask == nil,
+              reconnectTask == nil,
+              !sessionRequestInFlight,
+              ChatModel.shared.remoteCtrlSession == nil else { return nil }
+        sessionRequestInFlight = true
+        connectionGeneration += 1
+        retryTaskGeneration += 1
+        automaticReconnectTaskGeneration = nil
+        reconnectDelay = 0
+        cancelVerification()
+        retainedSessionSeqs.removeAll()
+        expectedSessionSeq = nil
+        ChatModel.shared.remoteCtrlSession = RemoteCtrlSession(
+            ctrlAppInfo: nil,
+            appVersion: "",
+            sessionState: .searching
+        )
+        return connectionGeneration
+    }
+
+    func finishDiscovery(_ generation: Int, sessionSeq: Int) -> Bool {
+        guard connectionGeneration == generation else { return rejectSession(sessionSeq) }
+        sessionRequestInFlight = false
+        guard !stopping,
+              let session = ChatModel.shared.remoteCtrlSession,
+              case .searching = session.sessionState else { return rejectSession(sessionSeq) }
+        return expectSession(sessionSeq)
+    }
+
+    func failDiscovery(_ generation: Int) -> Bool {
+        guard connectionGeneration == generation else { return false }
+        sessionRequestInFlight = false
+        guard !stopping,
+              let session = ChatModel.shared.remoteCtrlSession,
+              case .searching = session.sessionState else { return false }
+        ChatModel.shared.remoteCtrlSession = nil
+        return true
     }
 
     func beginSession(invitation: String? = nil) -> Int? {
@@ -2195,6 +2279,7 @@ final class RemoteCtrlReconnect {
         cancelVerification()
         retainedSessionSeqs.removeAll()
         expectedSessionSeq = nil
+        pendingFoundEvents.removeAll()
         pendingSessionCodes.removeAll()
         pendingStopEvents.removeAll()
     }
@@ -2272,6 +2357,7 @@ final class RemoteCtrlReconnect {
 
     private func takePendingStopEvent(_ sessionSeq: Int) -> RemoteCtrlStopReason? {
         guard let event = pendingStopEvents.removeValue(forKey: sessionSeq) else { return nil }
+        pendingFoundEvents.removeValue(forKey: sessionSeq)
         pendingSessionCodes.removeValue(forKey: sessionSeq)
         return event
     }
@@ -3457,16 +3543,15 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateContact(contact)
             }
         }
-    case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
+    case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible, sessionSeq):
         await MainActor.run {
-            if let sess = m.remoteCtrlSession, case .searching = sess.sessionState {
-                let state = UIRemoteCtrlSessionState.found(remoteCtrl: remoteCtrl, compatible: compatible)
-                m.remoteCtrlSession = RemoteCtrlSession(
-                    ctrlAppInfo: ctrlAppInfo_,
-                    appVersion: appVersion,
-                    sessionState: state
-                )
-            }
+            RemoteCtrlReconnect.shared.handleFound(
+                remoteCtrl,
+                ctrlAppInfo: ctrlAppInfo_,
+                appVersion: appVersion,
+                compatible: compatible,
+                sessionSeq: sessionSeq
+            )
         }
     case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode, sessionSeq):
         await MainActor.run {
