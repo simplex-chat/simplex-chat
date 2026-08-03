@@ -365,14 +365,18 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     }
 }
 
-@Test func nestedStoreErrorsIdentifyAnInvalidReplyTarget() {
+@Test func nestedStoreErrorsIdentifyEveryUnavailableReplyTarget() {
     // Given
     let invalidQuote = Data(#"{"error":{"type":"errorStore","storeError":{"type":"invalidQuote"}}}"#.utf8)
-    let unrelated = Data(#"{"error":{"type":"errorStore","storeError":{"type":"chatItemNotFound","itemId":9}}}"#.utf8)
+    let missingItem = Data(#"{"error":{"type":"errorStore","storeError":{"type":"chatItemNotFound","itemId":9}}}"#.utf8)
+    let badItem = Data(#"{"error":{"type":"errorStore","storeError":{"type":"badChatItem","itemId":9,"itemTs":null}}}"#.utf8)
+    let unrelated = Data(#"{"error":{"type":"errorStore","storeError":{"type":"fileNotFound","fileId":3}}}"#.utf8)
 
     // When / Then
-    #expect(NativeChatParser.commandErrorIsInvalidQuote(invalidQuote))
-    #expect(!NativeChatParser.commandErrorIsInvalidQuote(unrelated))
+    #expect(NativeChatParser.commandErrorMakesReplyTargetUnavailable(invalidQuote))
+    #expect(NativeChatParser.commandErrorMakesReplyTargetUnavailable(missingItem))
+    #expect(NativeChatParser.commandErrorMakesReplyTargetUnavailable(badItem))
+    #expect(!NativeChatParser.commandErrorMakesReplyTargetUnavailable(unrelated))
 }
 
 @Test func singleMessageReloadUsesTheCoreQuoteResolutionPagination() {

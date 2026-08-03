@@ -220,10 +220,12 @@ enum NativeChatParser {
         return "SimpleX could not complete the action."
     }
 
-    static func commandErrorIsInvalidQuote(_ data: Data) -> Bool {
+    static func commandErrorMakesReplyTargetUnavailable(_ data: Data) -> Bool {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let error = root["error"] else { return false }
-        return containsType("invalidQuote", in: error)
+        return ["invalidQuote", "chatItemNotFound", "badChatItem"].contains {
+            containsType($0, in: error)
+        }
     }
 
     static func validateCommandResponse(

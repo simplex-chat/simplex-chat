@@ -260,7 +260,7 @@ actor SimpleXCore {
     private func sendComposedMessage(_ message: [String: Any], to chat: NativeChat) throws {
         let response = try send(Self.sendCommand(message: message, to: chat))
         if message["quotedItemId"] != nil,
-           NativeChatParser.commandErrorIsInvalidQuote(response) {
+           NativeChatParser.commandErrorMakesReplyTargetUnavailable(response) {
             throw NativeChatError.replyTargetUnavailable
         }
         try NativeChatParser.validateCommandResponse(
