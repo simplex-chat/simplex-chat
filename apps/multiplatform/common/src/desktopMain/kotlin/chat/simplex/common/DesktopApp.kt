@@ -16,6 +16,7 @@ import androidx.compose.ui.window.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
+import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.chat.chatSearchRequest
@@ -142,8 +143,9 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       SimplexMenuBar()
 //      val hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
-      DisposableEffect(window) {
-        if (desktopPlatform.isMac()) configureMacOSWindow(window)
+      val desktopChromeColor = CurrentColors.collectAsState().value.colors.background
+      DisposableEffect(window, desktopChromeColor) {
+        if (desktopPlatform.isMac()) configureMacOSWindow(window, desktopChromeColor)
         onDispose {}
       }
       AppScreen()

@@ -3,6 +3,7 @@
 #include <jni.h>
 
 static NSString * const SimpleXVibrancyIdentifier = @"chat.simplex.sidebar.vibrancy";
+static NSString * const SimpleXTitlebarBackdropIdentifier = @"chat.simplex.titlebar.backdrop";
 static NSString * const SimpleXMessageCategory = @"MESSAGE";
 static NSString * const SimpleXContactCategory = @"CONTACT_REQUEST";
 static NSString * const SimpleXCallCategory = @"INCOMING_CALL";
@@ -81,7 +82,7 @@ static NSSet<UNNotificationCategory *> *notificationCategories(void) {
     ]];
 }
 
-static BOOL configureWindow(NSWindow *window) {
+static BOOL configureWindow(NSWindow *window, NSColor *chromeColor) {
     if (window == nil || window.contentView == nil) return NO;
 
     window.styleMask |= NSWindowStyleMaskFullSizeContentView;
@@ -89,27 +90,54 @@ static BOOL configureWindow(NSWindow *window) {
     window.titleVisibility = NSWindowTitleHidden;
 
     NSView *contentView = window.contentView;
+    NSVisualEffectView *effectView = nil;
+    NSView *titlebarBackdrop = nil;
     for (NSView *view in contentView.subviews.copy) {
-        if ([view.identifier isEqualToString:SimpleXVibrancyIdentifier]) return YES;
+        if ([view.identifier isEqualToString:SimpleXVibrancyIdentifier]) effectView = (NSVisualEffectView *)view;
+        if ([view.identifier isEqualToString:SimpleXTitlebarBackdropIdentifier]) titlebarBackdrop = view;
     }
 
-    NSVisualEffectView *effectView = [[NSVisualEffectView alloc] initWithFrame:contentView.bounds];
-    effectView.identifier = SimpleXVibrancyIdentifier;
-    effectView.material = NSVisualEffectMaterialSidebar;
-    effectView.blendingMode = NSVisualEffectBlendingModeBehindWindow;
-    effectView.state = NSVisualEffectStateFollowsWindowActiveState;
-    effectView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    [contentView addSubview:effectView positioned:NSWindowBelow relativeTo:contentView.subviews.firstObject];
+    if (effectView == nil) {
+        effectView = [[NSVisualEffectView alloc] initWithFrame:contentView.bounds];
+        effectView.identifier = SimpleXVibrancyIdentifier;
+        effectView.material = NSVisualEffectMaterialSidebar;
+        effectView.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+        effectView.state = NSVisualEffectStateFollowsWindowActiveState;
+        effectView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        [contentView addSubview:effectView positioned:NSWindowBelow relativeTo:contentView.subviews.firstObject];
+    }
+
+    CGFloat titlebarHeight = MAX(28.0, NSHeight(contentView.bounds) - NSHeight(window.contentLayoutRect));
+    NSRect titlebarFrame = NSMakeRect(
+        NSMinX(contentView.bounds),
+        NSMaxY(contentView.bounds) - titlebarHeight,
+        NSWidth(contentView.bounds),
+        titlebarHeight
+    );
+    if (titlebarBackdrop == nil) {
+        titlebarBackdrop = [[NSView alloc] initWithFrame:titlebarFrame];
+        titlebarBackdrop.identifier = SimpleXTitlebarBackdropIdentifier;
+        titlebarBackdrop.wantsLayer = YES;
+        titlebarBackdrop.autoresizingMask = NSViewWidthSizable | NSViewMinYMargin;
+        [contentView addSubview:titlebarBackdrop positioned:NSWindowAbove relativeTo:effectView];
+    } else {
+        titlebarBackdrop.frame = titlebarFrame;
+    }
+    titlebarBackdrop.layer.backgroundColor = chromeColor.CGColor;
     return YES;
 }
 
 JNIEXPORT jboolean JNICALL
-Java_chat_simplex_common_MacOSPlatformKt_macOSConfigureWindow(JNIEnv *env, jclass clazz, jlong windowHandle) {
+Java_chat_simplex_common_MacOSPlatformKt_macOSConfigureWindow(
+    JNIEnv *env, jclass clazz, jlong windowHandle,
+    jfloat chromeRed, jfloat chromeGreen, jfloat chromeBlue, jfloat chromeAlpha
+) {
     if (windowHandle == 0) return JNI_FALSE;
     __block BOOL configured = NO;
     void (^work)(void) = ^{
         @autoreleasepool {
-            configured = configureWindow((__bridge NSWindow *)(void *)windowHandle);
+            NSColor *chromeColor = [NSColor colorWithSRGBRed:chromeRed green:chromeGreen blue:chromeBlue alpha:chromeAlpha];
+            configured = configureWindow((__bridge NSWindow *)(void *)windowHandle, chromeColor);
         }
     };
     if ([NSThread isMainThread]) work(); else dispatch_sync(dispatch_get_main_queue(), work);

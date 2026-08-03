@@ -1,6 +1,7 @@
 package chat.simplex.common
 
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.graphics.Color
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.setMacOSWindowVibrancyAvailable
@@ -9,13 +10,25 @@ import java.awt.Component
 import java.awt.Container
 import java.awt.SystemColor
 
-private external fun macOSConfigureWindow(windowHandle: Long): Boolean
+private external fun macOSConfigureWindow(
+  windowHandle: Long,
+  chromeRed: Float,
+  chromeGreen: Float,
+  chromeBlue: Float,
+  chromeAlpha: Float,
+): Boolean
 
-fun configureMacOSWindow(window: ComposeWindow) {
+fun configureMacOSWindow(window: ComposeWindow, chromeColor: Color) {
   val skiaLayers = findSkiaLayers(window)
   try {
     skiaLayers.forEach { it.transparency = true }
-    val configured = macOSConfigureWindow(window.windowHandle)
+    val configured = macOSConfigureWindow(
+      window.windowHandle,
+      chromeColor.red,
+      chromeColor.green,
+      chromeColor.blue,
+      chromeColor.alpha,
+    )
     setMacOSWindowVibrancyAvailable(configured)
     if (!configured) {
       useOpaqueFallback(window, skiaLayers)
