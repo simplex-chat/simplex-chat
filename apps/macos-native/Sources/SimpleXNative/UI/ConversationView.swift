@@ -983,8 +983,7 @@ private struct MessageContentView: View {
     }
 
     private var messageText: some View {
-        Text(message.text)
-            .textSelection(.enabled)
+        MessageBodyText(text: message.text)
     }
 
     @ViewBuilder
@@ -1060,6 +1059,17 @@ private struct MessageContentView: View {
     private var attachmentExists: Bool {
         guard let source = message.fileSource else { return false }
         return FileManager.default.fileExists(atPath: source.sourceURL.path)
+    }
+}
+
+struct MessageBodyText: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
+            .textSelection(.enabled)
     }
 }
 

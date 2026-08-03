@@ -1,6 +1,7 @@
 import AppKit
 import CoreBridge
 import Foundation
+import SwiftUI
 import Testing
 @testable import SimpleXNative
 
@@ -83,6 +84,31 @@ import Testing
     let messages = try NativeChatParser.messages(from: Data(json.utf8))
     #expect(messages.map(\.sent) == [false, true])
     #expect(messages.map(\.text) == ["Hi", "Hey"])
+}
+
+@MainActor
+@Test func longMessageBodyUsesItsFullWrappedHeight() {
+    let shortHeight = messageBodyHeight("Short message")
+    let longHeight = messageBodyHeight(
+        String(repeating: "Unlimited browser profiles keep every profile isolated. ", count: 8)
+    )
+
+    #expect(longHeight > 100)
+    #expect(longHeight > shortHeight * 2)
+}
+
+@MainActor
+private func messageBodyHeight(_ text: String) -> CGFloat {
+    let view = HStack(alignment: .center, spacing: 4) {
+        Color.clear.frame(width: 44, height: 44)
+        MessageBodyText(text: text)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16))
+    }
+    .frame(width: 520, alignment: .trailing)
+
+    return NSHostingView(rootView: view).fittingSize.height
 }
 
 @Test func parsesImageMessagePreviewAndFile() throws {
