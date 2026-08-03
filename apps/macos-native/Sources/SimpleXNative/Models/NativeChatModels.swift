@@ -11,6 +11,16 @@ enum NativeChatKind: String, Sendable {
     var canSend: Bool {
         self == .direct || self == .group || self == .local
     }
+
+    var toolbarSubtitle: String {
+        switch self {
+        case .direct: "SimpleX contact"
+        case .group: "Group"
+        case .local: "Private notes"
+        case .contactRequest: "Contact request"
+        case .contactConnection: "Connecting"
+        }
+    }
 }
 
 struct NativeProfile: Sendable {

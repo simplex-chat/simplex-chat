@@ -45,6 +45,15 @@ struct SimpleXNativeApp: App {
                 }
                 .keyboardShortcut("a")
             }
+            CommandGroup(after: .pasteboard) {
+                Divider()
+                Button("Find in Conversation") { model.beginConversationSearch() }
+                    .keyboardShortcut("f")
+                    .disabled(model.selectedChat == nil)
+                Button("Search Chats") { model.sidebarSearchPresented = true }
+                    .keyboardShortcut("k")
+                    .disabled(model.phase != .ready)
+            }
             CommandGroup(after: .textEditing) {
                 Button("Delete Selected Messages") { model.requestDeleteSelectedMessages() }
                     .keyboardShortcut(.delete, modifiers: [])
@@ -88,6 +97,20 @@ struct SimpleXNativeApp: App {
                     Toggle("Play notification sounds", isOn: $notifications.soundsEnabled)
                     Button("Open Mac Notification Settings", action: notifications.openSystemSettings)
                 }
+
+                Section("Security") {
+                    LabeledContent(
+                        "Database passphrase",
+                        value: keychainPassphraseStatus
+                    )
+                    Button("Forget Saved Passphrase", role: .destructive, action: model.forgetSavedPassphrase)
+                        .disabled(!model.keychainPassphraseStorageAvailable || !model.hasStoredPassphrase)
+                    if let message = model.keychainStatusMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .formStyle(.grouped)
             .padding(20)
@@ -97,5 +120,12 @@ struct SimpleXNativeApp: App {
 
     private func sendFirstResponderAction(_ name: String) {
         NSApp.sendAction(Selector(name), to: nil, from: nil)
+    }
+
+    private var keychainPassphraseStatus: String {
+        guard model.keychainPassphraseStorageAvailable else {
+            return "Unavailable in this development build"
+        }
+        return model.hasStoredPassphrase ? "Saved in Mac Keychain" : "Not saved"
     }
 }

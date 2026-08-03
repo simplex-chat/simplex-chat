@@ -12,7 +12,7 @@ if [[ ! -f ${CORE_LIB_DIR}/libsimplex.dylib ]]; then
   exit 1
 fi
 
-swift build --package-path ${SCRIPT_DIR} -c release --product SimpleXNative
+swift build --disable-sandbox --package-path ${SCRIPT_DIR} -c release --product SimpleXNative
 
 if [[ -d ${APP_DIR} ]]; then
   BUILD_TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -38,6 +38,7 @@ plutil -insert LSApplicationCategoryType -string public.app-category.social-netw
 plutil -insert LSMinimumSystemVersion -string 14.0 ${APP_DIR}/Contents/Info.plist
 plutil -insert NSHighResolutionCapable -bool YES ${APP_DIR}/Contents/Info.plist
 plutil -insert NSHumanReadableCopyright -string "Copyright © 2020-2026 SimpleX Chat" ${APP_DIR}/Contents/Info.plist
+plutil -insert SimpleXKeychainPassphraseStorageEnabled -bool NO ${APP_DIR}/Contents/Info.plist
 
 xattr -cr ${APP_DIR}
 codesign --force --deep --sign - ${APP_DIR}

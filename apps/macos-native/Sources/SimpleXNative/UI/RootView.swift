@@ -25,6 +25,7 @@ struct RootView: View {
                         .navigationSplitViewColumnWidth(min: 240, ideal: 320, max: 480)
                 } detail: {
                     ConversationView(model: model)
+                        .navigationSplitViewColumnWidth(min: 520, ideal: 800)
                 }
                 .alert("SimpleX", isPresented: Binding(
                     get: { if case .failed = model.phase { true } else { false } },

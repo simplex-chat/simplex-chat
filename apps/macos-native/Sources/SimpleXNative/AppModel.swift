@@ -17,6 +17,9 @@ final class AppModel: ObservableObject {
     @Published var messages: [NativeMessage] = []
     @Published var draft = ""
     @Published var searchText = ""
+    @Published var sidebarSearchPresented = false
+    @Published var conversationSearchText = ""
+    @Published var conversationSearchPresented = false
     @Published var isLoadingConversation = false
     @Published var isSending = false
     @Published var selectedMessageIDs: Set<Int64> = []
@@ -25,23 +28,45 @@ final class AppModel: ObservableObject {
     @Published var attachmentError: String?
     @Published var showingDeleteConfirmation = false
     @Published var targetMessageID: Int64?
+    @Published var hasStoredPassphrase = false
+    @Published var keychainStatusMessage: String?
+    @Published private(set) var keychainPassphraseStorageAvailable: Bool
     @Published var density: DesktopChatDensity {
         didSet { UserDefaults.standard.set(density.rawValue, forKey: Self.densityKey) }
     }
 
     private let core = SimpleXCore()
+    private let previewMode: Bool
+    private let passphraseStore: any DatabasePassphraseStore
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var selectionAnchor: Int64?
     private static let densityKey = "desktopChatDensity"
 
-    init(notificationManager: NativeNotificationManager? = nil) {
+    init(
+        notificationManager: NativeNotificationManager? = nil,
+        passphraseStore: any DatabasePassphraseStore = DatabasePassphraseKeychain()
+    ) {
+        previewMode = ProcessInfo.processInfo.environment["SIMPLEX_NATIVE_UI_PREVIEW"] == "1"
+        self.passphraseStore = passphraseStore
+        keychainPassphraseStorageAvailable = Bundle.main.object(
+            forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
+        ) as? Bool == true
         density = DesktopChatDensity(
             rawValue: UserDefaults.standard.string(forKey: Self.densityKey) ?? ""
         ) ?? .compact
         self.notificationManager = notificationManager
         notificationManager?.model = self
+        if previewMode {
+            phase = .ready
+            profile = NativePreviewData.profile
+            chats = NativePreviewData.chats
+            selectedChatID = NativePreviewData.chats.first?.id
+            messages = selectedChatID.map(NativePreviewData.messages) ?? []
+        } else if keychainPassphraseStorageAvailable {
+            Task { await attemptAutomaticUnlock() }
+        }
     }
 
     deinit {
@@ -73,22 +98,41 @@ final class AppModel: ObservableObject {
         !selectedMessageIDs.isEmpty && selectedMessagesInTranscriptOrder.allSatisfy(\.deletable)
     }
 
-    func unlock(passphrase: String) {
+    var conversationSearchMatches: [NativeMessage] {
+        ConversationSearch.matches(messages, query: conversationSearchText)
+    }
+
+    var conversationSearchResultDescription: String {
+        let matches = conversationSearchMatches
+        let selectedID = selectedMessagesInTranscriptOrder.last?.id
+        return ConversationSearch.resultDescription(
+            matches: matches,
+            selectedID: selectedID,
+            queryIsEmpty: conversationSearchText.isEmpty
+        )
+    }
+
+    func unlock(passphrase: String, rememberPassphrase: Bool = true) {
         guard phase != .opening else { return }
         phase = .opening
         Task {
+            await openProfile(
+                passphrase: passphrase,
+                rememberPassphrase: rememberPassphrase && keychainPassphraseStorageAvailable,
+                automatic: false
+            )
+        }
+    }
+
+    func forgetSavedPassphrase() {
+        guard keychainPassphraseStorageAvailable else { return }
+        Task {
             do {
-                let (profile, chats) = try await core.open(passphrase: passphrase)
-                self.profile = profile
-                self.chats = chats
-                self.phase = .ready
-                if selectedChatID == nil { selectedChatID = chats.first?.id }
-                await loadSelectedConversation()
-                startEventLoop()
-                notificationManager?.chatSetupReady()
-                consumePendingNotificationRoutes()
+                try await passphraseStore.delete()
+                hasStoredPassphrase = false
+                keychainStatusMessage = "The saved passphrase was removed from Mac Keychain."
             } catch {
-                phase = .locked(message: error.localizedDescription)
+                keychainStatusMessage = error.localizedDescription
             }
         }
     }
@@ -99,11 +143,18 @@ final class AppModel: ObservableObject {
         clearMessageSelection()
         pendingAttachments = []
         targetMessageID = nil
+        conversationSearchText = ""
+        conversationSearchPresented = false
         if let id { notificationManager?.removeDeliveredNotifications(chatID: id) }
+        if previewMode {
+            messages = id.map(NativePreviewData.messages) ?? []
+            return
+        }
         Task { await loadSelectedConversation() }
     }
 
     func refresh() {
+        guard !previewMode else { return }
         guard let userID = profile?.userID else { return }
         Task {
             do {
@@ -119,6 +170,23 @@ final class AppModel: ObservableObject {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = pendingAttachments
         guard (!text.isEmpty || !attachments.isEmpty), let chat = selectedChat, !isSending else { return }
+        if previewMode {
+            if !text.isEmpty {
+                let nextID = (messages.map(\.id).max() ?? 0) + 1
+                messages.append(NativeMessage(
+                    id: nextID,
+                    text: text,
+                    timestamp: Date(),
+                    sent: true,
+                    author: nil,
+                    deletable: true,
+                    content: .text
+                ))
+            }
+            draft = ""
+            pendingAttachments = []
+            return
+        }
         draft = ""
         isSending = true
         Task {
@@ -186,6 +254,14 @@ final class AppModel: ObservableObject {
         pendingAttachments = PendingAttachment.reordered(pendingAttachments, from: source, before: destination)
     }
 
+    func moveAttachment(_ id: PendingAttachment.ID, by offset: Int) {
+        guard let sourceIndex = pendingAttachments.firstIndex(where: { $0.id == id }) else { return }
+        let destinationIndex = min(max(0, sourceIndex + offset), pendingAttachments.count - 1)
+        guard sourceIndex != destinationIndex else { return }
+        let attachment = pendingAttachments.remove(at: sourceIndex)
+        pendingAttachments.insert(attachment, at: destinationIndex)
+    }
+
     func selectMessage(_ id: Int64, modifiers: NSEvent.ModifierFlags) {
         let result = MessageSelection.updated(
             current: selectedMessageIDs,
@@ -215,6 +291,36 @@ final class AppModel: ObservableObject {
         selectionAnchor = messages[targetIndex].id
     }
 
+    func beginConversationSearch() {
+        guard selectedChat != nil else { return }
+        conversationSearchPresented = true
+    }
+
+    func updateConversationSearchSelection() {
+        guard let first = conversationSearchMatches.first else {
+            clearMessageSelection()
+            return
+        }
+        selectedMessageIDs = [first.id]
+        selectionAnchor = first.id
+        targetMessageID = first.id
+    }
+
+    func moveConversationSearchResult(by offset: Int) {
+        let matches = conversationSearchMatches
+        let selectedID = selectedMessagesInTranscriptOrder.last?.id
+        guard let nextID = ConversationSearch.nextID(in: matches, currentID: selectedID, offset: offset) else { return }
+        selectedMessageIDs = [nextID]
+        selectionAnchor = nextID
+        targetMessageID = nextID
+    }
+
+    func dismissConversationSearch() {
+        conversationSearchPresented = false
+        conversationSearchText = ""
+        clearMessageSelection()
+    }
+
     func copySelectedMessages() {
         guard transcriptFocused, !selectedMessageIDs.isEmpty else { return }
         let text = selectedMessagesInTranscriptOrder.map(\.text).joined(separator: "\n\n")
@@ -231,6 +337,11 @@ final class AppModel: ObservableObject {
         guard let chat = selectedChat, canDeleteSelectedMessages else { return }
         let identifiers = selectedMessagesInTranscriptOrder.map(\.id)
         showingDeleteConfirmation = false
+        if previewMode {
+            messages.removeAll { identifiers.contains($0.id) }
+            clearMessageSelection()
+            return
+        }
         Task {
             do {
                 try await core.deleteMessages(identifiers, from: chat)
@@ -248,7 +359,9 @@ final class AppModel: ObservableObject {
     }
 
     func dismissNearestState() {
-        if !pendingAttachments.isEmpty {
+        if conversationSearchPresented {
+            dismissConversationSearch()
+        } else if !pendingAttachments.isEmpty {
             pendingAttachments = []
         } else if !selectedMessageIDs.isEmpty {
             clearMessageSelection()
@@ -316,5 +429,65 @@ final class AppModel: ObservableObject {
     private func consumePendingNotificationRoutes() {
         let routes = notificationRouteQueue.consumeIfReady(true)
         for route in routes { openNotificationRoute(route) }
+    }
+
+    private func attemptAutomaticUnlock() async {
+        phase = .opening
+        do {
+            guard let passphrase = try await passphraseStore.load() else {
+                phase = .locked(message: nil)
+                return
+            }
+            hasStoredPassphrase = true
+            await openProfile(passphrase: passphrase, rememberPassphrase: true, automatic: true)
+        } catch {
+            keychainStatusMessage = error.localizedDescription
+            phase = .locked(message: "Couldn’t read the saved passphrase. Enter it to continue.")
+        }
+    }
+
+    private func openProfile(passphrase: String, rememberPassphrase: Bool, automatic: Bool) async {
+        do {
+            let (profile, chats) = try await core.open(passphrase: passphrase)
+
+            if rememberPassphrase {
+                do {
+                    try await passphraseStore.save(passphrase)
+                    hasStoredPassphrase = true
+                    keychainStatusMessage = nil
+                } catch {
+                    hasStoredPassphrase = false
+                    keychainStatusMessage = "The profile opened, but its passphrase wasn’t saved: \(error.localizedDescription)"
+                }
+            } else if !automatic {
+                do {
+                    try await passphraseStore.delete()
+                    hasStoredPassphrase = false
+                } catch {
+                    keychainStatusMessage = error.localizedDescription
+                }
+            }
+
+            self.profile = profile
+            self.chats = chats
+            phase = .ready
+            if selectedChatID == nil { selectedChatID = chats.first?.id }
+            await loadSelectedConversation()
+            startEventLoop()
+            notificationManager?.chatSetupReady()
+            consumePendingNotificationRoutes()
+        } catch {
+            if automatic, error.localizedDescription == "That database passphrase is not correct." {
+                do {
+                    try await passphraseStore.delete()
+                    hasStoredPassphrase = false
+                } catch {
+                    keychainStatusMessage = error.localizedDescription
+                }
+                phase = .locked(message: "The saved passphrase no longer opens this profile. Enter the current passphrase.")
+            } else {
+                phase = .locked(message: error.localizedDescription)
+            }
+        }
     }
 }

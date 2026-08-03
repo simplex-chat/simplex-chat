@@ -57,6 +57,39 @@ import Testing
     #expect(DesktopChatDensity.compact.tokens.avatarSize < DesktopChatDensity.spacious.tokens.avatarSize)
 }
 
+@Test func conversationSearchFindsCaseInsensitiveTextAndWrapsResults() {
+    let messages = [
+        NativeMessage(id: 1, text: "First PHOTO", timestamp: nil, sent: false, author: nil, deletable: true, content: .text),
+        NativeMessage(id: 2, text: "No match", timestamp: nil, sent: true, author: nil, deletable: true, content: .text),
+        NativeMessage(id: 3, text: "Another photo", timestamp: nil, sent: false, author: nil, deletable: true, content: .text),
+    ]
+    let matches = ConversationSearch.matches(messages, query: "photo")
+    #expect(matches.map(\.id) == [1, 3])
+    #expect(ConversationSearch.nextID(in: matches, currentID: 3, offset: 1) == 1)
+    #expect(ConversationSearch.nextID(in: matches, currentID: 1, offset: -1) == 3)
+    #expect(ConversationSearch.resultDescription(matches: matches, selectedID: 3, queryIsEmpty: false) == "2 of 2")
+}
+
+@Test(.disabled("Requires an Apple-provisioned application identifier; SwiftPM test hosts have none"))
+func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
+    let service = "chat.simplex.native.tests.\(UUID().uuidString)"
+    let store = DatabasePassphraseKeychain(service: service, account: "test-database")
+    try await store.delete()
+
+    do {
+        #expect(try await store.load() == nil)
+        try await store.save("first-passphrase")
+        #expect(try await store.load() == "first-passphrase")
+        try await store.save("updated-passphrase")
+        #expect(try await store.load() == "updated-passphrase")
+        try await store.delete()
+        #expect(try await store.load() == nil)
+    } catch {
+        try? await store.delete()
+        throw error
+    }
+}
+
 @Test func attachmentReorderingAndFailureRetentionPreserveOrder() {
     let urls = ["one.jpg", "two.mov", "three.pdf"].map { URL(fileURLWithPath: "/tmp/\($0)") }
     let attachments = [

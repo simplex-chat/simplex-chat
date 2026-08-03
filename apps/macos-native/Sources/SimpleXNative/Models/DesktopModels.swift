@@ -169,6 +169,26 @@ enum MessageSelection {
     }
 }
 
+enum ConversationSearch {
+    static func matches(_ messages: [NativeMessage], query: String) -> [NativeMessage] {
+        guard !query.isEmpty else { return [] }
+        return messages.filter { $0.text.localizedCaseInsensitiveContains(query) }
+    }
+
+    static func nextID(in matches: [NativeMessage], currentID: Int64?, offset: Int) -> Int64? {
+        guard !matches.isEmpty else { return nil }
+        let currentIndex = currentID.flatMap { id in matches.firstIndex(where: { $0.id == id }) } ?? 0
+        let nextIndex = (currentIndex + offset + matches.count) % matches.count
+        return matches[nextIndex].id
+    }
+
+    static func resultDescription(matches: [NativeMessage], selectedID: Int64?, queryIsEmpty: Bool) -> String {
+        guard !matches.isEmpty else { return queryIsEmpty ? "" : "No Results" }
+        let index = selectedID.flatMap { id in matches.firstIndex(where: { $0.id == id }) } ?? 0
+        return "\(index + 1) of \(matches.count)"
+    }
+}
+
 enum NotificationPreviewMode: String, CaseIterable, Identifiable, Sendable {
     case message
     case contact
