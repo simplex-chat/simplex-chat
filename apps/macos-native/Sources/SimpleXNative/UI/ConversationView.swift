@@ -152,8 +152,18 @@ struct ConversationView: View {
             .focused($transcriptFocused)
             .focusEffectDisabled()
             .overlay {
-                if model.isLoadingConversation { ProgressView() }
+                ZStack {
+                    if transcriptFocused {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(Color.accentColor.opacity(0.8), lineWidth: 2)
+                            .padding(2)
+                            .allowsHitTesting(false)
+                    }
+                    if model.isLoadingConversation { ProgressView() }
+                }
             }
+            .accessibilityLabel("Conversation transcript") // [VERIFY] Names the keyboard-focusable transcript region.
+            .accessibilityHint("Use the arrow keys to select messages. Press Return to reply to the selected message.") // [VERIFY] Describes the transcript keyboard actions.
             .onChange(of: model.messages.last?.id) { _, lastID in
                 guard let lastID, model.targetMessageID == nil else { return }
                 proxy.scrollTo(lastID, anchor: .bottom)
@@ -173,6 +183,11 @@ struct ConversationView: View {
             }
             .onKeyPress(.downArrow) {
                 model.moveMessageSelection(by: 1)
+                return .handled
+            }
+            .onKeyPress(.return) {
+                guard model.replyToSelectedMessage() else { return .ignored }
+                composerFocused = true
                 return .handled
             }
             .onKeyPress(.delete) {
@@ -216,7 +231,7 @@ struct ConversationView: View {
                     count: model.selectedMessageIDs.count,
                     canReply: model.canReplyToSelectedMessage,
                     canDelete: model.canDeleteSelectedMessages,
-                    reply: model.replyToSelectedMessage,
+                    reply: { model.replyToSelectedMessage() },
                     copy: model.copySelectedMessages,
                     delete: model.requestDeleteSelectedMessages,
                     clear: model.clearMessageSelection
@@ -553,7 +568,7 @@ private struct MessageRow: View {
                         }
                     }
                     .overlay(alignment: message.sent ? .leading : .trailing) {
-                        if hovering, canReply {
+                        if (hovering || selected) && canReply {
                             Button(action: reply) {
                                 Image(systemName: "arrowshape.turn.up.left")
                                     .frame(width: 28, height: 28)
@@ -561,10 +576,11 @@ private struct MessageRow: View {
                                     .overlay {
                                         Circle().stroke(Color(nsColor: .separatorColor))
                                     }
-                                    .contentShape(Circle())
                             }
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                             .buttonStyle(.plain)
-                            .offset(x: message.sent ? -40 : 40)
+                            .offset(x: message.sent ? -46 : 46)
                             .help("Reply")
                             .accessibilityLabel("Reply") // [VERIFY] Matches the visible tooltip.
                             .accessibilityInputLabels(["Reply", "Quote Message"])

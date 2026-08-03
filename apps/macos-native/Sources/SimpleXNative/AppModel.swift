@@ -581,10 +581,13 @@ final class AppModel: ObservableObject {
         replyTargetNavigationTask = nil
     }
 
-    func replyToSelectedMessage() {
+    @discardableResult
+    func replyToSelectedMessage() -> Bool {
         guard selectedMessagesInTranscriptOrder.count == 1,
-              let message = selectedMessagesInTranscriptOrder.first else { return }
+              let message = selectedMessagesInTranscriptOrder.first,
+              canReply(to: message) else { return false }
         beginReply(to: message)
+        return replyingTo?.id == message.id
     }
 
     func cancelReply() {

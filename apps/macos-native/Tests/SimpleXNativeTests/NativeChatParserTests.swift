@@ -1557,7 +1557,7 @@ private actor AttachmentOpenProbe {
     #expect(model.canReplyToSelectedMessage)
 
     // When: Reply is invoked, composed, and sent.
-    model.replyToSelectedMessage()
+    #expect(model.replyToSelectedMessage())
     #expect(model.replyingTo?.id == original.id)
     #expect(model.selectedMessageIDs.isEmpty)
     model.draft = "Reply from the selected message"
@@ -1590,7 +1590,7 @@ private actor AttachmentOpenProbe {
     #expect(model.selectedMessageIDs == [source.id])
 
     // When
-    model.replyToSelectedMessage()
+    #expect(model.replyToSelectedMessage())
 
     // Then
     #expect(model.replyingTo?.id == source.id)
@@ -1619,7 +1619,7 @@ private actor AttachmentOpenProbe {
     model.selectMessage(unavailable.id, modifiers: [])
 
     // When
-    model.replyToSelectedMessage()
+    #expect(!model.replyToSelectedMessage())
 
     // Then
     #expect(!model.canReplyToSelectedMessage)
