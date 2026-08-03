@@ -66,13 +66,6 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var badgeAsset: String {
-        switch self {
-        case .supporter: "badge-supporter"
-        case .legend: "badge-legend"
-        }
-    }
-
     var badgeType: BadgeType {
         switch self {
         case .supporter: .supporter
@@ -138,7 +131,7 @@ struct BadgesYourLevelView: View {
             selectedLevel = level
         } label: {
             VStack(spacing: 10) {
-                Image(level.badgeAsset)
+                Image(badgeImageName(level.badgeType))
                     .resizable()
                     .scaledToFit()
                     .frame(width: 60, height: 60)

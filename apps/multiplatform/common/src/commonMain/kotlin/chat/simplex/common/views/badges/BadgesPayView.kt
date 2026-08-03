@@ -96,7 +96,7 @@ fun BadgesPayView(level: BadgeLevel) {
         modifier = Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).clip(CircleShape)
       ) {
         Text(
-          stringResource(billingFooter(selectedPeriod)),
+          stringResource(billingFooter(selectedPeriod)).format("July 22, 2026"),
           Modifier.padding(vertical = 5.dp),
           style = MaterialTheme.typography.body2,
           color = MaterialTheme.colors.secondary,

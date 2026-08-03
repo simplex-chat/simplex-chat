@@ -393,7 +393,7 @@ struct SettingsView: View {
                 NavigationLink {
                     VersionView()
                         .navigationBarTitle("App version")
-                        .modifier(ThemedBackground())
+                        .modifier(ThemedBackground(grouped: true))
                 } label: {
                     Text(verbatim: "v\(appVersion ?? "?")")
                 }

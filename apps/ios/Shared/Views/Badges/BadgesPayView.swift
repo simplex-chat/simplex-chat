@@ -126,11 +126,12 @@ struct BadgesPayView: View {
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
-    // TODO [badges] source the actual renewal/end date from the purchase state machine when wired.
     private var billingFooter: LocalizedStringKey {
+        // TODO [badges] source the actual date from the purchase state machine when wired.
+        let date = "July 22, 2026"
         switch selectedPeriod {
-        case .subscribe: "Renews on July 22, 2026. Cancel anytime."
-        case .oneMonth: "Ends on August 22, 2026."
+        case .subscribe: return "Renews on \(date). Cancel anytime."
+        case .oneMonth: return "Ends on \(date)."
         }
     }
 }

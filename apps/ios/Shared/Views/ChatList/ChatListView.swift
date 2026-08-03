@@ -216,6 +216,7 @@ struct ChatListView: View {
         .appSheet(isPresented: $showBadgesSheet) {
             NavigationView {
                 BadgesSupportSimplexView(showsAsSheet: true)
+                    .modifier(ThemedBackground())
             }
         }
         .onChange(of: activeUserPickerSheet) {
