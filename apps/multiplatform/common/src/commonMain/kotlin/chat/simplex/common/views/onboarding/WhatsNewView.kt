@@ -943,7 +943,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
-        titleId = MR.strings.whats_new_supporter_badge_short,
+        titleId = MR.strings.v7_1_supporter_badge_title,
         view = { SupporterBadgeWhatsNew() }
       )
     )
@@ -955,12 +955,12 @@ private fun SupporterBadgeWhatsNew() {
   Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
       Text(
-        stringResource(MR.strings.whats_new_supporter_badge_title),
+        stringResource(MR.strings.v7_1_supporter_badge_title),
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold
       )
       Text(
-        stringResource(MR.strings.whats_new_supporter_badge_body),
+        stringResource(MR.strings.v7_1_supporter_badge_body),
         style = MaterialTheme.typography.body1,
         maxLines = 10
       )
