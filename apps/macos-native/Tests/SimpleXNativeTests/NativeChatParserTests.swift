@@ -338,6 +338,43 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     }
 }
 
+@Test func sendResponseValidationRequiresTheCommittedMessage() throws {
+    // Given
+    let committed = Data(#"{"result":{"type":"newChatItems","chatItems":[{"chatItem":{"meta":{"itemId":9}}}]}}"#.utf8)
+    let missingItem = Data(#"{"result":{"type":"newChatItems","chatItems":[]}}"#.utf8)
+    let wrongResult = Data(#"{"result":{"type":"cmdOk"}}"#.utf8)
+
+    // When / Then
+    try NativeChatParser.validateCommandResponse(
+        committed,
+        expectedType: "newChatItems",
+        requireChatItems: true
+    )
+    #expect(throws: NativeChatError.self) {
+        try NativeChatParser.validateCommandResponse(
+            missingItem,
+            expectedType: "newChatItems",
+            requireChatItems: true
+        )
+    }
+    #expect(throws: NativeChatError.self) {
+        try NativeChatParser.validateCommandResponse(
+            wrongResult,
+            expectedType: "newChatItems"
+        )
+    }
+}
+
+@Test func nestedStoreErrorsIdentifyAnInvalidReplyTarget() {
+    // Given
+    let invalidQuote = Data(#"{"error":{"type":"errorStore","storeError":{"type":"invalidQuote"}}}"#.utf8)
+    let unrelated = Data(#"{"error":{"type":"errorStore","storeError":{"type":"chatItemNotFound","itemId":9}}}"#.utf8)
+
+    // When / Then
+    #expect(NativeChatParser.commandErrorIsInvalidQuote(invalidQuote))
+    #expect(!NativeChatParser.commandErrorIsInvalidQuote(unrelated))
+}
+
 @Test func singleMessageReloadUsesTheCoreQuoteResolutionPagination() {
     // Given / When
     let command = SimpleXCore.chatPageCommand(chatID: "@42", around: 91, count: 0)
@@ -1650,6 +1687,41 @@ private actor AttachmentOpenProbe {
 }
 
 @MainActor
+@Test func invalidQuoteRaceKeepsTheDraftAndAttachmentsButRetiresTheReply() async throws {
+    // Given
+    let attachment = PendingAttachment(
+        id: UUID(),
+        url: URL(fileURLWithPath: "/tmp/reply-race-photo.jpg"),
+        fileName: "reply-race-photo.jpg",
+        kind: .image,
+        byteCount: 10,
+        previewImage: nil
+    )
+    let model = makeSendTestModel(
+        sendAttachmentOperation: { _, _, _, _ in
+            throw NativeChatError.replyTargetUnavailable
+        }
+    )
+    let original = try #require(model.messages.first)
+    model.draft = "Keep this caption"
+    model.pendingAttachments = [attachment]
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let task = try #require(model.sendTask)
+    await task.value
+
+    // Then
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep this caption")
+    #expect(model.pendingAttachments == [attachment])
+    #expect(model.replyContextError == "The message you were replying to is no longer available. Your draft was kept.")
+    #expect(model.phase == .ready)
+    #expect(!model.isSending)
+}
+
+@MainActor
 @Test func escapeDismissesSearchBeforeReplyContext() throws {
     // Given
     let model = AppModel(previewMode: true)
@@ -2940,6 +3012,33 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
                 sx_core_free(closeResult)
             }
         }
+        func sendCoreCommand(_ command: String) throws -> Data {
+            let result = command.withCString { sx_core_send_cmd(controller, $0, 0) }
+            guard let result else {
+                throw NativeChatError.unavailable("The bundled core returned no command response.")
+            }
+            defer { sx_core_free(result) }
+            guard let response = String(validatingUTF8: result) else {
+                throw NativeChatError.invalidResponse("The bundled core returned invalid UTF-8.")
+            }
+            return Data(response.utf8)
+        }
+
+        let createdUser = try sendCoreCommand(
+            #"/_create user {"profile":null,"pastTimestamp":false,"userChatRelay":false,"clientService":false}"#
+        )
+        _ = try NativeChatParser.profile(from: createdUser)
+        let started = try sendCoreCommand("/_start main=on snd_files=on")
+        try NativeChatParser.validateCommandResponse(started)
+        let localSend = try sendCoreCommand(
+            #"/_create *1 json [{"msgContent":{"type":"text","text":"Native response check"},"mentions":{}}]"#
+        )
+        try NativeChatParser.validateCommandResponse(
+            localSend,
+            expectedType: "newChatItems",
+            requireChatItems: true
+        )
+
         let originalURL = temporaryDirectory.appendingPathComponent("original.jpg")
         let encryptedURL = temporaryDirectory.appendingPathComponent("encrypted.jpg")
         try original.write(to: originalURL)

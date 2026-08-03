@@ -258,7 +258,16 @@ actor SimpleXCore {
     }
 
     private func sendComposedMessage(_ message: [String: Any], to chat: NativeChat) throws {
-        try ensureCommandSucceeded(send(Self.sendCommand(message: message, to: chat)))
+        let response = try send(Self.sendCommand(message: message, to: chat))
+        if message["quotedItemId"] != nil,
+           NativeChatParser.commandErrorIsInvalidQuote(response) {
+            throw NativeChatError.replyTargetUnavailable
+        }
+        try NativeChatParser.validateCommandResponse(
+            response,
+            expectedType: "newChatItems",
+            requireChatItems: true
+        )
     }
 
     nonisolated static func sendCommand(message: [String: Any], to chat: NativeChat) throws -> String {
@@ -342,9 +351,7 @@ actor SimpleXCore {
     }
 
     private func ensureCommandSucceeded(_ response: Data) throws {
-        if let message = NativeChatParser.commandError(from: response) {
-            throw NativeChatError.core(message)
-        }
+        try NativeChatParser.validateCommandResponse(response)
     }
 
     private func data(from pointer: UnsafePointer<CChar>?) throws -> Data {

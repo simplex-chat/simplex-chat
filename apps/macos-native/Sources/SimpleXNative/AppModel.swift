@@ -427,6 +427,9 @@ final class AppModel: ObservableObject {
             } catch is CancellationError {
                 if !draftWasSent { self?.restoreFailedDraft(text, in: chat.id) }
                 return
+            } catch NativeChatError.replyTargetUnavailable {
+                if !draftWasSent { self?.restoreFailedDraft(text, in: chat.id) }
+                self?.invalidateReplyContext(in: chat.id)
             } catch {
                 if !draftWasSent { self?.restoreFailedDraft(text, in: chat.id) }
                 self?.finishSendFailure(error.localizedDescription, in: chat.id)

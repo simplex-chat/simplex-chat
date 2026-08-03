@@ -220,6 +220,41 @@ enum NativeChatParser {
         return "SimpleX could not complete the action."
     }
 
+    static func commandErrorIsInvalidQuote(_ data: Data) -> Bool {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let error = root["error"] else { return false }
+        return containsType("invalidQuote", in: error)
+    }
+
+    static func validateCommandResponse(
+        _ data: Data,
+        expectedType: String? = nil,
+        requireChatItems: Bool = false
+    ) throws {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw NativeChatError.invalidResponse("The SimpleX core returned invalid JSON.")
+        }
+        if let message = commandError(from: data) {
+            throw NativeChatError.core(message)
+        }
+        guard let result = root["result"] as? [String: Any],
+              let resultType = string(result["type"]) else {
+            throw NativeChatError.invalidResponse("The SimpleX core response had no result.")
+        }
+        if let expectedType, resultType != expectedType {
+            throw NativeChatError.invalidResponse(
+                "Expected \(expectedType), received \(resultType)."
+            )
+        }
+        if requireChatItems {
+            guard let chatItems = result["chatItems"] as? [[String: Any]], !chatItems.isEmpty else {
+                throw NativeChatError.invalidResponse(
+                    "SimpleX accepted the send command without returning the sent message."
+                )
+            }
+        }
+    }
+
     static func image(from encoded: String?) -> NSImage? {
         guard var encoded, !encoded.isEmpty else { return nil }
         if let comma = encoded.firstIndex(of: ","), encoded[..<comma].contains("base64") {
@@ -244,6 +279,17 @@ enum NativeChatParser {
             return nested.merging(["type": expectedType]) { current, _ in current }
         }
         throw NativeChatError.invalidResponse("Expected \(expectedType), received \(string(result["type"]) ?? "an unknown response").")
+    }
+
+    private static func containsType(_ expectedType: String, in value: Any) -> Bool {
+        if let object = value as? [String: Any] {
+            if string(object["type"]) == expectedType { return true }
+            return object.values.contains { containsType(expectedType, in: $0) }
+        }
+        if let values = value as? [Any] {
+            return values.contains { containsType(expectedType, in: $0) }
+        }
+        return false
     }
 
     private static func parseChat(_ object: [String: Any]) -> NativeChat? {
@@ -430,11 +476,13 @@ enum NativeChatParser {
 enum NativeChatError: LocalizedError, Sendable {
     case core(String)
     case invalidResponse(String)
+    case replyTargetUnavailable
     case unavailable(String)
 
     var errorDescription: String? {
         switch self {
         case let .core(message), let .invalidResponse(message), let .unavailable(message): message
+        case .replyTargetUnavailable: "The message being replied to is no longer available."
         }
     }
 }
