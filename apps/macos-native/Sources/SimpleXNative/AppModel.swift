@@ -46,6 +46,7 @@ final class AppModel: ObservableObject {
     @Published var attachmentError: String?
     @Published var attachmentOpenError: String?
     @Published var quoteNavigationError: String?
+    @Published var replyContextError: String?
     @Published var openingAttachmentIDs: Set<Int64> = []
     @Published var replyingTo: NativeMessage?
     @Published var composerFocusRequest = 0
@@ -160,6 +161,13 @@ final class AppModel: ObservableObject {
             && !selectedMessageIDs.isEmpty
             && selectedMessagesInTranscriptOrder.allSatisfy(\.deletable)
             && !includesInFlightQuote
+    }
+
+    var canReplyToSelectedMessage: Bool {
+        selectedMessagesInTranscriptOrder.count == 1
+            && selectedMessagesInTranscriptOrder.first?.replyable == true
+            && selectedChat?.kind.canReply == true
+            && !isSendingSelectedChat
     }
 
     var conversationSearchMatches: [NativeMessage] {
@@ -396,7 +404,8 @@ final class AppModel: ObservableObject {
     }
 
     func beginReply(to message: NativeMessage) {
-        guard let chat = selectedChat, chat.kind.canReply, messages.contains(where: { $0.id == message.id }),
+        guard let chat = selectedChat, chat.kind.canReply, message.replyable,
+              messages.contains(where: { $0.id == message.id }),
               !isSendingSelectedChat else { return }
         replyingTo = message
         replyingChatID = chat.id
@@ -702,6 +711,7 @@ final class AppModel: ObservableObject {
             quoteNavigationTask = nil
             quoteNavigationRevision &+= 1
             quoteNavigationError = nil
+            replyContextError = nil
             if let previousChatID = selectedChatID {
                 saveComposerState(for: previousChatID)
             }
@@ -849,14 +859,29 @@ final class AppModel: ObservableObject {
             let loadedMessages = try await core.loadMessages(chatID: chatID, around: messageID)
             guard !Task.isCancelled, selectedChatID == chatID,
                   conversationLoadRevision == revision else { return false }
-            messages = loadedMessages
-            selectedMessageIDs.formIntersection(messages.map(\.id))
+            applyLoadedMessages(loadedMessages, to: chatID)
             return true
         } catch is CancellationError {
             return false
         } catch {
             phase = .failed(error.localizedDescription)
             return false
+        }
+    }
+
+    func applyLoadedMessages(_ loadedMessages: [NativeMessage], to chatID: NativeChat.ID) {
+        guard selectedChatID == chatID else { return }
+        messages = loadedMessages
+        selectedMessageIDs.formIntersection(messages.map(\.id))
+
+        guard replyingChatID == chatID, let currentReply = replyingTo,
+              let refreshedReply = loadedMessages.first(where: { $0.id == currentReply.id }) else { return }
+        if refreshedReply.replyable {
+            replyingTo = refreshedReply
+        } else if sendingChatID != chatID {
+            replyingTo = nil
+            replyingChatID = nil
+            replyContextError = "The message you were replying to is no longer available. Your draft was kept."
         }
     }
 

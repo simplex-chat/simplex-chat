@@ -45,21 +45,7 @@ struct ConversationView: View {
                 } message: {
                     Text("This removes the selected messages from this Mac. It does not delete them for other people.")
                 }
-                .alert("Couldn’t Add Attachment", isPresented: attachmentErrorPresented) {
-                    Button("OK") { model.attachmentError = nil }
-                } message: {
-                    Text(model.attachmentError ?? "")
-                }
-                .alert("Couldn’t Open Attachment", isPresented: attachmentOpenErrorPresented) {
-                    Button("OK") { model.attachmentOpenError = nil }
-                } message: {
-                    Text(model.attachmentOpenError ?? "")
-                }
-                .alert("Couldn’t Find Quoted Message", isPresented: quoteNavigationErrorPresented) {
-                    Button("OK") { model.quoteNavigationError = nil }
-                } message: {
-                    Text(model.quoteNavigationError ?? "")
-                }
+                .modifier(ConversationAlertsModifier(model: model))
             } else {
                 ContentUnavailableView {
                     Label("No Conversation Selected", systemImage: "bubble.left.and.bubble.right")
@@ -77,27 +63,6 @@ struct ConversationView: View {
         .onChange(of: model.composerFocusRequest) { _, _ in
             composerFocused = true
         }
-    }
-
-    private var attachmentErrorPresented: Binding<Bool> {
-        Binding(
-            get: { model.attachmentError != nil },
-            set: { if !$0 { model.attachmentError = nil } }
-        )
-    }
-
-    private var attachmentOpenErrorPresented: Binding<Bool> {
-        Binding(
-            get: { model.attachmentOpenError != nil },
-            set: { if !$0 { model.attachmentOpenError = nil } }
-        )
-    }
-
-    private var quoteNavigationErrorPresented: Binding<Bool> {
-        Binding(
-            get: { model.quoteNavigationError != nil },
-            set: { if !$0 { model.quoteNavigationError = nil } }
-        )
     }
 
     @ToolbarContentBuilder
@@ -145,7 +110,9 @@ struct ConversationView: View {
                             startsGroup: startsGroup(at: index),
                             endsGroup: endsGroup(at: index),
                             openingAttachment: model.openingAttachmentIDs.contains(message.id),
-                            canReply: chat.kind.canReply && !model.isSendingSelectedChat
+                            canReply: chat.kind.canReply
+                                && message.replyable
+                                && !model.isSendingSelectedChat
                         ) {
                             transcriptFocused = true
                             model.selectMessage(message.id, modifiers: NSApp.currentEvent?.modifierFlags ?? [])
@@ -239,9 +206,7 @@ struct ConversationView: View {
             if !model.selectedMessageIDs.isEmpty {
                 MessageSelectionBar(
                     count: model.selectedMessageIDs.count,
-                    canReply: model.selectedMessagesInTranscriptOrder.count == 1
-                        && chat.kind.canReply
-                        && !model.isSendingSelectedChat,
+                    canReply: model.canReplyToSelectedMessage,
                     canDelete: model.canDeleteSelectedMessages,
                     reply: model.replyToSelectedMessage,
                     copy: model.copySelectedMessages,
@@ -366,6 +331,62 @@ private struct MessageSelectionBar: View {
         .padding(.vertical, 8)
         .background(Color(nsColor: .windowBackgroundColor))
         .accessibilityElement(children: .contain)
+    }
+}
+
+private struct ConversationAlertsModifier: ViewModifier {
+    @ObservedObject var model: AppModel
+
+    func body(content: Content) -> some View {
+        content
+            .alert("Couldn’t Add Attachment", isPresented: attachmentErrorPresented) {
+                Button("OK") { model.attachmentError = nil }
+            } message: {
+                Text(model.attachmentError ?? "")
+            }
+            .alert("Couldn’t Open Attachment", isPresented: attachmentOpenErrorPresented) {
+                Button("OK") { model.attachmentOpenError = nil }
+            } message: {
+                Text(model.attachmentOpenError ?? "")
+            }
+            .alert("Couldn’t Find Quoted Message", isPresented: quoteNavigationErrorPresented) {
+                Button("OK") { model.quoteNavigationError = nil }
+            } message: {
+                Text(model.quoteNavigationError ?? "")
+            }
+            .alert("Reply Cancelled", isPresented: replyContextErrorPresented) {
+                Button("OK") { model.replyContextError = nil }
+            } message: {
+                Text(model.replyContextError ?? "")
+            }
+    }
+
+    private var attachmentErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.attachmentError != nil },
+            set: { if !$0 { model.attachmentError = nil } }
+        )
+    }
+
+    private var attachmentOpenErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.attachmentOpenError != nil },
+            set: { if !$0 { model.attachmentOpenError = nil } }
+        )
+    }
+
+    private var quoteNavigationErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.quoteNavigationError != nil },
+            set: { if !$0 { model.quoteNavigationError = nil } }
+        )
+    }
+
+    private var replyContextErrorPresented: Binding<Bool> {
+        Binding(
+            get: { model.replyContextError != nil },
+            set: { if !$0 { model.replyContextError = nil } }
+        )
     }
 }
 

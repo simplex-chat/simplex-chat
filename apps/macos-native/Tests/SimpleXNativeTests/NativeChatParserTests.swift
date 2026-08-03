@@ -33,6 +33,75 @@ import Testing
     #expect(message.quotedItem == NativeQuote(messageID: 7, text: "Original message", sent: true, author: nil))
 }
 
+private struct ReplyEligibilityCase: Sendable, CustomTestStringConvertible {
+    let name: String
+    let itemID: Int64
+    let metaFields: String
+    let content: String
+    let expected: Bool
+
+    var testDescription: String { name }
+}
+
+private let replyEligibilityCases = [
+    ReplyEligibilityCase(
+        name: "ordinary message",
+        itemID: 1,
+        metaFields: "",
+        content: #"{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Hello"}}"#,
+        expected: true
+    ),
+    ReplyEligibilityCase(
+        name: "system event",
+        itemID: 2,
+        metaFields: "",
+        content: #"{"type":"rcvGroupEvent"}"#,
+        expected: false
+    ),
+    ReplyEligibilityCase(
+        name: "deleted message",
+        itemID: 3,
+        metaFields: #", "itemDeleted":{"type":"deleted"}"#,
+        content: #"{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Gone"}}"#,
+        expected: false
+    ),
+    ReplyEligibilityCase(
+        name: "live message",
+        itemID: 4,
+        metaFields: #", "isLive":true"#,
+        content: #"{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Typing"}}"#,
+        expected: false
+    ),
+    ReplyEligibilityCase(
+        name: "report message",
+        itemID: 5,
+        metaFields: "",
+        content: #"{"type":"rcvMsgContent","msgContent":{"type":"report","text":"Report"}}"#,
+        expected: false
+    ),
+    ReplyEligibilityCase(
+        name: "temporary live placeholder",
+        itemID: -2,
+        metaFields: "",
+        content: #"{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Typing"}}"#,
+        expected: false
+    ),
+]
+
+@Test(arguments: replyEligibilityCases)
+private func parserLimitsRepliesToAvailableMessages(testCase: ReplyEligibilityCase) throws {
+    // Given
+    let json = """
+        {"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":\(testCase.itemID),"itemText":"Item","itemTs":"2026-08-02T20:00:00Z"\(testCase.metaFields)},"content":\(testCase.content)}]}}}
+        """
+
+    // When
+    let message = try #require(NativeChatParser.messages(from: Data(json.utf8)).first)
+
+    // Then
+    #expect(message.replyable == testCase.expected)
+}
+
 private struct QuotedAttachmentCase: Sendable, CustomTestStringConvertible {
     let contentType: String
     let expectedPreview: String
@@ -319,6 +388,77 @@ private actor AttachmentOpenProbe {
     #expect(sent.quotedItem?.text == original.text)
     #expect(model.replyingTo == nil)
     #expect(model.draft.isEmpty)
+}
+
+@MainActor
+@Test func replyControlsRejectUnavailableItems() throws {
+    // Given
+    let source = try #require(NativePreviewData.messages(for: "@1").first)
+    let unavailable = NativeMessage(
+        id: source.id,
+        text: source.text,
+        timestamp: source.timestamp,
+        sent: source.sent,
+        author: source.author,
+        deletable: source.deletable,
+        content: source.content,
+        replyable: false
+    )
+    let model = AppModel(previewMode: true)
+    model.messages = [unavailable]
+    model.selectMessage(unavailable.id, modifiers: [])
+
+    // When
+    model.replyToSelectedMessage()
+
+    // Then
+    #expect(!model.canReplyToSelectedMessage)
+    #expect(model.replyingTo == nil)
+    #expect(model.selectedMessageIDs == [unavailable.id])
+}
+
+@MainActor
+@Test func liveRefreshUpdatesOrInvalidatesReplyContextWithoutLosingDraft() throws {
+    // Given
+    let original = try #require(NativePreviewData.messages(for: "@1").first)
+    let edited = NativeMessage(
+        id: original.id,
+        text: "Edited source message",
+        timestamp: original.timestamp,
+        sent: original.sent,
+        author: original.author,
+        deletable: original.deletable,
+        content: original.content
+    )
+    let unavailable = NativeMessage(
+        id: edited.id,
+        text: "Message deleted",
+        timestamp: edited.timestamp,
+        sent: edited.sent,
+        author: edited.author,
+        deletable: false,
+        content: edited.content,
+        replyable: false
+    )
+    let model = AppModel(previewMode: true)
+    model.messages = [original]
+    model.draft = "Keep this draft"
+    model.beginReply(to: original)
+
+    // When: the quoted source is edited by a live refresh.
+    model.applyLoadedMessages([edited], to: "@1")
+
+    // Then: the composer shows the current source text.
+    #expect(model.replyingTo?.text == "Edited source message")
+    #expect(model.replyContextError == nil)
+
+    // When: a later refresh marks the source unavailable.
+    model.applyLoadedMessages([unavailable], to: "@1")
+
+    // Then: only the invalid quote is removed; the user's work survives.
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep this draft")
+    #expect(model.replyContextError == "The message you were replying to is no longer available. Your draft was kept.")
 }
 
 @MainActor

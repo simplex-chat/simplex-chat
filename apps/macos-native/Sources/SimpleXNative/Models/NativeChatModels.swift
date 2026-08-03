@@ -59,6 +59,7 @@ struct NativeMessage: Identifiable, Hashable, Sendable {
     let author: String?
     let deletable: Bool
     let content: NativeMessageContent
+    let replyable: Bool
     let quotedItem: NativeQuote?
     let fileSource: NativeCryptoFile?
 
@@ -70,6 +71,7 @@ struct NativeMessage: Identifiable, Hashable, Sendable {
         author: String?,
         deletable: Bool,
         content: NativeMessageContent,
+        replyable: Bool = true,
         quotedItem: NativeQuote? = nil,
         fileSource: NativeCryptoFile? = nil
     ) {
@@ -80,6 +82,7 @@ struct NativeMessage: Identifiable, Hashable, Sendable {
         self.author = author
         self.deletable = deletable
         self.content = content
+        self.replyable = replyable
         self.quotedItem = quotedItem
         self.fileSource = fileSource
     }
@@ -288,6 +291,8 @@ enum NativeChatParser {
         let member = direction?["groupMember"] as? [String: Any]
         let profile = member?["memberProfile"] as? [String: Any]
         let contentContainer = object["content"] as? [String: Any]
+        let contentType = string(contentContainer?["type"])
+            ?? contentContainer?.keys.first
         let messageContent = (contentContainer?["msgContent"] as? [String: Any])
             ?? ((contentContainer?["sndMsgContent"] as? [String: Any])?["msgContent"] as? [String: Any])
             ?? ((contentContainer?["rcvMsgContent"] as? [String: Any])?["msgContent"] as? [String: Any])
@@ -312,6 +317,11 @@ enum NativeChatParser {
         default:
             content = .text
         }
+        let isMessageContent = contentType == "sndMsgContent" || contentType == "rcvMsgContent"
+        let itemDeleted = meta["itemDeleted"].map { !($0 is NSNull) } ?? false
+        let isLive = bool(meta["isLive"]) ?? false
+        let isReport = string(messageContent?["type"]) == "report"
+        let replyable = isMessageContent && !itemDeleted && !isLive && id != -2 && !isReport
         return NativeMessage(
             id: id,
             text: string(meta["itemText"]) ?? "",
@@ -320,6 +330,7 @@ enum NativeChatParser {
             author: string(profile?["displayName"]) ?? string(member?["localDisplayName"]),
             deletable: bool(meta["deletable"]) ?? false,
             content: content,
+            replyable: replyable,
             quotedItem: parseQuote(object["quotedItem"]),
             fileSource: nativeFileSource
         )
