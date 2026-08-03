@@ -1,6 +1,6 @@
 # Settings
 
-> **Related spec:** [spec/client/navigation.md](../../spec/client/navigation.md) | [spec/services/theme.md](../../spec/services/theme.md) | [spec/services/notifications.md](../../spec/services/notifications.md)
+> **Related spec:** [spec/client/navigation.md](../../spec/client/navigation.md) | [spec/architecture.md](../../spec/architecture.md) | [spec/services/theme.md](../../spec/services/theme.md) | [spec/services/notifications.md](../../spec/services/notifications.md)
 
 ## Purpose
 
@@ -120,6 +120,16 @@ Server validation (`validateServers_`) now returns both errors and warnings.
 | CallKit integration | Enable/disable native iOS call UI |
 | Calls in recents | Show/hide calls in Phone app history |
 | Lock screen calls | Show/accept on lock screen options |
+
+#### Remote Desktop (`ConnectDesktopView`)
+
+The "Use from desktop" flow displays a QR scanner on iOS and pairs the phone with a desktop. After the user verifies a session, iOS saves the paired controller ID and the exact full QR invitation.
+
+If the local transport fails, the sheet remains open and shows "Reconnecting to desktop" as soon as iOS reports the network-path loss. iOS retries only the saved invitation on Wi-Fi or Ethernet, with a bounded backoff. It does not retry on cellular, run multicast discovery, or select another endpoint. It verifies the saved pairing automatically, without another user prompt.
+
+The Live Activity remains visible during this state and shows "Reconnecting to desktop" instead of the connected timer.
+
+With an active authenticated transport, iOS Disconnect sends `remoteCtrlStopped` before it closes the connection. macOS then closes the retained listener. macOS Stop sends the encrypted `/_stop remote ctrl` command; iOS receives `controllerStopped`, clears its retry target, and does not show an error. If either side stops while offline, it cannot send this signal. The other side must be stopped locally.
 
 ### Chat Database Section
 

@@ -632,7 +632,10 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
   val scope = rememberCoroutineScope()
 
   suspend fun setSubsTotal() {
-    if (chatModel.currentUser.value != null && chatModel.controller.hasChatCtrl() && chatModel.chatRunning.value == true) {
+    if (chatModel.currentUser.value != null &&
+        chatModel.controller.hasChatCtrl() &&
+        chatModel.chatRunning.value == true &&
+        chatModel.currentRemoteHost.value?.sessionState !is RemoteHostSessionState.Connecting) {
       val r = chatModel.controller.getAgentSubsTotal(chatModel.remoteHostId())
       if (r != null) {
         subs = r.first

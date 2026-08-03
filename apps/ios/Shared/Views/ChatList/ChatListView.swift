@@ -147,6 +147,7 @@ struct UserPickerSheetView: View {
             }
         }
         .environmentObject(ss)
+        .interactiveDismissDisabled(sheet == .useFromDesktop && chatModel.remoteCtrlSession != nil)
     }
 }
 
@@ -155,6 +156,7 @@ struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.scenePhase) private var scenePhase
     @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var showNewChatSheet = false
     @State private var searchMode = false
@@ -216,6 +218,23 @@ struct ChatListView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     userPickerShown = false
                 }
+            }
+        }
+        .onChange(of: chatModel.retainedRemoteCtrl) { retained in
+            if retained {
+                activeUserPickerSheet = .useFromDesktop
+            } else if activeUserPickerSheet == .useFromDesktop {
+                activeUserPickerSheet = nil
+            }
+        }
+        .onAppear {
+            if chatModel.retainedRemoteCtrl {
+                activeUserPickerSheet = .useFromDesktop
+            }
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active, chatModel.retainedRemoteCtrl {
+                activeUserPickerSheet = .useFromDesktop
             }
         }
         .environmentObject(chatTagsModel)

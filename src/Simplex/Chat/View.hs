@@ -291,6 +291,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
+  CRRemoteCtrlSearching {} -> ["ok"]
   CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion} ->
     [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
         <> viewRemoteCtrl ctrlAppInfo appVersion True
@@ -536,7 +537,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
       plain sessionCode
     ]
   CEvtNewRemoteHost RemoteHostInfo {remoteHostId = rhId, hostDeviceName} -> ["new remote host " <> sShow rhId <> " added: " <> plain hostDeviceName]
-  CEvtRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} compression -> ["remote host " <> sShow rhId <> " connected (" <> compressStr <> " compression)"]
+  CEvtRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} compression _ -> ["remote host " <> sShow rhId <> " connected (" <> compressStr <> " compression)"]
     where
       compressStr = if compression then "with" else "no"
   CEvtRemoteHostStopped {remoteHostId_} ->

@@ -75,6 +75,10 @@ The root list view. Key responsibilities:
 - Pending contact connections (`ChatInfo.contactConnection`) shown as cards
 - Contact requests (`ChatInfo.contactRequest`) shown with accept/reject UI via `ContactRequestView`
 
+### Remote Desktop Sheet
+
+When a verified remote desktop session changes from connected to reconnecting, [`ChatListView`](../../Shared/Views/ChatList/ChatListView.swift#L155) keeps the user-picker sheet on "Use from desktop". While `retainedRemoteCtrl` is true, `UserPickerSheetView` keeps the sheet non-dismissible through connection and verification. Disconnect ends the active sheet flow; successful Unlink also clears the matching saved reconnect target.
+
 ### Key Functions
 
 | Function | Line | Description |

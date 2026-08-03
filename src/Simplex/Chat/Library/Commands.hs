@@ -571,7 +571,7 @@ processChatCommand cxt nm = \case
   APISuspendChat t -> do
     chatWriteVar chatActivated False
     lift $ setAllExpireCIFlags False
-    stopRemoteCtrl
+    dropActiveRemoteCtrlTransport
     lift $ withAgent' (`suspendAgent` t)
     ok_
   ShowConnectionsDiff showIds -> do
@@ -3589,20 +3589,22 @@ processChatCommand cxt nm = \case
   ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
   SwitchRemoteHost rh_ -> CRCurrentRemoteHost <$> switchRemoteHost rh_
   StartRemoteHost rh_ ca_ bp_ -> do
-    (localAddrs, remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_ ca_ bp_
-    pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port, localAddrs}
+    (localAddrs, remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}, sessionSeq) <- startRemoteHost rh_ ca_ bp_
+    pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port, localAddrs, sessionSeq}
   StopRemoteHost rh_ -> closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
   GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
   ConnectRemoteCtrl inv -> withUser_ $ do
-    (remoteCtrl_, ctrlAppInfo) <- connectRemoteCtrlURI inv
-    pure CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion = currentAppVersion}
-  FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl >> ok_
+    (remoteCtrl_, ctrlAppInfo, sessionSeq) <- connectRemoteCtrlURI inv
+    pure CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion = currentAppVersion, sessionSeq}
+  FindKnownRemoteCtrl -> withUser_ $ CRRemoteCtrlSearching <$> findKnownRemoteCtrl
   ConfirmRemoteCtrl rcId -> withUser_ $ do
-    (rc, ctrlAppInfo) <- confirmRemoteCtrl rcId
-    pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion}
+    (rc, ctrlAppInfo, sessionSeq) <- confirmRemoteCtrl rcId
+    pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion, sessionSeq}
   VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId
+  APIAbortRemoteCtrl sessionSeq -> withUser_ $ cancelRemoteCtrlSession sessionSeq >> ok_
+  APIDropRemoteCtrl sessCode -> withUser_ $ dropRemoteCtrlTransport sessCode >> ok_
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -5798,6 +5800,8 @@ chatCommandP =
       "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
       "/verify remote ctrl " *> (VerifyRemoteCtrlSession <$> textP),
       "/list remote ctrls" $> ListRemoteCtrls,
+      "/_abort remote ctrl " *> (APIAbortRemoteCtrl <$> A.decimal),
+      "/_drop remote ctrl " *> (APIDropRemoteCtrl <$> textP),
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       "/_upload " *> (APIUploadStandaloneFile <$> A.decimal <* A.space <*> cryptoFileP),

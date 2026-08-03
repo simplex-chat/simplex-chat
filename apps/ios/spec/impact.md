@@ -51,7 +51,7 @@
 | Shared/ContentView.swift | PC1, PC2, PC3 | High | Root navigation — affects all chat access |
 | Shared/SimpleXApp.swift | PC1 through PC31 | High | App entry point — initialization affects everything |
 | Shared/AppDelegate.swift | PC18 | Medium | Push notification registration |
-| Shared/Views/ChatList/ChatListView.swift | PC1, PC28 | High | Main screen rendering and filtering |
+| Shared/Views/ChatList/ChatListView.swift | PC1, PC27, PC28 | High | Main screen rendering, filtering, and remote desktop sheet lifecycle |
 | Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup |
 | Shared/Views/Chat/ChatItem/ | PC2, PC3, PC5, PC7, PC8, PC9, PC10, PC11 | Medium | Individual message rendering components |
@@ -72,11 +72,15 @@
 | Shared/Views/UserSettings/NetworkAndServers/ | PC25, PC31 | High | Server configuration — affects connectivity and relay validation |
 | Shared/Views/UserSettings/UserProfilesView.swift | PC19, PC21 | Medium | Profile management |
 | Shared/Views/Onboarding/ | PC1 | Medium | First-time setup — affects initial state |
-| Shared/Views/LocalAuth/ | PC22 | Medium | App lock functionality |
-| Shared/Views/Database/ | PC23, PC26 | High | Database encryption and export |
-| Shared/Views/Migration/ | PC26 | High | Device migration — data portability |
+| Shared/Views/LocalAuth/ | PC22, PC27 | Medium | App lock functionality and remote reconnect target cleanup |
+| Shared/Views/Database/ | PC23, PC26, PC27 | High | Database encryption, export, and remote reconnect target cleanup |
+| Shared/Views/Migration/ | PC26, PC27 | High | Device migration, data portability, and remote reconnect target cleanup |
+| Shared/Views/RemoteAccess/ConnectDesktopView.swift | PC27 | Medium | Remote desktop pairing, reconnect state, and explicit stop |
 | Shared/Model/ChatModel.swift | PC1 through PC31 | High | Central state — all features depend on it |
 | Shared/Model/SimpleXAPI.swift | PC1 through PC31 | High | FFI bridge — all commands flow through here |
+| Shared/Model/SuspendChat.swift | PC18, PC27 | Medium | Background chat suspension and remote desktop keepalive |
+| Shared/Model/NetworkObserver.swift | PC25, PC27 | Medium | Network path state and remote desktop reconnect trigger |
+| Shared/Model/RemoteCtrlActivityAttributes.swift | PC27 | Low | Remote desktop Live Activity state |
 | Shared/Model/AppAPITypes.swift | PC1 through PC31 | High | Command/response types — all API communication |
 | Shared/Model/NtfManager.swift | PC18 | High | Notification delivery |
 | Shared/Model/BGManager.swift | PC18 | Medium | Background fetch scheduling |
@@ -89,6 +93,7 @@
 | SimpleX NSE/NotificationService.swift | PC18 | High | Push notification decryption and display |
 | Shared/Views/Chat/ChatItemsMerger.swift | PC2, PC3, PC31 | Low | Chat item merge categories — added channelRcv hash |
 | SimpleX SE/ShareAPI.swift | PC4, PC31 | Medium | Share extension API — sendAsGroup support |
+| SimpleX Live Activity/SimpleXLiveActivity.swift | PC27 | Low | Remote desktop connected and reconnecting Live Activity UI |
 
 ---
 
@@ -112,8 +117,10 @@
 | src/Simplex/Chat/Store/Connections.hs | PC2, PC12 | High | Connection persistence and entity resolution |
 | src/Simplex/Chat/Archive.hs | PC26 | Medium | Database export/import for migration |
 | src/Simplex/Chat/ProfileGenerator.hs | PC20 | Low | Random profile generation for incognito |
+| src/Simplex/Chat/Library/Commands.hs | PC27 | Medium | Exact remote-controller sequence-abort and transport-drop command decoding |
 | src/Simplex/Chat/Remote.hs | PC27 | Medium | Remote desktop protocol handler |
 | src/Simplex/Chat/Remote/Types.hs | PC27 | Low | Remote desktop data types |
+| src/Simplex/Chat/View.hs | PC27 | Low | Remote desktop event text rendering |
 | src/Simplex/Chat/Types/UITheme.hs | PC24 | Low | Theme data types for UI customization |
 | src/Simplex/Chat/Types/Preferences.hs | PC2, PC3, PC8 | Medium | Chat feature preferences (timed messages, etc.) |
 | src/Simplex/Chat/Types/Shared.hs | PC3, PC16 | Medium | Shared types including GroupMemberRole |

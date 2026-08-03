@@ -472,11 +472,6 @@ private suspend fun updateRemoteCtrls(remoteCtrls: SnapshotStateList<RemoteCtrlI
 private fun findKnownDesktop(showConnectScreen: MutableState<Boolean>) {
   withBGApi {
     if (controller.findKnownRemoteCtrl()) {
-      chatModel.remoteCtrlSession.value = RemoteCtrlSession(
-        ctrlAppInfo = null,
-        appVersion = "",
-        sessionState = UIRemoteCtrlSessionState.Searching
-      )
       showConnectScreen.value = true
     }
   }
@@ -501,13 +496,7 @@ private suspend fun connectDesktopAddress(sessionAddress: MutableState<String>, 
 private suspend fun connectDesktop(sessionAddress: MutableState<String>, connect: suspend () -> Pair<SomeRemoteCtrl?, ChatError?>): Boolean {
   val res = connect()
   if (res.first != null) {
-    val (rc_, ctrlAppInfo, v) = res.first!!
     sessionAddress.value = ""
-    chatModel.remoteCtrlSession.value = RemoteCtrlSession(
-      ctrlAppInfo = ctrlAppInfo,
-      appVersion = v,
-      sessionState = UIRemoteCtrlSessionState.Connecting(remoteCtrl_ = rc_)
-    )
   } else {
     val e = res.second ?: return false
     when {
@@ -528,10 +517,7 @@ private suspend fun connectDesktop(sessionAddress: MutableState<String>, connect
 
 private fun verifyDesktopSessionCode(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>, sessCode: String) {
   withBGApi {
-    val rc = controller.verifyRemoteCtrlSession(sessCode)
-    if (rc != null) {
-      chatModel.remoteCtrlSession.value = chatModel.remoteCtrlSession.value?.copy(sessionState = UIRemoteCtrlSessionState.Connected(remoteCtrl = rc, sessionCode = sessCode))
-    }
+    controller.verifyRemoteCtrlSession(sessCode)
     updateRemoteCtrls(remoteCtrls)
   }
 }

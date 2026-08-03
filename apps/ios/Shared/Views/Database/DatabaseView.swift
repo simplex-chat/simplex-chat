@@ -650,6 +650,9 @@ func stopChatAsync() async throws {
     ChatReceiver.shared.stop()
     await MainActor.run { ChatModel.shared.chatRunning = false }
     AppChatState.shared.set(.stopped)
+    await MainActor.run {
+        RemoteCtrlReconnect.shared.chatStopped()
+    }
 }
 
 func deleteChatAsync() async throws {

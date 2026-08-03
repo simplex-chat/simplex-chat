@@ -141,7 +141,11 @@ ChatTagsModel (singleton -- filter state)
 #### Remote Desktop
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `remoteCtrlSession` | `RemoteCtrlSession?` | Active remote desktop session | [L414](../Shared/Model/ChatModel.swift#L414) |
+| `remoteCtrlSession` | `RemoteCtrlSession?` | Current remote desktop flow, including reconnecting state | [source](../Shared/Model/ChatModel.swift#L1433) |
+
+[`RemoteCtrlSession`](../Shared/Model/ChatModel.swift#L1433) retains the exact scanned invitation while the session moves through connecting, pending confirmation, connected, or reconnecting state. Its `retained` property is true for a connected session and for invitation-backed connecting, pending-confirmation, and reconnecting states. `UIRemoteCtrlSessionState.reconnecting` distinguishes transport recovery from a connected session.
+
+After verification, `RemoteCtrlReconnectTarget` stores the controller ID and full invitation together as one atomic, JSON-encoded `UserDefaults` value. Chat suspension preserves this value. Database deletion, Disconnect, and matching Unlink clear it.
 
 #### Misc
 | Property | Type | Description | Line |
@@ -467,6 +471,7 @@ App-level UI settings stored in `UserDefaults.standard`:
 | `DEFAULT_SHOW_LA_NOTICE` | `Bool` | Show LA setup notice |
 | `DEFAULT_NOTIFICATION_ALERT_SHOWN` | `Bool` | Notification permission alert shown |
 | `DEFAULT_CALL_KIT_CALLS_IN_RECENTS` | `Bool` | Show CallKit calls in recents |
+| `remoteCtrlReconnectTarget` | JSON `Data` for `RemoteCtrlReconnectTarget` | Verified controller ID and exact full invitation stored as one value ([source](../Shared/Model/ChatModel.swift#L1488)) |
 
 ### GroupDefaults
 

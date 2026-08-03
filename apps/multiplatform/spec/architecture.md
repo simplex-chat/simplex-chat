@@ -9,6 +9,7 @@
 5. [Event Streaming](#5-event-streaming)
 6. [Platform Abstraction](#6-platform-abstraction)
 7. [Source Files](#7-source-files)
+8. [Remote Desktop Reconnect](#8-remote-desktop-reconnect)
 
 ---
 
@@ -421,3 +422,15 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | File | Path | Key Contents |
 |---|---|---|
 | ThemeManager.kt | [`common/src/commonMain/kotlin/chat/simplex/common/ui/theme/ThemeManager.kt`](../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/ThemeManager.kt) | Theme resolution, system/light/dark/custom, per-user overrides |
+
+---
+
+## 8. Remote Desktop Reconnect
+
+The desktop host starts one XRCP listener and displays its signed invitation. After a verified mobile transport disconnects, [`startRemoteHost`](../../../src/Simplex/Chat/Remote.hs#L156) keeps that listener and invitation, changes the session to `RHSConnecting`, and waits for another handshake. It validates the stored paired mobile identity fingerprint before it starts reverse HTTP2. A restored transport uses fresh TLS and session keys.
+
+[`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L532-L533) serializes the reconnect marker and explicit-stop tombstone. An explicit start clears both markers. Successful Stop or Delete clears reconnect state and records the tombstone. Host-session lifecycle events that carry a session sequence must match the current sequence and generation. A retained `RemoteHostStopped` event adds the reconnect marker, and `RemoteHostConnected` consumes it. A late event cannot restore a stopped host.
+
+A [`RemoteHostSelection`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L523) is one atomic generation and target-ID token. State-event updates use the state mutex; host switches and selection changes also use the selection mutex. A late reconnect or stop cannot override a later selection of local data or another host. [`App.kt`](../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L472) blocks desktop interaction with a full-window reconnect view and an explicit Disconnect action while the listener waits.
+
+The flow reuses the exact invitation. It does not start multicast discovery, reconstruct an endpoint, or create a fallback invitation. With an active transport, iOS Disconnect sends the authenticated `remoteCtrlStopped` event; the desktop closes the listener. macOS Stop sends the authenticated encrypted `/_stop remote ctrl` command; the remote command path in [`Remote.hs`](../../../src/Simplex/Chat/Remote.hs#L829) intercepts it and emits `controllerStopped` on iOS. These signals cannot cross a failed transport. The peer keeps its listener or retry intent until it is stopped locally. The invitation private keys are not persisted across a desktop process restart. Both peers require remote protocol version `7.1.0.0` or later.

@@ -424,6 +424,12 @@ fun EndPartOfScreen() {
 // Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
+  val reconnectingHost = chatModel.currentRemoteHost.value
+    ?.takeIf { it.sessionState is RemoteHostSessionState.Connecting }
+  if (reconnectingHost != null) {
+    RemoteHostReconnectingView(reconnectingHost)
+    return
+  }
   Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     StartPartOfScreen(userPickerState)
     tryOrShowError("UserPicker", error = {}) {
@@ -460,6 +466,47 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   }
   VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
   ModalManager.fullscreen.showInView()
+}
+
+@Composable
+private fun RemoteHostReconnectingView(host: RemoteHostInfo) {
+  Box(
+    Modifier.fillMaxSize().background(MaterialTheme.colors.background),
+    contentAlignment = Alignment.Center
+  ) {
+    Column(
+      Modifier.width(440.dp).padding(48.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      CircularProgressIndicator(
+        Modifier.size(56.dp),
+        color = MaterialTheme.colors.secondary,
+        strokeWidth = 4.dp
+      )
+      Spacer(Modifier.height(28.dp))
+      Text(stringResource(MR.strings.remote_host_reconnecting_title), style = MaterialTheme.typography.h5)
+      Spacer(Modifier.height(8.dp))
+      Text(
+        host.hostDeviceName.ifEmpty { host.remoteHostId.toString() },
+        style = MaterialTheme.typography.h6,
+        color = MaterialTheme.colors.secondary
+      )
+      Spacer(Modifier.height(12.dp))
+      Text(
+        stringResource(MR.strings.remote_host_reconnecting_desc),
+        color = MaterialTheme.colors.secondary
+      )
+      Spacer(Modifier.height(28.dp))
+      OutlinedButton(
+        onClick = { chatModel.controller.stopRemoteHostAndReloadHosts(host, true) },
+        border = BorderStroke(1.dp, WarningOrange)
+      ) {
+        Icon(painterResource(MR.images.ic_wifi_off), contentDescription = null, tint = WarningOrange)
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(MR.strings.disconnect_remote_host), color = WarningOrange)
+      }
+    }
+  }
 }
 
 @Composable

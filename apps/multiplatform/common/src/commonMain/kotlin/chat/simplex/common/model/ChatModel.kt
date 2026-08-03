@@ -5447,12 +5447,24 @@ data class RemoteCtrlSession(
   val active: Boolean
     get () = sessionState is UIRemoteCtrlSessionState.Connected
 
+  val sessionSeq: Int?
+    get() = when (val s = sessionState) {
+      is UIRemoteCtrlSessionState.Starting -> null
+      is UIRemoteCtrlSessionState.Searching -> s.sessionSeq
+      is UIRemoteCtrlSessionState.Found -> s.sessionSeq
+      is UIRemoteCtrlSessionState.Connecting -> s.sessionSeq
+      is UIRemoteCtrlSessionState.PendingConfirmation -> s.sessionSeq
+      is UIRemoteCtrlSessionState.Connected -> s.sessionSeq
+    }
+
   val sessionCode: String?
     get() = when (val s = sessionState) {
       is UIRemoteCtrlSessionState.PendingConfirmation -> s.sessionCode
       is UIRemoteCtrlSessionState.Connected -> s.sessionCode
       else -> null
     }
+
+  fun matchesSessionSeq(sessionSeq: Int): Boolean = this.sessionSeq == sessionSeq
 }
 
 @Serializable
@@ -5469,14 +5481,15 @@ sealed class RemoteCtrlStopReason {
   @Serializable @SerialName("discoveryFailed") class DiscoveryFailed(val chatError: ChatError): RemoteCtrlStopReason()
   @Serializable @SerialName("connectionFailed") class ConnectionFailed(val chatError: ChatError): RemoteCtrlStopReason()
   @Serializable @SerialName("setupFailed") class SetupFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("controllerStopped") object ControllerStopped: RemoteCtrlStopReason()
   @Serializable @SerialName("disconnected") object Disconnected: RemoteCtrlStopReason()
 }
 
 sealed class UIRemoteCtrlSessionState {
   object Starting: UIRemoteCtrlSessionState()
-  object Searching: UIRemoteCtrlSessionState()
-  data class Found(val remoteCtrl: RemoteCtrlInfo, val compatible: Boolean): UIRemoteCtrlSessionState()
-  data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
-  data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
-  data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
+  data class Searching(val sessionSeq: Int): UIRemoteCtrlSessionState()
+  data class Found(val remoteCtrl: RemoteCtrlInfo, val compatible: Boolean, val sessionSeq: Int): UIRemoteCtrlSessionState()
+  data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionSeq: Int): UIRemoteCtrlSessionState()
+  data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String, val sessionSeq: Int): UIRemoteCtrlSessionState()
+  data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String, val sessionSeq: Int): UIRemoteCtrlSessionState()
 }

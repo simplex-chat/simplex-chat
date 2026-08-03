@@ -51,6 +51,9 @@ struct SimpleXApp: App {
                     }
                 }
                 .onAppear() {
+                    if chatModel.remoteCtrlSession == nil {
+                        RemoteCtrlBGKeepAlive.shared.stop()
+                    }
                     // Present screen for continue migration if it wasn't finished yet
                     if chatModel.migrationState != nil {
                         // It's important, otherwise, user may be locked in undefined state
@@ -76,12 +79,7 @@ struct SimpleXApp: App {
                         chatModel.contentViewAccessAuthenticated = false
                         // authentication ---
 
-                        if CallController.useCallKit() && chatModel.activeCall != nil {
-                            CallController.shared.shouldSuspendChat = true
-                        } else {
-                            suspendChat()
-                            BGManager.shared.schedule()
-                        }
+                        RemoteCtrlBGKeepAlive.shared.handleAppBackgrounding()
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.shouldSuspendChat = false
@@ -90,6 +88,10 @@ struct SimpleXApp: App {
                         if appState != .stopped {
                             startChatAndActivate {
                                 if chatModel.chatRunning == true {
+                                    RemoteCtrlBGKeepAlive.shared.start()
+                                    Task { @MainActor in
+                                        RemoteCtrlReconnect.shared.resume()
+                                    }
                                     if let ntfResponse = chatModel.notificationResponse {
                                         chatModel.notificationResponse = nil
                                         NtfManager.shared.processNotificationResponse(ntfResponse)

@@ -63,6 +63,9 @@ struct LocalAuthView: View {
                     chatCloseStore()
                 }
                 deleteAppDatabaseAndFiles()
+                await MainActor.run {
+                    RemoteCtrlReconnect.shared.chatDeleted()
+                }
                 // Clear sensitive data on screen just in case app fails to hide its views while new database is created
                 m.chatId = nil
                 ItemsModel.shared.reversedChatItems = []

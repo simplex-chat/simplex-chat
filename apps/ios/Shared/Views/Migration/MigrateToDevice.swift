@@ -151,6 +151,9 @@ struct MigrateToDevice: View {
                 if case .archiveImportFailed = migrationState {
                     // Original database is not exist, nothing is setup correctly for showing to a user yet. Return to clean state
                     deleteAppDatabaseAndFiles()
+                    await MainActor.run {
+                        RemoteCtrlReconnect.shared.chatDeleted()
+                    }
                     initChatAndMigrate()
                 } else if case let .downloadProgress(_, _, fileId, _, _, ctrl) = migrationState, let ctrl {
                     await stopArchiveDownloading(fileId, ctrl)

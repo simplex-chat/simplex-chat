@@ -247,13 +247,15 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | Command | Parameters | Description | Source |
 |---------|-----------|-------------|--------|
 | `setLocalDeviceName` | `displayName` | Set device name for pairing | [L173](../Shared/Model/AppAPITypes.swift#L173) |
-| `connectRemoteCtrl` | `xrcpInvitation` | Connect to desktop via QR code | [L174](../Shared/Model/AppAPITypes.swift#L174) |
+| `connectRemoteCtrl` | `xrcpInvitation` | Start a cancellable session and return its sequence without waiting for the dial | [L183](../Shared/Model/AppAPITypes.swift#L183) |
 | `findKnownRemoteCtrl` | -- | Find previously paired desktops | [L175](../Shared/Model/AppAPITypes.swift#L175) |
 | `confirmRemoteCtrl` | `remoteCtrlId` | Confirm known remote controller | [L176](../Shared/Model/AppAPITypes.swift#L176) |
 | `verifyRemoteCtrlSession` | `sessionCode` | Verify session code | [L177](../Shared/Model/AppAPITypes.swift#L177) |
 | `listRemoteCtrls` | -- | List known remote controllers | [L178](../Shared/Model/AppAPITypes.swift#L178) |
 | `stopRemoteCtrl` | -- | Stop remote session | [L179](../Shared/Model/AppAPITypes.swift#L179) |
 | `deleteRemoteCtrl` | `remoteCtrlId` | Delete known controller | [L180](../Shared/Model/AppAPITypes.swift#L180) |
+
+[`ChatEvent.remoteCtrlStopped`](../Shared/Model/AppAPITypes.swift#L1201) includes the session sequence and a `RemoteCtrlStopReason`. The `.controllerStopped` case means macOS sent the authenticated `/_stop remote ctrl` command over the encrypted remote transport. iOS clears the saved reconnect target and treats this as an expected stop without an error alert. Internal `/_abort remote ctrl <sessionSeq>` silently detaches the matching controller session in any state; the coordinator uses it for a rejected attempt. `/_drop remote ctrl <sessionCode>` closes only the matching connected transport.
 
 ### 2.15 Diagnostics
 
