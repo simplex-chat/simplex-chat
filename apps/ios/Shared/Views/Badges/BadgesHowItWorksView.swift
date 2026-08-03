@@ -9,8 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-// Draft explanation of how private badges work. TODO [badges]: replace lorem ipsum with the real
-// copy once the badge protocol and privacy properties are documented.
+// TODO [badges]: replace lorem ipsum with the real copy once the badge protocol and privacy properties are documented.
 struct BadgesHowItWorksView: View {
     @EnvironmentObject var theme: AppTheme
 

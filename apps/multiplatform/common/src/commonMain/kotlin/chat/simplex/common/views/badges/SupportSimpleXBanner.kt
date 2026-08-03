@@ -29,8 +29,6 @@ import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.res.MR
 
-// Dumb chat-list card promoting the badges purchase flow. Both the show gate and the dismissal
-// persistence live in ChatListView; this view just renders and reports taps.
 @Composable
 fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
   val cardCornerRadius = 16.dp

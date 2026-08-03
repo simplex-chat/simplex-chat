@@ -9,8 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-// Dumb chat-list card promoting the badges purchase flow. Both the show gate and the dismissal
-// persistence live in ChatListView; this view just renders and reports taps.
 struct SupportSimpleXBanner: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme

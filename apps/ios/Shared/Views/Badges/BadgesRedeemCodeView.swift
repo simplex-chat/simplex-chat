@@ -9,8 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-// Draft entry-point for redeeming an investor badge code. TODO [badges]: implement input field,
-// server verification and success/failure states when the redeem API is defined.
+// TODO [badges]: implement input field, server verification and success/failure states when the redeem API is defined.
 struct BadgesRedeemCodeView: View {
     @EnvironmentObject var theme: AppTheme
 

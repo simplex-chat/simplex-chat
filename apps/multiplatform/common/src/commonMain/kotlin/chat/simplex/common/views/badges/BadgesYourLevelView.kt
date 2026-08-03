@@ -23,8 +23,7 @@ import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
-// Draft levels used by the badges UI while the API/state machine is still being designed. TODO [badges]:
-// replace with types produced by the badge purchase API when it lands.
+// TODO [badges]: replace with types produced by the badge purchase API when it lands.
 enum class BadgeLevel {
   Supporter,
   Legend;

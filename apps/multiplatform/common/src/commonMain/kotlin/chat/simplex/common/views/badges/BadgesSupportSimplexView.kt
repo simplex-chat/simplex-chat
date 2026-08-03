@@ -30,8 +30,6 @@ import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
-// Entry point for badges management. Subsequent screens push via ModalManager; the enclosing
-// modal (settings or the chat-list banner sheet) provides the sliding animation.
 @Composable
 fun BadgesSupportSimplexView() {
   // TODO [badges] gate on user badge status (no badge → this view, active → "Manage your badge")
@@ -96,8 +94,6 @@ private fun ChooseLevelButton() {
 }
 
 
-// Hero image reused across badges views and WhatsNewView v7.1. Fallback (no SIMPLEX_ASSETS) is a
-// gradient card carrying the small supporter badge glyph.
 @Composable
 fun PhoneSupporterHero(modifier: Modifier = Modifier) {
   val isDark = isInDarkTheme()

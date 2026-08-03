@@ -9,7 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-// Draft billing periods used by the badges UI while the API/state machine is still being designed.
 // TODO [badges]: replace with types produced by the badge purchase API when it lands.
 enum BadgePeriod: String, CaseIterable, Identifiable {
     case oneMonth

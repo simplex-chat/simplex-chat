@@ -9,9 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-// User's avatar + name with a preview badge at the selected level, rendered via NameWithBadge
-// so the preview matches how the badge appears on the name elsewhere. Callers can inject a
-// picker affordance (e.g. a chevron) into the name row via `trailing`.
 struct BadgeUserPreview<Trailing: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     let level: BadgeLevel

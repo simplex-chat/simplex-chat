@@ -17,9 +17,6 @@ import chat.simplex.common.views.helpers.NameWithBadge
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.res.MR
 
-// User's avatar + name with a preview badge at the selected level, rendered via NameWithBadge
-// so the preview matches how the badge appears on the name elsewhere. Callers can inject a
-// picker affordance (e.g. a chevron) into the name row via `trailing`.
 @Composable
 fun BadgeUserPreview(level: BadgeLevel, modifier: Modifier = Modifier, trailing: @Composable () -> Unit = {}) {
   val user = chatModel.currentUser.value

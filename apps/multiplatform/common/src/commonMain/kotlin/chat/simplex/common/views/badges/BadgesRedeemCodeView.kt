@@ -12,8 +12,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 
-// Draft entry-point for redeeming an investor badge code. TODO [badges]: implement input field,
-// server verification and success/failure states when the redeem API is defined.
+// TODO [badges]: implement input field, server verification and success/failure states when the redeem API is defined.
 @Composable
 fun BadgesRedeemCodeView() {
   ColumnWithScrollBar(
