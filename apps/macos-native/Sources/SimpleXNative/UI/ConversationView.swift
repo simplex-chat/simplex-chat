@@ -50,6 +50,14 @@ struct ConversationView: View {
                 } message: {
                     Text(model.attachmentError ?? "")
                 }
+                .alert("Couldn’t Open Attachment", isPresented: Binding(
+                    get: { model.attachmentOpenError != nil },
+                    set: { if !$0 { model.attachmentOpenError = nil } }
+                )) {
+                    Button("OK") { model.attachmentOpenError = nil }
+                } message: {
+                    Text(model.attachmentOpenError ?? "")
+                }
             } else {
                 ContentUnavailableView {
                     Label("No Conversation Selected", systemImage: "bubble.left.and.bubble.right")
@@ -63,6 +71,9 @@ struct ConversationView: View {
         }
         .onChange(of: composerFocused) { _, focused in
             if focused { model.transcriptFocused = false }
+        }
+        .onChange(of: model.composerFocusRequest) { _, _ in
+            composerFocused = true
         }
     }
 
@@ -82,7 +93,7 @@ struct ConversationView: View {
                 }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Conversation with (chat.displayName)")
+            .accessibilityLabel("Conversation with \(chat.displayName)")
         }
 
         ToolbarItem(placement: .primaryAction) {
@@ -109,7 +120,9 @@ struct ConversationView: View {
                             selected: model.selectedMessageIDs.contains(message.id),
                             density: model.density,
                             startsGroup: startsGroup(at: index),
-                            endsGroup: endsGroup(at: index)
+                            endsGroup: endsGroup(at: index),
+                            openingAttachment: model.openingAttachmentIDs.contains(message.id),
+                            canReply: chat.kind.canReply && !model.isSending
                         ) {
                             transcriptFocused = true
                             model.selectMessage(message.id, modifiers: NSApp.currentEvent?.modifierFlags ?? [])
@@ -121,6 +134,13 @@ struct ConversationView: View {
                             transcriptFocused = true
                             model.selectMessage(message.id, modifiers: [])
                             model.requestDeleteSelectedMessages()
+                        } reply: {
+                            model.beginReply(to: message)
+                            composerFocused = true
+                        } openQuote: { messageID in
+                            model.openQuotedMessage(messageID)
+                        } openAttachment: {
+                            model.openAttachment(message)
                         }
                         .id(message.id)
                     }
@@ -193,6 +213,11 @@ struct ConversationView: View {
 
     private func composer(chat: NativeChat) -> some View {
         VStack(spacing: 0) {
+            if let message = model.replyingTo {
+                ReplyContextBar(message: message, chat: chat, cancel: model.cancelReply)
+                Divider()
+            }
+
             if !model.pendingAttachments.isEmpty {
                 AttachmentTray(model: model)
                 Divider()
@@ -330,9 +355,14 @@ private struct MessageRow: View {
     let density: DesktopChatDensity
     let startsGroup: Bool
     let endsGroup: Bool
+    let openingAttachment: Bool
+    let canReply: Bool
     let select: () -> Void
     let copy: () -> Void
     let delete: () -> Void
+    let reply: () -> Void
+    let openQuote: (Int64) -> Void
+    let openAttachment: () -> Void
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -358,7 +388,13 @@ private struct MessageRow: View {
                         .padding(.leading, 8)
                 }
 
-                MessageContentView(message: message)
+                MessageContentView(
+                    message: message,
+                    chatName: chat.displayName,
+                    openingAttachment: openingAttachment,
+                    openQuote: openQuote,
+                    openAttachment: openAttachment
+                )
                     .padding(.horizontal, 12)
                     .padding(.vertical, density.tokens.messagePadding)
                     .background(bubbleBackground, in: bubbleShape)
@@ -383,12 +419,21 @@ private struct MessageRow: View {
             }
             .frame(maxWidth: 520, alignment: message.sent ? .trailing : .leading)
             .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(selected ? .isSelected : [])
-            .accessibilityAction(named: selected ? "Deselect Message" : "Select Message", select)
+            .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
+            .accessibilityActions {
+                Button(selected ? "Deselect Message" : "Select Message", action: select)
+                if canReply {
+                    Button("Reply", action: reply)
+                }
+            }
 
             if !message.sent { Spacer(minLength: 80) }
         }
         .contextMenu {
+            if canReply {
+                Button("Reply", action: reply)
+                Divider()
+            }
             Button("Copy", action: copy)
             Button(selected ? "Deselect Message" : "Select Message", action: select)
             if message.deletable {
@@ -439,6 +484,53 @@ private struct TranscriptDateHeader: View {
         if Calendar.current.isDateInToday(date) { return "Today" }
         if Calendar.current.isDateInYesterday(date) { return "Yesterday" }
         return date.formatted(.dateTime.month(.abbreviated).day().year())
+    }
+}
+
+private struct ReplyContextBar: View {
+    let message: NativeMessage
+    let chat: NativeChat
+    let cancel: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(.tint)
+                .frame(width: 4)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Replying to \(sender)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tint)
+                Text(preview)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .accessibilityElement(children: .combine)
+
+            Spacer(minLength: 8)
+
+            Button(action: cancel) {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.borderless)
+            .help("Cancel Reply")
+            .accessibilityLabel("Cancel Reply") // [VERIFY] Matches the visible tooltip.
+            .accessibilityInputLabels(["Cancel Reply", "Cancel"])
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var sender: String {
+        message.sent ? "You" : (message.author ?? chat.displayName)
+    }
+
+    private var preview: String {
+        message.text.isEmpty ? (message.content.attachmentDescription ?? "Message") : message.text
     }
 }
 
@@ -545,19 +637,32 @@ private struct AttachmentCard: View {
 
 private struct MessageContentView: View {
     let message: NativeMessage
+    let chatName: String
+    let openingAttachment: Bool
+    let openQuote: (Int64) -> Void
+    let openAttachment: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let quote = message.quotedItem {
+                QuotedMessagePreview(
+                    quote: quote,
+                    chatName: chatName,
+                    outgoing: message.sent,
+                    open: openQuote
+                )
+            }
+
             switch message.content {
             case .text:
                 messageText
-            case .image(let preview, let fileName, _):
+            case .image(let preview, let fileName):
                 mediaPreview(preview: preview, fileName: fileName ?? "Image", video: false)
                 if !message.text.isEmpty { messageText }
-            case .video(let preview, let fileName, _):
+            case .video(let preview, let fileName):
                 mediaPreview(preview: preview, fileName: fileName ?? "Video", video: true)
                 if !message.text.isEmpty { messageText }
-            case .file(let fileName, _):
+            case .file(let fileName):
                 fileAttachment(name: fileName ?? message.text)
                 if !message.text.isEmpty, message.text != fileName { messageText }
             }
@@ -595,17 +700,21 @@ private struct MessageContentView: View {
                     .shadow(radius: 4)
                     .accessibilityHidden(true)
             }
+            if openingAttachment {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel("Decrypting Attachment")
+            }
         }
         .frame(maxWidth: 420, maxHeight: 320)
         .clipShape(RoundedRectangle(cornerRadius: 8))
 
-        if let url = message.content.fileURL, FileManager.default.fileExists(atPath: url.path) {
-            Button {
-                NSWorkspace.shared.open(url)
-            } label: {
+        if attachmentExists {
+            Button(action: openAttachment) {
                 previewView
             }
             .buttonStyle(.plain)
+            .disabled(openingAttachment)
             .help("Open \(fileName)")
             .accessibilityLabel("Open \(fileName)") // [VERIFY] Uses the attachment file name.
             .accessibilityInputLabels(["Open \(fileName)", "Open Attachment"])
@@ -617,18 +726,71 @@ private struct MessageContentView: View {
 
     @ViewBuilder
     private func fileAttachment(name: String) -> some View {
-        if let url = message.content.fileURL, FileManager.default.fileExists(atPath: url.path) {
-            Button {
-                NSWorkspace.shared.open(url)
-            } label: {
+        if attachmentExists {
+            Button(action: openAttachment) {
                 Label(name.isEmpty ? "File" : name, systemImage: "doc")
+                if openingAttachment {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("Decrypting Attachment")
+                }
             }
             .buttonStyle(.link)
+            .disabled(openingAttachment)
             .help("Open \(name)")
         } else {
             Label(name.isEmpty ? "File" : name, systemImage: "doc")
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var attachmentExists: Bool {
+        guard let source = message.fileSource else { return false }
+        return FileManager.default.fileExists(atPath: source.sourceURL.path)
+    }
+}
+
+private struct QuotedMessagePreview: View {
+    let quote: NativeQuote
+    let chatName: String
+    let outgoing: Bool
+    let open: (Int64) -> Void
+
+    var body: some View {
+        Group {
+            if let messageID = quote.messageID {
+                Button { open(messageID) } label: { content }
+                    .buttonStyle(.plain)
+                    .help("Show Quoted Message")
+                    .accessibilityHint("Moves to the original message in this conversation.")
+            } else {
+                content
+            }
+        }
+    }
+
+    private var content: some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(outgoing ? Color(nsColor: .selectedControlTextColor) : Color.accentColor)
+                .frame(width: 4)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(sender)
+                    .font(.caption.weight(.semibold))
+                Text(quote.text)
+                    .font(.callout)
+                    .lineLimit(2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Quoted message from \(sender): \(quote.text)")
+    }
+
+    private var sender: String {
+        quote.author ?? (quote.sent ? "You" : chatName)
     }
 }
 

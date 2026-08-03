@@ -57,9 +57,23 @@ enum NativePreviewData {
                 minutesAgo: 4,
                 sent: false,
                 author: "Maya",
-                content: .image(preview: sampleImage, fileName: "evening.jpg", filePath: nil)
+                content: .image(preview: sampleImage, fileName: "evening.jpg")
             ),
-            message(5, "Nice. The native image view was worth fixing.", minutesAgo: 2, sent: true),
+            NativeMessage(
+                id: 5,
+                text: "Nice. The native image view was worth fixing.",
+                timestamp: Date().addingTimeInterval(-2 * 60),
+                sent: true,
+                author: nil,
+                deletable: true,
+                content: .text,
+                quotedItem: NativeQuote(
+                    messageID: 4,
+                    text: "The photos came through perfectly.",
+                    sent: false,
+                    author: "Maya"
+                )
+            ),
         ]
     }
 

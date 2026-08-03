@@ -21,15 +21,30 @@ import Testing
 }
 
 @Test func parsesImageMessagePreviewAndFile() throws {
-    let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":9,"itemText":"A photo","itemTs":"2026-08-02T20:00:00Z","deletable":true},"content":{"type":"rcvMsgContent","msgContent":{"type":"image","text":"A photo","image":"data:image/jpeg;base64,AA=="}},"file":{"fileName":"photo.jpg","fileSource":{"filePath":"photo.jpg","cryptoArgs":null}}}]}}}"#
+    let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":9,"itemText":"A photo","itemTs":"2026-08-02T20:00:00Z","deletable":true},"content":{"type":"rcvMsgContent","msgContent":{"type":"image","text":"A photo","image":"data:image/jpeg;base64,AA=="}},"quotedItem":{"chatDir":{"type":"directSnd"},"itemId":7,"sentAt":"2026-08-02T19:59:00Z","content":{"type":"text","text":"Original message"}},"file":{"fileName":"photo.jpg","fileSource":{"filePath":"photo.jpg","cryptoArgs":{"fileKey":"test-key","fileNonce":"test-nonce"}}}}]}}}"#
     let message = try #require(NativeChatParser.messages(from: Data(json.utf8)).first)
     #expect(message.deletable)
     #expect(message.content == .image(
         preview: "data:image/jpeg;base64,AA==",
-        fileName: "photo.jpg",
-        filePath: "photo.jpg"
+        fileName: "photo.jpg"
     ))
-    #expect(message.content.fileURL?.lastPathComponent == "photo.jpg")
+    #expect(message.fileSource?.sourceURL.lastPathComponent == "photo.jpg")
+    #expect(message.fileSource?.cryptoArgs == NativeCryptoFileArgs(fileKey: "test-key", fileNonce: "test-nonce"))
+    #expect(message.quotedItem == NativeQuote(messageID: 7, text: "Original message", sent: true, author: nil))
+}
+
+@Test func composedMessagesIncludeAQuoteOnlyWhenReplying() {
+    let reply = SimpleXCore.composedMessage(
+        messageContent: ["type": "text", "text": "Reply"],
+        quotedItemID: 42
+    )
+    #expect(reply["quotedItemId"] as? Int64 == 42)
+
+    let ordinary = SimpleXCore.composedMessage(
+        messageContent: ["type": "text", "text": "Ordinary"],
+        quotedItemID: nil
+    )
+    #expect(ordinary["quotedItemId"] == nil)
 }
 
 @Test func messageSelectionSupportsRangesAndCommandToggle() {
@@ -174,7 +189,7 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
     #expect(NativeChatParser.commandError(from: success) == nil)
 }
 
-@Test func opensTemporaryDatabaseWithBundledCore() throws {
+@Test func opensTemporaryDatabaseAndDecryptsAttachmentWithBundledCore() async throws {
     guard let libraryDirectory = ProcessInfo.processInfo.environment["SIMPLEX_CORE_LIB_DIR"] else {
         return
     }
@@ -201,9 +216,43 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
     let response = try #require(result.flatMap(String.init(validatingUTF8:)))
     #expect(NativeChatParser.migrationSucceeded(Data(response.utf8)))
     if let result { sx_core_free(result) }
+    var encryptedSource: NativeCryptoFile?
+    let original = Data([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0xff, 0xd9])
     if let controller {
-        if let closeResult = sx_core_close_store(controller) {
-            sx_core_free(closeResult)
+        defer {
+            if let closeResult = sx_core_close_store(controller) {
+                sx_core_free(closeResult)
+            }
         }
+        let originalURL = temporaryDirectory.appendingPathComponent("original.jpg")
+        let encryptedURL = temporaryDirectory.appendingPathComponent("encrypted.jpg")
+        try original.write(to: originalURL)
+
+        let encryptResult = originalURL.path.withCString { fromPath in
+            encryptedURL.path.withCString { toPath in
+                sx_core_encrypt_file(controller, fromPath, toPath)
+            }
+        }
+        let encryptJSON = try #require(encryptResult.flatMap(String.init(validatingUTF8:)))
+        if let encryptResult { sx_core_free(encryptResult) }
+        let encryptObject = try #require(
+            JSONSerialization.jsonObject(with: Data(encryptJSON.utf8)) as? [String: Any]
+        )
+        let cryptoArgs = try #require(encryptObject["cryptoArgs"] as? [String: Any])
+        let key = try #require(cryptoArgs["fileKey"] as? String)
+        let nonce = try #require(cryptoArgs["fileNonce"] as? String)
+        encryptedSource = NativeCryptoFile(
+            filePath: encryptedURL.path,
+            cryptoArgs: NativeCryptoFileArgs(fileKey: key, fileNonce: nonce)
+        )
     }
+
+    let attachmentCore = SimpleXCore()
+    let source = try #require(encryptedSource)
+    let decryptedURL = try await attachmentCore.openableURL(
+        for: source,
+        fileName: "photo.jpg"
+    )
+    #expect(decryptedURL.lastPathComponent == "photo.jpg")
+    #expect(try Data(contentsOf: decryptedURL) == original)
 }

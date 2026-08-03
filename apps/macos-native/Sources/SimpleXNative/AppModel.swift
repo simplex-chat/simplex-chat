@@ -26,6 +26,10 @@ final class AppModel: ObservableObject {
     @Published var transcriptFocused = false
     @Published var pendingAttachments: [PendingAttachment] = []
     @Published var attachmentError: String?
+    @Published var attachmentOpenError: String?
+    @Published var openingAttachmentIDs: Set<Int64> = []
+    @Published var replyingTo: NativeMessage?
+    @Published var composerFocusRequest = 0
     @Published var showingDeleteConfirmation = false
     @Published var targetMessageID: Int64?
     @Published var hasStoredPassphrase = false
@@ -40,6 +44,7 @@ final class AppModel: ObservableObject {
     private let passphraseStore: any DatabasePassphraseStore
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
+    private var conversationLoadTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var selectionAnchor: Int64?
     private static let densityKey = "desktopChatDensity"
@@ -71,6 +76,7 @@ final class AppModel: ObservableObject {
 
     deinit {
         eventTask?.cancel()
+        conversationLoadTask?.cancel()
     }
 
     var selectedChat: NativeChat? {
@@ -142,6 +148,7 @@ final class AppModel: ObservableObject {
         selectedChatID = id
         clearMessageSelection()
         pendingAttachments = []
+        replyingTo = nil
         targetMessageID = nil
         conversationSearchText = ""
         conversationSearchPresented = false
@@ -150,7 +157,8 @@ final class AppModel: ObservableObject {
             messages = id.map(NativePreviewData.messages) ?? []
             return
         }
-        Task { await loadSelectedConversation() }
+        conversationLoadTask?.cancel()
+        conversationLoadTask = Task { await loadSelectedConversation() }
     }
 
     func refresh() {
@@ -169,6 +177,7 @@ final class AppModel: ObservableObject {
     func sendDraft() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = pendingAttachments
+        let quotedMessage = replyingTo
         guard (!text.isEmpty || !attachments.isEmpty), let chat = selectedChat, !isSending else { return }
         if previewMode {
             if !text.isEmpty {
@@ -180,31 +189,56 @@ final class AppModel: ObservableObject {
                     sent: true,
                     author: nil,
                     deletable: true,
-                    content: .text
+                    content: .text,
+                    quotedItem: quotedMessage.map {
+                        NativeQuote(
+                            messageID: $0.id,
+                            text: $0.text.isEmpty ? ($0.content.attachmentDescription ?? "Message") : $0.text,
+                            sent: $0.sent,
+                            author: $0.author
+                        )
+                    }
                 ))
             }
             draft = ""
             pendingAttachments = []
+            replyingTo = nil
             return
         }
         draft = ""
         isSending = true
         Task {
+            var contentWasSent = false
             do {
                 if attachments.isEmpty {
-                    try await core.sendText(text, to: chat)
+                    try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
+                    contentWasSent = true
+                    if selectedChatID == chat.id, replyingTo?.id == quotedMessage?.id { replyingTo = nil }
                 } else {
                     for (index, attachment) in attachments.enumerated() {
                         let caption = index == attachments.index(before: attachments.endIndex) ? text : ""
-                        try await core.sendAttachment(attachment, caption: caption, to: chat)
-                        pendingAttachments.removeAll { $0.id == attachment.id }
+                        let quotedItemID = index == attachments.startIndex ? quotedMessage?.id : nil
+                        try await core.sendAttachment(
+                            attachment,
+                            caption: caption,
+                            quotedItemID: quotedItemID,
+                            to: chat
+                        )
+                        if index == attachments.index(before: attachments.endIndex) { contentWasSent = true }
+                        if selectedChatID == chat.id {
+                            pendingAttachments.removeAll { $0.id == attachment.id }
+                            if quotedItemID != nil, replyingTo?.id == quotedItemID { replyingTo = nil }
+                        }
                     }
                 }
-                messages = try await core.loadMessages(chatID: chat.id)
+                let sentMessages = try await core.loadMessages(chatID: chat.id)
+                if selectedChatID == chat.id { messages = sentMessages }
                 if let userID = profile?.userID { chats = try await core.loadChats(userID: userID) }
             } catch {
-                draft = text
-                phase = .failed(error.localizedDescription)
+                if selectedChatID == chat.id {
+                    if !contentWasSent { draft = text }
+                    phase = .failed(error.localizedDescription)
+                }
             }
             isSending = false
         }
@@ -260,6 +294,58 @@ final class AppModel: ObservableObject {
         guard sourceIndex != destinationIndex else { return }
         let attachment = pendingAttachments.remove(at: sourceIndex)
         pendingAttachments.insert(attachment, at: destinationIndex)
+    }
+
+    func beginReply(to message: NativeMessage) {
+        guard selectedChat?.kind.canReply == true, !isSending else { return }
+        replyingTo = message
+        clearMessageSelection()
+        composerFocusRequest &+= 1
+    }
+
+    func replyToSelectedMessage() {
+        guard selectedMessagesInTranscriptOrder.count == 1,
+              let message = selectedMessagesInTranscriptOrder.first else { return }
+        beginReply(to: message)
+    }
+
+    func cancelReply() {
+        replyingTo = nil
+    }
+
+    func openQuotedMessage(_ messageID: Int64) {
+        if messages.contains(where: { $0.id == messageID }) {
+            targetMessageID = messageID
+            return
+        }
+        conversationLoadTask?.cancel()
+        conversationLoadTask = Task {
+            await loadSelectedConversation(around: messageID)
+            guard !Task.isCancelled, messages.contains(where: { $0.id == messageID }) else { return }
+            targetMessageID = messageID
+        }
+    }
+
+    func openAttachment(_ message: NativeMessage) {
+        guard let source = message.fileSource,
+              !openingAttachmentIDs.contains(message.id) else { return }
+        openingAttachmentIDs.insert(message.id)
+        Task {
+            defer { openingAttachmentIDs.remove(message.id) }
+            do {
+                let url = try await core.openableURL(
+                    for: source,
+                    fileName: message.content.attachmentDescription
+                )
+                guard NSWorkspace.shared.open(url) else {
+                    throw NativeChatError.unavailable("macOS could not open this attachment.")
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                attachmentOpenError = error.localizedDescription
+            }
+        }
     }
 
     func selectMessage(_ id: Int64, modifiers: NSEvent.ModifierFlags) {
@@ -336,6 +422,7 @@ final class AppModel: ObservableObject {
     func deleteSelectedMessages() {
         guard let chat = selectedChat, canDeleteSelectedMessages else { return }
         let identifiers = selectedMessagesInTranscriptOrder.map(\.id)
+        if let replyingTo, identifiers.contains(replyingTo.id) { self.replyingTo = nil }
         showingDeleteConfirmation = false
         if previewMode {
             messages.removeAll { identifiers.contains($0.id) }
@@ -361,6 +448,8 @@ final class AppModel: ObservableObject {
     func dismissNearestState() {
         if conversationSearchPresented {
             dismissConversationSearch()
+        } else if replyingTo != nil {
+            cancelReply()
         } else if !pendingAttachments.isEmpty {
             pendingAttachments = []
         } else if !selectedMessageIDs.isEmpty {
@@ -391,14 +480,21 @@ final class AppModel: ObservableObject {
             messages = []
             return
         }
+        let chatID = chat.id
         isLoadingConversation = true
+        defer {
+            if selectedChatID == chatID { isLoadingConversation = false }
+        }
         do {
-            messages = try await core.loadMessages(chatID: chat.id, around: messageID)
+            let loadedMessages = try await core.loadMessages(chatID: chatID, around: messageID)
+            guard !Task.isCancelled, selectedChatID == chatID else { return }
+            messages = loadedMessages
             selectedMessageIDs.formIntersection(messages.map(\.id))
+        } catch is CancellationError {
+            return
         } catch {
             phase = .failed(error.localizedDescription)
         }
-        isLoadingConversation = false
     }
 
     private func startEventLoop() {

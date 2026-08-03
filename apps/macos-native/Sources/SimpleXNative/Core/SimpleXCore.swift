@@ -4,6 +4,14 @@ import Foundation
 actor SimpleXCore {
     private var controller: UnsafeMutableRawPointer?
     private var loaded = false
+    private let decryptedFilesDirectory: URL
+
+    init() {
+        decryptedFilesDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("chat.simplex.native", isDirectory: true)
+            .appendingPathComponent("OpenedAttachments", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    }
 
     deinit {
         if let controller {
@@ -11,6 +19,7 @@ actor SimpleXCore {
                 sx_core_free(result)
             }
         }
+        try? FileManager.default.removeItem(at: decryptedFilesDirectory)
     }
 
     func open(passphrase: String) throws -> (NativeProfile, [NativeChat]) {
@@ -39,17 +48,25 @@ actor SimpleXCore {
         return try NativeChatParser.messages(from: send("/_get chat \(chatID) \(pagination)"))
     }
 
-    func sendText(_ text: String, to chat: NativeChat) throws {
+    func sendText(_ text: String, quotedItemID: Int64?, to chat: NativeChat) throws {
         guard chat.kind.canSend else {
             throw NativeChatError.unavailable("This conversation cannot accept messages yet.")
         }
-        try sendComposedMessage([
-            "msgContent": ["type": "text", "text": text],
-            "mentions": [:],
-        ], to: chat)
+        try sendComposedMessage(
+            Self.composedMessage(
+                messageContent: ["type": "text", "text": text],
+                quotedItemID: quotedItemID
+            ),
+            to: chat
+        )
     }
 
-    func sendAttachment(_ attachment: PendingAttachment, caption: String, to chat: NativeChat) throws {
+    func sendAttachment(
+        _ attachment: PendingAttachment,
+        caption: String,
+        quotedItemID: Int64?,
+        to chat: NativeChat
+    ) throws {
         guard chat.kind.canSend else {
             throw NativeChatError.unavailable("This conversation cannot accept attachments yet.")
         }
@@ -71,14 +88,69 @@ actor SimpleXCore {
         case .document:
             messageContent = ["type": "file", "text": caption]
         }
-        try sendComposedMessage([
-            "fileSource": [
-                "filePath": attachment.url.path,
-                "cryptoArgs": NSNull(),
-            ],
+        try sendComposedMessage(
+            Self.composedMessage(
+                messageContent: messageContent,
+                fileSource: [
+                    "filePath": attachment.url.path,
+                    "cryptoArgs": NSNull(),
+                ],
+                quotedItemID: quotedItemID
+            ),
+            to: chat
+        )
+    }
+
+    func openableURL(for source: NativeCryptoFile, fileName: String?) throws -> URL {
+        let sourceURL = source.sourceURL
+        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
+            throw NativeChatError.unavailable("The attachment is no longer stored on this Mac.")
+        }
+        guard let cryptoArgs = source.cryptoArgs else { return sourceURL }
+
+        try loadIfNeeded()
+        let directory = decryptedFilesDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let safeName = URL(fileURLWithPath: fileName ?? source.filePath).lastPathComponent
+        let destination = directory.appendingPathComponent(safeName.isEmpty ? "Attachment" : safeName)
+        let result = sourceURL.path.withCString { fromPath in
+            cryptoArgs.fileKey.withCString { key in
+                cryptoArgs.fileNonce.withCString { nonce in
+                    destination.path.withCString { toPath in
+                        sx_core_decrypt_file(fromPath, key, nonce, toPath)
+                    }
+                }
+            }
+        }
+        guard let result else {
+            try? FileManager.default.removeItem(at: directory)
+            throw NativeChatError.unavailable("SimpleX could not decrypt the attachment.")
+        }
+        defer { sx_core_free(result) }
+        let error = String(cString: result)
+        guard error.isEmpty else {
+            try? FileManager.default.removeItem(at: directory)
+            throw NativeChatError.core(error)
+        }
+        guard FileManager.default.fileExists(atPath: destination.path) else {
+            try? FileManager.default.removeItem(at: directory)
+            throw NativeChatError.unavailable("SimpleX decrypted the attachment without creating a readable file.")
+        }
+        return destination
+    }
+
+    nonisolated static func composedMessage(
+        messageContent: [String: Any],
+        fileSource: [String: Any]? = nil,
+        quotedItemID: Int64?
+    ) -> [String: Any] {
+        var message: [String: Any] = [
             "msgContent": messageContent,
-            "mentions": [:],
-        ], to: chat)
+            "mentions": [String: Int64](),
+        ]
+        if let fileSource { message["fileSource"] = fileSource }
+        if let quotedItemID { message["quotedItemId"] = quotedItemID }
+        return message
     }
 
     func deleteMessages(_ messageIDs: [Int64], from chat: NativeChat) throws {

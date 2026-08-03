@@ -55,12 +55,23 @@ struct SimpleXNativeApp: App {
                     .disabled(model.phase != .ready)
             }
             CommandGroup(after: .textEditing) {
+                Button("Reply to Selected Message") { model.replyToSelectedMessage() }
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                    .disabled(
+                        model.selectedMessagesInTranscriptOrder.count != 1
+                            || model.selectedChat?.kind.canReply != true
+                            || model.isSending
+                    )
                 Button("Delete Selected Messages") { model.requestDeleteSelectedMessages() }
                     .keyboardShortcut(.delete, modifiers: [])
                     .disabled(!model.transcriptFocused || !model.canDeleteSelectedMessages)
-                Button("Clear Selection or Attachments") { model.dismissNearestState() }
+                Button("Cancel Current Action") { model.dismissNearestState() }
                     .keyboardShortcut(.escape, modifiers: [])
-                    .disabled(model.selectedMessageIDs.isEmpty && model.pendingAttachments.isEmpty)
+                    .disabled(
+                        model.selectedMessageIDs.isEmpty
+                            && model.pendingAttachments.isEmpty
+                            && model.replyingTo == nil
+                    )
             }
             CommandMenu("Conversation") {
                 Button("Refresh") { model.refresh() }

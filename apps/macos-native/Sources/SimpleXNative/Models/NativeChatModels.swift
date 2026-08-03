@@ -12,6 +12,10 @@ enum NativeChatKind: String, Sendable {
         self == .direct || self == .group || self == .local
     }
 
+    var canReply: Bool {
+        self == .direct || self == .group
+    }
+
     var toolbarSubtitle: String {
         switch self {
         case .direct: "SimpleX contact"
@@ -55,26 +59,70 @@ struct NativeMessage: Identifiable, Hashable, Sendable {
     let author: String?
     let deletable: Bool
     let content: NativeMessageContent
+    let quotedItem: NativeQuote?
+    let fileSource: NativeCryptoFile?
+
+    init(
+        id: Int64,
+        text: String,
+        timestamp: Date?,
+        sent: Bool,
+        author: String?,
+        deletable: Bool,
+        content: NativeMessageContent,
+        quotedItem: NativeQuote? = nil,
+        fileSource: NativeCryptoFile? = nil
+    ) {
+        self.id = id
+        self.text = text
+        self.timestamp = timestamp
+        self.sent = sent
+        self.author = author
+        self.deletable = deletable
+        self.content = content
+        self.quotedItem = quotedItem
+        self.fileSource = fileSource
+    }
 }
 
 enum NativeMessageContent: Hashable, Sendable {
     case text
-    case image(preview: String?, fileName: String?, filePath: String?)
-    case video(preview: String?, fileName: String?, filePath: String?)
-    case file(fileName: String?, filePath: String?)
+    case image(preview: String?, fileName: String?)
+    case video(preview: String?, fileName: String?)
+    case file(fileName: String?)
 
-    var fileURL: URL? {
-        let path: String?
+    var attachmentDescription: String? {
         switch self {
-        case .text: path = nil
-        case let .image(_, _, filePath), let .video(_, _, filePath), let .file(_, filePath): path = filePath
+        case .text: nil
+        case let .image(_, fileName): fileName ?? "Photo"
+        case let .video(_, fileName): fileName ?? "Video"
+        case let .file(fileName): fileName ?? "File"
         }
-        guard let path, !path.isEmpty else { return nil }
-        if path.hasPrefix("/") { return URL(fileURLWithPath: path) }
+    }
+}
+
+struct NativeQuote: Hashable, Sendable {
+    let messageID: Int64?
+    let text: String
+    let sent: Bool
+    let author: String?
+}
+
+struct NativeCryptoFile: Hashable, Sendable {
+    let filePath: String
+    let cryptoArgs: NativeCryptoFileArgs?
+
+    var sourceURL: URL {
+        if filePath.hasPrefix("/") { return URL(fileURLWithPath: filePath) }
         return FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/share/simplex/simplex_v1_files", isDirectory: true)
-            .appendingPathComponent(path)
+            .appendingPathComponent(filePath)
     }
+}
+
+struct NativeCryptoFileArgs: Hashable, Sendable {
+    let fileKey: String
+    let fileNonce: String
 }
 
 enum NativeChatParser {
@@ -237,14 +285,20 @@ enum NativeChatParser {
         let fileSource = file?["fileSource"] as? [String: Any]
         let fileName = string(file?["fileName"])
         let filePath = string(fileSource?["filePath"])
+        let cryptoArgsObject = fileSource?["cryptoArgs"] as? [String: Any]
+        let cryptoArgs = cryptoArgsObject.flatMap { args -> NativeCryptoFileArgs? in
+            guard let key = string(args["fileKey"]), let nonce = string(args["fileNonce"]) else { return nil }
+            return NativeCryptoFileArgs(fileKey: key, fileNonce: nonce)
+        }
+        let nativeFileSource = filePath.map { NativeCryptoFile(filePath: $0, cryptoArgs: cryptoArgs) }
         let content: NativeMessageContent
         switch string(messageContent?["type"]) {
         case "image":
-            content = .image(preview: string(messageContent?["image"]), fileName: fileName, filePath: filePath)
+            content = .image(preview: string(messageContent?["image"]), fileName: fileName)
         case "video":
-            content = .video(preview: string(messageContent?["image"]), fileName: fileName, filePath: filePath)
+            content = .video(preview: string(messageContent?["image"]), fileName: fileName)
         case "file":
-            content = .file(fileName: fileName, filePath: filePath)
+            content = .file(fileName: fileName)
         default:
             content = .text
         }
@@ -255,7 +309,37 @@ enum NativeChatParser {
             sent: directionType.hasSuffix("Snd"),
             author: string(profile?["displayName"]) ?? string(member?["localDisplayName"]),
             deletable: bool(meta["deletable"]) ?? false,
-            content: content
+            content: content,
+            quotedItem: parseQuote(object["quotedItem"]),
+            fileSource: nativeFileSource
+        )
+    }
+
+    private static func parseQuote(_ value: Any?) -> NativeQuote? {
+        guard let object = value as? [String: Any],
+              let content = object["content"] as? [String: Any] else { return nil }
+        let direction = object["chatDir"] as? [String: Any]
+        let directionType = string(direction?["type"]) ?? direction?.keys.first ?? ""
+        let member = direction?["groupMember"] as? [String: Any]
+        let memberProfile = member?["memberProfile"] as? [String: Any]
+        let rawText = string(content["text"]) ?? ""
+        let text: String
+        if !rawText.isEmpty {
+            text = rawText
+        } else {
+            switch string(content["type"]) {
+            case "image": text = "Photo"
+            case "video": text = "Video"
+            case "voice": text = "Voice message"
+            case "file": text = "File"
+            default: text = "Message"
+            }
+        }
+        return NativeQuote(
+            messageID: int64(object["itemId"]),
+            text: text,
+            sent: directionType.hasSuffix("Snd"),
+            author: string(memberProfile?["displayName"]) ?? string(member?["localDisplayName"])
         )
     }
 
