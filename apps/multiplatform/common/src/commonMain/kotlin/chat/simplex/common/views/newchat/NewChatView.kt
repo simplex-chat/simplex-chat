@@ -314,6 +314,51 @@ fun ActiveProfilePicker(
     }
   }
 
+  fun selectProfile(user: User) {
+    switchingProfile.value = true
+    withApi {
+      try {
+        appPreferences.incognito.set(false)
+        var updatedConn: PendingContactConnection? = null;
+
+        if (contactConnection != null) {
+          updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
+          if (updatedConn != null) {
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
+              updateShownConnection(updatedConn)
+            }
+          }
+        }
+
+        if ((contactConnection != null && updatedConn != null) || contactConnection == null) {
+          controller.changeActiveUser_(
+            rhId = user.remoteHostId,
+            toUserId = user.userId,
+            viewPwd = if (user.hidden) searchTextOrPassword.value else null
+          )
+
+          if (chatModel.currentUser.value?.userId != user.userId) {
+            AlertManager.shared.showAlertMsg(generalGetString(
+              MR.strings.switching_profile_error_title),
+              String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+            )
+          }
+        }
+
+        if (updatedConn != null) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
+          }
+        }
+
+        close()
+      } finally {
+        switchingProfile.value = false
+      }
+    }
+  }
+
   @Composable
   fun ProfilePickerUserOption(user: User) {
     val selected = selectedProfile?.userId == user.userId && !incognito
@@ -322,50 +367,7 @@ fun ActiveProfilePicker(
       title = user.chatViewName,
       disabled = switchingProfile.value || selected,
       selected = selected,
-      onSelected = {
-        switchingProfile.value = true
-        withApi {
-          try {
-            appPreferences.incognito.set(false)
-            var updatedConn: PendingContactConnection? = null;
-
-            if (contactConnection != null) {
-              updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
-              if (updatedConn != null) {
-                withContext(Dispatchers.Main) {
-                  chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
-                  updateShownConnection(updatedConn)
-                }
-              }
-            }
-
-            if ((contactConnection != null && updatedConn != null) || contactConnection == null) {
-              controller.changeActiveUser_(
-                rhId = user.remoteHostId,
-                toUserId = user.userId,
-                viewPwd = if (user.hidden) searchTextOrPassword.value else null
-              )
-
-              if (chatModel.currentUser.value?.userId != user.userId) {
-                AlertManager.shared.showAlertMsg(generalGetString(
-                  MR.strings.switching_profile_error_title),
-                  String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
-                )
-              }
-            }
-
-            if (updatedConn != null) {
-              withContext(Dispatchers.Main) {
-                chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
-              }
-            }
-
-            close()
-          } finally {
-            switchingProfile.value = false
-          }
-        }
-      },
+      onSelected = { selectProfile(user) },
         image = { ProfileImage(size = 42.dp, image = user.image) },
         badge = user.profile.localBadge
     )
