@@ -86,6 +86,87 @@ import Testing
     #expect(messages.map(\.text) == ["Hi", "Hey"])
 }
 
+@Test func markChatReadUsesTheExistingCoreCommand() {
+    #expect(SimpleXCore.markChatReadCommand(chatID: "@42") == "/_read chat @42")
+    #expect(SimpleXCore.markChatReadCommand(chatID: "#9") == "/_read chat #9")
+}
+
+@MainActor
+@Test func openingTheLatestMessagesClearsUnreadOnlyAfterCoreConfirmation() async throws {
+    let unreadChat = NativeChat(
+        id: "@88",
+        apiID: 88,
+        kind: .direct,
+        displayName: "Unread chat",
+        image: nil,
+        preview: "New message",
+        timestamp: nil,
+        unreadCount: 3,
+        sendAsGroup: false
+    )
+    let readProbe = MarkReadProbe()
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == unreadChat.id)
+            #expect(aroundMessageID == nil)
+            return [NativeMessage(
+                id: 880,
+                text: "New message",
+                timestamp: nil,
+                sent: false,
+                author: nil,
+                deletable: true,
+                content: .text
+            )]
+        },
+        markChatReadOperation: { chatID in
+            await readProbe.mark(chatID)
+        },
+        windowFocusedOperation: { true }
+    )
+    model.chats = [unreadChat]
+
+    let load = try #require(model.selectChat(unreadChat.id))
+    await load.value
+
+    let recordedChatIDs = await readProbe.recordedChatIDs()
+    #expect(recordedChatIDs == [unreadChat.id])
+    #expect(model.chats.first(where: { $0.id == unreadChat.id })?.unreadCount == 0)
+}
+
+@MainActor
+@Test func backgroundConversationRefreshDoesNotClearUnreadMessages() async throws {
+    let unreadChat = NativeChat(
+        id: "@89",
+        apiID: 89,
+        kind: .direct,
+        displayName: "Background chat",
+        image: nil,
+        preview: "Keep this unread",
+        timestamp: nil,
+        unreadCount: 1,
+        sendAsGroup: false
+    )
+    let readProbe = MarkReadProbe()
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { _, _ in [] },
+        markChatReadOperation: { chatID in
+            await readProbe.mark(chatID)
+        },
+        windowFocusedOperation: { false }
+    )
+    model.chats = [unreadChat]
+
+    let load = try #require(model.selectChat(unreadChat.id))
+    await load.value
+
+    let recordedChatIDs = await readProbe.recordedChatIDs()
+    #expect(recordedChatIDs.isEmpty)
+    #expect(model.chats.first?.unreadCount == 1)
+}
+
 @MainActor
 @Test func longMessageBodyUsesItsFullWrappedHeight() {
     let shortHeight = messageBodyHeight("Short message")
@@ -1053,6 +1134,18 @@ private actor DelayedValue<Value: Sendable> {
 
     func release() {
         released = true
+    }
+}
+
+private actor MarkReadProbe {
+    private var chatIDs: [NativeChat.ID] = []
+
+    func mark(_ chatID: NativeChat.ID) {
+        chatIDs.append(chatID)
+    }
+
+    func recordedChatIDs() -> [NativeChat.ID] {
+        chatIDs
     }
 }
 

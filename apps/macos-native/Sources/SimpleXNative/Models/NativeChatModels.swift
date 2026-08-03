@@ -50,6 +50,20 @@ struct NativeChat: Identifiable, Hashable, Sendable {
         return "\(displayName)\(unread)\(message)"
     }
 
+    func markingRead() -> NativeChat {
+        NativeChat(
+            id: id,
+            apiID: apiID,
+            kind: kind,
+            displayName: displayName,
+            image: image,
+            preview: preview,
+            timestamp: timestamp,
+            unreadCount: 0,
+            sendAsGroup: sendAsGroup
+        )
+    }
+
     func displayedMessageAuthor(sent: Bool, author: String?) -> String {
         if sent { return sendAsGroup ? displayName : "You" }
         let normalizedAuthor = author?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

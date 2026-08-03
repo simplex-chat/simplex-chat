@@ -7,7 +7,9 @@ typealias SendAttachmentOperation = @Sendable (PendingAttachment, String, Int64?
 typealias LoadMessageOperation = @Sendable (NativeChat.ID, Int64) async throws -> NativeMessage?
 typealias LoadMessagesOperation = @Sendable (NativeChat.ID, Int64?) async throws -> [NativeMessage]
 typealias LoadChatsOperation = @Sendable (Int64) async throws -> [NativeChat]
+typealias MarkChatReadOperation = @Sendable (NativeChat.ID) async throws -> Void
 typealias OpenAttachmentOperation = @Sendable (NativeCryptoFile, String?) async throws -> Void
+typealias WindowFocusedOperation = @MainActor @Sendable () -> Bool
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -78,7 +80,9 @@ final class AppModel: ObservableObject {
     private let loadMessageOperation: LoadMessageOperation?
     private let loadMessagesOperation: LoadMessagesOperation?
     private let loadChatsOperation: LoadChatsOperation?
+    private let markChatReadOperation: MarkChatReadOperation?
     private let openAttachmentOperation: OpenAttachmentOperation?
+    private let windowFocusedOperation: WindowFocusedOperation?
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
     private var conversationLoadTask: Task<Void, Never>?
@@ -95,6 +99,7 @@ final class AppModel: ObservableObject {
     private var pendingSendStatusMessages: [NativeChat.ID: String] = [:]
     private var pendingAttachmentOpenErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyInvalidationChatIDs: Set<NativeChat.ID> = []
+    private var markingReadChatIDs: Set<NativeChat.ID> = []
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var quickLookRequestKey: AttachmentOpeningKey?
     private var deletingChatID: NativeChat.ID?
@@ -116,7 +121,9 @@ final class AppModel: ObservableObject {
         loadMessageOperation: LoadMessageOperation? = nil,
         loadMessagesOperation: LoadMessagesOperation? = nil,
         loadChatsOperation: LoadChatsOperation? = nil,
-        openAttachmentOperation: OpenAttachmentOperation? = nil
+        markChatReadOperation: MarkChatReadOperation? = nil,
+        openAttachmentOperation: OpenAttachmentOperation? = nil,
+        windowFocusedOperation: WindowFocusedOperation? = nil
     ) {
         self.previewMode = previewMode
             ?? (ProcessInfo.processInfo.environment["SIMPLEX_NATIVE_UI_PREVIEW"] == "1")
@@ -127,7 +134,9 @@ final class AppModel: ObservableObject {
         self.loadMessageOperation = loadMessageOperation
         self.loadMessagesOperation = loadMessagesOperation
         self.loadChatsOperation = loadChatsOperation
+        self.markChatReadOperation = markChatReadOperation
         self.openAttachmentOperation = openAttachmentOperation
+        self.windowFocusedOperation = windowFocusedOperation
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
         ) as? Bool == true
@@ -270,7 +279,8 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func selectChat(_ id: NativeChat.ID?) {
+    @discardableResult
+    func selectChat(_ id: NativeChat.ID?) -> Task<Void, Never>? {
         transitionToChat(id)
     }
 
@@ -1006,13 +1016,14 @@ final class AppModel: ObservableObject {
         return false
     }
 
+    @discardableResult
     private func transitionToChat(
         _ id: NativeChat.ID?,
         around messageID: Int64? = nil,
         scrollTo scrollTarget: Int64? = nil
-    ) {
+    ) -> Task<Void, Never>? {
         let changedChat = selectedChatID != id
-        guard changedChat || messageID != nil || scrollTarget != nil else { return }
+        guard changedChat || messageID != nil || scrollTarget != nil else { return nil }
 
         if changedChat {
             quickLookRequestKey = nil
@@ -1054,16 +1065,16 @@ final class AppModel: ObservableObject {
         guard let id else {
             messages = []
             isLoadingConversation = false
-            return
+            return nil
         }
         if previewMode {
             messages = NativePreviewData.messages(for: id)
             if let scrollTarget, messages.contains(where: { $0.id == scrollTarget }) {
                 targetMessageID = scrollTarget
             }
-            return
+            return nil
         }
-        scheduleConversationLoad(chatID: id, around: messageID, scrollTo: scrollTarget)
+        return scheduleConversationLoad(chatID: id, around: messageID, scrollTo: scrollTarget)
     }
 
     private func saveConversationNotices(for chatID: NativeChat.ID) {
@@ -1331,6 +1342,9 @@ final class AppModel: ObservableObject {
             }
             applyLoadedMessages(loadedMessages, to: chatID)
             conversationAnchorMessageID = messageID
+            if messageID == nil {
+                await markChatReadIfNeeded(chatID)
+            }
             return true
         } catch is CancellationError {
             return false
@@ -1363,6 +1377,40 @@ final class AppModel: ObservableObject {
         } else {
             invalidateReplyContext(in: chatID)
         }
+    }
+
+    private func markChatReadIfNeeded(_ chatID: NativeChat.ID) async {
+        guard let chat = chats.first(where: { $0.id == chatID }), chat.unreadCount > 0,
+              !markingReadChatIDs.contains(chatID), windowIsFocused else { return }
+        if previewMode, markChatReadOperation == nil { return }
+
+        markingReadChatIDs.insert(chatID)
+        defer { markingReadChatIDs.remove(chatID) }
+        do {
+            if let markChatReadOperation {
+                try await markChatReadOperation(chatID)
+            } else {
+                try await core.markChatRead(chatID: chatID)
+            }
+            guard let index = chats.firstIndex(where: { $0.id == chatID }) else { return }
+            chats[index] = chats[index].markingRead()
+            notificationManager?.removeDeliveredNotifications(chatID: chatID)
+        } catch is CancellationError {
+            return
+        } catch {
+            return
+        }
+    }
+
+    func markSelectedChatReadIfVisible() {
+        guard conversationAnchorMessageID == nil, !isLoadingConversation,
+              let chatID = selectedChatID else { return }
+        Task { await markChatReadIfNeeded(chatID) }
+    }
+
+    private var windowIsFocused: Bool {
+        if let windowFocusedOperation { return windowFocusedOperation() }
+        return NSApp.isActive && NSApp.keyWindow?.isKeyWindow == true
     }
 
     private func startEventLoop() {

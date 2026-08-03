@@ -33,6 +33,18 @@ final class NativeNotificationManager: NSObject, ObservableObject, UNUserNotific
         center.delegate = self
         registerCategories()
         refreshPermissionState()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowBecameFocused),
+            name: NSWindow.didBecomeKeyNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(applicationBecameActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
 
     func chatSetupReady() {
@@ -107,6 +119,14 @@ final class NativeNotificationManager: NSObject, ObservableObject, UNUserNotific
     func openSystemSettings() {
         guard let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    @objc private func windowBecameFocused() {
+        model?.markSelectedChatReadIfVisible()
+    }
+
+    @objc private func applicationBecameActive() {
+        model?.markSelectedChatReadIfVisible()
     }
 
     nonisolated func userNotificationCenter(

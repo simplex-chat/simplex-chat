@@ -72,6 +72,10 @@ actor SimpleXCore {
         return messages.first(where: { $0.id == itemID })
     }
 
+    func markChatRead(chatID: String) throws {
+        try ensureCommandSucceeded(send(Self.markChatReadCommand(chatID: chatID)))
+    }
+
     nonisolated static func chatPageCommand(
         chatID: String,
         around messageID: Int64?,
@@ -79,6 +83,10 @@ actor SimpleXCore {
     ) -> String {
         let pagination = messageID.map { "around=\($0) count=\(count)" } ?? "count=\(count)"
         return "/_get chat \(chatID) \(pagination)"
+    }
+
+    nonisolated static func markChatReadCommand(chatID: String) -> String {
+        "/_read chat \(chatID)"
     }
 
     func sendText(_ text: String, quotedItemID: Int64?, to chat: NativeChat) throws -> NativeSendReceipt {
