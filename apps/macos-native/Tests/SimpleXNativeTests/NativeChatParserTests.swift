@@ -1000,7 +1000,15 @@ private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
         sent: newerTarget.sent,
         author: newerTarget.author
     )
+    model.draft = "Ready after cancellation"
     #expect(model.openQuotedMessage(newerQuote, from: 911) == nil)
+
+    // Then: the obsolete loader no longer keeps the winning transcript artificially busy.
+    #expect(!model.isLoadingConversation)
+    #expect(model.canSendDraft)
+    #expect(model.canRefreshConversation)
+
+    // When: the cancelled operation eventually cooperates and returns.
     await probe.release()
     await olderNavigation.value
 

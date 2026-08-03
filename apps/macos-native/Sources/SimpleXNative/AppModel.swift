@@ -653,8 +653,8 @@ final class AppModel: ObservableObject {
     @discardableResult
     private func navigateToMessage(_ messageID: Int64, in chatID: NativeChat.ID) -> Task<Void, Never>? {
         guard selectedChatID == chatID else { return nil }
-        conversationLoadTask?.cancel()
         if messages.contains(where: { $0.id == messageID }) {
+            cancelConversationLoadWithoutReplacement()
             prepareForQuoteNavigation()
             conversationAnchorMessageID = messageID
             targetMessageID = messageID
@@ -667,6 +667,13 @@ final class AppModel: ObservableObject {
             navigationFailureMessage: "The original quoted message is no longer available in this conversation.",
             consumeQuoteNavigationStateOnSuccess: true
         )
+    }
+
+    private func cancelConversationLoadWithoutReplacement() {
+        conversationLoadTask?.cancel()
+        conversationLoadTask = nil
+        conversationLoadRevision &+= 1
+        isLoadingConversation = false
     }
 
     func selectMessage(_ id: Int64, modifiers: NSEvent.ModifierFlags) {
