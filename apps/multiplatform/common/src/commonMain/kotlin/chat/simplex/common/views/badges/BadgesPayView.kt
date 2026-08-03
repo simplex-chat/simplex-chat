@@ -95,7 +95,7 @@ fun BadgesPayView(level: BadgeLevel) {
         modifier = Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).clip(CircleShape)
       ) {
         Text(
-          stringResource(billingFooter(selectedPeriod)).format("July 22, 2026"),
+          stringResource(billingFooter(selectedPeriod)).format(stubBillingDate()),
           Modifier.padding(vertical = 5.dp),
           style = MaterialTheme.typography.body2,
           color = MaterialTheme.colors.secondary,
@@ -147,8 +147,14 @@ private fun PayButton(level: BadgeLevel, selectedPeriod: BadgePeriod) {
   )
 }
 
-// TODO [badges] source the actual renewal/end date from the purchase state machine when wired.
 private fun billingFooter(period: BadgePeriod): StringResource = when (period) {
   BadgePeriod.Subscribe -> MR.strings.badges_billing_footer_subscribe
   BadgePeriod.OneMonth -> MR.strings.badges_billing_footer_one_month
+}
+
+// TODO [badges] source the actual date from the purchase state machine when wired.
+private fun stubBillingDate(): String {
+  val date = java.time.LocalDate.of(2026, 7, 22)
+  val formatter = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)
+  return date.format(formatter)
 }
