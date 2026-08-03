@@ -538,11 +538,15 @@ final class AppModel: ObservableObject {
     }
 
     @discardableResult
-    private func loadConversation(chatID: NativeChat.ID, around messageID: Int64? = nil) async -> Bool {
+    private func loadConversation(
+        chatID: NativeChat.ID,
+        around messageID: Int64? = nil,
+        showProgress: Bool = true
+    ) async -> Bool {
         guard selectedChatID == chatID else { return false }
         conversationLoadRevision &+= 1
         let revision = conversationLoadRevision
-        isLoadingConversation = true
+        isLoadingConversation = showProgress
         defer {
             if selectedChatID == chatID, conversationLoadRevision == revision {
                 isLoadingConversation = false
@@ -580,7 +584,7 @@ final class AppModel: ObservableObject {
         do {
             chats = try await core.loadChats(userID: userID)
             if let chatID = selectedChatID {
-                _ = await loadConversation(chatID: chatID)
+                _ = await loadConversation(chatID: chatID, showProgress: false)
             }
             consumePendingNotificationRoutes()
         } catch {
