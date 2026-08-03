@@ -1195,6 +1195,37 @@ private actor ReplyValidationProbe {
     }
 }
 
+private actor DelayedTextSendProbe {
+    private let failureMessage: String?
+    private let cancelAfterSuccess: Bool
+    private var requested = false
+    private var released = false
+
+    init(failureMessage: String? = nil, cancelAfterSuccess: Bool = false) {
+        self.failureMessage = failureMessage
+        self.cancelAfterSuccess = cancelAfterSuccess
+    }
+
+    func send() async throws {
+        requested = true
+        while !released { await Task.yield() }
+        if let failureMessage {
+            throw NativeChatError.unavailable(failureMessage)
+        }
+        if cancelAfterSuccess {
+            withUnsafeCurrentTask { $0?.cancel() }
+        }
+    }
+
+    func waitUntilRequested() async {
+        while !requested { await Task.yield() }
+    }
+
+    func release() {
+        released = true
+    }
+}
+
 @MainActor
 private func makeSendTestModel(
     sendTextOperation: SendTextOperation? = nil,
@@ -1208,6 +1239,126 @@ private func makeSendTestModel(
         loadMessageOperation: loadMessageOperation
     )
     return model
+}
+
+@MainActor
+private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
+    NativeMessage(
+        id: message.id,
+        text: "Message deleted",
+        timestamp: message.timestamp,
+        sent: message.sent,
+        author: message.author,
+        deletable: false,
+        content: message.content,
+        replyable: false
+    )
+}
+
+@MainActor
+@Test func failedSendClearsAReplyTargetDeletedWhileTheSendWasInFlight() async throws {
+    // Given
+    let failure = "The reply could not be sent."
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let probe = DelayedTextSendProbe(failureMessage: failure)
+    let model = makeSendTestModel(
+        sendTextOperation: { _, _, _ in try await probe.send() },
+        loadMessageOperation: { _, _ in original }
+    )
+    model.messages = [original]
+    model.draft = "Keep this reply text"
+    model.beginReply(to: original)
+
+    // When: the source is deleted after validation but before the send fails.
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await probe.waitUntilRequested()
+    model.applyLoadedMessages([unavailableVersion(of: original)], to: "@1")
+
+    // Then: the in-flight composer remains stable until the operation resolves.
+    #expect(model.replyingTo?.id == original.id)
+    #expect(model.replyContextError == nil)
+    #expect(model.isSendingSelectedChat)
+
+    // When
+    await probe.release()
+    await send.value
+
+    // Then: the text is restored without retaining an invalid quote.
+    #expect(model.draft == "Keep this reply text")
+    #expect(model.replyingTo == nil)
+    #expect(model.replyContextError == "The message you were replying to is no longer available. Your draft was kept.")
+    #expect(model.phase == .failed(failure))
+    #expect(!model.isSending)
+}
+
+@MainActor
+@Test func committedReplyDoesNotReportADeferredTargetInvalidation() async throws {
+    // Given
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let probe = DelayedTextSendProbe(cancelAfterSuccess: true)
+    let model = makeSendTestModel(
+        sendTextOperation: { _, _, _ in try await probe.send() },
+        loadMessageOperation: { _, _ in original }
+    )
+    model.messages = [original]
+    model.draft = "This reply commits"
+    model.beginReply(to: original)
+
+    // When: the source is deleted while the core is committing the reply.
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await probe.waitUntilRequested()
+    model.applyLoadedMessages([unavailableVersion(of: original)], to: "@1")
+    await probe.release()
+    await send.value
+
+    // Then: the committed quote stays sent and no stale composer warning appears.
+    #expect(model.draft.isEmpty)
+    #expect(model.replyingTo == nil)
+    #expect(model.replyContextError == nil)
+    #expect(model.phase == .ready)
+    #expect(!model.isSending)
+}
+
+@MainActor
+@Test func transientReplyInvalidationCanRecoverBeforeAFailedSendReturns() async throws {
+    // Given
+    let failure = "The reply could not be sent."
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let recovered = NativeMessage(
+        id: original.id,
+        text: "Edited but available again",
+        timestamp: original.timestamp,
+        sent: original.sent,
+        author: original.author,
+        deletable: original.deletable,
+        content: original.content
+    )
+    let probe = DelayedTextSendProbe(failureMessage: failure)
+    let model = makeSendTestModel(
+        sendTextOperation: { _, _, _ in try await probe.send() },
+        loadMessageOperation: { _, _ in original }
+    )
+    model.messages = [original]
+    model.draft = "Retry against the recovered target"
+    model.beginReply(to: original)
+
+    // When: a transient unavailable state is followed by a valid refresh.
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await probe.waitUntilRequested()
+    model.applyLoadedMessages([unavailableVersion(of: original)], to: "@1")
+    model.applyLoadedMessages([recovered], to: "@1")
+    await probe.release()
+    await send.value
+
+    // Then: the failed send restores a valid, current reply context.
+    #expect(model.draft == "Retry against the recovered target")
+    #expect(model.replyingTo == recovered)
+    #expect(model.replyContextError == nil)
+    #expect(model.phase == .failed(failure))
+    #expect(!model.isSending)
 }
 
 @MainActor

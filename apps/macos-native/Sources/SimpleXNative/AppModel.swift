@@ -81,6 +81,7 @@ final class AppModel: ObservableObject {
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
+    private var pendingReplyInvalidationChatIDs: Set<NativeChat.ID> = []
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var deletingChatID: NativeChat.ID?
     private var deletingMessageIDs: Set<Int64> = []
@@ -311,10 +312,15 @@ final class AppModel: ObservableObject {
         let sendAttachmentOperation = sendAttachmentOperation
         let loadMessageOperation = loadMessageOperation
         sendTask = Task { [weak self] in
-            defer {
-                self?.finishSending()
-            }
             var draftWasSent = false
+            var quoteWasSent = false
+            defer {
+                self?.finishSending(
+                    in: chat.id,
+                    quotedMessageID: quotedMessage?.id,
+                    quoteWasSent: quoteWasSent
+                )
+            }
             do {
                 if let quotedMessage {
                     let refreshedReply: NativeMessage?
@@ -341,6 +347,7 @@ final class AppModel: ObservableObject {
                     }
                     draftWasSent = true
                     if let quotedItemID = quotedMessage?.id {
+                        quoteWasSent = true
                         self?.clearReply(quotedItemID, in: chat.id)
                     }
                     try Task.checkCancellation()
@@ -370,6 +377,7 @@ final class AppModel: ObservableObject {
                         if index == sendSteps.index(before: sendSteps.endIndex) { draftWasSent = true }
                         self?.removeSentAttachment(step.attachment.id, from: chat.id)
                         if let quotedItemID = step.quotedItemID {
+                            quoteWasSent = true
                             self?.clearReply(quotedItemID, in: chat.id)
                         }
                         try Task.checkCancellation()
@@ -946,6 +954,7 @@ final class AppModel: ObservableObject {
 
     private func invalidateReplyContext(in chatID: NativeChat.ID) {
         let message = "The message you were replying to is no longer available. Your draft was kept."
+        pendingReplyInvalidationChatIDs.remove(chatID)
         updateComposerState(for: chatID) { state in
             state.reply = nil
         }
@@ -967,10 +976,18 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func finishSending() {
+    private func finishSending(
+        in chatID: NativeChat.ID,
+        quotedMessageID: Int64?,
+        quoteWasSent: Bool
+    ) {
+        let replyWasInvalidated = pendingReplyInvalidationChatIDs.remove(chatID) != nil
         isSending = false
         sendingChatID = nil
         sendTask = nil
+        if replyWasInvalidated, !quoteWasSent, quotedMessageID != nil {
+            invalidateReplyContext(in: chatID)
+        }
     }
 
     private func finishSendFailure(_ message: String, in chatID: NativeChat.ID) {
@@ -1062,8 +1079,11 @@ final class AppModel: ObservableObject {
         guard replyingChatID == chatID, let currentReply = replyingTo,
               let refreshedReply = loadedMessages.first(where: { $0.id == currentReply.id }) else { return }
         if refreshedReply.replyable {
+            pendingReplyInvalidationChatIDs.remove(chatID)
             replyingTo = refreshedReply
-        } else if sendingChatID != chatID {
+        } else if sendingChatID == chatID {
+            pendingReplyInvalidationChatIDs.insert(chatID)
+        } else {
             invalidateReplyContext(in: chatID)
         }
     }
