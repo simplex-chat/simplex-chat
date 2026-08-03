@@ -121,6 +121,7 @@ struct ConversationView: View {
                             startsGroup: startsGroup(at: index),
                             endsGroup: endsGroup(at: index),
                             openingAttachment: model.isOpeningAttachment(message.id),
+                            inlineAudioURL: model.inlineAudioURL(message.id),
                             canReply: model.canReply(to: message),
                             canOpenQuote: model.canNavigateConversationHistory
                         ) {
@@ -141,6 +142,8 @@ struct ConversationView: View {
                             model.openQuotedMessage(quote, from: message.id)
                         } openAttachment: {
                             model.openAttachment(message)
+                        } prepareInlineAudio: {
+                            model.prepareInlineAudio(message)
                         }
                         .id(message.id)
                     }
@@ -517,6 +520,7 @@ private struct MessageRow: View {
     let startsGroup: Bool
     let endsGroup: Bool
     let openingAttachment: Bool
+    let inlineAudioURL: URL?
     let canReply: Bool
     let canOpenQuote: Bool
     let select: () -> Void
@@ -525,6 +529,7 @@ private struct MessageRow: View {
     let reply: () -> Void
     let openQuote: (NativeQuote) -> Void
     let openAttachment: () -> Void
+    let prepareInlineAudio: () -> Void
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -566,7 +571,7 @@ private struct MessageRow: View {
                 }
             }
             .frame(maxWidth: 568, alignment: message.sent ? .trailing : .leading)
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .contain)
             .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
             .accessibilityActions {
                 Button(selected ? "Deselect Message" : "Select Message", action: select)
@@ -600,9 +605,11 @@ private struct MessageRow: View {
             message: message,
             chat: chat,
             openingAttachment: openingAttachment,
+            inlineAudioURL: inlineAudioURL,
             canOpenQuote: canOpenQuote,
             openQuote: openQuote,
-            openAttachment: openAttachment
+            openAttachment: openAttachment,
+            prepareInlineAudio: prepareInlineAudio
         )
         .padding(.horizontal, 12)
         .padding(.vertical, density.tokens.messagePadding)
@@ -913,13 +920,16 @@ private struct AttachmentCard: View {
 
 private struct MessageContentView: View {
     @State private var playingLinkVideo = false
+    @State private var requestedAudioPlayback = false
 
     let message: NativeMessage
     let chat: NativeChat
     let openingAttachment: Bool
+    let inlineAudioURL: URL?
     let canOpenQuote: Bool
     let openQuote: (NativeQuote) -> Void
     let openAttachment: () -> Void
+    let prepareInlineAudio: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -950,44 +960,60 @@ private struct MessageContentView: View {
                 mediaPreview(preview: preview, fileName: fileName ?? "Video", video: true)
                 if !message.text.isEmpty { messageText }
             case .voice(let fileName, let duration):
-                voiceAttachment(fileName: fileName, duration: duration)
+                audioAttachment(fileName: fileName ?? "Voice message", duration: duration)
                 if !message.text.isEmpty { messageText }
             case .file(let fileName):
-                fileAttachment(name: fileName ?? message.text)
+                if NativeAudioFile.supports(fileName) {
+                    audioAttachment(fileName: fileName ?? message.text, duration: nil)
+                } else {
+                    fileAttachment(name: fileName ?? message.text)
+                }
                 if !message.text.isEmpty, message.text != fileName { messageText }
             }
         }
     }
 
     @ViewBuilder
-    private func voiceAttachment(fileName: String?, duration: Int?) -> some View {
-        if attachmentExists {
-            Button(action: openAttachment) {
-                voiceAttachmentLabel(duration: duration)
+    private func audioAttachment(fileName: String, duration: Int?) -> some View {
+        if requestedAudioPlayback, let inlineAudioURL {
+            InlineAudioPlayer(
+                url: inlineAudioURL,
+                title: fileName,
+                fallbackDuration: duration,
+                close: { requestedAudioPlayback = false }
+            )
+        } else if attachmentExists {
+            Button {
+                requestedAudioPlayback = true
+                prepareInlineAudio()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.title)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(fileName)
+                            .lineLimit(1)
+                        Text(openingAttachment ? "Preparing audio…" : "Play audio")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if openingAttachment {
+                        ProgressView()
+                            .controlSize(.small)
+                            .accessibilityLabel("Preparing Audio")
+                    }
+                }
             }
-            .buttonStyle(.link)
+            .buttonStyle(.plain)
             .disabled(openingAttachment)
-            .help("Open \(fileName ?? "voice message")")
+            .help("Play \(fileName)")
+            .accessibilityLabel("Play \(fileName)") // [VERIFY] Uses the visible audio file name.
+            .accessibilityInputLabels(["Play \(fileName)", "Play Audio"])
         } else {
-            voiceAttachmentLabel(duration: duration)
+            Label(fileName, systemImage: "waveform")
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private func voiceAttachmentLabel(duration: Int?) -> some View {
-        HStack(spacing: 6) {
-            Label("Voice message", systemImage: "waveform")
-            if let duration, duration > 0 {
-                Text(Duration.seconds(Double(duration)), format: .time(pattern: .minuteSecond))
-                    .foregroundStyle(.secondary)
-            }
-            if openingAttachment {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel("Decrypting Voice Message")
-            }
-        }
-        .accessibilityElement(children: .combine)
     }
 
     private var messageText: some View {

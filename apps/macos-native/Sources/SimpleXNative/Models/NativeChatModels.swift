@@ -128,6 +128,14 @@ enum NativeMessageContent: Hashable, Sendable {
         }
     }
 
+    var inlineAudioFileName: String? {
+        switch self {
+        case let .voice(fileName, _): fileName ?? "Voice message"
+        case let .file(fileName): NativeAudioFile.supports(fileName) ? fileName : nil
+        case .text, .link, .image, .video: nil
+        }
+    }
+
     var replyContextVisual: NativeReplyContextVisual? {
         switch self {
         case .text, .link: nil
@@ -164,6 +172,18 @@ enum NativeMessageContent: Hashable, Sendable {
     private static func voiceDescription(duration: Int?) -> String {
         guard let duration, duration > 0 else { return "Voice message" }
         return "Voice message, \(Duration.seconds(Double(duration)).formatted(.time(pattern: .minuteSecond)))"
+    }
+}
+
+enum NativeAudioFile {
+    private static let supportedExtensions: Set<String> = [
+        "aac", "aif", "aiff", "caf", "flac", "m4a", "mp3", "wav",
+    ]
+
+    static func supports(_ fileName: String?) -> Bool {
+        guard let fileName else { return false }
+        let fileExtension = URL(fileURLWithPath: fileName).pathExtension.lowercased()
+        return supportedExtensions.contains(fileExtension)
     }
 }
 

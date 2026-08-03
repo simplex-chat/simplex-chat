@@ -230,6 +230,15 @@ private func messageBodyHeight(_ text: String) -> CGFloat {
     #expect(NativeMessageLink.standaloneURL(in: "file:///tmp/private") == nil)
 }
 
+@Test func nativeAudioFilesUseInlinePlaybackWithoutClaimingDocuments() {
+    #expect(NativeAudioFile.supports("03 – Yön Sylössä On Polkumme.flac"))
+    #expect(NativeAudioFile.supports("VOICE.M4A"))
+    #expect(NativeAudioFile.supports("recording.wav"))
+    #expect(!NativeAudioFile.supports("report.pdf"))
+    #expect(!NativeAudioFile.supports(nil))
+    #expect(AudioPlaybackTime.label(65) == "1:05")
+}
+
 @Test func youtubeLinksBecomePrivacyEnhancedInlinePlayersAtTheirTimestamp() throws {
     let embed = try #require(NativeMessageLink.youtubeEmbedURL(for: "https://youtu.be/ishgn7-NLIU?t=24"))
     let components = try #require(URLComponents(url: embed, resolvingAgainstBaseURL: false))
@@ -1886,6 +1895,56 @@ private func writeTestJPEG(to url: URL) throws {
     // Then
     #expect(await probe.source() == encryptedSource)
     #expect(model.messages.first?.fileSource == encryptedSource)
+    #expect(model.attachmentOpenError == nil)
+    #expect(!model.isOpeningAttachment(original.id))
+}
+
+@MainActor
+@Test func inlineAudioPreparationRefreshesEncryptionMetadataAndCachesThePlayableURL() async throws {
+    let plainSource = NativeCryptoFile(filePath: "track.flac", cryptoArgs: nil)
+    let encryptedSource = NativeCryptoFile(
+        filePath: "track.flac",
+        cryptoArgs: NativeCryptoFileArgs(fileKey: "key", fileNonce: "nonce")
+    )
+    let original = NativeMessage(
+        id: 93,
+        text: "",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .file(fileName: "track.flac"),
+        fileSource: plainSource
+    )
+    let refreshed = NativeMessage(
+        id: original.id,
+        text: original.text,
+        timestamp: original.timestamp,
+        sent: original.sent,
+        author: original.author,
+        deletable: original.deletable,
+        content: original.content,
+        fileSource: encryptedSource
+    )
+    let playableURL = URL(fileURLWithPath: "/tmp/playable-track.flac")
+    let probe = AttachmentOpenProbe()
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { _, _ in refreshed },
+        prepareAttachmentOperation: { source, fileName in
+            #expect(fileName == "track.flac")
+            await probe.open(source)
+            return playableURL
+        }
+    )
+    model.messages = [original]
+
+    let preparation = try #require(model.prepareInlineAudio(original))
+    await preparation.value
+
+    #expect(await probe.source() == encryptedSource)
+    #expect(model.messages.first?.fileSource == encryptedSource)
+    #expect(model.inlineAudioURL(original.id) == playableURL)
     #expect(model.attachmentOpenError == nil)
     #expect(!model.isOpeningAttachment(original.id))
 }

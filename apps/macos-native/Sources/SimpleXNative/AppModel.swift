@@ -9,6 +9,7 @@ typealias LoadMessagesOperation = @Sendable (NativeChat.ID, Int64?) async throws
 typealias LoadChatsOperation = @Sendable (Int64) async throws -> [NativeChat]
 typealias MarkChatReadOperation = @Sendable (NativeChat.ID) async throws -> Void
 typealias OpenAttachmentOperation = @Sendable (NativeCryptoFile, String?) async throws -> Void
+typealias PrepareAttachmentOperation = @Sendable (NativeCryptoFile, String?) async throws -> URL
 typealias WindowFocusedOperation = @MainActor @Sendable () -> Bool
 
 @MainActor
@@ -60,6 +61,7 @@ final class AppModel: ObservableObject {
     @Published var replyContextError: String?
     @Published var sendStatusMessage: String?
     @Published private var openingAttachmentKeys: Set<AttachmentOpeningKey> = []
+    @Published private var inlineAudioURLs: [AttachmentOpeningKey: URL] = [:]
     @Published var replyingTo: NativeMessage?
     @Published var composerFocusRequest = 0
     @Published var showingDeleteConfirmation = false
@@ -82,6 +84,7 @@ final class AppModel: ObservableObject {
     private let loadChatsOperation: LoadChatsOperation?
     private let markChatReadOperation: MarkChatReadOperation?
     private let openAttachmentOperation: OpenAttachmentOperation?
+    private let prepareAttachmentOperation: PrepareAttachmentOperation?
     private let windowFocusedOperation: WindowFocusedOperation?
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
@@ -123,6 +126,7 @@ final class AppModel: ObservableObject {
         loadChatsOperation: LoadChatsOperation? = nil,
         markChatReadOperation: MarkChatReadOperation? = nil,
         openAttachmentOperation: OpenAttachmentOperation? = nil,
+        prepareAttachmentOperation: PrepareAttachmentOperation? = nil,
         windowFocusedOperation: WindowFocusedOperation? = nil
     ) {
         self.previewMode = previewMode
@@ -136,6 +140,7 @@ final class AppModel: ObservableObject {
         self.loadChatsOperation = loadChatsOperation
         self.markChatReadOperation = markChatReadOperation
         self.openAttachmentOperation = openAttachmentOperation
+        self.prepareAttachmentOperation = prepareAttachmentOperation
         self.windowFocusedOperation = windowFocusedOperation
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
@@ -713,25 +718,12 @@ final class AppModel: ObservableObject {
         let task = Task {
             defer { openingAttachmentKeys.remove(openingKey) }
             do {
-                var source = initialSource
-                if source.cryptoArgs == nil {
-                    let refreshedMessage: NativeMessage?
-                    if let loadMessageOperation {
-                        refreshedMessage = try await loadMessageOperation(chatID, message.id)
-                    } else {
-                        refreshedMessage = try await core.loadMessage(chatID: chatID, itemID: message.id)
-                    }
-                    try Task.checkCancellation()
-                    if let refreshedMessage, let refreshedSource = refreshedMessage.fileSource {
-                        source = refreshedSource
-                        if selectedChatID == chatID,
-                           let index = messages.firstIndex(where: { $0.id == message.id }) {
-                            messages[index] = refreshedMessage
-                        }
-                    }
-                }
-
-                let fileName = message.content.fileName ?? message.content.attachmentDescription
+                let (source, fileName) = try await resolveAttachment(
+                    initialSource: initialSource,
+                    message: message,
+                    chatID: chatID,
+                    loadMessageOperation: loadMessageOperation
+                )
                 if let openAttachmentOperation {
                     try await openAttachmentOperation(source, fileName)
                 } else {
@@ -758,6 +750,75 @@ final class AppModel: ObservableObject {
             }
         }
         return task
+    }
+
+    @discardableResult
+    func prepareInlineAudio(_ message: NativeMessage) -> Task<Void, Never>? {
+        guard message.content.inlineAudioFileName != nil,
+              let initialSource = message.fileSource,
+              let chatID = selectedChatID else { return nil }
+        let openingKey = AttachmentOpeningKey(chatID: chatID, messageID: message.id)
+        guard inlineAudioURLs[openingKey] == nil,
+              !openingAttachmentKeys.contains(openingKey) else { return nil }
+
+        let loadMessageOperation = loadMessageOperation
+        let prepareAttachmentOperation = prepareAttachmentOperation
+        openingAttachmentKeys.insert(openingKey)
+        let task = Task {
+            defer { openingAttachmentKeys.remove(openingKey) }
+            do {
+                let (source, fileName) = try await resolveAttachment(
+                    initialSource: initialSource,
+                    message: message,
+                    chatID: chatID,
+                    loadMessageOperation: loadMessageOperation
+                )
+                let url: URL
+                if let prepareAttachmentOperation {
+                    url = try await prepareAttachmentOperation(source, fileName)
+                } else {
+                    url = try await core.openableURL(for: source, fileName: fileName)
+                }
+                try Task.checkCancellation()
+                inlineAudioURLs[openingKey] = url
+            } catch is CancellationError {
+                return
+            } catch {
+                presentAttachmentOpenFailure(error.localizedDescription, in: chatID)
+            }
+        }
+        return task
+    }
+
+    func inlineAudioURL(_ messageID: Int64) -> URL? {
+        guard let chatID = selectedChatID else { return nil }
+        return inlineAudioURLs[AttachmentOpeningKey(chatID: chatID, messageID: messageID)]
+    }
+
+    private func resolveAttachment(
+        initialSource: NativeCryptoFile,
+        message: NativeMessage,
+        chatID: NativeChat.ID,
+        loadMessageOperation: LoadMessageOperation?
+    ) async throws -> (source: NativeCryptoFile, fileName: String?) {
+        var source = initialSource
+        if source.cryptoArgs == nil {
+            let refreshedMessage: NativeMessage?
+            if let loadMessageOperation {
+                refreshedMessage = try await loadMessageOperation(chatID, message.id)
+            } else {
+                refreshedMessage = try await core.loadMessage(chatID: chatID, itemID: message.id)
+            }
+            try Task.checkCancellation()
+            if let refreshedMessage, let refreshedSource = refreshedMessage.fileSource {
+                source = refreshedSource
+                if selectedChatID == chatID,
+                   let index = messages.firstIndex(where: { $0.id == message.id }) {
+                    messages[index] = refreshedMessage
+                }
+            }
+        }
+        return (source, message.content.fileName ?? message.content.attachmentDescription)
     }
 
     func isOpeningAttachment(_ messageID: Int64) -> Bool {
