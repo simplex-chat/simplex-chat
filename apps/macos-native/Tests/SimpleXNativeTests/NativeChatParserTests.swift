@@ -315,6 +315,105 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(model.quoteNavigationError == "The original quoted message is no longer available in this conversation.")
 }
 
+@MainActor
+@Test func offscreenQuotedMessageLoadsItsPageBeforeScrolling() async throws {
+    // Given
+    let target = NativeMessage(
+        id: 900,
+        text: "Original offscreen message",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .text
+    )
+    let quote = NativeQuote(messageID: target.id, text: target.text, sent: target.sent, author: target.author)
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            #expect(aroundMessageID == target.id)
+            return [target]
+        }
+    )
+    #expect(!model.messages.contains(where: { $0.id == target.id }))
+
+    // When
+    let navigation = try #require(model.openQuotedMessage(quote, from: 901))
+    await navigation.value
+
+    // Then
+    #expect(model.messages == [target])
+    #expect(model.targetMessageID == target.id)
+    #expect(model.quoteNavigationError == nil)
+    #expect(model.phase == .ready)
+}
+
+@MainActor
+@Test func deletedOffscreenQuoteShowsLocalErrorWithoutBreakingConversation() async throws {
+    // Given
+    let quote = NativeQuote(messageID: 902, text: "Deleted original", sent: false, author: "Maya")
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, _ in
+            throw NativeChatError.unavailable("The core no longer has this item.")
+        }
+    )
+    let originalMessages = model.messages
+
+    // When
+    let navigation = try #require(model.openQuotedMessage(quote, from: 903))
+    await navigation.value
+
+    // Then
+    #expect(model.messages == originalMessages)
+    #expect(model.targetMessageID == nil)
+    #expect(model.quoteNavigationError == "The original quoted message is no longer available in this conversation.")
+    #expect(model.phase == .ready)
+}
+
+private actor DelayedConversationLoadFailure {
+    private var requested = false
+    private var released = false
+
+    func load() async throws -> [NativeMessage] {
+        requested = true
+        while !released { await Task.yield() }
+        throw NativeChatError.unavailable("The old conversation load failed late.")
+    }
+
+    func waitUntilRequested() async {
+        while !requested { await Task.yield() }
+    }
+
+    func release() {
+        released = true
+    }
+}
+
+@MainActor
+@Test func offscreenQuoteFailureCannotLeakIntoANewConversation() async throws {
+    // Given
+    let probe = DelayedConversationLoadFailure()
+    let quote = NativeQuote(messageID: 904, text: "Old conversation", sent: false, author: "Maya")
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, _ in try await probe.load() }
+    )
+
+    // When: quote loading begins, then the user switches chats before it fails.
+    let navigation = try #require(model.openQuotedMessage(quote, from: 905))
+    await probe.waitUntilRequested()
+    model.selectChat("#2")
+    await probe.release()
+    await navigation.value
+
+    // Then: the stale failure is ignored in the newly selected conversation.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.quoteNavigationError == nil)
+    #expect(model.phase == .ready)
+}
+
 private actor AttachmentOpenProbe {
     private var openedSource: NativeCryptoFile?
 

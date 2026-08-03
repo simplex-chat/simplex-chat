@@ -5,6 +5,7 @@ typealias DeleteMessagesOperation = @Sendable ([Int64], NativeChat) async throws
 typealias SendTextOperation = @Sendable (String, Int64?, NativeChat) async throws -> Void
 typealias SendAttachmentOperation = @Sendable (PendingAttachment, String, Int64?, NativeChat) async throws -> Void
 typealias LoadMessageOperation = @Sendable (NativeChat.ID, Int64) async throws -> NativeMessage?
+typealias LoadMessagesOperation = @Sendable (NativeChat.ID, Int64?) async throws -> [NativeMessage]
 typealias OpenAttachmentOperation = @Sendable (NativeCryptoFile, String?) async throws -> Void
 
 @MainActor
@@ -66,6 +67,7 @@ final class AppModel: ObservableObject {
     private let sendTextOperation: SendTextOperation?
     private let sendAttachmentOperation: SendAttachmentOperation?
     private let loadMessageOperation: LoadMessageOperation?
+    private let loadMessagesOperation: LoadMessagesOperation?
     private let openAttachmentOperation: OpenAttachmentOperation?
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
@@ -92,6 +94,7 @@ final class AppModel: ObservableObject {
         sendTextOperation: SendTextOperation? = nil,
         sendAttachmentOperation: SendAttachmentOperation? = nil,
         loadMessageOperation: LoadMessageOperation? = nil,
+        loadMessagesOperation: LoadMessagesOperation? = nil,
         openAttachmentOperation: OpenAttachmentOperation? = nil
     ) {
         self.previewMode = previewMode
@@ -101,6 +104,7 @@ final class AppModel: ObservableObject {
         self.sendTextOperation = sendTextOperation
         self.sendAttachmentOperation = sendAttachmentOperation
         self.loadMessageOperation = loadMessageOperation
+        self.loadMessagesOperation = loadMessagesOperation
         self.openAttachmentOperation = openAttachmentOperation
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
@@ -456,8 +460,7 @@ final class AppModel: ObservableObject {
     func openQuotedMessage(_ quote: NativeQuote, from containingMessageID: Int64) -> Task<Void, Never>? {
         guard let chatID = selectedChatID else { return nil }
         if let messageID = quote.messageID {
-            navigateToMessage(messageID, in: chatID)
-            return nil
+            return navigateToMessage(messageID, in: chatID)
         }
 
         quoteNavigationTask?.cancel()
@@ -490,7 +493,9 @@ final class AppModel: ObservableObject {
                 if let index = messages.firstIndex(where: { $0.id == containingMessageID }) {
                     messages[index] = refreshedMessage
                 }
-                navigateToMessage(quotedMessageID, in: chatID)
+                if let navigation = navigateToMessage(quotedMessageID, in: chatID) {
+                    await navigation.value
+                }
             } catch is CancellationError {
                 return
             } catch {
@@ -552,14 +557,20 @@ final class AppModel: ObservableObject {
         return task
     }
 
-    private func navigateToMessage(_ messageID: Int64, in chatID: NativeChat.ID) {
-        guard selectedChatID == chatID else { return }
+    @discardableResult
+    private func navigateToMessage(_ messageID: Int64, in chatID: NativeChat.ID) -> Task<Void, Never>? {
+        guard selectedChatID == chatID else { return nil }
         if messages.contains(where: { $0.id == messageID }) {
             targetMessageID = messageID
-            return
+            return nil
         }
         conversationLoadTask?.cancel()
-        scheduleConversationLoad(chatID: chatID, around: messageID, scrollTo: messageID)
+        return scheduleConversationLoad(
+            chatID: chatID,
+            around: messageID,
+            scrollTo: messageID,
+            navigationFailureMessage: "The original quoted message is no longer available in this conversation."
+        )
     }
 
     func selectMessage(_ id: Int64, modifiers: NSEvent.ModifierFlags) {
@@ -870,26 +881,39 @@ final class AppModel: ObservableObject {
         }
     }
 
+    @discardableResult
     private func scheduleConversationLoad(
         chatID: NativeChat.ID,
         around messageID: Int64? = nil,
-        scrollTo scrollTarget: Int64? = nil
-    ) {
+        scrollTo scrollTarget: Int64? = nil,
+        navigationFailureMessage: String? = nil
+    ) -> Task<Void, Never> {
         conversationLoadTask?.cancel()
-        conversationLoadTask = Task {
-            let loaded = await loadConversation(chatID: chatID, around: messageID)
+        let task = Task {
+            let loaded = await loadConversation(
+                chatID: chatID,
+                around: messageID,
+                navigationFailureMessage: navigationFailureMessage
+            )
             guard loaded, !Task.isCancelled, selectedChatID == chatID else { return }
-            if let scrollTarget, messages.contains(where: { $0.id == scrollTarget }) {
-                targetMessageID = scrollTarget
+            if let scrollTarget {
+                if messages.contains(where: { $0.id == scrollTarget }) {
+                    targetMessageID = scrollTarget
+                } else if let navigationFailureMessage {
+                    quoteNavigationError = navigationFailureMessage
+                }
             }
         }
+        conversationLoadTask = task
+        return task
     }
 
     @discardableResult
     private func loadConversation(
         chatID: NativeChat.ID,
         around messageID: Int64? = nil,
-        showProgress: Bool = true
+        showProgress: Bool = true,
+        navigationFailureMessage: String? = nil
     ) async -> Bool {
         guard selectedChatID == chatID else { return false }
         conversationLoadRevision &+= 1
@@ -901,7 +925,12 @@ final class AppModel: ObservableObject {
             }
         }
         do {
-            let loadedMessages = try await core.loadMessages(chatID: chatID, around: messageID)
+            let loadedMessages: [NativeMessage]
+            if let loadMessagesOperation {
+                loadedMessages = try await loadMessagesOperation(chatID, messageID)
+            } else {
+                loadedMessages = try await core.loadMessages(chatID: chatID, around: messageID)
+            }
             guard !Task.isCancelled, selectedChatID == chatID,
                   conversationLoadRevision == revision else { return false }
             applyLoadedMessages(loadedMessages, to: chatID)
@@ -909,7 +938,13 @@ final class AppModel: ObservableObject {
         } catch is CancellationError {
             return false
         } catch {
-            phase = .failed(error.localizedDescription)
+            guard !Task.isCancelled, selectedChatID == chatID,
+                  conversationLoadRevision == revision else { return false }
+            if let navigationFailureMessage {
+                quoteNavigationError = navigationFailureMessage
+            } else {
+                phase = .failed(error.localizedDescription)
+            }
             return false
         }
     }

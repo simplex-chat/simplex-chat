@@ -147,7 +147,7 @@ struct ConversationView: View {
                 if model.isLoadingConversation { ProgressView() }
             }
             .onChange(of: model.messages.last?.id) { _, lastID in
-                guard let lastID else { return }
+                guard let lastID, model.targetMessageID == nil else { return }
                 proxy.scrollTo(lastID, anchor: .bottom)
             }
             .onChange(of: model.selectedMessagesInTranscriptOrder.last?.id) { _, selectedID in
