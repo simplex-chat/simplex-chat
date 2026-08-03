@@ -48,6 +48,15 @@ enum ComposerKeyboard {
     }
 }
 
+enum DesktopCopyCommandRoute: Equatable, Sendable {
+    case selectedMessages
+    case firstResponder
+
+    static func resolve(transcriptFocused: Bool, selectedMessageCount: Int) -> Self {
+        transcriptFocused && selectedMessageCount > 0 ? .selectedMessages : .firstResponder
+    }
+}
+
 enum PendingAttachmentKind: String, Sendable {
     case image
     case video

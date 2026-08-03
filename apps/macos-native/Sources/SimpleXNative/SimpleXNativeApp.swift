@@ -32,14 +32,17 @@ struct SimpleXNativeApp: App {
                 Button("Cut") { sendFirstResponderAction("cut:") }
                     .keyboardShortcut("x")
                 Button("Copy") {
-                    if model.transcriptFocused {
+                    switch DesktopCopyCommandRoute.resolve(
+                        transcriptFocused: model.transcriptFocused,
+                        selectedMessageCount: model.selectedMessageIDs.count
+                    ) {
+                    case .selectedMessages:
                         model.copySelectedMessages()
-                    } else {
+                    case .firstResponder:
                         sendFirstResponderAction("copy:")
                     }
                 }
-                    .keyboardShortcut("c")
-                    .disabled(model.transcriptFocused && model.selectedMessageIDs.isEmpty)
+                .keyboardShortcut("c")
                 Button("Paste") { sendFirstResponderAction("paste:") }
                     .keyboardShortcut("v")
                 Button("Select All") {

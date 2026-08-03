@@ -3730,6 +3730,21 @@ private actor DelayedDeletionProbe {
     )
 }
 
+@Test func copyCommandPreservesNativeTextSelectionAndSelectedMessageCopying() {
+    #expect(
+        DesktopCopyCommandRoute.resolve(transcriptFocused: true, selectedMessageCount: 0)
+            == .firstResponder
+    )
+    #expect(
+        DesktopCopyCommandRoute.resolve(transcriptFocused: true, selectedMessageCount: 2)
+            == .selectedMessages
+    )
+    #expect(
+        DesktopCopyCommandRoute.resolve(transcriptFocused: false, selectedMessageCount: 2)
+            == .firstResponder
+    )
+}
+
 @Test func replyControlRemainsVisibleAcrossItsHoverRegion() {
     #expect(MessageReplyControlVisibility.isVisible(canReply: true, hovering: true, selected: false))
     #expect(MessageReplyControlVisibility.isVisible(canReply: true, hovering: false, selected: true))
