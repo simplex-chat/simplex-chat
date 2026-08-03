@@ -341,6 +341,7 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
 @Test func sendResponseValidationRequiresTheCommittedMessage() throws {
     // Given
     let committed = Data(#"{"result":{"type":"newChatItems","chatItems":[{"chatItem":{"meta":{"itemId":9}}}]}}"#.utf8)
+    let committedReply = Data(#"{"result":{"type":"newChatItems","chatItems":[{"chatItem":{"meta":{"itemId":9},"quotedItem":{"itemId":42}}}]}}"#.utf8)
     let missingItem = Data(#"{"result":{"type":"newChatItems","chatItems":[]}}"#.utf8)
     let wrongResult = Data(#"{"result":{"type":"cmdOk"}}"#.utf8)
 
@@ -350,6 +351,18 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
         expectedType: "newChatItems",
         requireChatItems: true
     )
+    #expect(try NativeChatParser.validateSendResponse(
+        committedReply,
+        quotedItemID: 42
+    ).replyContextConfirmed)
+    #expect(try !NativeChatParser.validateSendResponse(
+        committed,
+        quotedItemID: 42
+    ).replyContextConfirmed)
+    #expect(try NativeChatParser.validateSendResponse(
+        committed,
+        quotedItemID: nil
+    ).replyContextConfirmed)
     #expect(throws: NativeChatError.self) {
         try NativeChatParser.validateCommandResponse(
             missingItem,
@@ -1769,7 +1782,11 @@ private actor AttachmentSendProbe {
         self.failingRequest = failingRequest
     }
 
-    func send(_ attachment: PendingAttachment, caption: String, quotedItemID: Int64?) throws {
+    func send(
+        _ attachment: PendingAttachment,
+        caption: String,
+        quotedItemID: Int64?
+    ) throws -> NativeSendReceipt {
         requests.append(Request(
             attachmentID: attachment.id,
             caption: caption,
@@ -1778,6 +1795,7 @@ private actor AttachmentSendProbe {
         if requests.count == failingRequest {
             throw NativeChatError.unavailable("The attachment could not be sent.")
         }
+        return .confirmed
     }
 
     func recordedRequests() -> [Request] {
@@ -1804,8 +1822,9 @@ private actor ReplyValidationProbe {
         released = true
     }
 
-    func recordSend() {
+    func recordSend() -> NativeSendReceipt {
         sendCount += 1
+        return .confirmed
     }
 
     func recordedSendCount() -> Int {
@@ -1824,7 +1843,7 @@ private actor DelayedTextSendProbe {
         self.cancelAfterSuccess = cancelAfterSuccess
     }
 
-    func send() async throws {
+    func send() async throws -> NativeSendReceipt {
         requested = true
         while !released { await Task.yield() }
         if let failureMessage {
@@ -1833,6 +1852,7 @@ private actor DelayedTextSendProbe {
         if cancelAfterSuccess {
             withUnsafeCurrentTask { $0?.cancel() }
         }
+        return .confirmed
     }
 
     func waitUntilRequested() async {
@@ -1935,6 +1955,32 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     #expect(model.draft.isEmpty)
     #expect(model.replyingTo == nil)
     #expect(model.replyContextError == nil)
+    #expect(model.phase == .ready)
+    #expect(!model.isSending)
+}
+
+@MainActor
+@Test func committedMessageWithoutTheRequestedQuoteIsNotRetried() async throws {
+    // Given
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let model = makeSendTestModel(sendTextOperation: { _, quotedItemID, _ in
+        #expect(quotedItemID == original.id)
+        withUnsafeCurrentTask { $0?.cancel() }
+        return NativeSendReceipt(replyContextConfirmed: false)
+    })
+    model.messages = [original]
+    model.draft = "Send this once"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await send.value
+
+    // Then: the committed message stays committed, while the UI reports the missing link.
+    #expect(model.draft.isEmpty)
+    #expect(model.replyingTo == nil)
+    #expect(model.replyContextError == "Your message was sent, but SimpleX could not link it to the original message.")
     #expect(model.phase == .ready)
     #expect(!model.isSending)
 }
@@ -2058,6 +2104,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     // Given
     let model = makeSendTestModel(sendAttachmentOperation: { _, _, _, _ in
         withUnsafeCurrentTask { $0?.cancel() }
+        return .confirmed
     })
     let original = try #require(model.messages.first)
     let attachments = ["sent.jpg", "unsent.jpg"].map {
@@ -2083,6 +2130,41 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     #expect(model.pendingAttachments == [attachments[1]])
     #expect(model.draft == "Keep for the unsent item")
     #expect(model.replyingTo == nil)
+    #expect(model.phase == .ready)
+    #expect(!model.isSending)
+}
+
+@MainActor
+@Test func committedAttachmentWithoutTheRequestedQuoteIsRemovedFromTheTray() async throws {
+    // Given
+    let attachment = PendingAttachment(
+        id: UUID(),
+        url: URL(fileURLWithPath: "/tmp/committed-photo.jpg"),
+        fileName: "committed-photo.jpg",
+        kind: .image,
+        byteCount: 10,
+        previewImage: nil
+    )
+    let model = makeSendTestModel(sendAttachmentOperation: { _, _, quotedItemID, _ in
+        #expect(quotedItemID != nil)
+        withUnsafeCurrentTask { $0?.cancel() }
+        return NativeSendReceipt(replyContextConfirmed: false)
+    })
+    let original = try #require(model.messages.first)
+    model.pendingAttachments = [attachment]
+    model.draft = "Committed caption"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await send.value
+
+    // Then: neither the file nor its caption can be sent a second time.
+    #expect(model.pendingAttachments.isEmpty)
+    #expect(model.draft.isEmpty)
+    #expect(model.replyingTo == nil)
+    #expect(model.replyContextError == "Your message was sent, but SimpleX could not link it to the original message.")
     #expect(model.phase == .ready)
     #expect(!model.isSending)
 }
@@ -2121,6 +2203,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     // Given
     let model = makeSendTestModel(sendAttachmentOperation: { _, _, _, _ in
         try Task.checkCancellation()
+        return .confirmed
     })
     let original = try #require(model.messages.first)
     let originAttachments = ["one.jpg", "two.jpg"].map {
@@ -2187,6 +2270,7 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     // Given
     let model = makeSendTestModel(sendTextOperation: { _, _, _ in
         try Task.checkCancellation()
+        return .confirmed
     })
     let replyTarget = try #require(model.messages.first)
     let unrelatedMessage = try #require(model.messages.dropFirst().first)

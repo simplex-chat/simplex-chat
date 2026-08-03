@@ -81,11 +81,11 @@ actor SimpleXCore {
         return "/_get chat \(chatID) \(pagination)"
     }
 
-    func sendText(_ text: String, quotedItemID: Int64?, to chat: NativeChat) throws {
+    func sendText(_ text: String, quotedItemID: Int64?, to chat: NativeChat) throws -> NativeSendReceipt {
         guard chat.kind.canSend else {
             throw NativeChatError.unavailable("This conversation cannot accept messages yet.")
         }
-        try sendComposedMessage(
+        return try sendComposedMessage(
             Self.composedMessage(
                 messageContent: ["type": "text", "text": text],
                 quotedItemID: quotedItemID
@@ -99,7 +99,7 @@ actor SimpleXCore {
         caption: String,
         quotedItemID: Int64?,
         to chat: NativeChat
-    ) throws {
+    ) throws -> NativeSendReceipt {
         guard chat.kind.canSend else {
             throw NativeChatError.unavailable("This conversation cannot accept attachments yet.")
         }
@@ -121,7 +121,7 @@ actor SimpleXCore {
         case .document:
             messageContent = ["type": "file", "text": caption]
         }
-        try sendComposedMessage(
+        return try sendComposedMessage(
             Self.composedMessage(
                 messageContent: messageContent,
                 fileSource: [
@@ -257,16 +257,15 @@ actor SimpleXCore {
         return response.data(using: .utf8)
     }
 
-    private func sendComposedMessage(_ message: [String: Any], to chat: NativeChat) throws {
+    private func sendComposedMessage(_ message: [String: Any], to chat: NativeChat) throws -> NativeSendReceipt {
         let response = try send(Self.sendCommand(message: message, to: chat))
         if message["quotedItemId"] != nil,
            NativeChatParser.commandErrorMakesReplyTargetUnavailable(response) {
             throw NativeChatError.replyTargetUnavailable
         }
-        try NativeChatParser.validateCommandResponse(
+        return try NativeChatParser.validateSendResponse(
             response,
-            expectedType: "newChatItems",
-            requireChatItems: true
+            quotedItemID: message["quotedItemId"] as? Int64
         )
     }
 

@@ -377,7 +377,7 @@ private struct ConversationAlertsModifier: ViewModifier {
             } message: {
                 Text(model.quoteNavigationError ?? "")
             }
-            .alert("Reply Cancelled", isPresented: replyContextErrorPresented) {
+            .alert("Reply Issue", isPresented: replyContextErrorPresented) {
                 Button("OK") { model.replyContextError = nil }
             } message: {
                 Text(model.replyContextError ?? "")

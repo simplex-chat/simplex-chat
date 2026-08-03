@@ -2,8 +2,8 @@ import AppKit
 import Foundation
 
 typealias DeleteMessagesOperation = @Sendable ([Int64], NativeChat) async throws -> [NativeMessage]
-typealias SendTextOperation = @Sendable (String, Int64?, NativeChat) async throws -> Void
-typealias SendAttachmentOperation = @Sendable (PendingAttachment, String, Int64?, NativeChat) async throws -> Void
+typealias SendTextOperation = @Sendable (String, Int64?, NativeChat) async throws -> NativeSendReceipt
+typealias SendAttachmentOperation = @Sendable (PendingAttachment, String, Int64?, NativeChat) async throws -> NativeSendReceipt
 typealias LoadMessageOperation = @Sendable (NativeChat.ID, Int64) async throws -> NativeMessage?
 typealias LoadMessagesOperation = @Sendable (NativeChat.ID, Int64?) async throws -> [NativeMessage]
 typealias LoadChatsOperation = @Sendable (Int64) async throws -> [NativeChat]
@@ -343,12 +343,12 @@ final class AppModel: ObservableObject {
         let loadMessageOperation = loadMessageOperation
         sendTask = Task { [weak self] in
             var draftWasSent = false
-            var quoteWasSent = false
+            var quoteCommitResolved = false
             defer {
                 self?.finishSending(
                     in: chat.id,
                     quotedMessageID: quotedMessage?.id,
-                    quoteWasSent: quoteWasSent
+                    quoteCommitResolved: quoteCommitResolved
                 )
             }
             do {
@@ -370,15 +370,19 @@ final class AppModel: ObservableObject {
                 }
                 if attachments.isEmpty {
                     try Task.checkCancellation()
+                    let receipt: NativeSendReceipt
                     if let sendTextOperation {
-                        try await sendTextOperation(text, quotedMessage?.id, chat)
+                        receipt = try await sendTextOperation(text, quotedMessage?.id, chat)
                     } else {
-                        try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
+                        receipt = try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
                     }
                     draftWasSent = true
                     if let quotedItemID = quotedMessage?.id {
-                        quoteWasSent = true
+                        quoteCommitResolved = true
                         self?.clearReply(quotedItemID, in: chat.id)
+                        if !receipt.replyContextConfirmed {
+                            self?.reportUnconfirmedReplyContext(in: chat.id)
+                        }
                     }
                     try Task.checkCancellation()
                 } else {
@@ -389,15 +393,16 @@ final class AppModel: ObservableObject {
                     )
                     for (index, step) in sendSteps.enumerated() {
                         try Task.checkCancellation()
+                        let receipt: NativeSendReceipt
                         if let sendAttachmentOperation {
-                            try await sendAttachmentOperation(
+                            receipt = try await sendAttachmentOperation(
                                 step.attachment,
                                 step.caption,
                                 step.quotedItemID,
                                 chat
                             )
                         } else {
-                            try await core.sendAttachment(
+                            receipt = try await core.sendAttachment(
                                 step.attachment,
                                 caption: step.caption,
                                 quotedItemID: step.quotedItemID,
@@ -407,8 +412,11 @@ final class AppModel: ObservableObject {
                         if index == sendSteps.index(before: sendSteps.endIndex) { draftWasSent = true }
                         self?.removeSentAttachment(step.attachment.id, from: chat.id)
                         if let quotedItemID = step.quotedItemID {
-                            quoteWasSent = true
+                            quoteCommitResolved = true
                             self?.clearReply(quotedItemID, in: chat.id)
+                            if !receipt.replyContextConfirmed {
+                                self?.reportUnconfirmedReplyContext(in: chat.id)
+                            }
                         }
                         try Task.checkCancellation()
                     }
@@ -1051,6 +1059,16 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private func reportUnconfirmedReplyContext(in chatID: NativeChat.ID) {
+        pendingReplyInvalidationChatIDs.remove(chatID)
+        let message = "Your message was sent, but SimpleX could not link it to the original message."
+        if selectedChatID == chatID {
+            replyContextError = message
+        } else {
+            pendingReplyContextErrors[chatID] = message
+        }
+    }
+
     private func restoreFailedDraft(_ text: String, in chatID: NativeChat.ID) {
         guard !text.isEmpty else { return }
         updateComposerState(for: chatID) { state in
@@ -1065,13 +1083,13 @@ final class AppModel: ObservableObject {
     private func finishSending(
         in chatID: NativeChat.ID,
         quotedMessageID: Int64?,
-        quoteWasSent: Bool
+        quoteCommitResolved: Bool
     ) {
         let replyWasInvalidated = pendingReplyInvalidationChatIDs.remove(chatID) != nil
         isSending = false
         sendingChatID = nil
         sendTask = nil
-        if replyWasInvalidated, !quoteWasSent, quotedMessageID != nil {
+        if replyWasInvalidated, !quoteCommitResolved, quotedMessageID != nil {
             invalidateReplyContext(in: chatID)
         }
         consumePendingNotificationRoutes()

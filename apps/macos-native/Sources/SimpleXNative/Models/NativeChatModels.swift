@@ -153,6 +153,12 @@ struct NativeCryptoFileArgs: Hashable, Sendable {
     let fileNonce: String
 }
 
+struct NativeSendReceipt: Equatable, Sendable {
+    let replyContextConfirmed: Bool
+
+    static let confirmed = NativeSendReceipt(replyContextConfirmed: true)
+}
+
 enum NativeChatParser {
     static func profile(from data: Data) throws -> NativeProfile {
         let result = try responseResult(from: data, expectedType: "activeUser")
@@ -255,6 +261,24 @@ enum NativeChatParser {
                 )
             }
         }
+    }
+
+    static func validateSendResponse(_ data: Data, quotedItemID: Int64?) throws -> NativeSendReceipt {
+        try validateCommandResponse(
+            data,
+            expectedType: "newChatItems",
+            requireChatItems: true
+        )
+        guard let quotedItemID else { return .confirmed }
+        let root = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let result = root?["result"] as? [String: Any]
+        let chatItems = result?["chatItems"] as? [[String: Any]] ?? []
+        let confirmed = chatItems.contains { item in
+            let chatItem = item["chatItem"] as? [String: Any] ?? item
+            let quote = chatItem["quotedItem"] as? [String: Any]
+            return int64(quote?["itemId"]) == quotedItemID
+        }
+        return NativeSendReceipt(replyContextConfirmed: confirmed)
     }
 
     static func image(from encoded: String?) -> NSImage? {
