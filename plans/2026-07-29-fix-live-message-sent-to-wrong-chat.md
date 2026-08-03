@@ -73,6 +73,63 @@ all, and the compose state is cleared so it does not leak into the chat
 that was opened. Sending it to the chat that is open now is the defect
 being fixed, so it is not used as a fallback.
 
+### Handing the compose state over to the opened chat
+
+Sending to the right chat is not enough on its own: `composeState` is
+shared between the chats opened in this view, and this is the only branch
+of `KeyChangeEffect` that neither resets it nor loads the opened chat's
+draft - the branch that loads a draft (`else if (chatModel.draftChatId
+.value == draftChatId(chatModel.chatId.value, chatScope) ...)`) is later
+in the same `if` chain and cannot be reached. So the live message stayed
+in the compose state of a view that now shows another chat, and that
+chat's draft was never read.
+
+`sendMessageAsync` then made it visible. It runs on `Dispatchers.Default`,
+so its writes land after the switch:
+
+```kotlin
+val liveMessage = cs.liveMessage
+if (!live) {
+  if (liveMessage != null) composeState.value = cs.copy(liveMessage = null)  // the whole composed state
+  sending()                                                                  // and its spinner
+}
+```
+
+The opened chat's input showed the text composed in the previous one until
+the send completed and `clearState()` emptied it; the draft it should have
+shown was still in the model, and the next switch away dropped it. This
+predates this fix - on `master` the same writes happen, and there
+`clearCurrentDraft()` resolves to the opened chat and deletes its draft
+outright.
+
+Four changes, all following from "this send no longer owns the compose
+state":
+
+- `sendMessageAsync` takes `composed: ComposeState = composeState.value`,
+  and `sendMessage` takes `composed: ComposeState? = null`, so only the
+  chat switch passes a state and every other sender still reads it inside
+  the coroutine, exactly where the send read it before. The chat switch
+  captures it on the main thread before replacing it - without that the
+  send would read the compose state of the chat that was opened and send
+  *its draft* to the previous chat.
+- `checkLinkPreview` takes that state too. It re-read `composeState`
+  rather than what was passed in, and it is reached by every text live
+  message through `updateMsgContent`, so with the compose state handed
+  over it would have rebuilt the message from the opened chat's draft, or
+  from nothing - overwriting the live message instead of committing it.
+  Only the calls inside `sendMessageAsync` pass the state; the three
+  senders that connect a prepared chat keep reading the current one.
+- Every `composeState` write in `sendMessageAsync` - the two at the start
+  and the clear/restore at the end - is guarded by `composeIsForSend()`
+  (`toChat.id == chat.id`). It compares the two chats rather than checking
+  which one is open, so the send made by a chat switch never takes the
+  compose state back, not even if that chat is opened again before the
+  send completes. `clearCurrentDraft(toChat)` is already keyed on the chat
+  and needs no guard. Whether the *view's own* send may still write when
+  its chat has been switched away is #7308's question, not this one's.
+- The chat-switch branch then resets `composeState` to the opened chat's
+  draft, or to an empty state, like the branches below it do.
+
 ## Blast radius
 
 `toChat` defaults to the chat this view shows, so every other send is
@@ -102,16 +159,49 @@ view is closed.
      typing. The message must appear in **A**; nothing is sent in **B**,
      and B's input and draft are untouched.
   2. Repeat with a draft already saved in **B** - it must still be there
-     after the switch.
-  3. Regressions: an ordinary send goes to the chat it was typed in;
+     after the switch. This is the case that was found failing: B showed
+     the text composed in A, then emptied when the send completed, and B's
+     draft was dropped on the next switch. Watch B's input from the moment
+     of the switch, not only after the send finishes.
+  3. Slow or failing send (network off) while doing 1 and 2, so the window
+     between the switch and the send completing is long enough to type in
+     **B** - what is typed there must survive the send completing.
+  4. Regressions: an ordinary send goes to the chat it was typed in;
      forwarding still targets the chat it was forwarded to; reporting a
      message still reports it in the chat it belongs to; sending in a
      member support chat still goes to that scope.
 
 Independent of #7308 (that one is about a send that is still in flight
 when the chat is switched), but both change the end of `sendMessageAsync`,
-so expect a conflict if they land together. Resolving it: the checks #7308
-adds there act on the chat the message was sent to, so its `chat.id` /
-`chat.chatInfo.id` become `toChat.id` / `toChat.chatInfo.id`; its
-`cs.liveMessage != null` clause already covers the send made by the chat
-switch.
+so expect a conflict if they land together.
+
+The two guards are **not** the same rule and the merge keeps both:
+
+- here, `composeIsForSend()` = `toChat.id == chat.id` - is this send for
+  the chat this view shows, or for another one;
+- in #7308, `chatIsOpen` = `chatModel.chatId.value == chat.id` - is the
+  chat this view shows still the one open.
+
+So resolving it: keep this branch's `composeIsForSend()` on the guard at
+the start of `sendMessageAsync`, and make #7308's `chatIsOpen` the
+conjunction, `composeIsForSend() && chatModel.chatId.value == chat.id`.
+Where `toChat` is `chat` - every send but the one made by a chat switch -
+that reduces to #7308's own check, so its behaviour is unchanged. This
+branch's `forwardingDraft` val and #7308's `withContext(Dispatchers.Main)`
+compose cleanly: the val moves inside the block, which is where #7308
+wants every read of the draft slot.
+
+An earlier revision of this note said that #7308's `cs.liveMessage != null`
+clause "already covers the send made by the chat switch". **It does not.**
+In #7308 that clause sat outside the `chatIsOpen` check:
+
+```kotlin
+val sentMessageInCompose = live || cs.liveMessage != null || (chatIsOpen && composeState.value.inProgress)
+```
+
+which is correct only while a live message is always sent to the chat that
+is open - the assumption this fix removes. Read as written, the clause
+*exempts* the chat-switch send from the very guard that protects the
+opened chat, so a merge that follows it reintroduces the leak described
+above. #7308 has been changed to keep the live clauses inside `chatIsOpen`,
+which is a no-op on its own branch and correct once this one lands.
