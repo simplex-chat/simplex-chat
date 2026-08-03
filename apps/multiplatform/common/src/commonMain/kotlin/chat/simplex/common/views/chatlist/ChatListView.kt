@@ -707,6 +707,7 @@ private fun BoxScope.unreadBadge(text: String? = "") {
 @Composable
 private fun ToggleFilterEnabledButton() {
   val showUnread = remember { chatModel.activeChatTagFilter }.value == ActiveFilter.Unread
+  val hasUnread = chatModel.chats.value.any { it.unreadTag }
 
   IconButton(onClick = {
     if (showUnread) {
@@ -719,7 +720,7 @@ private fun ToggleFilterEnabledButton() {
     Icon(
       painterResource(MR.images.ic_filter_list),
       null,
-      tint = if (showUnread) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
+      tint = if (showUnread) MaterialTheme.colors.background else if (hasUnread) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       modifier = Modifier
         .padding(3.dp)
         .background(color = if (showUnread) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
