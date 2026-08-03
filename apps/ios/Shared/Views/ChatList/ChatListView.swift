@@ -426,8 +426,6 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    // +1 vs SimpleX Lock's threshold (ContentView) accounts for the always-present
-                    // SimpleX Directory contact card, so this still needs 3 real conversations.
                     if !supporterBannerShown && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             onTap: { showBadgesSheet = true },

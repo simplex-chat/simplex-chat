@@ -1001,8 +1001,6 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ToggleChatListCard()
       }
     }
-    // +1 vs SimpleX Lock's threshold accounts for the always-present SimpleX Directory contact card,
-    // so this still needs 3 real conversations.
     if (!supporterBannerShown.value && chatModel.chats.value.size > 3) {
       item {
         Box(Modifier.zIndex(1f).padding(16.dp)) {

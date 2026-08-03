@@ -40,28 +40,10 @@ enum class BadgeLevel {
       Legend -> MR.strings.badges_level_legend_files
     }
 
-  val monthlyPrice: StringResource
+  val priceAmount: String
     get() = when (this) {
-      Supporter -> MR.strings.badges_level_supporter_monthly
-      Legend -> MR.strings.badges_level_legend_monthly
-    }
-
-  val oneMonthPrice: StringResource
-    get() = when (this) {
-      Supporter -> MR.strings.badges_level_supporter_one_month
-      Legend -> MR.strings.badges_level_legend_one_month
-    }
-
-  val payMonthlyLabel: StringResource
-    get() = when (this) {
-      Supporter -> MR.strings.badges_pay_supporter_monthly
-      Legend -> MR.strings.badges_pay_legend_monthly
-    }
-
-  val payOnceLabel: StringResource
-    get() = when (this) {
-      Supporter -> MR.strings.badges_pay_supporter_once
-      Legend -> MR.strings.badges_pay_legend_once
+      Supporter -> "$7"
+      Legend -> "$70"
     }
 
   val tagline: StringResource
@@ -157,7 +139,7 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
     )
     Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
     Text(stringResource(level.filesDescription), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
-    Text(stringResource(level.monthlyPrice), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
+    Text(stringResource(MR.strings.badges_price_monthly).format(level.priceAmount), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
   }
 }
 
