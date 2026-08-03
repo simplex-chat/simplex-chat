@@ -21,7 +21,6 @@ struct SimpleXNativeApp: App {
         .windowToolbarStyle(.unifiedCompact)
         .commands {
             SidebarCommands()
-            CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .pasteboard) {
                 Button("Cut") { sendFirstResponderAction("cut:") }
                     .keyboardShortcut("x")
@@ -63,11 +62,7 @@ struct SimpleXNativeApp: App {
                     .disabled(!model.transcriptFocused || !model.canDeleteSelectedMessages)
                 Button("Cancel Current Action") { model.dismissNearestState() }
                     .keyboardShortcut(.escape, modifiers: [])
-                    .disabled(
-                        model.selectedMessageIDs.isEmpty
-                            && model.pendingAttachments.isEmpty
-                            && model.replyingTo == nil
-                    )
+                    .disabled(!model.canDismissNearestState)
             }
             CommandMenu("Conversation") {
                 Button("Refresh") { model.refresh() }

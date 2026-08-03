@@ -536,6 +536,36 @@ private actor AttachmentOpenProbe {
     #expect(model.pendingAttachments == [attachment])
 }
 
+@MainActor
+@Test func escapeDismissesSearchBeforeReplyContext() throws {
+    // Given
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first)
+    model.draft = "Keep this draft"
+    model.beginReply(to: original)
+    model.sidebarSearchPresented = true
+    model.searchText = "maya"
+
+    // When: sidebar search is the nearest temporary state.
+    #expect(model.canDismissNearestState)
+    model.dismissNearestState()
+
+    // Then: only search closes; the reply and draft survive.
+    #expect(!model.sidebarSearchPresented)
+    #expect(model.searchText.isEmpty)
+    #expect(model.replyingTo?.id == original.id)
+    #expect(model.draft == "Keep this draft")
+    #expect(model.canDismissNearestState)
+
+    // When: Escape is invoked again.
+    model.dismissNearestState()
+
+    // Then: the reply context closes without discarding the draft.
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep this draft")
+    #expect(!model.canDismissNearestState)
+}
+
 private actor AttachmentSendProbe {
     struct Request: Sendable {
         let attachmentID: PendingAttachment.ID

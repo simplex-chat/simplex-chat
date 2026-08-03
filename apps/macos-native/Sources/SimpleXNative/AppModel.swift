@@ -171,6 +171,14 @@ final class AppModel: ObservableObject {
             && !isSendingSelectedChat
     }
 
+    var canDismissNearestState: Bool {
+        conversationSearchPresented
+            || sidebarSearchPresented
+            || (replyingTo != nil && !isSendingSelectedChat)
+            || (!pendingAttachments.isEmpty && !isSendingSelectedChat)
+            || !selectedMessageIDs.isEmpty
+    }
+
     var conversationSearchMatches: [NativeMessage] {
         ConversationSearch.matches(messages, query: conversationSearchText)
     }
@@ -694,6 +702,9 @@ final class AppModel: ObservableObject {
     func dismissNearestState() {
         if conversationSearchPresented {
             dismissConversationSearch()
+        } else if sidebarSearchPresented {
+            sidebarSearchPresented = false
+            searchText = ""
         } else if replyingTo != nil, !isSendingSelectedChat {
             cancelReply()
         } else if !pendingAttachments.isEmpty, !isSendingSelectedChat {

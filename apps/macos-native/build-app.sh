@@ -38,6 +38,7 @@ plutil -insert LSApplicationCategoryType -string public.app-category.social-netw
 plutil -insert LSMinimumSystemVersion -string 14.0 ${APP_DIR}/Contents/Info.plist
 plutil -insert NSHighResolutionCapable -bool YES ${APP_DIR}/Contents/Info.plist
 plutil -insert NSHumanReadableCopyright -string "Copyright © 2020-2026 SimpleX Chat" ${APP_DIR}/Contents/Info.plist
+plutil -insert NSPrincipalClass -string NSApplication ${APP_DIR}/Contents/Info.plist
 plutil -insert SimpleXKeychainPassphraseStorageEnabled -bool NO ${APP_DIR}/Contents/Info.plist
 
 xattr -cr ${APP_DIR}
