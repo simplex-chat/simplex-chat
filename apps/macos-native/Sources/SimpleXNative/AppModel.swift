@@ -76,6 +76,7 @@ final class AppModel: ObservableObject {
     private(set) var quoteNavigationTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
+    private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var selectionAnchor: Int64?
     private var replyingChatID: NativeChat.ID?
@@ -272,12 +273,29 @@ final class AppModel: ObservableObject {
         let core = core
         let sendTextOperation = sendTextOperation
         let sendAttachmentOperation = sendAttachmentOperation
+        let loadMessageOperation = loadMessageOperation
         sendTask = Task { [weak self] in
             defer {
                 self?.finishSending()
             }
             var draftWasSent = false
             do {
+                if let quotedMessage {
+                    let refreshedReply: NativeMessage?
+                    if let loadMessageOperation {
+                        refreshedReply = try await loadMessageOperation(chat.id, quotedMessage.id)
+                    } else if self?.previewMode == true {
+                        refreshedReply = quotedMessage
+                    } else {
+                        refreshedReply = try await core.loadMessage(chatID: chat.id, itemID: quotedMessage.id)
+                    }
+                    try Task.checkCancellation()
+                    guard refreshedReply?.replyable == true else {
+                        self?.restoreFailedDraft(text, in: chat.id)
+                        self?.invalidateReplyContext(in: chat.id)
+                        return
+                    }
+                }
                 if attachments.isEmpty {
                     try Task.checkCancellation()
                     if let sendTextOperation {
@@ -404,10 +422,11 @@ final class AppModel: ObservableObject {
     }
 
     func beginReply(to message: NativeMessage) {
-        guard let chat = selectedChat, chat.kind.canReply, message.replyable,
-              messages.contains(where: { $0.id == message.id }),
+        guard let chat = selectedChat, chat.kind.canReply,
+              let currentMessage = messages.first(where: { $0.id == message.id }),
+              currentMessage.replyable,
               !isSendingSelectedChat else { return }
-        replyingTo = message
+        replyingTo = currentMessage
         replyingChatID = chat.id
         clearMessageSelection()
         composerFocusRequest &+= 1
@@ -724,6 +743,9 @@ final class AppModel: ObservableObject {
             if let id, let message = pendingChatOperationErrors.removeValue(forKey: id) {
                 phase = .failed(message)
             }
+            if let id {
+                replyContextError = pendingReplyContextErrors.removeValue(forKey: id)
+            }
         }
         if let id { notificationManager?.removeDeliveredNotifications(chatID: id) }
 
@@ -797,6 +819,18 @@ final class AppModel: ObservableObject {
     private func clearReply(_ messageID: Int64, in chatID: NativeChat.ID) {
         updateComposerState(for: chatID) { state in
             if state.reply?.id == messageID { state.reply = nil }
+        }
+    }
+
+    private func invalidateReplyContext(in chatID: NativeChat.ID) {
+        let message = "The message you were replying to is no longer available. Your draft was kept."
+        updateComposerState(for: chatID) { state in
+            state.reply = nil
+        }
+        if selectedChatID == chatID {
+            replyContextError = message
+        } else {
+            pendingReplyContextErrors[chatID] = message
         }
     }
 
@@ -879,9 +913,7 @@ final class AppModel: ObservableObject {
         if refreshedReply.replyable {
             replyingTo = refreshedReply
         } else if sendingChatID != chatID {
-            replyingTo = nil
-            replyingChatID = nil
-            replyContextError = "The message you were replying to is no longer available. Your draft was kept."
+            invalidateReplyContext(in: chatID)
         }
     }
 

@@ -6,7 +6,7 @@ struct SidebarView: View {
     var body: some View {
         List(selection: Binding(
             get: { model.selectedChatID },
-            set: model.selectChat
+            set: { model.selectChat($0) }
         )) {
             ForEach(model.filteredChats) { chat in
                 ChatSidebarRow(chat: chat, density: model.density)

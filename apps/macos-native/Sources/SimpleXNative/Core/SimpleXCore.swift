@@ -1,8 +1,25 @@
 import CoreBridge
 import Foundation
 
+private final class SimpleXControllerHandle: @unchecked Sendable {
+    // Safety: the handle is privately owned by SimpleXCore, never escapes that actor,
+    // and closes its immutable native pointer exactly once during teardown.
+    // TODO: remove the unchecked conformance when imported C pointers support Sendable ownership.
+    let pointer: UnsafeMutableRawPointer
+
+    init(_ pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        if let result = sx_core_close_store(pointer) {
+            sx_core_free(result)
+        }
+    }
+}
+
 actor SimpleXCore {
-    private var controller: UnsafeMutableRawPointer?
+    private var controller: SimpleXControllerHandle?
     private var loaded = false
     private let decryptedFilesDirectory: URL
 
@@ -14,11 +31,6 @@ actor SimpleXCore {
     }
 
     deinit {
-        if let controller {
-            if let result = sx_core_close_store(controller) {
-                sx_core_free(result)
-            }
-        }
         try? FileManager.default.removeItem(at: decryptedFilesDirectory)
     }
 
@@ -57,7 +69,7 @@ actor SimpleXCore {
             around: itemID,
             count: 0
         )))
-        return messages.first(where: { $0.id == itemID }) ?? messages.first
+        return messages.first(where: { $0.id == itemID })
     }
 
     nonisolated static func chatPageCommand(
@@ -237,7 +249,7 @@ actor SimpleXCore {
 
     func receiveEvent(timeoutMicroseconds: Int32 = 500_000) -> Data? {
         guard let controller,
-              let pointer = sx_core_recv_msg_wait(controller, timeoutMicroseconds) else {
+              let pointer = sx_core_recv_msg_wait(controller.pointer, timeoutMicroseconds) else {
             return nil
         }
         defer { sx_core_free(pointer) }
@@ -281,12 +293,16 @@ actor SimpleXCore {
     private func migrate(passphrase: String) throws -> Data {
         let prefix = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/share/simplex/simplex_v1").path
+        var rawController: UnsafeMutableRawPointer?
         let result = prefix.withCString { path in
             passphrase.withCString { key in
                 "yesUp".withCString { confirmation in
-                    sx_core_migrate_init(path, key, confirmation, &controller)
+                    sx_core_migrate_init(path, key, confirmation, &rawController)
                 }
             }
+        }
+        if let rawController {
+            controller = SimpleXControllerHandle(rawController)
         }
         return try data(from: result)
     }
@@ -316,7 +332,7 @@ actor SimpleXCore {
         guard let controller else {
             throw NativeChatError.unavailable("The SimpleX database is not open.")
         }
-        let result = command.withCString { sx_core_send_cmd(controller, $0, 0) }
+        let result = command.withCString { sx_core_send_cmd(controller.pointer, $0, 0) }
         return try data(from: result)
     }
 

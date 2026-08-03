@@ -321,7 +321,7 @@ enum NativeChatParser {
         let itemDeleted = meta["itemDeleted"].map { !($0 is NSNull) } ?? false
         let isLive = bool(meta["isLive"]) ?? false
         let isReport = string(messageContent?["type"]) == "report"
-        let replyable = isMessageContent && !itemDeleted && !isLive && id != -2 && !isReport
+        let replyable = isMessageContent && !itemDeleted && !isLive && id >= 0 && !isReport
         return NativeMessage(
             id: id,
             text: string(meta["itemText"]) ?? "",

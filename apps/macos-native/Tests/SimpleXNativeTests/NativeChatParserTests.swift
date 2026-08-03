@@ -86,6 +86,13 @@ private let replyEligibilityCases = [
         content: #"{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Typing"}}"#,
         expected: false
     ),
+    ReplyEligibilityCase(
+        name: "other temporary message",
+        itemID: -1,
+        metaFields: "",
+        content: #"{"type":"sndMsgContent","msgContent":{"type":"text","text":"Pending"}}"#,
+        expected: false
+    ),
 ]
 
 @Test(arguments: replyEligibilityCases)
@@ -418,6 +425,31 @@ private actor AttachmentOpenProbe {
 }
 
 @MainActor
+@Test func replyActionUsesTheCurrentTranscriptItemInsteadOfAStaleRow() throws {
+    // Given
+    let original = try #require(NativePreviewData.messages(for: "@1").first)
+    let unavailable = NativeMessage(
+        id: original.id,
+        text: "Message deleted",
+        timestamp: original.timestamp,
+        sent: original.sent,
+        author: original.author,
+        deletable: false,
+        content: original.content,
+        replyable: false
+    )
+    let model = AppModel(previewMode: true)
+    model.messages = [unavailable]
+
+    // When: a row action captured before the refresh invokes Reply afterward.
+    model.beginReply(to: original)
+
+    // Then
+    #expect(model.replyingTo == nil)
+    #expect(model.composerFocusRequest == 0)
+}
+
+@MainActor
 @Test func liveRefreshUpdatesOrInvalidatesReplyContextWithoutLosingDraft() throws {
     // Given
     let original = try #require(NativePreviewData.messages(for: "@1").first)
@@ -534,17 +566,83 @@ private actor AttachmentSendProbe {
     }
 }
 
+private actor ReplyValidationProbe {
+    private var requested = false
+    private var released = false
+    private var sendCount = 0
+
+    func validate() async -> NativeMessage? {
+        requested = true
+        while !released { await Task.yield() }
+        return nil
+    }
+
+    func waitUntilRequested() async {
+        while !requested { await Task.yield() }
+    }
+
+    func release() {
+        released = true
+    }
+
+    func recordSend() {
+        sendCount += 1
+    }
+
+    func recordedSendCount() -> Int {
+        sendCount
+    }
+}
+
 @MainActor
 private func makeSendTestModel(
     sendTextOperation: SendTextOperation? = nil,
-    sendAttachmentOperation: SendAttachmentOperation? = nil
+    sendAttachmentOperation: SendAttachmentOperation? = nil,
+    loadMessageOperation: LoadMessageOperation? = nil
 ) -> AppModel {
     let model = AppModel(
         previewMode: true,
         sendTextOperation: sendTextOperation,
-        sendAttachmentOperation: sendAttachmentOperation
+        sendAttachmentOperation: sendAttachmentOperation,
+        loadMessageOperation: loadMessageOperation
     )
     return model
+}
+
+@MainActor
+@Test func deletedReplyTargetIsRecheckedBeforeSendingAndTheDraftSurvivesAChatSwitch() async throws {
+    // Given
+    let probe = ReplyValidationProbe()
+    let model = makeSendTestModel(
+        sendTextOperation: { _, _, _ in await probe.recordSend() },
+        loadMessageOperation: { _, _ in await probe.validate() }
+    )
+    let original = try #require(model.messages.first)
+    model.draft = "Keep this reply"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await probe.waitUntilRequested()
+    model.selectChat("#2")
+    await probe.release()
+    await send.value
+
+    // Then: nothing is sent or leaked into the currently visible conversation.
+    let sendCount = await probe.recordedSendCount()
+    #expect(sendCount == 0)
+    #expect(model.selectedChatID == "#2")
+    #expect(model.draft.isEmpty)
+    #expect(model.replyingTo == nil)
+    #expect(model.replyContextError == nil)
+    #expect(model.phase == .ready)
+
+    // And: returning to the originating chat restores the draft and explains the cancelled quote.
+    model.selectChat("@1")
+    #expect(model.draft == "Keep this reply")
+    #expect(model.replyingTo == nil)
+    #expect(model.replyContextError == "The message you were replying to is no longer available. Your draft was kept.")
 }
 
 @MainActor

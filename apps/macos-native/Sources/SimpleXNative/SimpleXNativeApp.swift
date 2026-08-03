@@ -57,11 +57,7 @@ struct SimpleXNativeApp: App {
             CommandGroup(after: .textEditing) {
                 Button("Reply to Selected Message") { model.replyToSelectedMessage() }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
-                    .disabled(
-                        model.selectedMessagesInTranscriptOrder.count != 1
-                            || model.selectedChat?.kind.canReply != true
-                            || model.isSendingSelectedChat
-                    )
+                    .disabled(!model.canReplyToSelectedMessage)
                 Button("Delete Selected Messages") { model.requestDeleteSelectedMessages() }
                     .keyboardShortcut(.delete, modifiers: [])
                     .disabled(!model.transcriptFocused || !model.canDeleteSelectedMessages)
