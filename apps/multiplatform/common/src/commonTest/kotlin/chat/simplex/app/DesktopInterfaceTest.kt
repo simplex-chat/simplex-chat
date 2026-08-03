@@ -40,6 +40,14 @@ class DesktopInterfaceTest {
   }
 
   @Test
+  fun sidebarVibrancyRequiresMatchingAppAndSystemAppearance() {
+    assertFalse(useOpaqueDesktopSidebar(vibrancyAvailable = true, appDark = false, systemDark = false))
+    assertFalse(useOpaqueDesktopSidebar(vibrancyAvailable = true, appDark = true, systemDark = true))
+    assertTrue(useOpaqueDesktopSidebar(vibrancyAvailable = true, appDark = true, systemDark = false))
+    assertTrue(useOpaqueDesktopSidebar(vibrancyAvailable = false, appDark = false, systemDark = false))
+  }
+
+  @Test
   fun rangeSelectionKeepsOrderAndSkipsUnselectableItems() {
     val items = listOf(1L to true, 2L to false, 3L to true, 4L to true)
     assertEquals(linkedSetOf(1L, 3L, 4L), desktopRangeSelection(items, 4L, 1L))

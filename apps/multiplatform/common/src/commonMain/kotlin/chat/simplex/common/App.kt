@@ -483,9 +483,15 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
     val autoCollapsed = maxWidth < DesktopLayoutState.MIN_SIDEBAR_WIDTH.dp + 520.dp
     val sidebarVisible = !DesktopLayoutState.sidebarCollapsed.value && !autoCollapsed
     val visibleSidebarWidth = if (sidebarVisible) sidebarWidth else 0.dp
+    val opaqueSidebar = useOpaqueDesktopSidebar(
+      macOSWindowVibrancyAvailable,
+      isInDarkTheme(),
+      chat.simplex.common.ui.theme.isSystemInDarkTheme(),
+    )
+    val sidebarBackground = if (opaqueSidebar) MaterialTheme.colors.background else Color.Transparent
 
     if (sidebarVisible) {
-      Box(Modifier.width(sidebarWidth).fillMaxHeight()) {
+      Box(Modifier.width(sidebarWidth).fillMaxHeight().background(sidebarBackground)) {
         Box(Modifier.fillMaxSize().padding(top = if (macOSWindowVibrancyAvailable) 28.dp else 0.dp)) {
           StartPartOfScreen(userPickerState)
           tryOrShowError("UserPicker", error = {}) {

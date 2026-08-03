@@ -30,6 +30,12 @@ fun DesktopChatDensity.tokens(): DesktopDensityTokens = when (this) {
   DesktopChatDensity.Spacious -> DesktopDensityTokens(10.dp, 58.dp, 36.dp, 2, 10.dp, 7.dp, 16.dp, 12.dp)
 }
 
+internal fun useOpaqueDesktopSidebar(
+  vibrancyAvailable: Boolean,
+  appDark: Boolean,
+  systemDark: Boolean,
+): Boolean = !vibrancyAvailable || appDark != systemDark
+
 object DesktopLayoutState {
   const val DEFAULT_SIDEBAR_WIDTH = 320f
   const val MIN_SIDEBAR_WIDTH = 240f
