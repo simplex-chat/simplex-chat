@@ -79,6 +79,7 @@ final class AppModel: ObservableObject {
     private(set) var sendTask: Task<Void, Never>?
     private var deleteTask: Task<Void, Never>?
     private(set) var quoteNavigationTask: Task<Void, Never>?
+    private var replyTargetNavigationTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
@@ -141,6 +142,7 @@ final class AppModel: ObservableObject {
         sendTask?.cancel()
         deleteTask?.cancel()
         quoteNavigationTask?.cancel()
+        replyTargetNavigationTask?.cancel()
     }
 
     var selectedChat: NativeChat? {
@@ -521,10 +523,16 @@ final class AppModel: ObservableObject {
     }
 
     private func cancelStaleNavigationForReply() {
+        cancelReplyTargetNavigation()
         quoteNavigationTask?.cancel()
         quoteNavigationTask = nil
         quoteNavigationRevision &+= 1
         cancelConversationLoadWithoutReplacement()
+    }
+
+    private func cancelReplyTargetNavigation() {
+        replyTargetNavigationTask?.cancel()
+        replyTargetNavigationTask = nil
     }
 
     func replyToSelectedMessage() {
@@ -535,6 +543,7 @@ final class AppModel: ObservableObject {
 
     func cancelReply() {
         guard !isSendingSelectedChat else { return }
+        cancelReplyTargetNavigation()
         replyingTo = nil
         replyingChatID = nil
     }
@@ -544,7 +553,8 @@ final class AppModel: ObservableObject {
         guard let message = replyingTo,
               let chatID = selectedChatID,
               replyingChatID == chatID else { return nil }
-        return openQuotedMessage(
+        cancelReplyTargetNavigation()
+        let task = openQuotedMessage(
             NativeQuote(
                 messageID: message.id,
                 text: message.replyPreview,
@@ -553,6 +563,8 @@ final class AppModel: ObservableObject {
             ),
             from: message.id
         )
+        replyTargetNavigationTask = task
+        return task
     }
 
     @discardableResult
@@ -924,6 +936,7 @@ final class AppModel: ObservableObject {
         guard changedChat || messageID != nil || scrollTarget != nil else { return }
 
         if changedChat {
+            cancelReplyTargetNavigation()
             quoteNavigationTask?.cancel()
             quoteNavigationTask = nil
             quoteNavigationRevision &+= 1

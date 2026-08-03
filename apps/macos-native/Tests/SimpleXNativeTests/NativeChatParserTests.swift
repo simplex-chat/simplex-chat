@@ -480,6 +480,101 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
 }
 
 @MainActor
+@Test func cancellingReplyRetiresItsPendingOriginalMessageNavigation() async throws {
+    // Given
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let visibleMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let probe = DelayedValue([original])
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            #expect(aroundMessageID == original.id)
+            return await probe.load()
+        }
+    )
+    model.draft = "Keep this draft"
+    model.beginReply(to: original)
+    model.messages = visibleMessages
+
+    // When: Show Original is loading and Escape cancels the reply context.
+    let navigation = try #require(model.openReplyTarget())
+    await probe.waitUntilRequested()
+    #expect(model.isLoadingConversation)
+    model.dismissNearestState()
+
+    // Then: the composer exits reply mode without losing the draft.
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep this draft")
+
+    // When: the cancelled backend request eventually returns.
+    await probe.release()
+    await navigation.value
+
+    // Then: it cannot replace or jump the visible transcript.
+    #expect(model.messages == visibleMessages)
+    #expect(model.targetMessageID == nil)
+    #expect(model.conversationAnchorMessageID == nil)
+    #expect(!model.isLoadingConversation)
+    #expect(model.quoteNavigationError == nil)
+}
+
+@MainActor
+@Test func cancellingReplyDoesNotCancelANewerInlineQuoteNavigation() async throws {
+    // Given
+    let replyTarget = NativePreviewData.messages(for: "@1")[0]
+    let inlineTarget = NativeMessage(
+        id: 9_704,
+        text: "Newer inline quote destination",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .text
+    )
+    let replyProbe = DelayedValue([replyTarget])
+    let inlineProbe = DelayedValue([inlineTarget])
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, aroundMessageID in
+            if aroundMessageID == replyTarget.id {
+                return await replyProbe.load()
+            }
+            #expect(aroundMessageID == inlineTarget.id)
+            return await inlineProbe.load()
+        }
+    )
+    model.beginReply(to: replyTarget)
+    model.messages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+
+    // When: a newer inline quote navigation supersedes Show Original.
+    let replyNavigation = try #require(model.openReplyTarget())
+    await replyProbe.waitUntilRequested()
+    let quote = NativeQuote(
+        messageID: inlineTarget.id,
+        text: inlineTarget.text,
+        sent: inlineTarget.sent,
+        author: inlineTarget.author
+    )
+    let inlineNavigation = try #require(model.openQuotedMessage(quote, from: 9_705))
+    await inlineProbe.waitUntilRequested()
+    model.cancelReply()
+
+    // Then: cancelling the old reply context leaves the newer user navigation alive.
+    #expect(model.replyingTo == nil)
+    await inlineProbe.release()
+    await inlineNavigation.value
+    #expect(model.messages == [inlineTarget])
+    #expect(model.targetMessageID == inlineTarget.id)
+
+    // Cleanup: the cancelled older request cannot overwrite the result when it returns.
+    await replyProbe.release()
+    await replyNavigation.value
+    #expect(model.messages == [inlineTarget])
+    #expect(model.targetMessageID == inlineTarget.id)
+}
+
+@MainActor
 @Test func deletedOffscreenQuoteShowsLocalErrorWithoutBreakingConversation() async throws {
     // Given
     let quote = NativeQuote(messageID: 902, text: "Deleted original", sent: false, author: "Maya")
