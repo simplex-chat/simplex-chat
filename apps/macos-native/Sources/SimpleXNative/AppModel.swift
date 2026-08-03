@@ -45,15 +45,21 @@ final class AppModel: ObservableObject {
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
     private var conversationLoadTask: Task<Void, Never>?
+    private var refreshTask: Task<Void, Never>?
+    private var sendTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var selectionAnchor: Int64?
+    private var replyingChatID: NativeChat.ID?
+    private var conversationLoadRevision: UInt64 = 0
     private static let densityKey = "desktopChatDensity"
 
     init(
         notificationManager: NativeNotificationManager? = nil,
-        passphraseStore: any DatabasePassphraseStore = DatabasePassphraseKeychain()
+        passphraseStore: any DatabasePassphraseStore = DatabasePassphraseKeychain(),
+        previewMode: Bool? = nil
     ) {
-        previewMode = ProcessInfo.processInfo.environment["SIMPLEX_NATIVE_UI_PREVIEW"] == "1"
+        self.previewMode = previewMode
+            ?? (ProcessInfo.processInfo.environment["SIMPLEX_NATIVE_UI_PREVIEW"] == "1")
         self.passphraseStore = passphraseStore
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
@@ -63,7 +69,7 @@ final class AppModel: ObservableObject {
         ) ?? .compact
         self.notificationManager = notificationManager
         notificationManager?.model = self
-        if previewMode {
+        if self.previewMode {
             phase = .ready
             profile = NativePreviewData.profile
             chats = NativePreviewData.chats
@@ -77,6 +83,8 @@ final class AppModel: ObservableObject {
     deinit {
         eventTask?.cancel()
         conversationLoadTask?.cancel()
+        refreshTask?.cancel()
+        sendTask?.cancel()
     }
 
     var selectedChat: NativeChat? {
@@ -144,30 +152,24 @@ final class AppModel: ObservableObject {
     }
 
     func selectChat(_ id: NativeChat.ID?) {
-        guard selectedChatID != id else { return }
-        selectedChatID = id
-        clearMessageSelection()
-        pendingAttachments = []
-        replyingTo = nil
-        targetMessageID = nil
-        conversationSearchText = ""
-        conversationSearchPresented = false
-        if let id { notificationManager?.removeDeliveredNotifications(chatID: id) }
-        if previewMode {
-            messages = id.map(NativePreviewData.messages) ?? []
-            return
-        }
-        conversationLoadTask?.cancel()
-        conversationLoadTask = Task { await loadSelectedConversation() }
+        transitionToChat(id)
     }
 
     func refresh() {
         guard !previewMode else { return }
         guard let userID = profile?.userID else { return }
-        Task {
+        refreshTask?.cancel()
+        refreshTask = Task {
             do {
-                chats = try await core.loadChats(userID: userID)
-                await loadSelectedConversation()
+                let loadedChats = try await core.loadChats(userID: userID)
+                guard !Task.isCancelled else { return }
+                chats = loadedChats
+                if let chatID = selectedChatID {
+                    conversationLoadTask?.cancel()
+                    _ = await loadConversation(chatID: chatID)
+                }
+            } catch is CancellationError {
+                return
             } catch {
                 phase = .failed(error.localizedDescription)
             }
@@ -177,8 +179,9 @@ final class AppModel: ObservableObject {
     func sendDraft() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = pendingAttachments
-        let quotedMessage = replyingTo
         guard (!text.isEmpty || !attachments.isEmpty), let chat = selectedChat, !isSending else { return }
+        let quotedMessage = replyingChatID == chat.id ? replyingTo : nil
+        if replyingTo != nil, quotedMessage == nil { cancelReply() }
         if previewMode {
             if !text.isEmpty {
                 let nextID = (messages.map(\.id).max() ?? 0) + 1
@@ -202,20 +205,26 @@ final class AppModel: ObservableObject {
             }
             draft = ""
             pendingAttachments = []
-            replyingTo = nil
+            cancelReply()
             return
         }
         draft = ""
         isSending = true
-        Task {
+        sendTask = Task {
+            defer {
+                isSending = false
+                sendTask = nil
+            }
             var contentWasSent = false
             do {
                 if attachments.isEmpty {
                     try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
+                    try Task.checkCancellation()
                     contentWasSent = true
-                    if selectedChatID == chat.id, replyingTo?.id == quotedMessage?.id { replyingTo = nil }
+                    if selectedChatID == chat.id, replyingTo?.id == quotedMessage?.id { cancelReply() }
                 } else {
                     for (index, attachment) in attachments.enumerated() {
+                        try Task.checkCancellation()
                         let caption = index == attachments.index(before: attachments.endIndex) ? text : ""
                         let quotedItemID = index == attachments.startIndex ? quotedMessage?.id : nil
                         try await core.sendAttachment(
@@ -224,23 +233,30 @@ final class AppModel: ObservableObject {
                             quotedItemID: quotedItemID,
                             to: chat
                         )
+                        try Task.checkCancellation()
                         if index == attachments.index(before: attachments.endIndex) { contentWasSent = true }
                         if selectedChatID == chat.id {
                             pendingAttachments.removeAll { $0.id == attachment.id }
-                            if quotedItemID != nil, replyingTo?.id == quotedItemID { replyingTo = nil }
+                            if quotedItemID != nil, replyingTo?.id == quotedItemID { cancelReply() }
                         }
                     }
                 }
                 let sentMessages = try await core.loadMessages(chatID: chat.id)
+                try Task.checkCancellation()
                 if selectedChatID == chat.id { messages = sentMessages }
-                if let userID = profile?.userID { chats = try await core.loadChats(userID: userID) }
+                if let userID = profile?.userID {
+                    let loadedChats = try await core.loadChats(userID: userID)
+                    try Task.checkCancellation()
+                    chats = loadedChats
+                }
+            } catch is CancellationError {
+                return
             } catch {
                 if selectedChatID == chat.id {
                     if !contentWasSent { draft = text }
                     phase = .failed(error.localizedDescription)
                 }
             }
-            isSending = false
         }
     }
 
@@ -297,8 +313,10 @@ final class AppModel: ObservableObject {
     }
 
     func beginReply(to message: NativeMessage) {
-        guard selectedChat?.kind.canReply == true, !isSending else { return }
+        guard let chat = selectedChat, chat.kind.canReply, messages.contains(where: { $0.id == message.id }),
+              !isSending else { return }
         replyingTo = message
+        replyingChatID = chat.id
         clearMessageSelection()
         composerFocusRequest &+= 1
     }
@@ -311,6 +329,7 @@ final class AppModel: ObservableObject {
 
     func cancelReply() {
         replyingTo = nil
+        replyingChatID = nil
     }
 
     func openQuotedMessage(_ messageID: Int64) {
@@ -319,11 +338,8 @@ final class AppModel: ObservableObject {
             return
         }
         conversationLoadTask?.cancel()
-        conversationLoadTask = Task {
-            await loadSelectedConversation(around: messageID)
-            guard !Task.isCancelled, messages.contains(where: { $0.id == messageID }) else { return }
-            targetMessageID = messageID
-        }
+        guard let chatID = selectedChatID else { return }
+        scheduleConversationLoad(chatID: chatID, around: messageID, scrollTo: messageID)
     }
 
     func openAttachment(_ message: NativeMessage) {
@@ -422,7 +438,7 @@ final class AppModel: ObservableObject {
     func deleteSelectedMessages() {
         guard let chat = selectedChat, canDeleteSelectedMessages else { return }
         let identifiers = selectedMessagesInTranscriptOrder.map(\.id)
-        if let replyingTo, identifiers.contains(replyingTo.id) { self.replyingTo = nil }
+        if let replyingTo, identifiers.contains(replyingTo.id) { cancelReply() }
         showingDeleteConfirmation = false
         if previewMode {
             messages.removeAll { identifiers.contains($0.id) }
@@ -468,32 +484,82 @@ final class AppModel: ObservableObject {
             notificationRouteQueue.enqueue(route)
             return
         }
-        selectedChatID = route.chatID
-        clearMessageSelection()
-        targetMessageID = route.messageID
-        notificationManager?.removeDeliveredNotifications(chatID: route.chatID)
-        Task { await loadSelectedConversation(around: route.messageID) }
+        transitionToChat(route.chatID, around: route.messageID, scrollTo: route.messageID)
     }
 
-    private func loadSelectedConversation(around messageID: Int64? = nil) async {
-        guard let chat = selectedChat else {
+    private func transitionToChat(
+        _ id: NativeChat.ID?,
+        around messageID: Int64? = nil,
+        scrollTo scrollTarget: Int64? = nil
+    ) {
+        let changedChat = selectedChatID != id
+        guard changedChat || messageID != nil || scrollTarget != nil else { return }
+
+        if changedChat {
+            selectedChatID = id
+            clearMessageSelection()
+            pendingAttachments = []
+            cancelReply()
+            targetMessageID = nil
+            conversationSearchText = ""
+            conversationSearchPresented = false
+        }
+        if let id { notificationManager?.removeDeliveredNotifications(chatID: id) }
+
+        conversationLoadTask?.cancel()
+        guard let id else {
             messages = []
+            isLoadingConversation = false
             return
         }
-        let chatID = chat.id
+        if previewMode {
+            messages = NativePreviewData.messages(for: id)
+            if let scrollTarget, messages.contains(where: { $0.id == scrollTarget }) {
+                targetMessageID = scrollTarget
+            }
+            return
+        }
+        scheduleConversationLoad(chatID: id, around: messageID, scrollTo: scrollTarget)
+    }
+
+    private func scheduleConversationLoad(
+        chatID: NativeChat.ID,
+        around messageID: Int64? = nil,
+        scrollTo scrollTarget: Int64? = nil
+    ) {
+        conversationLoadTask?.cancel()
+        conversationLoadTask = Task {
+            let loaded = await loadConversation(chatID: chatID, around: messageID)
+            guard loaded, !Task.isCancelled, selectedChatID == chatID else { return }
+            if let scrollTarget, messages.contains(where: { $0.id == scrollTarget }) {
+                targetMessageID = scrollTarget
+            }
+        }
+    }
+
+    @discardableResult
+    private func loadConversation(chatID: NativeChat.ID, around messageID: Int64? = nil) async -> Bool {
+        guard selectedChatID == chatID else { return false }
+        conversationLoadRevision &+= 1
+        let revision = conversationLoadRevision
         isLoadingConversation = true
         defer {
-            if selectedChatID == chatID { isLoadingConversation = false }
+            if selectedChatID == chatID, conversationLoadRevision == revision {
+                isLoadingConversation = false
+            }
         }
         do {
             let loadedMessages = try await core.loadMessages(chatID: chatID, around: messageID)
-            guard !Task.isCancelled, selectedChatID == chatID else { return }
+            guard !Task.isCancelled, selectedChatID == chatID,
+                  conversationLoadRevision == revision else { return false }
             messages = loadedMessages
             selectedMessageIDs.formIntersection(messages.map(\.id))
+            return true
         } catch is CancellationError {
-            return
+            return false
         } catch {
             phase = .failed(error.localizedDescription)
+            return false
         }
     }
 
@@ -513,8 +579,8 @@ final class AppModel: ObservableObject {
         guard let userID = profile?.userID else { return }
         do {
             chats = try await core.loadChats(userID: userID)
-            if selectedChatID != nil {
-                await loadSelectedConversation()
+            if let chatID = selectedChatID {
+                _ = await loadConversation(chatID: chatID)
             }
             consumePendingNotificationRoutes()
         } catch {
@@ -568,7 +634,9 @@ final class AppModel: ObservableObject {
             self.chats = chats
             phase = .ready
             if selectedChatID == nil { selectedChatID = chats.first?.id }
-            await loadSelectedConversation()
+            if let chatID = selectedChatID {
+                _ = await loadConversation(chatID: chatID)
+            }
             startEventLoop()
             notificationManager?.chatSetupReady()
             consumePendingNotificationRoutes()

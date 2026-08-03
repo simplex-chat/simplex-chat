@@ -47,6 +47,47 @@ import Testing
     #expect(ordinary["quotedItemId"] == nil)
 }
 
+@MainActor
+@Test func replyComposerSendsAndClearsQuotedContext() throws {
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first)
+
+    model.beginReply(to: original)
+    model.draft = "This is a reply"
+    model.sendDraft()
+
+    let sent = try #require(model.messages.last)
+    #expect(sent.text == "This is a reply")
+    #expect(sent.quotedItem?.messageID == original.id)
+    #expect(sent.quotedItem?.text == original.text)
+    #expect(model.replyingTo == nil)
+    #expect(model.draft.isEmpty)
+}
+
+@MainActor
+@Test func notificationChatTransitionCannotLeakAReplyIntoAnotherConversation() throws {
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first)
+    model.beginReply(to: original)
+    #expect(model.replyingTo?.id == original.id)
+
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "#2",
+        messageID: 20
+    ))
+
+    #expect(model.selectedChatID == "#2")
+    #expect(model.replyingTo == nil)
+    #expect(model.targetMessageID == 20)
+
+    let groupMessage = try #require(model.messages.first)
+    model.selectChat("*3")
+    model.beginReply(to: groupMessage)
+    #expect(model.replyingTo == nil)
+}
+
 @Test func messageSelectionSupportsRangesAndCommandToggle() {
     let ordered: [Int64] = [10, 20, 30, 40]
     let first = MessageSelection.updated(

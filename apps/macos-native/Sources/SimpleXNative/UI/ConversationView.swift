@@ -349,6 +349,8 @@ private struct ConversationSearchBar: View {
 }
 
 private struct MessageRow: View {
+    @State private var hovering = false
+
     let message: NativeMessage
     let chat: NativeChat
     let selected: Bool
@@ -406,6 +408,24 @@ private struct MessageRow: View {
                                 .padding(-2)
                         }
                     }
+                    .overlay(alignment: message.sent ? .leading : .trailing) {
+                        if hovering, canReply {
+                            Button(action: reply) {
+                                Image(systemName: "arrowshape.turn.up.left")
+                                    .frame(width: 28, height: 28)
+                                    .background(Color(nsColor: .controlBackgroundColor), in: Circle())
+                                    .overlay {
+                                        Circle().stroke(Color(nsColor: .separatorColor))
+                                    }
+                                    .contentShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .offset(x: message.sent ? -40 : 40)
+                            .help("Reply")
+                            .accessibilityLabel("Reply") // [VERIFY] Matches the visible tooltip.
+                            .accessibilityInputLabels(["Reply", "Quote Message"])
+                        }
+                    }
                     .contentShape(bubbleShape)
                     .onTapGesture(perform: select)
                     .focusEffectDisabled()
@@ -429,6 +449,7 @@ private struct MessageRow: View {
 
             if !message.sent { Spacer(minLength: 80) }
         }
+        .onHover { hovering = $0 }
         .contextMenu {
             if canReply {
                 Button("Reply", action: reply)
