@@ -1477,6 +1477,30 @@ private actor AttachmentOpenProbe {
     }
 }
 
+private actor DelayedAttachmentOpenFailure {
+    private let message: String
+    private var requested = false
+    private var released = false
+
+    init(_ message: String) {
+        self.message = message
+    }
+
+    func open() async throws {
+        requested = true
+        while !released { await Task.yield() }
+        throw NativeChatError.unavailable(message)
+    }
+
+    func waitUntilRequested() async {
+        while !requested { await Task.yield() }
+    }
+
+    func release() {
+        released = true
+    }
+}
+
 @MainActor
 @Test func attachmentOpenRefreshesMissingEncryptionMetadata() async throws {
     // Given
@@ -1527,7 +1551,70 @@ private actor AttachmentOpenProbe {
     #expect(await probe.source() == encryptedSource)
     #expect(model.messages.first?.fileSource == encryptedSource)
     #expect(model.attachmentOpenError == nil)
-    #expect(model.openingAttachmentIDs.isEmpty)
+    #expect(!model.isOpeningAttachment(original.id))
+}
+
+@MainActor
+@Test func attachmentOpeningStateAndFailuresStayWithTheirConversation() async throws {
+    // Given: an attachment is still opening when the user moves to another chat
+    // whose transcript happens to reuse the same message ID.
+    let failure = "The stored photo could not be decrypted."
+    let probe = DelayedAttachmentOpenFailure(failure)
+    let source = NativeCryptoFile(filePath: "/tmp/encrypted-photo.jpg", cryptoArgs: nil)
+    let first = NativeMessage(
+        id: 92,
+        text: "First photo",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .image(preview: nil, fileName: "first.jpg"),
+        fileSource: source
+    )
+    let second = NativeMessage(
+        id: first.id,
+        text: "Different photo",
+        timestamp: nil,
+        sent: false,
+        author: "Jordan",
+        deletable: true,
+        content: .image(preview: nil, fileName: "second.jpg"),
+        fileSource: source
+    )
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { chatID, _ in chatID == "@1" ? first : second },
+        openAttachmentOperation: { _, fileName in
+            if fileName == "first.jpg" { try await probe.open() }
+        }
+    )
+    model.messages = [first]
+
+    // When: the first chat's open remains in flight and the second chat appears.
+    let opening = try #require(model.openAttachment(first))
+    await probe.waitUntilRequested()
+    #expect(model.isOpeningAttachment(first.id))
+    model.selectChat("#2")
+    model.messages = [second]
+
+    // Then: the colliding message ID in the new chat is not shown as busy.
+    #expect(!model.isOpeningAttachment(second.id))
+    #expect(model.attachmentOpenError == nil)
+    let secondOpening = try #require(model.openAttachment(second))
+    await secondOpening.value
+    #expect(!model.isOpeningAttachment(second.id))
+    #expect(model.attachmentOpenError == nil)
+
+    // When: the old operation fails after the transition.
+    await probe.release()
+    await opening.value
+
+    // Then: its error waits for its originating conversation.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.attachmentOpenError == nil)
+    model.selectChat("@1")
+    #expect(model.attachmentOpenError == failure)
+    #expect(!model.isOpeningAttachment(first.id))
 }
 
 @MainActor

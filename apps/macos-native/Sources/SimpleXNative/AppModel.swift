@@ -28,6 +28,11 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private struct AttachmentOpeningKey: Hashable {
+        let chatID: NativeChat.ID
+        let messageID: Int64
+    }
+
     @Published var phase: Phase = .locked(message: nil)
     @Published var profile: NativeProfile?
     @Published var chats: [NativeChat] = []
@@ -51,7 +56,7 @@ final class AppModel: ObservableObject {
     @Published var quoteNavigationError: String?
     @Published var replyContextError: String?
     @Published var sendStatusMessage: String?
-    @Published var openingAttachmentIDs: Set<Int64> = []
+    @Published private var openingAttachmentKeys: Set<AttachmentOpeningKey> = []
     @Published var replyingTo: NativeMessage?
     @Published var composerFocusRequest = 0
     @Published var showingDeleteConfirmation = false
@@ -87,6 +92,7 @@ final class AppModel: ObservableObject {
     private var pendingQuoteNavigationErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
     private var pendingSendStatusMessages: [NativeChat.ID: String] = [:]
+    private var pendingAttachmentOpenErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyInvalidationChatIDs: Set<NativeChat.ID> = []
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var deletingChatID: NativeChat.ID?
@@ -680,16 +686,17 @@ final class AppModel: ObservableObject {
     @discardableResult
     func openAttachment(_ message: NativeMessage) -> Task<Void, Never>? {
         guard let initialSource = message.fileSource,
-              !openingAttachmentIDs.contains(message.id) else { return nil }
-        let chatID = selectedChatID
+              let chatID = selectedChatID else { return nil }
+        let openingKey = AttachmentOpeningKey(chatID: chatID, messageID: message.id)
+        guard !openingAttachmentKeys.contains(openingKey) else { return nil }
         let loadMessageOperation = loadMessageOperation
         let openAttachmentOperation = openAttachmentOperation
-        openingAttachmentIDs.insert(message.id)
+        openingAttachmentKeys.insert(openingKey)
         let task = Task {
-            defer { openingAttachmentIDs.remove(message.id) }
+            defer { openingAttachmentKeys.remove(openingKey) }
             do {
                 var source = initialSource
-                if source.cryptoArgs == nil, let chatID {
+                if source.cryptoArgs == nil {
                     let refreshedMessage: NativeMessage?
                     if let loadMessageOperation {
                         refreshedMessage = try await loadMessageOperation(chatID, message.id)
@@ -722,10 +729,17 @@ final class AppModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                attachmentOpenError = error.localizedDescription
+                presentAttachmentOpenFailure(error.localizedDescription, in: chatID)
             }
         }
         return task
+    }
+
+    func isOpeningAttachment(_ messageID: Int64) -> Bool {
+        guard let chatID = selectedChatID else { return false }
+        return openingAttachmentKeys.contains(
+            AttachmentOpeningKey(chatID: chatID, messageID: messageID)
+        )
     }
 
     @discardableResult
@@ -993,6 +1007,7 @@ final class AppModel: ObservableObject {
             quoteNavigationError = nil
             replyContextError = nil
             sendStatusMessage = nil
+            attachmentOpenError = nil
             selectedChatID = id
             conversationAnchorMessageID = nil
             messages = []
@@ -1008,6 +1023,7 @@ final class AppModel: ObservableObject {
                 quoteNavigationError = pendingQuoteNavigationErrors.removeValue(forKey: id)
                 replyContextError = pendingReplyContextErrors.removeValue(forKey: id)
                 sendStatusMessage = pendingSendStatusMessages.removeValue(forKey: id)
+                attachmentOpenError = pendingAttachmentOpenErrors.removeValue(forKey: id)
             }
         }
         if let id { notificationManager?.removeDeliveredNotifications(chatID: id) }
@@ -1037,6 +1053,9 @@ final class AppModel: ObservableObject {
         }
         if let sendStatusMessage {
             pendingSendStatusMessages[chatID] = sendStatusMessage
+        }
+        if let attachmentOpenError {
+            pendingAttachmentOpenErrors[chatID] = attachmentOpenError
         }
     }
 
@@ -1205,6 +1224,14 @@ final class AppModel: ObservableObject {
             sendStatusMessage = message
         } else {
             pendingSendStatusMessages[chatID] = message
+        }
+    }
+
+    private func presentAttachmentOpenFailure(_ message: String, in chatID: NativeChat.ID) {
+        if selectedChatID == chatID {
+            attachmentOpenError = message
+        } else {
+            pendingAttachmentOpenErrors[chatID] = message
         }
     }
 

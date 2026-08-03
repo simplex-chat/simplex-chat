@@ -118,7 +118,7 @@ struct ConversationView: View {
                             density: model.density,
                             startsGroup: startsGroup(at: index),
                             endsGroup: endsGroup(at: index),
-                            openingAttachment: model.openingAttachmentIDs.contains(message.id),
+                            openingAttachment: model.isOpeningAttachment(message.id),
                             canReply: model.canReply(to: message),
                             canOpenQuote: model.canNavigateConversationHistory
                         ) {
