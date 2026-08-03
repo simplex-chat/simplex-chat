@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.colorScheme) var colorScheme: ColorScheme
     // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
@@ -76,7 +75,6 @@ struct BadgesSupportSimplexView: View {
             }
             NavigationLink(isActive: $whyBuiltActive) {
                 WhySimpleX(onboarding: false, titleColor: theme.colors.primary, createProfileNavLinkActive: .constant(false))
-                    .modifier(ThemedBackground())
             } label: {
                 EmptyView()
             }

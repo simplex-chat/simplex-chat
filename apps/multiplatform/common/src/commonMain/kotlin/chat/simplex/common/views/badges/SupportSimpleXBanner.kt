@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -72,7 +73,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
       ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
           Text(
-            generalGetString(MR.strings.badges_banner_title),
+            stringResource(MR.strings.badges_banner_title),
             style = MaterialTheme.typography.body1,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colors.primary,
@@ -80,7 +81,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
             overflow = TextOverflow.Ellipsis
           )
           Text(
-            generalGetString(MR.strings.badges_banner_subtitle),
+            stringResource(MR.strings.badges_banner_subtitle),
             style = MaterialTheme.typography.body2,
             color = MaterialTheme.colors.onBackground,
             maxLines = 2,
@@ -92,7 +93,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
       // Same X pattern as OneHandUICard: circle-clipped clickable region with inner padding for hit area.
       Icon(
         painterResource(MR.images.ic_close),
-        contentDescription = generalGetString(MR.strings.icon_descr_close_button),
+        contentDescription = stringResource(MR.strings.icon_descr_close_button),
         tint = if (isDark) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary,
         modifier = Modifier
           .align(Alignment.TopEnd)
@@ -114,8 +115,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
       heroWidth = heroWidth,
       heroVisibleHeight = heroVisibleHeight,
       cardHeight = cardHeight,
-      trailingPadding = heroTrailingPadding,
-      modifier = Modifier
+      trailingPadding = heroTrailingPadding
     )
   }) { measurables, constraints ->
     val cardPlaceable = measurables[0].measure(constraints)
@@ -128,7 +128,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, trailingPadding: Dp, modifier: Modifier) {
+private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, trailingPadding: Dp) {
   if (BuildConfigCommon.SIMPLEX_ASSETS) {
     // draws at natural aspect, top-aligned in a shorter slot; ContentScale.Crop cuts the overflow at card bottom
     Image(
@@ -136,7 +136,7 @@ private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, 
       contentDescription = null,
       contentScale = ContentScale.Crop,
       alignment = Alignment.TopCenter,
-      modifier = modifier.padding(end = trailingPadding).size(width = heroWidth, height = heroVisibleHeight)
+      modifier = Modifier.padding(end = trailingPadding).size(width = heroWidth, height = heroVisibleHeight)
     )
   } else {
     val badgeSize = 48.dp
@@ -144,7 +144,7 @@ private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, 
       painterResource(MR.images.badge_supporter),
       contentDescription = null,
       contentScale = ContentScale.Fit,
-      modifier = modifier
+      modifier = Modifier
         .padding(end = trailingPadding + 12.dp, top = (cardHeight - badgeSize) / 2, bottom = (cardHeight - badgeSize) / 2)
         .size(badgeSize)
     )

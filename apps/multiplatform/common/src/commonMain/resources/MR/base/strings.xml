@@ -3228,7 +3228,6 @@
   <string name="badges_banner_subtitle">Get badge + files up to 5GB</string>
   <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
   <string name="supporter_perks">Supporter perks</string>
-  <string name="whats_new_supporter_badge_title">Supporter badge ❤️</string>
-  <string name="whats_new_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>
-  <string name="whats_new_supporter_badge_short">Supporter badge</string>
+  <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
+  <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>
 </resources>
