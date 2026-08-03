@@ -36,6 +36,7 @@ final class AppModel: ObservableObject {
     @Published var conversationSearchPresented = false
     @Published var isLoadingConversation = false
     @Published var isSending = false
+    @Published private(set) var sendingChatID: NativeChat.ID?
     @Published private(set) var isDeletingMessages = false
     @Published var selectedMessageIDs: Set<Int64> = []
     @Published var transcriptFocused = false
@@ -130,6 +131,10 @@ final class AppModel: ObservableObject {
     var canSendDraft: Bool {
         let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return (hasText || !pendingAttachments.isEmpty) && !isSending && selectedChat?.kind.canSend == true
+    }
+
+    var isSendingSelectedChat: Bool {
+        isSending && sendingChatID == selectedChatID
     }
 
     var selectedMessagesInTranscriptOrder: [NativeMessage] {
@@ -239,6 +244,7 @@ final class AppModel: ObservableObject {
             return
         }
         draft = ""
+        sendingChatID = chat.id
         isSending = true
         let core = core
         let sendTextOperation = sendTextOperation
@@ -311,7 +317,7 @@ final class AppModel: ObservableObject {
     }
 
     func chooseAttachments() {
-        guard !isSending else { return }
+        guard !isSendingSelectedChat else { return }
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
@@ -324,7 +330,7 @@ final class AppModel: ObservableObject {
     }
 
     func stageAttachments(_ urls: [URL]) {
-        guard !isSending else {
+        guard !isSendingSelectedChat else {
             attachmentError = "Wait for the current message to finish sending before changing attachments."
             return
         }
@@ -343,7 +349,7 @@ final class AppModel: ObservableObject {
     }
 
     func stageFilesFromPasteboard() {
-        guard !isSending else {
+        guard !isSendingSelectedChat else {
             attachmentError = "Wait for the current message to finish sending before changing attachments."
             return
         }
@@ -356,17 +362,17 @@ final class AppModel: ObservableObject {
     }
 
     func removeAttachment(_ id: PendingAttachment.ID) {
-        guard !isSending else { return }
+        guard !isSendingSelectedChat else { return }
         pendingAttachments.removeAll { $0.id == id }
     }
 
     func reorderAttachment(_ source: PendingAttachment.ID, before destination: PendingAttachment.ID) {
-        guard !isSending else { return }
+        guard !isSendingSelectedChat else { return }
         pendingAttachments = PendingAttachment.reordered(pendingAttachments, from: source, before: destination)
     }
 
     func moveAttachment(_ id: PendingAttachment.ID, by offset: Int) {
-        guard !isSending else { return }
+        guard !isSendingSelectedChat else { return }
         guard let sourceIndex = pendingAttachments.firstIndex(where: { $0.id == id }) else { return }
         let destinationIndex = min(max(0, sourceIndex + offset), pendingAttachments.count - 1)
         guard sourceIndex != destinationIndex else { return }
@@ -376,7 +382,7 @@ final class AppModel: ObservableObject {
 
     func beginReply(to message: NativeMessage) {
         guard let chat = selectedChat, chat.kind.canReply, messages.contains(where: { $0.id == message.id }),
-              !isSending else { return }
+              !isSendingSelectedChat else { return }
         replyingTo = message
         replyingChatID = chat.id
         clearMessageSelection()
@@ -390,6 +396,7 @@ final class AppModel: ObservableObject {
     }
 
     func cancelReply() {
+        guard !isSendingSelectedChat else { return }
         replyingTo = nil
         replyingChatID = nil
     }
@@ -566,9 +573,9 @@ final class AppModel: ObservableObject {
     func dismissNearestState() {
         if conversationSearchPresented {
             dismissConversationSearch()
-        } else if replyingTo != nil {
+        } else if replyingTo != nil, !isSendingSelectedChat {
             cancelReply()
-        } else if !pendingAttachments.isEmpty {
+        } else if !pendingAttachments.isEmpty, !isSendingSelectedChat {
             pendingAttachments = []
         } else if !selectedMessageIDs.isEmpty {
             clearMessageSelection()
@@ -699,6 +706,7 @@ final class AppModel: ObservableObject {
 
     private func finishSending() {
         isSending = false
+        sendingChatID = nil
         sendTask = nil
     }
 

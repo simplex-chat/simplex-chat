@@ -252,6 +252,72 @@ private func makeSendTestModel(
 }
 
 @MainActor
+@Test func inFlightSendLocksOnlyItsOriginatingComposer() async throws {
+    // Given
+    let model = makeSendTestModel(sendAttachmentOperation: { _, _, _, _ in
+        try Task.checkCancellation()
+    })
+    let original = try #require(model.messages.first)
+    let originAttachments = ["one.jpg", "two.jpg"].map {
+        PendingAttachment(
+            id: UUID(),
+            url: URL(fileURLWithPath: "/tmp/\($0)"),
+            fileName: $0,
+            kind: .image,
+            byteCount: 10,
+            previewImage: nil
+        )
+    }
+    model.pendingAttachments = originAttachments
+    model.draft = "Origin caption"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+
+    // Then: the originating composer cannot discard in-flight state.
+    #expect(model.isSendingSelectedChat)
+    #expect(model.sendingChatID == "@1")
+    model.cancelReply()
+    model.removeAttachment(originAttachments[0].id)
+    model.dismissNearestState()
+    #expect(model.replyingTo?.id == original.id)
+    #expect(model.pendingAttachments == originAttachments)
+
+    // When: another conversation becomes active.
+    model.selectChat("#2")
+    let groupMessage = try #require(model.messages.first)
+    let otherAttachment = PendingAttachment(
+        id: UUID(),
+        url: URL(fileURLWithPath: "/tmp/other.jpg"),
+        fileName: "other.jpg",
+        kind: .image,
+        byteCount: 10,
+        previewImage: nil
+    )
+
+    // Then: its reply and attachment controls remain available.
+    #expect(!model.isSendingSelectedChat)
+    model.beginReply(to: groupMessage)
+    #expect(model.replyingTo?.id == groupMessage.id)
+    model.pendingAttachments = [otherAttachment]
+    model.removeAttachment(otherAttachment.id)
+    #expect(model.pendingAttachments.isEmpty)
+
+    // Cleanup and verify the originating composer survives cancellation.
+    send.cancel()
+    await send.value
+    #expect(!model.isSending)
+    #expect(model.sendingChatID == nil)
+
+    model.selectChat("@1")
+    #expect(model.draft == "Origin caption")
+    #expect(model.pendingAttachments == originAttachments)
+    #expect(model.replyingTo?.id == original.id)
+}
+
+@MainActor
 @Test func deletionCompletionCannotReplaceAnotherChatsTranscript() async throws {
     // Given
     let deletedChatMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())

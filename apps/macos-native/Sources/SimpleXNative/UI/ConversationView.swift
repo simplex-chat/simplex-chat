@@ -23,7 +23,7 @@ struct ConversationView: View {
                 .navigationTitle("")
                 .toolbar { conversationToolbar(chat: chat) }
                 .dropDestination(for: URL.self) { urls, _ in
-                    guard !model.isSending else { return false }
+                    guard !model.isSendingSelectedChat else { return false }
                     model.stageAttachments(urls)
                     composerFocused = true
                     return !urls.isEmpty
@@ -125,7 +125,7 @@ struct ConversationView: View {
                             startsGroup: startsGroup(at: index),
                             endsGroup: endsGroup(at: index),
                             openingAttachment: model.openingAttachmentIDs.contains(message.id),
-                            canReply: chat.kind.canReply && !model.isSending
+                            canReply: chat.kind.canReply && !model.isSendingSelectedChat
                         ) {
                             transcriptFocused = true
                             model.selectMessage(message.id, modifiers: NSApp.currentEvent?.modifierFlags ?? [])
@@ -221,7 +221,7 @@ struct ConversationView: View {
                     count: model.selectedMessageIDs.count,
                     canReply: model.selectedMessagesInTranscriptOrder.count == 1
                         && chat.kind.canReply
-                        && !model.isSending,
+                        && !model.isSendingSelectedChat,
                     canDelete: model.canDeleteSelectedMessages,
                     reply: model.replyToSelectedMessage,
                     copy: model.copySelectedMessages,
@@ -232,7 +232,12 @@ struct ConversationView: View {
             }
 
             if let message = model.replyingTo {
-                ReplyContextBar(message: message, chat: chat, cancel: model.cancelReply)
+                ReplyContextBar(
+                    message: message,
+                    chat: chat,
+                    canCancel: !model.isSendingSelectedChat,
+                    cancel: model.cancelReply
+                )
                 Divider()
             }
 
@@ -253,7 +258,7 @@ struct ConversationView: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-                .disabled(model.isSending)
+                .disabled(model.isSendingSelectedChat)
                 .help("Add Attachments")
                 .accessibilityLabel("Attachments") // [VERIFY] Matches the attachment menu action.
                 .accessibilityInputLabels(["Attachments", "Attach Files"])
@@ -278,7 +283,7 @@ struct ConversationView: View {
                     ZStack {
                         Circle()
                             .fill(model.canSendDraft ? Color.accentColor : Color(nsColor: .tertiaryLabelColor))
-                        if model.isSending {
+                        if model.isSendingSelectedChat {
                             ProgressView()
                                 .controlSize(.small)
                                 .tint(Color(nsColor: .selectedControlTextColor))
@@ -572,6 +577,7 @@ private struct TranscriptDateHeader: View {
 private struct ReplyContextBar: View {
     let message: NativeMessage
     let chat: NativeChat
+    let canCancel: Bool
     let cancel: () -> Void
 
     var body: some View {
@@ -598,6 +604,7 @@ private struct ReplyContextBar: View {
                 Image(systemName: "xmark")
             }
             .buttonStyle(.borderless)
+            .disabled(!canCancel)
             .help("Cancel Reply")
             .accessibilityLabel("Cancel Reply") // [VERIFY] Matches the visible tooltip.
             .accessibilityInputLabels(["Cancel Reply", "Cancel"])
@@ -649,7 +656,7 @@ private struct AttachmentTray: View {
                         }
                         Button("Remove Attachment") { model.removeAttachment(attachment.id) }
                     }
-                    .disabled(model.isSending)
+                    .disabled(model.isSendingSelectedChat)
                 }
             }
             .padding(.horizontal, 12)

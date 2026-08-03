@@ -60,7 +60,7 @@ struct SimpleXNativeApp: App {
                     .disabled(
                         model.selectedMessagesInTranscriptOrder.count != 1
                             || model.selectedChat?.kind.canReply != true
-                            || model.isSending
+                            || model.isSendingSelectedChat
                     )
                 Button("Delete Selected Messages") { model.requestDeleteSelectedMessages() }
                     .keyboardShortcut(.delete, modifiers: [])
