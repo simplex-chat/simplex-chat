@@ -38,9 +38,12 @@ actual fun DefaultDialog(
       } else false
     }
   ) {
+    val shape = RoundedCornerShape(12.dp)
     Surface(
       Modifier
-        .border(border = BorderStroke(1.dp, MaterialTheme.colors.secondary.copy(alpha = 0.3F)), shape = RoundedCornerShape(8)),
+        .border(border = BorderStroke(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.16f)), shape = shape),
+      shape = shape,
+      elevation = 18.dp,
       contentColor = LocalContentColor.current
     ) {
       content()

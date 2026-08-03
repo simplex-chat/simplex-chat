@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
-import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,10 +84,10 @@ actual fun PlatformTextField(
   val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
   // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
   // In this case padding from right side should be bigger
-  val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
+  val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 88.dp else 46.dp
   val startPadding = 0.dp
   val endPadding = startEndPadding
-  val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
+  val padding = PaddingValues(startPadding, 8.dp, endPadding, 8.dp)
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)
   val clipboard = LocalClipboardManager.current
@@ -117,7 +116,6 @@ actual fun PlatformTextField(
     ),
     modifier = Modifier
       .padding(start = startPadding, end = endPadding)
-      .offset(y = (-5).dp)
       .fillMaxWidth()
       .focusRequester(focusReq)
       .onPreviewKeyEvent {
@@ -180,7 +178,7 @@ actual fun PlatformTextField(
           }
         else false
       },
-    cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+    cursorBrush = SolidColor(MaterialTheme.colors.primary),
     decorationBox = { innerTextField ->
         CompositionLocalProvider(
           LocalLayoutDirection provides if (isRtlByCharacters) LayoutDirection.Rtl else LocalLayoutDirection.current
@@ -194,7 +192,7 @@ actual fun PlatformTextField(
             isError = false,
             trailingIcon = null,
             interactionSource = remember { MutableInteractionSource() },
-            contentPadding = textFieldWithLabelPadding(start = 0.dp, end = 0.dp),
+            contentPadding = PaddingValues(vertical = 8.dp),
             visualTransformation = VisualTransformation.None,
             colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
           )

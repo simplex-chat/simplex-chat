@@ -65,7 +65,7 @@ class AlertManager {
             buttons()
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -97,7 +97,7 @@ class AlertManager {
             }
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -118,7 +118,7 @@ class AlertManager {
             buttons()
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -144,7 +144,7 @@ class AlertManager {
           val buttonRow: @Composable () -> Unit = {
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-              horizontalArrangement = Arrangement.SpaceBetween
+              horizontalArrangement = if (appPlatform.isDesktop) Arrangement.spacedBy(8.dp, Alignment.End) else Arrangement.SpaceBetween
             ) {
               val focusRequester = remember { FocusRequester() }
               LaunchedEffect(Unit) {
@@ -152,14 +152,14 @@ class AlertManager {
                 delay(200)
                 focusRequester.requestFocus()
               }
-              TextButton(onClick = {
+              AlertActionButton(dismissText, onClick = {
                 onDismiss?.invoke()
                 hideAlert()
-              }) { Text(dismissText) }
-              TextButton(onClick = {
+              })
+              AlertActionButton(confirmText, onClick = {
                 onConfirm?.invoke()
                 hideAlert()
-              }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
+              }, modifier = Modifier.focusRequester(focusRequester), emphasized = true, destructive = destructive)
             }
           }
           if (parseHtml) {
@@ -168,7 +168,7 @@ class AlertManager {
             AlertContent(text?.let { AnnotatedString(it) }, hostDevice, true, content = buttonRow)
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -204,7 +204,7 @@ class AlertManager {
             }
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -232,28 +232,28 @@ class AlertManager {
             val showShareButton = text != null && (shareText == true || (shareText == null && text.length > 500))
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-              horizontalArrangement = if (showShareButton) Arrangement.SpaceBetween else Arrangement.Center
+              horizontalArrangement = if (appPlatform.isDesktop) Arrangement.spacedBy(8.dp, Alignment.End) else if (showShareButton) Arrangement.SpaceBetween else Arrangement.Center
             ) {
               val clipboard = LocalClipboardManager.current
               if (showShareButton && text != null) {
-                TextButton(onClick = {
+                AlertActionButton(stringResource(MR.strings.share_verb), onClick = {
                   clipboard.shareText(text)
                   hideAlert()
-                }) { Text(stringResource(MR.strings.share_verb)) }
+                })
               }
-              TextButton(
+              AlertActionButton(
+                text = confirmText,
                 onClick = {
                   onConfirm?.invoke()
                   hideAlert()
                 },
-                Modifier.focusRequester(focusRequester)
-              ) {
-                Text(confirmText, color = Color.Unspecified)
-              }
+                modifier = Modifier.focusRequester(focusRequester),
+                emphasized = true
+              )
             }
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -273,7 +273,7 @@ class AlertManager {
             }
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -420,7 +420,7 @@ class AlertManager {
             }
           }
         },
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = alertDialogShape()
       )
     }
   }
@@ -436,13 +436,60 @@ class AlertManager {
   }
 }
 
+@Composable
+private fun alertDialogShape() = RoundedCornerShape(corner = CornerSize(if (appPlatform.isDesktop) 12.dp else 25.dp))
+
+@Composable
+private fun AlertActionButton(
+  text: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  emphasized: Boolean = false,
+  destructive: Boolean = false,
+) {
+  if (appPlatform.isDesktop) {
+    val buttonModifier = modifier.height(32.dp).widthIn(min = 72.dp)
+    val shape = RoundedCornerShape(7.dp)
+    if (emphasized) {
+      Button(
+        onClick = onClick,
+        modifier = buttonModifier,
+        shape = shape,
+        elevation = null,
+        colors = if (destructive) {
+          ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error, contentColor = MaterialTheme.colors.onPrimary)
+        } else {
+          ButtonDefaults.buttonColors()
+        },
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+      ) {
+        Text(text, fontSize = 13.sp, maxLines = 1)
+      }
+    } else {
+      OutlinedButton(
+        onClick = onClick,
+        modifier = buttonModifier,
+        shape = shape,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+      ) {
+        Text(text, fontSize = 13.sp, maxLines = 1)
+      }
+    }
+  } else {
+    TextButton(onClick = onClick, modifier = modifier) {
+      Text(text, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified)
+    }
+  }
+}
+
 private fun alertTitle(title: String): (@Composable () -> Unit)? {
   return {
     Text(
       title,
       Modifier.fillMaxWidth(),
       textAlign = TextAlign.Center,
-      fontSize = 20.sp
+      fontSize = if (appPlatform.isDesktop) 17.sp else 20.sp,
+      fontWeight = if (appPlatform.isDesktop) FontWeight.SemiBold else FontWeight.Normal
     )
   }
 }
@@ -476,9 +523,9 @@ private fun AlertContent(
               Text(
                 escapedHtmlToAnnotatedString(text, LocalDensity.current),
                 Modifier.fillMaxWidth(),
-                fontSize = 16.sp,
+                fontSize = if (appPlatform.isDesktop) 14.sp else 16.sp,
                 textAlign = textAlign,
-                color = MaterialTheme.colors.secondary
+                color = if (appPlatform.isDesktop) MaterialTheme.colors.onSurface.copy(alpha = 0.78f) else MaterialTheme.colors.secondary
               )
             }
             belowTextContent()
@@ -514,9 +561,9 @@ private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>
               Text(
                 text,
                 Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
-                fontSize = 16.sp,
+                fontSize = if (appPlatform.isDesktop) 14.sp else 16.sp,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colors.secondary
+                color = if (appPlatform.isDesktop) MaterialTheme.colors.onSurface.copy(alpha = 0.78f) else MaterialTheme.colors.secondary
               )
             }
           }

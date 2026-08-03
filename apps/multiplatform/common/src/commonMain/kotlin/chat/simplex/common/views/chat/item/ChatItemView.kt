@@ -1093,11 +1093,18 @@ fun showArchiveReportsAlert(ids: List<Long>, allowForAll: Boolean, archiveReport
 }
 
 @Composable
+private fun menuItemModifier(): Modifier = if (appPlatform.isDesktop) Modifier.heightIn(min = 32.dp) else Modifier
+
+private fun menuItemPadding(): PaddingValues = PaddingValues(horizontal = if (appPlatform.isDesktop) 12.dp else DEFAULT_PADDING * 1.5f)
+
+private fun menuItemIconModifier(): Modifier = Modifier.size(if (appPlatform.isDesktop) 17.dp else 24.dp)
+
+@Composable
 fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, onClick: () -> Unit) {
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, modifier = menuItemModifier(), contentPadding = menuItemPadding()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1107,7 +1114,7 @@ fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, on
           .padding(end = 15.dp),
         color = finalColor
       )
-      Icon(icon, text, tint = finalColor)
+      Icon(icon, text, menuItemIconModifier(), tint = finalColor)
     }
   }
 }
@@ -1117,7 +1124,7 @@ fun ItemAction(text: String, icon: ImageBitmap, textColor: Color = Color.Unspeci
   val finalColor = if (textColor == Color.Unspecified) {
     MenuTextColor
   } else textColor
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, modifier = menuItemModifier(), contentPadding = menuItemPadding()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1130,9 +1137,9 @@ fun ItemAction(text: String, icon: ImageBitmap, textColor: Color = Color.Unspeci
         overflow = TextOverflow.Ellipsis
       )
       if (iconColor == Color.Unspecified) {
-        Image(icon, text, Modifier.size(22.dp))
+        Image(icon, text, menuItemIconModifier())
       } else {
-        Icon(icon, text, Modifier.size(22.dp), tint = iconColor)
+        Icon(icon, text, menuItemIconModifier(), tint = iconColor)
       }
     }
   }
@@ -1149,7 +1156,7 @@ fun ItemAction(
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, modifier = menuItemModifier(), contentPadding = menuItemPadding()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1171,7 +1178,7 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, modifier = menuItemModifier(), contentPadding = menuItemPadding()) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1181,7 +1188,7 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
           .padding(end = 15.dp),
         color = finalColor
       )
-      Icon(icon, text, tint = finalColor)
+      Icon(icon, text, menuItemIconModifier(), tint = finalColor)
     }
   }
 }
@@ -1191,7 +1198,7 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, modifier = menuItemModifier(), contentPadding = menuItemPadding()) {
     Text(
       text,
       modifier = Modifier
