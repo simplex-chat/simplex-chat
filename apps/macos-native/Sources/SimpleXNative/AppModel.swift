@@ -609,14 +609,14 @@ final class AppModel: ObservableObject {
               let chatID = selectedChatID,
               replyingChatID == chatID else { return nil }
         cancelReplyTargetNavigation()
-        let task = openQuotedMessage(
-            NativeQuote(
-                messageID: message.id,
-                text: message.replyPreview,
-                sent: message.sent,
-                author: message.author
-            ),
-            from: message.id
+        quoteNavigationTask?.cancel()
+        quoteNavigationTask = nil
+        quoteNavigationRevision &+= 1
+        quoteNavigationError = nil
+        let task = navigateToMessage(
+            message.id,
+            in: chatID,
+            invalidateReplyIfMissing: true
         )
         replyTargetNavigationTask = task
         return task
@@ -743,7 +743,11 @@ final class AppModel: ObservableObject {
     }
 
     @discardableResult
-    private func navigateToMessage(_ messageID: Int64, in chatID: NativeChat.ID) -> Task<Void, Never>? {
+    private func navigateToMessage(
+        _ messageID: Int64,
+        in chatID: NativeChat.ID,
+        invalidateReplyIfMissing: Bool = false
+    ) -> Task<Void, Never>? {
         guard selectedChatID == chatID else { return nil }
         if messages.contains(where: { $0.id == messageID }) {
             cancelConversationLoadWithoutReplacement()
@@ -757,7 +761,8 @@ final class AppModel: ObservableObject {
             around: messageID,
             scrollTo: messageID,
             navigationFailureMessage: "The original quoted message is no longer available in this conversation.",
-            consumeQuoteNavigationStateOnSuccess: true
+            consumeQuoteNavigationStateOnSuccess: true,
+            invalidateReplyIfMissing: invalidateReplyIfMissing
         )
     }
 
@@ -1242,14 +1247,16 @@ final class AppModel: ObservableObject {
         scrollTo scrollTarget: Int64? = nil,
         navigationFailureMessage: String? = nil,
         consumeQuoteNavigationStateOnSuccess: Bool = false,
-        scrollToLatest: Bool = false
+        scrollToLatest: Bool = false,
+        invalidateReplyIfMissing: Bool = false
     ) -> Task<Void, Never> {
         conversationLoadTask?.cancel()
         let task = Task {
             let loaded = await loadConversation(
                 chatID: chatID,
                 around: messageID,
-                navigationFailureMessage: navigationFailureMessage
+                navigationFailureMessage: navigationFailureMessage,
+                invalidateReplyIfMissing: invalidateReplyIfMissing
             )
             guard loaded, !Task.isCancelled, selectedChatID == chatID else { return }
             if scrollToLatest, let latestMessageID = messages.last?.id {
@@ -1275,7 +1282,8 @@ final class AppModel: ObservableObject {
         around messageID: Int64? = nil,
         showProgress: Bool = true,
         navigationFailureMessage: String? = nil,
-        reportFailure: Bool = true
+        reportFailure: Bool = true,
+        invalidateReplyIfMissing: Bool = false
     ) async -> Bool {
         guard selectedChatID == chatID else { return false }
         conversationLoadRevision &+= 1
@@ -1297,7 +1305,11 @@ final class AppModel: ObservableObject {
                   conversationLoadRevision == revision else { return false }
             if let navigationFailureMessage, let messageID,
                !loadedMessages.contains(where: { $0.id == messageID }) {
-                quoteNavigationError = navigationFailureMessage
+                if invalidateReplyIfMissing {
+                    invalidateReplyContext(in: chatID)
+                } else {
+                    quoteNavigationError = navigationFailureMessage
+                }
                 return false
             }
             applyLoadedMessages(loadedMessages, to: chatID)
@@ -1309,7 +1321,9 @@ final class AppModel: ObservableObject {
             guard !Task.isCancelled, selectedChatID == chatID,
                   conversationLoadRevision == revision else { return false }
             if let navigationFailureMessage {
-                quoteNavigationError = navigationFailureMessage
+                quoteNavigationError = invalidateReplyIfMissing
+                    ? error.localizedDescription
+                    : navigationFailureMessage
             } else if reportFailure {
                 presentChatOperationFailure(error.localizedDescription, in: chatID)
             }

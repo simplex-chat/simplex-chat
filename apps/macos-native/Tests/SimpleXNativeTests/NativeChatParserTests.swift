@@ -709,6 +709,63 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
 }
 
 @MainActor
+@Test func missingOffscreenReplyTargetRetiresOnlyTheQuoteAndKeepsTheDraft() async throws {
+    // Given: the active reply points to an older message outside the visible page.
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let visibleMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            #expect(aroundMessageID == original.id)
+            return visibleMessages
+        }
+    )
+    model.draft = "Keep this reply draft"
+    model.beginReply(to: original)
+    model.messages = visibleMessages
+
+    // When: Show Original confirms that the requested target is absent.
+    let navigation = try #require(model.openReplyTarget())
+    await navigation.value
+
+    // Then: only the invalid quote is retired; user content and transcript survive.
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep this reply draft")
+    #expect(model.messages == visibleMessages)
+    #expect(model.targetMessageID == nil)
+    #expect(model.quoteNavigationError == nil)
+    #expect(model.replyContextError == "The message you were replying to is no longer available. Your draft was kept.")
+}
+
+@MainActor
+@Test func transientReplyTargetLoadFailureKeepsTheQuoteForRetry() async throws {
+    // Given
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let visibleMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, _ in
+            throw NativeChatError.unavailable("Temporary history failure")
+        }
+    )
+    model.draft = "Do not lose this"
+    model.beginReply(to: original)
+    model.messages = visibleMessages
+
+    // When
+    let navigation = try #require(model.openReplyTarget())
+    await navigation.value
+
+    // Then: an inconclusive load does not claim the original was deleted.
+    #expect(model.replyingTo?.id == original.id)
+    #expect(model.draft == "Do not lose this")
+    #expect(model.messages == visibleMessages)
+    #expect(model.replyContextError == nil)
+    #expect(model.quoteNavigationError == "Temporary history failure")
+}
+
+@MainActor
 @Test func cancellingReplyRetiresItsPendingOriginalMessageNavigation() async throws {
     // Given
     let original = NativePreviewData.messages(for: "@1")[0]
