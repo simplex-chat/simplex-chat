@@ -715,6 +715,9 @@ private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
     #expect(!model.canDeleteSelectedMessages)
     #expect(!model.canNavigateConversationHistory)
     #expect(!model.canRefreshConversation)
+    #expect(!model.canReply(to: target))
+    model.beginReply(to: target)
+    #expect(model.replyingTo == nil)
     model.sendDraft()
     model.requestDeleteSelectedMessages()
     #expect(model.sendTask == nil)
@@ -736,6 +739,7 @@ private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
     #expect(model.canDeleteSelectedMessages)
     #expect(model.canNavigateConversationHistory)
     #expect(model.canRefreshConversation)
+    #expect(model.canReply(to: target))
     #expect(model.messages == originalMessages)
 }
 
@@ -1992,6 +1996,118 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
 }
 
 @MainActor
+@Test func newerReplyCancelsAnOlderOffscreenQuotePageLoad() async throws {
+    // Given
+    let originalMessages = NativePreviewData.messages(for: "@1")
+    let replyTarget = try #require(originalMessages.first)
+    let offscreenTarget = NativeMessage(
+        id: 9_701,
+        text: "Older offscreen quote destination",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .text
+    )
+    let probe = DelayedValue([offscreenTarget])
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            #expect(aroundMessageID == offscreenTarget.id)
+            return await probe.load()
+        }
+    )
+    model.messages = originalMessages
+    let quote = NativeQuote(
+        messageID: offscreenTarget.id,
+        text: offscreenTarget.text,
+        sent: offscreenTarget.sent,
+        author: offscreenTarget.author
+    )
+
+    // When: an offscreen quote page is loading, then Reply becomes the newer intent.
+    let navigation = try #require(model.openQuotedMessage(quote, from: 9_702))
+    await probe.waitUntilRequested()
+    #expect(model.isLoadingConversation)
+    model.beginReply(to: replyTarget)
+
+    // Then: Reply immediately keeps the visible transcript and owns the composer.
+    #expect(model.replyingTo?.id == replyTarget.id)
+    #expect(model.messages == originalMessages)
+    #expect(!model.isLoadingConversation)
+
+    // When: the cancelled page loader eventually returns.
+    await probe.release()
+    await navigation.value
+
+    // Then: it cannot replace the transcript or steal scroll focus.
+    #expect(model.replyingTo?.id == replyTarget.id)
+    #expect(model.messages == originalMessages)
+    #expect(model.targetMessageID == nil)
+    #expect(model.conversationAnchorMessageID == nil)
+}
+
+@MainActor
+@Test func newerReplyCancelsOlderUnresolvedQuoteMetadata() async throws {
+    // Given
+    let replyTarget = NativePreviewData.messages(for: "@1")[0]
+    let unresolvedQuote = NativeQuote(messageID: nil, text: "Older unresolved quote", sent: false, author: "Maya")
+    let containingMessage = NativeMessage(
+        id: 9_703,
+        text: "Reply with delayed metadata",
+        timestamp: nil,
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text,
+        quotedItem: unresolvedQuote
+    )
+    let refreshedMessage = NativeMessage(
+        id: containingMessage.id,
+        text: containingMessage.text,
+        timestamp: containingMessage.timestamp,
+        sent: containingMessage.sent,
+        author: containingMessage.author,
+        deletable: containingMessage.deletable,
+        content: containingMessage.content,
+        quotedItem: NativeQuote(
+            messageID: replyTarget.id,
+            text: replyTarget.text,
+            sent: replyTarget.sent,
+            author: replyTarget.author
+        )
+    )
+    let probe = DelayedValue<NativeMessage?>(refreshedMessage)
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { _, _ in await probe.load() }
+    )
+    let originalMessages = [replyTarget, containingMessage]
+    model.messages = originalMessages
+
+    // When: metadata resolution is pending, then the user chooses a visible reply target.
+    let navigation = try #require(model.openQuotedMessage(unresolvedQuote, from: containingMessage.id))
+    await probe.waitUntilRequested()
+    #expect(model.quoteNavigationTask != nil)
+    model.beginReply(to: replyTarget)
+
+    // Then: the newer reply retires the unresolved navigation immediately.
+    #expect(model.replyingTo?.id == replyTarget.id)
+    #expect(model.quoteNavigationTask == nil)
+
+    // When: the cancelled metadata request returns.
+    await probe.release()
+    await navigation.value
+
+    // Then: it cannot update the old row or jump the transcript.
+    #expect(model.replyingTo?.id == replyTarget.id)
+    #expect(model.messages == originalMessages)
+    #expect(model.targetMessageID == nil)
+    #expect(model.quoteNavigationError == nil)
+}
+
+@MainActor
 @Test func inFlightSendBlocksQuotedHistoryNavigation() async throws {
     // Given
     let failure = "The delayed send failed."
@@ -2059,6 +2175,7 @@ private actor DelayedDeletionProbe {
         deleteMessagesOperation: { _, _ in try await probe.delete() }
     )
     let target = try #require(model.messages.first)
+    let unrelatedMessage = try #require(model.messages.dropFirst().first)
     model.draft = "Keep this reply"
     model.beginReply(to: target)
     model.selectMessage(target.id, modifiers: [])
@@ -2072,6 +2189,9 @@ private actor DelayedDeletionProbe {
     #expect(!model.canSendDraft)
     #expect(!model.canNavigateConversationHistory)
     #expect(!model.canRefreshConversation)
+    #expect(!model.canReply(to: unrelatedMessage))
+    model.beginReply(to: unrelatedMessage)
+    #expect(model.replyingTo?.id == target.id)
     let quote = NativeQuote(messageID: target.id, text: target.text, sent: target.sent, author: target.author)
     #expect(model.openQuotedMessage(quote, from: 910) == nil)
     #expect(model.targetMessageID == nil)
@@ -2086,6 +2206,7 @@ private actor DelayedDeletionProbe {
     #expect(model.replyingTo?.id == target.id)
     #expect(model.draft == "Keep this reply")
     #expect(model.canSendDraft)
+    #expect(model.canReply(to: unrelatedMessage))
     #expect(model.phase == .failed(failure))
 }
 

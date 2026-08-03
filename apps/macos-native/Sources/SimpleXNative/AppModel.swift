@@ -500,6 +500,7 @@ final class AppModel: ObservableObject {
         guard let chat = selectedChat, canReply(to: message),
               let currentMessage = messages.first(where: { $0.id == message.id }),
               currentMessage.replyable else { return }
+        cancelStaleNavigationForReply()
         replyingTo = currentMessage
         replyingChatID = chat.id
         if conversationSearchPresented {
@@ -513,10 +514,17 @@ final class AppModel: ObservableObject {
     func canReply(to message: NativeMessage) -> Bool {
         guard let chat = selectedChat,
               chat.kind.canReply,
-              !isSendingSelectedChat,
+              canNavigateConversationHistory,
               let currentMessage = messages.first(where: { $0.id == message.id }) else { return false }
         return currentMessage.replyable
             && !deletionIncludesMessage(currentMessage.id, in: chat.id)
+    }
+
+    private func cancelStaleNavigationForReply() {
+        quoteNavigationTask?.cancel()
+        quoteNavigationTask = nil
+        quoteNavigationRevision &+= 1
+        cancelConversationLoadWithoutReplacement()
     }
 
     func replyToSelectedMessage() {
