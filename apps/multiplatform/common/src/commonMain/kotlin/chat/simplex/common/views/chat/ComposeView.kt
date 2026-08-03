@@ -938,11 +938,13 @@ fun ComposeView(
     val lastFailed = lastMessageFailedToSend
     // composeState is shared between the chats opened in this view, and this runs after the send API call, so the user
     // could have switched chats or typed another message in the meantime - only the message that was sent may be
-    // cleared or restored. Live messages are sent while typing in the chat or when leaving it, they are not affected.
-    // On Main, so that these checks and changes are not interleaved with the user switching chats or typing.
+    // cleared or restored. On Main, so that these checks and changes are not interleaved with the user switching
+    // chats or typing.
     withContext(Dispatchers.Main) {
       val chatIsOpen = chatModel.chatId.value == chat.id
-      val sentMessageInCompose = live || cs.liveMessage != null || (chatIsOpen && composeState.value.inProgress)
+      // a live message is held in the compose state of the chat it is sent to, but only while that chat is the one open
+      val liveSend = live || cs.liveMessage != null
+      val sentMessageInCompose = chatIsOpen && (liveSend || composeState.value.inProgress)
       if (sentMessageInCompose) {
         if (lastFailed == null) {
           clearState(live)
@@ -955,7 +957,8 @@ fun ComposeView(
         if (sentMessageInCompose) composeState.value = draft
       } else {
         clearCurrentDraft()
-        if (!sentMessageInCompose && lastFailed != null) {
+        // liveSend excluded: a failing keystroke send would otherwise write a draft on every attempt
+        if (!sentMessageInCompose && !liveSend && lastFailed != null) {
           // the message was not sent, so it is restored in the chat it was composed in, or kept as its draft if another chat is open
           if (chatIsOpen && composeState.value.empty) {
             composeState.value = lastFailed
@@ -1345,6 +1348,12 @@ fun ComposeView(
       // the message being sent must not be kept in the compose state, it is shared with the chat opened next;
       // if it fails to send it is restored in this chat or saved as its draft
       clearState()
+      // clearState() does not load the draft of the chat opened next, and without this it is never shown and is
+      // dropped when that chat is left
+      val draft = chatModel.draft.value
+      if (draft != null && chatModel.draftChatId.value == draftChatId(chatModel.chatId.value, chatScope)) {
+        composeState.value = draft
+      }
     } else if (!cs.empty) {
       if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
         recState.value = RecordingState.NotStarted
