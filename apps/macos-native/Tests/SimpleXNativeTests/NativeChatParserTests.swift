@@ -1099,6 +1099,98 @@ private func makeSendTestModel(
     #expect(model.canDeleteSelectedMessages)
 }
 
+private actor DelayedDeletionProbe {
+    private let messages: [NativeMessage]?
+    private let failureMessage: String
+    private var requested = false
+    private var released = false
+
+    init(messages: [NativeMessage]? = nil, failureMessage: String = "Deletion failed") {
+        self.messages = messages
+        self.failureMessage = failureMessage
+    }
+
+    func delete() async throws -> [NativeMessage] {
+        requested = true
+        while !released { await Task.yield() }
+        if let messages { return messages }
+        throw NativeChatError.unavailable(failureMessage)
+    }
+
+    func waitUntilRequested() async {
+        while !requested { await Task.yield() }
+    }
+
+    func release() {
+        released = true
+    }
+}
+
+@MainActor
+@Test func failedDeletionPreservesReplyAndBlocksRacingSend() async throws {
+    // Given
+    let failure = "The reply target could not be deleted."
+    let probe = DelayedDeletionProbe(failureMessage: failure)
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in try await probe.delete() }
+    )
+    let target = try #require(model.messages.first)
+    model.draft = "Keep this reply"
+    model.beginReply(to: target)
+    model.selectMessage(target.id, modifiers: [])
+
+    // When: deletion is pending.
+    let deletion = try #require(model.deleteSelectedMessages())
+    await probe.waitUntilRequested()
+
+    // Then: the reply stays visible, but cannot be sent into the deletion race.
+    #expect(model.replyingTo?.id == target.id)
+    #expect(!model.canSendDraft)
+    model.sendDraft()
+    #expect(model.sendTask == nil)
+
+    // When: deletion fails.
+    await probe.release()
+    await deletion.value
+
+    // Then: the complete composer is restored and can be retried.
+    #expect(model.replyingTo?.id == target.id)
+    #expect(model.draft == "Keep this reply")
+    #expect(model.canSendDraft)
+    #expect(model.phase == .failed(failure))
+}
+
+@MainActor
+@Test func successfulDeletionClearsOnlyItsReplyContextAcrossChatSwitch() async throws {
+    // Given
+    let remainingMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let probe = DelayedDeletionProbe(messages: remainingMessages)
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in try await probe.delete() }
+    )
+    let target = try #require(model.messages.first)
+    model.draft = "Keep as an ordinary draft"
+    model.beginReply(to: target)
+    model.selectMessage(target.id, modifiers: [])
+
+    // When: deletion starts and the user switches conversations.
+    let deletion = try #require(model.deleteSelectedMessages())
+    await probe.waitUntilRequested()
+    #expect(model.replyingTo?.id == target.id)
+    #expect(!model.canSendDraft)
+    model.selectChat("#2")
+    await probe.release()
+    await deletion.value
+
+    // Then: returning restores the draft, but not a quote to the deleted item.
+    model.selectChat("@1")
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep as an ordinary draft")
+    #expect(model.canSendDraft)
+}
+
 @MainActor
 @Test func deletionCompletionCannotReplaceAnotherChatsTranscript() async throws {
     // Given
@@ -1179,6 +1271,8 @@ private func makeSendTestModel(
     )
     let originalMessages = model.messages
     let selected = try #require(model.messages.first)
+    model.draft = "Keep this reply"
+    model.beginReply(to: selected)
     model.selectMessage(selected.id, modifiers: [])
 
     // When
@@ -1188,7 +1282,38 @@ private func makeSendTestModel(
 
     // Then
     #expect(model.messages == originalMessages)
+    #expect(model.replyingTo?.id == selected.id)
+    #expect(model.draft == "Keep this reply")
     #expect(!model.isDeletingMessages)
+}
+
+@MainActor
+@Test func cancellationAfterDeletionCommitClearsReplyAndRemovesTarget() async throws {
+    // Given
+    let remainingMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in
+            withUnsafeCurrentTask { $0?.cancel() }
+            return remainingMessages
+        }
+    )
+    let target = try #require(model.messages.first)
+    model.draft = "Keep as an ordinary draft"
+    model.beginReply(to: target)
+    model.selectMessage(target.id, modifiers: [])
+
+    // When: the delete operation commits, then observes cancellation.
+    let deletion = try #require(model.deleteSelectedMessages())
+    await deletion.value
+
+    // Then: committed state wins over cancellation.
+    #expect(!model.messages.contains(where: { $0.id == target.id }))
+    #expect(model.replyingTo == nil)
+    #expect(model.draft == "Keep as an ordinary draft")
+    #expect(model.canSendDraft)
+    #expect(!model.isDeletingMessages)
+    #expect(model.phase == .ready)
 }
 
 @MainActor

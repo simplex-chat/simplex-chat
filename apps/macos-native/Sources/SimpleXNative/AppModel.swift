@@ -80,6 +80,8 @@ final class AppModel: ObservableObject {
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
+    private var deletingChatID: NativeChat.ID?
+    private var deletingMessageIDs: Set<Int64> = []
     private var selectionAnchor: Int64?
     private var replyingChatID: NativeChat.ID?
     private var conversationLoadRevision: UInt64 = 0
@@ -148,7 +150,10 @@ final class AppModel: ObservableObject {
 
     var canSendDraft: Bool {
         let hasText = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return (hasText || !pendingAttachments.isEmpty) && !isSending && selectedChat?.kind.canSend == true
+        return (hasText || !pendingAttachments.isEmpty)
+            && !isSending
+            && !isDeletingReplyTarget
+            && selectedChat?.kind.canSend == true
     }
 
     var isSendingSelectedChat: Bool {
@@ -169,10 +174,12 @@ final class AppModel: ObservableObject {
     }
 
     var canReplyToSelectedMessage: Bool {
-        selectedMessagesInTranscriptOrder.count == 1
-            && selectedMessagesInTranscriptOrder.first?.replyable == true
+        guard selectedMessagesInTranscriptOrder.count == 1,
+              let message = selectedMessagesInTranscriptOrder.first else { return false }
+        return message.replyable
             && selectedChat?.kind.canReply == true
             && !isSendingSelectedChat
+            && !deletionIncludesMessage(message.id, in: selectedChatID)
     }
 
     var canDismissNearestState: Bool {
@@ -250,7 +257,8 @@ final class AppModel: ObservableObject {
     func sendDraft() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = pendingAttachments
-        guard (!text.isEmpty || !attachments.isEmpty), let chat = selectedChat, !isSending else { return }
+        guard (!text.isEmpty || !attachments.isEmpty), let chat = selectedChat,
+              !isSending, !isDeletingReplyTarget else { return }
         let quotedMessage = replyingChatID == chat.id ? replyingTo : nil
         if replyingTo != nil, quotedMessage == nil { cancelReply() }
         if previewMode, sendTextOperation == nil, sendAttachmentOperation == nil {
@@ -437,7 +445,8 @@ final class AppModel: ObservableObject {
         guard let chat = selectedChat, chat.kind.canReply,
               let currentMessage = messages.first(where: { $0.id == message.id }),
               currentMessage.replyable,
-              !isSendingSelectedChat else { return }
+              !isSendingSelectedChat,
+              !deletionIncludesMessage(currentMessage.id, in: chat.id) else { return }
         replyingTo = currentMessage
         replyingChatID = chat.id
         clearMessageSelection()
@@ -650,61 +659,101 @@ final class AppModel: ObservableObject {
     func deleteSelectedMessages() -> Task<Void, Never>? {
         guard let chat = selectedChat, canDeleteSelectedMessages else { return nil }
         let identifiers = selectedMessagesInTranscriptOrder.map(\.id)
-        if let replyingTo, identifiers.contains(replyingTo.id) { cancelReply() }
         showingDeleteConfirmation = false
         if previewMode, deleteMessagesOperation == nil {
             messages.removeAll { identifiers.contains($0.id) }
+            identifiers.forEach { clearReply($0, in: chat.id) }
             clearMessageSelection()
             return nil
         }
 
+        deletingChatID = chat.id
+        deletingMessageIDs = Set(identifiers)
         isDeletingMessages = true
         clearMessageSelection()
         let operation = deleteMessagesOperation
         let core = core
         let task = Task { [weak self] in
+            var deletionCommitted = false
             do {
                 let loadedMessages: [NativeMessage]
                 if let operation {
                     loadedMessages = try await operation(identifiers, chat)
+                    deletionCommitted = true
                 } else {
                     try await core.deleteMessages(identifiers, from: chat)
+                    deletionCommitted = true
                     try Task.checkCancellation()
                     loadedMessages = try await core.loadMessages(chatID: chat.id)
                 }
                 try Task.checkCancellation()
                 guard let self else { return }
-                self.finishMessageDeletion(loadedMessages, in: chat.id)
+                self.finishMessageDeletion(loadedMessages, deletedIDs: identifiers, in: chat.id)
             } catch is CancellationError {
-                self?.finishMessageDeletionCancellation()
+                if deletionCommitted {
+                    self?.finishCommittedMessageDeletion(deletedIDs: identifiers, in: chat.id)
+                } else {
+                    self?.finishMessageDeletionCancellation()
+                }
             } catch {
-                self?.finishMessageDeletionFailure(error.localizedDescription, in: chat.id)
+                if deletionCommitted {
+                    self?.finishCommittedMessageDeletion(deletedIDs: identifiers, in: chat.id)
+                } else {
+                    self?.finishMessageDeletionFailure(error.localizedDescription, in: chat.id)
+                }
             }
         }
         deleteTask = task
         return task
     }
 
-    private func finishMessageDeletion(_ loadedMessages: [NativeMessage], in chatID: NativeChat.ID) {
-        isDeletingMessages = false
-        deleteTask = nil
+    private func finishMessageDeletion(
+        _ loadedMessages: [NativeMessage],
+        deletedIDs: [Int64],
+        in chatID: NativeChat.ID
+    ) {
+        clearDeletionState()
+        deletedIDs.forEach { clearReply($0, in: chatID) }
         guard selectedChatID == chatID else { return }
         messages = loadedMessages
     }
 
+    private func finishCommittedMessageDeletion(deletedIDs: [Int64], in chatID: NativeChat.ID) {
+        clearDeletionState()
+        deletedIDs.forEach { clearReply($0, in: chatID) }
+        guard selectedChatID == chatID else { return }
+        messages.removeAll { deletedIDs.contains($0.id) }
+    }
+
     private func finishMessageDeletionCancellation() {
-        isDeletingMessages = false
-        deleteTask = nil
+        clearDeletionState()
     }
 
     private func finishMessageDeletionFailure(_ message: String, in chatID: NativeChat.ID) {
-        isDeletingMessages = false
-        deleteTask = nil
+        clearDeletionState()
         if selectedChatID == chatID {
             phase = .failed(message)
         } else {
             pendingChatOperationErrors[chatID] = message
         }
+    }
+
+    private var isDeletingReplyTarget: Bool {
+        guard let replyingTo else { return false }
+        return deletionIncludesMessage(replyingTo.id, in: replyingChatID)
+    }
+
+    private func deletionIncludesMessage(_ messageID: Int64, in chatID: NativeChat.ID?) -> Bool {
+        isDeletingMessages
+            && deletingChatID == chatID
+            && deletingMessageIDs.contains(messageID)
+    }
+
+    private func clearDeletionState() {
+        deletingChatID = nil
+        deletingMessageIDs = []
+        isDeletingMessages = false
+        deleteTask = nil
     }
 
     func clearMessageSelection() {
