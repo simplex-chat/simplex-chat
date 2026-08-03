@@ -459,12 +459,14 @@ final class AppModel: ObservableObject {
     @discardableResult
     func openQuotedMessage(_ quote: NativeQuote, from containingMessageID: Int64) -> Task<Void, Never>? {
         guard let chatID = selectedChatID else { return nil }
+        quoteNavigationTask?.cancel()
+        quoteNavigationTask = nil
+        quoteNavigationRevision &+= 1
+        quoteNavigationError = nil
         if let messageID = quote.messageID {
             return navigateToMessage(messageID, in: chatID)
         }
 
-        quoteNavigationTask?.cancel()
-        quoteNavigationRevision &+= 1
         let revision = quoteNavigationRevision
         let operation = loadMessageOperation
         let task = Task {
@@ -560,11 +562,11 @@ final class AppModel: ObservableObject {
     @discardableResult
     private func navigateToMessage(_ messageID: Int64, in chatID: NativeChat.ID) -> Task<Void, Never>? {
         guard selectedChatID == chatID else { return nil }
+        conversationLoadTask?.cancel()
         if messages.contains(where: { $0.id == messageID }) {
             targetMessageID = messageID
             return nil
         }
-        conversationLoadTask?.cancel()
         return scheduleConversationLoad(
             chatID: chatID,
             around: messageID,

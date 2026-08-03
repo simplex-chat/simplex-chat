@@ -391,6 +391,30 @@ private actor DelayedConversationLoadFailure {
     }
 }
 
+private actor DelayedValue<Value: Sendable> {
+    private let value: Value
+    private var requested = false
+    private var released = false
+
+    init(_ value: Value) {
+        self.value = value
+    }
+
+    func load() async -> Value {
+        requested = true
+        while !released { await Task.yield() }
+        return value
+    }
+
+    func waitUntilRequested() async {
+        while !requested { await Task.yield() }
+    }
+
+    func release() {
+        released = true
+    }
+}
+
 @MainActor
 @Test func offscreenQuoteFailureCannotLeakIntoANewConversation() async throws {
     // Given
@@ -412,6 +436,105 @@ private actor DelayedConversationLoadFailure {
     #expect(model.selectedChatID == "#2")
     #expect(model.quoteNavigationError == nil)
     #expect(model.phase == .ready)
+}
+
+@MainActor
+@Test func newerKnownQuoteCancelsOlderUnresolvedQuoteNavigation() async throws {
+    // Given
+    let model = AppModel(previewMode: true)
+    let newerTarget = try #require(model.messages.first)
+    let olderTarget = NativeMessage(
+        id: 906,
+        text: "Older target",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .text
+    )
+    let olderContainingMessage = NativeMessage(
+        id: 907,
+        text: "Reply with unresolved metadata",
+        timestamp: nil,
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text,
+        quotedItem: NativeQuote(
+            messageID: olderTarget.id,
+            text: olderTarget.text,
+            sent: olderTarget.sent,
+            author: olderTarget.author
+        )
+    )
+    let probe = DelayedValue<NativeMessage?>(olderContainingMessage)
+    let testModel = AppModel(
+        previewMode: true,
+        loadMessageOperation: { _, _ in await probe.load() }
+    )
+    let unresolvedQuote = NativeQuote(messageID: nil, text: olderTarget.text, sent: false, author: "Maya")
+
+    // When: the older metadata reload starts, then a newer loaded quote is opened.
+    let olderNavigation = try #require(testModel.openQuotedMessage(unresolvedQuote, from: olderContainingMessage.id))
+    await probe.waitUntilRequested()
+    let newerQuote = NativeQuote(
+        messageID: newerTarget.id,
+        text: newerTarget.text,
+        sent: newerTarget.sent,
+        author: newerTarget.author
+    )
+    #expect(testModel.openQuotedMessage(newerQuote, from: 908) == nil)
+    await probe.release()
+    await olderNavigation.value
+
+    // Then: the late older result cannot replace the newest scroll target.
+    #expect(testModel.targetMessageID == newerTarget.id)
+    #expect(testModel.quoteNavigationError == nil)
+}
+
+@MainActor
+@Test func loadedQuoteCancelsOlderOffscreenPageLoad() async throws {
+    // Given
+    let offscreenTarget = NativeMessage(
+        id: 909,
+        text: "Offscreen target",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .text
+    )
+    let probe = DelayedValue([offscreenTarget])
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, _ in await probe.load() }
+    )
+    let originalMessages = model.messages
+    let newerTarget = try #require(originalMessages.first)
+    let offscreenQuote = NativeQuote(
+        messageID: offscreenTarget.id,
+        text: offscreenTarget.text,
+        sent: offscreenTarget.sent,
+        author: offscreenTarget.author
+    )
+
+    // When: an offscreen load starts, then a loaded quote is chosen.
+    let olderNavigation = try #require(model.openQuotedMessage(offscreenQuote, from: 910))
+    await probe.waitUntilRequested()
+    let newerQuote = NativeQuote(
+        messageID: newerTarget.id,
+        text: newerTarget.text,
+        sent: newerTarget.sent,
+        author: newerTarget.author
+    )
+    #expect(model.openQuotedMessage(newerQuote, from: 911) == nil)
+    await probe.release()
+    await olderNavigation.value
+
+    // Then: the cancelled page cannot replace the transcript or newest target.
+    #expect(model.messages == originalMessages)
+    #expect(model.targetMessageID == newerTarget.id)
+    #expect(model.quoteNavigationError == nil)
 }
 
 private actor AttachmentOpenProbe {
