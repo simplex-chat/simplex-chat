@@ -157,15 +157,7 @@ struct ConversationView: View {
             .focused($transcriptFocused)
             .focusEffectDisabled()
             .overlay {
-                ZStack {
-                    if transcriptFocused {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .stroke(Color.accentColor.opacity(0.8), lineWidth: 2)
-                            .padding(2)
-                            .allowsHitTesting(false)
-                    }
-                    if model.isLoadingConversation { ProgressView() }
-                }
+                if model.isLoadingConversation { ProgressView() }
             }
             .accessibilityLabel("Conversation transcript") // [VERIFY] Names the keyboard-focusable transcript region.
             .accessibilityHint("Use the arrow keys to select messages. Press Return to reply to the selected message.") // [VERIFY] Describes the transcript keyboard actions.
