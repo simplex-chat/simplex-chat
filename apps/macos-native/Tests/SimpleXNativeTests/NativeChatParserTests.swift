@@ -1047,6 +1047,28 @@ private actor AttachmentOpenProbe {
 }
 
 @MainActor
+@Test func replyingFromConversationSearchConsumesTheSelectedResult() throws {
+    // Given
+    let model = AppModel(previewMode: true)
+    let source = try #require(model.messages.first(where: { $0.text.contains("photos") }))
+    model.beginConversationSearch()
+    model.conversationSearchText = "photos"
+    model.updateConversationSearchSelection()
+    let previousFocusRequest = model.composerFocusRequest
+    #expect(model.selectedMessageIDs == [source.id])
+
+    // When
+    model.replyToSelectedMessage()
+
+    // Then
+    #expect(model.replyingTo?.id == source.id)
+    #expect(!model.conversationSearchPresented)
+    #expect(model.conversationSearchText.isEmpty)
+    #expect(model.selectedMessageIDs.isEmpty)
+    #expect(model.composerFocusRequest == previousFocusRequest + 1)
+}
+
+@MainActor
 @Test func replyControlsRejectUnavailableItems() throws {
     // Given
     let source = try #require(NativePreviewData.messages(for: "@1").first)

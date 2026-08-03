@@ -474,7 +474,11 @@ final class AppModel: ObservableObject {
               currentMessage.replyable else { return }
         replyingTo = currentMessage
         replyingChatID = chat.id
-        clearMessageSelection()
+        if conversationSearchPresented {
+            dismissConversationSearch()
+        } else {
+            clearMessageSelection()
+        }
         composerFocusRequest &+= 1
     }
 
