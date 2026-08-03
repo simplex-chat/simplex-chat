@@ -83,6 +83,7 @@ final class AppModel: ObservableObject {
     private var replyTargetNavigationTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
+    private var pendingQuoteNavigationErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
     private var pendingSendStatusMessages: [NativeChat.ID: String] = [:]
     private var pendingReplyInvalidationChatIDs: Set<NativeChat.ID> = []
@@ -979,12 +980,13 @@ final class AppModel: ObservableObject {
             quoteNavigationTask?.cancel()
             quoteNavigationTask = nil
             quoteNavigationRevision &+= 1
+            if let previousChatID = selectedChatID {
+                saveComposerState(for: previousChatID)
+                saveConversationNotices(for: previousChatID)
+            }
             quoteNavigationError = nil
             replyContextError = nil
             sendStatusMessage = nil
-            if let previousChatID = selectedChatID {
-                saveComposerState(for: previousChatID)
-            }
             selectedChatID = id
             conversationAnchorMessageID = nil
             messages = []
@@ -997,6 +999,7 @@ final class AppModel: ObservableObject {
                 phase = .failed(message)
             }
             if let id {
+                quoteNavigationError = pendingQuoteNavigationErrors.removeValue(forKey: id)
                 replyContextError = pendingReplyContextErrors.removeValue(forKey: id)
                 sendStatusMessage = pendingSendStatusMessages.removeValue(forKey: id)
             }
@@ -1017,6 +1020,18 @@ final class AppModel: ObservableObject {
             return
         }
         scheduleConversationLoad(chatID: id, around: messageID, scrollTo: scrollTarget)
+    }
+
+    private func saveConversationNotices(for chatID: NativeChat.ID) {
+        if let quoteNavigationError {
+            pendingQuoteNavigationErrors[chatID] = quoteNavigationError
+        }
+        if let replyContextError {
+            pendingReplyContextErrors[chatID] = replyContextError
+        }
+        if let sendStatusMessage {
+            pendingSendStatusMessages[chatID] = sendStatusMessage
+        }
     }
 
     private func saveComposerState(for chatID: NativeChat.ID) {

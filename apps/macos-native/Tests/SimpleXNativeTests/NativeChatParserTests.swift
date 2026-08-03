@@ -783,6 +783,20 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(model.conversationSearchText == "Hey")
     #expect(model.selectedMessageIDs == [1])
     #expect(model.phase == .ready)
+
+    // When: a notification changes chats before the quote error is acknowledged.
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "#2",
+        messageID: nil
+    ))
+
+    // Then: only the originating chat retains the quote-navigation error.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.quoteNavigationError == nil)
+    model.selectChat("@1")
+    #expect(model.quoteNavigationError == "The original quoted message is no longer available in this conversation.")
 }
 
 @MainActor
@@ -1680,6 +1694,21 @@ private actor AttachmentOpenProbe {
     #expect(model.replyingTo == nil)
     #expect(model.draft == "Keep this draft")
     #expect(model.replyContextError == "The message you were replying to is no longer available. Your draft was kept.")
+
+    // When: a notification moves to another chat before the warning is acknowledged.
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "#2",
+        messageID: nil
+    ))
+
+    // Then: the warning follows its draft instead of leaking or disappearing.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.replyContextError == nil)
+    model.selectChat("@1")
+    #expect(model.draft == "Keep this draft")
+    #expect(model.replyContextError == "The message you were replying to is no longer available. Your draft was kept.")
 }
 
 @MainActor
@@ -2115,6 +2144,22 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
         "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(refreshFailure)"
     )
     #expect(!model.isSending)
+
+    // When: the user follows a notification before acknowledging the status.
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "#2",
+        messageID: nil
+    ))
+
+    // Then: the status is retained only for the conversation that sent the reply.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.sendStatusMessage == nil)
+    model.selectChat("@1")
+    #expect(model.sendStatusMessage ==
+        "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(refreshFailure)"
+    )
 }
 
 @MainActor
