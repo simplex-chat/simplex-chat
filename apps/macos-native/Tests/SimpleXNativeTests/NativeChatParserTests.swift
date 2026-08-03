@@ -391,6 +391,10 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
         }
     )
     #expect(!model.messages.contains(where: { $0.id == target.id }))
+    model.beginConversationSearch()
+    model.conversationSearchText = "Hey"
+    model.updateConversationSearchSelection()
+    #expect(model.selectedMessageIDs == [1])
 
     // When
     let navigation = try #require(model.openQuotedMessage(quote, from: 901))
@@ -400,6 +404,9 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(model.messages == [target])
     #expect(model.targetMessageID == target.id)
     #expect(model.quoteNavigationError == nil)
+    #expect(!model.conversationSearchPresented)
+    #expect(model.conversationSearchText.isEmpty)
+    #expect(model.selectedMessageIDs.isEmpty)
     #expect(model.phase == .ready)
 }
 
@@ -483,6 +490,11 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
         }
     )
     let originalMessages = model.messages
+    model.beginConversationSearch()
+    model.conversationSearchText = "Hey"
+    model.updateConversationSearchSelection()
+    model.targetMessageID = nil
+    #expect(model.selectedMessageIDs == [1])
 
     // When
     let navigation = try #require(model.openQuotedMessage(quote, from: 903))
@@ -492,6 +504,40 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(model.messages == originalMessages)
     #expect(model.targetMessageID == nil)
     #expect(model.quoteNavigationError == "The original quoted message is no longer available in this conversation.")
+    #expect(model.conversationSearchPresented)
+    #expect(model.conversationSearchText == "Hey")
+    #expect(model.selectedMessageIDs == [1])
+    #expect(model.phase == .ready)
+}
+
+@MainActor
+@Test func offscreenQuoteMissingFromLoadedPagePreservesTranscriptAndSearch() async throws {
+    // Given
+    let quote = NativeQuote(messageID: 906, text: "Missing original", sent: false, author: "Maya")
+    let model = AppModel(
+        previewMode: true,
+        loadMessagesOperation: { _, aroundMessageID in
+            #expect(aroundMessageID == quote.messageID)
+            return []
+        }
+    )
+    let originalMessages = model.messages
+    model.beginConversationSearch()
+    model.conversationSearchText = "Hey"
+    model.updateConversationSearchSelection()
+    model.targetMessageID = nil
+
+    // When
+    let navigation = try #require(model.openQuotedMessage(quote, from: 907))
+    await navigation.value
+
+    // Then
+    #expect(model.messages == originalMessages)
+    #expect(model.targetMessageID == nil)
+    #expect(model.quoteNavigationError == "The original quoted message is no longer available in this conversation.")
+    #expect(model.conversationSearchPresented)
+    #expect(model.conversationSearchText == "Hey")
+    #expect(model.selectedMessageIDs == [1])
     #expect(model.phase == .ready)
 }
 

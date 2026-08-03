@@ -527,7 +527,6 @@ final class AppModel: ObservableObject {
         quoteNavigationRevision &+= 1
         quoteNavigationError = nil
         if let messageID = quote.messageID {
-            prepareForQuoteNavigation()
             return navigateToMessage(messageID, in: chatID)
         }
 
@@ -556,7 +555,6 @@ final class AppModel: ObservableObject {
                     quoteNavigationError = "The original quoted message is no longer available in this conversation."
                     return
                 }
-                prepareForQuoteNavigation()
                 if let index = messages.firstIndex(where: { $0.id == containingMessageID }) {
                     messages[index] = refreshedMessage
                 }
@@ -638,6 +636,7 @@ final class AppModel: ObservableObject {
         guard selectedChatID == chatID else { return nil }
         conversationLoadTask?.cancel()
         if messages.contains(where: { $0.id == messageID }) {
+            prepareForQuoteNavigation()
             conversationAnchorMessageID = messageID
             targetMessageID = messageID
             return nil
@@ -646,7 +645,8 @@ final class AppModel: ObservableObject {
             chatID: chatID,
             around: messageID,
             scrollTo: messageID,
-            navigationFailureMessage: "The original quoted message is no longer available in this conversation."
+            navigationFailureMessage: "The original quoted message is no longer available in this conversation.",
+            consumeQuoteNavigationStateOnSuccess: true
         )
     }
 
@@ -1019,6 +1019,7 @@ final class AppModel: ObservableObject {
         around messageID: Int64? = nil,
         scrollTo scrollTarget: Int64? = nil,
         navigationFailureMessage: String? = nil,
+        consumeQuoteNavigationStateOnSuccess: Bool = false,
         scrollToLatest: Bool = false
     ) -> Task<Void, Never> {
         conversationLoadTask?.cancel()
@@ -1033,6 +1034,9 @@ final class AppModel: ObservableObject {
                 targetMessageID = latestMessageID
             } else if let scrollTarget {
                 if messages.contains(where: { $0.id == scrollTarget }) {
+                    if consumeQuoteNavigationStateOnSuccess {
+                        prepareForQuoteNavigation()
+                    }
                     targetMessageID = scrollTarget
                 } else if let navigationFailureMessage {
                     quoteNavigationError = navigationFailureMessage
@@ -1069,6 +1073,11 @@ final class AppModel: ObservableObject {
             }
             guard !Task.isCancelled, selectedChatID == chatID,
                   conversationLoadRevision == revision else { return false }
+            if let navigationFailureMessage, let messageID,
+               !loadedMessages.contains(where: { $0.id == messageID }) {
+                quoteNavigationError = navigationFailureMessage
+                return false
+            }
             applyLoadedMessages(loadedMessages, to: chatID)
             conversationAnchorMessageID = messageID
             return true
