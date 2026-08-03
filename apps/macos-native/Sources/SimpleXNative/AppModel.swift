@@ -2,6 +2,8 @@ import AppKit
 import Foundation
 
 typealias DeleteMessagesOperation = @Sendable ([Int64], NativeChat) async throws -> [NativeMessage]
+typealias SendTextOperation = @Sendable (String, Int64?, NativeChat) async throws -> Void
+typealias SendAttachmentOperation = @Sendable (PendingAttachment, String, Int64?, NativeChat) async throws -> Void
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -56,11 +58,13 @@ final class AppModel: ObservableObject {
     private let previewMode: Bool
     private let passphraseStore: any DatabasePassphraseStore
     private let deleteMessagesOperation: DeleteMessagesOperation?
+    private let sendTextOperation: SendTextOperation?
+    private let sendAttachmentOperation: SendAttachmentOperation?
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
     private var conversationLoadTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
-    private var sendTask: Task<Void, Never>?
+    private(set) var sendTask: Task<Void, Never>?
     private var deleteTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
@@ -74,12 +78,16 @@ final class AppModel: ObservableObject {
         notificationManager: NativeNotificationManager? = nil,
         passphraseStore: any DatabasePassphraseStore = DatabasePassphraseKeychain(),
         previewMode: Bool? = nil,
-        deleteMessagesOperation: DeleteMessagesOperation? = nil
+        deleteMessagesOperation: DeleteMessagesOperation? = nil,
+        sendTextOperation: SendTextOperation? = nil,
+        sendAttachmentOperation: SendAttachmentOperation? = nil
     ) {
         self.previewMode = previewMode
             ?? (ProcessInfo.processInfo.environment["SIMPLEX_NATIVE_UI_PREVIEW"] == "1")
         self.passphraseStore = passphraseStore
         self.deleteMessagesOperation = deleteMessagesOperation
+        self.sendTextOperation = sendTextOperation
+        self.sendAttachmentOperation = sendAttachmentOperation
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
         ) as? Bool == true
@@ -204,7 +212,7 @@ final class AppModel: ObservableObject {
         guard (!text.isEmpty || !attachments.isEmpty), let chat = selectedChat, !isSending else { return }
         let quotedMessage = replyingChatID == chat.id ? replyingTo : nil
         if replyingTo != nil, quotedMessage == nil { cancelReply() }
-        if previewMode {
+        if previewMode, sendTextOperation == nil, sendAttachmentOperation == nil {
             if !text.isEmpty {
                 let nextID = (messages.map(\.id).max() ?? 0) + 1
                 messages.append(NativeMessage(
@@ -232,20 +240,27 @@ final class AppModel: ObservableObject {
         }
         draft = ""
         isSending = true
-        sendTask = Task {
+        let core = core
+        let sendTextOperation = sendTextOperation
+        let sendAttachmentOperation = sendAttachmentOperation
+        sendTask = Task { [weak self] in
             defer {
-                isSending = false
-                sendTask = nil
+                self?.finishSending()
             }
-            var contentWasSent = false
+            var draftWasSent = false
             do {
                 if attachments.isEmpty {
-                    try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
                     try Task.checkCancellation()
-                    contentWasSent = true
-                    if let quotedItemID = quotedMessage?.id {
-                        clearReply(quotedItemID, in: chat.id)
+                    if let sendTextOperation {
+                        try await sendTextOperation(text, quotedMessage?.id, chat)
+                    } else {
+                        try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
                     }
+                    draftWasSent = true
+                    if let quotedItemID = quotedMessage?.id {
+                        self?.clearReply(quotedItemID, in: chat.id)
+                    }
+                    try Task.checkCancellation()
                 } else {
                     let sendSteps = PendingAttachmentBatch.sendSteps(
                         attachments: attachments,
@@ -254,33 +269,43 @@ final class AppModel: ObservableObject {
                     )
                     for (index, step) in sendSteps.enumerated() {
                         try Task.checkCancellation()
-                        try await core.sendAttachment(
-                            step.attachment,
-                            caption: step.caption,
-                            quotedItemID: step.quotedItemID,
-                            to: chat
-                        )
-                        try Task.checkCancellation()
-                        if index == sendSteps.index(before: sendSteps.endIndex) { contentWasSent = true }
-                        removeSentAttachment(step.attachment.id, from: chat.id)
-                        if let quotedItemID = step.quotedItemID {
-                            clearReply(quotedItemID, in: chat.id)
+                        if let sendAttachmentOperation {
+                            try await sendAttachmentOperation(
+                                step.attachment,
+                                step.caption,
+                                step.quotedItemID,
+                                chat
+                            )
+                        } else {
+                            try await core.sendAttachment(
+                                step.attachment,
+                                caption: step.caption,
+                                quotedItemID: step.quotedItemID,
+                                to: chat
+                            )
                         }
+                        if index == sendSteps.index(before: sendSteps.endIndex) { draftWasSent = true }
+                        self?.removeSentAttachment(step.attachment.id, from: chat.id)
+                        if let quotedItemID = step.quotedItemID {
+                            self?.clearReply(quotedItemID, in: chat.id)
+                        }
+                        try Task.checkCancellation()
                     }
                 }
                 let sentMessages = try await core.loadMessages(chatID: chat.id)
                 try Task.checkCancellation()
-                if selectedChatID == chat.id { messages = sentMessages }
-                if let userID = profile?.userID {
+                if self?.selectedChatID == chat.id { self?.messages = sentMessages }
+                if let userID = self?.profile?.userID {
                     let loadedChats = try await core.loadChats(userID: userID)
                     try Task.checkCancellation()
-                    chats = loadedChats
+                    self?.chats = loadedChats
                 }
             } catch is CancellationError {
+                if !draftWasSent { self?.restoreFailedDraft(text, in: chat.id) }
                 return
             } catch {
-                if !contentWasSent { restoreFailedDraft(text, in: chat.id) }
-                phase = .failed(error.localizedDescription)
+                if !draftWasSent { self?.restoreFailedDraft(text, in: chat.id) }
+                self?.finishSendFailure(error.localizedDescription, in: chat.id)
             }
         }
     }
@@ -669,6 +694,19 @@ final class AppModel: ObservableObject {
             } else if state.draft != text {
                 state.draft = "\(text)\n\(state.draft)"
             }
+        }
+    }
+
+    private func finishSending() {
+        isSending = false
+        sendTask = nil
+    }
+
+    private func finishSendFailure(_ message: String, in chatID: NativeChat.ID) {
+        if selectedChatID == chatID {
+            phase = .failed(message)
+        } else {
+            pendingChatOperationErrors[chatID] = message
         }
     }
 

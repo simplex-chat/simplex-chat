@@ -107,6 +107,150 @@ import Testing
     #expect(model.pendingAttachments == [attachment])
 }
 
+private actor AttachmentSendProbe {
+    struct Request: Sendable {
+        let attachmentID: PendingAttachment.ID
+        let caption: String
+        let quotedItemID: Int64?
+    }
+
+    private let failingRequest: Int?
+    private var requests: [Request] = []
+
+    init(failingRequest: Int? = nil) {
+        self.failingRequest = failingRequest
+    }
+
+    func send(_ attachment: PendingAttachment, caption: String, quotedItemID: Int64?) throws {
+        requests.append(Request(
+            attachmentID: attachment.id,
+            caption: caption,
+            quotedItemID: quotedItemID
+        ))
+        if requests.count == failingRequest {
+            throw NativeChatError.unavailable("The attachment could not be sent.")
+        }
+    }
+
+    func recordedRequests() -> [Request] {
+        requests
+    }
+}
+
+@MainActor
+private func makeSendTestModel(
+    sendTextOperation: SendTextOperation? = nil,
+    sendAttachmentOperation: SendAttachmentOperation? = nil
+) -> AppModel {
+    let model = AppModel(
+        previewMode: true,
+        sendTextOperation: sendTextOperation,
+        sendAttachmentOperation: sendAttachmentOperation
+    )
+    return model
+}
+
+@MainActor
+@Test func partialAttachmentFailureKeepsOnlyUnsentItemsAndDoesNotRepeatTheQuote() async throws {
+    // Given
+    let probe = AttachmentSendProbe(failingRequest: 2)
+    let model = makeSendTestModel(sendAttachmentOperation: { attachment, caption, quotedItemID, _ in
+        try await probe.send(attachment, caption: caption, quotedItemID: quotedItemID)
+    })
+    let original = try #require(model.messages.first)
+    let attachments = ["one.jpg", "two.jpg"].map {
+        PendingAttachment(
+            id: UUID(),
+            url: URL(fileURLWithPath: "/tmp/\($0)"),
+            fileName: $0,
+            kind: .image,
+            byteCount: 10,
+            previewImage: nil
+        )
+    }
+    model.pendingAttachments = attachments
+    model.draft = "Batch caption"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await send.value
+
+    // Then
+    let requests = await probe.recordedRequests()
+    #expect(requests.map(\.attachmentID) == attachments.map(\.id))
+    #expect(requests.map(\.quotedItemID) == [original.id, nil])
+    #expect(requests.map(\.caption) == ["", "Batch caption"])
+    #expect(model.pendingAttachments == [attachments[1]])
+    #expect(model.draft == "Batch caption")
+    #expect(model.replyingTo == nil)
+    #expect(!model.isSending)
+}
+
+@MainActor
+@Test func cancellationAfterCoreSuccessCommitsTheSentAttachmentBeforeStopping() async throws {
+    // Given
+    let model = makeSendTestModel(sendAttachmentOperation: { _, _, _, _ in
+        withUnsafeCurrentTask { $0?.cancel() }
+    })
+    let original = try #require(model.messages.first)
+    let attachments = ["sent.jpg", "unsent.jpg"].map {
+        PendingAttachment(
+            id: UUID(),
+            url: URL(fileURLWithPath: "/tmp/\($0)"),
+            fileName: $0,
+            kind: .image,
+            byteCount: 10,
+            previewImage: nil
+        )
+    }
+    model.pendingAttachments = attachments
+    model.draft = "Keep for the unsent item"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await send.value
+
+    // Then
+    #expect(model.pendingAttachments == [attachments[1]])
+    #expect(model.draft == "Keep for the unsent item")
+    #expect(model.replyingTo == nil)
+    #expect(model.phase == .ready)
+    #expect(!model.isSending)
+}
+
+@MainActor
+@Test func offscreenSendFailureRestoresItsComposerAndWaitsToShowTheError() async throws {
+    // Given
+    let failure = "The reply could not be sent."
+    let model = makeSendTestModel(sendTextOperation: { _, _, _ in
+        throw NativeChatError.unavailable(failure)
+    })
+    let original = try #require(model.messages.first)
+    model.draft = "Retry this reply"
+    model.beginReply(to: original)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    model.selectChat("#2")
+    await send.value
+
+    // Then
+    #expect(model.phase == .ready)
+    #expect(model.draft.isEmpty)
+    #expect(model.replyingTo == nil)
+    #expect(!model.isSending)
+
+    model.selectChat("@1")
+    #expect(model.phase == .failed(failure))
+    #expect(model.draft == "Retry this reply")
+    #expect(model.replyingTo?.id == original.id)
+}
+
 @MainActor
 @Test func deletionCompletionCannotReplaceAnotherChatsTranscript() async throws {
     // Given
