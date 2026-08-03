@@ -699,6 +699,11 @@ private struct ReplyContextBar: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
+
+                    if let visual = message.content.replyContextVisual {
+                        Spacer(minLength: 8)
+                        ReplyContextVisualView(visual: visual)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -714,7 +719,10 @@ private struct ReplyContextBar: View {
 
             Button(action: cancel) {
                 Image(systemName: "xmark")
+                    .frame(width: 28, height: 28)
             }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
             .buttonStyle(.borderless)
             .disabled(!canCancel)
             .help("Cancel Reply")
@@ -733,6 +741,51 @@ private struct ReplyContextBar: View {
 
     private var preview: String {
         message.replyPreview
+    }
+}
+
+private struct ReplyContextVisualView: View {
+    let visual: NativeReplyContextVisual
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.quaternary)
+
+            switch visual {
+            case let .image(preview):
+                mediaPreview(preview, fallback: "photo")
+            case let .video(preview):
+                mediaPreview(preview, fallback: "film")
+                Image(systemName: "play.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color(nsColor: .selectedControlTextColor))
+                    .shadow(radius: 2)
+            case .voice:
+                Image(systemName: "waveform")
+                    .foregroundStyle(.secondary)
+            case .file:
+                Image(systemName: "doc")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 40, height: 40)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func mediaPreview(_ preview: String?, fallback: String) -> some View {
+        if let image = NativeChatParser.image(from: preview) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFill()
+                .accessibilityIgnoresInvertColors()
+        } else {
+            Image(systemName: fallback)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

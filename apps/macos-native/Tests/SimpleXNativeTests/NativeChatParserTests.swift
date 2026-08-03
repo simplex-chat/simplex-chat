@@ -258,6 +258,26 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(unnamedPhoto.replyPreview == "Photo")
 }
 
+@Test func replyContextVisualsMatchAttachmentTypes() {
+    let imagePreview = "data:image/jpeg;base64,AA=="
+    let videoPreview = "data:image/jpeg;base64,AQ=="
+
+    #expect(NativeMessageContent.text.replyContextVisual == nil)
+    #expect(NativeMessageContent.image(
+        preview: imagePreview,
+        fileName: "photo.jpg"
+    ).replyContextVisual == .image(imagePreview))
+    #expect(NativeMessageContent.video(
+        preview: videoPreview,
+        fileName: "clip.mp4"
+    ).replyContextVisual == .video(videoPreview))
+    #expect(NativeMessageContent.voice(
+        fileName: "voice.m4a",
+        duration: 5
+    ).replyContextVisual == .voice)
+    #expect(NativeMessageContent.file(fileName: "notes.pdf").replyContextVisual == .file)
+}
+
 @Test func parsesVoiceMessageForPlaybackAndReplyContext() throws {
     // Given
     let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":12,"itemText":"","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"voice","text":"","duration":65}},"file":{"fileName":"voice.m4a","fileSource":{"filePath":"voice.m4a","cryptoArgs":{"fileKey":"key","fileNonce":"nonce"}}}}]}}}"#

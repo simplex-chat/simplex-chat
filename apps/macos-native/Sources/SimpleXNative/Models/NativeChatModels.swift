@@ -106,6 +106,16 @@ enum NativeMessageContent: Hashable, Sendable {
     case voice(fileName: String?, duration: Int?)
     case file(fileName: String?)
 
+    var replyContextVisual: NativeReplyContextVisual? {
+        switch self {
+        case .text: nil
+        case let .image(preview, _): .image(preview)
+        case let .video(preview, _): .video(preview)
+        case .voice: .voice
+        case .file: .file
+        }
+    }
+
     var attachmentDescription: String? {
         switch self {
         case .text: nil
@@ -133,6 +143,13 @@ enum NativeMessageContent: Hashable, Sendable {
         guard let duration, duration > 0 else { return "Voice message" }
         return "Voice message, \(Duration.seconds(Double(duration)).formatted(.time(pattern: .minuteSecond)))"
     }
+}
+
+enum NativeReplyContextVisual: Hashable, Sendable {
+    case image(String?)
+    case video(String?)
+    case voice
+    case file
 }
 
 struct NativeQuote: Hashable, Sendable {
