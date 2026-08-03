@@ -608,6 +608,10 @@ private actor ConversationRefreshProbe {
         while requests.isEmpty { await Task.yield() }
     }
 
+    func waitUntilRequestCount(_ count: Int) async {
+        while requests.count < count { await Task.yield() }
+    }
+
     func releaseFirstRequest() {
         firstRequestReleased = true
     }
@@ -2268,6 +2272,128 @@ private actor DelayedDeletionProbe {
 
     model.selectChat("@1")
     #expect(model.replyingTo?.id == original.id)
+}
+
+@MainActor
+@Test func sameChatNotificationWaitsForAFailedSendToReleaseTheTranscript() async throws {
+    // Given
+    let failure = "The delayed send failed."
+    let probe = DelayedTextSendProbe(failureMessage: failure)
+    let model = makeSendTestModel(sendTextOperation: { _, _, _ in try await probe.send() })
+    let target = try #require(model.messages.last)
+    model.draft = "Keep this draft if sending fails"
+
+    // When: a notification for the selected chat arrives during the send.
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await probe.waitUntilRequested()
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "@1",
+        messageID: target.id
+    ))
+
+    // Then: the route cannot replace the transcript owned by the send.
+    #expect(model.isSendingSelectedChat)
+    #expect(model.targetMessageID == nil)
+
+    // When: the send resolves with an error.
+    await probe.release()
+    await send.value
+
+    // Then: the draft is restored and the queued click reaches its exact message.
+    #expect(model.phase == .failed(failure))
+    #expect(model.draft == "Keep this draft if sending fails")
+    #expect(!model.isSending)
+    #expect(model.targetMessageID == target.id)
+}
+
+@MainActor
+@Test func sameChatNotificationWaitsForAFailedDeletionToReleaseTheTranscript() async throws {
+    // Given
+    let failure = "The delayed deletion failed."
+    let probe = DelayedDeletionProbe(failureMessage: failure)
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in try await probe.delete() }
+    )
+    let deletionTarget = try #require(model.messages.first)
+    let routeTarget = try #require(model.messages.last)
+    model.selectMessage(deletionTarget.id, modifiers: [])
+
+    // When: a notification for the selected chat arrives during deletion.
+    let deletion = try #require(model.deleteSelectedMessages())
+    await probe.waitUntilRequested()
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "@1",
+        messageID: routeTarget.id
+    ))
+
+    // Then: the in-flight deletion keeps ownership of the transcript.
+    #expect(model.isDeletingSelectedChat)
+    #expect(model.targetMessageID == nil)
+
+    // When: deletion resolves with an error.
+    await probe.release()
+    await deletion.value
+
+    // Then: the queued click is consumed without losing the failure state.
+    #expect(model.phase == .failed(failure))
+    #expect(!model.isDeletingMessages)
+    #expect(model.targetMessageID == routeTarget.id)
+}
+
+@MainActor
+@Test func notificationRouteWaitsForBothPhasesOfManualRefresh() async throws {
+    // Given
+    let chatsProbe = DelayedValue(NativePreviewData.chats)
+    let originalMessages = NativePreviewData.messages(for: "@1")
+    let transcriptProbe = ConversationRefreshProbe(messages: originalMessages)
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            return await transcriptProbe.load(around: aroundMessageID)
+        },
+        loadChatsOperation: { _ in await chatsProbe.load() }
+    )
+    model.phase = .ready
+    model.profile = NativePreviewData.profile
+    model.chats = NativePreviewData.chats
+    model.selectedChatID = "@1"
+    model.messages = originalMessages
+    let target = try #require(originalMessages.last)
+
+    // When: the route arrives while refresh is still loading the chat list.
+    model.refresh()
+    await chatsProbe.waitUntilRequested()
+    model.openNotificationRoute(NotificationRoute(
+        userID: NativePreviewData.profile.userID,
+        remoteHostID: nil,
+        chatID: "@1",
+        messageID: target.id
+    ))
+
+    // Then: it cannot bypass the pending transcript refresh.
+    #expect(model.isRefreshing)
+    #expect(model.targetMessageID == nil)
+    #expect(await transcriptProbe.recordedRequests().isEmpty)
+
+    // When: refresh completes, its queued route loads the exact message afterward.
+    await chatsProbe.release()
+    await transcriptProbe.waitUntilRequestCount(2)
+    for _ in 0..<1_000 {
+        if model.targetMessageID == target.id { break }
+        await Task.yield()
+    }
+
+    // Then
+    #expect(!model.isRefreshing)
+    #expect(await transcriptProbe.recordedRequests() == [nil, target.id])
+    #expect(model.targetMessageID == target.id)
 }
 
 @MainActor

@@ -270,6 +270,7 @@ final class AppModel: ObservableObject {
             defer {
                 isRefreshing = false
                 refreshTask = nil
+                consumePendingNotificationRoutes()
             }
             do {
                 let loadedChats = try await loadChats(userID: userID)
@@ -813,6 +814,7 @@ final class AppModel: ObservableObject {
         in chatID: NativeChat.ID
     ) {
         clearDeletionState()
+        defer { consumePendingNotificationRoutes() }
         deletedIDs.forEach { clearReply($0, in: chatID) }
         guard selectedChatID == chatID else { return }
         conversationAnchorMessageID = nil
@@ -821,6 +823,7 @@ final class AppModel: ObservableObject {
 
     private func finishCommittedMessageDeletion(deletedIDs: [Int64], in chatID: NativeChat.ID) {
         clearDeletionState()
+        defer { consumePendingNotificationRoutes() }
         deletedIDs.forEach { clearReply($0, in: chatID) }
         guard selectedChatID == chatID else { return }
         if conversationAnchorMessageID.map(deletedIDs.contains) == true {
@@ -831,6 +834,7 @@ final class AppModel: ObservableObject {
 
     private func finishMessageDeletionCancellation() {
         clearDeletionState()
+        consumePendingNotificationRoutes()
     }
 
     private func finishMessageDeletionFailure(_ message: String, in chatID: NativeChat.ID) {
@@ -840,6 +844,7 @@ final class AppModel: ObservableObject {
         } else {
             pendingChatOperationErrors[chatID] = message
         }
+        consumePendingNotificationRoutes()
     }
 
     private func deletionIncludesMessage(_ messageID: Int64, in chatID: NativeChat.ID?) -> Bool {
@@ -876,7 +881,7 @@ final class AppModel: ObservableObject {
     }
 
     func openNotificationRoute(_ route: NotificationRoute) {
-        guard case .ready = phase,
+        guard canOpenNotificationRoutes,
               route.userID == nil || route.userID == profile?.userID,
               route.remoteHostID == nil else {
             notificationRouteQueue.enqueue(route)
@@ -886,7 +891,20 @@ final class AppModel: ObservableObject {
             notificationRouteQueue.enqueue(route)
             return
         }
+        if isRefreshing || (
+            route.chatID == selectedChatID
+                && (isSendingSelectedChat || isDeletingSelectedChat)
+        ) {
+            notificationRouteQueue.enqueue(route)
+            return
+        }
         transitionToChat(route.chatID, around: route.messageID, scrollTo: route.messageID)
+    }
+
+    private var canOpenNotificationRoutes: Bool {
+        if case .ready = phase { return true }
+        if case .failed = phase { return true }
+        return false
     }
 
     private func transitionToChat(
@@ -1032,6 +1050,7 @@ final class AppModel: ObservableObject {
         if replyWasInvalidated, !quoteWasSent, quotedMessageID != nil {
             invalidateReplyContext(in: chatID)
         }
+        consumePendingNotificationRoutes()
     }
 
     private func finishSendFailure(_ message: String, in chatID: NativeChat.ID) {
