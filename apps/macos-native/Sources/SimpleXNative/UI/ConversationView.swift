@@ -38,7 +38,9 @@ struct ConversationView: View {
                     isPresented: $model.showingDeleteConfirmation,
                     titleVisibility: .visible
                 ) {
-                    Button("Delete Locally", role: .destructive, action: model.deleteSelectedMessages)
+                    Button("Delete Locally", role: .destructive) {
+                        model.deleteSelectedMessages()
+                    }
                     Button("Cancel", role: .cancel) {}
                 } message: {
                     Text("This removes the selected messages from this Mac. It does not delete them for other people.")

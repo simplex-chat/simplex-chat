@@ -1,6 +1,8 @@
 import AppKit
 import Foundation
 
+typealias DeleteMessagesOperation = @Sendable ([Int64], NativeChat) async throws -> [NativeMessage]
+
 @MainActor
 final class AppModel: ObservableObject {
     enum Phase: Equatable {
@@ -32,6 +34,7 @@ final class AppModel: ObservableObject {
     @Published var conversationSearchPresented = false
     @Published var isLoadingConversation = false
     @Published var isSending = false
+    @Published private(set) var isDeletingMessages = false
     @Published var selectedMessageIDs: Set<Int64> = []
     @Published var transcriptFocused = false
     @Published var pendingAttachments: [PendingAttachment] = []
@@ -52,12 +55,15 @@ final class AppModel: ObservableObject {
     private let core = SimpleXCore()
     private let previewMode: Bool
     private let passphraseStore: any DatabasePassphraseStore
+    private let deleteMessagesOperation: DeleteMessagesOperation?
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
     private var conversationLoadTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var sendTask: Task<Void, Never>?
+    private var deleteTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
+    private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var selectionAnchor: Int64?
     private var replyingChatID: NativeChat.ID?
@@ -67,11 +73,13 @@ final class AppModel: ObservableObject {
     init(
         notificationManager: NativeNotificationManager? = nil,
         passphraseStore: any DatabasePassphraseStore = DatabasePassphraseKeychain(),
-        previewMode: Bool? = nil
+        previewMode: Bool? = nil,
+        deleteMessagesOperation: DeleteMessagesOperation? = nil
     ) {
         self.previewMode = previewMode
             ?? (ProcessInfo.processInfo.environment["SIMPLEX_NATIVE_UI_PREVIEW"] == "1")
         self.passphraseStore = passphraseStore
+        self.deleteMessagesOperation = deleteMessagesOperation
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
         ) as? Bool == true
@@ -96,6 +104,7 @@ final class AppModel: ObservableObject {
         conversationLoadTask?.cancel()
         refreshTask?.cancel()
         sendTask?.cancel()
+        deleteTask?.cancel()
     }
 
     var selectedChat: NativeChat? {
@@ -120,7 +129,9 @@ final class AppModel: ObservableObject {
     }
 
     var canDeleteSelectedMessages: Bool {
-        !selectedMessageIDs.isEmpty && selectedMessagesInTranscriptOrder.allSatisfy(\.deletable)
+        !isDeletingMessages
+            && !selectedMessageIDs.isEmpty
+            && selectedMessagesInTranscriptOrder.allSatisfy(\.deletable)
     }
 
     var conversationSearchMatches: [NativeMessage] {
@@ -461,24 +472,64 @@ final class AppModel: ObservableObject {
         showingDeleteConfirmation = true
     }
 
-    func deleteSelectedMessages() {
-        guard let chat = selectedChat, canDeleteSelectedMessages else { return }
+    @discardableResult
+    func deleteSelectedMessages() -> Task<Void, Never>? {
+        guard let chat = selectedChat, canDeleteSelectedMessages else { return nil }
         let identifiers = selectedMessagesInTranscriptOrder.map(\.id)
         if let replyingTo, identifiers.contains(replyingTo.id) { cancelReply() }
         showingDeleteConfirmation = false
-        if previewMode {
+        if previewMode, deleteMessagesOperation == nil {
             messages.removeAll { identifiers.contains($0.id) }
             clearMessageSelection()
-            return
+            return nil
         }
-        Task {
+
+        isDeletingMessages = true
+        clearMessageSelection()
+        let operation = deleteMessagesOperation
+        let core = core
+        let task = Task { [weak self] in
             do {
-                try await core.deleteMessages(identifiers, from: chat)
-                clearMessageSelection()
-                messages = try await core.loadMessages(chatID: chat.id)
+                let loadedMessages: [NativeMessage]
+                if let operation {
+                    loadedMessages = try await operation(identifiers, chat)
+                } else {
+                    try await core.deleteMessages(identifiers, from: chat)
+                    try Task.checkCancellation()
+                    loadedMessages = try await core.loadMessages(chatID: chat.id)
+                }
+                try Task.checkCancellation()
+                guard let self else { return }
+                self.finishMessageDeletion(loadedMessages, in: chat.id)
+            } catch is CancellationError {
+                self?.finishMessageDeletionCancellation()
             } catch {
-                phase = .failed(error.localizedDescription)
+                self?.finishMessageDeletionFailure(error.localizedDescription, in: chat.id)
             }
+        }
+        deleteTask = task
+        return task
+    }
+
+    private func finishMessageDeletion(_ loadedMessages: [NativeMessage], in chatID: NativeChat.ID) {
+        isDeletingMessages = false
+        deleteTask = nil
+        guard selectedChatID == chatID else { return }
+        messages = loadedMessages
+    }
+
+    private func finishMessageDeletionCancellation() {
+        isDeletingMessages = false
+        deleteTask = nil
+    }
+
+    private func finishMessageDeletionFailure(_ message: String, in chatID: NativeChat.ID) {
+        isDeletingMessages = false
+        deleteTask = nil
+        if selectedChatID == chatID {
+            phase = .failed(message)
+        } else {
+            pendingChatOperationErrors[chatID] = message
         }
     }
 
@@ -531,6 +582,9 @@ final class AppModel: ObservableObject {
             targetMessageID = nil
             conversationSearchText = ""
             conversationSearchPresented = false
+            if let id, let message = pendingChatOperationErrors.removeValue(forKey: id) {
+                phase = .failed(message)
+            }
         }
         if let id { notificationManager?.removeDeliveredNotifications(chatID: id) }
 

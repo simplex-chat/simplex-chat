@@ -108,6 +108,98 @@ import Testing
 }
 
 @MainActor
+@Test func deletionCompletionCannotReplaceAnotherChatsTranscript() async throws {
+    // Given
+    let deletedChatMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in deletedChatMessages }
+    )
+    let message = try #require(model.messages.first)
+    model.selectMessage(message.id, modifiers: [])
+
+    // When
+    let deletion = try #require(model.deleteSelectedMessages())
+    model.selectChat("#2")
+    let activeChatMessages = model.messages
+    await deletion.value
+
+    // Then
+    #expect(model.selectedChatID == "#2")
+    #expect(model.messages == activeChatMessages)
+    #expect(!model.isDeletingMessages)
+}
+
+@MainActor
+@Test func deletionCompletionRefreshesItsOriginatingTranscript() async throws {
+    // Given
+    let remainingMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in remainingMessages }
+    )
+    let message = try #require(model.messages.first)
+    model.selectMessage(message.id, modifiers: [])
+
+    // When
+    let deletion = try #require(model.deleteSelectedMessages())
+    await deletion.value
+
+    // Then
+    #expect(model.messages == remainingMessages)
+    #expect(model.selectedMessageIDs.isEmpty)
+    #expect(!model.isDeletingMessages)
+}
+
+@MainActor
+@Test func offscreenDeletionFailureWaitsForItsOriginatingChat() async throws {
+    // Given
+    let message = "The message could not be deleted."
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in throw NativeChatError.unavailable(message) }
+    )
+    let selected = try #require(model.messages.first)
+    model.selectMessage(selected.id, modifiers: [])
+
+    // When
+    let deletion = try #require(model.deleteSelectedMessages())
+    model.selectChat("#2")
+    await deletion.value
+
+    // Then
+    #expect(model.phase == .ready)
+    #expect(!model.isDeletingMessages)
+
+    model.selectChat("@1")
+    #expect(model.phase == .failed(message))
+}
+
+@MainActor
+@Test func cancelledDeletionDoesNotMutateTheTranscriptOrStayBusy() async throws {
+    // Given
+    let model = AppModel(
+        previewMode: true,
+        deleteMessagesOperation: { _, _ in
+            try Task.checkCancellation()
+            return []
+        }
+    )
+    let originalMessages = model.messages
+    let selected = try #require(model.messages.first)
+    model.selectMessage(selected.id, modifiers: [])
+
+    // When
+    let deletion = try #require(model.deleteSelectedMessages())
+    deletion.cancel()
+    await deletion.value
+
+    // Then
+    #expect(model.messages == originalMessages)
+    #expect(!model.isDeletingMessages)
+}
+
+@MainActor
 @Test func notificationChatTransitionCannotLeakAReplyIntoAnotherConversation() throws {
     // Given
     let model = AppModel(previewMode: true)
