@@ -258,19 +258,24 @@ actor SimpleXCore {
     }
 
     private func sendComposedMessage(_ message: [String: Any], to chat: NativeChat) throws {
+        try ensureCommandSucceeded(send(Self.sendCommand(message: message, to: chat)))
+    }
+
+    nonisolated static func sendCommand(message: [String: Any], to chat: NativeChat) throws -> String {
+        if message["quotedItemId"] != nil, !chat.kind.canReply {
+            throw NativeChatError.unavailable("Replies are not supported in this conversation.")
+        }
         let content = [message]
         let data = try JSONSerialization.data(withJSONObject: content)
         guard let json = String(data: data, encoding: .utf8) else {
             throw NativeChatError.invalidResponse("The message could not be encoded.")
         }
-        let command: String
         if chat.kind == .local {
-            command = "/_create *\(chat.apiID) json \(json)"
+            return "/_create *\(chat.apiID) json \(json)"
         } else {
             let asGroup = chat.sendAsGroup ? "(as_group=on)" : ""
-            command = "/_send \(chat.kind.rawValue)\(chat.apiID)\(asGroup) live=off ttl=default sign=off json \(json)"
+            return "/_send \(chat.kind.rawValue)\(chat.apiID)\(asGroup) live=off ttl=default sign=off json \(json)"
         }
-        try ensureCommandSucceeded(send(command))
     }
 
     private func loadIfNeeded() throws {

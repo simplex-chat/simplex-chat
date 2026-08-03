@@ -285,6 +285,10 @@ enum NativeChatParser {
         let items = object["chatItems"] as? [[String: Any]] ?? []
         let lastMeta = items.last?["meta"] as? [String: Any]
         let stats = object["chatStats"] as? [String: Any]
+        let sendAsGroup = switch kind {
+        case .group: groupSendsAsGroup(info: info, groupInfo: payload)
+        default: bool(payload["sendAsGroup"]) ?? false
+        }
         return NativeChat(
             id: "\(kind.rawValue)\(apiID)",
             apiID: apiID,
@@ -294,8 +298,16 @@ enum NativeChatParser {
             preview: string(lastMeta?["itemText"]) ?? "",
             timestamp: date(lastMeta?["itemTs"]),
             unreadCount: int(stats?["unreadCount"]) ?? 0,
-            sendAsGroup: bool(payload["sendAsGroup"]) ?? false
+            sendAsGroup: sendAsGroup
         )
+    }
+
+    private static func groupSendsAsGroup(info: [String: Any], groupInfo: [String: Any]) -> Bool {
+        if let explicit = bool(groupInfo["sendAsGroup"]) { return explicit }
+        if let scope = info["groupChatScope"], !(scope is NSNull) { return false }
+        let membership = groupInfo["membership"] as? [String: Any]
+        return bool(groupInfo["useRelays"]) == true
+            && string(membership?["memberRole"]) == "owner"
     }
 
     private static func parseMessage(_ object: [String: Any]) -> NativeMessage? {
@@ -336,7 +348,10 @@ enum NativeChatParser {
         }
         let isMessageContent = contentType == "sndMsgContent" || contentType == "rcvMsgContent"
         let itemDeleted = meta["itemDeleted"].map { !($0 is NSNull) } ?? false
-        let isLive = bool(meta["isLive"]) ?? false
+        // The core serializes CIMeta's stored field as `itemLive`; `isLive` is
+        // only a derived property in the existing Apple and Kotlin clients.
+        // Keep the older alias as a defensive fallback for preview fixtures.
+        let isLive = bool(meta["itemLive"]) ?? bool(meta["isLive"]) ?? false
         let isReport = string(messageContent?["type"]) == "report"
         let replyable = isMessageContent && !itemDeleted && !isLive && id >= 0 && !isReport
         return NativeMessage(

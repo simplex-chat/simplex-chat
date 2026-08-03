@@ -28,6 +28,35 @@ import Testing
     #expect(chats[0].unreadCount == 2)
 }
 
+@Test func channelOwnersSendGroupRepliesWithTheGroupIdentity() throws {
+    // Given
+    let json = #"{"result":{"type":"apiChats","user":{"userId":7},"chats":[{"chatInfo":{"type":"group","groupInfo":{"groupId":9,"localDisplayName":"News","useRelays":true,"membership":{"memberRole":"owner"},"groupProfile":{"displayName":"News"}}},"chatItems":[],"chatStats":{}}]}}"#
+
+    // When
+    let chat = try #require(NativeChatParser.chats(from: Data(json.utf8)).first)
+    let reply = SimpleXCore.composedMessage(
+        messageContent: ["type": "text", "text": "Reply"],
+        quotedItemID: 42
+    )
+    let command = try SimpleXCore.sendCommand(message: reply, to: chat)
+
+    // Then
+    #expect(chat.sendAsGroup)
+    #expect(command.hasPrefix("/_send #9(as_group=on) "))
+}
+
+@Test func ordinaryGroupsAndScopedSupportChatsDoNotImpersonateTheGroup() throws {
+    // Given
+    let json = #"{"result":{"type":"apiChats","user":{"userId":7},"chats":[{"chatInfo":{"type":"group","groupInfo":{"groupId":9,"localDisplayName":"Friends","useRelays":false,"membership":{"memberRole":"owner"},"groupProfile":{"displayName":"Friends"}}},"chatItems":[],"chatStats":{}},{"chatInfo":{"type":"group","groupChatScope":{"type":"memberSupport","groupMember_":null},"groupInfo":{"groupId":10,"localDisplayName":"Support","useRelays":true,"membership":{"memberRole":"owner"},"groupProfile":{"displayName":"Support"}}},"chatItems":[],"chatStats":{}}]}}"#
+
+    // When
+    let chats = try NativeChatParser.chats(from: Data(json.utf8))
+
+    // Then
+    #expect(chats.count == 2)
+    #expect(chats.allSatisfy { !$0.sendAsGroup })
+}
+
 @Test func parsesConversationDirections() throws {
     let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":1,"itemText":"Hi","itemTs":"2026-08-02T20:00:00Z"}},{"chatDir":{"type":"directSnd"},"meta":{"itemId":2,"itemText":"Hey","itemTs":"2026-08-02T20:01:00Z"}}]}}}"#
     let messages = try NativeChatParser.messages(from: Data(json.utf8))
@@ -97,6 +126,13 @@ private let replyEligibilityCases = [
     ReplyEligibilityCase(
         name: "live message",
         itemID: 4,
+        metaFields: #", "itemLive":true"#,
+        content: #"{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Typing"}}"#,
+        expected: false
+    ),
+    ReplyEligibilityCase(
+        name: "legacy live message alias",
+        itemID: 6,
         metaFields: #", "isLive":true"#,
         content: #"{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Typing"}}"#,
         expected: false
@@ -232,6 +268,74 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
         quotedItemID: nil
     )
     #expect(ordinary["quotedItemId"] == nil)
+}
+
+@Test func coreSendCommandsPreserveQuoteIdentityForDirectAndGroupReplies() throws {
+    // Given
+    let message = SimpleXCore.composedMessage(
+        messageContent: ["type": "text", "text": "Reply"],
+        quotedItemID: 42
+    )
+    let direct = NativeChat(
+        id: "@7",
+        apiID: 7,
+        kind: .direct,
+        displayName: "Maya",
+        image: nil,
+        preview: "",
+        timestamp: nil,
+        unreadCount: 0,
+        sendAsGroup: false
+    )
+    let group = NativeChat(
+        id: "#9",
+        apiID: 9,
+        kind: .group,
+        displayName: "Weekend plans",
+        image: nil,
+        preview: "",
+        timestamp: nil,
+        unreadCount: 0,
+        sendAsGroup: true
+    )
+
+    // When
+    let directCommand = try SimpleXCore.sendCommand(message: message, to: direct)
+    let groupCommand = try SimpleXCore.sendCommand(message: message, to: group)
+
+    // Then
+    #expect(directCommand.hasPrefix("/_send @7 live=off ttl=default sign=off json "))
+    #expect(groupCommand.hasPrefix("/_send #9(as_group=on) live=off ttl=default sign=off json "))
+    for command in [directCommand, groupCommand] {
+        let json = try #require(command.components(separatedBy: " json ").last)
+        let encoded = try #require(json.data(using: .utf8))
+        let messages = try #require(JSONSerialization.jsonObject(with: encoded) as? [[String: Any]])
+        #expect(messages.first?["quotedItemId"] as? Int64 == 42)
+    }
+}
+
+@Test func coreRejectsQuotedMessagesInNonReplyableConversations() {
+    // Given
+    let message = SimpleXCore.composedMessage(
+        messageContent: ["type": "text", "text": "Reply"],
+        quotedItemID: 42
+    )
+    let notes = NativeChat(
+        id: "*1",
+        apiID: 1,
+        kind: .local,
+        displayName: "Private notes",
+        image: nil,
+        preview: "",
+        timestamp: nil,
+        unreadCount: 0,
+        sendAsGroup: false
+    )
+
+    // When / Then
+    #expect(throws: NativeChatError.self) {
+        _ = try SimpleXCore.sendCommand(message: message, to: notes)
+    }
 }
 
 @Test func singleMessageReloadUsesTheCoreQuoteResolutionPagination() {
