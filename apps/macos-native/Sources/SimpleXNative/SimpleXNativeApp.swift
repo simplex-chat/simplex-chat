@@ -13,13 +13,14 @@ struct SimpleXNativeApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("SimpleX", id: MainWindowCommands.windowID) {
             RootView(model: model, notifications: notifications)
                 .frame(minWidth: 760, minHeight: 520)
         }
         .defaultSize(width: 1120, height: 720)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
+            MainWindowCommands()
             SidebarCommands()
             CommandGroup(replacing: .pasteboard) {
                 Button("Cut") { sendFirstResponderAction("cut:") }
