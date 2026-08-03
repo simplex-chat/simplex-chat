@@ -196,23 +196,45 @@ private func parserLimitsRepliesToAvailableMessages(testCase: ReplyEligibilityCa
 
 private struct QuotedAttachmentCase: Sendable, CustomTestStringConvertible {
     let contentType: String
+    let additionalContent: String
     let expectedPreview: String
+    let expectedVisual: NativeReplyContextVisual
 
     var testDescription: String { contentType }
 }
 
 private let quotedAttachmentCases = [
-    QuotedAttachmentCase(contentType: "image", expectedPreview: "Photo"),
-    QuotedAttachmentCase(contentType: "video", expectedPreview: "Video"),
-    QuotedAttachmentCase(contentType: "voice", expectedPreview: "Voice message"),
-    QuotedAttachmentCase(contentType: "file", expectedPreview: "File"),
+    QuotedAttachmentCase(
+        contentType: "image",
+        additionalContent: ",\"image\":\"quoted-photo-preview\"",
+        expectedPreview: "Photo",
+        expectedVisual: .image("quoted-photo-preview")
+    ),
+    QuotedAttachmentCase(
+        contentType: "video",
+        additionalContent: ",\"image\":\"quoted-video-preview\"",
+        expectedPreview: "Video",
+        expectedVisual: .video("quoted-video-preview")
+    ),
+    QuotedAttachmentCase(
+        contentType: "voice",
+        additionalContent: "",
+        expectedPreview: "Voice message",
+        expectedVisual: .voice
+    ),
+    QuotedAttachmentCase(
+        contentType: "file",
+        additionalContent: "",
+        expectedPreview: "File",
+        expectedVisual: .file
+    ),
 ]
 
 @Test(arguments: quotedAttachmentCases)
 private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: QuotedAttachmentCase) throws {
     // Given
     let json = """
-        {"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":9,"itemText":"Reply","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Reply"}},"quotedItem":{"chatDir":{"type":"directSnd"},"itemId":7,"sentAt":"2026-08-02T19:59:00Z","content":{"type":"\(testCase.contentType)","text":"   "}}}]}}}
+        {"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":9,"itemText":"Reply","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"text","text":"Reply"}},"quotedItem":{"chatDir":{"type":"directSnd"},"itemId":7,"sentAt":"2026-08-02T19:59:00Z","content":{"type":"\(testCase.contentType)","text":"   "\(testCase.additionalContent)}}}]}}}
         """
 
     // When
@@ -220,6 +242,7 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
 
     // Then
     #expect(message.quotedItem?.text == testCase.expectedPreview)
+    #expect(message.quotedItem?.visual == testCase.expectedVisual)
 }
 
 @Test func replyPreviewNormalizesCaptionsAndFallsBackForAttachments() {
@@ -1758,6 +1781,21 @@ private actor DelayedAttachmentOpenFailure {
     #expect(sent.quotedItem?.text == original.text)
     #expect(model.replyingTo == nil)
     #expect(model.draft.isEmpty)
+}
+
+@MainActor
+@Test func previewMediaReplyKeepsItsQuoteVisual() throws {
+    let model = AppModel(previewMode: true)
+    let original = try #require(model.messages.first { $0.content.replyContextVisual != nil })
+
+    model.beginReply(to: original)
+    model.draft = "Replying to the photo"
+    model.sendDraft()
+
+    let sent = try #require(model.messages.last)
+    #expect(sent.quotedItem?.messageID == original.id)
+    #expect(sent.quotedItem?.text == original.replyPreview)
+    #expect(sent.quotedItem?.visual == original.content.replyContextVisual)
 }
 
 @MainActor

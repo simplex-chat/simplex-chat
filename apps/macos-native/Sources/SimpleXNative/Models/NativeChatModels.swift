@@ -157,6 +157,21 @@ struct NativeQuote: Hashable, Sendable {
     let text: String
     let sent: Bool
     let author: String?
+    let visual: NativeReplyContextVisual?
+
+    init(
+        messageID: Int64?,
+        text: String,
+        sent: Bool,
+        author: String?,
+        visual: NativeReplyContextVisual? = nil
+    ) {
+        self.messageID = messageID
+        self.text = text
+        self.sent = sent
+        self.author = author
+        self.visual = visual
+    }
 }
 
 struct NativeCryptoFile: Hashable, Sendable {
@@ -496,8 +511,19 @@ enum NativeChatParser {
             messageID: int64(object["itemId"]),
             text: text,
             sent: directionType.hasSuffix("Snd"),
-            author: string(member?["localDisplayName"]) ?? string(memberProfile?["displayName"])
+            author: string(member?["localDisplayName"]) ?? string(memberProfile?["displayName"]),
+            visual: quoteVisual(content)
         )
+    }
+
+    private static func quoteVisual(_ content: [String: Any]) -> NativeReplyContextVisual? {
+        switch string(content["type"]) {
+        case "image": .image(string(content["image"]))
+        case "video": .video(string(content["image"]))
+        case "voice": .voice
+        case "file": .file
+        default: nil
+        }
     }
 
     private static func kind(for type: String) -> NativeChatKind? {

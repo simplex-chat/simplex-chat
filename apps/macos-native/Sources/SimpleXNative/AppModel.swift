@@ -339,7 +339,8 @@ final class AppModel: ObservableObject {
                             messageID: $0.id,
                             text: $0.replyPreview,
                             sent: $0.sent,
-                            author: $0.author
+                            author: $0.author,
+                            visual: $0.content.replyContextVisual
                         )
                     }
                 ))

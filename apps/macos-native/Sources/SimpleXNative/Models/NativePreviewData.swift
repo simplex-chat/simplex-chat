@@ -71,7 +71,8 @@ enum NativePreviewData {
                     messageID: 4,
                     text: "The photos came through perfectly.",
                     sent: false,
-                    author: "Maya"
+                    author: "Maya",
+                    visual: .image(sampleImage)
                 )
             ),
         ]

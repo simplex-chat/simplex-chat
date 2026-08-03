@@ -1075,6 +1075,11 @@ private struct QuotedMessagePreview: View {
                     .font(.callout)
                     .lineLimit(2)
             }
+
+            if let visual = quote.visual {
+                Spacer(minLength: 8)
+                ReplyContextVisualView(visual: visual)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
