@@ -108,6 +108,7 @@ chatGroupTests = do
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
     it "shared message body is reused" testSharedMessageBody
     it "shared batch body is reused" testSharedBatchBody
+    xit "shared batch body reference across binary and json members" testGroupSharedBatchBodyMixedModes
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -2321,6 +2322,106 @@ testSharedBatchBody ps =
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testGroupSharedBatchBodyMixedModes :: HasCallStack => TestParams -> IO ()
+testGroupSharedBatchBodyMixedModes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChatCfg ps oldCfg "dan" danProfile $ \dan ->
+          withNewTestChatCfg ps oldCfg "eve" eveProfile $ \eve -> do
+            alice ##> "/g team"
+            alice <## "group #team is created"
+            alice <## "to add members use /a team <name> or /create link #team"
+            alice ##> "/create link #team"
+            gLink <- getGroupLink alice "team" GRMember True
+            bob ##> ("/c " <> gLink)
+            bob <## "connection request sent!"
+            alice <## "bob (Bob): accepting request to join group #team..."
+            concurrentlyN_
+              [ alice <## "#team: bob joined the group",
+                do
+                  bob <## "#team: joining the group..."
+                  bob <## "#team: you joined the group"
+              ]
+            cath ##> ("/c " <> gLink)
+            cath <## "connection request sent!"
+            concurrentlyN_
+              [ do
+                  alice <## "cath (Catherine): accepting request to join group #team..."
+                  alice <## "#team: cath joined the group",
+                cath
+                  <### [ "#team: joining the group...",
+                         "#team: you joined the group",
+                         "#team: member bob (Bob) is connected"
+                       ],
+                bob
+                  <### [ "#team: alice added cath (Catherine) to the group (connecting...)",
+                         "#team: new member cath is connected"
+                       ]
+              ]
+            dan ##> ("/c " <> gLink)
+            dan <## "connection request sent!"
+            concurrentlyN_
+              [ do
+                  alice <## "dan (Daniel): accepting request to join group #team..."
+                  alice <## "#team: dan joined the group",
+                dan
+                  <### [ "#team: joining the group...",
+                         "#team: you joined the group",
+                         "#team: member bob (Bob) is connected",
+                         "#team: member cath (Catherine) is connected"
+                       ],
+                bob
+                  <### [ "#team: alice added dan (Daniel) to the group (connecting...)",
+                         "#team: new member dan is connected"
+                       ],
+                cath
+                  <### [ "#team: alice added dan (Daniel) to the group (connecting...)",
+                         "#team: new member dan is connected"
+                       ]
+              ]
+            eve ##> ("/c " <> gLink)
+            eve <## "connection request sent!"
+            concurrentlyN_
+              [ do
+                  alice <## "eve (Eve): accepting request to join group #team..."
+                  alice <## "#team: eve joined the group",
+                eve
+                  <### [ "#team: joining the group...",
+                         "#team: you joined the group",
+                         "#team: member bob (Bob) is connected",
+                         "#team: member cath (Catherine) is connected",
+                         "#team: member dan (Daniel) is connected"
+                       ],
+                bob
+                  <### [ "#team: alice added eve (Eve) to the group (connecting...)",
+                         "#team: new member eve is connected"
+                       ],
+                cath
+                  <### [ "#team: alice added eve (Eve) to the group (connecting...)",
+                         "#team: new member eve is connected"
+                       ],
+                dan
+                  <### [ "#team: alice added eve (Eve) to the group (connecting...)",
+                         "#team: new member eve is connected"
+                       ]
+              ]
+            threadDelay 1000000
+            cath ##> "/p kate"
+            cath <## "user profile is changed to kate (your 0 contacts are notified)"
+            threadDelay 1000000
+            cath #> "#team hi"
+            alice <# "#team kate> hi"
+            bob <# "#team kate> hi"
+            threadDelay 1000000
+            errs <- withCCTransaction cath $ \db ->
+              DB.query_ db "SELECT count(1) FROM group_snd_item_statuses WHERE group_snd_item_status LIKE 'snd_error%'" :: IO [[Int]]
+            errs `shouldBe` [[0]]
+            dan <# "#team kate> hi"
+            eve <# "#team kate> hi"
+  where
+    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
 
 testGroupAsync :: HasCallStack => TestParams -> IO ()
 testGroupAsync ps = do
