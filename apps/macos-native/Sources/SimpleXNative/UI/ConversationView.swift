@@ -812,11 +812,45 @@ private struct MessageContentView: View {
             case .video(let preview, let fileName):
                 mediaPreview(preview: preview, fileName: fileName ?? "Video", video: true)
                 if !message.text.isEmpty { messageText }
+            case .voice(let fileName, let duration):
+                voiceAttachment(fileName: fileName, duration: duration)
+                if !message.text.isEmpty { messageText }
             case .file(let fileName):
                 fileAttachment(name: fileName ?? message.text)
                 if !message.text.isEmpty, message.text != fileName { messageText }
             }
         }
+    }
+
+    @ViewBuilder
+    private func voiceAttachment(fileName: String?, duration: Int?) -> some View {
+        if attachmentExists {
+            Button(action: openAttachment) {
+                voiceAttachmentLabel(duration: duration)
+            }
+            .buttonStyle(.link)
+            .disabled(openingAttachment)
+            .help("Open \(fileName ?? "voice message")")
+        } else {
+            voiceAttachmentLabel(duration: duration)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func voiceAttachmentLabel(duration: Int?) -> some View {
+        HStack(spacing: 6) {
+            Label("Voice message", systemImage: "waveform")
+            if let duration, duration > 0 {
+                Text(Duration.seconds(Double(duration)), format: .time(pattern: .minuteSecond))
+                    .foregroundStyle(.secondary)
+            }
+            if openingAttachment {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel("Decrypting Voice Message")
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var messageText: some View {

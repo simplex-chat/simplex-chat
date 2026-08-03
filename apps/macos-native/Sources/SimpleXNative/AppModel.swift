@@ -597,12 +597,13 @@ final class AppModel: ObservableObject {
                     }
                 }
 
+                let fileName = message.content.fileName ?? message.content.attachmentDescription
                 if let openAttachmentOperation {
-                    try await openAttachmentOperation(source, message.content.attachmentDescription)
+                    try await openAttachmentOperation(source, fileName)
                 } else {
                     let url = try await core.openableURL(
                         for: source,
-                        fileName: message.content.attachmentDescription
+                        fileName: fileName
                     )
                     try Task.checkCancellation()
                     guard NSWorkspace.shared.open(url) else {

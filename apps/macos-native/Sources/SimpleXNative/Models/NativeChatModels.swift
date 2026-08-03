@@ -97,6 +97,7 @@ enum NativeMessageContent: Hashable, Sendable {
     case text
     case image(preview: String?, fileName: String?)
     case video(preview: String?, fileName: String?)
+    case voice(fileName: String?, duration: Int?)
     case file(fileName: String?)
 
     var attachmentDescription: String? {
@@ -104,13 +105,27 @@ enum NativeMessageContent: Hashable, Sendable {
         case .text: nil
         case let .image(_, fileName): Self.description(fileName, fallback: "Photo")
         case let .video(_, fileName): Self.description(fileName, fallback: "Video")
+        case let .voice(_, duration): Self.voiceDescription(duration: duration)
         case let .file(fileName): Self.description(fileName, fallback: "File")
+        }
+    }
+
+    var fileName: String? {
+        switch self {
+        case .text: nil
+        case let .image(_, fileName), let .video(_, fileName), let .voice(fileName, _), let .file(fileName):
+            fileName
         }
     }
 
     private static func description(_ fileName: String?, fallback: String) -> String {
         let normalizedName = fileName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return normalizedName.isEmpty ? fallback : normalizedName
+    }
+
+    private static func voiceDescription(duration: Int?) -> String {
+        guard let duration, duration > 0 else { return "Voice message" }
+        return "Voice message, \(Duration.seconds(Double(duration)).formatted(.time(pattern: .minuteSecond)))"
     }
 }
 
@@ -312,6 +327,8 @@ enum NativeChatParser {
             content = .image(preview: string(messageContent?["image"]), fileName: fileName)
         case "video":
             content = .video(preview: string(messageContent?["image"]), fileName: fileName)
+        case "voice":
+            content = .voice(fileName: fileName, duration: int(messageContent?["duration"]))
         case "file":
             content = .file(fileName: fileName)
         default:

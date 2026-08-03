@@ -187,6 +187,24 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
     #expect(unnamedPhoto.replyPreview == "Photo")
 }
 
+@Test func parsesVoiceMessageForPlaybackAndReplyContext() throws {
+    // Given
+    let json = #"{"result":{"type":"apiChat","chat":{"chatItems":[{"chatDir":{"type":"directRcv"},"meta":{"itemId":12,"itemText":"","itemTs":"2026-08-02T20:00:00Z"},"content":{"type":"rcvMsgContent","msgContent":{"type":"voice","text":"","duration":65}},"file":{"fileName":"voice.m4a","fileSource":{"filePath":"voice.m4a","cryptoArgs":{"fileKey":"key","fileNonce":"nonce"}}}}]}}}"#
+
+    // When
+    let message = try #require(NativeChatParser.messages(from: Data(json.utf8)).first)
+
+    // Then
+    #expect(message.content == .voice(fileName: "voice.m4a", duration: 65))
+    #expect(message.content.fileName == "voice.m4a")
+    #expect(message.replyPreview == "Voice message, 1:05")
+    #expect(message.fileSource == NativeCryptoFile(
+        filePath: "voice.m4a",
+        cryptoArgs: NativeCryptoFileArgs(fileKey: "key", fileNonce: "nonce")
+    ))
+    #expect(message.replyable)
+}
+
 @Test func composedMessagesIncludeAQuoteOnlyWhenReplying() {
     let reply = SimpleXCore.composedMessage(
         messageContent: ["type": "text", "text": "Reply"],
