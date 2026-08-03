@@ -50,6 +50,7 @@ final class AppModel: ObservableObject {
     @Published var attachmentOpenError: String?
     @Published var quoteNavigationError: String?
     @Published var replyContextError: String?
+    @Published var sendStatusMessage: String?
     @Published var openingAttachmentIDs: Set<Int64> = []
     @Published var replyingTo: NativeMessage?
     @Published var composerFocusRequest = 0
@@ -83,6 +84,7 @@ final class AppModel: ObservableObject {
     private var notificationRouteQueue = NotificationRouteQueue()
     private var pendingChatOperationErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyContextErrors: [NativeChat.ID: String] = [:]
+    private var pendingSendStatusMessages: [NativeChat.ID: String] = [:]
     private var pendingReplyInvalidationChatIDs: Set<NativeChat.ID> = []
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var deletingChatID: NativeChat.ID?
@@ -979,6 +981,7 @@ final class AppModel: ObservableObject {
             quoteNavigationRevision &+= 1
             quoteNavigationError = nil
             replyContextError = nil
+            sendStatusMessage = nil
             if let previousChatID = selectedChatID {
                 saveComposerState(for: previousChatID)
             }
@@ -995,6 +998,7 @@ final class AppModel: ObservableObject {
             }
             if let id {
                 replyContextError = pendingReplyContextErrors.removeValue(forKey: id)
+                sendStatusMessage = pendingSendStatusMessages.removeValue(forKey: id)
             }
         }
         if let id { notificationManager?.removeDeliveredNotifications(chatID: id) }
@@ -1158,7 +1162,11 @@ final class AppModel: ObservableObject {
 
     private func finishPostSendRefreshFailure(_ detail: String, in chatID: NativeChat.ID) {
         let message = "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(detail)"
-        finishSendFailure(message, in: chatID)
+        if selectedChatID == chatID {
+            sendStatusMessage = message
+        } else {
+            pendingSendStatusMessages[chatID] = message
+        }
     }
 
     @discardableResult

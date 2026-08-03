@@ -382,6 +382,11 @@ private struct ConversationAlertsModifier: ViewModifier {
             } message: {
                 Text(model.replyContextError ?? "")
             }
+            .alert("Message Sent", isPresented: sendStatusPresented) {
+                Button("OK") { model.sendStatusMessage = nil }
+            } message: {
+                Text(model.sendStatusMessage ?? "")
+            }
     }
 
     private var attachmentErrorPresented: Binding<Bool> {
@@ -409,6 +414,13 @@ private struct ConversationAlertsModifier: ViewModifier {
         Binding(
             get: { model.replyContextError != nil },
             set: { if !$0 { model.replyContextError = nil } }
+        )
+    }
+
+    private var sendStatusPresented: Binding<Bool> {
+        Binding(
+            get: { model.sendStatusMessage != nil },
+            set: { if !$0 { model.sendStatusMessage = nil } }
         )
     }
 }

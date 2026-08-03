@@ -1881,6 +1881,33 @@ private actor DelayedTextSendProbe {
     }
 }
 
+private actor DelayedPostSendRefreshFailure {
+    private let failureMessage: String
+    private let recoveredMessages: [NativeMessage]
+    private var requestCount = 0
+    private var firstRequestReleased = false
+
+    init(failureMessage: String, recoveredMessages: [NativeMessage]) {
+        self.failureMessage = failureMessage
+        self.recoveredMessages = recoveredMessages
+    }
+
+    func load() async throws -> [NativeMessage] {
+        requestCount += 1
+        guard requestCount == 1 else { return recoveredMessages }
+        while !firstRequestReleased { await Task.yield() }
+        throw NativeChatError.unavailable(failureMessage)
+    }
+
+    func waitUntilRequested() async {
+        while requestCount == 0 { await Task.yield() }
+    }
+
+    func release() {
+        firstRequestReleased = true
+    }
+}
+
 @MainActor
 private func makeSendTestModel(
     sendTextOperation: SendTextOperation? = nil,
@@ -2063,10 +2090,77 @@ private func unavailableVersion(of message: NativeMessage) -> NativeMessage {
     #expect(model.replyingTo == nil)
     #expect(model.messages == [original, committedReply])
     #expect(model.targetMessageID == committedReply.id)
-    #expect(model.phase == .failed(
+    #expect(model.phase == .ready)
+    #expect(model.sendStatusMessage ==
         "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(refreshFailure)"
-    ))
+    )
     #expect(!model.isSending)
+}
+
+@MainActor
+@Test func postSendRefreshNoticeWaitsForItsOriginatingConversation() async throws {
+    // Given
+    let refreshFailure = "The newest messages are temporarily unavailable."
+    let original = NativePreviewData.messages(for: "@1")[0]
+    let committedReply = NativeMessage(
+        id: 9_901,
+        text: "Committed before switching chats",
+        timestamp: Date(timeIntervalSince1970: 2),
+        sent: true,
+        author: nil,
+        deletable: true,
+        content: .text,
+        quotedItem: NativeQuote(
+            messageID: original.id,
+            text: original.replyPreview,
+            sent: original.sent,
+            author: original.author
+        )
+    )
+    let refreshProbe = DelayedPostSendRefreshFailure(
+        failureMessage: refreshFailure,
+        recoveredMessages: [original, committedReply]
+    )
+    let model = makeSendTestModel(
+        sendTextOperation: { _, quotedItemID, _ in
+            #expect(quotedItemID == original.id)
+            return NativeSendReceipt(
+                committedMessages: [committedReply],
+                replyContextConfirmed: true
+            )
+        },
+        loadMessagesOperation: { chatID, _ in
+            if chatID == "@1" { return try await refreshProbe.load() }
+            return NativePreviewData.messages(for: chatID)
+        }
+    )
+    model.messages = [original]
+    model.draft = "Send this once"
+    model.beginReply(to: original)
+
+    // When: the reply commits, then the user changes chats before refresh fails.
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    await refreshProbe.waitUntilRequested()
+    model.selectChat("#2")
+    await refreshProbe.release()
+    await send.value
+
+    // Then: no stale notice interrupts the new conversation.
+    #expect(model.selectedChatID == "#2")
+    #expect(model.phase == .ready)
+    #expect(model.sendStatusMessage == nil)
+
+    // When: the user returns to the conversation that sent the reply.
+    model.selectChat("@1")
+
+    // Then: its queued nonfatal status appears there, and only there.
+    #expect(model.phase == .ready)
+    #expect(model.sendStatusMessage ==
+        "Your message was sent, but the conversation could not refresh. Use Refresh to load it. \(refreshFailure)"
+    )
+    #expect(model.draft.isEmpty)
+    #expect(model.replyingTo == nil)
 }
 
 @MainActor
@@ -3271,6 +3365,19 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
         let committedReply = try #require(replyReceipt.committedMessages.first)
         #expect(committedReply.text == "Bundled-core reply")
         #expect(committedReply.quotedItem?.messageID == firstItemID)
+
+        let deletedOriginal = try sendCoreCommand(
+            "/_delete item #\(groupID) \(firstItemID) internal"
+        )
+        try NativeChatParser.validateCommandResponse(deletedOriginal)
+        let staleReplyMessage = SimpleXCore.composedMessage(
+            messageContent: ["type": "text", "text": "Stale bundled-core reply"],
+            quotedItemID: firstItemID
+        )
+        let staleReplySend = try sendCoreCommand(
+            SimpleXCore.sendCommand(message: staleReplyMessage, to: group)
+        )
+        #expect(NativeChatParser.commandErrorMakesReplyTargetUnavailable(staleReplySend))
 
         let originalURL = temporaryDirectory.appendingPathComponent("original.jpg")
         let encryptedURL = temporaryDirectory.appendingPathComponent("encrypted.jpg")
