@@ -53,6 +53,7 @@ final class AppModel: ObservableObject {
     @Published var pendingAttachments: [PendingAttachment] = []
     @Published var attachmentError: String?
     @Published var attachmentOpenError: String?
+    @Published var quickLookURL: URL?
     @Published var quoteNavigationError: String?
     @Published var replyContextError: String?
     @Published var sendStatusMessage: String?
@@ -95,6 +96,7 @@ final class AppModel: ObservableObject {
     private var pendingAttachmentOpenErrors: [NativeChat.ID: String] = [:]
     private var pendingReplyInvalidationChatIDs: Set<NativeChat.ID> = []
     private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
+    private var quickLookRequestKey: AttachmentOpeningKey?
     private var deletingChatID: NativeChat.ID?
     private var deletingMessageIDs: Set<Int64> = []
     private var selectionAnchor: Int64?
@@ -692,6 +694,11 @@ final class AppModel: ObservableObject {
         guard !openingAttachmentKeys.contains(openingKey) else { return nil }
         let loadMessageOperation = loadMessageOperation
         let openAttachmentOperation = openAttachmentOperation
+        let opensInQuickLook = openAttachmentOperation == nil && message.content.opensInQuickLook
+        if opensInQuickLook {
+            quickLookRequestKey = openingKey
+            quickLookURL = nil
+        }
         openingAttachmentKeys.insert(openingKey)
         let task = Task {
             defer { openingAttachmentKeys.remove(openingKey) }
@@ -723,13 +730,20 @@ final class AppModel: ObservableObject {
                         fileName: fileName
                     )
                     try Task.checkCancellation()
-                    guard NSWorkspace.shared.open(url) else {
+                    if opensInQuickLook {
+                        guard selectedChatID == chatID,
+                              quickLookRequestKey == openingKey else { return }
+                        quickLookRequestKey = nil
+                        quickLookURL = url
+                    } else if !NSWorkspace.shared.open(url) {
                         throw NativeChatError.unavailable("macOS could not open this attachment.")
                     }
                 }
             } catch is CancellationError {
+                if quickLookRequestKey == openingKey { quickLookRequestKey = nil }
                 return
             } catch {
+                if quickLookRequestKey == openingKey { quickLookRequestKey = nil }
                 presentAttachmentOpenFailure(error.localizedDescription, in: chatID)
             }
         }
@@ -1001,6 +1015,8 @@ final class AppModel: ObservableObject {
         guard changedChat || messageID != nil || scrollTarget != nil else { return }
 
         if changedChat {
+            quickLookRequestKey = nil
+            quickLookURL = nil
             cancelReplyTargetNavigation()
             quoteNavigationTask?.cancel()
             quoteNavigationTask = nil

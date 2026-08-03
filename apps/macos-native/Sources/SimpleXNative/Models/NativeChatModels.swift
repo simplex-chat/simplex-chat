@@ -106,6 +106,13 @@ enum NativeMessageContent: Hashable, Sendable {
     case voice(fileName: String?, duration: Int?)
     case file(fileName: String?)
 
+    var opensInQuickLook: Bool {
+        switch self {
+        case .image, .video: true
+        case .text, .voice, .file: false
+        }
+    }
+
     var replyContextVisual: NativeReplyContextVisual? {
         switch self {
         case .text: nil

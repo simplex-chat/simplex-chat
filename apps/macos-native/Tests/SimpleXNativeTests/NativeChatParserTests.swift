@@ -1,3 +1,4 @@
+import AppKit
 import CoreBridge
 import Foundation
 import Testing
@@ -299,6 +300,13 @@ private func whitespaceOnlyQuotedAttachmentsUseMeaningfulPreviews(testCase: Quot
         duration: 5
     ).replyContextVisual == .voice)
     #expect(NativeMessageContent.file(fileName: "notes.pdf").replyContextVisual == .file)
+}
+
+@Test func fullResolutionMediaUsesNativeQuickLook() {
+    #expect(NativeMessageContent.image(preview: nil, fileName: nil).opensInQuickLook)
+    #expect(NativeMessageContent.video(preview: nil, fileName: nil).opensInQuickLook)
+    #expect(!NativeMessageContent.voice(fileName: nil, duration: nil).opensInQuickLook)
+    #expect(!NativeMessageContent.file(fileName: nil).opensInQuickLook)
 }
 
 @Test func parsesVoiceMessageForPlaybackAndReplyContext() throws {
@@ -1651,6 +1659,19 @@ private actor DelayedAttachmentOpenFailure {
 }
 
 @MainActor
+private func writeTestJPEG(to url: URL) throws {
+    let image = NSImage(size: NSSize(width: 32, height: 24))
+    image.lockFocus()
+    NSColor.systemBlue.setFill()
+    NSRect(x: 0, y: 0, width: 32, height: 24).fill()
+    image.unlockFocus()
+    let tiff = try #require(image.tiffRepresentation)
+    let bitmap = try #require(NSBitmapImageRep(data: tiff))
+    let jpeg = try #require(bitmap.representation(using: .jpeg, properties: [:]))
+    try jpeg.write(to: url)
+}
+
+@MainActor
 @Test func attachmentOpenRefreshesMissingEncryptionMetadata() async throws {
     // Given
     let plainSource = NativeCryptoFile(filePath: "photo.jpg", cryptoArgs: nil)
@@ -1764,6 +1785,78 @@ private actor DelayedAttachmentOpenFailure {
     model.selectChat("@1")
     #expect(model.attachmentOpenError == failure)
     #expect(!model.isOpeningAttachment(first.id))
+}
+
+@MainActor
+@Test func openingAnImagePresentsTheOriginalFileInQuickLook() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let sourceURL = directory.appendingPathComponent("full-size.jpg")
+    try writeTestJPEG(to: sourceURL)
+
+    let source = NativeCryptoFile(filePath: sourceURL.path, cryptoArgs: nil)
+    let message = NativeMessage(
+        id: 93,
+        text: "Original photo",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .image(preview: "compressed-thumbnail", fileName: sourceURL.lastPathComponent),
+        fileSource: source
+    )
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { _, _ in message }
+    )
+    model.messages = [message]
+
+    let opening = try #require(model.openAttachment(message))
+    await opening.value
+
+    #expect(model.quickLookURL?.standardizedFileURL == sourceURL.standardizedFileURL)
+    #expect(model.attachmentOpenError == nil)
+    #expect(!model.isOpeningAttachment(message.id))
+}
+
+@MainActor
+@Test func delayedImageOpenCannotAppearInAnotherConversation() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let sourceURL = directory.appendingPathComponent("delayed-full-size.jpg")
+    try writeTestJPEG(to: sourceURL)
+
+    let source = NativeCryptoFile(filePath: sourceURL.path, cryptoArgs: nil)
+    let message = NativeMessage(
+        id: 94,
+        text: "Slow original photo",
+        timestamp: nil,
+        sent: false,
+        author: "Maya",
+        deletable: true,
+        content: .image(preview: "compressed-thumbnail", fileName: sourceURL.lastPathComponent),
+        fileSource: source
+    )
+    let probe = DelayedValue<NativeMessage?>(message)
+    let model = AppModel(
+        previewMode: true,
+        loadMessageOperation: { _, _ in await probe.load() }
+    )
+    model.messages = [message]
+
+    let opening = try #require(model.openAttachment(message))
+    await probe.waitUntilRequested()
+    model.selectChat("#2")
+    await probe.release()
+    await opening.value
+
+    #expect(model.selectedChatID == "#2")
+    #expect(model.quickLookURL == nil)
+    #expect(model.attachmentOpenError == nil)
 }
 
 @MainActor

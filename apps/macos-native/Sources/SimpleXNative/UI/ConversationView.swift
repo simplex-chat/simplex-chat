@@ -1,4 +1,5 @@
 import AppKit
+import QuickLook
 import SwiftUI
 
 struct ConversationView: View {
@@ -63,6 +64,7 @@ struct ConversationView: View {
         .onChange(of: model.composerFocusRequest) { _, _ in
             composerFocused = true
         }
+        .quickLookPreview($model.quickLookURL)
     }
 
     @ToolbarContentBuilder
