@@ -202,6 +202,12 @@ enum MessageSelection {
     }
 }
 
+enum MessageReplyControlVisibility {
+    static func isVisible(canReply: Bool, hovering: Bool, selected: Bool) -> Bool {
+        canReply && (hovering || selected)
+    }
+}
+
 enum ConversationSearch {
     static func matches(_ messages: [NativeMessage], query: String) -> [NativeMessage] {
         guard !query.isEmpty else { return [] }

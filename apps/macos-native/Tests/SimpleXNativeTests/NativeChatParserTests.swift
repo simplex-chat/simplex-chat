@@ -3456,6 +3456,13 @@ private actor DelayedDeletionProbe {
     #expect(toggled.selection == [20, 40])
 }
 
+@Test func replyControlRemainsVisibleAcrossItsHoverRegion() {
+    #expect(MessageReplyControlVisibility.isVisible(canReply: true, hovering: true, selected: false))
+    #expect(MessageReplyControlVisibility.isVisible(canReply: true, hovering: false, selected: true))
+    #expect(!MessageReplyControlVisibility.isVisible(canReply: true, hovering: false, selected: false))
+    #expect(!MessageReplyControlVisibility.isVisible(canReply: false, hovering: true, selected: true))
+}
+
 @Test func densityTokensStayOnTheMacSpacingGrid() {
     #expect(DesktopChatDensity.compact.tokens.chatRowPadding == 4)
     #expect(DesktopChatDensity.comfortable.tokens.transcriptGap == 12)

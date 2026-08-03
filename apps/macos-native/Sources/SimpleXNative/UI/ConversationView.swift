@@ -548,48 +548,13 @@ private struct MessageRow: View {
                         .padding(.leading, 8)
                 }
 
-                MessageContentView(
-                    message: message,
-                    chat: chat,
-                    openingAttachment: openingAttachment,
-                    canOpenQuote: canOpenQuote,
-                    openQuote: openQuote,
-                    openAttachment: openAttachment
-                )
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, density.tokens.messagePadding)
-                    .background(bubbleBackground, in: bubbleShape)
-                    .foregroundStyle(message.sent ? Color(nsColor: .selectedControlTextColor) : Color.primary)
-                    .overlay {
-                        if selected {
-                            bubbleShape
-                                .stroke(Color.accentColor, lineWidth: 2)
-                                .padding(-2)
-                        }
-                    }
-                    .overlay(alignment: message.sent ? .leading : .trailing) {
-                        if (hovering || selected) && canReply {
-                            Button(action: reply) {
-                                Image(systemName: "arrowshape.turn.up.left")
-                                    .frame(width: 28, height: 28)
-                                    .background(Color(nsColor: .controlBackgroundColor), in: Circle())
-                                    .overlay {
-                                        Circle().stroke(Color(nsColor: .separatorColor))
-                                    }
-                            }
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                            .buttonStyle(.plain)
-                            .offset(x: message.sent ? -46 : 46)
-                            .help("Reply")
-                            .accessibilityLabel("Reply") // [VERIFY] Matches the visible tooltip.
-                            .accessibilityInputLabels(["Reply", "Quote Message"])
-                            .accessibilityIdentifier("message.\(message.id).reply")
-                        }
-                    }
-                    .contentShape(bubbleShape)
-                    .onTapGesture(perform: select)
-                    .focusEffectDisabled()
+                HStack(alignment: .center, spacing: 4) {
+                    if message.sent, canReply { replyControlSlot }
+                    messageBubble
+                    if !message.sent, canReply { replyControlSlot }
+                }
+                .contentShape(Rectangle())
+                .onHover { hovering = $0 }
 
                 if endsGroup, let timestamp = message.timestamp {
                     Text(timestamp, format: .dateTime.hour().minute())
@@ -598,7 +563,7 @@ private struct MessageRow: View {
                         .padding(.horizontal, 8)
                 }
             }
-            .frame(maxWidth: 520, alignment: message.sent ? .trailing : .leading)
+            .frame(maxWidth: 568, alignment: message.sent ? .trailing : .leading)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
             .accessibilityActions {
@@ -613,7 +578,6 @@ private struct MessageRow: View {
 
             if !message.sent { Spacer(minLength: 80) }
         }
-        .onHover { hovering = $0 }
         .contextMenu {
             if canReply {
                 Button("Reply", action: reply)
@@ -627,6 +591,60 @@ private struct MessageRow: View {
             }
         }
         .accessibilityIdentifier("message.\(message.id)")
+    }
+
+    private var messageBubble: some View {
+        MessageContentView(
+            message: message,
+            chat: chat,
+            openingAttachment: openingAttachment,
+            canOpenQuote: canOpenQuote,
+            openQuote: openQuote,
+            openAttachment: openAttachment
+        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, density.tokens.messagePadding)
+        .background(bubbleBackground, in: bubbleShape)
+        .foregroundStyle(message.sent ? Color(nsColor: .selectedControlTextColor) : Color.primary)
+        .overlay {
+            if selected {
+                bubbleShape
+                    .stroke(Color.accentColor, lineWidth: 2)
+                    .padding(-2)
+            }
+        }
+        .contentShape(bubbleShape)
+        .onTapGesture(perform: select)
+        .focusEffectDisabled()
+    }
+
+    @ViewBuilder
+    private var replyControlSlot: some View {
+        if MessageReplyControlVisibility.isVisible(
+            canReply: canReply,
+            hovering: hovering,
+            selected: selected
+        ) {
+            Button(action: reply) {
+                Image(systemName: "arrowshape.turn.up.left")
+                    .frame(width: 28, height: 28)
+                    .background(Color(nsColor: .controlBackgroundColor), in: Circle())
+                    .overlay {
+                        Circle().stroke(Color(nsColor: .separatorColor))
+                    }
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .help("Reply")
+            .accessibilityLabel("Reply") // [VERIFY] Matches the visible tooltip.
+            .accessibilityInputLabels(["Reply", "Quote Message"])
+            .accessibilityIdentifier("message.\(message.id).reply")
+        } else {
+            Color.clear
+                .frame(width: 44, height: 44)
+                .accessibilityHidden(true)
+        }
     }
 
     private var bubbleBackground: Color {
