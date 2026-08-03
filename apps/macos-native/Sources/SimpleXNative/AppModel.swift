@@ -835,7 +835,7 @@ final class AppModel: ObservableObject {
 
     func copySelectedMessages() {
         guard !selectedMessageIDs.isEmpty else { return }
-        let text = selectedMessagesInTranscriptOrder.map(\.text).joined(separator: "\n\n")
+        let text = MessageSelection.clipboardText(for: selectedMessagesInTranscriptOrder)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }

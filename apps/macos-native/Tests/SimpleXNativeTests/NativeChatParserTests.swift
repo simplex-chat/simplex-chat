@@ -3456,6 +3456,43 @@ private actor DelayedDeletionProbe {
     #expect(toggled.selection == [20, 40])
 }
 
+@Test func selectedAttachmentsCopyMeaningfulTextInTranscriptOrder() {
+    let messages = [
+        NativeMessage(
+            id: 1,
+            text: "First message",
+            timestamp: nil,
+            sent: false,
+            author: nil,
+            deletable: true,
+            content: .text
+        ),
+        NativeMessage(
+            id: 2,
+            text: "",
+            timestamp: nil,
+            sent: false,
+            author: nil,
+            deletable: true,
+            content: .image(preview: nil, fileName: "photo.jpg")
+        ),
+        NativeMessage(
+            id: 3,
+            text: "",
+            timestamp: nil,
+            sent: false,
+            author: nil,
+            deletable: true,
+            content: .voice(fileName: nil, duration: 75)
+        ),
+    ]
+
+    #expect(
+        MessageSelection.clipboardText(for: messages)
+            == "First message\n\nphoto.jpg\n\nVoice message, 1:15"
+    )
+}
+
 @Test func replyControlRemainsVisibleAcrossItsHoverRegion() {
     #expect(MessageReplyControlVisibility.isVisible(canReply: true, hovering: true, selected: false))
     #expect(MessageReplyControlVisibility.isVisible(canReply: true, hovering: false, selected: true))

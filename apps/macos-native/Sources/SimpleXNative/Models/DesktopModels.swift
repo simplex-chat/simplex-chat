@@ -200,6 +200,10 @@ enum MessageSelection {
         }
         return ([clicked], clicked)
     }
+
+    static func clipboardText(for messages: [NativeMessage]) -> String {
+        messages.map(\.replyPreview).joined(separator: "\n\n")
+    }
 }
 
 enum MessageReplyControlVisibility {
