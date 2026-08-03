@@ -424,6 +424,12 @@ fun EndPartOfScreen() {
 // Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
+  val reconnectingHost = chatModel.currentRemoteHost.value
+    ?.takeIf { it.sessionState is RemoteHostSessionState.Connecting }
+  if (reconnectingHost != null) {
+    RemoteHostReconnectingView(reconnectingHost)
+    return
+  }
   Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
     StartPartOfScreen(userPickerState)
     tryOrShowError("UserPicker", error = {}) {
@@ -460,14 +466,14 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   }
   VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
   ModalManager.fullscreen.showInView()
-  chatModel.currentRemoteHost.value
-    ?.takeIf { it.sessionState is RemoteHostSessionState.Connecting }
-    ?.let { RemoteHostReconnectingView(it) }
 }
 
 @Composable
 private fun RemoteHostReconnectingView(host: RemoteHostInfo) {
-  DefaultDialog(onDismissRequest = {}) {
+  Box(
+    Modifier.fillMaxSize().background(MaterialTheme.colors.background),
+    contentAlignment = Alignment.Center
+  ) {
     Column(
       Modifier.width(440.dp).padding(48.dp),
       horizontalAlignment = Alignment.CenterHorizontally

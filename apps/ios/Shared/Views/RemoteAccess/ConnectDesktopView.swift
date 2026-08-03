@@ -173,7 +173,7 @@ struct ConnectDesktopView: View {
                     disconnectButton()
                 }
             }
-            .navigationTitle(Text(title))
+            .navigationTitle(scenePhase == .active ? Text(title) : Text(""))
 
             ProgressView().scaleEffect(2)
         }
