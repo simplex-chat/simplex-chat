@@ -152,6 +152,7 @@ data RemoteProtocolError
     RPEUnexpectedResponse {response :: Text}
   | -- | A file already exists in the destination position
     RPEStoredFileExists
+  | RPEInvalidFileName
   | PRERemoteControl {rcError :: RCErrorType}
   | RPEHTTP2 {http2Error :: Text}
   | RPEException {someException :: Text}
