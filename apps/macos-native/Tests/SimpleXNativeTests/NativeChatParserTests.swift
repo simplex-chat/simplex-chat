@@ -460,6 +460,182 @@ private actor DelayedValue<Value: Sendable> {
     }
 }
 
+private actor ConversationRefreshProbe {
+    private let messages: [NativeMessage]
+    private let delayFirstRequest: Bool
+    private var requests: [Int64?] = []
+    private var firstRequestReleased: Bool
+
+    init(messages: [NativeMessage], delayFirstRequest: Bool = false) {
+        self.messages = messages
+        self.delayFirstRequest = delayFirstRequest
+        firstRequestReleased = !delayFirstRequest
+    }
+
+    func load(around messageID: Int64?) async -> [NativeMessage] {
+        requests.append(messageID)
+        if delayFirstRequest, requests.count == 1 {
+            while !firstRequestReleased { await Task.yield() }
+        }
+        return messages
+    }
+
+    func waitUntilFirstRequested() async {
+        while requests.isEmpty { await Task.yield() }
+    }
+
+    func releaseFirstRequest() {
+        firstRequestReleased = true
+    }
+
+    func recordedRequests() -> [Int64?] {
+        requests
+    }
+}
+
+private actor FallbackRefreshProbe {
+    private let latestMessages: [NativeMessage]
+    private var requests: [Int64?] = []
+
+    init(latestMessages: [NativeMessage]) {
+        self.latestMessages = latestMessages
+    }
+
+    func load(around messageID: Int64?) throws -> [NativeMessage] {
+        requests.append(messageID)
+        if messageID != nil {
+            throw NativeChatError.unavailable("The anchored message was deleted.")
+        }
+        return latestMessages
+    }
+
+    func recordedRequests() -> [Int64?] {
+        requests
+    }
+}
+
+@MainActor
+private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { _, aroundMessageID in
+            await probe.load(around: aroundMessageID)
+        },
+        loadChatsOperation: { userID in
+            #expect(userID == NativePreviewData.profile.userID)
+            return NativePreviewData.chats
+        }
+    )
+    model.phase = .ready
+    model.profile = NativePreviewData.profile
+    model.chats = NativePreviewData.chats
+    model.selectedChatID = "@1"
+    model.messages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    return model
+}
+
+@MainActor
+@Test func liveEventRefreshPreservesTheActiveQuoteNavigationAnchor() async throws {
+    // Given
+    let target = NativePreviewData.messages(for: "@1")[0]
+    let quote = NativeQuote(
+        messageID: target.id,
+        text: target.text,
+        sent: target.sent,
+        author: target.author
+    )
+    let probe = ConversationRefreshProbe(messages: [target])
+    let model = makeLiveRefreshModel(probe: probe)
+
+    // When: the user opens an offscreen quote, then a live event refreshes the transcript.
+    let navigation = try #require(model.openQuotedMessage(quote, from: 912))
+    await navigation.value
+    await model.refreshAfterEvent()
+
+    // Then: both loads stay anchored to the user-selected original message.
+    let requests = await probe.recordedRequests()
+    #expect(requests == [target.id, target.id])
+    #expect(model.conversationAnchorMessageID == target.id)
+    #expect(model.messages == [target])
+    #expect(model.quoteNavigationError == nil)
+    #expect(model.phase == .ready)
+}
+
+@MainActor
+@Test func liveEventRefreshCannotSupersedeAnInFlightQuoteNavigation() async throws {
+    // Given
+    let target = NativePreviewData.messages(for: "@1")[0]
+    let quote = NativeQuote(
+        messageID: target.id,
+        text: target.text,
+        sent: target.sent,
+        author: target.author
+    )
+    let probe = ConversationRefreshProbe(messages: [target], delayFirstRequest: true)
+    let model = makeLiveRefreshModel(probe: probe)
+
+    // When: a live event arrives while the user-requested page is still loading.
+    let navigation = try #require(model.openQuotedMessage(quote, from: 913))
+    await probe.waitUntilFirstRequested()
+    #expect(model.isLoadingConversation)
+    await model.refreshAfterEvent()
+
+    // Then: the event updates the chat list without starting a competing transcript load.
+    var requests = await probe.recordedRequests()
+    #expect(requests == [target.id])
+
+    // When: the original navigation finishes.
+    await probe.releaseFirstRequest()
+    await navigation.value
+
+    // Then
+    requests = await probe.recordedRequests()
+    #expect(requests == [target.id])
+    #expect(model.conversationAnchorMessageID == target.id)
+    #expect(model.messages == [target])
+    #expect(!model.isLoadingConversation)
+    #expect(model.quoteNavigationError == nil)
+}
+
+@MainActor
+@Test func liveEventRefreshFallsBackWhenTheAnchoredMessageDisappears() async throws {
+    // Given
+    let target = NativePreviewData.messages(for: "@1")[0]
+    let latestMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())
+    let probe = FallbackRefreshProbe(latestMessages: latestMessages)
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { _, aroundMessageID in
+            try await probe.load(around: aroundMessageID)
+        },
+        loadChatsOperation: { _ in NativePreviewData.chats }
+    )
+    model.phase = .ready
+    model.profile = NativePreviewData.profile
+    model.chats = NativePreviewData.chats
+    model.selectedChatID = "@1"
+    model.messages = [target]
+    let quote = NativeQuote(
+        messageID: target.id,
+        text: target.text,
+        sent: target.sent,
+        author: target.author
+    )
+    #expect(model.openQuotedMessage(quote, from: 914) == nil)
+    #expect(model.conversationAnchorMessageID == target.id)
+
+    // When
+    await model.refreshAfterEvent()
+
+    // Then: the missing anchor is dropped and the newest transcript is loaded.
+    let requests = await probe.recordedRequests()
+    #expect(requests == [target.id, nil])
+    #expect(model.conversationAnchorMessageID == nil)
+    #expect(model.messages == latestMessages)
+    #expect(model.quoteNavigationError == nil)
+    #expect(model.phase == .ready)
+}
+
 @MainActor
 @Test func switchingChatsClearsStaleMessagesBeforeTheNewTranscriptLoads() async throws {
     // Given

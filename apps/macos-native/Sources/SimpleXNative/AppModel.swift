@@ -6,6 +6,7 @@ typealias SendTextOperation = @Sendable (String, Int64?, NativeChat) async throw
 typealias SendAttachmentOperation = @Sendable (PendingAttachment, String, Int64?, NativeChat) async throws -> Void
 typealias LoadMessageOperation = @Sendable (NativeChat.ID, Int64) async throws -> NativeMessage?
 typealias LoadMessagesOperation = @Sendable (NativeChat.ID, Int64?) async throws -> [NativeMessage]
+typealias LoadChatsOperation = @Sendable (Int64) async throws -> [NativeChat]
 typealias OpenAttachmentOperation = @Sendable (NativeCryptoFile, String?) async throws -> Void
 
 @MainActor
@@ -68,6 +69,7 @@ final class AppModel: ObservableObject {
     private let sendAttachmentOperation: SendAttachmentOperation?
     private let loadMessageOperation: LoadMessageOperation?
     private let loadMessagesOperation: LoadMessagesOperation?
+    private let loadChatsOperation: LoadChatsOperation?
     private let openAttachmentOperation: OpenAttachmentOperation?
     private weak var notificationManager: NativeNotificationManager?
     private var eventTask: Task<Void, Never>?
@@ -85,6 +87,7 @@ final class AppModel: ObservableObject {
     private var selectionAnchor: Int64?
     private var replyingChatID: NativeChat.ID?
     private var conversationLoadRevision: UInt64 = 0
+    private(set) var conversationAnchorMessageID: Int64?
     private var quoteNavigationRevision: UInt64 = 0
     private static let densityKey = "desktopChatDensity"
 
@@ -97,6 +100,7 @@ final class AppModel: ObservableObject {
         sendAttachmentOperation: SendAttachmentOperation? = nil,
         loadMessageOperation: LoadMessageOperation? = nil,
         loadMessagesOperation: LoadMessagesOperation? = nil,
+        loadChatsOperation: LoadChatsOperation? = nil,
         openAttachmentOperation: OpenAttachmentOperation? = nil
     ) {
         self.previewMode = previewMode
@@ -107,6 +111,7 @@ final class AppModel: ObservableObject {
         self.sendAttachmentOperation = sendAttachmentOperation
         self.loadMessageOperation = loadMessageOperation
         self.loadMessagesOperation = loadMessagesOperation
+        self.loadChatsOperation = loadChatsOperation
         self.openAttachmentOperation = openAttachmentOperation
         keychainPassphraseStorageAvailable = Bundle.main.object(
             forInfoDictionaryKey: "SimpleXKeychainPassphraseStorageEnabled"
@@ -236,7 +241,7 @@ final class AppModel: ObservableObject {
         refreshTask?.cancel()
         refreshTask = Task {
             do {
-                let loadedChats = try await core.loadChats(userID: userID)
+                let loadedChats = try await loadChats(userID: userID)
                 guard !Task.isCancelled else { return }
                 chats = loadedChats
                 if let chatID = selectedChatID {
@@ -358,7 +363,10 @@ final class AppModel: ObservableObject {
                 }
                 let sentMessages = try await core.loadMessages(chatID: chat.id)
                 try Task.checkCancellation()
-                if self?.selectedChatID == chat.id { self?.messages = sentMessages }
+                if self?.selectedChatID == chat.id {
+                    self?.conversationAnchorMessageID = nil
+                    self?.messages = sentMessages
+                }
                 if let userID = self?.profile?.userID {
                     let loadedChats = try await core.loadChats(userID: userID)
                     try Task.checkCancellation()
@@ -593,6 +601,7 @@ final class AppModel: ObservableObject {
         guard selectedChatID == chatID else { return nil }
         conversationLoadTask?.cancel()
         if messages.contains(where: { $0.id == messageID }) {
+            conversationAnchorMessageID = messageID
             targetMessageID = messageID
             return nil
         }
@@ -735,6 +744,7 @@ final class AppModel: ObservableObject {
         clearDeletionState()
         deletedIDs.forEach { clearReply($0, in: chatID) }
         guard selectedChatID == chatID else { return }
+        conversationAnchorMessageID = nil
         messages = loadedMessages
     }
 
@@ -742,6 +752,9 @@ final class AppModel: ObservableObject {
         clearDeletionState()
         deletedIDs.forEach { clearReply($0, in: chatID) }
         guard selectedChatID == chatID else { return }
+        if conversationAnchorMessageID.map(deletedIDs.contains) == true {
+            conversationAnchorMessageID = nil
+        }
         messages.removeAll { deletedIDs.contains($0.id) }
     }
 
@@ -828,6 +841,7 @@ final class AppModel: ObservableObject {
                 saveComposerState(for: previousChatID)
             }
             selectedChatID = id
+            conversationAnchorMessageID = nil
             messages = []
             clearMessageSelection()
             restoreComposerState(for: id)
@@ -985,7 +999,8 @@ final class AppModel: ObservableObject {
         chatID: NativeChat.ID,
         around messageID: Int64? = nil,
         showProgress: Bool = true,
-        navigationFailureMessage: String? = nil
+        navigationFailureMessage: String? = nil,
+        reportFailure: Bool = true
     ) async -> Bool {
         guard selectedChatID == chatID else { return false }
         conversationLoadRevision &+= 1
@@ -1006,6 +1021,7 @@ final class AppModel: ObservableObject {
             guard !Task.isCancelled, selectedChatID == chatID,
                   conversationLoadRevision == revision else { return false }
             applyLoadedMessages(loadedMessages, to: chatID)
+            conversationAnchorMessageID = messageID
             return true
         } catch is CancellationError {
             return false
@@ -1014,7 +1030,7 @@ final class AppModel: ObservableObject {
                   conversationLoadRevision == revision else { return false }
             if let navigationFailureMessage {
                 quoteNavigationError = navigationFailureMessage
-            } else {
+            } else if reportFailure {
                 phase = .failed(error.localizedDescription)
             }
             return false
@@ -1047,17 +1063,37 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func refreshAfterEvent() async {
+    func refreshAfterEvent() async {
         guard let userID = profile?.userID else { return }
         do {
-            chats = try await core.loadChats(userID: userID)
-            if let chatID = selectedChatID {
-                _ = await loadConversation(chatID: chatID, showProgress: false)
+            chats = try await loadChats(userID: userID)
+            if let chatID = selectedChatID, !isLoadingConversation {
+                let anchor = conversationAnchorMessageID
+                let loaded = await loadConversation(
+                    chatID: chatID,
+                    around: anchor,
+                    showProgress: false,
+                    reportFailure: anchor == nil
+                )
+                if !loaded, anchor != nil, !Task.isCancelled,
+                   selectedChatID == chatID, !isLoadingConversation {
+                    conversationAnchorMessageID = nil
+                    _ = await loadConversation(chatID: chatID, showProgress: false)
+                }
             }
             consumePendingNotificationRoutes()
+        } catch is CancellationError {
+            return
         } catch {
             phase = .failed(error.localizedDescription)
         }
+    }
+
+    private func loadChats(userID: Int64) async throws -> [NativeChat] {
+        if let loadChatsOperation {
+            return try await loadChatsOperation(userID)
+        }
+        return try await core.loadChats(userID: userID)
     }
 
     private func consumePendingNotificationRoutes() {
