@@ -127,7 +127,9 @@ struct BadgesPayView: View {
 
     private var billingFooter: LocalizedStringKey {
         // TODO [badges] source the actual date from the purchase state machine when wired.
-        let date = "July 22, 2026"
+        var comps = DateComponents(); comps.year = 2026; comps.month = 7; comps.day = 22
+        let stubDate = Calendar.current.date(from: comps) ?? Date()
+        let date = DateFormatter.localizedString(from: stubDate, dateStyle: .long, timeStyle: .none)
         switch selectedPeriod {
         case .subscribe: return "Renews on \(date). Cancel anytime."
         case .oneMonth: return "Ends on \(date)."
