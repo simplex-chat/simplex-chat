@@ -318,6 +318,41 @@ private func makeSendTestModel(
 }
 
 @MainActor
+@Test func inFlightReplyTargetCannotBeDeletedUntilTheSendResolves() async throws {
+    // Given
+    let model = makeSendTestModel(sendTextOperation: { _, _, _ in
+        try Task.checkCancellation()
+    })
+    let replyTarget = try #require(model.messages.first)
+    let unrelatedMessage = try #require(model.messages.dropFirst().first)
+    model.draft = "Reply in progress"
+    model.beginReply(to: replyTarget)
+
+    // When
+    model.sendDraft()
+    let send = try #require(model.sendTask)
+    model.selectMessage(replyTarget.id, modifiers: [])
+    model.requestDeleteSelectedMessages()
+
+    // Then: deleting the quoted source cannot strand a failed reply.
+    #expect(!model.canDeleteSelectedMessages)
+    #expect(!model.showingDeleteConfirmation)
+
+    // When: an unrelated message is selected instead.
+    model.selectMessage(unrelatedMessage.id, modifiers: [])
+
+    // Then: unrelated deletion remains available.
+    #expect(model.canDeleteSelectedMessages)
+
+    // Cleanup.
+    send.cancel()
+    await send.value
+    #expect(!model.isSending)
+    model.selectMessage(replyTarget.id, modifiers: [])
+    #expect(model.canDeleteSelectedMessages)
+}
+
+@MainActor
 @Test func deletionCompletionCannotReplaceAnotherChatsTranscript() async throws {
     // Given
     let deletedChatMessages = Array(NativePreviewData.messages(for: "@1").dropFirst())

@@ -142,9 +142,12 @@ final class AppModel: ObservableObject {
     }
 
     var canDeleteSelectedMessages: Bool {
-        !isDeletingMessages
+        let inFlightQuoteID = isSendingSelectedChat ? replyingTo?.id : nil
+        let includesInFlightQuote = inFlightQuoteID.map(selectedMessageIDs.contains) ?? false
+        return !isDeletingMessages
             && !selectedMessageIDs.isEmpty
             && selectedMessagesInTranscriptOrder.allSatisfy(\.deletable)
+            && !includesInFlightQuote
     }
 
     var conversationSearchMatches: [NativeMessage] {
