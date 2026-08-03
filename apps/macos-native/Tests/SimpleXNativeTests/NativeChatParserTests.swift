@@ -18,6 +18,26 @@ import Testing
     #expect(SingleInstanceGuard(lockURL: lockURL) != nil)
 }
 
+@Test func processLockYieldsToALegacyFrontendThatDoesNotOwnTheLock() throws {
+    // Given: an older build is already registered with macOS but predates the lock file.
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let lockURL = directory.appendingPathComponent("simplex-native.lock")
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    // When / Then: the new process releases the lock and yields to the legacy process.
+    #expect(SingleInstanceGuard(
+        lockURL: lockURL,
+        otherApplicationRunning: { true }
+    ) == nil)
+
+    // And: the rejected launch did not strand the lock for the next clean launch.
+    #expect(SingleInstanceGuard(
+        lockURL: lockURL,
+        otherApplicationRunning: { false }
+    ) != nil)
+}
+
 @Test func parsesDesktopChatListResponse() throws {
     let json = #"{"result":{"type":"apiChats","user":{"userId":7},"chats":[{"chatInfo":{"type":"direct","contact":{"contactId":42,"localDisplayName":"Alice","profile":{"displayName":"Alice"}}},"chatItems":[{"meta":{"itemText":"Hello","itemTs":"2026-08-02T20:00:00Z"}}],"chatStats":{"unreadCount":2}}]}}"#
     let chats = try NativeChatParser.chats(from: Data(json.utf8))

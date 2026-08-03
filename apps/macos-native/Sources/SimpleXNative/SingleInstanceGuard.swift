@@ -6,7 +6,10 @@ import Foundation
 final class SingleInstanceGuard {
     private let descriptor: Int32
 
-    init?(lockURL: URL = SingleInstanceGuard.defaultLockURL) {
+    init?(
+        lockURL: URL = SingleInstanceGuard.defaultLockURL,
+        otherApplicationRunning: () -> Bool = SingleInstanceGuard.hasOtherRunningApplication
+    ) {
         do {
             try FileManager.default.createDirectory(
                 at: lockURL.deletingLastPathComponent(),
@@ -22,6 +25,11 @@ final class SingleInstanceGuard {
             Darwin.close(descriptor)
             return nil
         }
+        guard !otherApplicationRunning() else {
+            sx_unlock_file(descriptor)
+            Darwin.close(descriptor)
+            return nil
+        }
         self.descriptor = descriptor
     }
 
@@ -34,6 +42,13 @@ final class SingleInstanceGuard {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/share/simplex", isDirectory: true)
             .appendingPathComponent("simplex-native.lock")
+    }
+
+    private static func hasOtherRunningApplication() -> Bool {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return false }
+        let currentProcessID = ProcessInfo.processInfo.processIdentifier
+        return NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier)
+            .contains(where: { $0.processIdentifier != currentProcessID })
     }
 
     @MainActor
