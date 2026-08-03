@@ -39,6 +39,7 @@ final class AppModel: ObservableObject {
     @Published var conversationSearchText = ""
     @Published var conversationSearchPresented = false
     @Published var isLoadingConversation = false
+    @Published private(set) var isRefreshing = false
     @Published var isSending = false
     @Published private(set) var sendingChatID: NativeChat.ID?
     @Published private(set) var isDeletingMessages = false
@@ -159,6 +160,7 @@ final class AppModel: ObservableObject {
         return (hasText || !pendingAttachments.isEmpty)
             && !isSending
             && !isDeletingSelectedChat
+            && !isRefreshing
             && !isLoadingConversation
             && quoteNavigationTask == nil
             && selectedChat?.kind.canSend == true
@@ -173,7 +175,7 @@ final class AppModel: ObservableObject {
     }
 
     var canNavigateConversationHistory: Bool {
-        !isSendingSelectedChat && !isDeletingSelectedChat
+        !isSendingSelectedChat && !isDeletingSelectedChat && !isRefreshing
     }
 
     var canRefreshConversation: Bool {
@@ -193,6 +195,7 @@ final class AppModel: ObservableObject {
         let includesInFlightQuote = inFlightQuoteID.map(selectedMessageIDs.contains) ?? false
         return !isDeletingMessages
             && !isSendingSelectedChat
+            && !isRefreshing
             && !isLoadingConversation
             && quoteNavigationTask == nil
             && !selectedMessageIDs.isEmpty
@@ -262,7 +265,12 @@ final class AppModel: ObservableObject {
         guard canRefreshConversation else { return }
         guard let userID = profile?.userID else { return }
         refreshTask?.cancel()
+        isRefreshing = true
         refreshTask = Task {
+            defer {
+                isRefreshing = false
+                refreshTask = nil
+            }
             do {
                 let loadedChats = try await loadChats(userID: userID)
                 guard !Task.isCancelled else { return }

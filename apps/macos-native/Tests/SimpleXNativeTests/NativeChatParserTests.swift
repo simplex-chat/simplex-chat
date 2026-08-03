@@ -677,6 +677,65 @@ private func makeLiveRefreshModel(probe: ConversationRefreshProbe) -> AppModel {
 }
 
 @MainActor
+@Test func manualRefreshBlocksConflictingTranscriptActionsFromItsFirstPhase() async throws {
+    // Given
+    let chatsProbe = DelayedValue(NativePreviewData.chats)
+    let originalMessages = NativePreviewData.messages(for: "@1")
+    let model = AppModel(
+        previewMode: false,
+        loadMessagesOperation: { chatID, aroundMessageID in
+            #expect(chatID == "@1")
+            #expect(aroundMessageID == nil)
+            return originalMessages
+        },
+        loadChatsOperation: { _ in await chatsProbe.load() }
+    )
+    model.phase = .ready
+    model.profile = NativePreviewData.profile
+    model.chats = NativePreviewData.chats
+    model.selectedChatID = "@1"
+    model.messages = originalMessages
+    let target = try #require(originalMessages.first)
+    let quote = NativeQuote(messageID: target.id, text: target.text, sent: target.sent, author: target.author)
+    model.draft = "Wait for refresh"
+    model.selectMessage(target.id, modifiers: [])
+
+    // When: Refresh is still loading only the chat list.
+    model.refresh()
+    await chatsProbe.waitUntilRequested()
+
+    // Then: transcript mutations are already disabled before its transcript load begins.
+    #expect(model.isRefreshing)
+    #expect(!model.isLoadingConversation)
+    #expect(!model.canSendDraft)
+    #expect(!model.canDeleteSelectedMessages)
+    #expect(!model.canNavigateConversationHistory)
+    #expect(!model.canRefreshConversation)
+    model.sendDraft()
+    model.requestDeleteSelectedMessages()
+    #expect(model.sendTask == nil)
+    #expect(!model.showingDeleteConfirmation)
+    #expect(model.openQuotedMessage(quote, from: 912) == nil)
+    #expect(model.targetMessageID == nil)
+
+    // When: both refresh phases finish.
+    await chatsProbe.release()
+    for _ in 0..<1_000 {
+        if !model.isRefreshing { break }
+        await Task.yield()
+    }
+
+    // Then: the original controls recover against the refreshed transcript.
+    #expect(!model.isRefreshing)
+    #expect(!model.isLoadingConversation)
+    #expect(model.canSendDraft)
+    #expect(model.canDeleteSelectedMessages)
+    #expect(model.canNavigateConversationHistory)
+    #expect(model.canRefreshConversation)
+    #expect(model.messages == originalMessages)
+}
+
+@MainActor
 @Test func liveEventRefreshPreservesTheActiveQuoteNavigationAnchor() async throws {
     // Given
     let target = NativePreviewData.messages(for: "@1")[0]
