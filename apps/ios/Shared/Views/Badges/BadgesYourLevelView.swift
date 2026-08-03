@@ -30,31 +30,10 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var monthlyPrice: LocalizedStringKey {
-        switch self {
-        case .supporter: "$7/month"
-        case .legend: "$70/month"
-        }
-    }
-
-    var oneMonthPrice: LocalizedStringKey {
+    var priceAmount: String {
         switch self {
         case .supporter: "$7"
         case .legend: "$70"
-        }
-    }
-
-    var payMonthlyLabel: LocalizedStringKey {
-        switch self {
-        case .supporter: "Pay $7/month"
-        case .legend: "Pay $70/month"
-        }
-    }
-
-    var payOnceLabel: LocalizedStringKey {
-        switch self {
-        case .supporter: "Pay $7"
-        case .legend: "Pay $70"
         }
     }
 
@@ -141,7 +120,7 @@ struct BadgesYourLevelView: View {
                 Text(level.filesDescription)
                     .font(.subheadline)
                     .foregroundColor(theme.colors.secondary)
-                Text(level.monthlyPrice)
+                Text("\(level.priceAmount)/month")
                     .font(.body)
                     .padding(.bottom, 20)
             }

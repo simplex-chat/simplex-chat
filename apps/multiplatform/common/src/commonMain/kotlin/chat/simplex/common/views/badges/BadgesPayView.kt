@@ -138,7 +138,8 @@ private fun PeriodCard(period: BadgePeriod, selectedPeriod: BadgePeriod, modifie
 private fun PayButton(level: BadgeLevel, selectedPeriod: BadgePeriod) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = if (selectedPeriod == BadgePeriod.Subscribe) level.payMonthlyLabel else level.payOnceLabel,
+    labelId = if (selectedPeriod == BadgePeriod.Subscribe) MR.strings.badges_pay_monthly else MR.strings.badges_pay_once,
+    labelArg = level.priceAmount,
     onboarding = null,
     onclick = {
       // TODO [badges] wire to purchase API when it lands.

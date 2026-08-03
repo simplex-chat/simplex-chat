@@ -120,7 +120,7 @@ struct BadgesPayView: View {
         Button {
             // TODO [badges] wire to purchase API when it lands.
         } label: {
-            Text(selectedPeriod == .subscribe ? level.payMonthlyLabel : level.payOnceLabel)
+            Text(selectedPeriod == .subscribe ? "Pay \(level.priceAmount)/month" : "Pay \(level.priceAmount)")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }

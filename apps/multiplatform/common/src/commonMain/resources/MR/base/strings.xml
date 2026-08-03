@@ -3202,14 +3202,9 @@
   <string name="badges_level_legend">Legend</string>
   <string name="badges_level_supporter_files">Send 2GB files</string>
   <string name="badges_level_legend_files">Send 5GB files</string>
-  <string name="badges_level_supporter_monthly">$7/month</string>
-  <string name="badges_level_legend_monthly">$70/month</string>
-  <string name="badges_level_supporter_one_month">$7</string>
-  <string name="badges_level_legend_one_month">$70</string>
-  <string name="badges_pay_supporter_monthly">Pay $7/month</string>
-  <string name="badges_pay_legend_monthly">Pay $70/month</string>
-  <string name="badges_pay_supporter_once">Pay $7</string>
-  <string name="badges_pay_legend_once">Pay $70</string>
+  <string name="badges_price_monthly">%1$s/month</string>
+  <string name="badges_pay_monthly">Pay %1$s/month</string>
+  <string name="badges_pay_once">Pay %1$s</string>
   <string name="badges_level_supporter_tagline">Optional profile badge\nand 2GB files</string>
   <string name="badges_level_legend_tagline">Optional profile badge\nand 5GB files</string>
   <string name="badges_period_one_month">1 month</string>
