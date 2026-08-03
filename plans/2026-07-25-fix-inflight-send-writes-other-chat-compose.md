@@ -89,13 +89,24 @@ In-flight content is deliberately **not** saved as a draft here: the
 message has been submitted and will most likely be sent, and a draft is
 for messages that are not sent yet.
 
+`clearState()` alone would leave the chat opened next with an empty input
+even when it has a draft: this branch, like the live message one above it,
+returns before the branch that loads a draft
+(`chatModel.draftChatId.value == draftChatId(chatModel.chatId.value, chatScope)`),
+so that draft was never shown - and, being still in the slot but not in
+any compose state, it was then dropped by `clearPrevDraft` on the next
+chat switch. It is loaded here instead. This is not the one-slot
+limitation below: nothing else is competing for the slot, the draft is
+simply lost.
+
 **2. Only touch the compose state if it still holds the message that was
 sent** (`ComposeView.kt:936-968`):
 
 ```kotlin
 withContext(Dispatchers.Main) {
   val chatIsOpen = chatModel.chatId.value == chat.id
-  val sentMessageInCompose = live || cs.liveMessage != null || (chatIsOpen && composeState.value.inProgress)
+  val liveSend = live || cs.liveMessage != null
+  val sentMessageInCompose = chatIsOpen && (liveSend || composeState.value.inProgress)
   if (sentMessageInCompose) {
     if (lastFailed == null) {
       clearState(live)
@@ -149,12 +160,26 @@ Deliberately unchanged:
   instead, **deleting** the destination chat's draft that the branch
   exists to preserve - only the compose write inside it is gated.
 - Live message sends (`live`, or `cs.liveMessage != null` for the send
-  that finalises a live message when leaving the chat, `ComposeView.kt:1338-1342`).
-  They never call `sending()`, so a guard based on `inProgress` would
-  change their behaviour: failed live sends would stop restoring and would
-  write a draft on every failing keystroke send. `sendMessageAsync` reads
-  `composeState` inside the coroutine (`ComposeView.kt:684`), so that
-  branch cannot clear the state itself without racing the send.
+  that finalises a live message when leaving the chat, `ComposeView.kt:1338-1342`),
+  as long as their chat is the one open. They never call `sending()`, so a
+  guard based on `inProgress` would change their behaviour: failed live
+  sends would stop restoring and would write a draft on every failing
+  keystroke send. That is why `liveSend` is an alternative to `inProgress`
+  inside the guard, and why it is excluded from the restore/draft branch -
+  not gating it there would produce exactly that draft-per-keystroke.
+
+  What they are **not** exempt from is `chatIsOpen`. An earlier revision
+  had `live || cs.liveMessage != null` outside it, which holds only while
+  a live message is always sent to the chat that is open. #7323 removes
+  that: the live message committed by a chat switch is sent to the chat it
+  was composed in, while this view already shows another one, so an
+  unguarded clause here would clear *that* chat's compose state - the leak
+  this fix exists to prevent. Standalone this changes nothing except a
+  live send that completes after its chat was left, which now leaves the
+  opened chat alone. `sendMessageAsync` reads `composeState` inside the
+  coroutine (`ComposeView.kt:684`), so that branch cannot clear the state
+  itself without racing the send; #7323 adds the `composed` parameter that
+  makes the captured state explicit.
 
 **3. The same check where the flag is shared** (`ComposeView.kt:600-602`
 and the three senders that connect a prepared chat). They call the same
