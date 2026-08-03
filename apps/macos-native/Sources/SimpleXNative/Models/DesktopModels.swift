@@ -131,6 +131,28 @@ struct PendingAttachment: Identifiable, Hashable, Sendable {
     }
 }
 
+struct PendingAttachmentSendStep: Equatable, Sendable {
+    let attachment: PendingAttachment
+    let caption: String
+    let quotedItemID: Int64?
+}
+
+enum PendingAttachmentBatch {
+    static func sendSteps(
+        attachments: [PendingAttachment],
+        caption: String,
+        quotedItemID: Int64?
+    ) -> [PendingAttachmentSendStep] {
+        attachments.enumerated().map { index, attachment in
+            PendingAttachmentSendStep(
+                attachment: attachment,
+                caption: index == attachments.index(before: attachments.endIndex) ? caption : "",
+                quotedItemID: index == attachments.startIndex ? quotedItemID : nil
+            )
+        }
+    }
+}
+
 enum AttachmentValidationError: LocalizedError, Equatable {
     case notAReadableFile(String)
     case tooLarge(String)

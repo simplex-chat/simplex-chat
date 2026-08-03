@@ -66,11 +66,13 @@ import Testing
 
 @MainActor
 @Test func notificationChatTransitionCannotLeakAReplyIntoAnotherConversation() throws {
+    // Given
     let model = AppModel(previewMode: true)
     let original = try #require(model.messages.first)
     model.beginReply(to: original)
     #expect(model.replyingTo?.id == original.id)
 
+    // When
     model.openNotificationRoute(NotificationRoute(
         userID: NativePreviewData.profile.userID,
         remoteHostID: nil,
@@ -78,6 +80,7 @@ import Testing
         messageID: 20
     ))
 
+    // Then
     #expect(model.selectedChatID == "#2")
     #expect(model.replyingTo == nil)
     #expect(model.targetMessageID == 20)
@@ -86,6 +89,44 @@ import Testing
     model.selectChat("*3")
     model.beginReply(to: groupMessage)
     #expect(model.replyingTo == nil)
+
+    model.selectChat("@1")
+    #expect(model.replyingTo?.id == original.id)
+}
+
+@MainActor
+@Test func switchingChatsPreservesIndependentComposerStates() throws {
+    // Given
+    let model = AppModel(previewMode: true)
+    let directMessage = try #require(model.messages.first)
+    let attachment = PendingAttachment(
+        id: UUID(),
+        url: URL(fileURLWithPath: "/tmp/photo.jpg"),
+        fileName: "photo.jpg",
+        kind: .image,
+        byteCount: 10,
+        previewImage: nil
+    )
+    model.draft = "Direct draft"
+    model.pendingAttachments = [attachment]
+    model.beginReply(to: directMessage)
+
+    // When
+    model.selectChat("#2")
+    let groupMessage = try #require(model.messages.first)
+    model.draft = "Group draft"
+    model.beginReply(to: groupMessage)
+    model.selectChat("@1")
+
+    // Then
+    #expect(model.draft == "Direct draft")
+    #expect(model.pendingAttachments == [attachment])
+    #expect(model.replyingTo?.id == directMessage.id)
+
+    model.selectChat("#2")
+    #expect(model.draft == "Group draft")
+    #expect(model.pendingAttachments.isEmpty)
+    #expect(model.replyingTo?.id == groupMessage.id)
 }
 
 @Test func messageSelectionSupportsRangesAndCommandToggle() {
@@ -147,15 +188,27 @@ func databasePassphraseKeychainAddsUpdatesLoadsAndDeletes() async throws {
 }
 
 @Test func attachmentReorderingAndFailureRetentionPreserveOrder() {
+    // Given
     let urls = ["one.jpg", "two.mov", "three.pdf"].map { URL(fileURLWithPath: "/tmp/\($0)") }
     let attachments = [
         PendingAttachment(id: UUID(), url: urls[0], fileName: "one.jpg", kind: .image, byteCount: 1, previewImage: nil),
         PendingAttachment(id: UUID(), url: urls[1], fileName: "two.mov", kind: .video, byteCount: 2, previewImage: nil),
         PendingAttachment(id: UUID(), url: urls[2], fileName: "three.pdf", kind: .document, byteCount: 3, previewImage: nil),
     ]
+    // When
     let reordered = PendingAttachment.reordered(attachments, from: attachments[2].id, before: attachments[0].id)
+    let sendSteps = PendingAttachmentBatch.sendSteps(
+        attachments: reordered,
+        caption: "Batch caption",
+        quotedItemID: 42
+    )
+
+    // Then
     #expect(reordered.map(\.fileName) == ["three.pdf", "one.jpg", "two.mov"])
     #expect(PendingAttachment.remainingAfterFailure(reordered, at: 1).map(\.fileName) == ["one.jpg", "two.mov"])
+    #expect(sendSteps.map(\.attachment.fileName) == ["three.pdf", "one.jpg", "two.mov"])
+    #expect(sendSteps.map(\.quotedItemID) == [42, nil, nil])
+    #expect(sendSteps.map(\.caption) == ["", "", "Batch caption"])
 }
 
 @Test func parsesMessageNotificationRouteAndPrivacyModes() throws {

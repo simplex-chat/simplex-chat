@@ -10,6 +10,16 @@ final class AppModel: ObservableObject {
         case failed(String)
     }
 
+    private struct ConversationComposerState {
+        var draft = ""
+        var attachments: [PendingAttachment] = []
+        var reply: NativeMessage?
+
+        var isEmpty: Bool {
+            draft.isEmpty && attachments.isEmpty && reply == nil
+        }
+    }
+
     @Published var phase: Phase = .locked(message: nil)
     @Published var profile: NativeProfile?
     @Published var chats: [NativeChat] = []
@@ -48,6 +58,7 @@ final class AppModel: ObservableObject {
     private var refreshTask: Task<Void, Never>?
     private var sendTask: Task<Void, Never>?
     private var notificationRouteQueue = NotificationRouteQueue()
+    private var composerStates: [NativeChat.ID: ConversationComposerState] = [:]
     private var selectionAnchor: Int64?
     private var replyingChatID: NativeChat.ID?
     private var conversationLoadRevision: UInt64 = 0
@@ -221,23 +232,28 @@ final class AppModel: ObservableObject {
                     try await core.sendText(text, quotedItemID: quotedMessage?.id, to: chat)
                     try Task.checkCancellation()
                     contentWasSent = true
-                    if selectedChatID == chat.id, replyingTo?.id == quotedMessage?.id { cancelReply() }
+                    if let quotedItemID = quotedMessage?.id {
+                        clearReply(quotedItemID, in: chat.id)
+                    }
                 } else {
-                    for (index, attachment) in attachments.enumerated() {
+                    let sendSteps = PendingAttachmentBatch.sendSteps(
+                        attachments: attachments,
+                        caption: text,
+                        quotedItemID: quotedMessage?.id
+                    )
+                    for (index, step) in sendSteps.enumerated() {
                         try Task.checkCancellation()
-                        let caption = index == attachments.index(before: attachments.endIndex) ? text : ""
-                        let quotedItemID = index == attachments.startIndex ? quotedMessage?.id : nil
                         try await core.sendAttachment(
-                            attachment,
-                            caption: caption,
-                            quotedItemID: quotedItemID,
+                            step.attachment,
+                            caption: step.caption,
+                            quotedItemID: step.quotedItemID,
                             to: chat
                         )
                         try Task.checkCancellation()
-                        if index == attachments.index(before: attachments.endIndex) { contentWasSent = true }
-                        if selectedChatID == chat.id {
-                            pendingAttachments.removeAll { $0.id == attachment.id }
-                            if quotedItemID != nil, replyingTo?.id == quotedItemID { cancelReply() }
+                        if index == sendSteps.index(before: sendSteps.endIndex) { contentWasSent = true }
+                        removeSentAttachment(step.attachment.id, from: chat.id)
+                        if let quotedItemID = step.quotedItemID {
+                            clearReply(quotedItemID, in: chat.id)
                         }
                     }
                 }
@@ -252,15 +268,14 @@ final class AppModel: ObservableObject {
             } catch is CancellationError {
                 return
             } catch {
-                if selectedChatID == chat.id {
-                    if !contentWasSent { draft = text }
-                    phase = .failed(error.localizedDescription)
-                }
+                if !contentWasSent { restoreFailedDraft(text, in: chat.id) }
+                phase = .failed(error.localizedDescription)
             }
         }
     }
 
     func chooseAttachments() {
+        guard !isSending else { return }
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
@@ -273,6 +288,10 @@ final class AppModel: ObservableObject {
     }
 
     func stageAttachments(_ urls: [URL]) {
+        guard !isSending else {
+            attachmentError = "Wait for the current message to finish sending before changing attachments."
+            return
+        }
         var failures: [String] = []
         for url in urls {
             do {
@@ -288,6 +307,10 @@ final class AppModel: ObservableObject {
     }
 
     func stageFilesFromPasteboard() {
+        guard !isSending else {
+            attachmentError = "Wait for the current message to finish sending before changing attachments."
+            return
+        }
         let urls = NSPasteboard.general.readObjects(forClasses: [NSURL.self]) as? [URL] ?? []
         if urls.isEmpty {
             attachmentError = "The clipboard does not contain any files."
@@ -297,14 +320,17 @@ final class AppModel: ObservableObject {
     }
 
     func removeAttachment(_ id: PendingAttachment.ID) {
+        guard !isSending else { return }
         pendingAttachments.removeAll { $0.id == id }
     }
 
     func reorderAttachment(_ source: PendingAttachment.ID, before destination: PendingAttachment.ID) {
+        guard !isSending else { return }
         pendingAttachments = PendingAttachment.reordered(pendingAttachments, from: source, before: destination)
     }
 
     func moveAttachment(_ id: PendingAttachment.ID, by offset: Int) {
+        guard !isSending else { return }
         guard let sourceIndex = pendingAttachments.firstIndex(where: { $0.id == id }) else { return }
         let destinationIndex = min(max(0, sourceIndex + offset), pendingAttachments.count - 1)
         guard sourceIndex != destinationIndex else { return }
@@ -496,10 +522,12 @@ final class AppModel: ObservableObject {
         guard changedChat || messageID != nil || scrollTarget != nil else { return }
 
         if changedChat {
+            if let previousChatID = selectedChatID {
+                saveComposerState(for: previousChatID)
+            }
             selectedChatID = id
             clearMessageSelection()
-            pendingAttachments = []
-            cancelReply()
+            restoreComposerState(for: id)
             targetMessageID = nil
             conversationSearchText = ""
             conversationSearchPresented = false
@@ -520,6 +548,74 @@ final class AppModel: ObservableObject {
             return
         }
         scheduleConversationLoad(chatID: id, around: messageID, scrollTo: scrollTarget)
+    }
+
+    private func saveComposerState(for chatID: NativeChat.ID) {
+        storeComposerState(
+            ConversationComposerState(draft: draft, attachments: pendingAttachments, reply: replyingTo),
+            for: chatID
+        )
+    }
+
+    private func restoreComposerState(for chatID: NativeChat.ID?) {
+        let state = chatID.flatMap { composerStates[$0] } ?? ConversationComposerState()
+        draft = state.draft
+        pendingAttachments = state.attachments
+        replyingTo = state.reply
+        replyingChatID = state.reply == nil ? nil : chatID
+    }
+
+    private func storeComposerState(_ state: ConversationComposerState, for chatID: NativeChat.ID) {
+        if state.isEmpty {
+            composerStates.removeValue(forKey: chatID)
+        } else {
+            composerStates[chatID] = state
+        }
+    }
+
+    private func updateComposerState(
+        for chatID: NativeChat.ID,
+        _ update: (inout ConversationComposerState) -> Void
+    ) {
+        if selectedChatID == chatID {
+            var state = ConversationComposerState(
+                draft: draft,
+                attachments: pendingAttachments,
+                reply: replyingTo
+            )
+            update(&state)
+            draft = state.draft
+            pendingAttachments = state.attachments
+            replyingTo = state.reply
+            replyingChatID = state.reply == nil ? nil : chatID
+        } else {
+            var state = composerStates[chatID] ?? ConversationComposerState()
+            update(&state)
+            storeComposerState(state, for: chatID)
+        }
+    }
+
+    private func removeSentAttachment(_ attachmentID: PendingAttachment.ID, from chatID: NativeChat.ID) {
+        updateComposerState(for: chatID) { state in
+            state.attachments.removeAll { $0.id == attachmentID }
+        }
+    }
+
+    private func clearReply(_ messageID: Int64, in chatID: NativeChat.ID) {
+        updateComposerState(for: chatID) { state in
+            if state.reply?.id == messageID { state.reply = nil }
+        }
+    }
+
+    private func restoreFailedDraft(_ text: String, in chatID: NativeChat.ID) {
+        guard !text.isEmpty else { return }
+        updateComposerState(for: chatID) { state in
+            if state.draft.isEmpty {
+                state.draft = text
+            } else if state.draft != text {
+                state.draft = "\(text)\n\(state.draft)"
+            }
+        }
     }
 
     private func scheduleConversationLoad(

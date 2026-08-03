@@ -23,6 +23,7 @@ struct ConversationView: View {
                 .navigationTitle("")
                 .toolbar { conversationToolbar(chat: chat) }
                 .dropDestination(for: URL.self) { urls, _ in
+                    guard !model.isSending else { return false }
                     model.stageAttachments(urls)
                     composerFocused = true
                     return !urls.isEmpty
@@ -235,6 +236,7 @@ struct ConversationView: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
+                .disabled(model.isSending)
                 .help("Add Attachments")
                 .accessibilityLabel("Attachments") // [VERIFY] Matches the attachment menu action.
                 .accessibilityInputLabels(["Attachments", "Attach Files"])
@@ -588,6 +590,7 @@ private struct AttachmentTray: View {
                         }
                         Button("Remove Attachment") { model.removeAttachment(attachment.id) }
                     }
+                    .disabled(model.isSending)
                 }
             }
             .padding(.horizontal, 12)
