@@ -764,7 +764,7 @@ struct ChatListSearchBar: View {
 
     private func toggleFilterButton() -> some View {
         let showUnread = chatTagsModel.activeFilter == .unread
-        let hasUnread = m.chats.contains { $0.unreadTag }
+        let hasUnread = m.chats.contains { !$0.chatInfo.chatDeleted && !$0.chatInfo.contactCard && $0.unreadTag }
         return ZStack {
             Color.clear
                 .frame(width: 22, height: 22)

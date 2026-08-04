@@ -707,7 +707,7 @@ private fun BoxScope.unreadBadge(text: String? = "") {
 @Composable
 private fun ToggleFilterEnabledButton() {
   val showUnread = remember { chatModel.activeChatTagFilter }.value == ActiveFilter.Unread
-  val hasUnread = chatModel.chats.value.any { it.unreadTag }
+  val hasUnread = chatModel.chats.value.any { !it.chatInfo.chatDeleted && !it.chatInfo.contactCard && it.unreadTag }
 
   IconButton(onClick = {
     if (showUnread) {

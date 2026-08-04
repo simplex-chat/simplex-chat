@@ -4,7 +4,7 @@
 
 The unread filter button in the chat list search bar looks the same whether or not there is anything to filter to. The only way to find out is to tap it — and if nothing is unread, the list empties and shows "No unread chats". There is no passive signal that unread chats exist.
 
-User tags already solve this for themselves: a tag chip carries a `●` badge when its chats have unread (`ChatListView.kt:1250`, driven by `unreadTags`). The unread filter button had no equivalent.
+User tags already solve this for themselves: a tag chip carries a `●` badge when its chats have unread (`TagsView` in `ChatListView.kt`, driven by `unreadTags`). The unread filter button had no equivalent.
 
 ## Fix
 
@@ -14,11 +14,13 @@ Tint the filter icon with the accent colour while any chat is unread. Same icon,
 |---|---|---|---|
 | off | none | grey lines | grey lines |
 | off | some | **accent lines** | **accent lines** |
-| on | — | white lines on accent pill | accent filled circle |
+| on | — | background-coloured lines on accent pill | accent filled circle |
 
 ## Why `Chat.unreadTag`
 
-The highlight uses `unreadTag` — the same property `ActiveFilter.Unread` matches on (`ChatListView.kt:1479`, `ChatListView.swift:555`). So the button is highlighted exactly when the filter has something to show, and the two cannot drift: they are the same symbol, not two copies of one rule. It also inherits the right mute semantics for free — a muted chat counts only when manually marked unread, and a mentions-only chat only on unread mentions.
+The highlight uses `unreadTag` — the same property `ActiveFilter.Unread` matches on in `filtered()` (`ChatListView.kt`) and `filtered(_:)` (`ChatListView.swift`). So the button is highlighted exactly when the filter has something to show, and the unread test cannot drift: it is the same symbol, not two copies of one rule. It also inherits the right mute semantics for free — a muted chat counts only when manually marked unread, and a mentions-only chat only on unread mentions.
+
+The predicate also repeats the list-visibility guard `!chatDeleted && !contactCard` that `filteredChats` applies before any filter. Without it the button lies: deleting a contact with "keep conversation" (`ChatDeleteMode.Entity`) routes to `updateContact` → `updateChatInfo`, which replaces `chatInfo` but preserves `chatStats` — so the chat keeps its unread count, becomes `chatDeleted`, and drops out of the list while still satisfying `unreadTag`. The button would stay highlighted with the filter permanently empty, and nothing would clear it because the chat is no longer reachable from the list. This guard is the one rule here that is copied rather than shared — if `filteredChats` ever hides chats on a further condition, this predicate needs the same term.
 
 The alternative, `users[].unreadCount`, was rejected: `changeUnreadCounter(user:by:)` increments it unconditionally, so muted chats would light the button while the filter showed nothing.
 
