@@ -2547,11 +2547,11 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> ([(GroupMember, Connection)], [(GroupMember, Connection)]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs (toSendBin, toSendJson) =
-      batchReqs BMBinary msgs toSendBin <> batchReqs BMJson msgs toSendJson
+      batchReqs 1 BMBinary toSendBin <> batchReqs 2 BMJson toSendJson
       where
-        batchReqs _ [] [] = ([], [])
-        batchReqs mode msgs' toSend' = case L.nonEmpty (batchSndMessagesJSON mode msgs') of
-          Just batched -> foldMembers (length batched + length msgs') msgBatchMBR batched toSend'
+        batchReqs _ _ [] = ([], [])
+        batchReqs n mode toSend' = case L.nonEmpty (batchSndMessagesJSON mode msgs) of
+          Just batched -> foldMembers (n * (length batched + length msgs)) msgBatchMBR batched toSend'
           Nothing -> ([], [])
         foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
         foldMembers lastRef mkMb mbs mems = snd $ foldr' foldMsgBodies (lastMemIdx_, ([], [])) mems

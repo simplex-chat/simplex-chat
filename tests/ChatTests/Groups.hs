@@ -108,7 +108,7 @@ chatGroupTests = do
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
     it "shared message body is reused" testSharedMessageBody
     it "shared batch body is reused" testSharedBatchBody
-    xit "shared batch body reference across binary and json members" testGroupSharedBatchBodyMixedModes
+    it "shared batch body reference across binary and json members" testGroupSharedBatchBodyMixedModes
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -2414,12 +2414,20 @@ testGroupSharedBatchBodyMixedModes ps =
             cath #> "#team hi"
             alice <# "#team kate> hi"
             bob <# "#team kate> hi"
-            threadDelay 1000000
-            errs <- withCCTransaction cath $ \db ->
-              DB.query_ db "SELECT count(1) FROM group_snd_item_statuses WHERE group_snd_item_status LIKE 'snd_error%'" :: IO [[Int]]
-            errs `shouldBe` [[0]]
             dan <# "#team kate> hi"
             eve <# "#team kate> hi"
+            alice ##> "/_get chat #1 count=100"
+            ra <- chat <$> getTermLine alice
+            ra `shouldContain` [(0, "updated profile (signed)")]
+            bob ##> "/_get chat #1 count=100"
+            rb <- chat <$> getTermLine bob
+            rb `shouldContain` [(0, "updated profile (signed)")]
+            dan ##> "/_get chat #1 count=100"
+            rd <- chat <$> getTermLine dan
+            rd `shouldContain` [(0, "updated profile")]
+            eve ##> "/_get chat #1 count=100"
+            re <- chat <$> getTermLine eve
+            re `shouldContain` [(0, "updated profile")]
   where
     oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
 
