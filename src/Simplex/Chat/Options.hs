@@ -46,6 +46,7 @@ data ChatOpts = ChatOpts
     optFilesFolder :: Maybe FilePath,
     optTempDirectory :: Maybe FilePath,
     showReactions :: Bool,
+    showFullLinks :: Bool,
     allowInstantFiles :: Bool,
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
@@ -418,6 +419,11 @@ chatOptsP appDir defaultDbName = do
       ( long "reactions"
           <> help "Show message reactions"
       )
+  showFullLinks <-
+    switch
+      ( long "show-full-links"
+          <> help "Show full connection links and addresses"
+      )
   allowInstantFiles <-
     switch
       ( long "allow-instant-files"
@@ -485,6 +491,7 @@ chatOptsP appDir defaultDbName = do
         optFilesFolder,
         optTempDirectory,
         showReactions,
+        showFullLinks,
         allowInstantFiles,
         autoAcceptFileSize,
         muteNotifications,

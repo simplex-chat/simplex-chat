@@ -77,11 +77,11 @@ chatCommandsDocsData :: [(String, String, [(ConsName, [String], Text, [ConsName]
 chatCommandsDocsData =
   [ ( "Address commands",
       "Bots can use these commands to automatically check and create address when initialized",
-      [ ("APICreateMyAddress", ["server_"], "Create bot address.", ["CRUserContactLinkCreated", "CRChatCmdError"], [], Just UNInteractive, "/_address " <> Param "userId"),
+      [ ("APICreateMyAddress", ["server_"], "Create bot address.", ["CRUserContactLinkCreated", "CRChatCmdError"], [], Just UNInteractive, "/_address " <> Param "userId" <> OnOffParam "pq_ratchet" "pqRatchet" Nothing),
         ("APIDeleteMyAddress", [], "Delete bot address.", ["CRUserContactLinkDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete_address " <> Param "userId"),
         ("APIShowMyAddress", [], "Get bot address and settings.", ["CRUserContactLink", "CRChatCmdError"], [], Nothing, "/_show_address " <> Param "userId"),
         ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"),
-        ("APISetAddressSettings", [], "Set bot address settings.", ["CRUserContactLinkUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_address_settings " <> Param "userId" <> " " <> Json "settings")
+        ("APISetAddressSettings", [], "Set bot address settings.", ["CRUserContactLinkUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_address_settings " <> Param "userId" <> OnOffParam "pq_ratchet" "pqRatchet" Nothing <> " " <> Json "settings")
       ]
     ),
     ( "Message commands",
@@ -97,7 +97,9 @@ chatCommandsDocsData =
         ),
         ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"),
         ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),
-        ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction", "CRChatCmdError"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction")
+        ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction", "CRChatCmdError"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction"),
+        ("APIShareMyAddress", [], "Share user address card", ["CRChatMsgContent"], [], Nothing, "/_share address" <> Param "toSendRef"),
+        ("APIShareChatMsgContent", [], "Share channel address", ["CRChatMsgContent"], [], Nothing, "/_share chat content " <> Param "shareChatRef" <> " " <> Param "toSendRef")
       ]
     ),
     ( "File commands",
@@ -121,7 +123,8 @@ chatCommandsDocsData =
         ("APIGetGroupRelays", [], "Get group relays.", ["CRGroupRelays", "CRChatCmdError"], [], Nothing, "/_get relays #" <> Param "groupId"),
         ("APIAddGroupRelays", [], "Add relays to group.", ["CRGroupRelaysAdded", "CRGroupRelaysAddFailed", "CRChatCmdError"], [], Just UNInteractive, "/_add relays #" <> Param "groupId" <> " " <> Join ',' "relayIds"),
         ("APIAllowRelayGroup", [], "Clear relay rejection for a channel (relay operator).", ["CRRelayGroupAllowed", "CRChatCmdError"], [], Just UNBackground, "/_relay allow #" <> Param "groupId"),
-        ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
+        ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile"),
+        ("APIVerifyGroupDomain", [], "Verify group domain", ["CRGroupDomainVerified"], [], Just UNInteractive, "/_verify domain #" <> Param "groupId")
       ]
     ),
     ( "Group link commands",
@@ -188,9 +191,14 @@ chatCommandsDocsData =
         ("APISetContactPrefs", [], "Configure chat preference overrides for the contact.", ["CRContactPrefsUpdated", "CRChatCmdError"], [], Just UNBackground, "/_set prefs @" <> Param "contactId" <> " " <> Json "preferences")
       ]
     ),
+    ( "Service commands",
+      "Bots with a double ratchet address can answer service requests.",
+      [ ("APISendServiceResponse", [], "Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.", ["CRServiceReplyAccepted", "CRChatCmdError"], [], Just UNBackground, "/_service_response " <> Param "userId" <> " " <> Param "requestId" <> " " <> Json "responseData")
+      ]
+    ),
     ( "Chat management",
       "These commands should not be used with CLI-based bots",
-      [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start"),
+      [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start" <> OnOffParam "main" "mainApp" Nothing <> OnOffParam "snd_files" "enableSndFiles" (Just True) <> OnOffParam "service_requests" "serviceRequests" (Just False)),
         ("APIStopChat", [], "Stop chat controller.", ["CRChatStopped"], [], Nothing, "/_stop")
       ]
     )
@@ -392,11 +400,13 @@ undocumentedCommands =
     "APIRejectCall",
     "APIReorderChatTags",
     "APIReportMessage",
+    "APIRotateAddressRatchetKeys",
     "APISaveAppSettings",
     "APISendCallAnswer",
     "APISendCallExtraInfo",
     "APISendCallInvitation",
     "APISendCallOffer",
+    "APISendServiceRequest",
     "APISetAppFilePaths",
     "APISetChatItemTTL",
     "APISetChatSettings",
@@ -419,8 +429,6 @@ undocumentedCommands =
     "APISetUserDomain",
     "APISetUserServers",
     "APISetUserUIThemes",
-    "APIShareChatMsgContent",
-    "APIShareMyAddress",
     "APIStandaloneFileInfo",
     "APIStorageEncryption",
     "APISuspendChat",
@@ -439,7 +447,6 @@ undocumentedCommands =
     "APIVerifyContact",
     "APIVerifyContactDomain",
     "APIVerifyGroupMember",
-    "APIVerifyGroupDomain",
     "APIVerifyToken",
     "CheckChatRunning",
     "ConfirmRemoteCtrl",
