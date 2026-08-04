@@ -288,8 +288,8 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
               INSERT INTO group_members
                 ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
-                  user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                  user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
@@ -395,8 +395,8 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: 
               INSERT INTO groups
                 (group_profile_id, local_display_name, user_id, enable_ntfs,
-                  created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
-              VALUES (?,?,?,?,?,?,?,?,?)
+                  created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, member_priv_key)
+              VALUES (?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 
@@ -1325,8 +1325,8 @@ Query:
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count, member_priv_key)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -7824,10 +7824,6 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE groups SET member_priv_key = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
