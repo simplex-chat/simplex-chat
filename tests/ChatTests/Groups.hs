@@ -2407,10 +2407,8 @@ testGroupSharedBatchBodyMixedModes ps =
                          "#team: new member eve is connected"
                        ]
               ]
-            threadDelay 1000000
             cath ##> "/p kate"
             cath <## "user profile is changed to kate (your 0 contacts are notified)"
-            threadDelay 1000000
             cath #> "#team hi"
             alice <# "#team kate> hi"
             bob <# "#team kate> hi"
