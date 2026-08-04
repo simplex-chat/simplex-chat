@@ -2327,7 +2327,7 @@ testGroupSharedBatchBodyMixedModes :: HasCallStack => TestParams -> IO ()
 testGroupSharedBatchBodyMixedModes ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChat ps "cath" cathProfile $ \cath ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         withNewTestChatCfg ps oldCfg "dan" danProfile $ \dan ->
           withNewTestChatCfg ps oldCfg "eve" eveProfile $ \eve -> do
             alice ##> "/g team"
@@ -2426,6 +2426,27 @@ testGroupSharedBatchBodyMixedModes ps =
             eve ##> "/_get chat #1 count=100"
             re <- chat <$> getTermLine eve
             re `shouldContain` [(0, "updated profile")]
+            dan #> "#team hello from dan"
+            [alice, bob, cath, eve] *<# "#team dan> hello from dan"
+        withTestChat ps "dan" $ \dan ->
+          withTestChat ps "eve" $ \eve -> do
+            dan <## "subscribed 4 connections on server localhost"
+            eve <## "subscribed 4 connections on server localhost"
+            dan #> "#team d1"
+            [alice, bob, cath, eve] *<# "#team dan> d1"
+            dan #> "#team d2"
+            [alice, bob, cath, eve] *<# "#team dan> d2"
+            eve #> "#team e1"
+            [alice, bob, cath, dan] *<# "#team eve> e1"
+            eve #> "#team e2"
+            [alice, bob, cath, dan] *<# "#team eve> e2"
+            dan ##> "/p dan2"
+            dan <## "user profile is changed to dan2 (your 0 contacts are notified)"
+            dan #> "#team d3"
+            [alice, bob, cath, eve] *<# "#team dan2> d3"
+            eve ##> "/_get chat #1 count=100"
+            re2 <- chat <$> getTermLine eve
+            re2 `shouldContain` [(0, "updated profile (signed)")]
   where
     oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
 
