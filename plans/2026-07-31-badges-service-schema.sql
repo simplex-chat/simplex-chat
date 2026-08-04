@@ -1,32 +1,41 @@
-CREATE TABLE products(
-  product_id TEXT NOT NULL PRIMARY KEY,
-  product_type TEXT NOT NULL,
+CREATE TABLE badge_prices(
+  price_id TEXT NOT NULL PRIMARY KEY,
   badge_type TEXT NOT NULL,
-  active INTEGER NOT NULL DEFAULT 1,
+  month_price INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
 
-CREATE TABLE offers(
+CREATE TABLE badge_offers(
   offer_id TEXT NOT NULL PRIMARY KEY,
-  product_id TEXT NOT NULL REFERENCES products,
+  price_id TEXT REFERENCES badge_prices,
+  months INTEGER NOT NULL,
+  discount_type TEXT NOT NULL,
+  free_months INTEGER,
+  discount INTEGER,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE store_skus(
+  store_sku_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  badge_type TEXT NOT NULL,
   plan TEXT NOT NULL,
   months INTEGER,
-  apple_product_id TEXT,
-  google_product_id TEXT,
-  price INTEGER,
-  currency TEXT,
-  state TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_offers_apple ON offers(apple_product_id) WHERE apple_product_id IS NOT NULL;
-
-CREATE UNIQUE INDEX idx_offers_google ON offers(google_product_id) WHERE google_product_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_store_skus_provider_sku ON store_skus(provider, sku);
 
 CREATE TABLE badge_purchases(
   badge_purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
   purchase_key BLOB NOT NULL,
-  product_id TEXT NOT NULL REFERENCES products,
+  badge_type TEXT NOT NULL,
+  price_id TEXT REFERENCES badge_prices,
+  offer_id TEXT REFERENCES badge_offers,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   UNIQUE(purchase_key)
@@ -35,7 +44,9 @@ CREATE TABLE badge_purchases(
 CREATE TABLE payments(
   payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
   badge_purchase_id INTEGER NOT NULL REFERENCES badge_purchases,
-  offer_id TEXT REFERENCES offers,
+  badge_type TEXT NOT NULL,
+  price_id TEXT REFERENCES badge_prices,
+  offer_id TEXT REFERENCES badge_offers,
   invoice_uuid TEXT,
   provider TEXT NOT NULL,
   provider_ref TEXT,

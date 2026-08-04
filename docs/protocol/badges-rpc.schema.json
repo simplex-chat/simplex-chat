@@ -92,7 +92,57 @@
         "balance": {"ref": "balance"}
       }
     },
-    "catalog": {},
+    "catalog": {
+      "properties": {
+        "prices": {"elements": {"ref": "badgePrice"}},
+        "offers": {"elements": {"ref": "badgeOffer"}}
+      }
+    },
+    "badgePrice": {
+      "properties": {
+        "priceId": {"type": "string"},
+        "badgeType": {"type": "string"},
+        "monthPrice": {"ref": "currencyAmount"},
+        "currency": {"type": "string"},
+        "status": {"ref": "badgeItemStatus"},
+        "createdAt": {"type": "timestamp"}
+      }
+    },
+    "badgeOffer": {
+      "properties": {
+        "offerId": {"type": "string"},
+        "months": {"type": "uint8"},
+        "discount": {"ref": "offerDiscount"},
+        "status": {"ref": "badgeItemStatus"},
+        "createdAt": {"type": "timestamp"}
+      },
+      "optionalProperties": {
+        "priceId": {
+          "type": "string",
+          "metadata": {"comment": "absent applies to any price"}
+        }
+      }
+    },
+    "offerDiscount": {
+      "discriminator": "type",
+      "mapping": {
+        "freeMonths": {
+          "properties": {"freeMonths": {"type": "uint8"}}
+        },
+        "discount": {
+          "properties": {
+            "discount": {
+              "type": "uint8",
+              "metadata": {"comment": "percent"}
+            }
+          }
+        }
+      }
+    },
+    "badgeItemStatus": {
+      "enum": ["active", "deprecated", "disabled"],
+      "metadata": {"comment": "disabled is not sent"}
+    },
     "statement": {
       "properties": {
         "entries": {"elements": {"ref": "ledgerEntry"}}
@@ -202,11 +252,15 @@
         },
         "getBadgeInvoice": {
           "properties": {
-            "offerId": {"type": "string"},
+            "priceId": {"type": "string"},
             "badgeInfo": {"ref": "badgeInfo"},
             "paymentVia": {"ref": "paymentVia"}
           },
           "optionalProperties": {
+            "offerId": {
+              "type": "string",
+              "metadata": {"comment": "absent for 1 month at the badge price"}
+            },
             "upgrade": {
               "ref": "upgrade",
               "metadata": {"comment": "upgrade non-store badge"}

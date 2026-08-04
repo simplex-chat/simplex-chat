@@ -17,7 +17,9 @@ module Simplex.Chat.Badges.Service
     BadgeServiceResponse (..),
     ServicePaymentDestination (..),
     BadgeServiceErrorCode (..),
-    BadgeCatalog,
+    BadgeCatalog (..),
+    BadgePrice (..),
+    BadgeOffer (..),
     BadgeStatement (..),
     BadgeBalance (..),
     StatementEntry (..),
@@ -55,7 +57,8 @@ data BadgeServiceRequest = BadgeServiceRequest
 data BadgeServiceCommand
   = BSCGetBadgeCatalog
   | BSCGetBadgeInvoice
-      { offerId :: BadgeOfferId,
+      { priceId :: BadgePriceId,
+        offerId :: Maybe BadgeOfferId, -- absent for 1 month at the badge price
         badgeInfo :: BadgeInfo,
         paymentVia :: ServicePaymentMethod,
         upgrade :: Maybe BadgeUpgrade -- upgrade non-store badge
@@ -149,7 +152,31 @@ data ServicePaymentDestination
       }
   deriving (Show)
 
-data BadgeCatalog
+data BadgeCatalog = BadgeCatalog
+  { prices :: [BadgePrice],
+    offers :: [BadgeOffer]
+  }
+  deriving (Show)
+
+data BadgePrice = BadgePrice
+  { priceId :: BadgePriceId,
+    badgeType :: BadgeType,
+    monthPrice :: CurrencyAmount,
+    currency :: Text,
+    status :: BadgeItemStatus,
+    createdAt :: UTCTime
+  }
+  deriving (Show)
+
+data BadgeOffer = BadgeOffer
+  { offerId :: BadgeOfferId,
+    priceId :: Maybe BadgePriceId, -- absent applies to any price
+    months :: Word8,
+    discount :: OfferDiscount,
+    status :: BadgeItemStatus,
+    createdAt :: UTCTime
+  }
+  deriving (Show)
 
 data BadgeStatement = BadgeStatement
   { entries :: [StatementEntry],
