@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle, zipWith3') where
+module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle, zipWith3', crossDeviceRenameFile) where
 
 import Control.Exception (Exception)
 import Control.Monad
@@ -19,9 +19,13 @@ import Data.List.NonEmpty (NonEmpty (..))
 import Data.Ord (comparing)
 import Data.Time (NominalDiffTime)
 import Data.Word (Word16)
+import Foreign.C.Error (Errno (..), eXDEV)
+import GHC.IO.Exception (ioe_errno)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import System.IO.Error (catchIOError)
 import System.Random (randomRIO)
+import UnliftIO.Directory (copyFile, removeFile, renameFile)
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (IOMode (..), withFile)
 
@@ -80,3 +84,18 @@ instance Exception e => MonadUnliftIO (ExceptT e (ReaderT r IO)) where
     withExceptT unInternalException . ExceptT . E.try $
       withRunInIO $ \run ->
         inner $ run . (either (E.throwIO . InternalException) pure <=< runExceptT)
+
+-- | Rename a file, falling back to copy + delete when source and destination
+-- are on different filesystems (rename(2) fails with EXDEV).
+crossDeviceRenameFile :: MonadIO m => FilePath -> FilePath -> m ()
+crossDeviceRenameFile src dst =
+  liftIO $ catchIOError (renameFile src dst) $ \e ->
+    if isCrossDeviceError e
+      then do
+        copyFile src dst
+        removeFile src
+      else E.throwIO e
+  where
+    isCrossDeviceError e = case ioe_errno e of
+      Just errno -> Errno errno == eXDEV
+      Nothing -> False

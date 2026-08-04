@@ -73,6 +73,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Util (crossDeviceRenameFile)
 import Simplex.FileTransfer.Description (ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FilePartyI)
@@ -105,7 +106,6 @@ import qualified System.FilePath as FP
 import System.Mem.Weak (Weak)
 import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
-import UnliftIO.Directory
 import UnliftIO.STM
 import qualified Data.Aeson as J
 
@@ -351,7 +351,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
             Just targetPath -> do
               fsTargetPath <- lift $ toFSFilePath targetPath
-              renameFile xftpPath fsTargetPath
+              crossDeviceRenameFile xftpPath fsTargetPath
               badDigest <- case ft of
                 RcvFileTransfer {fileInvitation = FileInvitation {fileDigest = Just d}, cryptoArgs} ->
                   (/= d) <$> cryptoFileDigest (CryptoFile fsTargetPath cryptoArgs)

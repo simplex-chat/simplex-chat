@@ -49,7 +49,7 @@ import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Remote
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Util (encryptFile, liftIOEither)
+import Simplex.Chat.Util (encryptFile, liftIOEither, crossDeviceRenameFile)
 import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
@@ -68,7 +68,7 @@ import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Concurrent (forkIO)
-import UnliftIO.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, renameFile)
+import UnliftIO.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive)
 
 remoteFilesFolder :: String
 remoteFilesFolder = "simplex_v1_files"
@@ -354,7 +354,7 @@ storeRemoteFile rhId encrypted_ localPath = do
     let rhf = hf </> storePath </> remoteFilesFolder
         hPath = rhf </> takeFileName filePath'
     createDirectoryIfMissing True rhf
-    (if encrypt then renameFile else copyFile) filePath hPath
+    (if encrypt then crossDeviceRenameFile else copyFile) filePath hPath
   pure (cf :: CryptoFile) {filePath = filePath'}
   where
     encryptLocalFile :: CM CryptoFile
