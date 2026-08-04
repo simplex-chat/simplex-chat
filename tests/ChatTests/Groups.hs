@@ -109,6 +109,8 @@ chatGroupTests = do
     it "shared message body is reused" testSharedMessageBody
     it "shared batch body is reused" testSharedBatchBody
     it "shared batch body reference across binary and json members" testGroupSharedBatchBodyMixedModes
+    it "shared batch body reused across binary and json members" testSharedBatchBodyMixed
+    it "all old members group upgrades to current version" testGroupAllOldThenUpgrade
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -2428,6 +2430,14 @@ testGroupSharedBatchBodyMixedModes ps =
             re `shouldContain` [(0, "updated profile")]
             dan #> "#team hello from dan"
             [alice, bob, cath, eve] *<# "#team dan> hello from dan"
+            alice ##> "/mr team dan admin"
+            concurrentlyN_
+              [ alice <## "#team: you changed the role of dan to admin (signed)",
+                dan <## "#team: alice changed your role from member to admin",
+                bob <## "#team: alice changed the role of dan from member to admin (signed)",
+                cath <## "#team: alice changed the role of dan from member to admin (signed)",
+                eve <## "#team: alice changed the role of dan from member to admin"
+              ]
         withTestChat ps "dan" $ \dan ->
           withTestChat ps "eve" $ \eve -> do
             dan <## "subscribed 4 connections on server localhost"
@@ -2447,6 +2457,134 @@ testGroupSharedBatchBodyMixedModes ps =
             eve ##> "/_get chat #1 count=100"
             re2 <- chat <$> getTermLine eve
             re2 `shouldContain` [(0, "updated profile (signed)")]
+  where
+    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
+
+testSharedBatchBodyMixed :: HasCallStack => TestParams -> IO ()
+testSharedBatchBodyMixed ps =
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice -> do
+    withSmpServer' serverCfg' $
+      withNewTestChatOpts ps opts' "bob" bobProfile $ \bob ->
+        withNewTestChatOpts ps opts' "cath" cathProfile $ \cath ->
+          withNewTestChatCfgOpts ps oldCfg opts' "dan" danProfile $ \dan ->
+            withNewTestChatCfgOpts ps oldCfg opts' "eve" eveProfile $ \eve -> do
+              createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRMember)
+              connectUsers alice eve
+              addMember "team" alice eve GRMember
+              eve ##> "/j team"
+              concurrentlyN_
+                [ alice <## "#team: eve joined the group",
+                  do
+                    eve <## "#team: you joined the group"
+                    eve
+                      <### [ "#team: member bob (Bob) is connected",
+                             "#team: member cath (Catherine) is connected",
+                             "#team: member dan (Daniel) is connected"
+                           ],
+                  do
+                    bob <## "#team: alice added eve (Eve) to the group (connecting...)"
+                    bob <## "#team: new member eve is connected",
+                  do
+                    cath <## "#team: alice added eve (Eve) to the group (connecting...)"
+                    cath <## "#team: new member eve is connected",
+                  do
+                    dan <## "#team: alice added eve (Eve) to the group (connecting...)"
+                    dan <## "#team: new member eve is connected"
+                ]
+    alice <##. "disconnected "
+    let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+        cms = intercalate ", " (map cm [1 .. 300 :: Int])
+    alice `send` ("/_send #1 json [" <> cms <> "]")
+    _ <- getTermLine alice
+    alice <## "300 messages sent"
+    checkMsgBodyCount alice 6
+    withSmpServer' serverCfg' $
+      withTestChatOpts ps opts' "bob" $ \bob ->
+        withTestChatOpts ps opts' "cath" $ \cath ->
+          withTestChatCfgOpts ps oldCfg opts' "dan" $ \dan ->
+            withTestChatCfgOpts ps oldCfg opts' "eve" $ \eve -> do
+              concurrentlyN_
+                [ alice <##. "subscribed ",
+                  bob <##. "subscribed ",
+                  cath <##. "subscribed ",
+                  dan <##. "subscribed ",
+                  eve <##. "subscribed "
+                ]
+              forM_ [(1 :: Int) .. 300] $ \i ->
+                [bob, cath, dan, eve] *<# ("#team alice> message " <> show i)
+              checkMsgBodyCount alice 0
+    alice <##. "disconnected "
+  where
+    oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
+    tmp = tmpPath ps
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testGroupAllOldThenUpgrade :: HasCallStack => TestParams -> IO ()
+testGroupAllOldThenUpgrade ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps oldCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps oldCfg "cath" cathProfile $ \cath -> do
+        alice ##> "/g team"
+        alice <## "group #team is created"
+        alice <## "to add members use /a team <name> or /create link #team"
+        alice ##> "/create link #team"
+        gLink <- getGroupLink alice "team" GRMember True
+        bob ##> ("/c " <> gLink)
+        bob <## "connection request sent!"
+        alice <## "bob (Bob): accepting request to join group #team..."
+        concurrentlyN_
+          [ alice <## "#team: bob joined the group",
+            do
+              bob <## "#team: joining the group..."
+              bob <## "#team: you joined the group"
+          ]
+        cath ##> ("/c " <> gLink)
+        cath <## "connection request sent!"
+        concurrentlyN_
+          [ do
+              alice <## "cath (Catherine): accepting request to join group #team..."
+              alice <## "#team: cath joined the group",
+            cath
+              <### [ "#team: joining the group...",
+                     "#team: you joined the group",
+                     "#team: member bob (Bob) is connected"
+                   ],
+            bob
+              <### [ "#team: alice added cath (Catherine) to the group (connecting...)",
+                     "#team: new member cath is connected"
+                   ]
+          ]
+        alice #> "#team hi1"
+        [bob, cath] *<# "#team alice> hi1"
+    withTestChat ps "bob" $ \bob ->
+      withTestChat ps "cath" $ \cath -> do
+        bob <##. "subscribed "
+        cath <##. "subscribed "
+        bob #> "#team b1"
+        [alice, cath] *<# "#team bob> b1"
+        cath #> "#team c1"
+        [alice, bob] *<# "#team cath> c1"
+        alice ##> "/p alisa"
+        alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+        alice #> "#team hi2"
+        [bob, cath] *<# "#team alisa> hi2"
+        bob ##> "/_get chat #1 count=100"
+        rb <- chat <$> getTermLine bob
+        rb `shouldContain` [(0, "updated profile (signed)")]
+        cath ##> "/_get chat #1 count=100"
+        rc <- chat <$> getTermLine cath
+        rc `shouldContain` [(0, "updated profile (signed)")]
   where
     oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
 
