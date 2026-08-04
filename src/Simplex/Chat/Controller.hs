@@ -863,7 +863,7 @@ data ChatResponse
   | CRAcceptingContactRequest {user :: User, contact :: Contact}
   | CRContactAlreadyExists {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
-  | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo, msgSigned :: Bool}
+  | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo, msgSigned :: Bool, localDeletion :: Bool}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRChatMsgContent {user :: User, msgContent :: MsgContent}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}

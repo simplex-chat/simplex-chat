@@ -1238,13 +1238,13 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     alice ##> "/p alisa"
     alice <## "user profile is changed to alisa (your 0 contacts are notified)"
     alice #> "#biz hello again" -- profile update is sent with message
-    biz <## "alice_1 updated group #alice:"
+    biz <## "alice_1 updated group #alice: (signed)"
     biz <## "changed to #alisa"
     biz <# "#alisa alisa_1> hello again"
     -- customer can invite members too, if business allows
     biz ##> "/mr alisa alisa_1 admin"
-    biz <## "#alisa: you changed the role of alisa_1 to admin"
-    alice <## "#biz: biz_1 changed your role from member to admin"
+    biz <## "#alisa: you changed the role of alisa_1 to admin (signed)"
+    alice <## "#biz: biz_1 changed your role from member to admin (signed)"
     connectUsers alice bob
     alice ##> "/a #biz bob"
     alice <## "invitation to join the group #biz sent to bob"
@@ -1309,11 +1309,11 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     biz #> "#alisa hey"
     concurrentlyN_
       [ do
-          alice <## "biz_1 updated group #biz:"
+          alice <## "biz_1 updated group #biz: (signed)"
           alice <## "changed to #business"
           alice <# "#business business_1> hey",
         do
-          bob <## "biz_1 updated group #biz:"
+          bob <## "biz_1 updated group #biz: (signed)"
           bob <## "changed to #business"
           bob <# "#business business_1> hey",
         do
@@ -1326,15 +1326,15 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     biz <## "Full deletion: on"
     concurrentlyN_
       [ do
-          alice <## "business_1 updated group #business:"
+          alice <## "business_1 updated group #business: (signed)"
           alice <## "updated group preferences:"
           alice <## "Full deletion: on",
         do
-          bob <## "business_1 updated group #business:"
+          bob <## "business_1 updated group #business: (signed)"
           bob <## "updated group preferences:"
           bob <## "Full deletion: on",
         do
-          cath <## "business updated group #alisa:"
+          cath <## "business updated group #alisa: (signed)"
           cath <## "updated group preferences:"
           cath <## "Full deletion: on"
       ]
@@ -2032,11 +2032,11 @@ testJoinGroupIncognito =
       -- remove member
       alice ##> ("/rm secret_club " <> cathIncognito)
       concurrentlyN_
-        [ alice <## ("#secret_club: you removed " <> cathIncognito <> " from the group"),
-          bob <## ("#secret_club: alice removed " <> cathIncognito <> " from the group"),
-          dan <## ("#secret_club: alice removed " <> cathIncognito <> " from the group"),
+        [ alice <## ("#secret_club: you removed " <> cathIncognito <> " from the group (signed)"),
+          bob <## ("#secret_club: alice removed " <> cathIncognito <> " from the group (signed)"),
+          dan <## ("#secret_club: alice removed " <> cathIncognito <> " from the group (signed)"),
           do
-            cath <## "#secret_club: alice removed you from the group"
+            cath <## "#secret_club: alice removed you from the group (signed)"
             cath <## "use /d #secret_club to delete the group"
         ]
       bob #> "#secret_club hi"
@@ -2175,10 +2175,10 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
       [ do
           bob <## "#team: you left the group"
           bob <## "use /d #team to delete the group",
-        alice <## ("#team: " <> bobIncognito <> " left the group")
+        alice <## ("#team: " <> bobIncognito <> " left the group (signed)")
       ]
     bob ##> "/d #team"
-    bob <## "#team: you deleted the group"
+    bob <## "#team: you deleted your local copy of the group"
     bob `hasContactProfiles` ["bob"]
 
 testDeleteGroupThenContactDeletesIncognitoProfile :: HasCallStack => TestParams -> IO ()
@@ -2220,10 +2220,10 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
       [ do
           bob <## "#team: you left the group"
           bob <## "use /d #team to delete the group",
-        alice <## ("#team: " <> bobIncognito <> " left the group")
+        alice <## ("#team: " <> bobIncognito <> " left the group (signed)")
       ]
     bob ##> "/d #team"
-    bob <## "#team: you deleted the group"
+    bob <## "#team: you deleted your local copy of the group"
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
     -- delete contact
     bob ##> "/d alice"
@@ -2592,7 +2592,7 @@ testUpdateGroupPrefs =
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
       alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on")])
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
       threadDelay 500000
@@ -2602,7 +2602,7 @@ testUpdateGroupPrefs =
       alice <## "Full deletion: off"
       alice <## "Voice messages: off"
       alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Full deletion: off"
       bob <## "Voice messages: off"
@@ -2612,7 +2612,7 @@ testUpdateGroupPrefs =
       alice <## "updated group preferences:"
       alice <## "Voice messages: on"
       alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Voice messages: on"
       threadDelay 500000
@@ -2665,7 +2665,7 @@ testAllowFullDeletionGroup =
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
       alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
@@ -2729,7 +2729,7 @@ testProhibitDirectMessages =
   where
     directProhibited :: HasCallStack => TestCC -> IO ()
     directProhibited cc = do
-      cc <## "alice updated group #team:"
+      cc <## "alice updated group #team: (signed)"
       cc <## "updated group preferences:"
       cc <## "Direct messages: off"
 
@@ -2785,7 +2785,7 @@ testEnableTimedMessagesGroup =
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"timedMessages\": {\"enable\": \"on\", \"ttl\": 1}, \"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Disappearing messages: on (1 sec)"
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: on (1 sec)"
       threadDelay 1000000
@@ -2803,7 +2803,7 @@ testEnableTimedMessagesGroup =
       alice ##> "/set disappear #team off"
       alice <## "updated group preferences:"
       alice <## "Disappearing messages: off"
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: off"
       threadDelay 1000000
@@ -2816,13 +2816,13 @@ testEnableTimedMessagesGroup =
       alice ##> "/set disappear #team on 30s"
       alice <## "updated group preferences:"
       alice <## "Disappearing messages: on (30 sec)"
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: on (30 sec)"
       alice ##> "/set disappear #team week" -- "on" is optional
       alice <## "updated group preferences:"
       alice <## "Disappearing messages: on (1 week)"
-      bob <## "alice updated group #team:"
+      bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: on (1 week)"
 
@@ -2940,7 +2940,7 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
   where
     directForOwners :: HasCallStack => TestCC -> IO ()
     directForOwners cc = do
-      cc <## "alice updated group #team:"
+      cc <## "alice updated group #team: (signed)"
       cc <## "updated group preferences:"
       cc <## "Direct messages: on for owners"
 
@@ -2975,7 +2975,7 @@ testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
   where
     filesForOwners :: HasCallStack => TestCC -> IO ()
     filesForOwners cc = do
-      cc <## "alice updated group #team:"
+      cc <## "alice updated group #team: (signed)"
       cc <## "updated group preferences:"
       cc <## "Files and media: on for owners"
 
@@ -3017,7 +3017,7 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
   where
     linksForOwners :: HasCallStack => TestCC -> IO ()
     linksForOwners cc = do
-      cc <## "alice updated group #team:"
+      cc <## "alice updated group #team: (signed)"
       cc <## "updated group preferences:"
       cc <## "SimpleX links: on for owners"
 
@@ -3663,10 +3663,10 @@ testShortLinkAddressPrepareBusiness = testChat3 businessProfile aliceProfile {fu
       bob <## "business address: known business #biz"
       bob <## "use #biz <message> to send messages"
       biz ##> "/d #bob"
-      biz <## "#bob: you deleted the group"
-      alice <## "#bob: biz deleted the group"
+      biz <## "#bob: you deleted the group (signed)"
+      alice <## "#bob: biz deleted the group (signed)"
       alice <## "use /d #bob to delete the local copy of the group"
-      bob <## "#biz: biz_1 deleted the group"
+      bob <## "#biz: biz_1 deleted the group (signed)"
       bob <## "use /d #biz to delete the local copy of the group"
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "business address: ok to connect"
@@ -3759,8 +3759,8 @@ testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
       bob ##> "/l #team"
       bob <## "#team: you left the group"
       bob <## "use /d #team to delete the group"
-      alice <## "#team: bob left the group"
-      cath <## "#team: bob left the group"
+      alice <## "#team: bob left the group (signed)"
+      cath <## "#team: bob left the group (signed)"
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect directly"
       void $ getTermLine bob
@@ -4422,7 +4422,7 @@ testShortLinkGroupChangeProfile = testChat3 aliceProfile bobProfile cathProfile 
 
       alice ##> "/gp team club"
       alice <## "changed to #club"
-      cath <## "alice updated group #team:"
+      cath <## "alice updated group #team: (signed)"
       cath <## "changed to #club"
 
       bob ##> ("/_connect plan 1 " <> shortLink)
@@ -4460,7 +4460,7 @@ testShortLinkGroupChangeProfileReceived = testChat3 aliceProfile bobProfile cath
 
       cath ##> "/gp team club"
       cath <## "changed to #club"
-      alice <## "cath updated group #team:"
+      alice <## "cath updated group #team: (signed)"
       alice <## "changed to #club"
       threadDelay 250000
 

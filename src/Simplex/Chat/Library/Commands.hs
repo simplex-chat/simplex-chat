@@ -64,7 +64,7 @@ import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), Deliv
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (encodeBatchElement)
+import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -164,7 +164,7 @@ checkProfileImageSize = mapM_ $ \(ImageData t) ->
    in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
 
 checkProfileSize :: Profile -> CM ()
-checkProfileSize p = checkInfoSize "Profile" (XInfo p)
+checkProfileSize p = checkInfoSize "Profile" (XInfo p Nothing)
 
 checkGroupProfileSize :: GroupProfile -> CM ()
 checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
@@ -1190,7 +1190,7 @@ processChatCommand cxt nm = \case
       Nothing -> throwCmdError "not a public group"
       Just PublicGroupProfile {groupLink} -> do
         let signingKeys = case (memberRole, groupKeys) of
-              (GROwner, Just gk@GroupKeys {groupRootKey = GRKPrivate _}) -> Just gk
+              (GROwner, Just gk@GroupKeys {publicGroupKeys = Just PublicGroupKeys {groupRootKey = GRKPrivate _}}) -> Just gk
               _ -> Nothing
         ownerSig <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
@@ -1358,7 +1358,7 @@ processChatCommand cxt nm = \case
         withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
         withFastStore' $ \db -> deleteGroupMembers db user gInfo
         withFastStore' $ \db -> deleteGroup db user gInfo
-        pure $ CRGroupDeletedUser user gInfo msgSigned
+        pure $ CRGroupDeletedUser user gInfo msgSigned (not doSendDel)
         where
           getRecipients gInfo
             | useRelays' gInfo = do
@@ -2288,8 +2288,7 @@ processChatCommand cxt nm = \case
         -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
-        gVar <- asks random
-        (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        (_, memberPrivKey) <- atomically . C.generateKeyPair =<< asks random
         gInfo' <- withFastStore $ \db -> do
           gInfo' <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey memberPrivKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
@@ -2431,8 +2430,7 @@ processChatCommand cxt nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    gVar <- asks random
-    rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+    rootKey@(rootPubKey, rootPrivKey) <- atomically . C.generateKeyPair =<< asks random
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
     -- TODO [address DR] remove this option and switch to IKUsePQ True
     let (pqInitKeys, useDR) = case pqRatchet_ of
@@ -2675,7 +2673,8 @@ processChatCommand cxt nm = \case
   APINewGroup userId incognito gProfile -> withUserId userId $ \user -> do
     g <- asks random
     memberId <- liftIO $ MemberId <$> encodedRandomBytes g 12
-    gInfo <- newGroup user incognito gProfile False memberId Nothing Nothing
+    (_, memberPrivKey) <- atomically $ C.generateKeyPair g
+    gInfo <- newGroup user incognito gProfile False memberId (Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}) Nothing
     createNewGroupItems user gInfo
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
@@ -2711,7 +2710,7 @@ processChatCommand cxt nm = \case
         groupLinkId <- GroupLinkId <$> drgRandomBytes 16
         subMode <- chatReadVar subscriptionMode
         -- generate root key pair; entity ID = sha256(rootPubKey) — see docs/rfcs/2026-03-28-group-identity-binding.md
-        rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        rootKey@(rootPubKey, rootPrivKey) <- atomically $ C.generateKeyPair gVar
         let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
             crClientData = encodeJSON $ CRDataGroup groupLinkId
         -- prepare link with entityId as linkEntityId (no server request)
@@ -2729,7 +2728,8 @@ processChatCommand cxt nm = \case
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData, ratchetKeys = Nothing}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
-        let groupKeys = GroupKeys {publicGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+        let groupKeys = GroupKeys {publicGroupKeys, memberPrivKey}
+            publicGroupKeys = Just PublicGroupKeys {publicGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey}
             setupLink gInfo = do
               -- TODO [relays] starting role should be communicated in protocol from owner to relays
               subRole <- asks $ channelSubscriberRole . config
@@ -2818,7 +2818,7 @@ processChatCommand cxt nm = \case
       case activeConn of
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
-          dm <- encodeConnInfo $ XGrpAcpt membershipMemId
+          dm <- encodeConnInfo $ XGrpAcpt membershipMemId (groupMemberKey g)
           agentConnId <- case memberConn fromMember of
             Nothing -> do
               agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
@@ -3383,7 +3383,7 @@ processChatCommand cxt nm = \case
           joinPreparedConn subMode conn = do
             -- [incognito] send membership incognito profile
             p <- presentUserBadge user (incognitoMembershipProfile gInfo) $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
-            dm <- encodeConnInfo $ XInfo p
+            dm <- encodeConnInfo $ XInfo p Nothing
             sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
             void $ withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3783,7 +3783,7 @@ processChatCommand cxt nm = \case
                 joinPreparedConn conn incognitoProfile
               joinPreparedConn conn incognitoProfile = do
                 profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user incognitoProfile Nothing True
-                dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
+                dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
                 sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3939,10 +3939,15 @@ processChatCommand cxt nm = \case
           Just gInfo_' -> userProfileInGroup' user gInfo_' incognitoProfile
           Nothing -> userProfileDirect user incognitoProfile Nothing True
       dm <- case gInfo_ of
-        Just (Just gInfo) | useRelays' gInfo -> case relayMemberId_ of
-          Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
-          Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
-        _ -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
+        Just (Just gInfo)
+          | useRelays' gInfo -> case relayMemberId_ of
+              Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
+              Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
+          | otherwise -> do
+              gInfo' <- createUserMemberKey gInfo
+              encodeConnInfoPQ pqSup $ XContact profileToSend (groupMemberKey gInfo') (Just xContactId) welcomeSharedMsgId msg_
+        _ ->
+          encodeConnInfoPQ pqSup $ XContact profileToSend Nothing (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined
@@ -4017,7 +4022,7 @@ processChatCommand cxt nm = \case
             ctSndEvent :: ChangedProfileContact -> CM (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
             ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = do
               p'' <- presentUserBadge user' Nothing mergedProfile'
-              pure (ConnectionId connId, Nothing, XInfo p'')
+              pure (ConnectionId connId, Nothing, XInfo p'' Nothing)
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
@@ -4050,7 +4055,7 @@ processChatCommand cxt nm = \case
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
               p <- presentUserBadge user incognitoProfile mergedProfile'
-              void (sendDirectContactMessage user ct' $ XInfo p) `catchAllErrors` eToView
+              void (sendDirectContactMessage user ct' $ XInfo p Nothing) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> Bool -> CM ChatResponse
@@ -4224,12 +4229,13 @@ processChatCommand cxt nm = \case
       createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
       createGroupFeatureItems user cd CISndGroupFeature gInfo
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
-    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} m@GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
           GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
             GroupInvitation
               { fromMember = MemberIdRole userMemberId userRole,
+                fromMemberKey = groupMemberKey gInfo,
                 invitedMember = MemberIdRole memberId memRole,
                 connRequest = cReq,
                 groupProfile,
@@ -5133,7 +5139,7 @@ addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
         | not (connIncognito conn) -> do
             let ct' = updateMergedPreferences user' ct
             p <- presentUserBadge user' Nothing $ userProfileDirect user' Nothing (Just ct') False
-            void (sendDirectContactMessage user' ct' (XInfo p)) `catchAllErrors` eToView
+            void (sendDirectContactMessage user' ct' (XInfo p Nothing)) `catchAllErrors` eToView
       _ -> pure ()
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()

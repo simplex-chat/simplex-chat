@@ -2681,8 +2681,7 @@ export interface GroupInfo {
 }
 
 export interface GroupKeys {
-  publicGroupId: string
-  groupRootKey: GroupRootKey
+  publicGroupKeys?: PublicGroupKeys
   memberPrivKey: string
 }
 
@@ -3527,6 +3526,11 @@ export interface PublicGroupAccess {
 
 export interface PublicGroupData {
   publicMemberCount: number // int64
+}
+
+export interface PublicGroupKeys {
+  publicGroupId: string
+  groupRootKey: GroupRootKey
 }
 
 export interface PublicGroupProfile {

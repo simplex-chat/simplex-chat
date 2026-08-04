@@ -479,9 +479,14 @@ groupRootPubKey (GRKPrivate pk) = C.publicKey pk
 groupRootPubKey (GRKPublic pk) = pk
 
 data GroupKeys = GroupKeys
-  { publicGroupId :: B64UrlByteString,
-    groupRootKey :: GroupRootKey,
+  { publicGroupKeys :: Maybe PublicGroupKeys,
     memberPrivKey :: C.PrivateKeyEd25519
+  }
+  deriving (Eq, Show)
+
+data PublicGroupKeys = PublicGroupKeys
+  { publicGroupId :: B64UrlByteString,
+    groupRootKey :: GroupRootKey
   }
   deriving (Eq, Show)
 
@@ -942,6 +947,7 @@ instance ToJSON GroupLinkId where
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
+    fromMemberKey :: Maybe MemberKey,
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
@@ -954,6 +960,7 @@ data GroupInvitation = GroupInvitation
 data GroupLinkInvitation = GroupLinkInvitation
   { fromMember :: MemberIdRole,
     fromMemberName :: ContactName,
+    fromMemberKey :: Maybe MemberKey,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
     accepted :: Maybe GroupAcceptance,
@@ -2334,6 +2341,8 @@ instance FromJSON GroupSummary where
   omittedField = Just GroupSummary {currentMembers = 0, publicMemberCount = Nothing}
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupKeys)
 
 $(JQ.deriveJSON defaultJSON ''GroupKeys)
 

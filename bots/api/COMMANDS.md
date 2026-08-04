@@ -1853,6 +1853,7 @@ GroupDeletedUser: User deleted group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - msgSigned: bool
+- localDeletion: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
