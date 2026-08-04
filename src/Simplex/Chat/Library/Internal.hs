@@ -78,7 +78,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (encryptFile, shuffle)
+import Simplex.Chat.Util (encryptFile, shuffle, crossDeviceRenameFile)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import qualified Simplex.Messaging.Crypto.Lazy as LC
@@ -1918,7 +1918,7 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
           tryAllErrors (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
             Right () -> do
               removeFile fsFilePath `catchAllErrors` \_ -> pure ()
-              renameFile tmpFile fsFilePath
+              crossDeviceRenameFile tmpFile fsFilePath
             Left e -> do
               eToView e
               removeFile tmpFile `catchAllErrors` \_ -> pure ()
