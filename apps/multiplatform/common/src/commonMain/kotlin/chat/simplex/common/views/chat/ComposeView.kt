@@ -684,13 +684,11 @@ fun ComposeView(
   // toChat is the chat the message was composed in - it differs from the chat this view shows only for a live message,
   // which is sent when the chat is switched, when this view already shows the chat that was opened. Live messages have
   // no context item, so the forwarding, editing and reporting branches below cannot be reached with a different chat.
-  // composed is passed by the send started by the chat switch: this runs on another thread, so by the time it would
-  // read composeState the view has already replaced it with the state of the chat that was opened.
-  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false, toChat: Chat = chat, composed: ComposeState = composeState.value): List<ChatItem>? {
-    val cs = composed
-    // composeState is shared between the chats opened in this view and holds the one it shows, so the send for another
-    // chat - the live message committed by the chat switch - must not write to it. Not even if that chat is opened
-    // again before this send completes: the compose state was handed over when the switch started this send.
+  // cs is passed by the send started by the chat switch: this runs on another thread, so by the time it would read
+  // composeState the view has already replaced it with the state of the chat that was opened.
+  suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false, toChat: Chat = chat, cs: ComposeState = composeState.value): List<ChatItem>? {
+    // a send for another chat may not write to composeState, which holds the chat this view shows - not even if that
+    // chat is opened again before it completes, the state was handed over when the switch started this send
     fun composeIsForSend(): Boolean = toChat.id == chat.id
     var sent: List<ChatItem>?
     var lastMessageFailedToSend: ComposeState? = null
@@ -953,7 +951,6 @@ fun ComposeView(
     // cleared or restored. On Main, so that these checks and changes are not interleaved with the user switching
     // chats or typing.
     withContext(Dispatchers.Main) {
-      // and this send is for the chat it shows, not for another one
       val chatIsOpen = composeIsForSend() && chatModel.chatId.value == chat.id
       // a live message is held in the compose state of the chat it is sent to, but only while that chat is the one open
       val liveSend = live || cs.liveMessage != null
@@ -977,7 +974,7 @@ fun ComposeView(
             composeState.value = lastFailed
           } else if (saveLastDraft) {
             chatModel.draft.value = lastFailed
-            chatModel.draftChatId.value = draftChatId(toChat.id, chatScope)
+            chatModel.draftChatId.value = draftChatId(chat.id, chatScope)
           }
         }
       }
@@ -985,7 +982,8 @@ fun ComposeView(
     return sent
   }
 
-  // composed is only passed by the chat switch; read inside the coroutine otherwise, where the send read it before
+  // toChat and composed are for the chat switch, which hands the compose state over to the chat it opened: a send for
+  // another chat may not write to it, so passing toChat without handing it over leaves the sent message in the input
   fun sendMessage(ttl: Int?, sign: Boolean = false, toChat: Chat = chat, composed: ComposeState? = null) {
     withLongRunningApi(slow = 120_000) {
       sendMessageAsync(null, false, ttl, sign, toChat, composed ?: composeState.value)
@@ -1362,11 +1360,10 @@ fun ComposeView(
       resetLinkPreview()
       clearPrevDraft(prevChatId)
       deleteUnusedFiles()
-      // the sent message stays in the shared compose state otherwise - it belongs to the chat it was composed in,
-      // and the chat opened next shows its own draft
+      // the sent message belongs to the chat it was composed in; the chat opened next shows its own draft
       val draft = chatModel.draft.value
       composeState.value = if (draft != null && chatModel.draftChatId.value == draftChatId(chatModel.chatId.value, chatScope)) draft
-        else ComposeState(useLinkPreviews = useLinkPreviews, maxFileSize = composeState.value.maxFileSize)
+        else ComposeState(useLinkPreviews = useLinkPreviews)
     } else if (cs.inProgress) {
       clearPrevDraft(prevChatId)
       // the message being sent must not be kept in the compose state, it is shared with the chat opened next;
