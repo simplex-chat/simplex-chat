@@ -597,6 +597,10 @@ fun ComposeView(
     composeState.value = composeState.value.copy(inProgress = true)
   }
 
+  // composeState and its inProgress flag are shared between the chats opened in this view, and sending is not cancelled
+  // when the chat is switched - a send may only clear or reset the state while it still holds the message that was sent
+  fun composeHasSentMessage(): Boolean = chatModel.chatId.value == chat.id && composeState.value.inProgress
+
   suspend fun sendMemberContactInvitation() {
     val mc = checkLinkPreview()
     sending()
@@ -604,10 +608,10 @@ fun ComposeView(
     if (contact != null) {
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
-        clearState()
+        if (composeHasSentMessage()) clearState()
       }
-    } else {
-      composeState.value = composeState.value.copy(inProgress = false)
+    } else withContext(Dispatchers.Main) {
+      if (composeHasSentMessage()) composeState.value = composeState.value.copy(inProgress = false)
     }
   }
 
@@ -624,10 +628,10 @@ fun ComposeView(
     if (contact != null) {
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
-        clearState()
+        if (composeHasSentMessage()) clearState()
       }
-    } else {
-      composeState.value = composeState.value.copy(inProgress = false)
+    } else withContext(Dispatchers.Main) {
+      if (composeHasSentMessage()) composeState.value = composeState.value.copy(inProgress = false)
     }
   }
 
@@ -669,10 +673,10 @@ fun ComposeView(
         chatModel.channelRelayHostnames.remove(groupInfo.groupId)
         chatModel.groupMembers.value = relayResults.map { it.relayMember }
         chatModel.populateGroupMembersIndexes()
-        clearState()
+        if (composeHasSentMessage()) clearState()
       }
-    } else {
-      composeState.value = composeState.value.copy(inProgress = false)
+    } else withContext(Dispatchers.Main) {
+      if (composeHasSentMessage()) composeState.value = composeState.value.copy(inProgress = false)
     }
   }
 
@@ -932,16 +936,38 @@ fun ComposeView(
     val wasForwarding = cs.forwarding
     val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItems)?.fromChatInfo?.id
     val lastFailed = lastMessageFailedToSend
-    if (lastFailed == null) {
-      clearState(live)
-    } else {
-      composeState.value = lastFailed
-    }
-    val draft = chatModel.draft.value
-    if (wasForwarding && chatModel.draftChatId.value == draftChatId(chat.chatInfo.id, chatScope) && forwardingFromChatId != chat.chatInfo.id && draft != null) {
-      composeState.value = draft
-    } else {
-      clearCurrentDraft()
+    // composeState is shared between the chats opened in this view, and this runs after the send API call, so the user
+    // could have switched chats or typed another message in the meantime - only the message that was sent may be
+    // cleared or restored. On Main, so that these checks and changes are not interleaved with the user switching
+    // chats or typing.
+    withContext(Dispatchers.Main) {
+      val chatIsOpen = chatModel.chatId.value == chat.id
+      // a live message is held in the compose state of the chat it is sent to, but only while that chat is the one open
+      val liveSend = live || cs.liveMessage != null
+      val sentMessageInCompose = chatIsOpen && (liveSend || composeState.value.inProgress)
+      if (sentMessageInCompose) {
+        if (lastFailed == null) {
+          clearState(live)
+        } else {
+          composeState.value = lastFailed
+        }
+      }
+      val draft = chatModel.draft.value
+      if (wasForwarding && chatModel.draftChatId.value == draftChatId(chat.chatInfo.id, chatScope) && forwardingFromChatId != chat.chatInfo.id && draft != null) {
+        if (sentMessageInCompose) composeState.value = draft
+      } else {
+        clearCurrentDraft()
+        // liveSend excluded: a failing keystroke send would otherwise write a draft on every attempt
+        if (!sentMessageInCompose && !liveSend && lastFailed != null) {
+          // the message was not sent, so it is restored in the chat it was composed in, or kept as its draft if another chat is open
+          if (chatIsOpen && composeState.value.empty) {
+            composeState.value = lastFailed
+          } else if (saveLastDraft) {
+            chatModel.draft.value = lastFailed
+            chatModel.draftChatId.value = draftChatId(chat.id, chatScope)
+          }
+        }
+      }
     }
     return sent
   }
@@ -1319,7 +1345,15 @@ fun ComposeView(
       deleteUnusedFiles()
     } else if (cs.inProgress) {
       clearPrevDraft(prevChatId)
-      composeState.value = cs.copy(inProgress = false, progressByTimeout = false)
+      // the message being sent must not be kept in the compose state, it is shared with the chat opened next;
+      // if it fails to send it is restored in this chat or saved as its draft
+      clearState()
+      // clearState() does not load the draft of the chat opened next, and without this it is never shown and is
+      // dropped when that chat is left
+      val draft = chatModel.draft.value
+      if (draft != null && chatModel.draftChatId.value == draftChatId(chatModel.chatId.value, chatScope)) {
+        composeState.value = draft
+      }
     } else if (!cs.empty) {
       if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
         recState.value = RecordingState.NotStarted
