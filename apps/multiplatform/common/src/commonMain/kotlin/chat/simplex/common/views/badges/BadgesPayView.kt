@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -84,16 +83,11 @@ fun BadgesPayView(level: BadgeLevel) {
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
-    // Replicates TextButtonBelowOnboardingButton's exact structure (TextButton chip + 7.5dp outer
-    // Modifier padding + 5dp Text vertical padding) so Pay's action-button-to-supporting-text
-    // spacing matches Support Simplex and Your Level to the pixel. onClick = {} + no fontWeight
-    // keeps it non-interactive-feeling and normal weight (not Medium/bold).
+    // Replicates TextButtonBelowOnboardingButton spacing (7.5dp outer + 5dp inner) without a
+    // TextButton so the footer has no hover/click affordance.
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, selectedPeriod)
-      TextButton(
-        onClick = {},
-        modifier = Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).clip(CircleShape)
-      ) {
+      Box(Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(
           stringResource(billingFooter(selectedPeriod)).format(stubBillingDate()),
           Modifier.padding(vertical = 5.dp),
