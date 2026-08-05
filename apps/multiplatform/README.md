@@ -8,6 +8,8 @@ This is the **Kotlin Multiplatform (KMP)** mobile and desktop client for SimpleX
 
 ## Build Commands
 
+Before the first build, build the Haskell core library for your target - it is not in the repo and Gradle does not build it, see [building the core library](../../docs/contributing/CORE-LIBS.md).
+
 ```bash
 # Android debug APK
 ./gradlew assembleDebug
