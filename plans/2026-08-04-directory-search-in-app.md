@@ -131,7 +131,7 @@ Kotlin: `common/src/commonMain/resources/MR/base/strings.xml`, beside `connect_p
 
 ## 10. Order of work
 
-1. Cursor fix + `testSearchGroups` fixture — standalone.
+1. Page `searchListedGroups` by its sort key instead of `group_id`, so `/next` stops repeating and skipping rows (§1), plus the `testSearchGroups` fixture — standalone, no app dependency.
 2. Settle the DR-address question (§2), then `--service-requests` and the directory enabling it.
 3. RPC schema, `Directory/Rpc.hs`, handler off the event loop — CLI-testable with `/_service_request`.
 4. iOS: API binding, view model, rows, button, keyboard, alert, pagination — chat list, then New chat.
