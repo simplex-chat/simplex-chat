@@ -3,7 +3,7 @@
 Branch: `nd/fix-live-message-sent-to-wrong-chat` (off `origin/stable`)
 Date: 2026-07-29
 
-Line references are against `origin/stable` at `8dc387cb5`, with this fix
+Line references are against `origin/stable` at `970ef8932`, with this fix
 applied. Android and desktop (`commonMain/ComposeView.kt`).
 
 ## Problem
@@ -15,7 +15,7 @@ desktop, where every chat switch reuses the same view.
 ## Cause
 
 A live message is committed when the chat is switched
-(`ComposeView.kt:1316-1328`), which before this change was:
+(`ComposeView.kt:1353-1369`), which before this change was:
 
 ```
     if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
@@ -48,7 +48,7 @@ never sent.
 
 `sendMessageAsync` and `sendMessage` take the chat the message was
 composed in, defaulting to the chat this view shows
-(`ComposeView.kt:679-682`, `952-956`). Only what a live message can reach
+(`ComposeView.kt:685-694`, `988-993`). Only what a live message can reach
 uses it: the message send, the update of an already sent live message,
 and the two places that clear the draft after sending. Live messages have
 no context item (`SendMsgView.kt:156-165` only offers the button when the
@@ -61,7 +61,7 @@ The chat switch resolves the chat by the id it had before the switch:
 ```kotlin
 val liveMessageChat = if (prevChatId == null || prevChatId == chat.id) chat else chatsCtx.getChat(prevChatId)
 // if that chat is gone there is nowhere to send it, and it must not be sent to the chat opened instead
-if (liveMessageChat != null) sendMessage(null, toChat = liveMessageChat) else clearState()
+if (liveMessageChat != null) sendMessage(null, toChat = liveMessageChat, composed = cs) else clearState()
 ```
 
 `prevChatId == chat.id` keeps the view's own chat, which is what secondary
@@ -98,7 +98,7 @@ if (!live) {
 The opened chat's input showed the text composed in the previous one until
 the send completed and `clearState()` emptied it; the draft it should have
 shown was still in the model, and the next switch away dropped it. This
-predates this fix - on `master` the same writes happen, and there
+predates this fix - without it the same writes happen, and there
 `clearCurrentDraft()` resolves to the opened chat and deletes its draft
 outright.
 
@@ -117,8 +117,12 @@ state":
   message through `updateMsgContent`, so with the compose state handed
   over it would have rebuilt the message from the opened chat's draft, or
   from nothing - overwriting the live message instead of committing it.
-  Only the calls inside `sendMessageAsync` pass the state; the three
-  senders that connect a prepared chat keep reading the current one.
+  Only the calls a live message can reach pass the state. The forwarding
+  call site keeps reading the current one - it is unreachable from the
+  chat switch, and `forwardItem` suspends before it, so passing the
+  captured state there would drop what was typed while the forward was in
+  flight. The three senders that connect a prepared chat keep reading the
+  current one too.
 - Every `composeState` write in `sendMessageAsync` is guarded by
   `composeIsForSend()` (`toChat.id == chat.id`): directly for the two at
   the start, and through `chatIsOpen` for the clear/restore at the end,
@@ -134,24 +138,42 @@ state":
 
 ## Blast radius
 
-`toChat` defaults to the chat this view shows, so every other send is
-unchanged: the send button (`SendMsgView.kt`), the live updates while
-typing (`sendMessageAsync(live = true)`), forwarding, editing and
-reporting all pass no chat and behave exactly as before. Only the send
-started by the chat switch passes a different one, and only the branches
-it can reach were changed.
+`toChat` defaults to the chat this view shows, so every other send passes
+no chat: the send button (`SendMsgView.kt`), the live updates while typing
+(`sendMessageAsync(live = true)`), forwarding, editing and reporting. For
+all of them `composeIsForSend()` is true, so every guard added here is a
+no-op and they behave exactly as before. Only the send started by the chat
+switch passes a different chat, and only the branches it can reach were
+changed.
+
+The one change not behind that guard is `checkLinkPreview` reading the
+state passed in. It matters only where the two can differ, which is after
+a suspension: the forwarding branch waits on `forwardItem`, so that call
+site deliberately keeps reading the current state (it is unreachable from
+the chat switch anyway). The other call sites are reached with nothing
+suspending since the state was captured.
 
 The live message update loop is not affected: it is started once
 (`SendMsgView.kt:523-559`) with the `::updateLiveMessage` reference of the
 composition in which live mode started, so its updates already go to the
-chat the message belongs to, and it exits when the send started by the
-chat switch clears `liveMessage`. Only that send was created fresh on
-every composition, which is why it was the one going to the wrong chat.
+chat the message belongs to. It exits because the chat switch replaces the
+compose state with the opened chat's, which has no `liveMessage` - on the
+main thread, as the chat is switched, rather than when the send completes
+as before. Only that send was created fresh on every composition, which is
+why it was the one going to the wrong chat.
 
 Not covered, and unchanged: a live message in a member support chat that
 is closed without changing the chat id is never committed - the effect
 that commits it is keyed on the chat id, which does not change when that
 view is closed.
+
+`chatsCtx.getChat` searches the context's own list, and a secondary
+context (member support, reports) is built with an empty one, so there it
+can only return null. That branch is not reached from a support chat in
+practice - it shares the group's chat id, so `prevChatId == chat.id` holds
+and the view's own `chat` is used - and if it ever were, the message is
+discarded rather than sent to the chat that was opened, which is the
+behaviour intended for "the chat is gone" anyway.
 
 ## Verification
 
@@ -168,8 +190,19 @@ view is closed.
   3. Slow or failing send (network off) while doing 1 and 2, so the window
      between the switch and the send completing is long enough to type in
      **B** - what is typed there must survive the send completing.
-  4. Regressions: an ordinary send goes to the chat it was typed in;
-     forwarding still targets the chat it was forwarded to; reporting a
+  4. The live message must carry a **link preview**: type a URL in **A**,
+     let the preview load, then switch. The message committed to A must be
+     the text that was composed - not the opened chat's draft, and not
+     empty. Every text live message is rebuilt through
+     `updateMsgContent` -> `checkLinkPreview`, so this is what breaks if
+     that one stops reading the state it was given.
+  5. Switch **back**: live message in A, switch to B, return to A and type
+     something new before the send completes. What is typed in A must
+     survive - the send handed the compose state over at the switch and
+     must not take it back.
+  6. Regressions: an ordinary send goes to the chat it was typed in;
+     forwarding still targets the chat it was forwarded to, and text typed
+     while a forward is in flight is still appended to it; reporting a
      message still reports it in the chat it belongs to; sending in a
      member support chat still goes to that scope.
 
