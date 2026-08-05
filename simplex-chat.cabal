@@ -41,6 +41,7 @@ library
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
       Simplex.Chat.Names
+      Simplex.Chat.Names.Wallet
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
