@@ -66,7 +66,15 @@ The call blocks until reply or timeout — pass `requestTimeout` of **10 s**, an
 
 ## 4. Search UI
 
-**Rows.** `SearchInDirectoryRow` goes beside `ConnectByNameRow` in the same slot on all four surfaces (ChatListView.kt:1109 via `TagsOrConnectByName` :1095; ChatListView.swift:803 via the `oneHandUI` branches :650-704; NewChatSheet.kt:322,413; NewChatMenuButton.swift:96-104). It shows for any non-empty text that is not a SimpleX link; `ConnectByNameRow` keeps its 5-character minimum (ChatListView.kt:1043). The slot is an either/or keyed on `connectNameCandidate` (ChatListView.kt:1100-1106; iOS one-hand :651-661, top-bar :696-704 already additive), so it becomes a small column — tags hide exactly when they hide for the name row today.
+**Rows.** `SearchInDirectoryRow` goes beside `ConnectByNameRow` in the same slot on all four surfaces (ChatListView.kt:1109 via `TagsOrConnectByName` :1095; ChatListView.swift:803 via the `oneHandUI` branches :650-704; NewChatSheet.kt:322,413; NewChatMenuButton.swift:96-104). On a phone:
+
+| search text | slot |
+| --- | --- |
+| empty | tags |
+| non-empty, not a name candidate | Search in Directory |
+| name candidate (5+ chars, ChatListView.kt:1043) | Search in Directory + Connect to \<name\> |
+
+The rows replace the tags exactly as `ConnectByNameRow` does today, so the tag rule is unchanged — only the range of text that produces a row widens. Desktop shows tags alongside, also as today. The slot still needs widening from `when { candidate == null -> TagsView; else -> ConnectByNameRow }` (ChatListView.kt:1100-1106; iOS one-hand :651-661, top-bar already additive :696-704), since it must now emit two rows. The directory row is hidden for a SimpleX link, which connects on its own.
 
 **Keyboard.** Kotlin already sets `ImeAction.Search` (SearchTextField.kt:105) with no `keyboardActions`; add `onSearch: (() -> Unit)? = null` feeding `KeyboardActions`, defaulting to `KeyboardActions.Default` so DefaultTopAppBar.kt:84, AddGroupMembersView.kt:217 and GroupChatInfoView.kt:1386 are untouched. Pass the handler only from the New-chat call sites (NewChatSheet.kt:312, :403), since `ContactsSearchBar` is shared with Deleted chats (:715, :725); iOS has the same hazard with `ContactsListSearchBar` (NewChatMenuButton.swift:333, used at :87 and :469). iOS also needs `.submitLabel(.search)` and `.onSubmit` (ChatListView.swift:665 and the New chat equivalent). Desktop shares `SearchTextField` with no soft keyboard — confirm Enter reaches the handler.
 
