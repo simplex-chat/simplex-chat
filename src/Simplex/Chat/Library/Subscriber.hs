@@ -916,7 +916,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 if useRelays' gInfo''
                   then do
                     introduceInChannel cxt user gInfo'' m'
-                    when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
+                    case mStatus of
+                      GSMemPendingApproval -> pure ()
+                      GSMemPendingReview -> pure ()
+                      _ -> when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
                   else case mStatus of
                     GSMemPendingApproval -> pure ()
                     GSMemPendingReview -> introduceToModerators cxt user gInfo'' m'

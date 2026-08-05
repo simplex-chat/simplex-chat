@@ -4054,11 +4054,12 @@ processChatCommand cxt nm = \case
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> Bool -> CM ChatResponse
-    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n', image = img'} domainVerified = do
+    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'} domainVerified = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
       checkProfileImageSize img'
       checkGroupProfileSize p'
+      when (useRelays' gInfo && isJust (ma' >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
       gInfo' <- withStore $ \db -> do
         g <- updateGroupProfile db user gInfo p'
@@ -4210,10 +4211,11 @@ processChatCommand cxt nm = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
     newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> MemberId -> Maybe GroupKeys -> Maybe Int64 -> CM GroupInfo
-    newGroup user incognito gProfile@GroupProfile {displayName, image} useRelays memberId groupKeys_ publicMemberCount_ = do
+    newGroup user incognito gProfile@GroupProfile {displayName, image, memberAdmission} useRelays memberId groupKeys_ publicMemberCount_ = do
       checkValidName displayName
       checkProfileImageSize image
       checkGroupProfileSize gProfile
+      when (useRelays && isJust (memberAdmission >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile useRelays memberId groupKeys_ publicMemberCount_
