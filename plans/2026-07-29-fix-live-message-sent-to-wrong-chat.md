@@ -105,10 +105,11 @@ outright.
 Four changes, all following from "this send no longer owns the compose
 state":
 
-- `sendMessageAsync` takes `composed: ComposeState = composeState.value`,
-  and `sendMessage` takes `composed: ComposeState? = null`, so only the
-  chat switch passes a state and every other sender still reads it inside
-  the coroutine, exactly where the send read it before. The chat switch
+- `sendMessageAsync` takes its `cs` as a parameter defaulting to
+  `composeState.value`, and `sendMessage` takes `composed: ComposeState? =
+  null`, so only the chat switch passes a state and every other sender
+  still reads it inside the coroutine, exactly where the send read it
+  before. The chat switch
   captures it on the main thread before replacing it - without that the
   send would read the compose state of the chat that was opened and send
   *its draft* to the previous chat.
@@ -225,9 +226,11 @@ is `chat` - every send but the one made by a chat switch - that reduces to
 
 Nothing else in that block had to move. #7308 already routes both compose
 writes through `sentMessageInCompose`, which derives from `chatIsOpen`, so
-guarding `chatIsOpen` guards them; the rest of the change there is two
-call sites taking `toChat` (`clearCurrentDraft`, and the draft id a failed
-message is saved under).
+guarding `chatIsOpen` guards them; the rest of the change there is one
+call site taking `toChat`, `clearCurrentDraft`. The draft id a failed
+message is saved under keeps using `chat`: that branch is behind
+`!liveSend`, which the send made by a chat switch never satisfies, so
+`toChat` is always `chat` where it is read.
 
 An earlier revision of this note said that #7308's `cs.liveMessage != null`
 clause "already covers the send made by the chat switch". **It did not.**
