@@ -62,7 +62,7 @@ Kotlin `CC.APISendServiceRequest(userId, target, timeoutSec, request: JsonObject
 
 The app ships the directory's **short link** as a constant; it cannot cache a resolved target, since `APISendServiceRequest` resolves internally and returns only the response.
 
-The call blocks until reply or timeout — pass `requestTimeout` of **10 s**, and use `withLongRunningApi` (Utils.kt:43), not the single-threaded `withBGApi` (:38). Guard stale responses with a generation counter bumped on text change, profile switch, remote-host switch and filter reset; a text comparison alone lets a pre-switch request return and repopulate a cleared list. No remote-host allowlist change is needed (`allowRemoteCommand` is a deny-list, Controller.hs:735). The request carries no profile, so incognito needs nothing.
+The call blocks until reply or timeout — pass `requestTimeout` of **10 s**, and use `withLongRunningApi` (Utils.kt:43), not the single-threaded `withBGApi` (:38). Show progress through the existing `ConnectProgressManager` (ChatModel.kt:55-78, ChatModel.swift:303-329): `startConnectProgress(text, onCancel)` when the request goes out, `stopConnectProgress()` when it returns. It already withholds the spinner for 1 s, and the search bar already renders it (ChatListView.kt:522, ChatListView.swift:670); `onCancel` gives the user a way out of the wait. Guard stale responses with a generation counter bumped on text change, profile switch, remote-host switch and filter reset; a text comparison alone lets a pre-switch request return and repopulate a cleared list. No remote-host allowlist change is needed (`allowRemoteCommand` is a deny-list, Controller.hs:735). The request carries no profile, so incognito needs nothing.
 
 ## 4. Search UI
 
@@ -92,9 +92,15 @@ Tap → `planAndConnect(rhId, shortLink ?: fullLink)`; both `PublicLink` fields 
 
 **Placement.** Declaration order is search bar, local matches, Names, Directory in both bar positions — the search bar is declared first regardless of mode (ChatListView.kt:952 before :1001; ChatListView.swift:399-412 before :422/:431), and one-hand mode flips only the physical direction. On Kotlin the new items go before `ChatListFeatureCards` (:1007); on iOS each row carries the same per-row `.scaleEffect` flip. On New chat they go after `itemsIndexed(filteredContactChats)` (NewChatSheet.kt:341, :430) and after the `ContactsList(…)` call (NewChatMenuButton.swift:159-168) — not inside `ContactsList` (:223), which Deleted chats also uses (:482).
 
-**Empty states are a condition change, not just wording.** Both platforms centre an overlay whenever the local filter is empty — ChatListView.kt:1016, ChatListView.swift:466, plus "You have no chats" at ChatListView.kt:419 — which is the normal successful directory search. Each condition must also require the new sections to be empty. New chat has its own: `NoFilteredContactsItem`, local to `NewChatSheetLayout` (NewChatSheet.kt:261-272), and the iOS states inside the shared `ContactsList` (:262-266), needing a defaulted parameter or lifting to `NewChatSheet`.
+**Empty states** are centred overlays gated on the local filter being empty — ChatListView.kt:1016, ChatListView.swift:466, and "You have no chats" at ChatListView.kt:419. They now depend on whether an online search has run:
 
-Two reachability gates: iOS renders the chat-list search bar only when the chat list is non-empty (ChatListView.swift:398), and on both platforms the has-chats-but-no-conversations onboarding state replaces the whole list (ChatListView.swift:384, ChatListView.kt:413).
+- **not yet run** (typing) — unchanged, including "You have no chats" when there are no local chats;
+- **run, anything found** in either new section — no overlay, results only;
+- **run, nothing found anywhere** — "no chats found".
+
+New chat has its own: `NoFilteredContactsItem`, local to `NewChatSheetLayout` (NewChatSheet.kt:261-272), and the iOS states inside the shared `ContactsList` (:262-266), needing a defaulted parameter or lifting to `NewChatSheet`.
+
+**The search bar must always be present**, since it is now a discovery instrument. Two gates hide it today and both have to go: iOS renders it only when the chat list is non-empty (ChatListView.swift:397-398), and on both platforms the has-chats-but-no-conversations onboarding state replaces the whole list — `ConnectOnboardingView` (ChatListView.swift:383-386) and `AndroidOnboardingCards` (ChatListView.kt:412-413). Keep the onboarding content, but render it below a live search bar rather than instead of it.
 
 ## 6. Pagination
 
@@ -116,7 +122,7 @@ Kotlin: `common/src/commonMain/resources/MR/base/strings.xml`, beside `connect_p
 | --- | --- |
 | Address not DR | `ASENotDRAddress` — a deployment bug: log, generic failure |
 | Directory silent or over its cap | `ASETimeout` after ~10 s → retry row |
-| Network down | existing offline handling; must not spin |
+| Network down | fails within the 10 s budget → retry row; no indefinite wait |
 | Response malformed or oversized | parse failure → error row, log the size |
 | Response late, or after a profile/host switch | dropped by the generation counter |
 | Name resolves to nothing | no row, no alert |
@@ -128,8 +134,8 @@ Kotlin: `common/src/commonMain/resources/MR/base/strings.xml`, beside `connect_p
 1. Cursor fix + `testSearchGroups` fixture — standalone.
 2. Settle the DR-address question (§2), then `--service-requests` and the directory enabling it.
 3. RPC schema, `Directory/Rpc.hs`, handler off the event loop — CLI-testable with `/_service_request`.
-4. Kotlin: API binding, view model, rows, button, keyboard, alert, pagination — chat list, then New chat.
-5. iOS: the same.
+4. iOS: API binding, view model, rows, button, keyboard, alert, pagination — chat list, then New chat.
+5. Kotlin: port it verbatim — same function and variable names, same structure and logic, diverging only where the platform forces it.
 6. Tests in `tests/Bots/DirectoryTests.hs`, following `Direct.hs:1903-1975`. Three harness changes first: `/ad` → `/ad pq_ratchet=on` (:1771); `mkDirectoryOpts` (:112-147) must set `serviceRequests` in `coreOptions`, as the bot starts through `runDirectory` → Core.hs:93; and the harness must expose the short link, which `getContactLink` (:1772) discards.
 
 ## Verify against the pinned agent first
