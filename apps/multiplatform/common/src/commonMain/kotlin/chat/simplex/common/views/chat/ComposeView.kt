@@ -815,7 +815,9 @@ fun ComposeView(
       if (cs.message.text.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(cs), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
+            // the current state, not cs: forwarding is never reached from the chat switch, and this keeps what was
+            // typed while the forward was in flight, as before
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
           } else {
             message
           }
