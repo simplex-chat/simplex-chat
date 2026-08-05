@@ -18,33 +18,31 @@ New `Directory/Rpc.hs`, JSON-derived, re-declared by hand in Kotlin and Swift.
 
 ```haskell
 data DirectorySearchRequest = DirectorySearchRequest
-  { searchText :: Maybe Text      -- Nothing = browse
-  , sortBy :: Maybe SearchSort    -- browse only: SSPopular | SSRecent
-  , cursor :: Maybe SearchCursor  -- opaque, echoed from a previous response
-  , limit :: Maybe Int            -- clamped to searchResults (Directory/Options.hs:195)
+  { searchText :: Text                -- the same string a user sends the bot in chat (STSearch)
+  , cursor :: Maybe (Int, GroupId)    -- last row's (membersCount, groupId); Nothing = first page
   }
 
 data DirectorySearchEntry = DirectorySearchEntry
   { entryType, displayName, simplexName, groupLink, activeAt, createdAt  -- as DirectoryEntry, Listing.hs:70
-  , shortDescr :: Maybe Text      -- plain text, not DirectoryEntry's MarkdownList
+  , shortDescr :: Maybe Text          -- as stored on the profile; the app parses markdown locally
   , image :: Maybe ImageData      -- the group profile picture, as the bot already sends it
   }
 
 data DirectorySearchResponse = DirectorySearchResponse
-  { entries :: [DirectorySearchEntry], cursor :: Maybe SearchCursor }  -- cursor Nothing = no more
+  { entries :: [DirectorySearchEntry], cursor :: Maybe (Int, GroupId) }  -- Nothing = no more
 ```
 
-Both directions go in a versioned envelope (`{"v":1,"method":…}` / `{"v":1,"result":…}` or `{"v":1,"error":…}`) so the response can grow; streaming will need it.
+This is the in-conversation text search (`STSearch`, Search.hs:13) and nothing more: no sort parameter — the directory's other two modes are separate commands, `/all` and `/new` (Service.hs:1141-1142), with no UI entry point here — and no page-size parameter, since the page size is the directory's own `searchResults` (Service.hs:1284, default 10 at Directory/Options.hs:195), as in chat. The cursor is the in-chat `SearchRequest.lastGroup` (Search.hs:10) widened to the corrected sort key below, and carried in the request because an RPC caller has no contact to hold server-side state against (`searchRequests :: TMap ContactId SearchRequest`, Service.hs:101). Both directions go in a versioned envelope (`{"v":1,"method":…}` / `{"v":1,"result":…}` or `{"v":1,"error":…}`), so browse or streaming can be added later without breaking clients.
 
-Two projections away from `DirectoryEntry`: drop `welcomeMessage` (it carries the group's whole description plus a link line, Listing.hs:105-119, bounded only by `maxEncodedInfoLength = 14694`, Protocol.hs:937), and send `shortDescr` as plain `Text` — `Format`'s JSON shape is build-dependent (`sumTypeJSON`, simplexmq Parsers.hs:110-115), so a Linux-built directory emits `{"type":…}` while iOS expects Swift's synthesized `{"caseName":…}` (ChatTypes.swift:5360), and the core never reshapes it (the payload stays a `J.Object`, Commands.hs:1455).
+Two projections away from `DirectoryEntry`: drop `welcomeMessage` (it carries the group's whole description plus a link line, Listing.hs:105-119, bounded only by `maxEncodedInfoLength = 14694`, Protocol.hs:937), and send `shortDescr` as `Text` rather than `DirectoryEntry`'s `MarkdownList`. `Text` is the stored form — `GroupProfile.shortDescr :: Maybe Text`, capped at 160 characters (Types.hs:882) — which the directory converts to `MarkdownList` only when generating the web listing (`toFormattedText`, Listing.hs:118); the app can parse it back with its own core through `chat_parse_markdown` (Mobile.hs:130, `parseToMarkdown`, Core.kt:31) if the row renders markdown. Sending `MarkdownList` would gain nothing and break iOS: `Format`'s JSON shape is build-dependent (`sumTypeJSON`, simplexmq Parsers.hs:110-115), so a Linux-built directory emits `{"type":…}` where iOS expects Swift's synthesized `{"caseName":…}` (ChatTypes.swift:5360), and the core passes the payload through unreshaped as a `J.Object` (Commands.hs:1455).
 
-`image` is the same `GroupProfile.image` the bot already sends as `MCImage` (Service.hs:1310), bounded to 12,500 bytes by the apps that set it (GroupProfileView.kt:95, GroupProfileView.swift:116). Against the ~14.7KB envelope that means roughly **one entry with an avatar per response** — which is what the directory returns today and why streaming is the follow-up. `entries` is a list regardless, so streaming changes the transport, not the client model; the client must render a one-entry response correctly.
+`image` is the same `GroupProfile.image` the bot already sends as `MCImage` (Service.hs:1310), bounded to 12,500 bytes by the apps that set it (GroupProfileView.kt:95, GroupProfileView.swift:116). So the handler queries its normal `searchResults` page as in chat, then fills `entries` until the response nears the envelope and sets the cursor to the last entry it included — with an avatar that is roughly **one entry per response** today, which is why streaming is the follow-up. `entries` is a list regardless, so streaming changes the transport, not the client model; the client must render a one-entry response correctly.
 
 **Handler.** Add `DEServiceRequest AgentInvId (Maybe C.PublicKeyEd25519) J.Object` to `DirectoryEvent` (Events.hs:48) and a `CEvtServiceRequest` case to `crDirectoryEvent_` (:81). In `directoryServiceEvent` (Service.hs:321) decode, search, build entries, reply with `APISendServiceResponse`. Malformed JSON, unknown method or unsupported version return the error envelope, never a chat message. Reply promptly — a late reply is discarded by the client.
 
 Entries need the group link, which `searchListedGroups` does not return (Store.hs:343) and without which `groupDirectoryEntry` yields `Nothing` (Listing.hs:126-130). Extend it to return `Maybe GroupLink` per row as `getAllListedGroups_` does (Store.hs:335-341); entries that still come out `Nothing` are skipped and excluded from paging.
 
-**Do the work off the event loop.** The directory processes every event — registrations, captchas, link checks, owner commands — on one sequential consumer (Service.hs:263-269, :175-181), so answering inline lets unauthenticated callers starve moderation. Fork the handler as `sendFoundGroups` already does (Service.hs:1301) with bounded concurrency, clamp `limit`, and cap the global request rate. The cap can only be global: a service request carries no caller identity, just `invId`, an optional attacker-chosen `sigKey_` and the payload (Subscriber.hs:1365-1368). Each request also accrues agent state — `APISendServiceResponse` returns an `AgentConnId` (Commands.hs:1472) whose `SSENT` has no chat entity behind it (Subscriber.hs:131) — so size the cap against that too.
+**Do the work off the event loop.** The directory processes every event — registrations, captchas, link checks, owner commands — on one sequential consumer (Service.hs:263-269, :175-181), so answering inline lets unauthenticated callers starve moderation. Fork the handler as `sendFoundGroups` already does (Service.hs:1301) with bounded concurrency, and cap the global request rate. The cap can only be global: a service request carries no caller identity, just `invId`, an optional attacker-chosen `sigKey_` and the payload (Subscriber.hs:1365-1368). Each request also accrues agent state — `APISendServiceResponse` returns an `AgentConnId` (Commands.hs:1472) whose `SSENT` has no chat entity behind it (Subscriber.hs:131) — so size the cap against that too.
 
 **Cursor fix (separate commit, first).** `searchListedGroups` orders by `summary_current_members_count DESC, r.group_reg_id ASC` (Store.hs:359, :388) or `r.created_at DESC, …` (:371) but pages with `AND r.group_id > ?` (:354, :366, :378) — a different column, unrelated to the sort key — so pages skip and repeat rows. Tie-break on `r.group_id` (unique, Directory/Store/SQLite/Migrations.hs:36; `group_reg_id` is not in `groupRegFields`, Store.hs:450) and use the OR form, since the mixed-direction sort rules out a row-value comparison:
 
