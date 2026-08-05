@@ -12,13 +12,14 @@ import {CR} from "./responses"
 // Network usage: interactive.
 export interface APICreateMyAddress {
   userId: number // int64
+  pqRatchet?: boolean
 }
 
 export namespace APICreateMyAddress {
   export type Response = CR.UserContactLinkCreated | CR.ChatCmdError
 
   export function cmdString(self: APICreateMyAddress): string {
-    return '/_address ' + self.userId
+    return '/_address ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '')
   }
 }
 
@@ -69,6 +70,7 @@ export namespace APISetProfileAddress {
 // Network usage: interactive.
 export interface APISetAddressSettings {
   userId: number // int64
+  pqRatchet?: boolean
   settings: T.AddressSettings
 }
 
@@ -76,7 +78,7 @@ export namespace APISetAddressSettings {
   export type Response = CR.UserContactLinkUpdated | CR.ChatCmdError
 
   export function cmdString(self: APISetAddressSettings): string {
-    return '/_address_settings ' + self.userId + ' ' + JSON.stringify(self.settings)
+    return '/_address_settings ' + self.userId + (typeof self.pqRatchet == 'boolean' ? ' pq_ratchet=' + (self.pqRatchet ? 'on' : 'off') : '') + ' ' + JSON.stringify(self.settings)
   }
 }
 
@@ -163,6 +165,35 @@ export namespace APIChatItemReaction {
 
   export function cmdString(self: APIChatItemReaction): string {
     return '/_reaction ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId + ' ' + (self.add ? 'on' : 'off') + ' ' + JSON.stringify(self.reaction)
+  }
+}
+
+// Share user address card
+// Network usage: no.
+export interface APIShareMyAddress {
+  toSendRef: T.ChatRef
+}
+
+export namespace APIShareMyAddress {
+  export type Response = CR.ChatMsgContent
+
+  export function cmdString(self: APIShareMyAddress): string {
+    return '/_share address' + T.ChatRef.cmdString(self.toSendRef)
+  }
+}
+
+// Share channel address
+// Network usage: no.
+export interface APIShareChatMsgContent {
+  shareChatRef: T.ChatRef
+  toSendRef: T.ChatRef
+}
+
+export namespace APIShareChatMsgContent {
+  export type Response = CR.ChatMsgContent
+
+  export function cmdString(self: APIShareChatMsgContent): string {
+    return '/_share chat content ' + T.ChatRef.cmdString(self.shareChatRef) + ' ' + T.ChatRef.cmdString(self.toSendRef)
   }
 }
 
@@ -417,6 +448,20 @@ export namespace APIUpdateGroupProfile {
   }
 }
 
+// Verify group domain
+// Network usage: interactive.
+export interface APIVerifyGroupDomain {
+  groupId: number // int64
+}
+
+export namespace APIVerifyGroupDomain {
+  export type Response = CR.GroupDomainVerified
+
+  export function cmdString(self: APIVerifyGroupDomain): string {
+    return '/_verify domain #' + self.groupId
+  }
+}
+
 // Group link commands
 // These commands can be used by bots that manage multiple public groups
 
@@ -562,6 +607,7 @@ export namespace APIAcceptContact {
 // Network usage: no.
 export interface APIRejectContact {
   contactReqId: number // int64
+  notify: boolean
 }
 
 export namespace APIRejectContact {
@@ -786,6 +832,25 @@ export namespace APISetContactPrefs {
   }
 }
 
+// Service commands
+// Bots with a double ratchet address can answer service requests.
+
+// Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.
+// Network usage: background.
+export interface APISendServiceResponse {
+  userId: number // int64
+  requestId: string
+  responseData: object
+}
+
+export namespace APISendServiceResponse {
+  export type Response = CR.ServiceReplyAccepted | CR.ChatCmdError
+
+  export function cmdString(self: APISendServiceResponse): string {
+    return '/_service_response ' + self.userId + ' ' + self.requestId + ' ' + JSON.stringify(self.responseData)
+  }
+}
+
 // Chat management
 // These commands should not be used with CLI-based bots
 
@@ -794,13 +859,14 @@ export namespace APISetContactPrefs {
 export interface StartChat {
   mainApp: boolean
   enableSndFiles: boolean
+  serviceRequests: boolean
 }
 
 export namespace StartChat {
   export type Response = CR.ChatStarted | CR.ChatRunning
 
-  export function cmdString(_self: StartChat): string {
-    return '/_start'
+  export function cmdString(self: StartChat): string {
+    return '/_start main=' + (self.mainApp ? 'on' : 'off') + (!self.enableSndFiles ? ' snd_files=off' : '') + (self.serviceRequests ? ' service_requests=on' : '')
   }
 }
 

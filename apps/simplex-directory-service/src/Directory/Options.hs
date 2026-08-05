@@ -14,14 +14,11 @@ module Directory.Options
   )
 where
 
-import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
-import Simplex.Messaging.Parsers (parseAll)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
@@ -36,8 +33,6 @@ data DirectoryOpts = DirectoryOpts
     profileNameLimit :: Int,
     captchaGenerator :: Maybe FilePath,
     voiceCaptchaGenerator :: Maybe FilePath,
-    directoryLog :: Maybe FilePath,
-    migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
     clientService :: Bool,
     runCLI :: Bool,
@@ -133,21 +128,6 @@ directoryOpts appDir defaultDbName = do
             <> metavar "VOICE_CAPTCHA_GENERATOR"
             <> help "Executable to generate voice captcha, accepts text as parameter, writes audio file, outputs file_path and duration_seconds to stdout"
         )
-  directoryLog <-
-    optional $
-      strOption
-        ( long "directory-file"
-            <> metavar "DIRECTORY_FILE"
-            <> help "Append only log for directory state"
-        )
-  migrateDirectoryLog <-
-    optional $
-      option
-        parseMigrateLog
-        ( long "migrate-directory-file"
-            <> metavar "MIGRATE_COMMAND"
-            <> help "Command to import/export directory log file"
-        )
   serviceName <-
     strOption
       ( long "service-name"
@@ -209,8 +189,6 @@ directoryOpts appDir defaultDbName = do
         profileNameLimit,
         captchaGenerator,
         voiceCaptchaGenerator,
-        directoryLog,
-        migrateDirectoryLog,
         serviceName = T.pack serviceName,
         clientService,
         runCLI,
@@ -245,6 +223,7 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
+      showFullLinks = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
@@ -253,14 +232,3 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
       userDisplayName = Nothing,
       userImageFile = Nothing
     }
-
-parseMigrateLog :: ReadM MigrateLog
-parseMigrateLog = eitherReader $ parseAll mlP . encodeUtf8 . T.pack
-  where
-    mlP =
-      A.takeTill (== ' ') >>= \case
-        "check" -> pure MLCheck
-        "import" -> pure MLImport
-        "export" -> pure MLExport
-        "listing" -> pure MLListing
-        _ -> fail "bad MigrateLog"

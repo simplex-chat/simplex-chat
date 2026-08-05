@@ -1071,8 +1071,9 @@ public enum SMPHandshakeError: Decodable, Hashable {
 
 public enum SMPAgentError: Decodable, Hashable {
     case A_MESSAGE
-    case A_PROHIBITED
+    case A_PROHIBITED(prohibitedErr: String)
     case A_VERSION
+    case A_LINK(linkErr: String)
     case A_CRYPTO
     case A_DUPLICATE
     case A_QUEUE(queueErr: String)

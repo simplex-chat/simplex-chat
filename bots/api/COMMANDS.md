@@ -15,6 +15,8 @@ This file is generated automatically.
 - [APIDeleteChatItem](#apideletechatitem)
 - [APIDeleteMemberChatItem](#apideletememberchatitem)
 - [APIChatItemReaction](#apichatitemreaction)
+- [APIShareMyAddress](#apisharemyaddress)
+- [APIShareChatMsgContent](#apisharechatmsgcontent)
 
 [File commands](#file-commands)
 - [ReceiveFile](#receivefile)
@@ -35,6 +37,7 @@ This file is generated automatically.
 - [APIAddGroupRelays](#apiaddgrouprelays)
 - [APIAllowRelayGroup](#apiallowrelaygroup)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
+- [APIVerifyGroupDomain](#apiverifygroupdomain)
 
 [Group link commands](#group-link-commands)
 - [APICreateGroupLink](#apicreategrouplink)
@@ -68,6 +71,9 @@ This file is generated automatically.
 - [APIUpdateProfile](#apiupdateprofile)
 - [APISetContactPrefs](#apisetcontactprefs)
 
+[Service commands](#service-commands)
+- [APISendServiceResponse](#apisendserviceresponse)
+
 [Chat management](#chat-management)
 - [StartChat](#startchat)
 - [APIStopChat](#apistopchat)
@@ -88,19 +94,20 @@ Create bot address.
 
 **Parameters**:
 - userId: int64
+- pqRatchet: bool?
 
 **Syntax**:
 
 ```
-/_address <userId>
+/_address <userId>[ pq_ratchet=on|off]
 ```
 
 ```javascript
-'/_address ' + userId // JavaScript
+'/_address ' + userId + (typeof pqRatchet == 'boolean' ? ' pq_ratchet=' + (pqRatchet ? 'on' : 'off') : '') // JavaScript
 ```
 
 ```python
-'/_address ' + str(userId) # Python
+'/_address ' + str(userId) + ((' pq_ratchet=' + ('on' if pqRatchet else 'off')) if pqRatchet is not None else '') # Python
 ```
 
 **Responses**:
@@ -238,20 +245,21 @@ Set bot address settings.
 
 **Parameters**:
 - userId: int64
+- pqRatchet: bool?
 - settings: [AddressSettings](./TYPES.md#addresssettings)
 
 **Syntax**:
 
 ```
-/_address_settings <userId> <json(settings)>
+/_address_settings <userId>[ pq_ratchet=on|off] <json(settings)>
 ```
 
 ```javascript
-'/_address_settings ' + userId + ' ' + JSON.stringify(settings) // JavaScript
+'/_address_settings ' + userId + (typeof pqRatchet == 'boolean' ? ' pq_ratchet=' + (pqRatchet ? 'on' : 'off') : '') + ' ' + JSON.stringify(settings) // JavaScript
 ```
 
 ```python
-'/_address_settings ' + str(userId) + ' ' + json.dumps(settings) # Python
+'/_address_settings ' + str(userId) + ((' pq_ratchet=' + ('on' if pqRatchet else 'off')) if pqRatchet is not None else '') + ' ' + json.dumps(settings) # Python
 ```
 
 **Responses**:
@@ -480,6 +488,73 @@ ChatItemReaction: Message reaction.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIShareMyAddress
+
+Share user address card
+
+*Network usage*: no.
+
+**Parameters**:
+- toSendRef: [ChatRef](./TYPES.md#chatref)
+
+**Syntax**:
+
+```
+/_share address<str(toSendRef)>
+```
+
+```javascript
+'/_share address' + ChatRef.cmdString(toSendRef) // JavaScript
+```
+
+```python
+'/_share address' + ChatRef_cmd_string(toSendRef) # Python
+```
+
+**Response**:
+
+ChatMsgContent: Chat card content that can be sent.
+- type: "chatMsgContent"
+- user: [User](./TYPES.md#user)
+- msgContent: [MsgContent](./TYPES.md#msgcontent)
+
+---
+
+
+### APIShareChatMsgContent
+
+Share channel address
+
+*Network usage*: no.
+
+**Parameters**:
+- shareChatRef: [ChatRef](./TYPES.md#chatref)
+- toSendRef: [ChatRef](./TYPES.md#chatref)
+
+**Syntax**:
+
+```
+/_share chat content <str(shareChatRef)> <str(toSendRef)>
+```
+
+```javascript
+'/_share chat content ' + ChatRef.cmdString(shareChatRef) + ' ' + ChatRef.cmdString(toSendRef) // JavaScript
+```
+
+```python
+'/_share chat content ' + ChatRef_cmd_string(shareChatRef) + ' ' + ChatRef_cmd_string(toSendRef) # Python
+```
+
+**Response**:
+
+ChatMsgContent: Chat card content that can be sent.
+- type: "chatMsgContent"
+- user: [User](./TYPES.md#user)
+- msgContent: [MsgContent](./TYPES.md#msgcontent)
 
 ---
 
@@ -1160,6 +1235,40 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+### APIVerifyGroupDomain
+
+Verify group domain
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_verify domain #<groupId>
+```
+
+```javascript
+'/_verify domain #' + groupId // JavaScript
+```
+
+```python
+'/_verify domain #' + str(groupId) # Python
+```
+
+**Response**:
+
+GroupDomainVerified: Group domain verified.
+- type: "groupDomainVerified"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- verificationFailure: string?
+
+---
+
+
 ## Group link commands
 
 These commands can be used by bots that manage multiple public groups
@@ -1551,6 +1660,7 @@ Reject contact request. The user who sent the request is **not notified**.
 
 **Parameters**:
 - contactReqId: int64
+- notify: bool
 
 **Syntax**:
 
@@ -2118,6 +2228,50 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+## Service commands
+
+Bots with a double ratchet address can answer service requests.
+
+
+### APISendServiceResponse
+
+Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.
+
+*Network usage*: background.
+
+**Parameters**:
+- userId: int64
+- requestId: string
+- responseData: JSONObject
+
+**Syntax**:
+
+```
+/_service_response <userId> <requestId> <json(responseData)>
+```
+
+```javascript
+'/_service_response ' + userId + ' ' + requestId + ' ' + JSON.stringify(responseData) // JavaScript
+```
+
+```python
+'/_service_response ' + str(userId) + ' ' + requestId + ' ' + json.dumps(responseData) # Python
+```
+
+**Responses**:
+
+ServiceReplyAccepted: Service reply accepted for delivery. `connectionId` correlates the reply delivery event..
+- type: "serviceReplyAccepted"
+- user: [User](./TYPES.md#user)
+- connectionId: string
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
 ## Chat management
 
 These commands should not be used with CLI-based bots
@@ -2132,11 +2286,20 @@ Start chat controller.
 **Parameters**:
 - mainApp: bool
 - enableSndFiles: bool
+- serviceRequests: bool
 
 **Syntax**:
 
 ```
-/_start
+/_start main=on|off[ snd_files=off][ service_requests=on]
+```
+
+```javascript
+'/_start main=' + (mainApp ? 'on' : 'off') + (!enableSndFiles ? ' snd_files=off' : '') + (serviceRequests ? ' service_requests=on' : '') // JavaScript
+```
+
+```python
+'/_start' + ' main=' + ('on' if mainApp else 'off') + (' snd_files=off' if not enableSndFiles else '') + (' service_requests=on' if serviceRequests else '') # Python
 ```
 
 **Responses**:
