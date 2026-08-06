@@ -570,14 +570,16 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
   where
     storeFile :: Maybe FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFile = \case
+      -- must stay a bare name: the controller re-joins it with its own folder, and the host with filesFolder
       Just ff -> takeFileName <$$> storeFileTo ff
       Nothing -> storeFileTo =<< getDefaultFilesFolder
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFileTo dir = liftIO . tryAllErrors' $ do
       safeName <- either throwError pure $ remoteFileName fileName
       filePath <- liftIO $ dir `uniqueCombine` safeName
-      -- unreachable while safeName has no directory components - guards against a future change to either
-      inDir <- liftIO $ (==) <$> canonicalizePath dir <*> canonicalizePath (takeDirectory filePath)
+      -- resolves symlinks, so it also catches a final component linking outside the folder
+      canonPath <- liftIO $ canonicalizePath filePath
+      inDir <- liftIO $ (takeDirectory canonPath ==) <$> canonicalizePath dir
       unless inDir $ throwError $ RPEInvalidBody "file path outside of files folder"
       receiveEncryptedFile rfKN getChunk fileSize fileDigest filePath
       pure filePath

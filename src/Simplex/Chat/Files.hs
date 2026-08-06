@@ -4,6 +4,7 @@
 module Simplex.Chat.Files
   ( SafeFileName,
     safeFileName,
+    safeFileNameStr,
     uniqueCombine,
     getChatTempDirectory,
     getDefaultFilesFolder,
@@ -18,8 +19,13 @@ import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getHomeDirectory, 
 -- | A file name with directory components removed, so combining it with a folder cannot escape that folder.
 newtype SafeFileName = SafeFileName String
 
+safeFileNameStr :: String -> String
+safeFileNameStr = notDots . makeValid . takeFileName
+  where
+    notDots n = if n == "." || n == ".." then "_" else n
+
 safeFileName :: String -> SafeFileName
-safeFileName = SafeFileName . makeValid . takeFileName
+safeFileName = SafeFileName . safeFileNameStr
 
 uniqueCombine :: FilePath -> SafeFileName -> IO FilePath
 uniqueCombine fPath (SafeFileName fName) = tryCombine (0 :: Int)

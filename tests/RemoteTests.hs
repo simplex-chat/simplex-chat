@@ -18,6 +18,7 @@ import Data.Either (isLeft, isRight)
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
+import Simplex.Chat.Files (safeFileNameStr)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
@@ -27,7 +28,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Util
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
-import System.FilePath ((</>))
+import System.FilePath (takeFileName, (</>))
 import Test.Hspec hiding (it)
 import UnliftIO
 import UnliftIO.Concurrent
@@ -43,15 +44,23 @@ remoteTests = describe "Remote" $ do
           _ -> False
   describe "stored file name" $ do
     it "rejects names with directory components" $ \_ ->
-      filter (isRight . remoteFileName) ["../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "", ".", ".."]
+      filter (isRight . remoteFileName) ["../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "", ".", ".."]
         `shouldBe` []
     it "accepts bare file names" $ \_ ->
       filter (isLeft . remoteFileName) ["test.pdf", "test_1.pdf", ".hidden", "a b.tar.gz"]
         `shouldBe` []
+    it "sanitizes any name to a real file name" $ \_ ->
+      filter (not . sanitized) fileNames `shouldBe` []
+    it "sanitizes to a name with no directory components" $ \_ ->
+      filter (\n -> let n' = safeFileNameStr n in n' /= takeFileName n') fileNames `shouldBe` []
   xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
   describe "With compression" $ aroundWith (. ((True, True),)) runRemoteTests
+  where
+    fileNames :: [FilePath]
+    fileNames = ["", ".", "..", "...", "../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "test.pdf", ".hidden", "a b.tar.gz"]
+    sanitized n = let n' = safeFileNameStr n in n' /= "" && n' /= "." && n' /= ".."
 
 runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
 runRemoteTests = do
