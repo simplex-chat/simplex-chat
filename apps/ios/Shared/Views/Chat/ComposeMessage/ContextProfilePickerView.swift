@@ -23,6 +23,7 @@ struct ContextProfilePickerView: View {
     @State private var showIncognitoSheet = false
     @State private var showAddProfile = false
     @State private var creatingProfile = false
+    @State private var changingProfile = false
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
@@ -166,8 +167,11 @@ struct ContextProfilePickerView: View {
         }
     }
 
+    private var busy: Bool { creatingProfile || changingProfile }
+
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
+            if busy { return }
             if !chat.chatInfo.profileChangeProhibited {
                 if selectedUser == user {
                     if !incognitoDefault {
@@ -235,7 +239,7 @@ struct ContextProfilePickerView: View {
             .padding(.trailing)
             .frame(height: USER_ROW_SIZE)
         }
-        .disabled(creatingProfile)
+        .disabled(busy)
     }
 
     // Creates a profile to use for this invitation. It is created without becoming
@@ -271,25 +275,43 @@ struct ContextProfilePickerView: View {
             // resync to what the host actually did and report it. The failure is the
             // switch, not the creation, so it is not rethrown into the form's "error
             // creating profile" handler.
+            //
+            // Dismiss the form first. The switch below replaces the chat list with the new
+            // user's, and the prepared chat stayed with the previous one - so this view,
+            // which is the sheet's presenter, is removed from the hierarchy by the switch
+            // itself. Nothing shown from inside it would survive, and an alert raised
+            // while it is being torn down is discarded.
+            await MainActor.run { showAddProfile = false }
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
-                // The prepared chat stayed with the previous profile and is not in this
-                // one's list, so leave it rather than showing an empty chat view.
-                await MainActor.run { chatModel.chatId = nil }
-            } catch {}
-            // The form stays open, as it does for any other failure. showAlert presents
-            // through UIKit on the top view controller, so it is shown over the sheet.
+            } catch {
+                logger.error("changeActiveUserAsync_ error: \(responseError(error))")
+            }
             await MainActor.run {
+                // The prepared chat is not in the new user's list, so a pushed chat view
+                // would render blank. Only clear it if it is still the chat this picker
+                // belongs to - a notification tap may have navigated elsewhere by now.
+                if chatModel.chatId == chat.id { chatModel.chatId = nil }
                 showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             }
             return
         }
-        await MainActor.run { showAddProfile = false }
+        // changingProfile set here, not only inside changeProfile's Task: the defer above
+        // clears creatingProfile as soon as this function returns, and that Task has not
+        // necessarily started by then - the rows would be live in between.
+        await MainActor.run {
+            showAddProfile = false
+            changingProfile = true
+        }
         changeProfile(newUser)
     }
 
     private func changeProfile(_ newUser: User) {
         Task {
+            // Two round trips follow; without this every row, including "Add profile",
+            // stays live and a second change can be started on top of this one.
+            await MainActor.run { changingProfile = true }
+            defer { Task { @MainActor in changingProfile = false } }
             do {
                 if let contact = chat.chatInfo.contact {
                     let updatedContact = try await apiChangePreparedContactUser(contactId: contact.contactId, newUserId: newUser.userId)
@@ -339,6 +361,7 @@ struct ContextProfilePickerView: View {
 
     private func incognitoOption() -> some View {
         Button {
+            if busy { return }
             if !chat.chatInfo.profileChangeProhibited {
                 if incognitoDefault {
                     listExpanded.toggle()

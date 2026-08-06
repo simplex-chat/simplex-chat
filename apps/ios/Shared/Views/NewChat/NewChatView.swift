@@ -427,12 +427,20 @@ private struct ActiveProfilePicker: View {
                                 profileSwitchStatus = .idle
                                 dismiss()
                             }
+                        } else {
+                            // Same latch as in the selectedProfile handler below: without
+                            // this, a nil result leaves profileSwitchStatus stuck and the
+                            // picker dimmed behind a spinner with hit testing off.
+                            await MainActor.run {
+                                profileSwitchStatus = .idle
+                                incognitoEnabled = !incognito
+                            }
                         }
                     } catch {
-                        profileSwitchStatus = .idle
-                        incognitoEnabled = !incognito
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
                         await MainActor.run {
+                            profileSwitchStatus = .idle
+                            incognitoEnabled = !incognito
                             showErrorAlert(error, NSLocalizedString("Error changing to incognito!", comment: ""))
                         }
                     }
@@ -481,10 +489,18 @@ private struct ActiveProfilePicker: View {
                             }
                         } else {
                             // No connection, or apiChangeConnectionUser returned nothing:
-                            // nothing was moved, so don't switch or dismiss - and reset the
+                            // nothing was moved, so don't switch or dismiss. Reset the
                             // status, which otherwise latches the picker into its spinner
-                            // with hit testing off.
-                            await MainActor.run { profileSwitchStatus = .idle }
+                            // with hit testing off, and put selectedProfile back on the
+                            // active user as the catch below does - otherwise the profile
+                            // that was not switched to keeps the checkmark, and tapping it
+                            // does nothing because the view thinks it is already selected.
+                            await MainActor.run {
+                                profileSwitchStatus = .idle
+                                if let currentUser = chatModel.currentUser {
+                                    selectedProfile = currentUser
+                                }
+                            }
                         }
                     } catch {
                         await MainActor.run {
@@ -619,6 +635,12 @@ private struct ActiveProfilePicker: View {
             // controller, so it appears over the form, which stays open as on any other
             // failure.
             await MainActor.run {
+                // The app has switched to the new profile, so make the picker agree with
+                // it rather than leaving the checkmark on a profile that is no longer
+                // active. The connection stayed with the previous profile and cannot be
+                // moved from here; the alert says so.
+                profileSwitchStatus = .idle
+                selectedProfile = newUser
                 showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             }
             return
@@ -692,9 +714,8 @@ private struct ActiveProfilePicker: View {
         }
         .opacity(switchingProfileByTimeout ? 0.4 : 1)
         // Attached to the picker, not to the row: the row lives in a lazy container that
-        // may dispose it, taking the presented sheet with it. Not the root either - two
-        // .sheet modifiers on the same view conflict, and body already presents
-        // IncognitoHelp.
+        // may dispose it, taking the presented sheet with it. Unlike the compose picker
+        // this view is never replaced, so the picker is a stable enough owner.
         .sheet(isPresented: $showAddProfile) {
             NavigationView {
                 CreateProfile(onSubmit: { displayName, shortDescr, image in
