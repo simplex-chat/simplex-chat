@@ -46,6 +46,20 @@ struct ContextProfilePickerView: View {
                 profilePicker()
             }
         }
+        // Attached here, not to the row and not to profilePicker(): the row lives in a
+        // lazy container that may dispose it, and profilePicker() itself is replaced the
+        // moment listExpanded flips - which changeProfile does while this sheet is still
+        // dismissing, and which an incoming event can do at any time by setting
+        // profileChangeProhibited. This Group survives both. Stacking it with the
+        // IncognitoHelp sheet on body is fine from iOS 14.5; the app targets 15.
+        .sheet(isPresented: $showAddProfile) {
+            NavigationView {
+                CreateProfile(onSubmit: { displayName, shortDescr, image in
+                    try await createProfileForChat(displayName, shortDescr, image)
+                })
+            }
+            .interactiveDismissDisabled(creatingProfile)
+        }
     }
 
     private func currentSelection() -> some View {
@@ -150,19 +164,8 @@ struct ContextProfilePickerView: View {
                 }
             }
         }
-        // Attached to the picker, not to the row: the row lives in a lazy container that
-        // may dispose it, taking the presented sheet with it. Not the root either - two
-        // .sheet modifiers on the same view conflict, and body already presents
-        // IncognitoHelp.
-        .sheet(isPresented: $showAddProfile) {
-            NavigationView {
-                CreateProfile(onSubmit: { displayName, shortDescr, image in
-                    try await createProfileForChat(displayName, shortDescr, image)
-                })
-            }
-        }
     }
-    
+
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
             if !chat.chatInfo.profileChangeProhibited {
@@ -251,17 +254,31 @@ struct ContextProfilePickerView: View {
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateProfileKeepingActive(profile)
-        let users = try? listUsers()
+        let updatedUsers = try? listUsers()
         await MainActor.run {
-            if let users = users { chatModel.users = users }
+            if let updatedUsers = updatedUsers {
+                chatModel.users = updatedUsers
+                // This view's own list is otherwise only filled in onAppear, so without
+                // this the profile just created is missing from the picker if the
+                // reassignment below fails - and the row count the frame is sized from
+                // is one short.
+                users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
+            }
         }
         if newUser.activeUser {
             // The core did not honour keepActiveUser and activated the profile - an older
             // remote host ignoring the unknown field. Reassigning would now fail, so
-            // resync to what the host actually did and report it.
-            try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
-            // The form stays open, as it does for any other failure, so the alert is not
-            // presented while a sheet is dismissing - it would be swallowed.
+            // resync to what the host actually did and report it. The failure is the
+            // switch, not the creation, so it is not rethrown into the form's "error
+            // creating profile" handler.
+            do {
+                try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+                // The prepared chat stayed with the previous profile and is not in this
+                // one's list, so leave it rather than showing an empty chat view.
+                await MainActor.run { chatModel.chatId = nil }
+            } catch {}
+            // The form stays open, as it does for any other failure. showAlert presents
+            // through UIKit on the top view controller, so it is shown over the sheet.
             await MainActor.run {
                 showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             }
@@ -293,9 +310,10 @@ struct ContextProfilePickerView: View {
                 }
                 do {
                     try await changeActiveUserAsync_(newUser.userId, viewPwd: nil, keepingChatId: chat.id)
-                    // Reopen the chat under the new profile: keepingChatId only preserves
-                    // its place in the reloaded list, so without this the switch lands on
-                    // the chat list rather than the invitation it was chosen for.
+                    // Assert the open chat: nothing on this path clears chatId on iOS, so
+                    // this is normally a no-op, but keepingChatId only keeps the chat's
+                    // place in the reloaded list - it does not open it. The id is
+                    // unchanged by the reassignment, it is the contact/group id.
                     await MainActor.run { chatModel.chatId = chat.id }
                 } catch {
                     await MainActor.run {

@@ -479,6 +479,12 @@ private struct ActiveProfilePicker: View {
                                     )
                                 }
                             }
+                        } else {
+                            // No connection, or apiChangeConnectionUser returned nothing:
+                            // nothing was moved, so don't switch or dismiss - and reset the
+                            // status, which otherwise latches the picker into its spinner
+                            // with hit testing off.
+                            await MainActor.run { profileSwitchStatus = .idle }
                         }
                     } catch {
                         await MainActor.run {
@@ -573,7 +579,10 @@ private struct ActiveProfilePicker: View {
                 Spacer()
             }
         }
-        .disabled(creatingProfile || switchingProfileByTimeout)
+        // profileSwitchStatus, not just switchingProfileByTimeout: that only latches half
+        // a second later, and creatingProfile is cleared as soon as the switch is handed
+        // to the selectedProfile handler - leaving the row live in between.
+        .disabled(creatingProfile || switchingProfileByTimeout || profileSwitchStatus != .idle)
     }
 
     // Creates a profile for this invitation without activating it, then routes through
@@ -591,20 +600,26 @@ private struct ActiveProfilePicker: View {
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateProfileKeepingActive(profile)
-        let users = try? listUsers()
+        let updatedUsers = try? listUsers()
         await MainActor.run {
-            if let users = users { chatModel.users = users }
+            if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
             profiles = chatModel.users.map { $0.user }
         }
         if newUser.activeUser {
             // Older core ignored keepActiveUser and switched instead - resync rather than
-            // attempting a connection change that would now fail.
-            try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+            // attempting a connection change that would now fail. The failure is the
+            // switch, not the creation, so it is not rethrown into the form's "error
+            // creating profile" handler.
+            do {
+                try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+            } catch {}
+            // Not the view's own `alert`: it is bound to a view that is presenting this
+            // form as a sheet, and UIKit refuses an alert on a controller that already
+            // has one presented - it would never be shown. showAlert goes to the top view
+            // controller, so it appears over the form, which stays open as on any other
+            // failure.
             await MainActor.run {
-                alert = SomeAlert(
-                    alert: Alert(title: Text("Error changing chat profile")),
-                    id: "createProfileActivatedError"
-                )
+                showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             }
             return
         }
@@ -686,6 +701,10 @@ private struct ActiveProfilePicker: View {
                     try await createProfileForConnection(displayName, shortDescr, image)
                 })
             }
+            // The submit runs in an unstructured Task that SwiftUI does not cancel, so a
+            // swipe-to-dismiss mid-create would still create the profile and switch to it
+            // while every state write landed on a dismissed view.
+            .interactiveDismissDisabled(creatingProfile)
         }
     }
 }
