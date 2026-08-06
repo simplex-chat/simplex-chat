@@ -11,6 +11,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Logger.Simple
 import Control.Monad
+import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -23,6 +24,7 @@ import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote (remoteFileName, remoteFilesFolder)
+import Simplex.Chat.Remote.Protocol (remoteStoreFile)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -260,8 +262,9 @@ remoteStoreFileTest =
       contactBob desktop bob
 
       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-      desktopHostStore <- case M.lookup (RHId 1) rhs of
-        Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> remoteFilesFolder
+      (rhClient, desktopHostStore) <- case M.lookup (RHId 1) rhs of
+        Just (_, RHSessionConnected {rhClient, storePath}) ->
+          pure (rhClient, desktopHostFiles </> storePath </> remoteFilesFolder)
         _ -> fail "Host session 1 should be started"
       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
       desktop <## "file test.pdf stored on remote host 1"
@@ -277,6 +280,17 @@ remoteStoreFileTest =
       Just cfArgs@(CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
       chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
       chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+
+      -- the host rejects a traversal name before draining the attachment; only calling the protocol
+      -- directly can put such a name on the wire, as /store remote file sanitizes it controller-side
+      runExceptT (remoteStoreFile rhClient "tests/fixtures/test.pdf" "../x") >>= \case
+        Left (RPEInvalidBody _) -> pure ()
+        r -> fail $ "expected RPEInvalidBody, got " <> show r
+      doesFileExist "./tests/tmp/x" `shouldReturn` False
+      -- the undrained attachment did not break the session
+      desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+      desktop <## "file test_3.pdf stored on remote host 1"
+      B.readFile (mobileFiles </> "test_3.pdf") `shouldReturn` src
 
       removeFile (desktopHostStore </> "test_1.pdf")
       removeFile (desktopHostStore </> "test_2.pdf")
