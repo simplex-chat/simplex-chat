@@ -46,24 +46,27 @@ chatBotRepl welcome answer _user cc = do
   where
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
 
-initializeBotAddress :: ChatController -> IO ()
-initializeBotAddress = initializeBotAddress' True Nothing
+-- `pqRatchet = Just True` (IKUsePQ) is required for service RPC; Nothing is the legacy non-DR contact address.
+data BotAddressOpts = BotAddressOpts
+  { logAddress :: Bool,
+    pqRatchet :: Maybe Bool,
+    autoAccept :: Bool
+  }
 
--- Second argument controls how a NEW address is created when none exists:
---   Nothing    -> non-double-ratchet contact address (compatible with legacy
---                 contact-request bots such as directory and broadcast).
---   Just True  -> double-ratchet address with post-quantum keys, required for
---                 service RPC (see docs/protocol/badges-rpc.md).
---   Just False -> double-ratchet address with per-ratchet PQ enabled.
--- If an address already exists, this argument is unused (ShowMyAddress path).
-initializeBotAddress' :: Bool -> Maybe Bool -> ChatController -> IO ()
-initializeBotAddress' logAddress pqRatchet_ cc = do
+defaultBotAddressOpts :: BotAddressOpts
+defaultBotAddressOpts = BotAddressOpts {logAddress = True, pqRatchet = Nothing, autoAccept = True}
+
+initializeBotAddress :: ChatController -> IO ()
+initializeBotAddress = initializeBotAddress' defaultBotAddressOpts
+
+initializeBotAddress' :: BotAddressOpts -> ChatController -> IO ()
+initializeBotAddress' BotAddressOpts {logAddress, pqRatchet, autoAccept = doAutoAccept} cc = do
   sendChatCmd cc ShowMyAddress >>= \case
     Right (CRUserContactLink _ UserContactLink {connLinkContact}) -> showBotAddress connLinkContact
     Left (ChatErrorStore SEUserContactLinkNotFound) -> do
       when logAddress $ putStrLn "No bot address, creating..."
       -- TODO [short links] create short link by default
-      sendChatCmd cc (CreateMyAddress pqRatchet_) >>= \case
+      sendChatCmd cc (CreateMyAddress pqRatchet) >>= \case
         Right (CRUserContactLinkCreated _ ccLink) -> showBotAddress ccLink
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
@@ -72,7 +75,8 @@ initializeBotAddress' logAddress pqRatchet_ cc = do
       when logAddress $ do
         putStrLn $ "Bot's contact address is: " <> B.unpack (maybe (strEncode uri) strEncode shortUri)
         when (isJust shortUri) $ putStrLn $ "Full contact address for old clients: " <> B.unpack (strEncode uri)
-      let settings = AddressSettings {businessAddress = False, autoAccept = Just AutoAccept {acceptIncognito = False}, autoReply = Nothing}
+      let aa = if doAutoAccept then Just AutoAccept {acceptIncognito = False} else Nothing
+          settings = AddressSettings {businessAddress = False, autoAccept = aa, autoReply = Nothing}
       void $ sendChatCmd cc $ SetAddressSettings Nothing settings
 
 sendMessage :: ChatController -> Contact -> Text -> IO ()

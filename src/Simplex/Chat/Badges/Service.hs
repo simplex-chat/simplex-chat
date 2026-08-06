@@ -19,7 +19,6 @@ module Simplex.Chat.Badges.Service
     BadgeServiceResponse (..),
     ServicePaymentDestination (..),
     BadgeServiceErrorCode (..),
-    badgeServiceErrorCodeText,
     BadgeCatalog (..),
     BadgePrice (..),
     BadgeOffer (..),
@@ -31,16 +30,16 @@ module Simplex.Chat.Badges.Service
     StatementDebitType (..),
   ) where
 
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.Encoding as JE
 import Data.Int (Int64)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8, Word16, Word32)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Store
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (TextEncoding (..), textParseJSON, textToEncoding, textToJSON)
 import Simplex.Messaging.Version (VersionScope)
 import Simplex.Messaging.Version.Internal (Version (..))
 
@@ -228,6 +227,8 @@ data StatementDebitType
   | SDUnknown {tag :: Text, json :: J.Object}
   deriving (Show)
 
+-- Wire form is snake_case per docs/protocol/badges-rpc.schema.json.
+-- Written by hand because enumJSON $ dropPrefix "BSE" would emit camelCase.
 data BadgeServiceErrorCode
   = BSEBadRequest
   | BSEUnsupportedVersion
@@ -246,52 +247,52 @@ data BadgeServiceErrorCode
   | BSEReceiptInvalid
   | BSEReceiptUsed
   | BSEInternal
+  | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
 
--- Wire form is snake_case per docs/protocol/badges-rpc.schema.json (definition `response.error.code`).
--- The codebase's `enumJSON $ dropPrefix "BSE"` would produce camelCase ("unsupportedVersion") and
--- silently break the wire format under every client, so the mapping is written explicitly here.
-badgeServiceErrorCodeText :: BadgeServiceErrorCode -> Text
-badgeServiceErrorCodeText = \case
-  BSEBadRequest -> "bad_request"
-  BSEUnsupportedVersion -> "unsupported_version"
-  BSEUnknownPurchaseKey -> "unknown_purchase_key"
-  BSEUnknownOfferId -> "unknown_offer_id"
-  BSEOfferDisabled -> "offer_disabled"
-  BSEOfferMismatch -> "offer_mismatch"
-  BSEProductUnavailable -> "product_unavailable"
-  BSEPaymentNotEntitled -> "payment_not_entitled"
-  BSEPaymentPending -> "payment_pending"
-  BSEProviderUnavailable -> "provider_unavailable"
-  BSERateLimited -> "rate_limited"
-  BSECodeInvalid -> "code_invalid"
-  BSECodeUsed -> "code_used"
-  BSECodeExpired -> "code_expired"
-  BSEReceiptInvalid -> "receipt_invalid"
-  BSEReceiptUsed -> "receipt_used"
-  BSEInternal -> "internal"
+instance TextEncoding BadgeServiceErrorCode where
+  textEncode = \case
+    BSEBadRequest -> "bad_request"
+    BSEUnsupportedVersion -> "unsupported_version"
+    BSEUnknownPurchaseKey -> "unknown_purchase_key"
+    BSEUnknownOfferId -> "unknown_offer_id"
+    BSEOfferDisabled -> "offer_disabled"
+    BSEOfferMismatch -> "offer_mismatch"
+    BSEProductUnavailable -> "product_unavailable"
+    BSEPaymentNotEntitled -> "payment_not_entitled"
+    BSEPaymentPending -> "payment_pending"
+    BSEProviderUnavailable -> "provider_unavailable"
+    BSERateLimited -> "rate_limited"
+    BSECodeInvalid -> "code_invalid"
+    BSECodeUsed -> "code_used"
+    BSECodeExpired -> "code_expired"
+    BSEReceiptInvalid -> "receipt_invalid"
+    BSEReceiptUsed -> "receipt_used"
+    BSEInternal -> "internal"
+    BSEUnknown t -> t
+  textDecode s = Just $ case s of
+    "bad_request" -> BSEBadRequest
+    "unsupported_version" -> BSEUnsupportedVersion
+    "unknown_purchase_key" -> BSEUnknownPurchaseKey
+    "unknown_offer_id" -> BSEUnknownOfferId
+    "offer_disabled" -> BSEOfferDisabled
+    "offer_mismatch" -> BSEOfferMismatch
+    "product_unavailable" -> BSEProductUnavailable
+    "payment_not_entitled" -> BSEPaymentNotEntitled
+    "payment_pending" -> BSEPaymentPending
+    "provider_unavailable" -> BSEProviderUnavailable
+    "rate_limited" -> BSERateLimited
+    "code_invalid" -> BSECodeInvalid
+    "code_used" -> BSECodeUsed
+    "code_expired" -> BSECodeExpired
+    "receipt_invalid" -> BSEReceiptInvalid
+    "receipt_used" -> BSEReceiptUsed
+    "internal" -> BSEInternal
+    t -> BSEUnknown t
 
-instance J.ToJSON BadgeServiceErrorCode where
-  toJSON = J.String . badgeServiceErrorCodeText
-  toEncoding = JE.text . badgeServiceErrorCodeText
+instance ToJSON BadgeServiceErrorCode where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
 
-instance J.FromJSON BadgeServiceErrorCode where
-  parseJSON = J.withText "BadgeServiceErrorCode" $ \case
-    "bad_request" -> pure BSEBadRequest
-    "unsupported_version" -> pure BSEUnsupportedVersion
-    "unknown_purchase_key" -> pure BSEUnknownPurchaseKey
-    "unknown_offer_id" -> pure BSEUnknownOfferId
-    "offer_disabled" -> pure BSEOfferDisabled
-    "offer_mismatch" -> pure BSEOfferMismatch
-    "product_unavailable" -> pure BSEProductUnavailable
-    "payment_not_entitled" -> pure BSEPaymentNotEntitled
-    "payment_pending" -> pure BSEPaymentPending
-    "provider_unavailable" -> pure BSEProviderUnavailable
-    "rate_limited" -> pure BSERateLimited
-    "code_invalid" -> pure BSECodeInvalid
-    "code_used" -> pure BSECodeUsed
-    "code_expired" -> pure BSECodeExpired
-    "receipt_invalid" -> pure BSEReceiptInvalid
-    "receipt_used" -> pure BSEReceiptUsed
-    "internal" -> pure BSEInternal
-    t -> fail $ "unknown BadgeServiceErrorCode: " <> T.unpack t
+instance FromJSON BadgeServiceErrorCode where
+  parseJSON = textParseJSON "BadgeServiceErrorCode"
