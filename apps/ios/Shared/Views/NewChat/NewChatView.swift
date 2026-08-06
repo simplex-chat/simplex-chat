@@ -427,18 +427,12 @@ private struct ActiveProfilePicker: View {
                                 profileSwitchStatus = .idle
                                 dismiss()
                             }
-                        } else {
-                            // Nothing changed, so just release the status, which otherwise
-                            // latches the picker behind a spinner with hit testing off.
-                            // incognitoEnabled is the app-wide default: writing it here
-                            // would mark the invitation as used.
-                            await MainActor.run { profileSwitchStatus = .idle }
                         }
                     } catch {
+                        profileSwitchStatus = .idle
+                        incognitoEnabled = !incognito
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
                         await MainActor.run {
-                            profileSwitchStatus = .idle
-                            incognitoEnabled = !incognito
                             showErrorAlert(error, NSLocalizedString("Error changing to incognito!", comment: ""))
                         }
                     }
@@ -485,16 +479,6 @@ private struct ActiveProfilePicker: View {
                                     )
                                 }
                             }
-                        } else {
-                            // Nothing moved, so don't switch or dismiss. Reset the status,
-                            // and the selection as the catch below does - otherwise the
-                            // profile keeps the checkmark and tapping it does nothing.
-                            await MainActor.run {
-                                profileSwitchStatus = .idle
-                                if let currentUser = chatModel.currentUser {
-                                    selectedProfile = currentUser
-                                }
-                            }
                         }
                     } catch {
                         await MainActor.run {
@@ -523,13 +507,13 @@ private struct ActiveProfilePicker: View {
     }
 
 
-    // switchingProfileByTimeout latches half a second late, to avoid spinner flicker, but
-    // input must be blocked from the start or a second tap starts a competing switch.
+    // The row must be dead from the moment work starts: switchingProfileByTimeout only
+    // latches half a second later, to keep the spinner from flickering.
     private var busy: Bool { creatingProfile || switchingProfileByTimeout || profileSwitchStatus != .idle }
 
     @ViewBuilder private func viewBody() -> some View {
         profilePicker()
-            .allowsHitTesting(!busy)
+            .allowsHitTesting(!switchingProfileByTimeout)
             .modifier(ThemedBackground(grouped: true))
             .overlay {
                 if switchingProfileByTimeout {

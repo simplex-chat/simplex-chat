@@ -42,10 +42,9 @@ fun ComposeContextProfilePickerView(
   val incognitoDefault = chatModel.controller.appPrefs.incognito.get()
   val users = chatModel.users.map { it.user }.filter { u -> u.activeUser || !u.hidden }
   val listExpanded = remember { mutableStateOf(false) }
-  // Not rememberSaveable: process death would skip the resetting finally and strand it true
-  val changingProfile = remember { mutableStateOf(false) }
-  // Creating counts as busy until the invitation has moved, which is after the form closes
-  val busy = changingProfile.value || chatModel.creatingProfileForInvitation.value
+  // Stays set until the invitation has been moved onto the new profile, which is after
+  // the form has closed and this picker is interactive again
+  val busy = chatModel.creatingProfileForInvitation.value
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val isVisible = remember { mutableStateOf(false) }
@@ -84,52 +83,45 @@ fun ComposeContextProfilePickerView(
   }
 
   suspend fun changeProfileTo(newUser: User) {
-    changingProfile.value = true
-    try {
-      var chatMoved = false
-      if (chat.chatInfo is ChatInfo.Direct) {
-        val updatedContact = chatModel.controller.apiChangePreparedContactUser(rhId, chat.chatInfo.contact.contactId, newUser.userId)
-        if (updatedContact != null) {
-          selectedUser.value = newUser
-          chatModel.controller.appPrefs.incognito.set(false)
-          listExpanded.value = false
-          chatModel.chatsContext.updateContact(rhId, updatedContact)
-          chatMoved = true
-        }
-      } else if (chat.chatInfo is ChatInfo.Group) {
-        val updatedGroup = chatModel.controller.apiChangePreparedGroupUser(rhId, chat.chatInfo.groupInfo.groupId, newUser.userId)
-        if (updatedGroup != null) {
-          selectedUser.value = newUser
-          chatModel.controller.appPrefs.incognito.set(false)
-          listExpanded.value = false
-          chatModel.chatsContext.updateGroup(rhId, updatedGroup)
-          chatMoved = true
-        }
+    var chatMoved = false
+    if (chat.chatInfo is ChatInfo.Direct) {
+      val updatedContact = chatModel.controller.apiChangePreparedContactUser(rhId, chat.chatInfo.contact.contactId, newUser.userId)
+      if (updatedContact != null) {
+        selectedUser.value = newUser
+        chatModel.controller.appPrefs.incognito.set(false)
+        listExpanded.value = false
+        chatModel.chatsContext.updateContact(rhId, updatedContact)
+        chatMoved = true
       }
-      // Only switch if the chat moved, or the user ends up in another profile with the
-      // invitation left behind. apiChangePrepared*User reports the failure itself.
-      if (chatMoved) {
-        chatModel.controller.changeActiveUser_(
-          rhId = newUser.remoteHostId,
-          toUserId = newUser.userId,
-          viewPwd = null,
-          keepingChatId = chat.id
+    } else if (chat.chatInfo is ChatInfo.Group) {
+      val updatedGroup = chatModel.controller.apiChangePreparedGroupUser(rhId, chat.chatInfo.groupInfo.groupId, newUser.userId)
+      if (updatedGroup != null) {
+        selectedUser.value = newUser
+        chatModel.controller.appPrefs.incognito.set(false)
+        listExpanded.value = false
+        chatModel.chatsContext.updateGroup(rhId, updatedGroup)
+        chatMoved = true
+      }
+    }
+    // Only switch if the chat moved, or the user ends up in another profile with the
+    // invitation left behind. apiChangePrepared*User reports the failure itself.
+    if (chatMoved) {
+      chatModel.controller.changeActiveUser_(
+        rhId = newUser.remoteHostId,
+        toUserId = newUser.userId,
+        viewPwd = null,
+        keepingChatId = chat.id
+      )
+      if (chatModel.currentUser.value?.userId != newUser.userId) {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.switching_profile_error_title),
+          String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
         )
-        if (chatModel.currentUser.value?.userId != newUser.userId) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.switching_profile_error_title),
-            String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
-          )
-        }
       }
-    } finally {
-      changingProfile.value = false
     }
   }
 
   fun changeProfile(newUser: User) {
-    // Also here, not just in changeProfileTo: withApi dispatches, leaving a gap after the tap
-    changingProfile.value = true
     withApi { changeProfileTo(newUser) }
   }
 

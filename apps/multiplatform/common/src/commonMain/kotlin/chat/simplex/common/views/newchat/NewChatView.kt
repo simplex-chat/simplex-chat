@@ -359,11 +359,7 @@ fun ActiveProfilePicker(
         }
       }
 
-      // Only if still the top: the call above can wait indefinitely on the retry alert
-      // while back stays enabled, and an unconditional close() would pop the wrong screen.
-      if (ModalManager.start.isLastModalOpenNotClosing(ModalViewId.ACTIVE_PROFILE_PICKER)) {
-        close()
-      }
+      close()
     } finally {
       switchingProfile.value = false
     }
@@ -576,7 +572,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
           end = 16.dp
         ),
         click = {
-          ModalManager.start.showCustomModal(keyboardCoversBar = false, id = ModalViewId.ACTIVE_PROFILE_PICKER) { close ->
+          ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },
