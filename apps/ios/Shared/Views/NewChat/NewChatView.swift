@@ -859,8 +859,6 @@ enum ConnectTarget {
 func strConnectTarget(_ str: String) -> ConnectTarget? {
     let parsedMd = parseSimpleXMarkdown(str)
     let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
-    // showText is set only for a link written as a markdown hyperlink, whose text is the whole
-    // "[label](link)" source rather than the link - connect via the parsed uri in that case
     return if links.count == 1, case let .simplexLink(showText, linkType, simplexUri, smpHosts) = links[0].format {
         .link(text: showText != nil ? simplexUri : links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
     } else if links.isEmpty,

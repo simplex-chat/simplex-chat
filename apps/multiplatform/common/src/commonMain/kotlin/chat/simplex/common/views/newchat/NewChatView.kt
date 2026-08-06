@@ -836,8 +836,6 @@ fun strConnectTarget(str: String): ConnectTarget? {
   val links = parsedMd.filter { it.format?.isSimplexLink ?: false }
   if (links.size == 1) {
     val fmt = links[0].format as Format.SimplexLink
-    // showText is set only for a link written as a markdown hyperlink, whose text is the whole
-    // "[label](link)" source rather than the link - connect via the parsed uri in that case
     val text = if (fmt.showText != null) fmt.simplexUri else links[0].text
     return ConnectTarget.Link(text, fmt.linkType, fmt.simplexLinkText)
   }
