@@ -40,6 +40,8 @@ library
       Simplex.Chat.AppSettings
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
+      Simplex.Chat.Badges.Service
+      Simplex.Chat.Badges.Store
       Simplex.Chat.Names
       Simplex.Chat.Call
       Simplex.Chat.Controller
