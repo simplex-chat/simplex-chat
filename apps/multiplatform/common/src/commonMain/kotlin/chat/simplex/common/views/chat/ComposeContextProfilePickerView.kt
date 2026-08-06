@@ -19,6 +19,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.createProfileForInvitation
+import chat.simplex.common.views.creatingProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.IncognitoOptionImage
 import chat.simplex.common.views.usersettings.IncognitoView
@@ -41,8 +42,11 @@ fun ComposeContextProfilePickerView(
   val incognitoDefault = chatModel.controller.appPrefs.incognito.get()
   val users = chatModel.users.map { it.user }.filter { u -> u.activeUser || !u.hidden }
   val listExpanded = remember { mutableStateOf(false) }
-  // Not rememberSaveable, and hoisted out of the lazy item: either strands it true.
-  val creatingProfile = remember { mutableStateOf(false) }
+  // Not rememberSaveable: process death would skip the resetting finally and strand it true.
+  val changingProfile = remember { mutableStateOf(false) }
+  // Creating a profile keeps the rows disabled too - the reassignment runs after the form
+  // closes, and until it has, picking anything else moves the invitation twice.
+  val busy = changingProfile.value || creatingProfileForInvitation.value
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val isVisible = remember { mutableStateOf(false) }
@@ -80,8 +84,9 @@ fun ComposeContextProfilePickerView(
     }
   }
 
-  fun changeProfile(newUser: User) {
-    withApi {
+  suspend fun changeProfileTo(newUser: User) {
+    changingProfile.value = true
+    try {
       var chatMoved = false
       if (chat.chatInfo is ChatInfo.Direct) {
         val updatedContact = chatModel.controller.apiChangePreparedContactUser(rhId, chat.chatInfo.contact.contactId, newUser.userId)
@@ -104,6 +109,7 @@ fun ComposeContextProfilePickerView(
       }
       // Only switch profile if the chat was actually moved to it, otherwise the user
       // would end up in another profile with the invitation left behind in this one.
+      // apiChangePreparedContactUser/apiChangePreparedGroupUser report the failure.
       if (chatMoved) {
         chatModel.controller.changeActiveUser_(
           rhId = newUser.remoteHostId,
@@ -111,19 +117,29 @@ fun ComposeContextProfilePickerView(
           viewPwd = null,
           keepingChatId = chat.id
         )
-        // Reopen the chat under the new profile. keepingChatId only preserves its
-        // place in the reloaded list, so without this the switch lands on the chat
-        // list of the new profile rather than the invitation it was chosen for.
-        // The id is unchanged by the reassignment - it is the contact/group id.
-        chatModel.chatId.value = chat.id
         if (chatModel.currentUser.value?.userId != newUser.userId) {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.switching_profile_error_title),
             String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
           )
+        } else {
+          // Reopen the chat under the new profile - only once the switch is known to
+          // have happened, or this would point the chat view at a chat that now belongs
+          // to a different profile, defeating the guard in updateChats that clears it.
+          // The id is unchanged by the reassignment - it is the contact/group id.
+          chatModel.chatId.value = chat.id
         }
       }
+    } finally {
+      changingProfile.value = false
     }
+  }
+
+  fun changeProfile(newUser: User) {
+    // Also set here, not only in changeProfileTo: withApi dispatches, so between the tap
+    // and the coroutine starting the row would still be enabled.
+    changingProfile.value = true
+    withApi { changeProfileTo(newUser) }
   }
 
   fun showCantChangeProfileAlert() {
@@ -139,7 +155,7 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-        .clickable(onClick = {
+        .clickable(enabled = !busy, onClick = {
           if (!chat.chatInfo.profileChangeProhibited) {
             if (selectedUser.value.userId == user.userId) {
               if (!incognitoDefault) {
@@ -182,7 +198,7 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-        .clickable(onClick = {
+        .clickable(enabled = !busy, onClick = {
           if (!chat.chatInfo.profileChangeProhibited) {
             if (incognitoDefault) {
               listExpanded.value = !listExpanded.value
@@ -242,7 +258,15 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-        .clickable(onClick = { createProfileForInvitation(rhId, creatingProfile) { changeProfile(it) } })
+        // ModalManager.end, like the incognito info modal above: the center manager nulls
+        // chatId on desktop, which closes the very chat this picker belongs to.
+        .clickable(enabled = !busy, onClick = {
+          if (!chat.chatInfo.profileChangeProhibited) {
+            createProfileForInvitation(rhId, ModalManager.end) { changeProfileTo(it) }
+          } else {
+            showCantChangeProfileAlert()
+          }
+        })
         .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically

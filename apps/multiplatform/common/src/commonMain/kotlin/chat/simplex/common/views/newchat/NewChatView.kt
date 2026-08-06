@@ -40,6 +40,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.createProfileForInvitation
+import chat.simplex.common.views.creatingProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.BuildConfigCommon
@@ -294,8 +295,6 @@ fun ActiveProfilePicker(
   showIncognito: Boolean = true
 ) {
   val switchingProfile = remember { mutableStateOf(false) }
-  // Not rememberSaveable, and hoisted out of the lazy item: either strands it true.
-  val creatingProfile = remember { mutableStateOf(false) }
   val incognito = remember {
     chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
   }
@@ -308,67 +307,80 @@ fun ActiveProfilePicker(
 
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
 
-  LaunchedEffect(switchingProfile.value) {
-    progressByTimeout = if (switchingProfile.value) {
+  // Creating a profile for this invitation keeps the picker busy until the connection has
+  // been moved onto it, not just until the profile exists.
+  val busy = switchingProfile.value || creatingProfileForInvitation.value
+
+  LaunchedEffect(busy) {
+    progressByTimeout = if (busy) {
       delay(500)
-      switchingProfile.value
+      busy
     } else {
       false
     }
   }
 
+  suspend fun selectProfileAsync(user: User) {
+    switchingProfile.value = true
+    try {
+      var updatedConn: PendingContactConnection? = null
+
+      if (contactConnection != null) {
+        updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
+        // The connection was not moved - apiChangeConnectionUser reports it. Leave the
+        // picker open instead of switching or dismissing: a profile just created for this
+        // invitation would otherwise be stranded with nothing pointing at it, and the
+        // connection needs the network here, so this is what happens when offline.
+        if (updatedConn == null) return
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
+          updateShownConnection(updatedConn)
+        }
+      }
+      // Set only once the connection is known to have moved, so a failed reassignment
+      // does not silently turn the app-wide incognito default off.
+      appPreferences.incognito.set(false)
+
+      controller.changeActiveUser_(
+        rhId = user.remoteHostId,
+        toUserId = user.userId,
+        viewPwd = if (user.hidden) searchTextOrPassword.value else null
+      )
+
+      if (chatModel.currentUser.value?.userId != user.userId) {
+        AlertManager.shared.showAlertMsg(generalGetString(
+          MR.strings.switching_profile_error_title),
+          String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+        )
+      }
+
+      if (updatedConn != null) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
+        }
+      }
+
+      close()
+    } finally {
+      switchingProfile.value = false
+    }
+  }
+
   fun selectProfile(user: User) {
     switchingProfile.value = true
-    withApi {
-      try {
-        appPreferences.incognito.set(false)
-        var updatedConn: PendingContactConnection? = null;
-
-        if (contactConnection != null) {
-          updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
-          if (updatedConn != null) {
-            withContext(Dispatchers.Main) {
-              chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
-              updateShownConnection(updatedConn)
-            }
-          }
-        }
-
-        if ((contactConnection != null && updatedConn != null) || contactConnection == null) {
-          controller.changeActiveUser_(
-            rhId = user.remoteHostId,
-            toUserId = user.userId,
-            viewPwd = if (user.hidden) searchTextOrPassword.value else null
-          )
-
-          if (chatModel.currentUser.value?.userId != user.userId) {
-            AlertManager.shared.showAlertMsg(generalGetString(
-              MR.strings.switching_profile_error_title),
-              String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
-            )
-          }
-        }
-
-        if (updatedConn != null) {
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
-          }
-        }
-
-        close()
-      } finally {
-        switchingProfile.value = false
-      }
-    }
+    withApi { selectProfileAsync(user) }
   }
 
   @Composable
   fun NewProfileOption() {
     ProfilePickerOption(
       title = stringResource(MR.strings.users_add),
-      disabled = switchingProfile.value || creatingProfile.value,
+      disabled = busy,
       selected = false,
-      onSelected = { createProfileForInvitation(rhId, creatingProfile) { selectProfile(it) } },
+      // ModalManager.start, the pane this picker is itself shown in, like the incognito
+      // info modal below: the center manager renders the form in another pane on desktop,
+      // leaving this picker live beside it, and nulls chatId, closing any open chat.
+      onSelected = { createProfileForInvitation(rhId, ModalManager.start) { selectProfileAsync(it) } },
       image = {
         Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
           Icon(
@@ -388,7 +400,7 @@ fun ActiveProfilePicker(
 
     ProfilePickerOption(
       title = user.chatViewName,
-      disabled = switchingProfile.value || selected,
+      disabled = busy || selected,
       selected = selected,
       onSelected = { selectProfile(user) },
         image = { ProfileImage(size = 42.dp, image = user.image) },
@@ -399,11 +411,11 @@ fun ActiveProfilePicker(
   @Composable
   fun IncognitoUserOption() {
     ProfilePickerOption(
-      disabled = switchingProfile.value,
+      disabled = busy,
       title = stringResource(MR.strings.incognito),
       selected = incognito,
       onSelected = {
-        if (incognito || switchingProfile.value || contactConnection == null) return@ProfilePickerOption
+        if (incognito || busy || contactConnection == null) return@ProfilePickerOption
 
         switchingProfile.value = true
         withApi {
@@ -435,7 +447,7 @@ fun ActiveProfilePicker(
         .fillMaxSize()
         .alpha(if (progressByTimeout) 0.6f else 1f)
     ) {
-      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent(false)), userScrollEnabled = !switchingProfile.value) {
+      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent(false)), userScrollEnabled = !busy) {
         item {
           val oneHandUI = remember { appPrefs.oneHandUI.state }
           if (oneHandUI.value) {

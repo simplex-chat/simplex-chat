@@ -46,9 +46,11 @@ import chat.simplex.common.views.usersettings.DeleteImageButton
 import chat.simplex.common.views.usersettings.EditImageButton
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URI
 
 const val MAX_BIO_LENGTH_BYTES = 160
@@ -347,20 +349,35 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
+/** True while a profile is being created for an invitation and handed over to the picker
+ * that asked for it. Deliberately not remembered in either picker: on Android the picker's
+ * composition is disposed while the create-profile modal is on top of it, and comes back
+ * with every remembered flag reset - a per-picker flag would be released the moment the
+ * form opens, leaving the rows live during the reassignment. */
+val creatingProfileForInvitation = mutableStateOf(false)
+
 // Creates a profile for an invitation and hands it to onCreated, which moves the
 // invitation onto it. The profile is created *without* becoming active: the reassignment
 // APIs resolve the prepared chat or connection under the active user, so the profile that
-// owns the invitation has to stay active until onCreated has run.
-fun createProfileForInvitation(rhId: Long?, creating: MutableState<Boolean>, onCreated: (User) -> Unit) {
+// owns the invitation has to stay active until onCreated has run - which is also why
+// onCreated is suspending, so the in-flight flag covers the reassignment and not just the
+// creation.
+fun createProfileForInvitation(rhId: Long?, modalManager: ModalManager, onCreated: suspend (User) -> Unit) {
+  // Shown in the picker's own pane: ModalManager.center nulls chatId on desktop, which
+  // closes the chat the prepared invitation is in - and for the picker that is itself a
+  // start-pane modal, leaves the picker live beside the form.
   // Two taps before the modal renders would otherwise stack two modals sharing one id,
   // after which close() could dismiss the wrong one.
-  if (ModalManager.center.hasModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
-  ModalManager.center.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
+  if (modalManager.hasModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
+  modalManager.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
     CreateProfile { displayName, shortDescr, image ->
-      if (creating.value) return@CreateProfile
-      creating.value = true
+      if (creatingProfileForInvitation.value) return@CreateProfile
+      creatingProfileForInvitation.value = true
       withBGApi {
         try {
+          // The reassignment in onCreated resolves the invitation under whatever is active
+          // then, so remember what owns it now and check nothing moved underneath us.
+          val ownerUserId = chatModel.currentUser.value?.userId
           val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
           val newUser = controller.apiCreateProfileKeepingActive(rhId, profile) ?: return@withBGApi
           if (newUser.activeUser) {
@@ -374,17 +391,32 @@ fun createProfileForInvitation(rhId: Long?, creating: MutableState<Boolean>, onC
           }
           // Keep chatModel.users current even if onCreated's reassignment fails - it only
           // refreshes when it actually switches. listUsers throws and withBGApi does not
-          // catch, so this cosmetic refresh is guarded.
-          runCatching { controller.listUsers(rhId) }.getOrNull()?.let { updatedUsers ->
-            chatModel.users.clear()
-            chatModel.users.addAll(updatedUsers)
+          // catch, so this cosmetic refresh is guarded; and it is applied on the main
+          // thread, where the receiver loop also updates this list.
+          if (chatModel.remoteHostId() == rhId) {
+            runCatching { controller.listUsers(rhId) }.getOrNull()?.let { updatedUsers ->
+              withContext(Dispatchers.Main) {
+                chatModel.users.clear()
+                chatModel.users.addAll(updatedUsers)
+              }
+            }
           }
-          if (ModalManager.center.isLastModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) {
-            close()
+          // A notification tap or a remote host switch can change the active user or tear
+          // the form down while the profile is being created. Reassigning after either
+          // would resolve the invitation under the wrong profile, or move it under a
+          // screen the user has already left, so stop with the profile created.
+          if (
+            chatModel.currentUser.value?.userId != ownerUserId ||
+            chatModel.remoteHostId() != rhId ||
+            !modalManager.isLastModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)
+          ) {
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+            return@withBGApi
           }
+          close()
           onCreated(newUser)
         } finally {
-          creating.value = false
+          creatingProfileForInvitation.value = false
         }
       }
     }
