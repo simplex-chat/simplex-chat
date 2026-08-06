@@ -14,13 +14,14 @@ import Control.Monad
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Either (isLeft, isRight)
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote (remoteFilesFolder)
+import Simplex.Chat.Remote (remoteFileName, remoteFilesFolder)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -40,6 +41,13 @@ remoteTests = describe "Remote" $ do
         `shouldSatisfy` \case
           Right (StartRemoteHost Nothing (Just (RCCtrlAddress _ "Ethernet 2")) (Just 12345)) -> True
           _ -> False
+  describe "stored file name" $ do
+    it "rejects names with directory components" $ \_ ->
+      filter (isRight . remoteFileName) ["../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "", ".", ".."]
+        `shouldBe` []
+    it "accepts bare file names" $ \_ ->
+      filter (isLeft . remoteFileName) ["test.pdf", "test_1.pdf", ".hidden", "a b.tar.gz"]
+        `shouldBe` []
   xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests

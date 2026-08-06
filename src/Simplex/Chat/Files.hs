@@ -1,15 +1,28 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Simplex.Chat.Files where
+module Simplex.Chat.Files
+  ( SafeFileName,
+    safeFileName,
+    uniqueCombine,
+    getChatTempDirectory,
+    getDefaultFilesFolder,
+  )
+where
 
 import Simplex.Chat.Controller
 import Simplex.Messaging.Util (ifM)
-import System.FilePath (combine, splitExtensions)
+import System.FilePath (combine, makeValid, splitExtensions, takeFileName)
 import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getHomeDirectory, getTemporaryDirectory)
 
-uniqueCombine :: FilePath -> String -> IO FilePath
-uniqueCombine fPath fName = tryCombine (0 :: Int)
+-- | A file name with directory components removed, so combining it with a folder cannot escape that folder.
+newtype SafeFileName = SafeFileName String
+
+safeFileName :: String -> SafeFileName
+safeFileName = SafeFileName . makeValid . takeFileName
+
+uniqueCombine :: FilePath -> SafeFileName -> IO FilePath
+uniqueCombine fPath (SafeFileName fName) = tryCombine (0 :: Int)
   where
     tryCombine n =
       let (name, ext) = splitExtensions fName

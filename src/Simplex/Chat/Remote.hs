@@ -65,10 +65,10 @@ import Simplex.Messaging.Util
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..), RCVerifiedInvitation (..), verifySignedInvitation)
 import Simplex.RemoteControl.Types
-import System.FilePath (takeFileName, (</>))
+import System.FilePath (takeDirectory, takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Concurrent (forkIO)
-import UnliftIO.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, renameFile)
+import UnliftIO.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, renameFile)
 
 remoteFilesFolder :: String
 remoteFilesFolder = "simplex_v1_files"
@@ -361,7 +361,7 @@ storeRemoteFile rhId encrypted_ localPath = do
     encryptLocalFile = do
       tmpDir <- lift getChatTempDirectory
       createDirectoryIfMissing True tmpDir
-      tmpFile <- liftIO $ tmpDir `uniqueCombine` takeFileName localPath
+      tmpFile <- liftIO $ tmpDir `uniqueCombine` safeFileName localPath
       cfArgs <- atomically . CF.randomArgs =<< asks random
       liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
       pure $ CryptoFile tmpFile $ Just cfArgs
@@ -574,9 +574,20 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
       Nothing -> storeFileTo =<< getDefaultFilesFolder
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFileTo dir = liftIO . tryAllErrors' $ do
-      filePath <- liftIO $ dir `uniqueCombine` fileName
+      safeName <- either throwError pure $ remoteFileName fileName
+      filePath <- liftIO $ dir `uniqueCombine` safeName
+      -- unreachable while safeName has no directory components - guards against a future change to either
+      inDir <- liftIO $ (==) <$> canonicalizePath dir <*> canonicalizePath (takeDirectory filePath)
+      unless inDir $ throwError $ RPEInvalidBody "file path outside of files folder"
       receiveEncryptedFile rfKN getChunk fileSize fileDigest filePath
       pure filePath
+
+-- The controller only ever sends a bare file name (see storeRemoteFile), so a path is a protocol violation.
+remoteFileName :: FilePath -> Either RemoteProtocolError SafeFileName
+remoteFileName fName
+  | fName /= takeFileName fName || fName `elem` (["", ".", ".."] :: [FilePath]) =
+      Left $ RPEInvalidBody "invalid file name"
+  | otherwise = Right $ safeFileName fName
 
 handleGetFile :: User -> RemoteFile -> Respond -> CM ()
 handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
