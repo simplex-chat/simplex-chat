@@ -178,7 +178,7 @@ chatCommandsDocsData =
       [ ("ShowActiveUser", [], "Get active user profile.", ["CRActiveUser", "CRChatCmdError"], [], Nothing, "/user"),
         ( "CreateActiveUser",
           [],
-          "Create new user profile.",
+          "Create new user profile. The new profile becomes the active one, unless keepActiveUser is set - in that case the current profile stays active. The response carries the created profile either way, so with keepActiveUser it is not the active profile.",
           ["CRActiveUser", "CRChatCmdError"],
           [TD "CEUserExists" "User or contact with this name already exists", TD "CEInvalidDisplayName" "Invalid user display name"],
           Nothing,
