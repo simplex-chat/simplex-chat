@@ -428,13 +428,13 @@ private struct ActiveProfilePicker: View {
                                 dismiss()
                             }
                         } else {
-                            // Same latch as in the selectedProfile handler below: without
-                            // this, a nil result leaves profileSwitchStatus stuck and the
-                            // picker dimmed behind a spinner with hit testing off.
-                            await MainActor.run {
-                                profileSwitchStatus = .idle
-                                incognitoEnabled = !incognito
-                            }
+                            // Only reachable with no connection - apiSetConnectionIncognito
+                            // throws rather than returning nil. Nothing was changed, so just
+                            // release the status, which otherwise stays .switchingIncognito
+                            // and latches the picker behind a spinner with hit testing off.
+                            // incognitoEnabled is left alone: it is bound to the app-wide
+                            // default, and writing it marks the invitation as used.
+                            await MainActor.run { profileSwitchStatus = .idle }
                         }
                     } catch {
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
@@ -529,9 +529,15 @@ private struct ActiveProfilePicker: View {
     }
 
 
+    // switchingProfileByTimeout only latches half a second after a switch starts, to keep
+    // the spinner from flickering on fast switches - but input has to be blocked from the
+    // moment the work begins, or a second tap inside that window starts a competing
+    // connection change and user switch.
+    private var busy: Bool { creatingProfile || switchingProfileByTimeout || profileSwitchStatus != .idle }
+
     @ViewBuilder private func viewBody() -> some View {
         profilePicker()
-            .allowsHitTesting(!switchingProfileByTimeout)
+            .allowsHitTesting(!busy)
             .modifier(ThemedBackground(grouped: true))
             .overlay {
                 if switchingProfileByTimeout {
@@ -598,7 +604,7 @@ private struct ActiveProfilePicker: View {
         // profileSwitchStatus, not just switchingProfileByTimeout: that only latches half
         // a second later, and creatingProfile is cleared as soon as the switch is handed
         // to the selectedProfile handler - leaving the row live in between.
-        .disabled(creatingProfile || switchingProfileByTimeout || profileSwitchStatus != .idle)
+        .disabled(busy)
     }
 
     // Creates a profile for this invitation without activating it, then routes through
@@ -628,19 +634,24 @@ private struct ActiveProfilePicker: View {
             // creating profile" handler.
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
-            } catch {}
-            // Not the view's own `alert`: it is bound to a view that is presenting this
-            // form as a sheet, and UIKit refuses an alert on a controller that already
-            // has one presented - it would never be shown. showAlert goes to the top view
-            // controller, so it appears over the form, which stays open as on any other
-            // failure.
+            } catch {
+                logger.error("changeActiveUserAsync_ error: \(responseError(error))")
+            }
+            // Dismiss the form, as the compose picker does on the same failure: the app is
+            // now showing a different profile and the connection stayed with the previous
+            // one, so there is nothing left to do here and a second attempt would fail the
+            // same way.
             await MainActor.run {
-                // The app has switched to the new profile, so make the picker agree with
-                // it rather than leaving the checkmark on a profile that is no longer
-                // active. The connection stayed with the previous profile and cannot be
-                // moved from here; the alert says so.
+                showAddProfile = false
+                // Make the picker agree with the profile that is now active rather than
+                // leaving the checkmark on one that is not.
                 profileSwitchStatus = .idle
                 selectedProfile = newUser
+            }
+            // getTopViewController() keeps returning the sheet until its dismissal
+            // transition ends, and an alert presented on a controller being dismissed is
+            // dropped - so let it settle first.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             }
             return
