@@ -27,4 +27,4 @@ simplex-badge-service --help
 
 - default (no `--run-cli`): background service mode, no interactive terminal.
 - `--run-cli`: interactive CLI that also processes service requests (mirrors `simplex-directory-service --run-cli`).
-- `--no-address`: skip address creation on start-up (useful when the address was created out of band, for example in tests).
+- `--no-address`: skip address creation on start-up (for operators who provision the address themselves).

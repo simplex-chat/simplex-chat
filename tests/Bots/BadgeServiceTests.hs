@@ -55,7 +55,6 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} =
 withBadgeService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()) -> IO ()
 withBadgeService ps test = do
   let opts = mkBadgeServiceOpts ps
-  -- Create the bot database with no address.
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
   runBadgeService testCfg opts (pure ())
@@ -66,7 +65,7 @@ withBadgeService ps test = do
     bs ##> "/sa"
     (sLink, fullLink) <- getContactLinks bs False
     bs <## "auto_accept off"
-    ("rk=" `isInfixOf` fullLink) `shouldBe` True
+    ("&rk=" `isInfixOf` fullLink) `shouldBe` True
     pure sLink
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
   runBadgeService testCfg opts $

@@ -227,8 +227,6 @@ data StatementDebitType
   | SDUnknown {tag :: Text, json :: J.Object}
   deriving (Show)
 
--- Wire form is snake_case per docs/protocol/badges-rpc.schema.json.
--- Written by hand because enumJSON $ dropPrefix "BSE" would emit camelCase.
 data BadgeServiceErrorCode
   = BSEBadRequest
   | BSEUnsupportedVersion
@@ -250,6 +248,8 @@ data BadgeServiceErrorCode
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
 
+-- Wire form is snake_case per docs/protocol/badges-rpc.schema.json.
+-- Written by hand because enumJSON $ dropPrefix "BSE" would emit camelCase.
 instance TextEncoding BadgeServiceErrorCode where
   textEncode = \case
     BSEBadRequest -> "bad_request"
