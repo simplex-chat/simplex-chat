@@ -4005,8 +4005,9 @@ testCreateUserKeepingActiveUser = testChat2 aliceProfile bobProfile test
       -- ... and the active user is unchanged, with no switch back needed
       bob ##> "/u"
       showActiveUser bob "bob (Bob)"
-      -- the new user's own record is not active either - the clients branch on this
-      -- field of the created user, and it is listed last, having never been activated
+      -- the new user's record is not active either, which is the field both clients
+      -- branch on to detect a core that ignored the flag; /u only covers the TVar.
+      -- (/users sorts by display name, so the order here says nothing about active_order.)
       bob ##> "/users"
       bob <## "bob (Bob) (active)"
       bob <## "robert"

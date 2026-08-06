@@ -121,16 +121,17 @@ Uses the existing `users_add` ("Add profile") string — **zero new translation 
   the row must be emitted **last** to render at the top. Surface 2's is not reversed, and
   the row must sit **outside** the `activeProfile != null` branch or it disappears
   whenever search text filters the active profile out.
-- **The modal must open in the picker's own pane.** `ModalManager.center.showCustomModal`
-  sets `ChatModel.chatId = null` (`ModalView.kt`), and on desktop the chat view **is** the
-  centre pane — so opening the form from the compose picker closed the very invitation it
-  was for, taking the typed compose draft with it, and only the success path reopened it.
-  From surface 2, itself a start-pane modal, the form landed in another pane with the
-  picker still live beside it (the scrim at `App.kt` is suppressed while a centre modal is
-  open) — and `apiChangeConnectionUser` recreates the connection, so a row tapped
-  meanwhile invalidates the `pccConnId` the form is about to use. Pass the manager in:
-  `end` for surface 1, `start` for surface 2, matching the incognito modal each already
-  opens.
+- **The modal must open in `ModalManager.fullscreen`.** Every other placement is wrong on
+  desktop, where the four managers are four panes: `center` sets `ChatModel.chatId = null`
+  (`ModalView.kt`) and the chat view **is** the centre pane, so the form closed the very
+  invitation it was for, taking the typed compose draft with it, and only the success path
+  reopened it. `end` leaves the compose picker live in the pane beside the form — and
+  `apiChangeConnectionUser` recreates the connection, so a row tapped meanwhile
+  invalidates the `pccConnId` the form is about to use — and its
+  `desktopExpandWindowToWidth` widens the window for good. `start` works for surface 2 but
+  disposes that picker, losing its search text. `fullscreen` is an opaque `Surface` over
+  every pane: no picker can be operated while the form is up, none is torn down, and
+  nothing else moves. On Android all four are the same manager regardless.
 - **`keepingChatId` does not open the chat**, it only preserves its place in the reloaded
   list. It does not need to: the earlier claim that you land on the chat list without an
   explicit `chatModel.chatId.value = chat.id` was the `center` placement above, not
@@ -145,10 +146,14 @@ Uses the existing `users_add` ("Add profile") string — **zero new translation 
   skips the resetting `finally`) and a lazy item is disposed by scrolling — but so is the
   whole picker: on Android every `ModalManager` placement shares one stack and
   `showInView` renders only the top entry, so pushing the form disposes surface 2's
-  picker and it returns with every `remember` reset. Hence one top-level
-  `creatingProfileForInvitation`, and a **suspending** `onCreated` so the flag covers the
-  reassignment rather than just the creation — `changeProfile`/`selectProfile` only
-  *launch* it.
+  picker (a modal) and it returns with every `remember` reset. Surface 1's picker is not
+  a modal and survives on both platforms; the flag is shared anyway. Hence
+  `ChatModel.creatingProfileForInvitation` — in the model, not a top-level `val`, so it
+  is not first created inside a composition — and a **suspending** `onCreated` so the flag
+  covers the reassignment rather than just the creation (`changeProfile`/`selectProfile`
+  only *launch* it). Hand `onCreated` back to `Dispatchers.Main` before calling it: it
+  reassigns and switches, and every structure it touches is also written by the receiver
+  loop on Main.
 - **Re-check the active user and the host before reassigning.** The reassignment resolves
   the invitation under whatever is active when it runs, and nothing holds
   `changingActiveUserMutex` across this flow: a notification tap
