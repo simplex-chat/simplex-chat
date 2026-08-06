@@ -117,12 +117,9 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
-  /** [isLastModalOpen], except that a modal already dismissed and only waiting out its
-   * close animation does not count - [closeModal] leaves it in [modalViews] and stages
-   * its index in [toRemove]. A caller deciding whether to close on "is my modal still the
-   * last one?" needs this, or a back-tap during a long operation pops the screen beneath
-   * as well. Kept separate because [isLastModalOpen] also gates secondary chat teardown,
-   * which relies on the existing behaviour. */
+  /** [isLastModalOpen], but a modal already dismissed and only waiting out its close
+   * animation does not count - [closeModal] leaves it in [modalViews] until then. Separate
+   * from [isLastModalOpen], which gates secondary chat teardown on the existing behaviour. */
   fun isLastModalOpenNotClosing(id: ModalViewId): Boolean {
     var i = modalViews.size - 1
     while (i >= 0 && i in toRemove) i--

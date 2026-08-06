@@ -54,7 +54,7 @@ struct ContextProfilePickerView: View {
             NavigationView {
                 CreateProfile(onSubmit: { displayName, shortDescr, image in
                     try await createProfileForChat(displayName, shortDescr, image)
-                })
+                }, submitting: creatingProfile)
             }
             .interactiveDismissDisabled(creatingProfile)
         }

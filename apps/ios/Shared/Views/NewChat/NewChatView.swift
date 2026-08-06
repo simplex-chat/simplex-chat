@@ -697,7 +697,7 @@ private struct ActiveProfilePicker: View {
             NavigationView {
                 CreateProfile(onSubmit: { displayName, shortDescr, image in
                     try await createProfileForConnection(displayName, shortDescr, image)
-                })
+                }, submitting: creatingProfile)
             }
             // The submit runs in an unstructured Task that SwiftUI does not cancel, so a
             // swipe-to-dismiss mid-create would still create the profile and switch to it
