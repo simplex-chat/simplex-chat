@@ -121,22 +121,55 @@ Uses the existing `users_add` ("Add profile") string — **zero new translation 
   the row must be emitted **last** to render at the top. Surface 2's is not reversed, and
   the row must sit **outside** the `activeProfile != null` branch or it disappears
   whenever search text filters the active profile out.
+- **The modal must open in the picker's own pane.** `ModalManager.center.showCustomModal`
+  sets `ChatModel.chatId = null` (`ModalView.kt`), and on desktop the chat view **is** the
+  centre pane — so opening the form from the compose picker closed the very invitation it
+  was for, taking the typed compose draft with it, and only the success path reopened it.
+  From surface 2, itself a start-pane modal, the form landed in another pane with the
+  picker still live beside it (the scrim at `App.kt` is suppressed while a centre modal is
+  open) — and `apiChangeConnectionUser` recreates the connection, so a row tapped
+  meanwhile invalidates the `pccConnId` the form is about to use. Pass the manager in:
+  `end` for surface 1, `start` for surface 2, matching the incognito modal each already
+  opens.
 - **`keepingChatId` does not open the chat**, it only preserves its place in the reloaded
-  list. Set `chatModel.chatId.value = chat.id` after switching, or you land on the new
-  profile's chat list instead of the invitation. The *old* `chat.id` stays valid because
-  the reassignment updates in place — `updatePreparedContactUser` runs
+  list. It does not need to: the earlier claim that you land on the chat list without an
+  explicit `chatModel.chatId.value = chat.id` was the `center` placement above, not
+  `keepingChatId`. Keep the assignment, but only once the switch is known to have
+  happened — `updateChats` deliberately clears `chatId` when the id is absent from the
+  reloaded list. The *old* `chat.id` stays valid because the reassignment updates in
+  place — `updatePreparedContactUser` runs
   `UPDATE contacts SET user_id = ? WHERE contact_id = ?` and re-reads the same id, and the
   group path does the same for `group_id`. Do not "fix" this to use the returned chat.
-- **In-flight flags must not be `rememberSaveable`, nor scoped to a lazy item** — either
-  strands them `true` (process death skips the resetting `finally`; scrolling disposes
-  the item) and the row dies permanently.
+- **In-flight flags must not live in the picker's composition at all**, and must not be
+  released when the profile exists. `rememberSaveable` strands them `true` (process death
+  skips the resetting `finally`) and a lazy item is disposed by scrolling — but so is the
+  whole picker: on Android every `ModalManager` placement shares one stack and
+  `showInView` renders only the top entry, so pushing the form disposes surface 2's
+  picker and it returns with every `remember` reset. Hence one top-level
+  `creatingProfileForInvitation`, and a **suspending** `onCreated` so the flag covers the
+  reassignment rather than just the creation — `changeProfile`/`selectProfile` only
+  *launch* it.
+- **Re-check the active user and the host before reassigning.** The reassignment resolves
+  the invitation under whatever is active when it runs, and nothing holds
+  `changingActiveUserMutex` across this flow: a notification tap
+  (`NtfManager.acceptContactRequestAction`) switches the user from another dispatcher, and
+  a remote host connect/disconnect switches the host and closes modals.
 - **`listUsers` throws and `withBGApi` does not catch** (`wrapWithLogging` has no catch),
   so an exception after creation aborts silently. Use `runCatching` for the cosmetic
   refresh, and the safe `changeActiveUser` wrapper rather than `changeActiveUser_`.
 - **Create first, close only on success** — the shared `createUser` helper behind both
   wrappers shows its own alert and returns null, so dismissing first discards everything
   typed on a duplicate name. Guard dismissal-during-creation with a `ModalViewId` +
-  `isLastModalOpen`, or a back-tap still switches profile.
+  `isLastModalOpen` — and when that check fails, **stop**: continuing merely without
+  closing still reassigns and switches under a screen the user has left. The check also
+  has to ignore modals already staged in `toRemove`, or during the ~250ms close animation
+  a dismissed form still reads as open and the second `close()` pops the screen beneath.
+- **Only switch or dismiss once the invitation actually moved.** Surface 2 did both
+  unconditionally. Unlike the prepared-chat reassignment, which is pure DB,
+  `APIChangeConnectionUser` → `recreateConn` provisions a new queue — so it is what fails
+  offline, while creation, being local, always succeeds. Dismissing there strands the
+  profile just created with nothing pointing at it. `appPrefs.incognito` must be cleared
+  on the same condition.
 - **Stale remote host**: an older core ignores the unknown field and activates anyway.
   There is no version to gate on — but the response carries `activeUser`, so check it and
   resync rather than issuing a reassign that must fail.
@@ -197,14 +230,28 @@ Manual matrix (Android + desktop) — the part that actually finds bugs:
 | Scroll row out of view and back, then tap | still works |
 | Duplicate name | typed name and avatar survive; form stays open |
 | Hidden current profile | works, no password prompt |
-| Back/Esc during creation | no profile switch; modals unwind cleanly |
-| Desktop: tap a row while the form is open | no concurrent switch |
+| Back/Esc during creation | no profile switch; modals unwind cleanly — and the screen *under* the form is still there |
+| Desktop: cancel the form | the invitation chat is still open, with the typed draft intact |
+| Desktop: tap a row while the form is open | not possible — the form is in the same pane as the picker |
 | One-time link → Share profile → Add profile | link is regenerated |
-| Airplane mode | profile is created; connect fails as today |
+| Airplane mode | profile is created; **the connection change fails**, so the picker stays open and no switch happens (creation is local, `recreateConn` is not) |
+| Switch profile from a notification mid-create | no reassignment; reported, profile left created |
+| Second tap while the switch is in flight | row disabled, spinner shown, no second profile |
 | Older remote host | detected via `newUser.activeUser`; resyncs and reports |
 
 **Every user-visible bug in this feature was found by running the app** — none by
-compilation, the test suite, or ten rounds of review.
+compilation, the test suite, or ten rounds of review. A later adversarial review pass
+did find the rest of §4 statically, but only after the flow was written down.
+
+**Known, not fixed.** `withBGApi` builds a detached scope that nothing cancels and no
+Android lifecycle callback stops, so backgrounding right after Create lets the flow
+finish unattended — the active profile switches while the app is invisible. Process
+death between creation and the reassignment leaves a complete, non-active, empty
+profile (with its preset cards and note folder) and the invitation still on the old
+one, with nothing to reconcile it. Deleting it in Settings is the only recovery. This
+failure mode is new: before `keepActiveUser`, creation always activated immediately, so
+a half-finished create was self-evident. Fixing it needs either a cancellation-aware
+scope or a reconciliation pass, neither of which belongs in this branch.
 
 ## 7. iOS — done, but **never compiled**
 
@@ -234,10 +281,13 @@ Differences from Kotlin, each deliberate:
 
 Swift-specific traps found while reviewing, all fixed:
 
-- **Two `.sheet` modifiers on one view conflict** in SwiftUI, and both pickers already
-  present `IncognitoHelp` from the root — so the new sheet goes on the picker itself: a
-  descendant of the root, but *not* the row. Rows live in a `LazyVStack`/`List`, which
-  may dispose them and take the presented sheet with them.
+- **The sheet's owner must outlive the sheet.** Rows live in a `LazyVStack`/`List` and can
+  be disposed, taking the presented sheet with them — but so can `profilePicker()`, which
+  is swapped for `currentSelection()` the moment `listExpanded` flips, which
+  `changeProfile` does while the sheet is still dismissing, and which an incoming event
+  can do at any time via `profileChangeProhibited`. It goes on the `Group` in `viewBody()`,
+  which survives both. Two `.sheet` modifiers on one chain conflicted only before iOS
+  14.5; the app targets 15, so stacking it with the root's `IncognitoHelp` is fine.
 - **Surface 1's picker height is computed from the row count** —
   `USER_ROW_SIZE * min(MAX_VISIBLE_USER_ROWS, users.count + 1)` — unlike Kotlin's
   content-sized `heightIn(max = ...)`. Adding a row without making that `+ 2` clips one,
@@ -247,9 +297,22 @@ Swift-specific traps found while reviewing, all fixed:
   init is not necessarily `onSubmit`; both call sites pass `onSubmit:` explicitly.
 - `if creatingProfile { … }` then setting it is a **non-atomic check-and-set**, and reads
   `@State` off the main actor; both are done inside one `MainActor.run`.
-- **Presenting an alert while a sheet is dismissing swallows it.** The form is dismissed
-  only on the success path, so failures leave it open with the alert over it — which is
-  also what any other failure does.
+- **A SwiftUI `.alert(item:)` on the view presenting the sheet never appears.** UIKit
+  refuses an alert on a controller that already has a presentation, and the form is still
+  up on every failure path. Use the global `showAlert`, which targets the top view
+  controller and therefore draws over the sheet — surface 2 originally used its own
+  `alert` state here and the "core ignored keepActiveUser" report was silently dropped.
+- **Only the switch failed, not the creation.** `changeActiveUserAsync_` throws, and on
+  the resync path that propagated into the form's catch, which reports "Error creating
+  profile!" for a profile that exists. Catch it there.
+- **The submit `Task` is unstructured**, so SwiftUI does not cancel it on dismissal:
+  swipe-to-dismiss mid-create still created the profile and switched to it while every
+  `MainActor.run` write, including the one clearing the in-flight flag, landed on a view
+  that was gone. `.interactiveDismissDisabled(creatingProfile)` on both sheets.
+- **`@State` snapshots taken in `onAppear` go stale.** Surface 1's `users` is filled once
+  and is what the row list *and* the `frame(maxHeight:)` row count read, so refresh it
+  wherever `chatModel.users` is refreshed — and do not name the `listUsers` result
+  `users`, which is what hid this.
 - The `onChange(of: selectedProfile)` handler that surface 2 reuses **returns early unless
   `profileSwitchStatus == .switchingUser`**, so both must be assigned in the same
   `MainActor.run` before SwiftUI's next update.
