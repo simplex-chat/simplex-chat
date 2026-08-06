@@ -47,16 +47,23 @@ chatBotRepl welcome answer _user cc = do
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
 
 initializeBotAddress :: ChatController -> IO ()
-initializeBotAddress = initializeBotAddress' True
+initializeBotAddress = initializeBotAddress' True Nothing
 
-initializeBotAddress' :: Bool -> ChatController -> IO ()
-initializeBotAddress' logAddress cc = do
+-- Second argument controls how a NEW address is created when none exists:
+--   Nothing    -> non-double-ratchet contact address (compatible with legacy
+--                 contact-request bots such as directory and broadcast).
+--   Just True  -> double-ratchet address with post-quantum keys, required for
+--                 service RPC (see docs/protocol/badges-rpc.md).
+--   Just False -> double-ratchet address with per-ratchet PQ enabled.
+-- If an address already exists, this argument is unused (ShowMyAddress path).
+initializeBotAddress' :: Bool -> Maybe Bool -> ChatController -> IO ()
+initializeBotAddress' logAddress pqRatchet_ cc = do
   sendChatCmd cc ShowMyAddress >>= \case
     Right (CRUserContactLink _ UserContactLink {connLinkContact}) -> showBotAddress connLinkContact
     Left (ChatErrorStore SEUserContactLinkNotFound) -> do
       when logAddress $ putStrLn "No bot address, creating..."
       -- TODO [short links] create short link by default
-      sendChatCmd cc (CreateMyAddress Nothing) >>= \case
+      sendChatCmd cc (CreateMyAddress pqRatchet_) >>= \case
         Right (CRUserContactLinkCreated _ ccLink) -> showBotAddress ccLink
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure

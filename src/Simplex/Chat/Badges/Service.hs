@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 
 module Simplex.Chat.Badges.Service
@@ -17,6 +19,7 @@ module Simplex.Chat.Badges.Service
     BadgeServiceResponse (..),
     ServicePaymentDestination (..),
     BadgeServiceErrorCode (..),
+    badgeServiceErrorCodeText,
     BadgeCatalog (..),
     BadgePrice (..),
     BadgeOffer (..),
@@ -29,8 +32,10 @@ module Simplex.Chat.Badges.Service
   ) where
 
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Encoding as JE
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8, Word16, Word32)
 import Simplex.Chat.Badges
@@ -242,3 +247,51 @@ data BadgeServiceErrorCode
   | BSEReceiptUsed
   | BSEInternal
   deriving (Eq, Show)
+
+-- Wire form is snake_case per docs/protocol/badges-rpc.schema.json (definition `response.error.code`).
+-- The codebase's `enumJSON $ dropPrefix "BSE"` would produce camelCase ("unsupportedVersion") and
+-- silently break the wire format under every client, so the mapping is written explicitly here.
+badgeServiceErrorCodeText :: BadgeServiceErrorCode -> Text
+badgeServiceErrorCodeText = \case
+  BSEBadRequest -> "bad_request"
+  BSEUnsupportedVersion -> "unsupported_version"
+  BSEUnknownPurchaseKey -> "unknown_purchase_key"
+  BSEUnknownOfferId -> "unknown_offer_id"
+  BSEOfferDisabled -> "offer_disabled"
+  BSEOfferMismatch -> "offer_mismatch"
+  BSEProductUnavailable -> "product_unavailable"
+  BSEPaymentNotEntitled -> "payment_not_entitled"
+  BSEPaymentPending -> "payment_pending"
+  BSEProviderUnavailable -> "provider_unavailable"
+  BSERateLimited -> "rate_limited"
+  BSECodeInvalid -> "code_invalid"
+  BSECodeUsed -> "code_used"
+  BSECodeExpired -> "code_expired"
+  BSEReceiptInvalid -> "receipt_invalid"
+  BSEReceiptUsed -> "receipt_used"
+  BSEInternal -> "internal"
+
+instance J.ToJSON BadgeServiceErrorCode where
+  toJSON = J.String . badgeServiceErrorCodeText
+  toEncoding = JE.text . badgeServiceErrorCodeText
+
+instance J.FromJSON BadgeServiceErrorCode where
+  parseJSON = J.withText "BadgeServiceErrorCode" $ \case
+    "bad_request" -> pure BSEBadRequest
+    "unsupported_version" -> pure BSEUnsupportedVersion
+    "unknown_purchase_key" -> pure BSEUnknownPurchaseKey
+    "unknown_offer_id" -> pure BSEUnknownOfferId
+    "offer_disabled" -> pure BSEOfferDisabled
+    "offer_mismatch" -> pure BSEOfferMismatch
+    "product_unavailable" -> pure BSEProductUnavailable
+    "payment_not_entitled" -> pure BSEPaymentNotEntitled
+    "payment_pending" -> pure BSEPaymentPending
+    "provider_unavailable" -> pure BSEProviderUnavailable
+    "rate_limited" -> pure BSERateLimited
+    "code_invalid" -> pure BSECodeInvalid
+    "code_used" -> pure BSECodeUsed
+    "code_expired" -> pure BSECodeExpired
+    "receipt_invalid" -> pure BSEReceiptInvalid
+    "receipt_used" -> pure BSEReceiptUsed
+    "internal" -> pure BSEInternal
+    t -> fail $ "unknown BadgeServiceErrorCode: " <> T.unpack t

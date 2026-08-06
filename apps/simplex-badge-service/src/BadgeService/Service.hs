@@ -13,21 +13,23 @@ where
 import BadgeService.Options
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import Control.Concurrent.STM
+import Control.Logger.Simple
 import Control.Monad
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Badges.Service (BadgeServiceErrorCode (..))
 import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
+import Simplex.Chat.Store.Profiles (AddressSettings (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (User (..))
 import Simplex.Messaging.Agent.Protocol (AgentInvId)
-import Simplex.Messaging.Util (raceAny_)
+import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
 
@@ -64,6 +66,10 @@ badgeService opts cfg = do
       (_, event) <- atomically . readTBQueue $ outputQ cc
       case event of
         Right (CEvtServiceRequest u reqId _sigKey reqData) ->
+          -- TODO [badge service] the handler must enforce `_sigKey == BadgeServiceRequest.purchaseKey`
+          -- (docs/protocol/badges-rpc.md: "rejects a purchaseKey that differs from it with bad_request,
+          -- and a key it holds no record of with unknown_purchase_key"). This is the identity guarantee
+          -- of the whole protocol - do not drop this binding when the real handler lands.
           handleServiceRequest cc u reqId reqData
         _ -> pure ()
 
@@ -73,6 +79,7 @@ badgeServiceCLI opts = do
   let eventHook _cc ev = do
         case ev of
           Right (CEvtServiceRequest u reqId _sigKey reqData) ->
+            -- Same _sigKey obligation as the non-CLI branch above.
             atomically $ writeTQueue (serviceRequestQ env) (u, reqId, reqData)
           _ -> pure ()
         pure ev
@@ -100,10 +107,26 @@ badgePreStartHook opts ChatController {config, chatStore} =
 
 badgePostStartHook :: BadgeServiceOpts -> ChatController -> IO ()
 badgePostStartHook BadgeServiceOpts {noAddress, testing} cc = do
+  -- SREQ delivery depends on this flag being True (src/Simplex/Chat/Library/Subscriber.hs:1366-1372).
+  -- Core hardcodes serviceRequests=False when starting the chat (src/Simplex/Chat/Core.hs:93);
+  -- flipping the TVar here in postStartHook is the current mechanism to enable service requests
+  -- for a service bot. Any SREQ arriving between agentSubscriber starting and this write is
+  -- dropped via dropSReq. This race window is currently accepted.
   atomically $ writeTVar (processServiceRequests cc) True
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
-    Just _ -> unless noAddress $ initializeBotAddress' (not testing) cc
+    Just _ -> unless noAddress $ do
+      -- Service RPC requires a double-ratchet address (simplexmq Agent.hs:1738 rejects non-DR
+      -- with ASENotDRAddress), so pass `Just True` to CreateMyAddress when creating.
+      initializeBotAddress' (not testing) (Just True) cc
+      -- The badge service handles service requests only; it does not reply to contact requests
+      -- (see loop above, which matches only CEvtServiceRequest). Disable autoAccept explicitly
+      -- so a stray contact request is not silently accepted and then left in limbo forever.
+      let noContactSettings =
+            AddressSettings {businessAddress = False, autoAccept = Nothing, autoReply = Nothing}
+      sendChatCmd cc (SetAddressSettings Nothing noContactSettings) >>= \case
+        Right _ -> pure ()
+        Left e -> logError $ "badge service: failed to disable autoAccept: " <> tshow e
 
 badgePostStartHookCLI :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
 badgePostStartHookCLI opts env cc = do
@@ -111,32 +134,16 @@ badgePostStartHookCLI opts env cc = do
   void $ atomically $ tryPutTMVar (serviceCC env) cc
 
 handleServiceRequest :: ChatController -> User -> AgentInvId -> J.Object -> IO ()
-handleServiceRequest cc User {userId} reqId _reqData =
-  void $ sendChatCmd cc (APISendServiceResponse userId reqId $ errorResponse BSEUnsupportedVersion)
+handleServiceRequest cc User {userId} reqId _reqData = do
+  let reqIdT = safeDecodeUtf8 (strEncode reqId)
+  logInfo $ "badge service request " <> reqIdT
+  sendChatCmd cc (APISendServiceResponse userId reqId $ errorResponse BSEUnsupportedVersion) >>= \case
+    Right _ -> pure ()
+    Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
 
 errorResponse :: BadgeServiceErrorCode -> J.Object
 errorResponse errCode =
   KM.fromList
     [ ("type", J.String "error"),
-      ("code", J.String $ errorCodeText errCode)
+      ("code", J.toJSON errCode)
     ]
-
-errorCodeText :: BadgeServiceErrorCode -> Text
-errorCodeText = \case
-  BSEBadRequest -> "bad_request"
-  BSEUnsupportedVersion -> "unsupported_version"
-  BSEUnknownPurchaseKey -> "unknown_purchase_key"
-  BSEUnknownOfferId -> "unknown_offer_id"
-  BSEOfferDisabled -> "offer_disabled"
-  BSEOfferMismatch -> "offer_mismatch"
-  BSEProductUnavailable -> "product_unavailable"
-  BSEPaymentNotEntitled -> "payment_not_entitled"
-  BSEPaymentPending -> "payment_pending"
-  BSEProviderUnavailable -> "provider_unavailable"
-  BSERateLimited -> "rate_limited"
-  BSECodeInvalid -> "code_invalid"
-  BSECodeUsed -> "code_used"
-  BSECodeExpired -> "code_expired"
-  BSEReceiptInvalid -> "receipt_invalid"
-  BSEReceiptUsed -> "receipt_used"
-  BSEInternal -> "internal"
