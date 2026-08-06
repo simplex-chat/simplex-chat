@@ -594,11 +594,9 @@ private struct ActiveProfilePicker: View {
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
-        let updatedUsers = try? await listUsersAsync()
-        await MainActor.run {
-            if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
-            profiles = chatModel.users.map { $0.user }
-        }
+        // Checked before refreshing the lists below: on this path the core has already
+        // activated the new profile, so they would disagree with chatModel.currentUser
+        // until the resync lands - and changeActiveUserAsync_ refreshes them anyway.
         if newUser.activeUser {
             // An older core ignored keepActiveUser, so the connection change would fail
             do {
@@ -619,7 +617,10 @@ private struct ActiveProfilePicker: View {
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
+        let updatedUsers = try? await listUsersAsync()
         await MainActor.run {
+            if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
+            profiles = chatModel.users.map { $0.user }
             showAddProfile = false
             selectedProfile = newUser
             profileSwitchStatus = .switchingUser

@@ -258,14 +258,9 @@ struct ContextProfilePickerView: View {
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
-        let updatedUsers = try? await listUsersAsync()
-        await MainActor.run {
-            if let updatedUsers = updatedUsers {
-                chatModel.users = updatedUsers
-                // Only filled in onAppear otherwise, so the new profile is missing here
-                users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
-            }
-        }
+        // Checked before refreshing the lists below: on this path the core has already
+        // activated the new profile, so they would disagree with chatModel.currentUser
+        // until the resync lands - and changeActiveUserAsync_ refreshes them anyway.
         if newUser.activeUser {
             // An older remote host ignored keepActiveUser, so the reassignment would
             // fail. Resync and report - not rethrown, or the form blames the creation.
@@ -286,8 +281,14 @@ struct ContextProfilePickerView: View {
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
-        // Here too: the defer clears creatingProfile as soon as this returns
+        let updatedUsers = try? await listUsersAsync()
         await MainActor.run {
+            if let updatedUsers = updatedUsers {
+                chatModel.users = updatedUsers
+                // Only filled in onAppear otherwise, so the new profile is missing here
+                users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
+            }
+            // changingProfile here too: the defer clears creatingProfile as soon as this returns
             showAddProfile = false
             changingProfile = true
         }
