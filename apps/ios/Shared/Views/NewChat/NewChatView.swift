@@ -611,7 +611,7 @@ private struct ActiveProfilePicker: View {
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
-        let updatedUsers = try? listUsers()
+        let updatedUsers = try? await listUsersAsync()
         await MainActor.run {
             if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
             profiles = chatModel.users.map { $0.user }

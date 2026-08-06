@@ -261,7 +261,7 @@ struct ContextProfilePickerView: View {
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
-        let updatedUsers = try? listUsers()
+        let updatedUsers = try? await listUsersAsync()
         await MainActor.run {
             if let updatedUsers = updatedUsers {
                 chatModel.users = updatedUsers
@@ -274,7 +274,6 @@ struct ContextProfilePickerView: View {
             // An older remote host ignored keepActiveUser and activated it, so the
             // reassignment would fail. Resync to what the host did and report it - not
             // rethrown, or the form reports it as a failure to create the profile.
-            // let, not var: MainActor.run's body is @Sendable and cannot capture a mutable local
             let switched: Bool
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
