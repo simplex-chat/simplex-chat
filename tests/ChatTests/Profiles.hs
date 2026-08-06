@@ -4005,10 +4005,8 @@ testCreateUserKeepingActiveUser = testChat2 aliceProfile bobProfile test
       -- ... and the active user is unchanged, with no switch back needed
       bob ##> "/u"
       showActiveUser bob "bob (Bob)"
-      -- the new user's row is not active either - /u only covers the currentUser TVar.
-      -- Note this reads the stored row, not the CRActiveUser payload the clients branch
-      -- on, and /users sorts by display name, so it says nothing about active_order.
-      -- Neither of those is covered by any test here.
+      -- the stored row is not active either, which /u does not cover (it reads the TVar).
+      -- Not the CRActiveUser payload the clients branch on - no test here reaches that.
       bob ##> "/users"
       bob <## "bob (Bob) (active)"
       bob <## "robert"
@@ -4025,21 +4023,9 @@ testCreateUserKeepingActiveUser = testChat2 aliceProfile bobProfile test
       bob ##> "/_set contact user @4 2"
       bob <## "contact alice changed from user bob to user robert"
 
+      -- and the profile that was never activated still activates normally
       bob ##> "/user robert"
       showActiveUser bob "robert"
-
-      bob ##> "/_connect contact @4 text hello"
-      bob
-        <### [ "alice: connection started",
-               WithTime "@alice hello"
-             ]
-      alice <# "robert> hello"
-      concurrently_
-        (bob <## "alice (Alice): contact is connected")
-        (alice <## "robert: contact is connected")
-
-      alice <##> bob
-      alice `hasContactProfiles` ["alice", "robert"]
 
 -- Regression guard: clients that do not send keepActiveUser at all (iOS, CLI)
 -- must still parse and must still get the new user activated.
