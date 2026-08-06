@@ -113,9 +113,16 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun hasModalOpen(id: ModalViewId): Boolean = modalViews.any { it.id == id }
+  // A modal closed while its animation is still running stays in modalViews until the
+  // animation ends, so both checks have to skip the ones already staged for removal -
+  // otherwise a caller that closes on "is my modal still the last one?" pops the modal
+  // underneath instead.
+  private fun openModalViews(): List<ModalViewHolder> =
+    if (toRemove.isEmpty()) modalViews else modalViews.filterIndexed { i, _ -> i !in toRemove }
 
-  fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
+  fun hasModalOpen(id: ModalViewId): Boolean = openModalViews().any { it.id == id }
+
+  fun isLastModalOpen(id: ModalViewId): Boolean = openModalViews().lastOrNull()?.id == id
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal(id = id, forceAnimated = forceAnimated) { close ->
