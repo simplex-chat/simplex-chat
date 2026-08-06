@@ -269,19 +269,19 @@ struct ContextProfilePickerView: View {
         if newUser.activeUser {
             // An older remote host ignored keepActiveUser, so the reassignment would
             // fail. Resync and report - not rethrown, or the form blames the creation.
-            let switched: Bool
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
-                switched = true
             } catch {
                 logger.error("changeActiveUserAsync_ error: \(responseError(error))")
-                switched = false
             }
             await MainActor.run {
                 // Unconditional: the switch only removes this view when it succeeded
                 showAddProfile = false
-                // Only if it switched: the chat is then gone from the list and renders blank
-                if switched && chatModel.chatId == chat.id { chatModel.chatId = nil }
+                // Only if it switched, which the active user tells us: the prepared chat
+                // is then gone from the reloaded list and would render blank.
+                if chatModel.currentUser?.userId == newUser.userId && chatModel.chatId == chat.id {
+                    chatModel.chatId = nil
+                }
             }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return

@@ -610,9 +610,11 @@ private struct ActiveProfilePicker: View {
             // with the previous one, so a second attempt would fail the same way.
             await MainActor.run {
                 showAddProfile = false
-                // Make the picker agree with the profile that is now active
                 profileSwitchStatus = .idle
-                selectedProfile = newUser
+                // Whatever the resync above ended up with - newUser if it switched, the
+                // previous profile if it threw. Not newUser unconditionally, or a failed
+                // switch leaves the checkmark on a profile that is not active.
+                selectedProfile = chatModel.currentUser ?? selectedProfile
             }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
