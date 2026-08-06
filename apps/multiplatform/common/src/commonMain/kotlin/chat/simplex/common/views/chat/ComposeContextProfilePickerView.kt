@@ -11,6 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -116,17 +117,15 @@ fun ComposeContextProfilePickerView(
           viewPwd = null,
           keepingChatId = chat.id
         )
+        // No chatId assignment here. changeActiveUser_ passes keepingChatId, and
+        // updateChats only clears chatId when the chat is missing from the reloaded
+        // list - so on success this would be a no-op, and in the one case the guard
+        // does fire it would re-point the chat view at a chat that is not there.
         if (chatModel.currentUser.value?.userId != newUser.userId) {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.switching_profile_error_title),
             String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
           )
-        } else {
-          // Reopen the chat under the new profile - only once the switch is known to
-          // have happened, or this would point the chat view at a chat that now belongs
-          // to a different profile, defeating the guard in updateChats that clears it.
-          // The id is unchanged by the reassignment - it is the contact/group id.
-          chatModel.chatId.value = chat.id
         }
       }
     } finally {
@@ -257,7 +256,15 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-        .clickable(enabled = !busy, onClick = { createProfileForInvitation(rhId) { changeProfileTo(it) } })
+        .clickable(enabled = !busy, onClick = {
+          // Same guard as every other row: the flag is live state the receiver loop
+          // flips, so it can turn true between this row being laid out and the tap.
+          if (!chat.chatInfo.profileChangeProhibited) {
+            createProfileForInvitation(rhId) { changeProfileTo(it) }
+          } else {
+            showCantChangeProfileAlert()
+          }
+        })
         .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
@@ -286,7 +293,9 @@ fun ComposeContextProfilePickerView(
     LazyColumnWithScrollBarNoAppBar(
       Modifier
         .heightIn(max = MAX_USER_PICKER_HEIGHT)
-        .background(MaterialTheme.colors.surface),
+        .background(MaterialTheme.colors.surface)
+        // The rows are already unclickable while busy; this is the only thing that says so.
+        .alpha(if (busy) 0.6f else 1f),
       reverseLayout = true,
       maxHeight = remember { mutableStateOf(MAX_USER_PICKER_HEIGHT) },
       containerAlignment = Alignment.BottomEnd
@@ -340,7 +349,8 @@ fun ComposeContextProfilePickerView(
   fun CurrentSelection() {
     Column(
       Modifier
-        .background(MaterialTheme.colors.surface),
+        .background(MaterialTheme.colors.surface)
+        .alpha(if (busy) 0.6f else 1f),
     ) {
       Text(
         generalGetString(MR.strings.context_user_picker_your_profile),

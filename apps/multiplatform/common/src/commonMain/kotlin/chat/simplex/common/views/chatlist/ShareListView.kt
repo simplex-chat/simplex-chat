@@ -107,7 +107,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
         UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-          ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+          ModalManager.start.showCustomModal(keyboardCoversBar = false, id = ModalViewId.ACTIVE_PROFILE_PICKER) { close ->
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },

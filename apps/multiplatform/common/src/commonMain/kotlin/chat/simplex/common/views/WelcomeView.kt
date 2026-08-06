@@ -60,7 +60,7 @@ fun bioFitsLimit(bio: String): Boolean {
 }
 
 @Composable
-fun CreateProfile(onSubmit: (displayName: String, shortDescr: String, image: String?) -> Unit) {
+fun CreateProfile(submitting: Boolean = false, onSubmit: (displayName: String, shortDescr: String, image: String?) -> Unit) {
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
@@ -159,7 +159,7 @@ fun CreateProfile(onSubmit: (displayName: String, shortDescr: String, image: Str
         SettingsActionItem(
           painterResource(MR.images.ic_check),
           stringResource(MR.strings.create_another_profile_button),
-          disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
+          disabled = submitting || !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
           click = { onSubmit(displayName.value, shortDescr.value, profileImage.value) },
@@ -362,13 +362,17 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
   // link picker but disposes it, losing what was typed in its search box. fullscreen is
   // an opaque Surface over every pane, so no picker can be operated while the form is up
   // and none of them is torn down. On Android all four are the same manager anyway.
-  // Two taps before the modal renders would otherwise stack two modals sharing one id,
-  // after which close() could dismiss the wrong one.
+  // Not while one is still being created: the in-flight job identifies its own form only
+  // by this id, so a second form opened underneath it would be the one closed and the
+  // wrong profile handed over.
   if (chatModel.creatingProfileForInvitation.value) return
+  // Two taps before the modal renders would otherwise stack two modals sharing one id,
+  // after which close() could dismiss the wrong one. NotClosing, or re-opening the form
+  // right after backing out of it is a silent no-op until the animation ends.
   val modalManager = ModalManager.fullscreen
-  if (modalManager.hasModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
+  if (modalManager.hasModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
   modalManager.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
-    CreateProfile { displayName, shortDescr, image ->
+    CreateProfile(submitting = chatModel.creatingProfileForInvitation.value) { displayName, shortDescr, image ->
       if (chatModel.creatingProfileForInvitation.value) return@CreateProfile
       chatModel.creatingProfileForInvitation.value = true
       withBGApi {
@@ -383,8 +387,14 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             // remote host ignoring the unknown field. Reassigning would now fail, so resync
             // to what the host actually did and report it. Not switching_profile_error_message:
             // that says the invitation was moved, and on this path it was not.
-            controller.changeActiveUser(newUser.remoteHostId, newUser.userId, null)
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+            // The form is dismissed first: the app is about to be showing a different
+            // profile, and leaving the form on top of it invites a second attempt that
+            // would fail the same way.
+            withContext(Dispatchers.Main) {
+              if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) close()
+              controller.changeActiveUser(newUser.remoteHostId, newUser.userId, null)
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+            }
             return@withBGApi
           }
           // Keep chatModel.users current even if onCreated's reassignment fails - it only
@@ -414,7 +424,10 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             // The form is gone - most likely the user backed out of it while the profile
             // was being created. Don't move the invitation under a screen they have left,
             // and don't report an error for something they did deliberately.
-            if (!modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return@withContext
+            if (!modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) {
+              Log.i(TAG, "createProfileForInvitation: form closed before the invitation was moved, profile ${newUser.userId} left created")
+              return@withContext
+            }
             close()
             onCreated(newUser)
           }

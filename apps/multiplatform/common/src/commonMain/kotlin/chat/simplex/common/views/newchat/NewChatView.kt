@@ -302,7 +302,7 @@ fun ActiveProfilePicker(
   // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected.
   // Keyed on the profile count as well so a profile created from this picker appears in it
   // without relying on the composition being torn down and rebuilt by the form on top.
-  val filteredProfiles = remember(searchTextOrPassword.value, chatModel.users.size) {
+  val filteredProfiles = remember(searchTextOrPassword.value, chatModel.users.size, chatModel.currentUser.value?.userId) {
     filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 
@@ -367,7 +367,12 @@ fun ActiveProfilePicker(
         }
       }
 
-      close()
+      // Only if this picker is still the top of its stack. The reassignment above can
+      // wait indefinitely on the retry alert, and back is not blocked while it does, so
+      // an unconditional close() here would pop whatever the user moved on to.
+      if (ModalManager.start.isLastModalOpenNotClosing(ModalViewId.ACTIVE_PROFILE_PICKER)) {
+        close()
+      }
     } finally {
       switchingProfile.value = false
     }
@@ -580,7 +585,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
           end = 16.dp
         ),
         click = {
-          ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+          ModalManager.start.showCustomModal(keyboardCoversBar = false, id = ModalViewId.ACTIVE_PROFILE_PICKER) { close ->
             val search = rememberSaveable { mutableStateOf("") }
             ModalView(
               { close() },

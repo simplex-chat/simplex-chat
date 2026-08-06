@@ -92,7 +92,8 @@ class ModalData(val keyboardCoversBar: Boolean = true) {
 enum class ModalViewId {
   SECONDARY_CHAT,
   CONTEXT_USER_PICKER_INCOGNITO,
-  CONTEXT_USER_PICKER_NEW_PROFILE
+  CONTEXT_USER_PICKER_NEW_PROFILE,
+  ACTIVE_PROFILE_PICKER
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -125,12 +126,21 @@ class ModalManager(private val placement: ModalPlacement? = null) {
    *
    * Separate from [isLastModalOpen] rather than folded into it, because that one is also
    * used to decide when to tear down secondary chats, where the existing behaviour is
-   * relied on. Indexed access rather than iteration, so it stays safe if a caller ever
-   * reaches it off the main thread while these lists are being mutated. */
+   * relied on. */
   fun isLastModalOpenNotClosing(id: ModalViewId): Boolean {
     var i = modalViews.size - 1
     while (i >= 0 && i in toRemove) i--
     return i >= 0 && modalViews.getOrNull(i)?.id == id
+  }
+
+  /** [hasModalOpen] with the same exclusion as [isLastModalOpenNotClosing]: a modal
+   * dismissed but still animating out does not count. Without it, re-opening something
+   * straight after closing it is a silent no-op for the length of the animation. */
+  fun hasModalOpenNotClosing(id: ModalViewId): Boolean {
+    for (i in modalViews.indices) {
+      if (i !in toRemove && modalViews.getOrNull(i)?.id == id) return true
+    }
+    return false
   }
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
