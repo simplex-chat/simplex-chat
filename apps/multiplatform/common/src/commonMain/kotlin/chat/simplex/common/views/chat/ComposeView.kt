@@ -681,14 +681,11 @@ fun ComposeView(
     }
   }
 
-  // toChat is the chat the message was composed in - it differs from the chat this view shows only for a live message,
-  // which is sent when the chat is switched, when this view already shows the chat that was opened. Live messages have
-  // no context item, so the forwarding, editing and reporting branches below cannot be reached with a different chat.
-  // cs is passed by the send started by the chat switch: this runs on another thread, so by the time it would read
-  // composeState the view has already replaced it with the state of the chat that was opened.
+  // toChat is the chat the message was composed in - it differs from the one this view shows only for the live message
+  // committed by a chat switch, which has no context item, so the forwarding, editing and reporting branches below
+  // cannot run with a different chat. cs is that send's state, captured before the switch replaced it.
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?, sign: Boolean = false, toChat: Chat = chat, cs: ComposeState = composeState.value): List<ChatItem>? {
-    // a send for another chat may not write to composeState, which holds the chat this view shows - not even if that
-    // chat is opened again before it completes, the state was handed over when the switch started this send
+    // a send for another chat may not write to composeState, even after that chat is opened again - it was handed over
     fun composeIsForSend(): Boolean = toChat.id == chat.id
     var sent: List<ChatItem>?
     var lastMessageFailedToSend: ComposeState? = null
@@ -813,8 +810,8 @@ fun ComposeView(
       if (cs.message.text.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            // the current state, not cs: forwarding is never reached from the chat switch, and this keeps what was
-            // typed while the forward was in flight, as before
+            // the current state, not cs: forwarding is never reached from the chat switch, and keeps what was typed
+            // while it was in flight
             send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions, sign = sign)
           } else {
             message
@@ -982,8 +979,8 @@ fun ComposeView(
     return sent
   }
 
-  // toChat and composed are for the chat switch, which hands the compose state over to the chat it opened: a send for
-  // another chat may not write to it, so passing toChat without handing it over leaves the sent message in the input
+  // toChat and composed are for the chat switch, which hands the compose state over to the chat it opened; passing
+  // toChat without doing that leaves the sent message in the input
   fun sendMessage(ttl: Int?, sign: Boolean = false, toChat: Chat = chat, composed: ComposeState? = null) {
     withLongRunningApi(slow = 120_000) {
       sendMessageAsync(null, false, ttl, sign, toChat, composed ?: composeState.value)
@@ -1351,8 +1348,7 @@ fun ComposeView(
   KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
     val cs = composeState.value
     if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
-      // the chat is already switched here, and this view shows the chat that was opened - the live message
-      // has to be sent to the chat it was composed in, which is the one with the same id as before the switch
+      // the chat is already switched, so the live message goes to the chat with the id it had before the switch
       val liveMessageChat = if (prevChatId == null || prevChatId == chat.id) chat else chatsCtx.getChat(prevChatId)
       // if that chat is gone there is nowhere to send it, and it must not be sent to the chat opened instead
       // cs is captured on this thread, before the compose state is replaced below
