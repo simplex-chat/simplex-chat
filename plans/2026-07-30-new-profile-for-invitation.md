@@ -86,38 +86,26 @@ Two limits of the flag, both deliberate and neither covered by a test:
 Response stays `CRActiveUser` — it carries the created user, which on this path is not
 the active one. Documented at the field; no client decoder changes.
 
-## 3. Commits
+## 3. What the branch contains
 
-In branch order.
-
-1. **parameterise the create-profile form's submit action** — `CreateProfile` chose
-   between two submit paths internally, invisible at its two call sites. The callback
-   passes *raw fields*, not a `Profile`: the two paths build different ones
-   (no-profile-setup drops `shortDescr`), so a `Profile`-shaped callback would silently
-   change behaviour. The branch itself moves to a named `createProfileFromForm` that both
-   existing call sites delegate to — copying it into each would have left two copies to
-   drift. Net +12 lines; the `chatModel` parameter was redundant anyway.
-2. **fix: don't switch profile when the reassignment failed** — pre-existing bug.
-   `changeActiveUser_` sat outside the null guards, so a failed reassign still switched
-   profile and stranded the invitation. Reachable today. iOS unaffected (its API throws,
-   so control flow skips the switch).
-3. **core: `keepActiveUser`** — §2. Also regenerates three client artifacts and
-   hand-syncs two more that no test covers (§5).
-4. **core: tests** — `keepActiveUser` works; and omitting it still activates (guards an
-   iOS-breaking regression, since iOS never sends the field).
-5. **feature: surface 1** — see gotchas. The create-then-hand-off flow lives in a single
-   `createProfileForInvitation(rhId, creating) { newUser -> … }` beside the other
-   profile-creation helpers; both surfaces call it, differing only in what they do with
-   the created profile. Written out twice it was ~35 duplicated lines free to drift.
-6. **extract `selectProfile`** — pure move of the row handler's body out of the lambda,
-   so the next commit can take the same path instead of duplicating it. No behaviour
-   change; review it by checking the body is unchanged apart from indentation.
-7. **feature: surface 2** — 32 added lines, nothing removed, now that the move is its own
-   commit.
-8. **fix: profile image lost when creating the first chat profile** — pre-existing on
-   master, unrelated, safe to drop. Desktop-only: reachable just from the user picker's
-   "Create chat profile" row, shown when there is no local profile. Onboarding never hits
-   it — those screens take a name only.
+- **core** — `keepActiveUser` (§2), its two tests, and the regenerated client artifacts
+  plus the two hand-synced ones no test covers (§5).
+- **both surfaces** — the "Add profile" row, and the shared
+  `createProfileForInvitation(rhId) { newUser -> … }` beside the other profile-creation
+  helpers. Both call it and differ only in what they do with the created profile; written
+  out twice it was ~35 duplicated lines free to drift.
+- **`CreateProfile` gains an optional submit callback**, passing *raw fields* rather than
+  a `Profile`: the two existing paths build different ones (no-profile-setup drops
+  `shortDescr`), so a `Profile`-shaped callback would silently change behaviour. Optional,
+  so neither existing call site changes.
+- **`ActiveProfilePicker`'s row handler is extracted** so the create flow takes the same
+  path instead of duplicating it. Pure move — review it by checking the body is unchanged
+  apart from indentation.
+- **two pre-existing fixes ride along**, each in its own commit and each droppable: a
+  failed prepared-chat reassignment used to switch profile anyway and strand the
+  invitation (reachable today, and worse once a profile has just been created for it);
+  and the first chat profile's avatar was stored as its description (desktop-only, from
+  the user picker's "Create chat profile" row).
 
 Uses the existing `users_add` ("Add profile") string — **zero new translation keys**.
 
@@ -170,12 +158,11 @@ Uses the existing `users_add` ("Add profile") string — **zero new translation 
   `changingActiveUserMutex` across this flow: a notification tap
   (`NtfManager.acceptContactRequestAction`) switches the user from another dispatcher, and
   a remote host connect/disconnect switches the host and closes modals.
-- **`listUsers` throws and `withBGApi` does not catch** (`wrapWithLogging` has no catch),
+- **`listUsers` throws and `withApi` does not catch** (`wrapWithLogging` has no catch),
   so an exception after creation aborts silently. Use `runCatching` for the cosmetic
   refresh, and the safe `changeActiveUser` wrapper rather than `changeActiveUser_`.
-- **Create first, close only on success** — the shared `createUser` helper behind both
-  wrappers shows its own alert and returns null, so dismissing first discards everything
-  typed on a duplicate name. Guard dismissal-during-creation with a `ModalViewId` +
+- **Create first, close only on success** — `apiCreateActiveUser` shows its own alert and
+  returns null, so dismissing first discards everything typed on a duplicate name. Guard dismissal-during-creation with a `ModalViewId` +
   `isLastModalOpen` — and when that check fails, **stop**: continuing merely without
   closing still reassigns and switches under a screen the user has left. The check also
   has to ignore modals already staged in `toRemove`, or during the ~250ms close animation
@@ -184,8 +171,8 @@ Uses the existing `users_add` ("Add profile") string — **zero new translation 
   unconditionally. Unlike the prepared-chat reassignment, which is pure DB,
   `APIChangeConnectionUser` → `recreateConn` provisions a new queue — so it is what fails
   offline, while creation, being local, always succeeds. Dismissing there strands the
-  profile just created with nothing pointing at it. `appPrefs.incognito` must be cleared
-  on the same condition.
+  profile just created with nothing pointing at it. (`appPrefs.incognito` is cleared
+  before that check, as on master — moving it is a separate, pre-existing fix.)
 - **Stale remote host**: an older core ignores the unknown field and activates anyway.
   There is no version to gate on — but the response carries `activeUser`, so check it and
   resync rather than issuing a reassign that must fail.
@@ -282,16 +269,17 @@ Differences from Kotlin, each deliberate:
 - **Surface 1's row goes first**, not last: that list is not reverse-laid-out, so
   emitting first is what puts it at the top. Surface 2's row stays **last** on both
   platforms — that list is not reversed on either, so last means bottom on both.
-- **`onSubmit` is optional**, not required — it touches no existing call site, which
-  matters more when the change cannot be compiled.
 - **The two create flows are *not* extracted into one**, unlike Kotlin. The 12 identical
   lines include `defer { creating = false }`, which must stay in the function that owns
   the whole flow — inside a helper it would fire on the helper's return, clearing the
   in-flight flag before the caller has reassigned and letting a second submit through.
-  That leaves ~5 safely extractable lines, and the rest differs anyway (alert mechanism:
-  global `showAlert` vs the view's `alert` state; final action; an extra `profiles`
-  refresh). Kotlin's extraction was worth it because the shared flow was 35 lines and
-  compile-checked; this one is neither.
+  That leaves ~5 safely extractable lines, and the rest differs anyway (final action; an
+  extra `profiles` refresh). Kotlin's extraction was worth it because the shared flow was
+  35 lines and compile-checked; this one is neither.
+- **`changeProfile` keeps its `Task`**, so the compose picker needs a second flag where
+  Kotlin's suspending `onCreated` needs none. Making it `async` and awaiting it removes
+  the flag but lifts the body out of the `Task` and re-indents the whole function — more
+  diff than it saves.
 - Reuses `"Add profile"` (16 locales) and `"Error changing chat profile"` (10) — again
   zero new translation entries.
 
