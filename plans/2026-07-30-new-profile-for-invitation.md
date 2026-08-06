@@ -72,6 +72,17 @@ window with the opposite outcome.
 and older callers are untouched. The flag is ignored when there is no active user to keep,
 which would otherwise leave none at all.
 
+Two limits of the flag, both deliberate and neither covered by a test:
+
+- It is **ignored when there is no active user** (`isNothing curUser_`), which would
+  otherwise leave none at all. A client cannot distinguish that from a stale host that
+  dropped the field — both come back as `activeUser = True`.
+- `active_order = 0` for a profile that was never activated sorts it **below** activated
+  ones, but `M20240920_user_order` back-filled every existing row with 0, so on a migrated
+  database it *ties* with them and the order falls back to row order. `userQuery` has no
+  `ORDER BY`, and the terminal harness cannot observe `activeOrder`, so this is stated
+  rather than tested.
+
 Response stays `CRActiveUser` — it carries the created user, which on this path is not
 the active one. Documented at the field; no client decoder changes.
 

@@ -1363,9 +1363,6 @@ struct NewUser: Encodable {
     var profile: Profile?
     var pastTimestamp: Bool
     var userChatRelay: Bool = false
-    // when set, the user is created without becoming active, preserving the current one;
-    // absent/false activates it as before. The response is activeUser either way - it
-    // carries the created user, which is then not the active one.
     var keepActiveUser: Bool = false
 }
 

@@ -70,6 +70,15 @@ func showAlert(
     }
 }
 
+/// An alert raised while a sheet is dismissing is presented on a controller that is going
+/// away, and is dropped - getTopViewController() keeps returning it until the transition
+/// ends. Use this when the caller has just dismissed something.
+func alertAfterDismissal(_ title: String, _ message: String? = nil) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        showAlert(title, message: message)
+    }
+}
+
 func showSheet(
     _ title: String?,
     message: String? = nil,

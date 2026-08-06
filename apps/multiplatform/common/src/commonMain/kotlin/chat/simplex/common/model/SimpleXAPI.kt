@@ -880,16 +880,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User? =
-    createUser(rh, p, pastTimestamp = pastTimestamp, keepActiveUser = false, ctrl = ctrl)
-
-  /** Creates a profile *without* activating it: [apiChangePreparedContactUser] resolves the
-   * prepared chat under the active user, so the profile that owns it must stay active until
-   * the chat has moved. The returned user is therefore not the active one. */
-  suspend fun apiCreateProfileKeepingActive(rh: Long?, p: Profile): User? =
-    createUser(rh, p, pastTimestamp = false, keepActiveUser = true, ctrl = null)
-
-  private suspend fun createUser(rh: Long?, p: Profile?, pastTimestamp: Boolean, keepActiveUser: Boolean, ctrl: ChatCtrl?): User? {
+  /** [keepActiveUser] creates the profile *without* activating it, for the invitation
+   * pickers: the reassignment APIs resolve the prepared chat or connection under the
+   * active user, so the profile that owns it has to stay active until it has moved. The
+   * response is the created user either way, which is then not the active one. */
+  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, keepActiveUser: Boolean = false, ctrl: ChatCtrl? = null): User? {
     val r = sendCmd(rh, CC.CreateActiveUser(p, pastTimestamp = pastTimestamp, keepActiveUser = keepActiveUser), ctrl)
     if (r is API.Result && r.res is CR.ActiveUser) return r.res.user.updateRemoteHostId(rh)
     val e = (r as? API.Error)?.err
@@ -905,7 +900,7 @@ object ChatController {
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_title), r.details)
     }
-    Log.d(TAG, "createUser (keepActiveUser=$keepActiveUser): ${r.responseType} ${r.details}")
+    Log.d(TAG, "apiCreateActiveUser (keepActiveUser=$keepActiveUser): ${r.responseType} ${r.details}")
     return null
   }
 

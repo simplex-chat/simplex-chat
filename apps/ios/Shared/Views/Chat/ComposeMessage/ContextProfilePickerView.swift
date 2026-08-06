@@ -101,8 +101,7 @@ struct ContextProfilePickerView: View {
 
                             let otherUsers = users
                                 .filter { u in u.userId != selectedUser.userId }
-                                // Descending, as every other profile list sorts
-                                .sorted(using: KeyPathComparator<User>(\.activeOrder, order: .reverse))
+                                .sorted(using: KeyPathComparator<User>(\.activeOrder))
                             ForEach(otherUsers) { p in
                                 profilerPickerUserOption(p)
                                     .contentShape(Rectangle())
@@ -221,7 +220,11 @@ struct ContextProfilePickerView: View {
 
     private func addProfileOption() -> some View {
         Button {
-            showAddProfile = true
+            if chat.chatInfo.profileChangeProhibited {
+                showCantChangeProfileAlert()
+            } else {
+                showAddProfile = true
+            }
         } label: {
             HStack {
                 Image(systemName: "person.crop.circle.badge.plus")
@@ -257,7 +260,7 @@ struct ContextProfilePickerView: View {
         if alreadyCreating { return }
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
-        let newUser = try apiCreateProfileKeepingActive(profile)
+        let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
         let updatedUsers = try? listUsers()
         await MainActor.run {
             if let updatedUsers = updatedUsers {
@@ -281,23 +284,19 @@ struct ContextProfilePickerView: View {
                 switched = false
             }
             await MainActor.run {
+                // Dismissed unconditionally: the switch removes this view - and the sheet
+                // it presents - only when it succeeded. If it threw, the form would be
+                // left over a profile that already exists.
+                showAddProfile = false
                 // Only if the switch happened: the chat is then absent from the reloaded
                 // list and would render blank. If it failed, the chat is still fine.
                 if switched && chatModel.chatId == chat.id { chatModel.chatId = nil }
             }
-            // The switch replaces the chat list, which removes this view - and the sheet
-            // it presents - from the hierarchy. Both that teardown and an explicit
-            // dismissal animate, and getTopViewController() keeps returning the sheet
-            // until the transition ends, so an alert raised now is presented on a
-            // controller being dismissed and dropped. Let it settle first.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
-            }
+            alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
-        // changingProfile set here, not only inside changeProfile's Task: the defer above
-        // clears creatingProfile as soon as this function returns, and that Task has not
-        // necessarily started by then - the rows would be live in between.
+        // changingProfile here too: the defer above clears creatingProfile as soon as this
+        // returns, and changeProfile's Task has not necessarily started by then.
         await MainActor.run {
             showAddProfile = false
             changingProfile = true
@@ -307,9 +306,6 @@ struct ContextProfilePickerView: View {
 
     private func changeProfile(_ newUser: User) {
         Task {
-            // Two round trips follow; without this every row, including "Add profile",
-            // stays live and a second change can be started on top of this one.
-            await MainActor.run { changingProfile = true }
             defer { Task { @MainActor in changingProfile = false } }
             do {
                 if let contact = chat.chatInfo.contact {
@@ -331,29 +327,22 @@ struct ContextProfilePickerView: View {
                 }
                 do {
                     try await changeActiveUserAsync_(newUser.userId, viewPwd: nil, keepingChatId: chat.id)
-                    // Assert the open chat: nothing on this path clears chatId on iOS, so
-                    // this is normally a no-op, but keepingChatId only keeps the chat's
-                    // place in the reloaded list - it does not open it. The id is
-                    // unchanged by the reassignment, it is the contact/group id.
-                    await MainActor.run { chatModel.chatId = chat.id }
                 } catch {
-                    await MainActor.run {
-                        showAlert(
-                            NSLocalizedString("Error switching profile", comment: "alert title"),
-                            message: String.localizedStringWithFormat(NSLocalizedString("Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.", comment: "alert message"), newUser.chatViewName)
-                        )
-                    }
+                    alertAfterDismissal(
+                        NSLocalizedString("Error switching profile", comment: "alert title"),
+                        String.localizedStringWithFormat(NSLocalizedString("Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.", comment: "alert message"), newUser.chatViewName)
+                    )
                 }
             } catch let error {
                 await MainActor.run {
                     if let currentUser = chatModel.currentUser {
                         selectedUser = currentUser
                     }
-                    showAlert(
-                        NSLocalizedString("Error changing chat profile", comment: "alert title"),
-                        message: responseError(error)
-                    )
                 }
+                alertAfterDismissal(
+                    NSLocalizedString("Error changing chat profile", comment: "alert title"),
+                    responseError(error)
+                )
             }
         }
     }

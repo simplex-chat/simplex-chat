@@ -300,8 +300,8 @@ fun ActiveProfilePicker(
   val selectedProfile by remember { chatModel.currentUser }
   val searchTextOrPassword = rememberSaveable { search }
   // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected.
-  // Keyed on the users too, or a profile created from this picker is missing from it.
-  val filteredProfiles = remember(searchTextOrPassword.value, chatModel.users.size, chatModel.currentUser.value?.userId) {
+  // Keyed on the count too, or a profile created from this picker is missing from it.
+  val filteredProfiles = remember(searchTextOrPassword.value, chatModel.users.size) {
     filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 

@@ -368,7 +368,7 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
         try {
           val ownerUserId = chatModel.currentUser.value?.userId
           val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
-          val newUser = controller.apiCreateProfileKeepingActive(rhId, profile) ?: return@withApi
+          val newUser = controller.apiCreateActiveUser(rhId, profile, keepActiveUser = true) ?: return@withApi
           if (newUser.activeUser) {
             // An older remote host ignored the flag and activated it, so the reassignment
             // would fail. Resync to what the host did and report it, with the form

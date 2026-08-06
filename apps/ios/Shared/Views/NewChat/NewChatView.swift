@@ -610,7 +610,7 @@ private struct ActiveProfilePicker: View {
         if alreadyCreating { return }
         defer { Task { @MainActor in creatingProfile = false } }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
-        let newUser = try apiCreateProfileKeepingActive(profile)
+        let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
         let updatedUsers = try? listUsers()
         await MainActor.run {
             if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
@@ -635,12 +635,7 @@ private struct ActiveProfilePicker: View {
                 profileSwitchStatus = .idle
                 selectedProfile = newUser
             }
-            // getTopViewController() keeps returning the sheet until its dismissal
-            // transition ends, and an alert presented on a controller being dismissed is
-            // dropped - so let it settle first.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                showAlert(NSLocalizedString("Error changing chat profile", comment: "alert title"))
-            }
+            alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
         await MainActor.run {

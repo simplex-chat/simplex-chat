@@ -253,18 +253,11 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    try createUser(p, pastTimestamp: pastTimestamp, keepActiveUser: false, ctrl: ctrl)
-}
-
-// Creates a profile *without* activating it: apiChangePreparedContactUser resolves the
-// prepared chat under the active user, so the profile that owns it must stay active until
-// the chat has moved. The returned user is therefore not the active one.
-func apiCreateProfileKeepingActive(_ p: Profile) throws -> User {
-    try createUser(p, pastTimestamp: false, keepActiveUser: true, ctrl: nil)
-}
-
-private func createUser(_ p: Profile?, pastTimestamp: Bool, keepActiveUser: Bool, ctrl: chat_ctrl?) throws -> User {
+/// keepActiveUser creates the profile *without* activating it, for the invitation
+/// pickers: the reassignment APIs resolve the prepared chat or connection under the active
+/// user, so the profile that owns it has to stay active until it has moved. The response
+/// is the created user either way, which is then not the active one.
+func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, keepActiveUser: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
     let r: ChatResponse0 = try chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp, keepActiveUser: keepActiveUser), ctrl: ctrl)
     if case let .activeUser(user) = r { return user }
     throw r.unexpected
