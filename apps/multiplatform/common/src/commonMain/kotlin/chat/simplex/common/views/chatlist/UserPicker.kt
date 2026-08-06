@@ -30,7 +30,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.CreateProfile
-import chat.simplex.common.views.createProfileFromForm
 import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.*
@@ -260,9 +259,7 @@ fun UserPicker(
                 LaunchedEffect(Unit) {
                   userPickerState.value = AnimatedViewState.HIDING
                 }
-                CreateProfile { displayName, shortDescr, image ->
-                  createProfileFromForm(chat.simplex.common.platform.chatModel, displayName, shortDescr, image, close)
-                }
+                CreateProfile(chat.simplex.common.platform.chatModel, close)
               }
             }
           }

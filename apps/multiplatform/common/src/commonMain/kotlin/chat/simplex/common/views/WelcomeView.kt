@@ -57,8 +57,12 @@ fun bioFitsLimit(bio: String): Boolean {
   return chatJsonLength(bio) <= MAX_BIO_LENGTH_BYTES
 }
 
+/** [onSubmit] replaces the default create-and-activate action, so the same form can be
+ * used to create a profile for an invitation - which must not switch the active user
+ * until the invitation has been moved onto it. Optional, so the existing call sites are
+ * untouched. */
 @Composable
-fun CreateProfile(submitting: Boolean = false, onSubmit: (displayName: String, shortDescr: String, image: String?) -> Unit) {
+fun CreateProfile(chatModel: ChatModel, close: () -> Unit, submitting: Boolean = false, onSubmit: ((displayName: String, shortDescr: String, image: String?) -> Unit)? = null) {
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
@@ -160,7 +164,15 @@ fun CreateProfile(submitting: Boolean = false, onSubmit: (displayName: String, s
           disabled = submitting || !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
-          click = { onSubmit(displayName.value, shortDescr.value, profileImage.value) },
+          click = {
+            if (onSubmit != null) {
+              onSubmit(displayName.value, shortDescr.value, profileImage.value)
+            } else if (chatModel.localUserCreated.value == true) {
+              createProfileInProfiles(chatModel, displayName.value, shortDescr.value, profileImage.value, close)
+            } else {
+              createProfileInNoProfileSetup(displayName.value, profileImage.value, close)
+            }
+          },
         )
         SectionTextFooter(generalGetString(MR.strings.your_profile_is_stored_on_your_device))
         SectionTextFooter(generalGetString(MR.strings.profile_is_only_shared_with_your_contacts))
@@ -359,7 +371,7 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
   val modalManager = ModalManager.fullscreen
   if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
   modalManager.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
-    CreateProfile(submitting = chatModel.creatingProfileForInvitation.value) { displayName, shortDescr, image ->
+    CreateProfile(chatModel, close, submitting = chatModel.creatingProfileForInvitation.value) { displayName, shortDescr, image ->
       if (chatModel.creatingProfileForInvitation.value) return@CreateProfile
       chatModel.creatingProfileForInvitation.value = true
       // On Main, like the pickers' own handlers: every call here suspends into IO, and the
@@ -405,17 +417,6 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
         }
       }
     }
-  }
-}
-
-// The two ordinary "add a profile" paths, where the new profile becomes the active
-// one. Creating one for an invitation takes neither, which is why the form itself
-// no longer chooses.
-fun createProfileFromForm(chatModel: ChatModel, displayName: String, shortDescr: String, image: String?, close: () -> Unit) {
-  if (chatModel.localUserCreated.value == true) {
-    createProfileInProfiles(chatModel, displayName, shortDescr, image, close)
-  } else {
-    createProfileInNoProfileSetup(displayName, image, close)
   }
 }
 
