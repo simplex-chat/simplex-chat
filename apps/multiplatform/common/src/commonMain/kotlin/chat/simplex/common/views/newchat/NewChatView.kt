@@ -300,16 +300,14 @@ fun ActiveProfilePicker(
   val selectedProfile by remember { chatModel.currentUser }
   val searchTextOrPassword = rememberSaveable { search }
   // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected.
-  // Keyed on the profile count as well so a profile created from this picker appears in it
-  // without relying on the composition being torn down and rebuilt by the form on top.
+  // Keyed on the users too, or a profile created from this picker is missing from it.
   val filteredProfiles = remember(searchTextOrPassword.value, chatModel.users.size, chatModel.currentUser.value?.userId) {
     filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
 
-  // Creating a profile for this invitation keeps the picker busy until the connection has
-  // been moved onto it, not just until the profile exists.
+  // Busy until the connection has moved onto the new profile, not just until it exists
   val busy = switchingProfile.value || chatModel.creatingProfileForInvitation.value
 
   LaunchedEffect(busy) {
@@ -320,9 +318,8 @@ fun ActiveProfilePicker(
       false
     }
   }
-  // Creating skips the 500ms grace: the picker is recomposed from scratch when the form
-  // closes, so progressByTimeout starts again from false and would leave the rows looking
-  // idle while the invitation is being moved.
+  // Creating skips the 500ms grace: the picker is recomposed when the form closes, so
+  // progressByTimeout restarts from false and the rows would look idle
   val showProgress = progressByTimeout || chatModel.creatingProfileForInvitation.value
 
   suspend fun selectProfileAsync(user: User) {
@@ -332,20 +329,15 @@ fun ActiveProfilePicker(
 
       if (contactConnection != null) {
         updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
-        // The connection was not moved. Leave the picker open instead of switching or
-        // dismissing: a profile just created for this invitation would otherwise be
-        // stranded with nothing pointing at it, and this call provisions a new queue, so
-        // it is what fails offline. apiChangeConnectionUser reports the failure itself
-        // except when sendCmdWithRetry gives up, which is either the user cancelling the
-        // retry or the command being cancelled.
+        // Not moved - leave the picker open rather than stranding a profile just created
+        // for this invitation. This call provisions a new queue, so it is what fails offline.
         if (updatedConn == null) return
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
           updateShownConnection(updatedConn)
         }
       }
-      // Set only once the connection is known to have moved, so a failed reassignment
-      // does not silently turn the app-wide incognito default off.
+      // Only once the connection has moved, or a failure silently clears the app-wide default
       appPreferences.incognito.set(false)
 
       controller.changeActiveUser_(
@@ -367,9 +359,8 @@ fun ActiveProfilePicker(
         }
       }
 
-      // Only if this picker is still the top of its stack. The reassignment above can
-      // wait indefinitely on the retry alert, and back is not blocked while it does, so
-      // an unconditional close() here would pop whatever the user moved on to.
+      // Only if still the top: the call above can wait indefinitely on the retry alert
+      // while back stays enabled, and an unconditional close() would pop the wrong screen.
       if (ModalManager.start.isLastModalOpenNotClosing(ModalViewId.ACTIVE_PROFILE_PICKER)) {
         close()
       }

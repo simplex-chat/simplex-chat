@@ -47,12 +47,9 @@ struct ContextProfilePickerView: View {
                 profilePicker()
             }
         }
-        // Attached here, not to the row and not to profilePicker(): the row lives in a
-        // lazy container that may dispose it, and profilePicker() itself is replaced the
-        // moment listExpanded flips - which changeProfile does while this sheet is still
-        // dismissing, and which an incoming event can do at any time by setting
-        // profileChangeProhibited. This Group survives both. Stacking it with the
-        // IncognitoHelp sheet on body is fine from iOS 14.5; the app targets 15.
+        // On the Group, not the row or profilePicker(): both are disposed while this is
+        // presented - the row by its lazy container, the picker when listExpanded flips.
+        // Stacking with body's IncognitoHelp sheet is fine from iOS 14.5; target is 15.
         .sheet(isPresented: $showAddProfile) {
             NavigationView {
                 CreateProfile(onSubmit: { displayName, shortDescr, image in
@@ -104,9 +101,7 @@ struct ContextProfilePickerView: View {
 
                             let otherUsers = users
                                 .filter { u in u.userId != selectedUser.userId }
-                                // Descending, as every other profile list sorts: a profile
-                                // that was never activated has active_order 0 and belongs
-                                // at the end, not the front.
+                                // Descending, as every other profile list sorts
                                 .sorted(using: KeyPathComparator<User>(\.activeOrder, order: .reverse))
                             ForEach(otherUsers) { p in
                                 profilerPickerUserOption(p)
@@ -183,8 +178,7 @@ struct ContextProfilePickerView: View {
                         listExpanded = false
                     }
                 } else if selectedUser != user {
-                    // Only the branch that starts work is guarded - expanding and
-                    // collapsing the list is local and stays available.
+                    // Only the branch that starts work: expand/collapse is local
                     if busy { return }
                     changingProfile = true
                     changeProfile(user)
@@ -268,22 +262,16 @@ struct ContextProfilePickerView: View {
         await MainActor.run {
             if let updatedUsers = updatedUsers {
                 chatModel.users = updatedUsers
-                // This view's own list is otherwise only filled in onAppear, so without
-                // this the profile just created is missing from the picker if the
-                // reassignment below fails - and the row count the frame is sized from
-                // is one short.
+                // Otherwise only filled in onAppear, so the profile just created is
+                // missing from the picker, and the row count the frame uses is one short.
                 users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
             }
         }
         if newUser.activeUser {
-            // The core did not honour keepActiveUser and activated the profile - an older
-            // remote host ignoring the unknown field. Reassigning would now fail, so
-            // resync to what the host actually did and report it. The failure is the
-            // switch, not the creation, so it is not rethrown into the form's "error
-            // creating profile" handler.
-            // let, not var: MainActor.run's body is @Sendable, and capturing a mutable
-            // local in one is diagnosed under strict concurrency. Assigned on both
-            // branches, so it is definitely initialised.
+            // An older remote host ignored keepActiveUser and activated it, so the
+            // reassignment would fail. Resync to what the host did and report it - not
+            // rethrown, or the form reports it as a failure to create the profile.
+            // let, not var: MainActor.run's body is @Sendable and cannot capture a mutable local
             let switched: Bool
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
@@ -293,10 +281,8 @@ struct ContextProfilePickerView: View {
                 switched = false
             }
             await MainActor.run {
-                // Only when the switch actually happened: the prepared chat then belongs
-                // to a profile that is no longer active, so it is absent from the reloaded
-                // list and a pushed chat view renders blank. If the switch failed nothing
-                // moved and the chat is still fine - closing it would be the regression.
+                // Only if the switch happened: the chat is then absent from the reloaded
+                // list and would render blank. If it failed, the chat is still fine.
                 if switched && chatModel.chatId == chat.id { chatModel.chatId = nil }
             }
             // The switch replaces the chat list, which removes this view - and the sheet

@@ -428,12 +428,10 @@ private struct ActiveProfilePicker: View {
                                 dismiss()
                             }
                         } else {
-                            // Only reachable with no connection - apiSetConnectionIncognito
-                            // throws rather than returning nil. Nothing was changed, so just
-                            // release the status, which otherwise stays .switchingIncognito
-                            // and latches the picker behind a spinner with hit testing off.
-                            // incognitoEnabled is left alone: it is bound to the app-wide
-                            // default, and writing it marks the invitation as used.
+                            // Nothing changed, so just release the status, which otherwise
+                            // latches the picker behind a spinner with hit testing off.
+                            // incognitoEnabled is the app-wide default: writing it here
+                            // would mark the invitation as used.
                             await MainActor.run { profileSwitchStatus = .idle }
                         }
                     } catch {
@@ -488,13 +486,9 @@ private struct ActiveProfilePicker: View {
                                 }
                             }
                         } else {
-                            // No connection, or apiChangeConnectionUser returned nothing:
-                            // nothing was moved, so don't switch or dismiss. Reset the
-                            // status, which otherwise latches the picker into its spinner
-                            // with hit testing off, and put selectedProfile back on the
-                            // active user as the catch below does - otherwise the profile
-                            // that was not switched to keeps the checkmark, and tapping it
-                            // does nothing because the view thinks it is already selected.
+                            // Nothing moved, so don't switch or dismiss. Reset the status,
+                            // and the selection as the catch below does - otherwise the
+                            // profile keeps the checkmark and tapping it does nothing.
                             await MainActor.run {
                                 profileSwitchStatus = .idle
                                 if let currentUser = chatModel.currentUser {
@@ -529,10 +523,8 @@ private struct ActiveProfilePicker: View {
     }
 
 
-    // switchingProfileByTimeout only latches half a second after a switch starts, to keep
-    // the spinner from flickering on fast switches - but input has to be blocked from the
-    // moment the work begins, or a second tap inside that window starts a competing
-    // connection change and user switch.
+    // switchingProfileByTimeout latches half a second late, to avoid spinner flicker, but
+    // input must be blocked from the start or a second tap starts a competing switch.
     private var busy: Bool { creatingProfile || switchingProfileByTimeout || profileSwitchStatus != .idle }
 
     @ViewBuilder private func viewBody() -> some View {
@@ -601,9 +593,6 @@ private struct ActiveProfilePicker: View {
                 Spacer()
             }
         }
-        // profileSwitchStatus, not just switchingProfileByTimeout: that only latches half
-        // a second later, and creatingProfile is cleared as soon as the switch is handed
-        // to the selectedProfile handler - leaving the row live in between.
         .disabled(busy)
     }
 
@@ -628,10 +617,8 @@ private struct ActiveProfilePicker: View {
             profiles = chatModel.users.map { $0.user }
         }
         if newUser.activeUser {
-            // Older core ignored keepActiveUser and switched instead - resync rather than
-            // attempting a connection change that would now fail. The failure is the
-            // switch, not the creation, so it is not rethrown into the form's "error
-            // creating profile" handler.
+            // An older core ignored keepActiveUser and switched instead, so the connection
+            // change would fail. Not rethrown, or the form reports it as a creation failure.
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
             } catch {

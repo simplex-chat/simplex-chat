@@ -118,29 +118,16 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
-  /** Like [isLastModalOpen], except that a modal already dismissed and only waiting out
-   * its close animation does not count as open: [closeModal] leaves it in [modalViews]
-   * and stages its index in [toRemove]. A caller that decides whether to close on "is my
-   * modal still the last one?" needs this, or a back-tap during a long operation makes it
-   * pop the screen underneath as well.
-   *
-   * Separate from [isLastModalOpen] rather than folded into it, because that one is also
-   * used to decide when to tear down secondary chats, where the existing behaviour is
-   * relied on. */
+  /** [isLastModalOpen], except that a modal already dismissed and only waiting out its
+   * close animation does not count - [closeModal] leaves it in [modalViews] and stages
+   * its index in [toRemove]. A caller deciding whether to close on "is my modal still the
+   * last one?" needs this, or a back-tap during a long operation pops the screen beneath
+   * as well. Kept separate because [isLastModalOpen] also gates secondary chat teardown,
+   * which relies on the existing behaviour. */
   fun isLastModalOpenNotClosing(id: ModalViewId): Boolean {
     var i = modalViews.size - 1
     while (i >= 0 && i in toRemove) i--
     return i >= 0 && modalViews.getOrNull(i)?.id == id
-  }
-
-  /** [hasModalOpen] with the same exclusion as [isLastModalOpenNotClosing]: a modal
-   * dismissed but still animating out does not count. Without it, re-opening something
-   * straight after closing it is a silent no-op for the length of the animation. */
-  fun hasModalOpenNotClosing(id: ModalViewId): Boolean {
-    for (i in modalViews.indices) {
-      if (i !in toRemove && modalViews.getOrNull(i)?.id == id) return true
-    }
-    return false
   }
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {

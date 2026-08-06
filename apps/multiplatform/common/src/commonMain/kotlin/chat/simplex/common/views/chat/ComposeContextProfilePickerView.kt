@@ -42,10 +42,9 @@ fun ComposeContextProfilePickerView(
   val incognitoDefault = chatModel.controller.appPrefs.incognito.get()
   val users = chatModel.users.map { it.user }.filter { u -> u.activeUser || !u.hidden }
   val listExpanded = remember { mutableStateOf(false) }
-  // Not rememberSaveable: process death would skip the resetting finally and strand it true.
+  // Not rememberSaveable: process death would skip the resetting finally and strand it true
   val changingProfile = remember { mutableStateOf(false) }
-  // Creating a profile keeps the rows disabled too - the reassignment runs after the form
-  // closes, and until it has, picking anything else moves the invitation twice.
+  // Creating counts as busy until the invitation has moved, which is after the form closes
   val busy = changingProfile.value || chatModel.creatingProfileForInvitation.value
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
@@ -107,9 +106,8 @@ fun ComposeContextProfilePickerView(
           chatMoved = true
         }
       }
-      // Only switch profile if the chat was actually moved to it, otherwise the user
-      // would end up in another profile with the invitation left behind in this one.
-      // apiChangePreparedContactUser/apiChangePreparedGroupUser report the failure.
+      // Only switch if the chat moved, or the user ends up in another profile with the
+      // invitation left behind. apiChangePrepared*User reports the failure itself.
       if (chatMoved) {
         chatModel.controller.changeActiveUser_(
           rhId = newUser.remoteHostId,
@@ -117,10 +115,6 @@ fun ComposeContextProfilePickerView(
           viewPwd = null,
           keepingChatId = chat.id
         )
-        // No chatId assignment here. changeActiveUser_ passes keepingChatId, and
-        // updateChats only clears chatId when the chat is missing from the reloaded
-        // list - so on success this would be a no-op, and in the one case the guard
-        // does fire it would re-point the chat view at a chat that is not there.
         if (chatModel.currentUser.value?.userId != newUser.userId) {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.switching_profile_error_title),
@@ -134,8 +128,7 @@ fun ComposeContextProfilePickerView(
   }
 
   fun changeProfile(newUser: User) {
-    // Also set here, not only in changeProfileTo: withApi dispatches, so between the tap
-    // and the coroutine starting the row would still be enabled.
+    // Also here, not just in changeProfileTo: withApi dispatches, leaving a gap after the tap
     changingProfile.value = true
     withApi { changeProfileTo(newUser) }
   }
@@ -257,8 +250,7 @@ fun ComposeContextProfilePickerView(
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
         .clickable(enabled = !busy, onClick = {
-          // Same guard as every other row: the flag is live state the receiver loop
-          // flips, so it can turn true between this row being laid out and the tap.
+          // Live state the receiver loop flips, so it can turn true after the row was laid out
           if (!chat.chatInfo.profileChangeProhibited) {
             createProfileForInvitation(rhId) { changeProfileTo(it) }
           } else {
@@ -294,7 +286,6 @@ fun ComposeContextProfilePickerView(
       Modifier
         .heightIn(max = MAX_USER_PICKER_HEIGHT)
         .background(MaterialTheme.colors.surface)
-        // The rows are already unclickable while busy; this is the only thing that says so.
         .alpha(if (busy) 0.6f else 1f),
       reverseLayout = true,
       maxHeight = remember { mutableStateOf(MAX_USER_PICKER_HEIGHT) },
