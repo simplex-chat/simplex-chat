@@ -40,7 +40,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.createProfileForInvitation
-import chat.simplex.common.views.creatingProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.BuildConfigCommon
@@ -300,8 +299,10 @@ fun ActiveProfilePicker(
   }
   val selectedProfile by remember { chatModel.currentUser }
   val searchTextOrPassword = rememberSaveable { search }
-  // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected
-  val filteredProfiles = remember(searchTextOrPassword.value) {
+  // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected.
+  // Keyed on the profile count as well so a profile created from this picker appears in it
+  // without relying on the composition being torn down and rebuilt by the form on top.
+  val filteredProfiles = remember(searchTextOrPassword.value, chatModel.users.size) {
     filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 
@@ -309,7 +310,7 @@ fun ActiveProfilePicker(
 
   // Creating a profile for this invitation keeps the picker busy until the connection has
   // been moved onto it, not just until the profile exists.
-  val busy = switchingProfile.value || creatingProfileForInvitation.value
+  val busy = switchingProfile.value || chatModel.creatingProfileForInvitation.value
 
   LaunchedEffect(busy) {
     progressByTimeout = if (busy) {
@@ -319,6 +320,10 @@ fun ActiveProfilePicker(
       false
     }
   }
+  // Creating skips the 500ms grace: the picker is recomposed from scratch when the form
+  // closes, so progressByTimeout starts again from false and would leave the rows looking
+  // idle while the invitation is being moved.
+  val showProgress = progressByTimeout || chatModel.creatingProfileForInvitation.value
 
   suspend fun selectProfileAsync(user: User) {
     switchingProfile.value = true
@@ -327,10 +332,12 @@ fun ActiveProfilePicker(
 
       if (contactConnection != null) {
         updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
-        // The connection was not moved - apiChangeConnectionUser reports it. Leave the
-        // picker open instead of switching or dismissing: a profile just created for this
-        // invitation would otherwise be stranded with nothing pointing at it, and the
-        // connection needs the network here, so this is what happens when offline.
+        // The connection was not moved. Leave the picker open instead of switching or
+        // dismissing: a profile just created for this invitation would otherwise be
+        // stranded with nothing pointing at it, and this call provisions a new queue, so
+        // it is what fails offline. apiChangeConnectionUser reports the failure itself
+        // except when sendCmdWithRetry gives up, which is either the user cancelling the
+        // retry or the command being cancelled.
         if (updatedConn == null) return
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
@@ -377,10 +384,7 @@ fun ActiveProfilePicker(
       title = stringResource(MR.strings.users_add),
       disabled = busy,
       selected = false,
-      // ModalManager.start, the pane this picker is itself shown in, like the incognito
-      // info modal below: the center manager renders the form in another pane on desktop,
-      // leaving this picker live beside it, and nulls chatId, closing any open chat.
-      onSelected = { createProfileForInvitation(rhId, ModalManager.start) { selectProfileAsync(it) } },
+      onSelected = { createProfileForInvitation(rhId) { selectProfileAsync(it) } },
       image = {
         Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
           Icon(
@@ -445,7 +449,7 @@ fun ActiveProfilePicker(
     Column(
       Modifier
         .fillMaxSize()
-        .alpha(if (progressByTimeout) 0.6f else 1f)
+        .alpha(if (showProgress) 0.6f else 1f)
     ) {
       LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent(false)), userScrollEnabled = !busy) {
         item {
@@ -504,7 +508,7 @@ fun ActiveProfilePicker(
         }
       }
     }
-    if (progressByTimeout) {
+    if (showProgress) {
       DefaultProgressView("")
     }
   }

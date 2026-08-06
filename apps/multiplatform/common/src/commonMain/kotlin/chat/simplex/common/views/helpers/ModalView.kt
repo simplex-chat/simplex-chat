@@ -113,16 +113,25 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  // A modal closed while its animation is still running stays in modalViews until the
-  // animation ends, so both checks have to skip the ones already staged for removal -
-  // otherwise a caller that closes on "is my modal still the last one?" pops the modal
-  // underneath instead.
-  private fun openModalViews(): List<ModalViewHolder> =
-    if (toRemove.isEmpty()) modalViews else modalViews.filterIndexed { i, _ -> i !in toRemove }
+  fun hasModalOpen(id: ModalViewId): Boolean = modalViews.any { it.id == id }
 
-  fun hasModalOpen(id: ModalViewId): Boolean = openModalViews().any { it.id == id }
+  fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
-  fun isLastModalOpen(id: ModalViewId): Boolean = openModalViews().lastOrNull()?.id == id
+  /** Like [isLastModalOpen], except that a modal already dismissed and only waiting out
+   * its close animation does not count as open: [closeModal] leaves it in [modalViews]
+   * and stages its index in [toRemove]. A caller that decides whether to close on "is my
+   * modal still the last one?" needs this, or a back-tap during a long operation makes it
+   * pop the screen underneath as well.
+   *
+   * Separate from [isLastModalOpen] rather than folded into it, because that one is also
+   * used to decide when to tear down secondary chats, where the existing behaviour is
+   * relied on. Indexed access rather than iteration, so it stays safe if a caller ever
+   * reaches it off the main thread while these lists are being mutated. */
+  fun isLastModalOpenNotClosing(id: ModalViewId): Boolean {
+    var i = modalViews.size - 1
+    while (i >= 0 && i in toRemove) i--
+    return i >= 0 && modalViews.getOrNull(i)?.id == id
+  }
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal(id = id, forceAnimated = forceAnimated) { close ->

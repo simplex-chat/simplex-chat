@@ -122,6 +122,13 @@ object ChatModel {
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   // map of connections network statuses, key is agent connection id
   val switchingUsersAndHosts = mutableStateOf(false)
+  /** True from the moment a profile is submitted in the "add profile for this invitation"
+   * form until the invitation has been moved onto it. Lives here rather than in the picker
+   * that started it: on Android every ModalManager placement is one stack rendering only
+   * its top entry, so the one-time link picker - itself a modal - is disposed while the
+   * form is above it and returns with every remembered flag reset. (The compose picker is
+   * not a modal and does survive, on both platforms.) */
+  val creatingProfileForInvitation = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)

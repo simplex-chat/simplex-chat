@@ -349,30 +349,28 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-/** True while a profile is being created for an invitation and handed over to the picker
- * that asked for it. Deliberately not remembered in either picker: on Android the picker's
- * composition is disposed while the create-profile modal is on top of it, and comes back
- * with every remembered flag reset - a per-picker flag would be released the moment the
- * form opens, leaving the rows live during the reassignment. */
-val creatingProfileForInvitation = mutableStateOf(false)
-
 // Creates a profile for an invitation and hands it to onCreated, which moves the
 // invitation onto it. The profile is created *without* becoming active: the reassignment
 // APIs resolve the prepared chat or connection under the active user, so the profile that
 // owns the invitation has to stay active until onCreated has run - which is also why
 // onCreated is suspending, so the in-flight flag covers the reassignment and not just the
 // creation.
-fun createProfileForInvitation(rhId: Long?, modalManager: ModalManager, onCreated: suspend (User) -> Unit) {
-  // Shown in the picker's own pane: ModalManager.center nulls chatId on desktop, which
-  // closes the chat the prepared invitation is in - and for the picker that is itself a
-  // start-pane modal, leaves the picker live beside the form.
+fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
+  // ModalManager.fullscreen on purpose. center nulls chatId on desktop, closing the very
+  // chat a prepared invitation is in; end widens the window for good and leaves the
+  // compose picker live in the pane beside the form; start would work for the one-time
+  // link picker but disposes it, losing what was typed in its search box. fullscreen is
+  // an opaque Surface over every pane, so no picker can be operated while the form is up
+  // and none of them is torn down. On Android all four are the same manager anyway.
   // Two taps before the modal renders would otherwise stack two modals sharing one id,
   // after which close() could dismiss the wrong one.
+  if (chatModel.creatingProfileForInvitation.value) return
+  val modalManager = ModalManager.fullscreen
   if (modalManager.hasModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
   modalManager.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
     CreateProfile { displayName, shortDescr, image ->
-      if (creatingProfileForInvitation.value) return@CreateProfile
-      creatingProfileForInvitation.value = true
+      if (chatModel.creatingProfileForInvitation.value) return@CreateProfile
+      chatModel.creatingProfileForInvitation.value = true
       withBGApi {
         try {
           // The reassignment in onCreated resolves the invitation under whatever is active
@@ -401,22 +399,27 @@ fun createProfileForInvitation(rhId: Long?, modalManager: ModalManager, onCreate
               }
             }
           }
-          // A notification tap or a remote host switch can change the active user or tear
-          // the form down while the profile is being created. Reassigning after either
-          // would resolve the invitation under the wrong profile, or move it under a
-          // screen the user has already left, so stop with the profile created.
-          if (
-            chatModel.currentUser.value?.userId != ownerUserId ||
-            chatModel.remoteHostId() != rhId ||
-            !modalManager.isLastModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)
-          ) {
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
-            return@withBGApi
+          // Hand over on the main thread: onCreated reassigns the chat or connection and
+          // switches the user, all of which update structures the receiver loop also
+          // writes to on Main - and Main is where both pickers ran this before it became
+          // a suspending callback. close() touches the modal stack, so it goes here too.
+          withContext(Dispatchers.Main) {
+            // A notification tap or a remote host switch can change the active user or the
+            // host while the profile is being created; reassigning then would resolve the
+            // invitation under the wrong profile. Stop, with the profile created.
+            if (chatModel.currentUser.value?.userId != ownerUserId || chatModel.remoteHostId() != rhId) {
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+              return@withContext
+            }
+            // The form is gone - most likely the user backed out of it while the profile
+            // was being created. Don't move the invitation under a screen they have left,
+            // and don't report an error for something they did deliberately.
+            if (!modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return@withContext
+            close()
+            onCreated(newUser)
           }
-          close()
-          onCreated(newUser)
         } finally {
-          creatingProfileForInvitation.value = false
+          chatModel.creatingProfileForInvitation.value = false
         }
       }
     }

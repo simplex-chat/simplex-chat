@@ -19,7 +19,6 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.createProfileForInvitation
-import chat.simplex.common.views.creatingProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.IncognitoOptionImage
 import chat.simplex.common.views.usersettings.IncognitoView
@@ -46,7 +45,7 @@ fun ComposeContextProfilePickerView(
   val changingProfile = remember { mutableStateOf(false) }
   // Creating a profile keeps the rows disabled too - the reassignment runs after the form
   // closes, and until it has, picking anything else moves the invitation twice.
-  val busy = changingProfile.value || creatingProfileForInvitation.value
+  val busy = changingProfile.value || chatModel.creatingProfileForInvitation.value
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val isVisible = remember { mutableStateOf(false) }
@@ -258,15 +257,7 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-        // ModalManager.end, like the incognito info modal above: the center manager nulls
-        // chatId on desktop, which closes the very chat this picker belongs to.
-        .clickable(enabled = !busy, onClick = {
-          if (!chat.chatInfo.profileChangeProhibited) {
-            createProfileForInvitation(rhId, ModalManager.end) { changeProfileTo(it) }
-          } else {
-            showCantChangeProfileAlert()
-          }
-        })
+        .clickable(enabled = !busy, onClick = { createProfileForInvitation(rhId) { changeProfileTo(it) } })
         .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
