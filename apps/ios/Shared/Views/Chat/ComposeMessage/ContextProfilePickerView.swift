@@ -281,12 +281,16 @@ struct ContextProfilePickerView: View {
             // resync to what the host actually did and report it. The failure is the
             // switch, not the creation, so it is not rethrown into the form's "error
             // creating profile" handler.
-            var switched = false
+            // let, not var: MainActor.run's body is @Sendable, and capturing a mutable
+            // local in one is diagnosed under strict concurrency. Assigned on both
+            // branches, so it is definitely initialised.
+            let switched: Bool
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
                 switched = true
             } catch {
                 logger.error("changeActiveUserAsync_ error: \(responseError(error))")
+                switched = false
             }
             await MainActor.run {
                 // Only when the switch actually happened: the prepared chat then belongs
