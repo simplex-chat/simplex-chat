@@ -318,14 +318,12 @@ fun ActiveProfilePicker(
       false
     }
   }
-  // Creating skips the 500ms grace: the picker is recomposed when the form closes, so
-  // progressByTimeout restarts from false and the rows would look idle
-  val showProgress = progressByTimeout || chatModel.creatingProfileForInvitation.value
-
   suspend fun selectProfileAsync(user: User) {
     switchingProfile.value = true
     try {
       var updatedConn: PendingContactConnection? = null
+
+      appPreferences.incognito.set(false)
 
       if (contactConnection != null) {
         updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
@@ -337,8 +335,6 @@ fun ActiveProfilePicker(
           updateShownConnection(updatedConn)
         }
       }
-      // Only once the connection has moved, or a failure silently clears the app-wide default
-      appPreferences.incognito.set(false)
 
       controller.changeActiveUser_(
         rhId = user.remoteHostId,
@@ -441,7 +437,7 @@ fun ActiveProfilePicker(
     Column(
       Modifier
         .fillMaxSize()
-        .alpha(if (showProgress) 0.6f else 1f)
+        .alpha(if (progressByTimeout) 0.6f else 1f)
     ) {
       LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent(false)), userScrollEnabled = !busy) {
         item {
@@ -486,10 +482,8 @@ fun ActiveProfilePicker(
             ProfilePickerUserOption(p)
           }
         }
-        // Outside the branch above: inside it, the row would disappear whenever the
-        // active profile is filtered out by the search text. Only offered when there
-        // is a connection to move to the new profile - in the share list there is
-        // nothing for a brand new profile to share into.
+        // Outside the branch above, or the row disappears when search filters the active
+        // profile out. Only with a connection to move - the share list has none.
         if (contactConnection != null) {
           item {
             NewProfileOption()
@@ -500,7 +494,7 @@ fun ActiveProfilePicker(
         }
       }
     }
-    if (showProgress) {
+    if (progressByTimeout) {
       DefaultProgressView("")
     }
   }

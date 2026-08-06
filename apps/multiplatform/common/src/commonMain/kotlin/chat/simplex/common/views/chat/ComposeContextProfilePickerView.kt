@@ -11,7 +11,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -42,8 +41,8 @@ fun ComposeContextProfilePickerView(
   val incognitoDefault = chatModel.controller.appPrefs.incognito.get()
   val users = chatModel.users.map { it.user }.filter { u -> u.activeUser || !u.hidden }
   val listExpanded = remember { mutableStateOf(false) }
-  // Stays set until the invitation has been moved onto the new profile, which is after
-  // the form has closed and this picker is interactive again
+  // Set until the invitation has moved onto the new profile, which is after the form has
+  // closed and this picker is interactive again
   val busy = chatModel.creatingProfileForInvitation.value
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
@@ -277,8 +276,7 @@ fun ComposeContextProfilePickerView(
     LazyColumnWithScrollBarNoAppBar(
       Modifier
         .heightIn(max = MAX_USER_PICKER_HEIGHT)
-        .background(MaterialTheme.colors.surface)
-        .alpha(if (busy) 0.6f else 1f),
+        .background(MaterialTheme.colors.surface),
       reverseLayout = true,
       maxHeight = remember { mutableStateOf(MAX_USER_PICKER_HEIGHT) },
       containerAlignment = Alignment.BottomEnd
@@ -332,8 +330,7 @@ fun ComposeContextProfilePickerView(
   fun CurrentSelection() {
     Column(
       Modifier
-        .background(MaterialTheme.colors.surface)
-        .alpha(if (busy) 0.6f else 1f),
+        .background(MaterialTheme.colors.surface),
     ) {
       Text(
         generalGetString(MR.strings.context_user_picker_your_profile),
