@@ -58,6 +58,13 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import Simplex.Chat.Names.Service
+import Simplex.Chat.Names.Service.Default (nameDeployment, namesService)
+import Simplex.Chat.Names.Snrc
+import qualified Simplex.Chat.Wallet as W
+import qualified Simplex.Chat.Store.Wallets as WS
+import qualified Simplex.Messaging.Crypto.BIP39 as B39
+import Simplex.Messaging.Eth.Address (Address, checksumAddress, parseAddress)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -2381,6 +2388,90 @@ processChatCommand cxt nm = \case
       _ -> throwError e
     connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APINameAddress userId -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    pure $ CRNameAddress user (nameAddrText $ W.accountAddress pk) (fromIntegral . W.arIndex $ W.waRef pk)
+  APINameRecoveryKey userId -> withUserId userId $ \user -> do
+    (w, _) <- userWalletAccount user
+    phrase <- nameEither $ W.recoveryKeyPhrase w
+    pure $ CRNameRecoveryKey user (safeDecodeUtf8 phrase) (W.wsBackedUp w)
+  APINameRecoveryKeyImport userId phrase -> withUserId userId $ \user -> do
+    seed <- nameEither . W.importRecoveryKey $ encodeUtf8 phrase
+    w <- withStore' $ \db -> WS.createWalletSeed db seed
+    let r = W.AccountRef {W.arSeedId = W.wsId w, W.arIndex = 0}
+    withStore' $ \db -> WS.bindAccount db user r
+    pure $ CRNameRecoveryKey user phrase (W.wsBackedUp w)
+  APINameRecoveryKeySaved userId -> withUserId userId $ \user -> do
+    (w, _) <- userWalletAccount user
+    withStore' $ \db -> WS.setSeedBackedUp db (W.wsId w) True
+    phrase <- nameEither $ W.recoveryKeyPhrase w
+    pure $ CRNameRecoveryKey user (safeDecodeUtf8 phrase) True
+  APINameQuote userId label -> withUserId userId $ \user -> do
+    q <- nameSvc $ quoteName namesService (encodeUtf8 label)
+    pure $ CRNameQuoted user label (nqAvailable q) (nqPriceCents q)
+  APINameBuy userId label link_ -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    let req =
+          BuyRequest
+            { brLabel = encodeUtf8 label,
+              brOwner = W.accountAddress pk,
+              brYears = 1,
+              brPayment = PPRedeemCode "dev-mock-payment",
+              brContactLink = encodeUtf8 <$> link_,
+              brChannelLink = Nothing
+            }
+    pid <- nameSvc $ buyName namesService req
+    reg <- namePoll pid (20 :: Int)
+    case reg of
+      RegConfirmed {rsTxHash} -> do
+        let fqdn = label <> ".simplex"
+        rec' <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
+        unless (nrvOwner rec' == W.accountAddress pk) $ throwCmdError "registered name is not owned by this profile"
+        pure $ CRNameRegistered user fqdn (safeDecodeUtf8 rsTxHash)
+      RegFailed e -> throwCmdError $ "registration failed: " <> B.unpack e
+      RegPending -> throwCmdError "registration is still pending, try again"
+  APINameList userId -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    ns <- nameSvc $ namesOwnedBy namesService (W.accountAddress pk)
+    pure $ CRNamesOwned user (map safeDecodeUtf8 ns)
+  APINameInfo userId fqdn -> withUserId userId $ \user -> do
+    r <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
+    pure $
+      CRNameInfo
+        user
+        fqdn
+        (nameAddrText $ nrvOwner r)
+        (map safeDecodeUtf8 $ nrvContact r)
+        (map safeDecodeUtf8 $ nrvChannel r)
+        (fromIntegral $ nrvExpires r)
+        (fromIntegral $ nrvEditCredits r)
+  APINameSetLink userId fqdn newLink -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
+    tx <-
+      nameRelay pk $
+        SetTextRecord
+          { sxName = encodeUtf8 fqdn,
+            sxKey = contactRecordKey,
+            sxValue = encodeUtf8 newLink,
+            sxNonce = n,
+            sxDeadline = nameDeadline
+          }
+    pure $ CRNameIntentRelayed user "link" fqdn tx
+  APINameGift userId label recipient -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    to <- nameEither $ parseAddress (encodeUtf8 recipient)
+    n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
+    tx <-
+      nameRelay pk $
+        TransferName
+          { tiFrom = W.accountAddress pk,
+            tiTo = to,
+            tiLabel = encodeUtf8 label,
+            tiNonce = n,
+            tiDeadline = nameDeadline
+          }
+    pure $ CRNameIntentRelayed user "gift" (label <> ".simplex") tx
   APIVerifyContactDomain contactId -> withUser $ \user -> do
     ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
@@ -5701,6 +5792,26 @@ chatCommandP =
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
+      "/_name address " *> (APINameAddress <$> A.decimal),
+      "/_name key import " *> (APINameRecoveryKeyImport <$> A.decimal <* A.space <*> textP),
+      "/_name key saved " *> (APINameRecoveryKeySaved <$> A.decimal),
+      "/_name key " *> (APINameRecoveryKey <$> A.decimal),
+      "/_name quote " *> (APINameQuote <$> A.decimal <* A.space <*> nameWordP),
+      "/_name buy " *> (APINameBuy <$> A.decimal <* A.space <*> nameWordP <*> optional (A.space *> textP)),
+      "/_name list " *> (APINameList <$> A.decimal),
+      "/_name info " *> (APINameInfo <$> A.decimal <* A.space <*> nameWordP),
+      "/_name link " *> (APINameSetLink <$> A.decimal <* A.space <*> nameWordP <* A.space <*> textP),
+      "/_name gift " *> (APINameGift <$> A.decimal <* A.space <*> nameWordP <* A.space <*> textP),
+      "/names address" $> APINameAddress 1,
+      "/names key import " *> (APINameRecoveryKeyImport 1 <$> textP),
+      "/names key saved" $> APINameRecoveryKeySaved 1,
+      "/names key" $> APINameRecoveryKey 1,
+      "/names quote " *> (APINameQuote 1 <$> nameWordP),
+      "/names buy " *> (APINameBuy 1 <$> nameWordP <*> optional (A.space *> textP)),
+      "/names list" $> APINameList 1,
+      "/names info " *> (APINameInfo 1 <$> nameWordP),
+      "/names link " *> (APINameSetLink 1 <$> nameWordP <* A.space <*> textP),
+      "/names gift " *> (APINameGift 1 <$> nameWordP <* A.space <*> textP),
       "/_verify domain #" *> (APIVerifyGroupDomain <$> A.decimal),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
@@ -5937,6 +6048,7 @@ chatCommandP =
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""
       pure $ if T.null descr then Nothing else Just $ T.take 160 descr
     textP = safeDecodeUtf8 <$> A.takeByteString
+    nameWordP = safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
@@ -6099,3 +6211,47 @@ mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar (
         validFirstNameChar = isLetter c || cat == DecimalNumber || cat == OtherSymbol
         validFirstChar = validFirstNameChar || cat == CurrencySymbol || cat == MathSymbol
         prohibited = ".,;/\\#@'\"`~" :: String
+
+-- SimpleX names helpers -------------------------------------------------------
+--
+-- The service is the mock today (see Simplex.Chat.Names.Service.Default); these
+-- helpers do not know that, so swapping in the SMP-backed client changes only
+-- that module.
+
+-- | The profile's derived key, creating the seed and binding on first use.
+-- Single-seed by construction: the binding reuses the database's first wallet.
+userWalletAccount :: User -> CM (W.WalletSeed, W.WalletAccount)
+userWalletAccount user = do
+  g <- asks random
+  (w, r) <- withStore' $ \db -> WS.getOrCreateAccountRef db user (atomically $ W.newSeed B39.MS128 g)
+  pk <- nameEither $ W.deriveAccount w (W.arIndex r)
+  pure (w, pk)
+
+nameEither :: Either String a -> CM a
+nameEither = either throwCmdError pure
+
+nameSvc :: IO (Either ServiceError a) -> CM a
+nameSvc act = liftIO act >>= either (throwCmdError . B.unpack . serviceErrorText) pure
+
+-- | Poll registration to completion, standing in for the commit-reveal wait.
+namePoll :: PurchaseId -> Int -> CM RegistrationStatus
+namePoll pid n
+  | n <= 0 = pure RegPending
+  | otherwise =
+      nameSvc (registrationStatus namesService pid) >>= \case
+        RegPending -> liftIO (threadDelay 50000) >> namePoll pid (n - 1)
+        r -> pure r
+
+-- | Sign an intent with the profile key and hand it to the relayer.
+nameRelay :: W.WalletAccount -> Intent -> CM Text
+nameRelay pk intent = do
+  digest <- nameEither $ intentDigest nameDeployment intent
+  sig <- nameEither $ W.signDigest pk digest
+  safeDecodeUtf8 <$> nameSvc (relayIntent namesService SignedIntent {siIntent = intent, siSignature = sig})
+
+nameAddrText :: Address -> Text
+nameAddrText = safeDecodeUtf8 . checksumAddress
+
+-- | Intents expire; the mock's clock is fixed, so this is a fixed horizon.
+nameDeadline :: Integer
+nameDeadline = 1786000000 + 3600

@@ -87,3 +87,5 @@ website/test/stubs-layout-cache/_includes/*.js
 apps/android/app/release
 apps/multiplatform/.kotlin/sessions
 
+.idea/
+cabal.project.dev

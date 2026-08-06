@@ -544,6 +544,16 @@ data ChatCommand
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
   | APIVerifyContactDomain {contactId :: ContactId}
+  | APINameAddress {userId :: UserId}
+  | APINameRecoveryKey {userId :: UserId}
+  | APINameRecoveryKeyImport {userId :: UserId, recoveryPhrase :: Text}
+  | APINameRecoveryKeySaved {userId :: UserId}
+  | APINameQuote {userId :: UserId, nameLabel :: Text}
+  | APINameBuy {userId :: UserId, nameLabel :: Text, nameLink :: Maybe Text}
+  | APINameList {userId :: UserId}
+  | APINameInfo {userId :: UserId, nameFqdn :: Text}
+  | APINameSetLink {userId :: UserId, nameFqdn :: Text, nameLink_ :: Text}
+  | APINameGift {userId :: UserId, nameLabel :: Text, nameRecipient :: Text}
   | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -923,6 +933,13 @@ data ChatResponse
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRAppSettings {appSettings :: AppSettings}
+  | CRNameAddress {user :: User, nameAddress :: Text, nameAccount :: Int}
+  | CRNameRecoveryKey {user :: User, recoveryPhrase :: Text, recoveryKeySaved :: Bool}
+  | CRNameQuoted {user :: User, nameLabel :: Text, nameAvailable :: Bool, namePriceCents :: Int}
+  | CRNameRegistered {user :: User, nameFqdn :: Text, nameTxHash :: Text}
+  | CRNamesOwned {user :: User, ownedNames :: [Text]}
+  | CRNameInfo {user :: User, nameFqdn :: Text, nameOwner :: Text, nameContact :: [Text], nameChannel :: [Text], nameExpires :: Int, nameEditCredits :: Int}
+  | CRNameIntentRelayed {user :: User, nameAction :: Text, nameFqdn :: Text, nameTxHash :: Text}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 

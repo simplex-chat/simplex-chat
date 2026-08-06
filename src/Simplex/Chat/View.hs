@@ -34,6 +34,7 @@ import Data.Text.Encoding (decodeLatin1)
 import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 import qualified Network.HTTP.Types as Q
@@ -149,6 +150,37 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
+  CRNameAddress u addr acct -> ttyUser u ["name address (account " <> sShow acct <> "): " <> plain addr]
+  CRNameRecoveryKey u phrase saved ->
+    ttyUser u $
+      [ "name recovery key:",
+        "",
+        plain phrase,
+        ""
+      ]
+        <> if saved
+          then ["you marked this as saved"]
+          else ["write this down and keep it offline - it is the only way to recover your names", "then run /names key saved"]
+  CRNameQuoted u label avail cents ->
+    ttyUser u
+      [ plain label <> ".simplex: "
+          <> (if avail then "available" else "taken")
+          <> ", " <> plain (moneyText cents) <> "/year"
+      ]
+  CRNameRegistered u name tx -> ttyUser u ["registered " <> plain name, "tx " <> plain tx]
+  CRNamesOwned u [] -> ttyUser u ["you own no names"]
+  CRNamesOwned u ns -> ttyUser u $ "your names:" : map (("  " <>) . plain) ns
+  CRNameInfo u name owner contact channel expires credits ->
+    ttyUser u $
+      [ plain name,
+        "  owner    " <> plain owner,
+        "  expires  " <> plain (expiryText expires),
+        "  changes  " <> sShow credits <> " relayed record changes left"
+      ]
+        <> ["  contact  " <> plain l | l <- contact]
+        <> ["  channel  " <> plain l | l <- channel]
+  CRNameIntentRelayed u action name tx ->
+    ttyUser u [plain action <> " " <> plain name <> " done", "tx " <> plain tx]
   CRGroupDomainVerified u g result -> ttyUser u $ viewDomainVerified NTPublicGroup (groupSimplexDomain g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -1145,6 +1177,14 @@ simplexChatContact' = \case
 groupSimplexDomain :: GroupInfo -> Maybe SimplexDomain
 groupSimplexDomain GroupInfo {groupProfile = GroupProfile {publicGroup}} =
   claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+
+expiryText :: Int -> Text
+expiryText t = T.pack . formatTime defaultTimeLocale "%Y-%m-%d" . posixSecondsToUTCTime $ fromIntegral t
+
+moneyText :: Int -> Text
+moneyText cents = T.pack $ "$" <> show (cents `div` 100) <> "." <> pad (cents `mod` 100)
+  where
+    pad n = let str = show n in if length str < 2 then '0' : str else str
 
 viewDomainVerified :: SimplexNameType -> Maybe SimplexDomain -> Maybe Text -> [StyledString]
 viewDomainVerified nameType domain_ result =
