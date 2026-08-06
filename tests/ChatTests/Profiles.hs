@@ -52,6 +52,7 @@ chatProfileTests = do
     it "reject profile image that is too large" testSetProfileImageTooLarge
     it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
+    it "create user without keepActiveUser activates it" testCreateUserWithoutKeepActiveUser
     it "present supporter badge to contacts" testUserBadgeBroadcast
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
     it "supporter badge sent to member joining via group link" testUserBadgeGroupLink
@@ -154,7 +155,6 @@ shortLinkTests = do
   it "change prepared contact user" testShortLinkChangePreparedContactUser
   it "change prepared contact user, new user has contact with the same name" testShortLinkChangePreparedContactUserDuplicate
   it "create user keeping active user, then change prepared contact user" testCreateUserKeepingActiveUser
-  it "create user without keepActiveUser activates it" testCreateUserWithoutKeepActiveUser
   it "connect to prepared group incognito" testShortLinkConnectPreparedGroupIncognito
   it "change prepared group user" testShortLinkChangePreparedGroupUser
   it "change prepared group user, new user has group with the same name" testShortLinkChangePreparedGroupUserDuplicate
@@ -4005,6 +4005,11 @@ testCreateUserKeepingActiveUser = testChat2 aliceProfile bobProfile test
       -- ... and the active user is unchanged, with no switch back needed
       bob ##> "/u"
       showActiveUser bob "bob (Bob)"
+      -- the new user's own record is not active either - the clients branch on this
+      -- field of the created user, and it is listed last, having never been activated
+      bob ##> "/users"
+      bob <## "bob (Bob) (active)"
+      bob <## "robert"
 
       alice ##> "/_connect 1"
       (shortLink, fullLink) <- getInvitations alice

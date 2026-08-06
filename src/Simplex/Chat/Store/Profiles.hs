@@ -140,7 +140,10 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
         sendRcptsContacts = True
         sendRcptsSmallGroups = True
         autoAcceptMemberContacts = False
-    order <- getNextActiveOrder db
+    -- active_order means "last activated", and setActiveUser is otherwise its only
+    -- writer - so a user created without being activated must not consume an order,
+    -- or it would sort above the profile that is actually in use.
+    order <- if activeUser then getNextActiveOrder db else pure 0
     DB.execute
       db
       "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?)"
