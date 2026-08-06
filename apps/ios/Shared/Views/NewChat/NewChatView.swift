@@ -580,9 +580,8 @@ private struct ActiveProfilePicker: View {
         .disabled(busy)
     }
 
-    // Creates a profile for this invitation without activating it, then routes through
-    // the same selectedProfile path as picking an existing profile, so the connection
-    // change and the switch cannot drift apart.
+    // Created without activating, then routed through the same selectedProfile path as
+    // picking an existing profile, so the connection change and the switch cannot drift.
     private func createProfileForConnection(_ displayName: String, _ shortDescr: String?, _ image: String?) async throws {
         // Atomic check-and-set on the main actor: a plain check-then-set leaves a window
         // where two submits both pass, and @State must not be read off the main actor.
@@ -601,21 +600,17 @@ private struct ActiveProfilePicker: View {
             profiles = chatModel.users.map { $0.user }
         }
         if newUser.activeUser {
-            // An older core ignored keepActiveUser and switched instead, so the connection
-            // change would fail. Not rethrown, or the form reports it as a creation failure.
+            // An older core ignored keepActiveUser, so the connection change would fail
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
             } catch {
                 logger.error("changeActiveUserAsync_ error: \(responseError(error))")
             }
-            // Dismiss the form, as the compose picker does on the same failure: the app is
-            // now showing a different profile and the connection stayed with the previous
-            // one, so there is nothing left to do here and a second attempt would fail the
-            // same way.
+            // Dismiss: the app now shows a different profile and the connection stayed
+            // with the previous one, so a second attempt would fail the same way.
             await MainActor.run {
                 showAddProfile = false
-                // Make the picker agree with the profile that is now active rather than
-                // leaving the checkmark on one that is not.
+                // Make the picker agree with the profile that is now active
                 profileSwitchStatus = .idle
                 selectedProfile = newUser
             }
@@ -699,9 +694,7 @@ private struct ActiveProfilePicker: View {
                     try await createProfileForConnection(displayName, shortDescr, image)
                 }, submitting: creatingProfile)
             }
-            // The submit runs in an unstructured Task that SwiftUI does not cancel, so a
-            // swipe-to-dismiss mid-create would still create the profile and switch to it
-            // while every state write landed on a dismissed view.
+            // The submit Task is unstructured and SwiftUI will not cancel it on dismissal
             .interactiveDismissDisabled(creatingProfile)
         }
     }

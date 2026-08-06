@@ -47,9 +47,8 @@ struct ContextProfilePickerView: View {
                 profilePicker()
             }
         }
-        // On the Group, not the row or profilePicker(): both are disposed while this is
-        // presented - the row by its lazy container, the picker when listExpanded flips.
-        // Stacking with body's IncognitoHelp sheet is fine from iOS 14.5; target is 15.
+        // On the Group: the row and profilePicker() are both disposed while this is
+        // presented. Stacking sheets is supported from iOS 14.5; the target is 15.
         .sheet(isPresented: $showAddProfile) {
             NavigationView {
                 CreateProfile(onSubmit: { displayName, shortDescr, image in
@@ -177,7 +176,7 @@ struct ContextProfilePickerView: View {
                         listExpanded = false
                     }
                 } else if selectedUser != user {
-                    // Only the branch that starts work: expand/collapse is local
+                    // Only the branch that starts work; expand/collapse is local
                     if busy { return }
                     changingProfile = true
                     changeProfile(user)
@@ -245,13 +244,11 @@ struct ContextProfilePickerView: View {
         .disabled(busy)
     }
 
-    // Creates a profile to use for this invitation. It is created without becoming
-    // active, because changeProfile below reassigns the prepared chat and the API
-    // resolves that chat under the currently active user - so the profile that owns the
-    // invitation has to stay active until the chat has been moved.
+    // Created without becoming active: changeProfile below resolves the prepared chat
+    // under the active user, so the profile that owns it must stay active until it moves.
     private func createProfileForChat(_ displayName: String, _ shortDescr: String?, _ image: String?) async throws {
-        // Atomic check-and-set on the main actor: a plain check-then-set leaves a window
-        // where two submits both pass, and @State must not be read off the main actor.
+        // Atomic check-and-set: check-then-set lets two submits through, and @State
+        // must not be read off the main actor.
         let alreadyCreating = await MainActor.run { () -> Bool in
             if creatingProfile { return true }
             creatingProfile = true
@@ -265,15 +262,13 @@ struct ContextProfilePickerView: View {
         await MainActor.run {
             if let updatedUsers = updatedUsers {
                 chatModel.users = updatedUsers
-                // Otherwise only filled in onAppear, so the profile just created is
-                // missing from the picker, and the row count the frame uses is one short.
+                // Only filled in onAppear otherwise, so the new profile is missing here
                 users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
             }
         }
         if newUser.activeUser {
-            // An older remote host ignored keepActiveUser and activated it, so the
-            // reassignment would fail. Resync to what the host did and report it - not
-            // rethrown, or the form reports it as a failure to create the profile.
+            // An older remote host ignored keepActiveUser, so the reassignment would
+            // fail. Resync and report - not rethrown, or the form blames the creation.
             let switched: Bool
             do {
                 try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
@@ -283,19 +278,15 @@ struct ContextProfilePickerView: View {
                 switched = false
             }
             await MainActor.run {
-                // Dismissed unconditionally: the switch removes this view - and the sheet
-                // it presents - only when it succeeded. If it threw, the form would be
-                // left over a profile that already exists.
+                // Unconditional: the switch only removes this view when it succeeded
                 showAddProfile = false
-                // Only if the switch happened: the chat is then absent from the reloaded
-                // list and would render blank. If it failed, the chat is still fine.
+                // Only if it switched: the chat is then gone from the list and renders blank
                 if switched && chatModel.chatId == chat.id { chatModel.chatId = nil }
             }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
-        // changingProfile here too: the defer above clears creatingProfile as soon as this
-        // returns, and changeProfile's Task has not necessarily started by then.
+        // Here too: the defer clears creatingProfile as soon as this returns
         await MainActor.run {
             showAddProfile = false
             changingProfile = true
