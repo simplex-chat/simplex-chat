@@ -570,7 +570,6 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
   where
     storeFile :: Maybe FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFile = \case
-      -- must stay a bare name: the controller re-joins it with its own folder, and the host with filesFolder
       Just ff -> takeFileName <$$> storeFileTo ff
       Nothing -> storeFileTo =<< getDefaultFilesFolder
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
