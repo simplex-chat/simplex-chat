@@ -53,7 +53,7 @@ remoteTests = describe "Remote" $ do
     it "sanitizes any name to a real file name" $ \_ ->
       filter (not . sanitized) fileNames `shouldBe` []
     it "sanitizes to a name with no directory components" $ \_ ->
-      filter (\n -> let n' = safeFileNameStr n in n' /= takeFileName n') fileNames `shouldBe` []
+      filter (not . bareName) fileNames `shouldBe` []
   xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
@@ -62,6 +62,7 @@ remoteTests = describe "Remote" $ do
     fileNames :: [FilePath]
     fileNames = ["", ".", "..", "...", "../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "test.pdf", ".hidden", "a b.tar.gz"]
     sanitized n = let n' = safeFileNameStr n in n' /= "" && n' /= "." && n' /= ".."
+    bareName n = let n' = safeFileNameStr n in n' == takeFileName n'
 
 runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
 runRemoteTests = do
