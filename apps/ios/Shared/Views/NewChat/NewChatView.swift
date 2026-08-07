@@ -397,6 +397,8 @@ private struct ActiveProfilePicker: View {
     @State private var searchTextOrPassword = ""
     @State private var showIncognitoSheet = false
     @State private var incognitoFirst: Bool = false
+    @State private var showAddProfile = false
+    @State private var creatingProfile = false
     @State var selectedProfile: User
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
@@ -424,6 +426,16 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                                 profileSwitchStatus = .idle
                                 dismiss()
+                            }
+                        } else {
+                            // Backstop for a nil connection coming back without a throw: the
+                            // row above cannot start this with contactConnection nil. Without
+                            // it the status stays .switchingIncognito and busy leaves the
+                            // whole picker - including "Add profile" - permanently dead. Both
+                            // writes in one hop, so the re-entrant onChange sees .idle.
+                            await MainActor.run {
+                                profileSwitchStatus = .idle
+                                incognitoEnabled = !incognito
                             }
                         }
                     } catch {
@@ -477,6 +489,15 @@ private struct ActiveProfilePicker: View {
                                     )
                                 }
                             }
+                        } else {
+                            // apiChangeConnectionUser returns nil rather than throwing when
+                            // the retry is cancelled - offline. Without this the status stays
+                            // .switchingUser, switchingProfileByTimeout latches, and the
+                            // picker is left permanently behind its spinner.
+                            await MainActor.run {
+                                profileSwitchStatus = .idle
+                                selectedProfile = chatModel.currentUser ?? selectedProfile
+                            }
                         }
                     } catch {
                         await MainActor.run {
@@ -505,9 +526,15 @@ private struct ActiveProfilePicker: View {
     }
 
 
+    // The picker must be dead from the moment work starts: switchingProfileByTimeout only
+    // latches half a second later, to keep the spinner from flickering, and in that window
+    // a second row tap would run apiChangeConnectionUser against a connection that
+    // recreateConn is already deleting.
+    private var busy: Bool { creatingProfile || switchingProfileByTimeout || profileSwitchStatus != .idle }
+
     @ViewBuilder private func viewBody() -> some View {
         profilePicker()
-            .allowsHitTesting(!switchingProfileByTimeout)
+            .allowsHitTesting(!busy)
             .modifier(ThemedBackground(grouped: true))
             .overlay {
                 if switchingProfileByTimeout {
@@ -532,7 +559,9 @@ private struct ActiveProfilePicker: View {
 
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
-            if selectedProfile == user && incognitoEnabled {
+            // contactConnection as in incognitoOption: with nothing to change the handler
+            // does nothing and the backstop writes the app-wide default straight back.
+            if selectedProfile == user && incognitoEnabled && contactConnection != nil {
                 incognitoEnabled = false
                 profileSwitchStatus = .switchingIncognito
             } else if selectedProfile != user {
@@ -558,9 +587,107 @@ private struct ActiveProfilePicker: View {
         }
     }
 
+    private var addProfileOption: some View {
+        Button {
+            showAddProfile = true
+        } label: {
+            HStack {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .resizable().scaledToFit().frame(width: 38, height: 38)
+                    .foregroundColor(theme.colors.primary)
+                Text("Add profile")
+                    .foregroundColor(theme.colors.primary)
+                Spacer()
+            }
+        }
+    }
+
+    // Created without activating, then routed through the same selectedProfile path as
+    // picking an existing profile, so the connection change and the switch cannot drift.
+    private func createProfileForConnection(_ displayName: String, _ shortDescr: String?, _ image: String?) async throws {
+        // Atomic check-and-set on the main actor: a plain check-then-set leaves a window
+        // where two submits both pass, and @State must not be read off the main actor.
+        let alreadyCreating = await MainActor.run { () -> Bool in
+            if creatingProfile { return true }
+            creatingProfile = true
+            return false
+        }
+        if alreadyCreating { return }
+        defer { Task { @MainActor in creatingProfile = false } }
+        let ownerUserId = await MainActor.run { chatModel.currentUser?.userId }
+        let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
+        let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
+        // Checked before refreshing the lists below: on this path the core has already
+        // activated the new profile, so they would disagree with chatModel.currentUser
+        // until the resync lands - and changeActiveUserAsync_ refreshes them anyway.
+        if newUser.activeUser {
+            // An older core ignored keepActiveUser, so the connection change would fail
+            do {
+                try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+            } catch {
+                logger.error("changeActiveUserAsync_ error: \(responseError(error))")
+            }
+            // Dismiss: the app now shows a different profile and the connection stayed
+            // with the previous one, so a second attempt would fail the same way.
+            await MainActor.run {
+                showAddProfile = false
+                profileSwitchStatus = .idle
+                // Whatever the resync above ended up with - newUser if it switched, the
+                // previous profile if it threw. Not newUser unconditionally, or a failed
+                // switch leaves the checkmark on a profile that is not active.
+                selectedProfile = chatModel.currentUser ?? selectedProfile
+                // Registered here rather than trusting the resync: changeActiveUserAsync_
+                // calls apiSetActiveUserAsync and listUsersAsync before the MainActor.run
+                // that writes m.users, so a throw leaves that list untouched.
+                if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
+                    chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
+                }
+                // And this snapshot is otherwise only filled in onAppear, so without it the
+                // picker lists the old profiles and no row shows a checkmark.
+                profiles = chatModel.users.map { $0.user }
+            }
+            alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
+            return
+        }
+        // Below the branch above, which returns: adding it there would leave two entries
+        // flagged activeUser, and its own resync refreshes the list anyway. Above the guard
+        // below, which returns without refreshing either list - the profile exists by now,
+        // so it has to appear in both or the next attempt at the same name is a duplicate.
+        // profiles is otherwise only filled in onAppear.
+        await MainActor.run {
+            if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
+                chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
+            }
+            profiles = chatModel.users.map { $0.user }
+        }
+        let updatedUsers = try? await listUsersAsync()
+        // apiChangeConnectionUser resolves pccConnId under whatever is active when the
+        // selectedProfile handler runs, and a notification action can have switched it.
+        // After the await above, not before it: checked first, that await reopens the very
+        // window this closes. Kotlin orders it the same way.
+        guard await MainActor.run({ chatModel.currentUser?.userId }) == ownerUserId else {
+            await MainActor.run { showAddProfile = false }
+            alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
+            return
+        }
+        await MainActor.run {
+            if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
+            // Derived from chatModel.users, which already holds the new profile - without
+            // it selectedProfile below points at a profile that has no row in the picker.
+            profiles = chatModel.users.map { $0.user }
+            showAddProfile = false
+            selectedProfile = newUser
+            profileSwitchStatus = .switchingUser
+        }
+    }
+
     @ViewBuilder private func profilePicker() -> some View {
         let incognitoOption = Button {
-            if !incognitoEnabled {
+            // contactConnection too, as Kotlin's IncognitoUserOption checks: with nothing to
+            // change the handler below does nothing, and incognitoEnabled is a binding onto
+            // the app-wide default, so toggling it here would write that preference twice
+            // for an action that cannot happen.
+            if !incognitoEnabled && contactConnection != nil {
                 incognitoEnabled = true
                 profileSwitchStatus = .switchingIncognito
             }
@@ -610,8 +737,27 @@ private struct ActiveProfilePicker: View {
                     profilerPickerUserOption(p)
                 }
             }
+
+            // Outside the branch above: inside it the row would disappear whenever the
+            // active profile is filtered out by the search text. Only offered when there
+            // is a connection to move to the new profile.
+            if contactConnection != nil {
+                addProfileOption
+            }
         }
         .opacity(switchingProfileByTimeout ? 0.4 : 1)
+        // Attached to the picker, not to the row: the row lives in a lazy container that
+        // may dispose it, taking the presented sheet with it. Unlike the compose picker
+        // this view is never replaced, so the picker is a stable enough owner.
+        .sheet(isPresented: $showAddProfile) {
+            NavigationView {
+                CreateProfile(onSubmit: { displayName, shortDescr, image in
+                    try await createProfileForConnection(displayName, shortDescr, image)
+                }, submitting: creatingProfile)
+            }
+            // The submit Task is unstructured and SwiftUI will not cancel it on dismissal
+            .interactiveDismissDisabled(creatingProfile)
+        }
     }
 }
 

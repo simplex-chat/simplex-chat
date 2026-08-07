@@ -122,6 +122,10 @@ object ChatModel {
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   // map of connections network statuses, key is agent connection id
   val switchingUsersAndHosts = mutableStateOf(false)
+  /** Set while a profile is being created for an invitation and moved onto it. On the
+   * model because on Android the picker that starts it is itself a modal, and is disposed
+   * while the create-profile form is above it - a remembered flag would come back false. */
+  val creatingProfileForInvitation = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)

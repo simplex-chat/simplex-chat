@@ -744,7 +744,7 @@ export namespace ShowActiveUser {
   }
 }
 
-// Create new user profile.
+// Create new user profile. The new profile becomes the active one, unless keepActiveUser is set - in that case the current profile stays active. The response carries the created profile either way, so with keepActiveUser it is not the active profile.
 // Network usage: no.
 export interface CreateActiveUser {
   newUser: T.NewUser
