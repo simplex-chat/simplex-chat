@@ -295,14 +295,16 @@ struct ContextProfilePickerView: View {
                 users.append(newUser)
             }
         }
+        let updatedUsers = try? await listUsersAsync()
         // changeProfile resolves the prepared chat under whatever is active when it runs,
-        // and a notification action can have switched it while we were creating.
+        // and a notification action can have switched it while we were creating. After the
+        // await above, not before it: checked first, that await reopens the very window
+        // this closes. Kotlin orders it the same way.
         guard await MainActor.run({ chatModel.currentUser?.userId }) == ownerUserId else {
             await MainActor.run { showAddProfile = false }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
-        let updatedUsers = try? await listUsersAsync()
         await MainActor.run {
             if let updatedUsers = updatedUsers {
                 chatModel.users = updatedUsers
@@ -361,13 +363,13 @@ struct ContextProfilePickerView: View {
 
     private func incognitoOption() -> some View {
         Button {
-            // As in profilerPickerUserOption: a failed changeProfile would leave the
-            // incognito default on while the picker still shows the chat profile.
-            if busy { return }
             if !chat.chatInfo.profileChangeProhibited {
                 if incognitoDefault {
                     listExpanded.toggle()
-                } else {
+                } else if !busy {
+                    // As in profilerPickerUserOption: a failed changeProfile would leave the
+                    // incognito default on while the picker still shows the chat profile.
+                    // Only this branch - expanding and collapsing is local, as on Kotlin.
                     incognitoDefault = true
                     listExpanded = false
                 }

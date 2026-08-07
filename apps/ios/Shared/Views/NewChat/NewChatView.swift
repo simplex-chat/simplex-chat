@@ -559,7 +559,9 @@ private struct ActiveProfilePicker: View {
 
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
-            if selectedProfile == user && incognitoEnabled {
+            // contactConnection as in incognitoOption: with nothing to change the handler
+            // does nothing and the backstop writes the app-wide default straight back.
+            if selectedProfile == user && incognitoEnabled && contactConnection != nil {
                 incognitoEnabled = false
                 profileSwitchStatus = .switchingIncognito
             } else if selectedProfile != user {
@@ -634,6 +636,10 @@ private struct ActiveProfilePicker: View {
                 // previous profile if it threw. Not newUser unconditionally, or a failed
                 // switch leaves the checkmark on a profile that is not active.
                 selectedProfile = chatModel.currentUser ?? selectedProfile
+                // The resync refreshed chatModel.users but not this snapshot, which is
+                // otherwise only filled in onAppear: without it the picker lists the old
+                // profiles, none matches the active one, and no row shows a checkmark.
+                profiles = chatModel.users.map { $0.user }
             }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
@@ -649,14 +655,16 @@ private struct ActiveProfilePicker: View {
             }
             profiles = chatModel.users.map { $0.user }
         }
+        let updatedUsers = try? await listUsersAsync()
         // apiChangeConnectionUser resolves pccConnId under whatever is active when the
         // selectedProfile handler runs, and a notification action can have switched it.
+        // After the await above, not before it: checked first, that await reopens the very
+        // window this closes. Kotlin orders it the same way.
         guard await MainActor.run({ chatModel.currentUser?.userId }) == ownerUserId else {
             await MainActor.run { showAddProfile = false }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
-        let updatedUsers = try? await listUsersAsync()
         await MainActor.run {
             if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
             // Derived from chatModel.users, which already holds the new profile - without
