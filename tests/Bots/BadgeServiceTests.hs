@@ -13,7 +13,6 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.STM
 import Control.Exception (finally)
-import Data.List (isInfixOf)
 import Simplex.Chat.Controller (ChatConfig)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
@@ -58,14 +57,12 @@ withBadgeService ps test = do
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
   runBadgeService testCfg opts (pure ())
-  -- Reopen and read the address the service created. `rk=` in the full link is diagnostic:
-  -- if it were absent the RPC below would fail with ASENotDRAddress.
+  -- Reopen the DB to read the link the service created.
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
-    (sLink, fullLink) <- getContactLinks bs False
+    (sLink, _) <- getContactLinks bs False
     bs <## "auto_accept off"
-    ("&rk=" `isInfixOf` fullLink) `shouldBe` True
     pure sLink
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
   runBadgeService testCfg opts $
