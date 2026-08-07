@@ -69,7 +69,7 @@ withBadgeService ps test = do
 runBadgeService :: ChatConfig -> BadgeServiceOpts -> IO () -> IO ()
 runBadgeService cfg opts action = do
   t <- forkIO $ badgeService opts cfg
-  threadDelay 100000
+  threadDelay 500000
   action `finally` killThread t
 
 testBadgeServiceRedeemUnsupported :: HasCallStack => TestParams -> IO ()
