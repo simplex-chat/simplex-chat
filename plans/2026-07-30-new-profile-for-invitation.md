@@ -496,3 +496,35 @@ Also fixed in the same round, pre-existing and adjacent (like §9):
   `profileSwitchStatus` directly. It is the exact twin of the `apiChangeConnectionUser`
   -returns-nil case this branch already fixes, so it got the same `else`: reset the status
   and roll the toggle back.
+
+## 10. "The failed move is silent" — raised repeatedly, and not accurate
+
+Review has flagged three times that `if (updatedConn == null) return` in `selectProfileAsync`
+(and its iOS twin, and `changeProfileTo`'s `chatMoved` gate) leaves the user with a created
+profile, an unmoved invitation and no message. The premise is wrong, and it is worth
+recording why so the fourth reviewer does not re-derive it.
+
+`apiChangeConnectionUser` returns null on exactly two paths:
+
+- **An error came back.** `sendCmdWithRetry` asks `retryableNetworkErrorAlert`; for a
+  retryable one — `BROKER TIMEOUT`, `BROKER NETWORK`, the SMP cases — it shows a **retry
+  dialog**, which is what an offline device gets. For anything else it returns the error to
+  `apiChangeConnectionUser`, which alerts through `networkErrorAlert` or `apiErrorAlert`.
+  Either way the user is told.
+- **The user cancelled that retry dialog** (or the coroutine was cancelled). Nothing further
+  is shown — because they just declined it themselves.
+
+So the "offline, nothing happens" scenario does not exist: offline produces the retry
+dialog. `changeProfileTo` is the same shape — `apiChangePrepared*User` alerts on failure,
+which is why the code comment says the switch is skipped rather than reported again.
+
+The state left behind is also recoverable, deliberately. The profile is registered in
+`chatModel.users` before either early return (§8), and both pickers **stay open** on
+failure, so the new profile is present as a row and tapping it retries the move through the
+normal path. Adding another alert here would stack a second dialog on top of the one the
+user just dismissed — the mistake fixed once already in this branch, where
+`changeActiveUser` and the caller both reported the same failure.
+
+What *is* true: pressing "Add profile" a second time with the same name fails as a
+duplicate. That is the core refusing to create a profile that already exists, and the fix
+is to tap the row rather than recreate it.

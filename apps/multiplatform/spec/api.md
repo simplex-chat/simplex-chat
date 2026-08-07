@@ -89,22 +89,22 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
-| `apiGetActiveUser` | `rh: Long?, ctrl: ChatCtrl?` | Fetch the currently active user profile | [L841](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L841) |
+| `apiGetActiveUser` | `rh: Long?, ctrl: ChatCtrl?` | Fetch the currently active user profile | [L873](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L873) |
 | `apiCreateActiveUser` | `rh: Long?, p: Profile?, pastTimestamp: Boolean, keepActiveUser: Boolean, ctrl: ChatCtrl?` | Create a new user profile and set it as active, unless `keepActiveUser` | [L887](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L887) |
-| `listUsers` | `rh: Long?` | List all user profiles sorted by display name | [L871](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L871) |
-| `apiSetActiveUser` | `rh: Long?, userId: Long, viewPwd: String?` | Switch the active user to a different profile | [L881](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L881) |
-| `apiSetAllContactReceipts` | `rh: Long?, enable: Boolean` | Enable/disable delivery receipts for all contacts globally | [L888](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L888) |
-| `apiSetUserContactReceipts` | `u: User, userMsgReceiptSettings: UserMsgReceiptSettings` | Set delivery receipt settings for user contacts | [L894](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L894) |
-| `apiSetUserGroupReceipts` | `u: User, userMsgReceiptSettings: UserMsgReceiptSettings` | Set delivery receipt settings for user groups | [L900](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L900) |
-| `apiSetUserAutoAcceptMemberContacts` | `u: User, enable: Boolean` | Toggle auto-accept for member contact requests | [L906](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L906) |
-| `apiHideUser` | `u: User, viewPwd: String` | Hide a user profile behind a password | [L912](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L912) |
-| `apiUnhideUser` | `u: User, viewPwd: String` | Unhide a previously hidden user profile | [L915](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L915) |
-| `apiMuteUser` | `u: User` | Mute all notifications for a user profile | [L918](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L918) |
-| `apiUnmuteUser` | `u: User` | Unmute notifications for a user profile | [L921](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L921) |
-| `apiDeleteUser` | `u: User, delSMPQueues: Boolean, viewPwd: String?` | Delete a user profile and optionally its SMP queues | [L930](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L930) |
-| `apiUpdateProfile` | `rh: Long?, profile: Profile` | Update the active user's display profile | [L1682](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1682) |
-| `apiSetProfileAddress` | `rh: Long?, on: Boolean` | Enable/disable including address in user profile | [L1694](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1694) |
-| `apiSetUserUIThemes` | `rh: Long?, userId: Long, themes: ThemeModeOverrides?` | Set UI theme overrides for a user | [L1732](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1732) |
+| `listUsers` | `rh: Long?` | List all user profiles sorted by display name | [L907](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L907) |
+| `apiSetActiveUser` | `rh: Long?, userId: Long, viewPwd: String?` | Switch the active user to a different profile | [L917](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L917) |
+| `apiSetAllContactReceipts` | `rh: Long?, enable: Boolean` | Enable/disable delivery receipts for all contacts globally | [L924](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L924) |
+| `apiSetUserContactReceipts` | `u: User, userMsgReceiptSettings: UserMsgReceiptSettings` | Set delivery receipt settings for user contacts | [L930](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L930) |
+| `apiSetUserGroupReceipts` | `u: User, userMsgReceiptSettings: UserMsgReceiptSettings` | Set delivery receipt settings for user groups | [L936](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L936) |
+| `apiSetUserAutoAcceptMemberContacts` | `u: User, enable: Boolean` | Toggle auto-accept for member contact requests | [L942](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L942) |
+| `apiHideUser` | `u: User, viewPwd: String` | Hide a user profile behind a password | [L948](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L948) |
+| `apiUnhideUser` | `u: User, viewPwd: String` | Unhide a previously hidden user profile | [L951](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L951) |
+| `apiMuteUser` | `u: User` | Mute all notifications for a user profile | [L954](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L954) |
+| `apiUnmuteUser` | `u: User` | Unmute notifications for a user profile | [L957](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L957) |
+| `apiDeleteUser` | `u: User, delSMPQueues: Boolean, viewPwd: String?` | Delete a user profile and optionally its SMP queues | [L966](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L966) |
+| `apiUpdateProfile` | `rh: Long?, profile: Profile` | Update the active user's display profile | [L1823](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1823) |
+| `apiSetProfileAddress` | `rh: Long?, on: Boolean` | Enable/disable including address in user profile | [L1835](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1835) |
+| `apiSetUserUIThemes` | `rh: Long?, userId: Long, themes: ThemeModeOverrides?` | Set UI theme overrides for a user | [L1905](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1905) |
 
 ### 2.2 Chat Lifecycle
 
