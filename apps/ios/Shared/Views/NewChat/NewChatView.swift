@@ -428,9 +428,11 @@ private struct ActiveProfilePicker: View {
                                 dismiss()
                             }
                         } else {
-                            // Nothing to change, so nothing happened. Without this the status
-                            // stays .switchingIncognito and busy leaves the whole picker -
-                            // including the new "Add profile" row - permanently dead.
+                            // Backstop for a nil connection coming back without a throw: the
+                            // row above cannot start this with contactConnection nil. Without
+                            // it the status stays .switchingIncognito and busy leaves the
+                            // whole picker - including "Add profile" - permanently dead. Both
+                            // writes in one hop, so the re-entrant onChange sees .idle.
                             await MainActor.run {
                                 profileSwitchStatus = .idle
                                 incognitoEnabled = !incognito
@@ -665,7 +667,11 @@ private struct ActiveProfilePicker: View {
 
     @ViewBuilder private func profilePicker() -> some View {
         let incognitoOption = Button {
-            if !incognitoEnabled {
+            // contactConnection too, as Kotlin's IncognitoUserOption checks: with nothing to
+            // change the handler below does nothing, and incognitoEnabled is a binding onto
+            // the app-wide default, so toggling it here would write that preference twice
+            // for an action that cannot happen.
+            if !incognitoEnabled && contactConnection != nil {
                 incognitoEnabled = true
                 profileSwitchStatus = .switchingIncognito
             }

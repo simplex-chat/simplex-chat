@@ -371,10 +371,13 @@ re-derive them.
   not.** `ModalView(close, enableClose = !creatingProfileForInvitation)` now disables Back,
   Esc and the back arrow while the profile is being created — the Kotlin equivalent of
   iOS's `interactiveDismissDisabled`, following `MigrateFromDevice`/`ChooseServerOperators`,
-  which use the same idiom. Note the Android consequence: with no enabled `BackHandler`,
-  Back falls through to whatever handles it beneath rather than doing nothing. That is the
-  same trade-off the migration screens already accept, and it beats the alternative of
-  orphaning a profile. The separate case below is still open.
+  which use the same idiom. **`enableClose = false` is not enough on its own**: it removes
+  the handler rather than neutering it, and Compose then passes Back to the next enabled
+  one — `ChatView`'s (`ChatView.kt`, unconditional), which closes the chat behind the still
+  visible form. So the form also registers `BackHandler(enabled = creating, onBack = {})`
+  to swallow the event; it composes after `ModalView`'s and therefore wins while enabled.
+  The migration screens have the same fall-through, but they are not layered over a screen
+  with its own handler. The separate case below is still open.
 
 - **A modal pushed on top of the create form is indistinguishable from backing out of it**
   (`WelcomeView.kt`). The guard is `!isLastModalOpenNotClosing(...)`, which is also false

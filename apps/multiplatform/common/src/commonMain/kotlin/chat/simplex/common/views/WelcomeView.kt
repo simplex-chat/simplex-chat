@@ -376,6 +376,10 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
     // and the next attempt at the same name fails as a duplicate. iOS closes the same
     // window with interactiveDismissDisabled.
     ModalView(close, enableClose = !chatModel.creatingProfileForInvitation.value) {
+      // Consume Back rather than leaving it unhandled: ModalView's own handler is disabled
+      // above, and Compose would then pass the event down to ChatView's, closing the chat
+      // behind the form. Registered after ModalView's, so it wins while it is enabled.
+      BackHandler(enabled = chatModel.creatingProfileForInvitation.value, onBack = {})
       CreateProfile(chatModel, close, submitting = chatModel.creatingProfileForInvitation.value) { displayName, shortDescr, image ->
         if (chatModel.creatingProfileForInvitation.value) return@CreateProfile
         chatModel.creatingProfileForInvitation.value = true
