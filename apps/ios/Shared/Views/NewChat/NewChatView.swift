@@ -615,14 +615,6 @@ private struct ActiveProfilePicker: View {
         let ownerUserId = await MainActor.run { chatModel.currentUser?.userId }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
-        // Before any early return below, as Kotlin does: nothing else on iOS refreshes
-        // chatModel.users, so a profile left out of it exists in the database but in no
-        // list the app shows - and creating it again fails on the duplicate name.
-        await MainActor.run {
-            if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
-                chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
-            }
-        }
         // Checked before refreshing the lists below: on this path the core has already
         // activated the new profile, so they would disagree with chatModel.currentUser
         // until the resync lands - and changeActiveUserAsync_ refreshes them anyway.
@@ -645,6 +637,17 @@ private struct ActiveProfilePicker: View {
             }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
+        }
+        // Below the branch above, which returns: adding it there would leave two entries
+        // flagged activeUser, and its own resync refreshes the list anyway. Above the guard
+        // below, which returns without refreshing either list - the profile exists by now,
+        // so it has to appear in both or the next attempt at the same name is a duplicate.
+        // profiles is otherwise only filled in onAppear.
+        await MainActor.run {
+            if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
+                chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
+            }
+            profiles = chatModel.users.map { $0.user }
         }
         // apiChangeConnectionUser resolves pccConnId under whatever is active when the
         // selectedProfile handler runs, and a notification action can have switched it.

@@ -390,12 +390,6 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             val ownerUserId = chatModel.currentUser.value?.userId
             val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
             val newUser = controller.apiCreateActiveUser(rhId, profile, keepActiveUser = true) ?: return@withApi
-            // Before any early return below, as on iOS: nothing else adds it, so a profile
-            // left out of chatModel.users exists in the database but in no list the app
-            // shows, and creating it again fails on the duplicate name.
-            if (chatModel.remoteHostId() == rhId && chatModel.users.none { it.user.userId == newUser.userId }) {
-              chatModel.users.add(UserInfo(newUser, 0))
-            }
             if (newUser.activeUser) {
               // An older remote host ignored the flag and activated it, so the reassignment
               // would fail. Resync to what the host did and report it, with the form
@@ -408,12 +402,19 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
               AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
               return@withApi
             }
-            // Refresh so the new profile carries its real unread count and ordering rather
-            // than the placeholder added above. listUsers throws and withApi does not catch.
+            // Below the branch above, which returns: adding it there would leave two entries
+            // flagged activeUser, and its own resync refreshes the list anyway. Above the
+            // check below, which returns without listing it - the profile exists by now, so
+            // it has to be in the list or the next attempt at the same name is a duplicate.
+            // listUsers throws and withApi does not catch, so the refresh is guarded and the
+            // placeholder stands in for it, carrying the real counts once it succeeds.
             if (chatModel.remoteHostId() == rhId) {
-              runCatching { controller.listUsers(rhId) }.getOrNull()?.let {
+              val updatedUsers = runCatching { controller.listUsers(rhId) }.getOrNull()
+              if (updatedUsers != null) {
                 chatModel.users.clear()
-                chatModel.users.addAll(it)
+                chatModel.users.addAll(updatedUsers)
+              } else if (chatModel.users.none { it.user.userId == newUser.userId }) {
+                chatModel.users.add(UserInfo(newUser, 0))
               }
             }
             // onCreated resolves the invitation under whatever is active when it runs, and a

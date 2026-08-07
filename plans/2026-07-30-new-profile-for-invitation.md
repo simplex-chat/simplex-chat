@@ -413,10 +413,16 @@ Three more, from a later round:
   `clickable(enabled = !busy)` on the profile and incognito rows also blocks their purely
   local `listExpanded` toggle, so the picker cannot be collapsed while a change is in
   flight; iOS gates only the work-starting branch (`if busy { return }` inside the tap).
-  Kept deliberately: master had *no* gate on those rows at all, so this is already
-  stricter than what it replaced, and holding the picker still during the change avoids
-  swapping `profilePicker()` for `currentSelection()` mid-flight — which on iOS is exactly
-  what disposed a presented sheet (see the "sheet's owner must outlive the sheet" note).
+  Master had *no* gate on those rows at all, so this is stricter than what it replaced.
+  The cost is real though, and worse than first written here: this picker has no
+  `progressByTimeout` spinner or alpha change, unlike `ActiveProfilePicker`, so during a
+  slow `changeProfileTo` it is simply inert with no feedback and cannot even be collapsed.
+  The justification originally given — that holding it still avoids swapping
+  `profilePicker()` for `currentSelection()` mid-flight — was borrowed from iOS, where that
+  swap disposes a presented sheet; Kotlin has no sheet to lose, so it does not apply here.
+  Left as is only because the change is cosmetic and touching these rows again is the kind
+  of edit that has repeatedly introduced defects in this branch. Gate the work-starting
+  branches instead, as iOS does, if this picker is revisited.
 
 - **`submitting:` and `.interactiveDismissDisabled(...)` are read inside the `.sheet`
   content closure.** If SwiftUI does not re-invoke that closure when the presenting view's
