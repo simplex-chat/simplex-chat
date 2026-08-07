@@ -367,6 +367,15 @@ re-derive them.
   replaced, and the `UserInfo` fallback above makes the count change in the one case this
   feature introduced.
 
+- **The form's own close affordances are gated, the "covered by another modal" case is
+  not.** `ModalView(close, enableClose = !creatingProfileForInvitation)` now disables Back,
+  Esc and the back arrow while the profile is being created — the Kotlin equivalent of
+  iOS's `interactiveDismissDisabled`, following `MigrateFromDevice`/`ChooseServerOperators`,
+  which use the same idiom. Note the Android consequence: with no enabled `BackHandler`,
+  Back falls through to whatever handles it beneath rather than doing nothing. That is the
+  same trade-off the migration screens already accept, and it beats the alternative of
+  orphaning a profile. The separate case below is still open.
+
 - **A modal pushed on top of the create form is indistinguishable from backing out of it**
   (`WelcomeView.kt`). The guard is `!isLastModalOpenNotClosing(...)`, which is also false
   when another modal covers the form — on Android all four `ModalManager` placements share
@@ -464,3 +473,17 @@ This is the exact mirror of a bug this branch *did* have to fix — `selectProfi
 called `incognito.set(false)` before the connection move, which with the picker now staying
 open on failure produced "preference off, Incognito still ticked". Same shape, opposite
 direction; see §4.
+
+Also fixed in the same round, pre-existing and adjacent (like §9):
+
+- **`onChange(of: incognitoEnabled)` could strand the whole picker**
+  (`NewChat/NewChatView.swift`). Its work sits inside
+  `if let contactConn = contactConnection, let conn = try await apiSetConnectionIncognito(…)`,
+  so when `contactConnection` is nil the body did nothing and `profileSwitchStatus` stayed
+  `.switchingIncognito` forever. That is reachable: the incognito row renders
+  unconditionally, while "Add profile" is gated on `contactConnection != nil`. Pre-existing,
+  and the picker ended up dead either way — but this branch made it immediate rather than
+  after the 0.5 s spinner latch, because `allowsHitTesting(!busy)` now keys on
+  `profileSwitchStatus` directly. It is the exact twin of the `apiChangeConnectionUser`
+  -returns-nil case this branch already fixes, so it got the same `else`: reset the status
+  and roll the toggle back.

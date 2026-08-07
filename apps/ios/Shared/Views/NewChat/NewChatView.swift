@@ -427,6 +427,14 @@ private struct ActiveProfilePicker: View {
                                 profileSwitchStatus = .idle
                                 dismiss()
                             }
+                        } else {
+                            // Nothing to change, so nothing happened. Without this the status
+                            // stays .switchingIncognito and busy leaves the whole picker -
+                            // including the new "Add profile" row - permanently dead.
+                            await MainActor.run {
+                                profileSwitchStatus = .idle
+                                incognitoEnabled = !incognito
+                            }
                         }
                     } catch {
                         profileSwitchStatus = .idle

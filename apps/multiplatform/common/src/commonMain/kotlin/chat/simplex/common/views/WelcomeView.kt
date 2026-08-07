@@ -370,69 +370,75 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
   // compose picker live in the pane beside the form; start disposes the picker that opened it.
   val modalManager = ModalManager.fullscreen
   if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
-  modalManager.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
-    CreateProfile(chatModel, close, submitting = chatModel.creatingProfileForInvitation.value) { displayName, shortDescr, image ->
-      if (chatModel.creatingProfileForInvitation.value) return@CreateProfile
-      chatModel.creatingProfileForInvitation.value = true
-      // On Main, like the pickers' own handlers: every call here suspends into IO, and the
-      // chat model is updated on Main by the receiver loop.
-      withApi {
-        try {
-          val ownerUserId = chatModel.currentUser.value?.userId
-          val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
-          val newUser = controller.apiCreateActiveUser(rhId, profile, keepActiveUser = true) ?: return@withApi
-          if (newUser.activeUser) {
-            // An older remote host ignored the flag and activated it, so the reassignment
-            // would fail. Resync to what the host did and report it, with the form
-            // dismissed - the app is about to be showing a different profile.
-            if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) close()
-            // changeActiveUser_, not changeActiveUser: the latter shows its own alert on
-            // failure, which would stack with the one below reporting the same thing.
-            runCatching { controller.changeActiveUser_(newUser.remoteHostId, newUser.userId, null) }
-              .onFailure { Log.e(TAG, "createProfileForInvitation: resync failed: ${it.stackTraceToString()}") }
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
-            return@withApi
-          }
-          // List the new profile even if the reassignment below fails. listUsers throws and
-          // withApi does not catch, so the refresh is guarded.
-          if (chatModel.remoteHostId() == rhId) {
-            val updatedUsers = runCatching { controller.listUsers(rhId) }.getOrNull()
-            if (updatedUsers != null) {
-              chatModel.users.clear()
-              chatModel.users.addAll(updatedUsers)
-            } else if (chatModel.users.none { it.user.userId == newUser.userId }) {
-              // listUsers failed, and the picker is keyed on chatModel.users.size - without
-              // this it shows no row for the profile just created, and creating it again
-              // fails on the duplicate name.
+  modalManager.showCustomModal(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
+    // Back, Esc and the back arrow must not dismiss the form while the profile is being
+    // created: it would exist with the invitation never moved onto it and nothing said,
+    // and the next attempt at the same name fails as a duplicate. iOS closes the same
+    // window with interactiveDismissDisabled.
+    ModalView(close, enableClose = !chatModel.creatingProfileForInvitation.value) {
+      CreateProfile(chatModel, close, submitting = chatModel.creatingProfileForInvitation.value) { displayName, shortDescr, image ->
+        if (chatModel.creatingProfileForInvitation.value) return@CreateProfile
+        chatModel.creatingProfileForInvitation.value = true
+        // On Main, like the pickers' own handlers: every call here suspends into IO, and the
+        // chat model is updated on Main by the receiver loop.
+        withApi {
+          try {
+            val ownerUserId = chatModel.currentUser.value?.userId
+            val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
+            val newUser = controller.apiCreateActiveUser(rhId, profile, keepActiveUser = true) ?: return@withApi
+            // Before any early return below, as on iOS: nothing else adds it, so a profile
+            // left out of chatModel.users exists in the database but in no list the app
+            // shows, and creating it again fails on the duplicate name.
+            if (chatModel.remoteHostId() == rhId && chatModel.users.none { it.user.userId == newUser.userId }) {
               chatModel.users.add(UserInfo(newUser, 0))
             }
+            if (newUser.activeUser) {
+              // An older remote host ignored the flag and activated it, so the reassignment
+              // would fail. Resync to what the host did and report it, with the form
+              // dismissed - the app is about to be showing a different profile.
+              if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) close()
+              // changeActiveUser_, not changeActiveUser: the latter shows its own alert on
+              // failure, which would stack with the one below reporting the same thing.
+              runCatching { controller.changeActiveUser_(newUser.remoteHostId, newUser.userId, null) }
+                .onFailure { Log.e(TAG, "createProfileForInvitation: resync failed: ${it.stackTraceToString()}") }
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+              return@withApi
+            }
+            // Refresh so the new profile carries its real unread count and ordering rather
+            // than the placeholder added above. listUsers throws and withApi does not catch.
+            if (chatModel.remoteHostId() == rhId) {
+              runCatching { controller.listUsers(rhId) }.getOrNull()?.let {
+                chatModel.users.clear()
+                chatModel.users.addAll(it)
+              }
+            }
+            // onCreated resolves the invitation under whatever is active when it runs, and a
+            // notification tap or a host switch can have changed that while we were creating.
+            if (chatModel.currentUser.value?.userId != ownerUserId || chatModel.remoteHostId() != rhId) {
+              // Closed: the profile exists, so leaving the form up means the next Create
+              // fails on the duplicate name for as long as the name is unchanged.
+              if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) close()
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+              return@withApi
+            }
+            // Form gone - the user backed out of it. Don't move the invitation under a screen
+            // they left, and don't report an error for something they did on purpose.
+            if (!modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) {
+              Log.i(TAG, "createProfileForInvitation: form closed before the invitation moved")
+              return@withApi
+            }
+            close()
+            try {
+              onCreated(newUser)
+            } catch (e: Exception) {
+              // changeActiveUser_ throws, and withApi does not catch - the global handler
+              // would close a modal or clear chatId with nothing said about the failure.
+              Log.e(TAG, "createProfileForInvitation: moving the invitation failed: ${e.stackTraceToString()}")
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+            }
+          } finally {
+            chatModel.creatingProfileForInvitation.value = false
           }
-          // onCreated resolves the invitation under whatever is active when it runs, and a
-          // notification tap or a host switch can have changed that while we were creating.
-          if (chatModel.currentUser.value?.userId != ownerUserId || chatModel.remoteHostId() != rhId) {
-            // Closed: the profile exists, so leaving the form up means the next Create
-            // fails on the duplicate name for as long as the name is unchanged.
-            if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) close()
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
-            return@withApi
-          }
-          // Form gone - the user backed out of it. Don't move the invitation under a screen
-          // they left, and don't report an error for something they did on purpose.
-          if (!modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) {
-            Log.i(TAG, "createProfileForInvitation: form closed before the invitation moved")
-            return@withApi
-          }
-          close()
-          try {
-            onCreated(newUser)
-          } catch (e: Exception) {
-            // changeActiveUser_ throws, and withApi does not catch - the global handler
-            // would close a modal or clear chatId with nothing said about the failure.
-            Log.e(TAG, "createProfileForInvitation: moving the invitation failed: ${e.stackTraceToString()}")
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
-          }
-        } finally {
-          chatModel.creatingProfileForInvitation.value = false
         }
       }
     }
