@@ -414,7 +414,14 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             return@withApi
           }
           close()
-          onCreated(newUser)
+          try {
+            onCreated(newUser)
+          } catch (e: Exception) {
+            // changeActiveUser_ throws, and withApi does not catch - the global handler
+            // would close a modal or clear chatId with nothing said about the failure.
+            Log.e(TAG, "createProfileForInvitation: moving the invitation failed: ${e.stackTraceToString()}")
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+          }
         } finally {
           chatModel.creatingProfileForInvitation.value = false
         }

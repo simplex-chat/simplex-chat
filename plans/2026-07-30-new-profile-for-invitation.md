@@ -188,6 +188,10 @@ Two hazards left as they are on master, so review does not keep re-raising them:
   profile first is local and fast and barely widens it. Fixing it needs a `ModalViewId`
   on the picker at both call sites, including `ShareListView`, which does not offer this
   feature at all.
+- `Terminal/Input.hs` caches any `CRActiveUser` as the remote host's current user. With
+  `keepActiveUser` that response can carry a profile that is deliberately not active, so a
+  CLI acting as a controller caches the wrong one until the next `/user`. Display-only,
+  and there is no flag in the response to distinguish the two cases.
 - `alertAfterDismissal` waits a fixed 0.5s for a sheet transition rather than observing
   it. A slow device or a late-released interactive dismissal can still outlast it. The
   deterministic version needs the presenting controller's completion handler, which is

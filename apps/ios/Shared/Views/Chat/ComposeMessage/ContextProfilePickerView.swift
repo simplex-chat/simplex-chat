@@ -295,6 +295,10 @@ struct ContextProfilePickerView: View {
                 chatModel.users = updatedUsers
                 // Only filled in onAppear otherwise, so the new profile is missing here
                 users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
+            } else if !users.contains(where: { $0.userId == newUser.userId }) {
+                // changeProfile sets selectedUser to it, and otherUsers filters on that -
+                // absent from users, nothing is filtered out and a row is clipped.
+                users.append(newUser)
             }
             // changingProfile here too: the defer clears creatingProfile as soon as this returns
             showAddProfile = false

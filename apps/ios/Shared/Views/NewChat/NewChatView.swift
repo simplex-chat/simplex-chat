@@ -479,6 +479,15 @@ private struct ActiveProfilePicker: View {
                                     )
                                 }
                             }
+                        } else {
+                            // apiChangeConnectionUser returns nil rather than throwing when
+                            // the retry is cancelled - offline. Without this the status stays
+                            // .switchingUser, switchingProfileByTimeout latches, and the
+                            // picker is left permanently behind its spinner.
+                            await MainActor.run {
+                                profileSwitchStatus = .idle
+                                selectedProfile = chatModel.currentUser ?? selectedProfile
+                            }
                         }
                     } catch {
                         await MainActor.run {

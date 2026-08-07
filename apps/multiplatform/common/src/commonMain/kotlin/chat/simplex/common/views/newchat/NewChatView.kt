@@ -323,8 +323,6 @@ fun ActiveProfilePicker(
     try {
       var updatedConn: PendingContactConnection? = null
 
-      appPreferences.incognito.set(false)
-
       if (contactConnection != null) {
         updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
         // Not moved - leave the picker open rather than stranding a profile just created
@@ -335,6 +333,9 @@ fun ActiveProfilePicker(
           updateShownConnection(updatedConn)
         }
       }
+      // After the move, not before: the picker now stays open on failure, and clearing the
+      // app-wide default there would leave it off with Incognito still ticked in the picker
+      appPreferences.incognito.set(false)
 
       controller.changeActiveUser_(
         rhId = user.remoteHostId,
