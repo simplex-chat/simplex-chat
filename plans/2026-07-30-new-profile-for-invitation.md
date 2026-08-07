@@ -209,9 +209,17 @@ which becomes `profile?`/`NotRequired`). So the two client libraries that are ke
 by hand — `simplex-chat-python/api.py` and `simplex-chat-nodejs/api.ts`, both of which
 build a `NewUser` literal listing every bool — stop type-checking until the new field is
 added there too. Neither is generated, so no test catches it; the precedent is
-`a4e3a1ea1`, which added `clientService` to both. (`simplex-chat-client/typescript` has
-its own separate types and is deliberately untouched — it was not updated for
-`clientService` either.)
+`a4e3a1ea1`, which added `clientService` to both.
+
+`simplex-chat-client/typescript` is deliberately untouched, but **not** because it has its
+own types — it imports `T` from `@simplex-chat/types`, the same package this branch
+regenerates. It is insulated by its version pin: `package.json` asks for `^0.3.0`, which on
+a `0.x` version allows only patch releases, so it resolves to the *published* `0.3.0` and
+never sees the local `0.10.3`. There is no workspace link and no `paths` mapping in its
+`tsconfig.json` to override that. So its `{profile, pastTimestamp: false}` literal still
+type-checks — and adding `keepActiveUser: false` to it, as looks natural by analogy with
+the other two clients, would *break* it: excess-property checking against published `0.3.0`,
+which has no such field. It was not updated for `clientService` either, for the same reason.
 
 **Before touching any type in `Simplex.Chat.Types`, run the `Bot API docs` tests.** The
 Haskell compiles fine without them; only that test catches the drift, and only a full run
@@ -401,9 +409,17 @@ Three more, from a later round:
 - **`submitting:` and `.interactiveDismissDisabled(...)` are read inside the `.sheet`
   content closure.** If SwiftUI does not re-invoke that closure when the presenting view's
   `@State` changes, the Create button stays live and the sheet stays swipe-dismissable for
-  the whole submit. The atomic check-and-set bounds the damage to "a second tap does
-  nothing, silently". Unverified either way — there is no Swift toolchain here, and the
-  fix (making the flag a `@Binding`) is not worth making blind.
+  the whole submit. **Check this first when the branch reaches Xcode** — raised twice in
+  review, the second time arguing the swipe-dismiss half is the real hazard rather than the
+  double tap, and that is right: the atomic check-and-set bounds the tap, but nothing
+  bounds the dismiss, and the unstructured submit `Task` is not cancelled by it. That is
+  precisely the bug `.interactiveDismissDisabled` was added to prevent, so if the closure
+  does not re-evaluate, that fix is inert and the original bug is still live.
+  Still not changed here: `submitting` would have to become a `@Binding`, which has no
+  clean default for the onboarding call site that passes neither argument, and there is no
+  Swift toolchain on this machine to tell whether the change is necessary or whether it
+  compiles. Verify in Xcode by swiping the form away mid-create; if it dismisses, make it a
+  `@Binding` (and give the onboarding site `.constant(false)`).
 
 - **`active_order = 0` sorts the new profile to the *top* of the iOS compose picker.**
   That picker sorts `KeyPathComparator(\.activeOrder)` **ascending** while every other
@@ -412,7 +428,7 @@ Three more, from a later round:
   first. Cosmetic, and arguably an improvement in that one picker, but it does mean the
   new profile appears at opposite ends of the two platforms' compose pickers.
 
-## 9. A pre-existing bug found next door, deliberately left alone
+## 9. A pre-existing bug found next door, fixed here
 
 `IncognitoUserOption` in `newchat/NewChatView.kt` writes the app-wide incognito preference
 *before* the call that can fail, and never rolls it back:
@@ -437,10 +453,12 @@ Low severity, for two reasons. The call uses `sendCmd`, not `sendCmdWithRetry`, 
 error branches alert — so the user is told *this* action failed; only the lingering
 preference is silent. And it fails toward more privacy, not less.
 
-**The fix is to move that one line inside `if (conn != null)`.** Nothing between the two
-statements reads the preference, so there is no reason it is set early. It was written,
-verified against the compiler, and then reverted: this is untouched master code, and the
-branch should not fix a bug it did not cause. Worth a separate one-line PR.
+**Fixed by moving that one line inside `if (conn != null)`.** Nothing between the two
+statements reads the preference, so there was no reason it was set early. This is
+pre-existing master code rather than anything the branch introduced, and it is carried
+here deliberately: it sits in the same function the branch already rewrites, and the
+symmetric bug on the profile path is fixed two blocks above — leaving one direction
+broken while fixing the other is how the mismatch survived in the first place.
 
 This is the exact mirror of a bug this branch *did* have to fix — `selectProfileAsync`
 called `incognito.set(false)` before the connection move, which with the picker now staying

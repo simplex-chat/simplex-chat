@@ -413,9 +413,12 @@ fun ActiveProfilePicker(
         switchingProfile.value = true
         withApi {
           try {
-            appPreferences.incognito.set(true)
             val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
             if (conn != null) {
+              // Only once the connection is actually incognito, as on the profile path
+              // above: set before the call, a failure leaves the app-wide default on and
+              // the next connection silently uses a random profile.
+              appPreferences.incognito.set(true)
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.updateContactConnection(rhId, conn)
                 updateShownConnection(conn)
