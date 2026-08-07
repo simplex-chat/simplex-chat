@@ -46,6 +46,7 @@ library
       Simplex.Chat.Names.Service.Mock
       Simplex.Chat.Names.Snrc
       Simplex.Chat.Wallet
+      Simplex.Chat.Wallet.Stealth
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -641,6 +642,7 @@ test-suite simplex-chat-test
       RemoteTests
       ValidNames
       ViewTests
+      WalletTests
       API.Docs.Commands
       API.Docs.Events
       API.Docs.Generate

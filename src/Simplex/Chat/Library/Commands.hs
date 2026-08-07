@@ -62,7 +62,9 @@ import Simplex.Chat.Names.Service
 import Simplex.Chat.Names.Service.Default (nameDeployment, namesService)
 import Simplex.Chat.Names.Snrc
 import qualified Simplex.Chat.Wallet as W
+import Simplex.Chat.Wallet.Stealth
 import qualified Simplex.Chat.Store.Wallets as WS
+import qualified Simplex.Messaging.Eth.Stealth as St
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import Simplex.Messaging.Eth.Address (Address, checksumAddress, parseAddress)
 import Simplex.Chat.Call
@@ -2390,7 +2392,13 @@ processChatCommand cxt nm = \case
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APINameAddress userId -> withUserId userId $ \user -> do
     (_, pk) <- userWalletAccount user
-    pure $ CRNameAddress user (nameAddrText $ W.accountAddress pk) (fromIntegral . W.arIndex $ W.waRef pk)
+    ks <- userStealthKeys user
+    pure $
+      CRNameAddress
+        user
+        (nameAddrText $ W.accountAddress pk)
+        (fromIntegral . W.arIndex $ W.waRef pk)
+        (safeDecodeUtf8 . metaAddressHex $ W.accountMetaAddress ks)
   APINameRecoveryKey userId -> withUserId userId $ \user -> do
     (w, _) <- userWalletAccount user
     phrase <- nameEither $ W.recoveryKeyPhrase w
@@ -2460,18 +2468,69 @@ processChatCommand cxt nm = \case
     pure $ CRNameIntentRelayed user "link" fqdn tx
   APINameGift userId label recipient -> withUserId userId $ \user -> do
     (_, pk) <- userWalletAccount user
-    to <- nameEither $ parseAddress (encodeUtf8 recipient)
+    -- The recipient is a published meta-address, not an address: sending to a
+    -- plain address would link them to the name for every chain observer. The
+    -- destination is derived here, once, and the ephemeral key rides the
+    -- transfer so they can rediscover it from their recovery phrase alone.
+    ma <- nameEither . parseMetaAddressHex $ encodeUtf8 recipient
+    g <- asks random
+    dest <- nameEither =<< liftIO (giftDestination g ma)
     n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
     tx <-
-      nameRelay pk $
+      nameRelayAnnouncing pk (Just $ announcementOf dest) $
         TransferName
           { tiFrom = W.accountAddress pk,
-            tiTo = to,
+            tiTo = St.sdAddress dest,
             tiLabel = encodeUtf8 label,
             tiNonce = n,
             tiDeadline = nameDeadline
           }
     pure $ CRNameIntentRelayed user "gift" (label <> ".simplex") tx
+  APINameIncoming userId -> withUserId userId $ \user -> do
+    rows <- withStore' $ \db -> WS.getIncomingAddresses db user W.ChainEth
+    ns <- forM rows $ \r -> (nameAddrText (WS.otaAddress r),) <$> namesAt (WS.otaAddress r)
+    pure $ CRNamesIncoming user ns
+  APINameAccept userId addrText -> withUserId userId $ \user -> do
+    addr <- nameEither $ parseAddress (encodeUtf8 addrText)
+    _ <- oneTimeAccountFor user addr
+    ns <- namesAt addr
+    -- Accepting is the act that links this profile to the name on chain. The
+    -- record rewrite and the edit-credit top-up that pay for it are Workstream
+    -- A and D; until those exist this records the decision only.
+    withStore' $ \db -> WS.acceptOneTimeAddress db user W.ChainEth addr
+    pure $ CRNameAccepted user (nameAddrText addr) ns
+  APINameDecline userId addrText -> withUserId userId $ \user -> do
+    addr <- nameEither $ parseAddress (encodeUtf8 addrText)
+    withStore' $ \db -> WS.declineOneTimeAddress db user W.ChainEth addr
+    pure $ CRNameDeclined user (nameAddrText addr)
+  APINameExportKey userId addrText -> withUserId userId $ \user -> do
+    addr <- nameEither $ parseAddress (encodeUtf8 addrText)
+    ota <- oneTimeAccountFor user addr
+    pure $ CRNameKeyExported user (nameAddrText addr) (safeDecodeUtf8 $ exportOneTimeKey ota)
+  APINameRescan userId -> withUserId userId $ \user -> do
+    ks <- userStealthKeys user
+    cursor <- withStore' $ \db -> WS.getScannedTo db user
+    (as, cursor') <- nameSvc $ announcementsFrom namesService cursor
+    let found = scanAnnouncements ks as
+    forM_ found $ \(an, addr) ->
+      withStore' $ \db -> WS.recordOneTimeAddress db user W.ChainEth addr (anEphemeralPubKey an)
+    withStore' $ \db -> WS.setScannedTo db user cursor'
+    pure $ CRNameRescanned user (length found)
+  NameAddress -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameAddress userId
+  NameRecoveryKey -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKey userId
+  NameRecoveryKeyImport phrase -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeyImport userId phrase
+  NameRecoveryKeySaved -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeySaved userId
+  NameQuoteCmd l -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameQuote userId l
+  NameBuy l lnk -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameBuy userId l lnk
+  NameList -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameList userId
+  NameInfo n -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameInfo userId n
+  NameSetLink n l -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameSetLink userId n l
+  NameGift l r -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameGift userId l r
+  NameIncoming -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameIncoming userId
+  NameAccept a -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameAccept userId a
+  NameDecline a -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameDecline userId a
+  NameExportKey a -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameExportKey userId a
+  NameRescan -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRescan userId
   APIVerifyContactDomain contactId -> withUser $ \user -> do
     ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
@@ -5802,16 +5861,26 @@ chatCommandP =
       "/_name info " *> (APINameInfo <$> A.decimal <* A.space <*> nameWordP),
       "/_name link " *> (APINameSetLink <$> A.decimal <* A.space <*> nameWordP <* A.space <*> textP),
       "/_name gift " *> (APINameGift <$> A.decimal <* A.space <*> nameWordP <* A.space <*> textP),
-      "/names address" $> APINameAddress 1,
-      "/names key import " *> (APINameRecoveryKeyImport 1 <$> textP),
-      "/names key saved" $> APINameRecoveryKeySaved 1,
-      "/names key" $> APINameRecoveryKey 1,
-      "/names quote " *> (APINameQuote 1 <$> nameWordP),
-      "/names buy " *> (APINameBuy 1 <$> nameWordP <*> optional (A.space *> textP)),
-      "/names list" $> APINameList 1,
-      "/names info " *> (APINameInfo 1 <$> nameWordP),
-      "/names link " *> (APINameSetLink 1 <$> nameWordP <* A.space <*> textP),
-      "/names gift " *> (APINameGift 1 <$> nameWordP <* A.space <*> textP),
+      "/_name incoming " *> (APINameIncoming <$> A.decimal),
+      "/_name accept " *> (APINameAccept <$> A.decimal <* A.space <*> textP),
+      "/_name decline " *> (APINameDecline <$> A.decimal <* A.space <*> textP),
+      "/_name export " *> (APINameExportKey <$> A.decimal <* A.space <*> textP),
+      "/_name rescan " *> (APINameRescan <$> A.decimal),
+      "/names address" $> NameAddress,
+      "/names key import " *> (NameRecoveryKeyImport <$> textP),
+      "/names key saved" $> NameRecoveryKeySaved,
+      "/names key" $> NameRecoveryKey,
+      "/names quote " *> (NameQuoteCmd <$> nameWordP),
+      "/names buy " *> (NameBuy <$> nameWordP <*> optional (A.space *> textP)),
+      "/names list" $> NameList,
+      "/names info " *> (NameInfo <$> nameWordP),
+      "/names link " *> (NameSetLink <$> nameWordP <* A.space <*> textP),
+      "/names gift " *> (NameGift <$> nameWordP <* A.space <*> textP),
+      "/names incoming" $> NameIncoming,
+      "/names accept " *> (NameAccept <$> textP),
+      "/names decline " *> (NameDecline <$> textP),
+      "/names export " *> (NameExportKey <$> textP),
+      "/names rescan" $> NameRescan,
       "/_verify domain #" *> (APIVerifyGroupDomain <$> A.decimal),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
@@ -6244,10 +6313,41 @@ namePoll pid n
 
 -- | Sign an intent with the profile key and hand it to the relayer.
 nameRelay :: W.WalletAccount -> Intent -> CM Text
-nameRelay pk intent = do
+nameRelay pk = nameRelayAnnouncing pk Nothing
+
+nameRelayAnnouncing :: W.WalletAccount -> Maybe Announcement -> Intent -> CM Text
+nameRelayAnnouncing pk announce intent = do
   digest <- nameEither $ intentDigest nameDeployment intent
   sig <- nameEither $ W.signDigest pk digest
-  safeDecodeUtf8 <$> nameSvc (relayIntent namesService SignedIntent {siIntent = intent, siSignature = sig})
+  safeDecodeUtf8 <$> nameSvc (relayIntent namesService SignedIntent {siIntent = intent, siSignature = sig} announce)
+
+-- | The profile's stealth keys, on the same seed and account index as its
+-- main address.
+userStealthKeys :: User -> CM W.StealthKeys
+userStealthKeys user = do
+  g <- asks random
+  (w, r) <- withStore' $ \db -> WS.getOrCreateAccountRef db user (atomically $ W.newSeed B39.MS128 g)
+  nameEither $ W.deriveStealthKeys w W.ChainEth (W.arIndex r)
+
+-- | Re-derive the key for a destination this profile has recorded. Fails if it
+-- was never seen: the ephemeral key is what makes the address reachable, and it
+-- is not recoverable from the address itself.
+oneTimeAccountFor :: User -> Address -> CM OneTimeAccount
+oneTimeAccountFor user addr = do
+  row <- withStore' $ \db -> WS.getOneTimeAddress db user W.ChainEth addr
+  case row of
+    Nothing -> throwCmdError "no received name at that address - try /names rescan"
+    Just r -> do
+      ks <- userStealthKeys user
+      nameEither $ oneTimeAccount ks (WS.otaEphemeralPubKey r)
+
+announcementOf :: St.StealthDestination -> Announcement
+announcementOf d = Announcement {anEphemeralPubKey = St.sdEphemeralPubKey d, anViewTag = St.sdViewTag d}
+
+namesAt :: Address -> CM [Text]
+namesAt addr = map safeDecodeUtf8 <$> nameSvc (namesOwnedBy namesService addr)
+
+
 
 nameAddrText :: Address -> Text
 nameAddrText = safeDecodeUtf8 . checksumAddress

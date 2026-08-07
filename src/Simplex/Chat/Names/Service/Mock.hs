@@ -38,15 +38,20 @@ module Simplex.Chat.Names.Service.Mock
 where
 
 import Control.Concurrent.STM
+import Control.Monad (forM_)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.Char (isDigit)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
 import Simplex.Chat.Names.Service
 import Simplex.Chat.Names.Snrc
 import Simplex.Chat.Wallet (recoverSigner)
+import Simplex.Chat.Wallet.Stealth (Announcement)
+import Text.Read (readMaybe)
 import Simplex.Messaging.Eth.Address (Address, mkAddress)
 import Simplex.Messaging.Eth.Keccak (keccak256)
 
@@ -71,7 +76,11 @@ data MockChain = MockChain
     mcPendingRounds :: TVar Int,
     mcValidatePayment :: TVar (PaymentProof -> Either ByteString ()),
     -- | Registration credits held by the relayer, granted by the beneficiary.
-    mcRegistrarCredits :: TVar Integer
+    mcRegistrarCredits :: TVar Integer,
+    -- | The announcement log, in order. Stands in for the registrar's
+    -- 'StealthNameTransfer' events, which is the only place a recipient
+    -- restoring from the phrase alone can find an ephemeral key.
+    mcAnnouncements :: TVar [Announcement]
   }
 
 -- | Relayed record edits granted per year of registration. AB's figure: ten a
@@ -111,7 +120,8 @@ newMockChain = do
   mcPendingRounds <- newTVarIO 1
   mcValidatePayment <- newTVarIO (const $ Right ())
   mcRegistrarCredits <- newTVarIO 100
-  pure MockChain {mcNames, mcNonces, mcPending, mcSeq, mcNow, mcPendingRounds, mcValidatePayment, mcRegistrarCredits}
+  mcAnnouncements <- newTVarIO []
+  pure MockChain {mcNames, mcNonces, mcPending, mcSeq, mcNow, mcPendingRounds, mcValidatePayment, mcRegistrarCredits, mcAnnouncements}
 
 -- | How many status polls a registration stays pending, standing in for the
 -- 60-second commit-reveal wait. 0 makes registration immediate.
@@ -169,6 +179,7 @@ mockNamesService c =
       buyName = buy,
       registrationStatus = status,
       relayIntent = relay,
+      announcementsFrom = anns,
       resolveName = resolve,
       namesOwnedBy = ownedBy,
       currentNonce = nonceOf,
@@ -263,7 +274,15 @@ mockNamesService c =
 
     -- The heart of the mock: recompute the digest, recover the signer, and
     -- apply the same authorisation rules the contracts do.
-    relay SignedIntent {siIntent, siSignature} = do
+    -- Announcement ranges for a recovery scan. The cursor is an opaque
+    -- position in the log; the client stores it and never interprets it.
+    anns from = do
+      as <- readTVarIO (mcAnnouncements c)
+      let start = maybe 0 (fromMaybe 0 . readMaybe . T.unpack) from
+          rest = drop start as
+      pure $ Right (rest, T.pack . show $ start + length rest)
+
+    relay SignedIntent {siIntent, siSignature} announce = do
       now <- readTVarIO (mcNow c)
       case intentDigest mockDeployment siIntent of
         Left e -> pure . Left $ SEUnavailable (BC.pack e)
@@ -278,6 +297,9 @@ mockNamesService c =
               TransferName {tiFrom, tiTo, tiLabel, tiNonce, tiDeadline}
                 | tiDeadline < now -> pure $ Left SEExpiredIntent
                 | tiNonce /= expected -> pure $ Left SEBadNonce
+                -- transferWithSig requires to != from, so an announcement
+                -- always costs a real transfer to another party
+                | tiTo == tiFrom -> pure $ Left SESelfTransfer
                 | otherwise ->
                     let name = fqdn tiLabel
                      in case M.lookup name names of
@@ -288,6 +310,7 @@ mockNamesService c =
                             | otherwise -> do
                                 modifyTVar' (mcNames c) $ M.insert name e {neOwner = tiTo}
                                 bump
+                                forM_ announce $ \a -> modifyTVar' (mcAnnouncements c) (<> [a])
                                 pure . Right $ txHash ("transfer:" <> name)
               SetTextRecord {sxName, sxKey, sxValue, sxNonce, sxDeadline}
                 | sxDeadline < now -> pure $ Left SEExpiredIntent

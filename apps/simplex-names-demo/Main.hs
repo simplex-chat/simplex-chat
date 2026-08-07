@@ -227,4 +227,4 @@ relaySignedRaw :: NamesService -> WalletAccount -> Intent -> IO (Either ServiceE
 relaySignedRaw svc pk intent = do
   digest <- expect "digest" $ intentDigest mockDeployment intent
   sig <- expect "sign" $ signDigest pk digest
-  relayIntent svc SignedIntent {siIntent = intent, siSignature = sig}
+  relayIntent svc SignedIntent {siIntent = intent, siSignature = sig} Nothing

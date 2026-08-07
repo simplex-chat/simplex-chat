@@ -150,7 +150,33 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
-  CRNameAddress u addr acct -> ttyUser u ["name address (account " <> sShow acct <> "): " <> plain addr]
+  CRNameAddress u addr acct meta ->
+    ttyUser
+      u
+      [ "name address (account " <> sShow acct <> "): " <> plain addr,
+        "meta-address (share this to be sent names): " <> plain meta
+      ]
+  CRNamesIncoming u ns
+    | null ns -> ttyUser u ["no names have been sent to you"]
+    | otherwise ->
+        ttyUser u $
+          "names sent to you, not yet accepted:"
+            : map (\(addr, names) -> "  " <> plain (T.intercalate ", " names) <> " at " <> plain addr) ns
+            <> ["", "accepting links this profile to the name on chain; declining leaves no trace"]
+  CRNameAccepted u addr names ->
+    ttyUser u ["accepted " <> plain (T.intercalate ", " names) <> " at " <> plain addr]
+  CRNameDeclined u addr -> ttyUser u ["declined the name at " <> plain addr <> " - nothing was written on chain"]
+  CRNameKeyExported u addr key ->
+    ttyUser
+      u
+      [ "private key for " <> plain addr <> ":",
+        "",
+        plain key,
+        "",
+        "this key controls that one address and nothing else - not your other names, not your recovery key"
+      ]
+  CRNameRescanned u found ->
+    ttyUser u [if found == 0 then "no new names found" else "found " <> sShow found <> " name(s) sent to you - see /names incoming"]
   CRNameRecoveryKey u phrase saved ->
     ttyUser u $
       [ "name recovery key:",

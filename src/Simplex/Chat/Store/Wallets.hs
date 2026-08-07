@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Persistence for wallet seeds and per-profile accounts.
@@ -17,23 +18,40 @@ module Simplex.Chat.Store.Wallets
     getAccountRef,
     getOrCreateAccountRef,
     bindAccount,
+    getNextAccountIndex,
+    reserveAccounts,
+    OneTimeAddress (..),
+    recordOneTimeAddress,
+    getIncomingAddresses,
+    getOneTimeAddress,
+    acceptOneTimeAddress,
+    declineOneTimeAddress,
+    getScannedTo,
+    setScannedTo,
   )
 where
 
+import Control.Monad (join, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
+import Data.Either (rights)
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (isJust, listToMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types (User (..))
-import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), SeedId (..), WalletSeed (..))
+import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), Chain, SeedId (..), WalletSeed (..), chainText, parseChain)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Eth.Address (Address, mkAddress, unAddress)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple.QQ (sql)
 #endif
 
 toSeed :: (Int64, ByteString, Bool) -> WalletSeed
@@ -92,14 +110,134 @@ getOrCreateAccountRef db user mkSeed = do
   case existing of
     Just r | arSeedId r == wsId s -> pure (s, r)
     _ -> do
-      ix <- nextAccountIndex db (wsId s)
+      ix <- takeAccountIndex db (wsId s)
       let r = AccountRef {arSeedId = wsId s, arIndex = ix}
       bindAccount db user r
       pure (s, r)
 
-nextAccountIndex :: DB.Connection -> SeedId -> IO AccountIndex
-nextAccountIndex db (SeedId sId) = do
-  used <-
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT MAX(wallet_account_index) FROM users WHERE wallet_seed_id = ?" (Only sId)
-  pure $ maybe 0 (\m -> fromIntegral (m :: Int64) + 1) (fromMaybe Nothing used)
+-- | Take the next account index and advance the seed's high-water mark.
+--
+-- The mark is stored rather than computed as @MAX(users.wallet_account_index)@,
+-- because after recovery from the phrase alone the @users@ table is empty while
+-- accounts @0..N@ already hold names on chain. Computing it would hand the first
+-- newly created profile index 0 and, with it, a recovered account's keys and
+-- published meta-address. 'reserveAccounts' is what the recovery probe calls to
+-- raise the mark past everything it found.
+takeAccountIndex :: DB.Connection -> SeedId -> IO AccountIndex
+takeAccountIndex db sId@(SeedId sId') = do
+  ix <- getNextAccountIndex db sId
+  DB.execute db "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ?" (fromIntegral ix + 1 :: Int64, sId')
+  pure ix
+
+getNextAccountIndex :: DB.Connection -> SeedId -> IO AccountIndex
+getNextAccountIndex db (SeedId sId) =
+  maybe 0 (fromIntegral :: Int64 -> AccountIndex)
+    <$> ( maybeFirstRow fromOnly $
+            DB.query db "SELECT next_account_index FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
+        )
+
+-- | Raise the high-water mark so that @count@ accounts are treated as taken.
+-- Called by recovery once the probe has established how many were in use; never
+-- lowers it.
+reserveAccounts :: DB.Connection -> SeedId -> AccountIndex -> IO ()
+reserveAccounts db sId@(SeedId sId') count = do
+  cur <- getNextAccountIndex db sId
+  when (count > cur) $
+    DB.execute db "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ?" (fromIntegral count :: Int64, sId')
+
+-- One-time addresses.
+--
+-- Rows are created when a sender's message arrives, or when a recovery scan
+-- rediscovers one. They hold no private key: 'ephemeral_pub_key' plus the seed
+-- re-derives it, so this table is a cache and losing it costs a rescan rather
+-- than an asset.
+--
+-- 'accepted_at' is NULL until the user accepts. An unaccepted row must never be
+-- shown as a name the user owns: accepting is what creates the on-chain link
+-- between them and the name, and it is theirs to decline.
+
+data OneTimeAddress = OneTimeAddress
+  { otaChain :: Chain,
+    otaAddress :: Address,
+    otaEphemeralPubKey :: ByteString,
+    otaAccepted :: Bool
+  }
+  deriving (Eq, Show)
+
+toOneTimeAddress :: (Text, ByteString, ByteString, Maybe Text) -> Either String OneTimeAddress
+toOneTimeAddress (chain, addr, eph, acceptedAt) = do
+  c <- maybe (Left $ "unknown chain: " <> T.unpack chain) Right $ parseChain chain
+  a <- mkAddress addr
+  pure OneTimeAddress {otaChain = c, otaAddress = a, otaEphemeralPubKey = eph, otaAccepted = isJust acceptedAt}
+
+-- | Record a destination. Idempotent: the same announcement may arrive by
+-- message and again by rescan.
+recordOneTimeAddress :: DB.Connection -> User -> Chain -> Address -> ByteString -> IO ()
+recordOneTimeAddress db User {userId} c addr eph =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO wallet_one_time_addresses (user_id, chain, address, ephemeral_pub_key)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT (user_id, chain, address) DO NOTHING
+    |]
+    (userId, chainText c, unAddress addr, eph)
+
+-- | Destinations awaiting a decision.
+getIncomingAddresses :: DB.Connection -> User -> Chain -> IO [OneTimeAddress]
+getIncomingAddresses db User {userId} c =
+  rights . map toOneTimeAddress
+    <$> DB.query
+      db
+      [sql|
+        SELECT chain, address, ephemeral_pub_key, accepted_at
+        FROM wallet_one_time_addresses
+        WHERE user_id = ? AND chain = ? AND accepted_at IS NULL
+        ORDER BY wallet_one_time_address_id
+      |]
+      (userId, chainText c)
+
+getOneTimeAddress :: DB.Connection -> User -> Chain -> Address -> IO (Maybe OneTimeAddress)
+getOneTimeAddress db User {userId} c addr = do
+  r <-
+    maybeFirstRow id $
+      DB.query
+        db
+        [sql|
+          SELECT chain, address, ephemeral_pub_key, accepted_at
+          FROM wallet_one_time_addresses
+          WHERE user_id = ? AND chain = ? AND address = ?
+        |]
+        (userId, chainText c, unAddress addr)
+  pure $ either (const Nothing) Just . toOneTimeAddress =<< r
+
+-- | Accepting is deliberate and, on chain, irreversible in its effect: it is
+-- what links this profile to the name.
+acceptOneTimeAddress :: DB.Connection -> User -> Chain -> Address -> IO ()
+acceptOneTimeAddress db User {userId} c addr =
+  DB.execute
+    db
+    [sql|
+      UPDATE wallet_one_time_addresses SET accepted_at = CURRENT_TIMESTAMP
+      WHERE user_id = ? AND chain = ? AND address = ? AND accepted_at IS NULL
+    |]
+    (userId, chainText c, unAddress addr)
+
+-- | Declining touches no chain state, so it is a local delete. A rescan would
+-- surface the same destination again, which is correct: the name really is
+-- still sitting there.
+declineOneTimeAddress :: DB.Connection -> User -> Chain -> Address -> IO ()
+declineOneTimeAddress db User {userId} c addr =
+  DB.execute
+    db
+    "DELETE FROM wallet_one_time_addresses WHERE user_id = ? AND chain = ? AND address = ? AND accepted_at IS NULL"
+    (userId, chainText c, unAddress addr)
+
+-- | Where the last recovery scan reached, so a repeat scan resumes.
+getScannedTo :: DB.Connection -> User -> IO (Maybe Text)
+getScannedTo db User {userId} =
+  join <$> maybeFirstRow fromOnly (DB.query db "SELECT wallet_scanned_to FROM users WHERE user_id = ?" (Only userId))
+
+setScannedTo :: DB.Connection -> User -> Text -> IO ()
+setScannedTo db User {userId} cursor =
+  DB.execute db "UPDATE users SET wallet_scanned_to = ? WHERE user_id = ?" (cursor, userId)

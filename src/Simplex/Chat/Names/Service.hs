@@ -25,7 +25,9 @@ module Simplex.Chat.Names.Service
 where
 
 import Data.ByteString (ByteString)
+import Data.Text (Text)
 import Simplex.Chat.Names.Snrc (SignedIntent)
+import Simplex.Chat.Wallet.Stealth (Announcement)
 import Simplex.Messaging.Eth.Address (Address)
 
 -- | Proof that the store (or a web checkout) was paid. Mirrors the shape
@@ -98,6 +100,10 @@ data ServiceError
     SENoRegistrarCredits
   | -- | This name's relayed-edit allowance is exhausted until renewal.
     SENoEditCredits
+  | -- | @transferWithSig@ rejects @to == from@: a self-transfer would emit an
+    -- announcement for the cost of gas alone, which is how the scan set stays
+    -- bounded by real gifts.
+    SESelfTransfer
   deriving (Eq, Show)
 
 serviceErrorText :: ServiceError -> ByteString
@@ -113,13 +119,27 @@ serviceErrorText = \case
   SENotFound -> "name not found"
   SENoRegistrarCredits -> "the registration service is out of credits, please report this"
   SENoEditCredits -> "no record changes left for this name until you extend it"
+  SESelfTransfer -> "cannot send a name to the address that already owns it"
 
 data NamesService = NamesService
   { quoteName :: ByteString -> IO (Either ServiceError NameQuote),
     buyName :: BuyRequest -> IO (Either ServiceError PurchaseId),
     registrationStatus :: PurchaseId -> IO (Either ServiceError RegistrationStatus),
     -- | Hand a user-signed intent to the relayer, which pays the gas.
-    relayIntent :: SignedIntent -> IO (Either ServiceError ByteString),
+    --
+    -- The announcement rides a transfer rather than travelling separately: it
+    -- is what lets the recipient rediscover a gifted name from the recovery
+    -- phrase alone. It is not covered by the signature — the contract takes it
+    -- as a plain argument — so a hostile relayer can drop or corrupt it. That
+    -- costs discoverability by scan, not the name, and the sender's chat
+    -- message carries the same ephemeral key anyway.
+    relayIntent :: SignedIntent -> Maybe Announcement -> IO (Either ServiceError ByteString),
+    -- | Announcement ranges for a recovery scan, from an opaque cursor.
+    --
+    -- The service serves the raw range and the client does the matching: a
+    -- viewing key never leaves the device, so there is no delegated-scanning
+    -- trade to make.
+    announcementsFrom :: Maybe Text -> IO (Either ServiceError ([Announcement], Text)),
     -- | Independent confirmation path; in production this is SMP @RSLV@.
     resolveName :: ByteString -> IO (Either ServiceError NameRecordView),
     -- | Owner to names, for recovery-key import. Advisory: each name is

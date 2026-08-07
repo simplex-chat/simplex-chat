@@ -554,6 +554,26 @@ data ChatCommand
   | APINameInfo {userId :: UserId, nameFqdn :: Text}
   | APINameSetLink {userId :: UserId, nameFqdn :: Text, nameLink_ :: Text}
   | APINameGift {userId :: UserId, nameLabel :: Text, nameRecipient :: Text}
+  | APINameIncoming {userId :: UserId}
+  | APINameAccept {userId :: UserId, nameOneTimeAddress :: Text}
+  | APINameDecline {userId :: UserId, nameOneTimeAddress :: Text}
+  | APINameExportKey {userId :: UserId, nameOneTimeAddress :: Text}
+  | APINameRescan {userId :: UserId}
+  | NameAddress
+  | NameRecoveryKey
+  | NameRecoveryKeyImport {recoveryPhrase :: Text}
+  | NameRecoveryKeySaved
+  | NameQuoteCmd {nameLabel :: Text}
+  | NameBuy {nameLabel :: Text, nameLink :: Maybe Text}
+  | NameList
+  | NameInfo {nameFqdn :: Text}
+  | NameSetLink {nameFqdn :: Text, nameLink_ :: Text}
+  | NameGift {nameLabel :: Text, nameRecipient :: Text}
+  | NameIncoming
+  | NameAccept {nameOneTimeAddress :: Text}
+  | NameDecline {nameOneTimeAddress :: Text}
+  | NameExportKey {nameOneTimeAddress :: Text}
+  | NameRescan
   | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -933,13 +953,18 @@ data ChatResponse
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRAppSettings {appSettings :: AppSettings}
-  | CRNameAddress {user :: User, nameAddress :: Text, nameAccount :: Int}
+  | CRNameAddress {user :: User, nameAddress :: Text, nameAccount :: Int, nameMetaAddress :: Text}
   | CRNameRecoveryKey {user :: User, recoveryPhrase :: Text, recoveryKeySaved :: Bool}
   | CRNameQuoted {user :: User, nameLabel :: Text, nameAvailable :: Bool, namePriceCents :: Int}
   | CRNameRegistered {user :: User, nameFqdn :: Text, nameTxHash :: Text}
   | CRNamesOwned {user :: User, ownedNames :: [Text]}
   | CRNameInfo {user :: User, nameFqdn :: Text, nameOwner :: Text, nameContact :: [Text], nameChannel :: [Text], nameExpires :: Int, nameEditCredits :: Int}
   | CRNameIntentRelayed {user :: User, nameAction :: Text, nameFqdn :: Text, nameTxHash :: Text}
+  | CRNamesIncoming {user :: User, incomingNames :: [(Text, [Text])]}
+  | CRNameAccepted {user :: User, nameOneTimeAddr :: Text, acceptedNames :: [Text]}
+  | CRNameDeclined {user :: User, nameOneTimeAddr :: Text}
+  | CRNameKeyExported {user :: User, nameOneTimeAddr :: Text, nameOneTimeKey :: Text}
+  | CRNameRescanned {user :: User, rescanFound :: Int}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
