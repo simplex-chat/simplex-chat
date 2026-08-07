@@ -171,7 +171,9 @@ struct ContextProfilePickerView: View {
                 if selectedUser == user {
                     if !incognitoDefault {
                         listExpanded.toggle()
-                    } else {
+                    } else if !busy {
+                        // Gated like the sibling write in incognitoOption, and like both of
+                        // the Kotlin ones: only expand/collapse stays live while busy.
                         incognitoDefault = false
                         listExpanded = false
                     }
@@ -315,10 +317,16 @@ struct ContextProfilePickerView: View {
             showAddProfile = false
             changingProfile = true
         }
-        changeProfile(newUser)
+        changeProfile(newUser, dismissingSheet: true)
     }
 
-    private func changeProfile(_ newUser: User) {
+    /// [dismissingSheet] only on the create path, which closes the form first: the delay is
+    /// there to outlast a sheet dismissal, and on the plain row tap there is no sheet, so it
+    /// would just detach the error from the tap that caused it - master alerted at once.
+    private func changeProfile(_ newUser: User, dismissingSheet: Bool = false) {
+        func report(_ title: String, _ message: String? = nil) {
+            if dismissingSheet { alertAfterDismissal(title, message) } else { showAlert(title, message: message) }
+        }
         Task {
             defer { Task { @MainActor in changingProfile = false } }
             do {
@@ -342,7 +350,7 @@ struct ContextProfilePickerView: View {
                 do {
                     try await changeActiveUserAsync_(newUser.userId, viewPwd: nil, keepingChatId: chat.id)
                 } catch {
-                    alertAfterDismissal(
+                    report(
                         NSLocalizedString("Error switching profile", comment: "alert title"),
                         String.localizedStringWithFormat(NSLocalizedString("Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.", comment: "alert message"), newUser.chatViewName)
                     )
@@ -353,7 +361,7 @@ struct ContextProfilePickerView: View {
                         selectedUser = currentUser
                     }
                 }
-                alertAfterDismissal(
+                report(
                     NSLocalizedString("Error changing chat profile", comment: "alert title"),
                     responseError(error)
                 )

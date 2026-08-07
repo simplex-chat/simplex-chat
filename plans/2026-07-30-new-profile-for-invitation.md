@@ -397,6 +397,13 @@ re-derive them.
   close that targets a specific id — a change to the subtlest code in the branch, for a
   window of about a second.
 
+- **`alertAfterDismissal` on paths with no sheet — fixed.** `changeProfile` is reached both
+  from the create flow (which dismisses the form first) and from an ordinary row tap (which
+  dismisses nothing), so routing all of its errors through the delay detached them from the
+  tap that caused them — master alerted at once. It now takes `dismissingSheet`, set only by
+  the create path. The remaining note about the fixed delay still applies to the four callers
+  that do dismiss a sheet:
+
 - **`alertAfterDismissal` waits a fixed 0.5 s** (`ShareSheet.swift`). It exists because
   UIKit drops an alert presented on a controller that is still dismissing. The delay is a
   proxy for "the sheet has finished", so a slow enough dismissal still drops the alert —
@@ -547,3 +554,11 @@ entries flagged `activeUser`, which makes `firstOrNull { it.activeUser }` resolv
 whichever comes first. Corrupting which profile reads as active is worse than a missing
 row, and the missing row needs an outdated remote host *and* a failed resync to appear at
 all; the alert on that path tells the user something went wrong either way.
+
+The `listUsers` refresh in `createProfileForInvitation` was **removed** rather than kept:
+`clear()` + `addAll()` from `withApi` (Main) raced the identical pair `changeActiveUser_`
+runs from `withBGApi`'s single-thread dispatcher — reachable when a notification action
+switches user mid-creation — and it had nothing to contribute. `newUser` is the API's own
+record, and a profile created a moment ago has no unread messages, so appending the one row
+is both correct and strictly less to go wrong. The later re-check of the active user did not
+help: it runs after the list has already been clobbered.

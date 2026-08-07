@@ -406,16 +406,12 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             // flagged activeUser, and its own resync refreshes the list anyway. Above the
             // check below, which returns without listing it - the profile exists by now, so
             // it has to be in the list or the next attempt at the same name is a duplicate.
-            // listUsers throws and withApi does not catch, so the refresh is guarded and the
-            // placeholder stands in for it, carrying the real counts once it succeeds.
-            if (chatModel.remoteHostId() == rhId) {
-              val updatedUsers = runCatching { controller.listUsers(rhId) }.getOrNull()
-              if (updatedUsers != null) {
-                chatModel.users.clear()
-                chatModel.users.addAll(updatedUsers)
-              } else if (chatModel.users.none { it.user.userId == newUser.userId }) {
-                chatModel.users.add(UserInfo(newUser, 0))
-              }
+            // Just this row, not a listUsers refresh: that clears and refills the whole list
+            // from Main while changeActiveUser_ can be doing the same from withBGApi, and it
+            // has nothing to add - newUser is the API's own record and a profile created a
+            // moment ago has no unread messages.
+            if (chatModel.remoteHostId() == rhId && chatModel.users.none { it.user.userId == newUser.userId }) {
+              chatModel.users.add(UserInfo(newUser, 0))
             }
             // onCreated resolves the invitation under whatever is active when it runs, and a
             // notification tap or a host switch can have changed that while we were creating.
