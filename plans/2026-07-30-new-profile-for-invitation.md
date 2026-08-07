@@ -342,3 +342,47 @@ Swift-specific traps found while reviewing, all fixed:
 run — treat it as unverified until it builds in Xcode, for the reason at the end of §6.
 First thing to check: open a prepared chat with **one** profile and confirm "Add profile"
 is visible without scrolling.
+
+## 8. Known limitations, deliberately not fixed
+
+Each of these was raised in review, confirmed against the code, and left alone — the fix
+costs more risk or diff than the defect is worth. Recorded so the next reader does not
+re-derive them.
+
+- **`filteredProfiles` is keyed on `chatModel.users.size`, not contents**
+  (`newchat/NewChatView.kt`). A refresh that preserves the count leaves stale `User`
+  values, so `firstOrNull { it.activeUser }` can point at the previously active profile.
+  Keying on contents is the obvious fix and is *wrong here*: the comment directly above it
+  ("Intentionally don't use derivedStateOf in order to NOT change an order after user was
+  selected") is load-bearing — re-keying on contents re-sorts the list under the user
+  mid-selection. The count key is strictly better than the search-text-only key it
+  replaced, and the `UserInfo` fallback above makes the count change in the one case this
+  feature introduced.
+
+- **A modal pushed on top of the create form is indistinguishable from backing out of it**
+  (`WelcomeView.kt`). The guard is `!isLastModalOpenNotClosing(...)`, which is also false
+  when another modal covers the form — on Android all four `ModalManager` placements share
+  one stack, so a deep link or notification action arriving mid-creation makes it fire:
+  profile created, invitation not moved, only a `Log.i`. Proceeding instead is *worse*:
+  `close()` pops the top of the stack, so it would dismiss the covering modal rather than
+  the form. Distinguishing the two needs a "present but not closing" predicate plus a
+  close that targets a specific id — a change to the subtlest code in the branch, for a
+  window of about a second.
+
+- **`alertAfterDismissal` waits a fixed 0.5 s** (`ShareSheet.swift`). It exists because
+  UIKit drops an alert presented on a controller that is still dismissing. The delay is a
+  proxy for "the sheet has finished", so a slow enough dismissal still drops the alert —
+  the failure it was written to prevent. It is also used on two paths where no sheet was
+  presented, delaying those errors for nothing. Deterministic alternatives (present from
+  the dismissal completion handler, or retry until the top controller is stable) are worth
+  doing if this helper acquires more callers.
+
+- **A never-activated profile gets `active_order = 0`, which can tie** (`Store/Profiles.hs`).
+  Intent is "sorts below every profile that has been used". True on any database where a
+  profile has ever been switched to, and on a fresh one — the first profile gets `1`,
+  since `getNextActiveOrder` returns `max + 1` over an empty table. Not true on a database
+  migrated by `M20240920_user_order`, which defaults every existing row to `0` without
+  backfilling: until the first switch the new profile ties with them, and
+  `sortedByDescending` is stable, so it lands wherever the source list put it. Cosmetic —
+  selection is by `userId`, never by position. The `getNextActiveOrder` wraparound branch
+  has the same tie and needs `maxBound` activations to reach.

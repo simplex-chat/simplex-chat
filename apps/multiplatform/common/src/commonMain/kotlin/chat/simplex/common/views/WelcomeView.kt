@@ -391,11 +391,17 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             return@withApi
           }
           // List the new profile even if the reassignment below fails. listUsers throws and
-          // withApi does not catch, so the cosmetic refresh is guarded.
+          // withApi does not catch, so the refresh is guarded.
           if (chatModel.remoteHostId() == rhId) {
-            runCatching { controller.listUsers(rhId) }.getOrNull()?.let {
+            val updatedUsers = runCatching { controller.listUsers(rhId) }.getOrNull()
+            if (updatedUsers != null) {
               chatModel.users.clear()
-              chatModel.users.addAll(it)
+              chatModel.users.addAll(updatedUsers)
+            } else if (chatModel.users.none { it.user.userId == newUser.userId }) {
+              // listUsers failed, and the picker is keyed on chatModel.users.size - without
+              // this it shows no row for the profile just created, and creating it again
+              // fails on the duplicate name.
+              chatModel.users.add(UserInfo(newUser, 0))
             }
           }
           // onCreated resolves the invitation under whatever is active when it runs, and a
