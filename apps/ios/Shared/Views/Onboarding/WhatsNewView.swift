@@ -8,6 +8,7 @@
 // Spec: spec/client/navigation.md
 
 import SwiftUI
+import StoreKit
 import SimpleXChat
 
 private struct VersionDescription {
@@ -40,6 +41,8 @@ private struct FeatureView {
     let title: LocalizedStringKey
     let view: () -> any View
 }
+
+private let isInUS = SKStorefront().countryCode == "USA"
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -684,7 +687,13 @@ private let versionDescriptions: [VersionDescription] = [
                     ("text.alignleft", "Easier to read."),
                 ]
             ))
-        ]
+        ] + (isInUS ? [
+            .feature(Description(
+                icon: "dollarsign.circle",
+                title: "Invest in SimpleX Chat",
+                description: "[Learn more on Wefunder](https://wefunder.com/simplexchat)."
+            ))
+        ] : [])
     ),
 ]
 
