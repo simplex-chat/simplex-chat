@@ -90,7 +90,7 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
 | `apiGetActiveUser` | `rh: Long?, ctrl: ChatCtrl?` | Fetch the currently active user profile | [L841](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L841) |
-| `apiCreateActiveUser` | `rh: Long?, p: Profile?, pastTimestamp: Boolean, keepActiveUser: Boolean, ctrl: ChatCtrl?` | Create a new user profile and set it as active, unless `keepActiveUser` | [L851](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L851) |
+| `apiCreateActiveUser` | `rh: Long?, p: Profile?, pastTimestamp: Boolean, keepActiveUser: Boolean, ctrl: ChatCtrl?` | Create a new user profile and set it as active, unless `keepActiveUser` | [L887](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L887) |
 | `listUsers` | `rh: Long?` | List all user profiles sorted by display name | [L871](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L871) |
 | `apiSetActiveUser` | `rh: Long?, userId: Long, viewPwd: String?` | Switch the active user to a different profile | [L881](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L881) |
 | `apiSetAllContactReceipts` | `rh: Long?, enable: Boolean` | Enable/disable delivery receipts for all contacts globally | [L888](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L888) |

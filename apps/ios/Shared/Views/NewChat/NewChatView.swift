@@ -638,12 +638,14 @@ private struct ActiveProfilePicker: View {
         let updatedUsers = try? await listUsersAsync()
         await MainActor.run {
             if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
-            profiles = chatModel.users.map { $0.user }
-            // listUsersAsync failed, so chatModel.users predates the creation: without this
-            // selectedProfile below points at a profile that has no row in the picker.
-            if !profiles.contains(where: { $0.userId == newUser.userId }) {
-                profiles.append(newUser)
+            // listUsersAsync failed, so chatModel.users predates the creation. Add it there
+            // as well as to profiles below, or the profile exists in the database but in no
+            // list the app shows, and creating it again fails on the duplicate name.
+            if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
+                chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
             }
+            // Without this selectedProfile below points at a profile that has no row.
+            profiles = chatModel.users.map { $0.user }
             showAddProfile = false
             selectedProfile = newUser
             profileSwitchStatus = .switchingUser

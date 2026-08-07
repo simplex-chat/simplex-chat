@@ -386,7 +386,10 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             // would fail. Resync to what the host did and report it, with the form
             // dismissed - the app is about to be showing a different profile.
             if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) close()
-            controller.changeActiveUser(newUser.remoteHostId, newUser.userId, null)
+            // changeActiveUser_, not changeActiveUser: the latter shows its own alert on
+            // failure, which would stack with the one below reporting the same thing.
+            runCatching { controller.changeActiveUser_(newUser.remoteHostId, newUser.userId, null) }
+              .onFailure { Log.e(TAG, "createProfileForInvitation: resync failed: ${it.stackTraceToString()}") }
             AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
             return@withApi
           }

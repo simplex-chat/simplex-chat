@@ -295,10 +295,17 @@ struct ContextProfilePickerView: View {
                 chatModel.users = updatedUsers
                 // Only filled in onAppear otherwise, so the new profile is missing here
                 users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
-            } else if !users.contains(where: { $0.userId == newUser.userId }) {
+            } else {
                 // changeProfile sets selectedUser to it, and otherUsers filters on that -
                 // absent from users, nothing is filtered out and a row is clipped.
-                users.append(newUser)
+                if !users.contains(where: { $0.userId == newUser.userId }) {
+                    users.append(newUser)
+                }
+                // App-wide too, or the profile exists in the database but in no list the
+                // app shows, and creating it again fails on the duplicate name.
+                if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
+                    chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
+                }
             }
             // changingProfile here too: the defer clears creatingProfile as soon as this returns
             showAddProfile = false

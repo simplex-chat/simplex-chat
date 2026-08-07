@@ -386,3 +386,28 @@ re-derive them.
   `sortedByDescending` is stable, so it lands wherever the source list put it. Cosmetic —
   selection is by `userId`, never by position. The `getNextActiveOrder` wraparound branch
   has the same tie and needs `maxBound` activations to reach.
+
+Three more, from a later round:
+
+- **The Kotlin compose picker's rows are gated more broadly than the iOS ones.**
+  `clickable(enabled = !busy)` on the profile and incognito rows also blocks their purely
+  local `listExpanded` toggle, so the picker cannot be collapsed while a change is in
+  flight; iOS gates only the work-starting branch (`if busy { return }` inside the tap).
+  Kept deliberately: master had *no* gate on those rows at all, so this is already
+  stricter than what it replaced, and holding the picker still during the change avoids
+  swapping `profilePicker()` for `currentSelection()` mid-flight — which on iOS is exactly
+  what disposed a presented sheet (see the "sheet's owner must outlive the sheet" note).
+
+- **`submitting:` and `.interactiveDismissDisabled(...)` are read inside the `.sheet`
+  content closure.** If SwiftUI does not re-invoke that closure when the presenting view's
+  `@State` changes, the Create button stays live and the sheet stays swipe-dismissable for
+  the whole submit. The atomic check-and-set bounds the damage to "a second tap does
+  nothing, silently". Unverified either way — there is no Swift toolchain here, and the
+  fix (making the flag a `@Binding`) is not worth making blind.
+
+- **`active_order = 0` sorts the new profile to the *top* of the iOS compose picker.**
+  That picker sorts `KeyPathComparator(\.activeOrder)` **ascending** while every other
+  picker sorts descending. The ascending sort is pre-existing, but before this branch a
+  newly created profile got `max + 1` and landed last there; now it gets `0` and lands
+  first. Cosmetic, and arguably an improvement in that one picker, but it does mean the
+  new profile appears at opposite ends of the two platforms' compose pickers.
