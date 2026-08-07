@@ -83,5 +83,4 @@ testBadgeServiceRedeemUnsupported ps =
     let redeemReq =
           "{\"version\":1,\"request\":{\"type\":\"purchaseBadge\",\"payment\":{\"type\":\"code\",\"code\":\"TEST-CODE\"}}}"
     client ##> ("/_service_request 1 " <> bsLink <> " " <> redeemReq)
-    -- Exact string is deterministic under the aeson fork's ordered-keymap default (Map-backed).
     client <## "service response: {\"code\":\"unsupported_version\",\"type\":\"error\"}"
