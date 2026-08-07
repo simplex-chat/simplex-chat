@@ -352,6 +352,9 @@ struct ContextProfilePickerView: View {
 
     private func incognitoOption() -> some View {
         Button {
+            // As in profilerPickerUserOption: a failed changeProfile would leave the
+            // incognito default on while the picker still shows the chat profile.
+            if busy { return }
             if !chat.chatInfo.profileChangeProhibited {
                 if incognitoDefault {
                     listExpanded.toggle()

@@ -516,13 +516,15 @@ private struct ActiveProfilePicker: View {
     }
 
 
-    // The row must be dead from the moment work starts: switchingProfileByTimeout only
-    // latches half a second later, to keep the spinner from flickering.
+    // The picker must be dead from the moment work starts: switchingProfileByTimeout only
+    // latches half a second later, to keep the spinner from flickering, and in that window
+    // a second row tap would run apiChangeConnectionUser against a connection that
+    // recreateConn is already deleting.
     private var busy: Bool { creatingProfile || switchingProfileByTimeout || profileSwitchStatus != .idle }
 
     @ViewBuilder private func viewBody() -> some View {
         profilePicker()
-            .allowsHitTesting(!switchingProfileByTimeout)
+            .allowsHitTesting(!busy)
             .modifier(ThemedBackground(grouped: true))
             .overlay {
                 if switchingProfileByTimeout {
@@ -586,7 +588,6 @@ private struct ActiveProfilePicker: View {
                 Spacer()
             }
         }
-        .disabled(busy)
     }
 
     // Created without activating, then routed through the same selectedProfile path as
@@ -638,6 +639,11 @@ private struct ActiveProfilePicker: View {
         await MainActor.run {
             if let updatedUsers = updatedUsers { chatModel.users = updatedUsers }
             profiles = chatModel.users.map { $0.user }
+            // listUsersAsync failed, so chatModel.users predates the creation: without this
+            // selectedProfile below points at a profile that has no row in the picker.
+            if !profiles.contains(where: { $0.userId == newUser.userId }) {
+                profiles.append(newUser)
+            }
             showAddProfile = false
             selectedProfile = newUser
             profileSwitchStatus = .switchingUser
