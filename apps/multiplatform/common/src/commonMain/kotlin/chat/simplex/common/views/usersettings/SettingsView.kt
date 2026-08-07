@@ -22,7 +22,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -143,7 +142,7 @@ fun HelpAndSupportView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_support_project)) {
-      if (!BuildConfigCommon.ANDROID_BUNDLE) {
+      if (!platform.androidIsPlayStoreBuild) {
         ContributeItem(uriHandler)
       }
       if (appPlatform.isAndroid) {

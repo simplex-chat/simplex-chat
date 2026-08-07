@@ -370,6 +370,7 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | `androidCreateActiveCallState()` | empty `Closeable` | Create `ActiveCallState` |
 | `androidIsXiaomiDevice()` | `false` | Check device brand |
 | `androidApiLevel` | `null` | `Build.VERSION.SDK_INT` |
+| `androidIsPlayStoreBuild` | `false` | `BuildConfig.PLAY_STORE` |
 | `androidLockPortraitOrientation()` | no-op | Lock to `SCREEN_ORIENTATION_PORTRAIT` |
 | `androidAskToAllowBackgroundCalls()` | `true` | Show battery restriction dialog |
 | `desktopShowAppUpdateNotice()` | no-op | Show update notice (Desktop only) |
