@@ -20,7 +20,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Text as T
 import Simplex.Chat.Badges.Service (BadgeServiceErrorCode (..))
-import Simplex.Chat.Bot (BotAddressOpts (..), defaultBotAddressOpts, initializeBotAddress')
+import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
@@ -111,11 +111,7 @@ badgePostStartHook BadgeServiceOpts {noAddress, testing} cc = do
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     -- DR required for service RPC; autoAccept off because badge service ignores contact events.
-    Just _ ->
-      unless noAddress $
-        initializeBotAddress'
-          defaultBotAddressOpts {logAddress = not testing, pqRatchet = Just True, autoAccept = False}
-          cc
+    Just _ -> unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
 
 badgePostStartHookCLI :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
 badgePostStartHookCLI opts env cc = do

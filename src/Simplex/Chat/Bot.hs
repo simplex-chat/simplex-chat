@@ -46,27 +46,18 @@ chatBotRepl welcome answer _user cc = do
   where
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
 
--- `pqRatchet = Just True` (IKUsePQ) is required for service RPC; Nothing is the legacy non-DR contact address.
-data BotAddressOpts = BotAddressOpts
-  { logAddress :: Bool,
-    pqRatchet :: Maybe Bool,
-    autoAccept :: Bool
-  }
-
-defaultBotAddressOpts :: BotAddressOpts
-defaultBotAddressOpts = BotAddressOpts {logAddress = True, pqRatchet = Nothing, autoAccept = True}
-
 initializeBotAddress :: ChatController -> IO ()
-initializeBotAddress = initializeBotAddress' defaultBotAddressOpts
+initializeBotAddress = initializeBotAddress' True Nothing True
 
-initializeBotAddress' :: BotAddressOpts -> ChatController -> IO ()
-initializeBotAddress' BotAddressOpts {logAddress, pqRatchet, autoAccept = doAutoAccept} cc = do
+-- pqRatchet_ selects the address type when creating: Just True (IKUsePQ) is required for service RPC, Nothing is the legacy non-DR contact address.
+initializeBotAddress' :: Bool -> Maybe Bool -> Bool -> ChatController -> IO ()
+initializeBotAddress' logAddress pqRatchet_ doAutoAccept cc = do
   sendChatCmd cc ShowMyAddress >>= \case
     Right (CRUserContactLink _ UserContactLink {connLinkContact}) -> showBotAddress connLinkContact
     Left (ChatErrorStore SEUserContactLinkNotFound) -> do
       when logAddress $ putStrLn "No bot address, creating..."
       -- TODO [short links] create short link by default
-      sendChatCmd cc (CreateMyAddress pqRatchet) >>= \case
+      sendChatCmd cc (CreateMyAddress pqRatchet_) >>= \case
         Right (CRUserContactLinkCreated _ ccLink) -> showBotAddress ccLink
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
