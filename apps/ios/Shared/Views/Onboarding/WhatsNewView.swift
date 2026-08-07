@@ -686,6 +686,18 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
+    // TODO [badges] finalise copy + Read more link before v7.1 ships.
+    VersionDescription(
+        version: "v7.1",
+        post: nil,
+        features: [
+            .view(FeatureView(
+                icon: nil,
+                title: "Supporter badge",
+                view: { SupporterBadgeWhatsNew() }
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -698,6 +710,42 @@ func shouldShowWhatsNew() -> Bool {
     let v = UserDefaults.standard.string(forKey: DEFAULT_WHATS_NEW_VERSION)
     setLastVersionDefault()
     return v != lastVersion
+}
+
+fileprivate struct SupporterBadgeWhatsNew: View {
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Supporter badge ❤️")
+                    .font(.title3)
+                    .bold()
+                Text("Help keep the network running — send files up to 2 GB.")
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(10)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            heroThumbnail()
+        }
+    }
+
+    @ViewBuilder
+    private func heroThumbnail() -> some View {
+        #if SIMPLEX_ASSETS
+        Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 110, height: 110)
+        #else
+        Image("badge-supporter")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 72, height: 72)
+        #endif
+    }
 }
 
 fileprivate struct NewOperatorsView: View {

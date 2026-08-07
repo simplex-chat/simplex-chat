@@ -95,7 +95,7 @@ struct NameBadge: View {
     }
 }
 
-private func badgeImageName(_ t: BadgeType) -> String {
+func badgeImageName(_ t: BadgeType) -> String {
     switch t {
     case .legend: "badge-legend"
     case .investor: "badge-investor"
