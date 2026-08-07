@@ -852,10 +852,10 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
     chatReadVar filesFolder >>= \case
       Nothing -> do
         defaultFolder <- lift getDefaultFilesFolder
-        fPath <- liftIO $ defaultFolder `uniqueCombine` safeFileName fn
+        fPath <- liftIO $ defaultFolder `uniqueCombine` fn
         createEmptyFile fPath $> fPath
       Just filesFolder -> do
-        fPath <- liftIO $ filesFolder `uniqueCombine` safeFileName fn
+        fPath <- liftIO $ filesFolder `uniqueCombine` fn
         createEmptyFile fPath
         pure $ takeFileName fPath
   Just fPath ->
@@ -869,7 +869,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   where
     createInPassedDirectory :: FilePath -> CM FilePath
     createInPassedDirectory fPathDir = do
-      fPath <- liftIO $ fPathDir `uniqueCombine` safeFileName fn
+      fPath <- liftIO $ fPathDir `uniqueCombine` fn
       createEmptyFile fPath $> fPath
     createEmptyFile :: FilePath -> CM ()
     createEmptyFile fPath = emptyFile `catchThrow` (ChatError . CEFileWrite fPath . show)
@@ -1914,7 +1914,7 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
       when final $ do
         lift $ closeFileHandle fileId rcvFiles
         forM_ cryptoArgs $ \cfArgs -> do
-          tmpFile <- lift getChatTempDirectory >>= liftIO . (`uniqueCombine` safeFileName fileName)
+          tmpFile <- lift getChatTempDirectory >>= liftIO . (`uniqueCombine` fileName)
           tryAllErrors (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
             Right () -> do
               removeFile fsFilePath `catchAllErrors` \_ -> pure ()

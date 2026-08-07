@@ -1135,7 +1135,7 @@ processChatCommand cxt nm = \case
                         (doesFileExist fsFromPath)
                         ( do
                             newFileName <- liftIO $ maybe (pure fileName) (generateNewFileName fileName) $ mediaFilePrefix mc
-                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` safeFileName newFileName
+                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` newFileName
                             liftIO $ B.writeFile fsNewPath "" -- create empty file
                             encrypt <- chatReadVar encryptLocalFiles
                             cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing

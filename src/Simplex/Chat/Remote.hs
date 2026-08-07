@@ -361,7 +361,7 @@ storeRemoteFile rhId encrypted_ localPath = do
     encryptLocalFile = do
       tmpDir <- lift getChatTempDirectory
       createDirectoryIfMissing True tmpDir
-      tmpFile <- liftIO $ tmpDir `uniqueCombine` safeFileName localPath
+      tmpFile <- liftIO $ tmpDir `uniqueCombine` takeFileName localPath
       cfArgs <- atomically . CF.randomArgs =<< asks random
       liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
       pure $ CryptoFile tmpFile $ Just cfArgs
@@ -575,8 +575,8 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
       Nothing -> storeFileTo =<< getDefaultFilesFolder
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFileTo dir = liftIO . tryAllErrors' $ do
-      safeName <- either throwError pure $ remoteFileName fileName
-      filePath <- liftIO $ dir `uniqueCombine` safeName
+      unless (validRemoteFileName fileName) $ throwError $ RPEInvalidBody "invalid file name"
+      filePath <- liftIO $ dir `uniqueCombine` fileName
       -- resolves symlinks, so it also catches a final component linking outside the folder
       canonPath <- liftIO $ canonicalizePath filePath
       inDir <- liftIO $ (takeDirectory canonPath ==) <$> canonicalizePath dir
@@ -585,11 +585,8 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
       pure filePath
 
 -- The controller only ever sends a bare file name (see storeRemoteFile), so a path is a protocol violation.
-remoteFileName :: FilePath -> Either RemoteProtocolError SafeFileName
-remoteFileName fName
-  | fName /= takeFileName fName || fName `elem` (["", ".", ".."] :: [FilePath]) =
-      Left $ RPEInvalidBody "invalid file name"
-  | otherwise = Right $ safeFileName fName
+validRemoteFileName :: FilePath -> Bool
+validRemoteFileName fName = fName == takeFileName fName && fName `notElem` (["", ".", ".."] :: [FilePath])
 
 handleGetFile :: User -> RemoteFile -> Respond -> CM ()
 handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do

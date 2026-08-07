@@ -15,7 +15,6 @@ import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (isLeft, isRight)
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
@@ -23,7 +22,7 @@ import Simplex.Chat.Files (safeFileNameStr)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote (remoteFileName, remoteFilesFolder)
+import Simplex.Chat.Remote (remoteFilesFolder, validRemoteFileName)
 import Simplex.Chat.Remote.Protocol (remoteStoreFile)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -46,10 +45,10 @@ remoteTests = describe "Remote" $ do
           _ -> False
   describe "stored file name" $ do
     it "rejects names with directory components" $ \_ ->
-      filter (isRight . remoteFileName) ["../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "", ".", ".."]
+      filter validRemoteFileName ["../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "", ".", ".."]
         `shouldBe` []
     it "accepts bare file names" $ \_ ->
-      filter (isLeft . remoteFileName) ["test.pdf", "test_1.pdf", ".hidden", "a b.tar.gz"]
+      filter (not . validRemoteFileName) ["test.pdf", "test_1.pdf", ".hidden", "a b.tar.gz"]
         `shouldBe` []
     it "sanitizes any name to a real file name" $ \_ ->
       filter (not . sanitized) fileNames `shouldBe` []
