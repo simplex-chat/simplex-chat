@@ -8441,8 +8441,9 @@ chat item action</note>
         <target>Serveur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve">
+      <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve" approved="no">
         <source>Server %@ does not support name resolution. Configure servers, or use a connection link.</source>
+        <target state="translated">Le serveur %@ ne prend pas en charge la résolution de noms. Configurez des serveurs ou utilisez un lien de connexion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve">
@@ -9172,7 +9173,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve" approved="no">
         <source>Subscribers can report messsages to moderators.</source>
-        <target state="needs-translation">Les abonnés peuvent signaler les messages aux modérateurs.</target>
+        <target state="translated">Les abonnés peuvent signaler les messages aux modérateurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribers can send SimpleX links." xml:space="preserve" approved="no">
@@ -9307,12 +9308,14 @@ L'adresse du relais a été utilisée pour configurer ce relais pour le canal.</
         <target state="translated">Appuyez sur « Se connecter » pour utiliser le bot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Join channel" xml:space="preserve">
+      <trans-unit id="Tap Join channel" xml:space="preserve" approved="no">
         <source>Tap Join channel</source>
+        <target state="translated">Appuyez sur Rejoindre le canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Join group" xml:space="preserve">
+      <trans-unit id="Tap Join group" xml:space="preserve" approved="no">
         <source>Tap Join group</source>
+        <target state="translated">Appuyez sur Rejoindre le groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -9340,8 +9343,9 @@ L'adresse du relais a été utilisée pour configurer ce relais pour le canal.</
         <target>Appuyez pour rejoindre incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to open" xml:space="preserve">
+      <trans-unit id="Tap to open" xml:space="preserve" approved="no">
         <source>Tap to open</source>
+        <target state="translated">Appuyez pour ouvrir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to paste link" xml:space="preserve">
@@ -9365,12 +9369,14 @@ L'adresse du relais a été utilisée pour configurer ce relais pour le canal.</
         <note>relay test failure
 server test failure</note>
       </trans-unit>
-      <trans-unit id="Test notifications" xml:space="preserve">
+      <trans-unit id="Test notifications" xml:space="preserve" approved="no">
         <source>Test notifications</source>
+        <target state="translated">Notifications de test</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Test relay" xml:space="preserve">
+      <trans-unit id="Test relay" xml:space="preserve" approved="no">
         <source>Test relay</source>
+        <target state="translated">Relais de test</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve">
@@ -9410,24 +9416,29 @@ It can happen because of some bug or when the connection is compromised.</source
 Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve">
+      <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve" approved="no">
         <source>The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.</source>
+        <target state="translated">Le nom SimpleX #%@ est enregistré sans lien de canal. Ajoutez un lien de canal via la page d'enregistrement.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve">
+      <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve" approved="no">
         <source>The SimpleX name %@ is registered, but it has no valid link.</source>
+        <target state="translated">Le nom SimpleX %@ est enregistré, mais ne possède aucun lien valide.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve">
+      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve" approved="no">
         <source>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</source>
+        <target state="translated">Le nom SimpleX %@ est enregistré, mais n'a pas été ajouté au profil. Ajoutez-le à votre adresse ou au profil du canal si vous en êtes le propriétaire.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve">
+      <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve" approved="no">
         <source>The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</source>
+        <target state="translated">Le nom SimpleX @%@ est enregistré sans adresse SimpleX. Ajoutez votre adresse à ce nom via la page d'enregistrement.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
+      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve" approved="no">
         <source>The address will be short, and your profile will be shared via the address.</source>
+        <target state="translated">L'adresse sera courte et votre profil sera partagé via cette adresse.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -9440,8 +9451,9 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
         <target>L'application protège votre vie privée en utilisant des opérateurs différents pour chaque conversation.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The app removed this message after %lld attempts to receive it." xml:space="preserve">
+      <trans-unit id="The app removed this message after %lld attempts to receive it." xml:space="preserve" approved="no">
         <source>The app removed this message after %lld attempts to receive it.</source>
+        <target state="translated">L'application a supprimé ce message après %lld tentatives de réception.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve">
@@ -9454,12 +9466,14 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
         <target>La tentative de modification de la phrase secrète de la base de données n'a pas abouti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." xml:space="preserve">
+      <trans-unit id="The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." xml:space="preserve" approved="no">
         <source>The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</source>
+        <target state="translated">Le badge est signé avec une clé que cette version de l'application ne reconnaît pas. Mettez l'application à jour pour vérifier ce badge.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve">
+      <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve" approved="no">
         <source>The channel required this message to be signed, but the signature is missing.</source>
+        <target state="translated">Le canal exige que ce message soit signé, mais la signature est absente.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
@@ -9467,8 +9481,9 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
         <target>Le code scanné n'est pas un code QR de lien SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve">
+      <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve" approved="no">
         <source>The connection reached the limit of undelivered messages</source>
+        <target state="translated">La connexion a atteint la limite de messages non distribués</target>
         <note>conn error description</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages, your contact may be offline." xml:space="preserve">
@@ -9496,9 +9511,11 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
         <target>Le chiffrement fonctionne et le nouvel accord de chiffrement n'est pas nécessaire. Cela peut provoquer des erreurs de connexion !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The first network where you own&#10;your contacts and groups." xml:space="preserve">
+      <trans-unit id="The first network where you own&#10;your contacts and groups." xml:space="preserve" approved="no">
         <source>The first network where you own
 your contacts and groups.</source>
+        <target state="translated">Le premier réseau où vous possédez
+vos contacts et vos groupes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -9506,8 +9523,9 @@ your contacts and groups.</source>
         <target>Le hash du message précédent est différent.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
+      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve" approved="no">
         <source>The link will be short, and group profile will be shared via the link.</source>
+        <target state="translated">Le lien sera court et le profil du groupe sera partagé via ce lien.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -9535,8 +9553,9 @@ your contacts and groups.</source>
         <target>L'ancienne base de données n'a pas été supprimée lors de la migration, elle peut être supprimée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." xml:space="preserve">
+      <trans-unit id="The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." xml:space="preserve" approved="no">
         <source>The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it.</source>
+        <target state="translated">La plus ancienne des libertés humaines : parler à une autre personne sans être surveillé, sur une infrastructure qui ne peut pas la trahir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
@@ -9594,8 +9613,9 @@ your contacts and groups.</source>
         <target>Puis nous avons déménagé en ligne, et chaque plateforme a demandé un morceau de vous - votre nom, votre numéro, vos amis. Nous avons accepté que le prix à payer pour parler aux autres est de faire savoir à quelqu'un à qui nous parlons. À chaque génération, les gens et la technique le faisaient de cette manière : téléphone, courriels, messagers, médias sociaux. C'était le seul moyen possible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." xml:space="preserve">
+      <trans-unit id="There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." xml:space="preserve" approved="no">
         <source>There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected.</source>
+        <target state="translated">Il existe une autre voie. Un réseau sans numéro de téléphone. Sans nom d'utilisateur. Sans compte. Sans aucune identité utilisateur. Un réseau qui relie les personnes et transporte des messages chiffrés sans savoir qui est connecté.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="These conditions will also apply for: **%@**." xml:space="preserve">
@@ -9613,8 +9633,9 @@ your contacts and groups.</source>
         <target>Ils peuvent être modifiés dans les paramètres des contacts et des groupes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve">
+      <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve" approved="no">
         <source>This SimpleX name is not registered. Please check the name.</source>
+        <target state="translated">Ce nom SimpleX n'est pas enregistré. Vérifiez-le.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -9627,8 +9648,9 @@ your contacts and groups.</source>
         <target>Cette action ne peut être annulée - les messages envoyés et reçus avant la date sélectionnée seront supprimés. Cela peut prendre plusieurs minutes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
+        <target state="translated">Cette action est irréversible : les messages envoyés et reçus dans cette discussion avant la date sélectionnée seront supprimés.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -9636,8 +9658,9 @@ your contacts and groups.</source>
         <target>Cette action ne peut être annulée - votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
+      <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve" approved="no">
         <source>This badge could not be verified and may not be genuine.</source>
+        <target state="translated">Ce badge n'a pas pu être vérifié et pourrait ne pas être authentique.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
@@ -9670,21 +9693,25 @@ your contacts and groups.</source>
         <target>Ce groupe n'existe plus.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This group requires a newer version of the app. Please update the app to join." xml:space="preserve">
+      <trans-unit id="This group requires a newer version of the app. Please update the app to join." xml:space="preserve" approved="no">
         <source>This group requires a newer version of the app. Please update the app to join.</source>
+        <target state="translated">Ce groupe nécessite une version plus récente. Mettez l'application à jour pour le rejoindre.</target>
         <note>alert message
 alert subtitle</note>
       </trans-unit>
-      <trans-unit id="This is a chat relay address, it cannot be used to connect." xml:space="preserve">
+      <trans-unit id="This is a chat relay address, it cannot be used to connect." xml:space="preserve" approved="no">
         <source>This is a chat relay address, it cannot be used to connect.</source>
+        <target state="translated">C'est une adresse de relais de discussion, elle ne permet pas de se connecter.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This is the last active relay. Removing it will prevent message delivery to subscribers." xml:space="preserve">
+      <trans-unit id="This is the last active relay. Removing it will prevent message delivery to subscribers." xml:space="preserve" approved="no">
         <source>This is the last active relay. Removing it will prevent message delivery to subscribers.</source>
+        <target state="translated">Il s'agit du dernier relais actif. Le supprimer empêchera la distribution des messages aux abonnés.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This is your link for channel %@!" xml:space="preserve">
+      <trans-unit id="This is your link for channel %@!" xml:space="preserve" approved="no">
         <source>This is your link for channel %@!</source>
+        <target state="translated">Voici votre lien pour le canal %@ !</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
