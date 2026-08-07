@@ -180,6 +180,19 @@ Uses the existing `users_add` ("Add profile") string — **zero new translation 
   new profile always has the SimpleX Team/Status cards. Core returns the updated contact;
   do not pre-check.
 
+Two hazards left as they are on master, so review does not keep re-raising them:
+
+- `selectProfileAsync`'s trailing `close()` pops whatever is on top rather than the
+  picker, so backing out during the connection change dismisses the screen underneath.
+  The ordinary row tap has had exactly that window since before this branch; creating a
+  profile first is local and fast and barely widens it. Fixing it needs a `ModalViewId`
+  on the picker at both call sites, including `ShareListView`, which does not offer this
+  feature at all.
+- `alertAfterDismissal` waits a fixed 0.5s for a sheet transition rather than observing
+  it. A slow device or a late-released interactive dismissal can still outlast it. The
+  deterministic version needs the presenting controller's completion handler, which is
+  not reachable from where these alerts are raised.
+
 ## 5. Generated and hand-synced artifacts — easy to miss
 
 `NewUser` is a documented API type, and `apiDocsTest` generates **11 files** from those

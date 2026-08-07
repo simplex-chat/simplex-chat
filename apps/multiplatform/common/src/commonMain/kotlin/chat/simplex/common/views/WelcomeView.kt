@@ -401,6 +401,9 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
           // onCreated resolves the invitation under whatever is active when it runs, and a
           // notification tap or a host switch can have changed that while we were creating.
           if (chatModel.currentUser.value?.userId != ownerUserId || chatModel.remoteHostId() != rhId) {
+            // Closed: the profile exists, so leaving the form up means the next Create
+            // fails on the duplicate name for as long as the name is unchanged.
+            if (modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) close()
             AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
             return@withApi
           }

@@ -592,6 +592,7 @@ private struct ActiveProfilePicker: View {
         }
         if alreadyCreating { return }
         defer { Task { @MainActor in creatingProfile = false } }
+        let ownerUserId = await MainActor.run { chatModel.currentUser?.userId }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
         // Checked before refreshing the lists below: on this path the core has already
@@ -614,6 +615,13 @@ private struct ActiveProfilePicker: View {
                 // switch leaves the checkmark on a profile that is not active.
                 selectedProfile = chatModel.currentUser ?? selectedProfile
             }
+            alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
+            return
+        }
+        // apiChangeConnectionUser resolves pccConnId under whatever is active when the
+        // selectedProfile handler runs, and a notification action can have switched it.
+        guard await MainActor.run({ chatModel.currentUser?.userId }) == ownerUserId else {
+            await MainActor.run { showAddProfile = false }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }

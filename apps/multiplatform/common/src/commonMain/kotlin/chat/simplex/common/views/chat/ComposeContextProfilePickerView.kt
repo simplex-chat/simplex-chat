@@ -41,9 +41,10 @@ fun ComposeContextProfilePickerView(
   val incognitoDefault = chatModel.controller.appPrefs.incognito.get()
   val users = chatModel.users.map { it.user }.filter { u -> u.activeUser || !u.hidden }
   val listExpanded = remember { mutableStateOf(false) }
-  // Set until the invitation has moved onto the new profile, which is after the form has
-  // closed and this picker is interactive again
-  val busy = chatModel.creatingProfileForInvitation.value
+  val changingProfile = remember { mutableStateOf(false) }
+  // Creating stays set until the invitation has moved, which is after the form has closed
+  // and this picker is interactive again
+  val busy = changingProfile.value || chatModel.creatingProfileForInvitation.value
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val isVisible = remember { mutableStateOf(false) }
@@ -121,7 +122,12 @@ fun ComposeContextProfilePickerView(
   }
 
   fun changeProfile(newUser: User) {
-    withApi { changeProfileTo(newUser) }
+    // Set before withApi, which dispatches - the rows would be live until it runs.
+    // The create path is covered by creatingProfileForInvitation instead.
+    changingProfile.value = true
+    withApi {
+      try { changeProfileTo(newUser) } finally { changingProfile.value = false }
+    }
   }
 
   fun showCantChangeProfileAlert() {

@@ -256,6 +256,7 @@ struct ContextProfilePickerView: View {
         }
         if alreadyCreating { return }
         defer { Task { @MainActor in creatingProfile = false } }
+        let ownerUserId = await MainActor.run { chatModel.currentUser?.userId }
         let profile = Profile(displayName: displayName, fullName: "", shortDescr: shortDescr, image: image)
         let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
         // Checked before refreshing the lists below: on this path the core has already
@@ -278,6 +279,13 @@ struct ContextProfilePickerView: View {
                     chatModel.chatId = nil
                 }
             }
+            alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
+            return
+        }
+        // changeProfile resolves the prepared chat under whatever is active when it runs,
+        // and a notification action can have switched it while we were creating.
+        guard await MainActor.run({ chatModel.currentUser?.userId }) == ownerUserId else {
+            await MainActor.run { showAddProfile = false }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
