@@ -26,6 +26,7 @@ chatNamesTests = do
   it "connect by name resolving to channel (primary) and direct contact" testConnectByNameChannelAndContact
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
   it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
+  it "gift a name to a contact by name, using their published meta-address" testGiftByContactName
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
@@ -308,3 +309,38 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
         bob <## "SimpleX name: @biz.simplex (verified)"
   where
     bizName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "biz" [])
+
+-- | The point of putting the meta-address in the profile: the sender pastes
+-- nothing and no handshake happens beyond the connection they already have.
+--
+-- Bob publishes his meta-address, it travels to Alice with his profile, and she
+-- gifts him a name by contact name alone. He then finds it by scanning the
+-- announcement, having received no message about it at all.
+testGiftByContactName :: HasCallStack => TestParams -> IO ()
+testGiftByContactName ps = withSmpServerAndNames $ \_reg ->
+  testChat2 aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      -- publishing is what /names address does; it updates the profile
+      -- publishing puts the meta-address in bob's profile, which then travels
+      -- to alice with it when they connect - nothing extra is exchanged
+      bob ##> "/names address"
+      bob <##. "name address"
+      bob <##. "meta-address ("
+      connectUsers alice bob
+      alice ##> "/names buy alicechat"
+      alice <## "registered alicechat.simplex"
+      alice <##. "tx "
+      alice ##> "/names gift alicechat @bob"
+      alice <## "gift alicechat.simplex done"
+      alice <##. "tx "
+      -- Bob was told nothing. The announcement is all he has.
+      bob ##> "/names incoming"
+      bob <## "no names have been sent to you"
+      bob ##> "/names rescan"
+      bob <## "found 1 name(s) sent to you - see /names incoming"
+      bob ##> "/names incoming"
+      bob <## "names sent to you, not yet accepted:"
+      bob <##. "  alicechat.simplex at 0x"
+      bob <## ""
+      bob <## "accepting links this profile to the name on chain; declining leaves no trace"

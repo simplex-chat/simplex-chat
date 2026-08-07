@@ -107,7 +107,7 @@ directoryNameTests = do
   it "should mark an inconsistent SimpleX name as not verified" testDirectoryChannelNameNotVerified
 
 directoryProfile :: Profile
-directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing, metaAddress = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe FilePath -> DirectoryOpts
 mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =

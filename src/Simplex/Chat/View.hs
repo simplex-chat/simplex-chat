@@ -2035,12 +2035,15 @@ viewSwitchPhase = \case
   SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> UserProfileUpdateSummary -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, description, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', description = description', image = image', contactLink = contactLink', preferences = prefs'} summary =
+viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, description, image, contactLink, preferences, metaAddress = ma} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', description = description', image = image', contactLink = contactLink', preferences = prefs', metaAddress = ma'} summary =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     UserProfileUpdateSummary {updateSuccesses = s, updateFailures = f} = summary
     profileUpdated
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' && contactLink == contactLink' = []
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' && contactLink == contactLink' =
+          -- Publishing a meta-address changes nothing a reader would notice, so
+          -- say so explicitly rather than reporting an empty update.
+          ["meta-address published, contacts can now send you names" <> notified | ma /= ma']
       | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
       | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' = [if isNothing image' then "profile image removed" else "profile image updated"]
       | n == n' && fullName == fullName' && shortDescr == shortDescr' = ["user description " <> (if maybe True T.null description' then "removed" else "changed to " <> maybe "" plain description') <> notified]

@@ -161,6 +161,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
           Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
           Simplex.Chat.Store.Postgres.Migrations.M20260806_wallet_seeds
+          Simplex.Chat.Store.Postgres.Migrations.M20260807_profile_meta_address
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -332,6 +333,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
           Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
           Simplex.Chat.Store.SQLite.Migrations.M20260806_wallet_seeds
+          Simplex.Chat.Store.SQLite.Migrations.M20260807_profile_meta_address
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

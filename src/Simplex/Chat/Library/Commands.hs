@@ -2392,10 +2392,11 @@ processChatCommand cxt nm = \case
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APINameAddress userId -> withUserId userId $ \user -> do
     (_, pk) <- userWalletAccount user
-    ks <- userStealthKeys user
+    user' <- publishMetaAddress user
+    ks <- userStealthKeys user'
     pure $
       CRNameAddress
-        user
+        user'
         (nameAddrText $ W.accountAddress pk)
         (fromIntegral . W.arIndex $ W.waRef pk)
         (safeDecodeUtf8 . metaAddressHex $ W.accountMetaAddress ks)
@@ -2472,7 +2473,16 @@ processChatCommand cxt nm = \case
     -- plain address would link them to the name for every chain observer. The
     -- destination is derived here, once, and the ephemeral key rides the
     -- transfer so they can rediscover it from their recovery phrase alone.
-    ma <- nameEither . parseMetaAddressHex $ encodeUtf8 recipient
+    --
+    -- @name takes it from the contact's profile, which is the whole point of
+    -- publishing it there: no handshake, nothing to paste.
+    ma <- case T.stripPrefix "@" recipient of
+      Just cName -> do
+        Contact {profile = LocalProfile {metaAddress = ma_}} <- withFastStore $ \db -> getContactByName db cxt user cName
+        case ma_ of
+          Nothing -> throwCmdError "that contact has not published a meta-address - they need a newer app version"
+          Just ma' -> nameEither . parseMetaAddressHex $ encodeUtf8 ma'
+      Nothing -> nameEither . parseMetaAddressHex $ encodeUtf8 recipient
     g <- asks random
     dest <- nameEither =<< liftIO (giftDestination g ma)
     n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
@@ -4109,6 +4119,24 @@ processChatCommand cxt nm = \case
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
     updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
+    -- | Put this profile's stealth meta-address into the profile, so contacts
+    -- can send it a name with no handshake. Idempotent, and a no-op unless the
+    -- value changed - which it does when a different recovery key is imported,
+    -- and that change must reach contacts or gifts land at an address this
+    -- device can no longer find.
+    --
+    -- Incognito profiles are unaffected: they are generated per connection by
+    -- 'Simplex.Chat.ProfileGenerator' and never carry a meta-address.
+    publishMetaAddress :: User -> CM User
+    publishMetaAddress user@User {profile = lp} = do
+      ks <- userStealthKeys user
+      let ma = Just . safeDecodeUtf8 . metaAddressHex $ W.accountMetaAddress ks
+          p@Profile {metaAddress = published} = fromLocalProfile lp
+      if published == ma
+        then pure user
+        else do
+          _ <- updateProfile user (p {metaAddress = ma} :: Profile)
+          fromMaybe user <$> (asks currentUser >>= readTVarIO)
     updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
     updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
@@ -6086,7 +6114,7 @@ chatCommandP =
     newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing, metaAddress = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -6095,7 +6123,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing, metaAddress = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

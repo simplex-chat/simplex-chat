@@ -1257,8 +1257,13 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     }
 
 redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
-redactedMemberProfile g m Profile {displayName, fullName, shortDescr, description, image, contactLink = lnk, peerType, badge, contactDomain} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink True =<< shortDescr, description = removeSimplexLink False =<< description, image, contactLink, preferences = Nothing, peerType, badge, contactDomain = redactedDomain}
+redactedMemberProfile g m Profile {displayName, fullName, shortDescr, description, image, contactLink = lnk, peerType, badge, contactDomain, metaAddress} =
+  -- metaAddress is passed through to group members deliberately. It is a public
+  -- key pair, not an address: holding it lets someone send this member a name
+  -- and nothing else - it cannot locate what was sent, nor link two gifts to
+  -- each other, since that needs the private viewing key. Redacting it would
+  -- only break gifting for people known through a group.
+  Profile {displayName, fullName, shortDescr = removeSimplexLink True =<< shortDescr, description = removeSimplexLink False =<< description, image, contactLink, preferences = Nothing, peerType, badge, contactDomain = redactedDomain, metaAddress}
   where
     contactLink = if allowSimplexLinks then lnk else Nothing
     redactedDomain = if allowDirect then (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain else Nothing
@@ -3210,6 +3215,7 @@ simplexTeamContactProfile =
       image = Just simplexChatImage,
       contactLink = Just $ CLFull adminContactReq,
       peerType = Nothing,
+      metaAddress = Nothing,
       preferences = Nothing,
       badge = Nothing,
       contactDomain = Nothing

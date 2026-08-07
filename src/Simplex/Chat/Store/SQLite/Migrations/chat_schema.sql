@@ -32,7 +32,8 @@ CREATE TABLE contact_profiles(
   contact_domain TEXT,
   contact_domain_proof TEXT,
   contact_domain_verified INTEGER,
-  description TEXT
+  description TEXT,
+  meta_address TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,

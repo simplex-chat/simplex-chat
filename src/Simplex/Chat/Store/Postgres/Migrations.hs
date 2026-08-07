@@ -40,6 +40,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
 import Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
 import Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
 import Simplex.Chat.Store.Postgres.Migrations.M20260806_wallet_seeds
+import Simplex.Chat.Store.Postgres.Migrations.M20260807_profile_meta_address
 import Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
 import Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
 import Simplex.Chat.Store.Postgres.Migrations.M20260714_member_security_code
@@ -93,7 +94,8 @@ schemaMigrations =
     ("20260716_signed_history", m20260716_signed_history, Just down_m20260716_signed_history),
     ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles),
     ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection),
-    ("20260806_wallet_seeds", m20260806_wallet_seeds, Just down_m20260806_wallet_seeds)
+    ("20260806_wallet_seeds", m20260806_wallet_seeds, Just down_m20260806_wallet_seeds),
+    ("20260807_profile_meta_address", m20260807_profile_meta_address, Just down_m20260807_profile_meta_address)
   ]
 
 -- | The list of migrations in ascending order by date
