@@ -426,10 +426,19 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
               AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
               return@withApi
             }
-            // Form gone - the user backed out of it. Don't move the invitation under a screen
-            // they left, and don't report an error for something they did on purpose.
+            // Form no longer on top. Don't move the invitation under a screen the user left -
+            // but the two ways to get here need different treatment.
             if (!modalManager.isLastModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) {
-              Log.i(TAG, "createProfileForInvitation: form closed before the invitation moved")
+              if (modalManager.isModalOpenNotClosing(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) {
+                // Still there, just covered - a deep link or notification action opened a modal
+                // over it, which on Android shares the one stack. The form comes back with the
+                // name still typed, and Create would then fail as a duplicate, so say what
+                // happened rather than leaving the only silent branch in this function.
+                AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
+              } else {
+                // Genuinely dismissed - don't report an error for something they chose.
+                Log.i(TAG, "createProfileForInvitation: form closed before the invitation moved")
+              }
               return@withApi
             }
             close()

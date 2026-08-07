@@ -379,7 +379,15 @@ re-derive them.
   The migration screens have the same fall-through, but they are not layered over a screen
   with its own handler. The separate case below is still open.
 
-- **A modal pushed on top of the create form is indistinguishable from backing out of it**
+- ~~**A modal pushed on top of the create form is indistinguishable from backing out of it**~~
+  **Fixed.** `isModalOpenNotClosing` was added beside `isLastModalOpenNotClosing`, so the
+  two cases now separate: still present but not on top means covered — report it, because
+  the form returns with the name still typed and Create would fail as a duplicate; absent
+  means dismissed — stay quiet, the user chose that. Neither case moves the invitation, and
+  neither calls `close()`, which would still pop the covering modal. Original note kept
+  below for the reasoning about why proceeding is not an option:
+
+- **(superseded) A modal pushed on top of the create form is indistinguishable from backing out of it**
   (`WelcomeView.kt`). The guard is `!isLastModalOpenNotClosing(...)`, which is also false
   when another modal covers the form — on Android all four `ModalManager` placements share
   one stack, so a deep link or notification action arriving mid-creation makes it fire:
@@ -420,9 +428,11 @@ Three more, from a later round:
   The justification originally given — that holding it still avoids swapping
   `profilePicker()` for `currentSelection()` mid-flight — was borrowed from iOS, where that
   swap disposes a presented sheet; Kotlin has no sheet to lose, so it does not apply here.
-  Left as is only because the change is cosmetic and touching these rows again is the kind
-  of edit that has repeatedly introduced defects in this branch. Gate the work-starting
-  branches instead, as iOS does, if this picker is revisited.
+  **Fixed** by gating the branches rather than the row, as iOS does. Only `changeProfile`
+  starts async work; the two `incognito.set` branches change state and are gated too;
+  expanding and collapsing is local and is now always available. This was a regression
+  introduced by this branch — master had no gate on these rows at all — which is what
+  finally settled it, after being raised three times and deferred twice.
 
 - **`submitting:` and `.interactiveDismissDisabled(...)` are read inside the `.sheet`
   content closure.** If SwiftUI does not re-invoke that closure when the presenting view's
@@ -528,3 +538,12 @@ user just dismissed — the mistake fixed once already in this branch, where
 What *is* true: pressing "Add profile" a second time with the same name fails as a
 duplicate. That is the core refusing to create a profile that already exists, and the fix
 is to tap the row rather than recreate it.
+
+One consequence of the registration placement (§8), recorded so it is a choice and not an
+oversight: on the stale-core path — an old remote host activated the profile despite
+`keepActiveUser` — the profile is **not** added to `chatModel.users` if the resync then
+throws. It is registered below that branch precisely because registering above it left two
+entries flagged `activeUser`, which makes `firstOrNull { it.activeUser }` resolve to
+whichever comes first. Corrupting which profile reads as active is worse than a missing
+row, and the missing row needs an outdated remote host *and* a failed resync to appear at
+all; the alert on that path tells the user something went wrong either way.

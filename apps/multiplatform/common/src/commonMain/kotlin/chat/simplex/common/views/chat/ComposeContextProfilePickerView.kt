@@ -143,16 +143,19 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-        .clickable(enabled = !busy, onClick = {
+        // busy gates the branches that change something, not the row: this picker has no
+        // spinner or dimming, so gating the row left it inert with no feedback and not even
+        // collapsible during a slow change. Expanding and collapsing is local. As on iOS.
+        .clickable(onClick = {
           if (!chat.chatInfo.profileChangeProhibited) {
             if (selectedUser.value.userId == user.userId) {
               if (!incognitoDefault) {
                 listExpanded.value = !listExpanded.value
-              } else {
+              } else if (!busy) {
                 chatModel.controller.appPrefs.incognito.set(false)
                 listExpanded.value = false
               }
-            } else {
+            } else if (!busy) {
               changeProfile(user)
             }
           } else {
@@ -186,11 +189,11 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
-        .clickable(enabled = !busy, onClick = {
+        .clickable(onClick = {
           if (!chat.chatInfo.profileChangeProhibited) {
             if (incognitoDefault) {
               listExpanded.value = !listExpanded.value
-            } else {
+            } else if (!busy) {
               chatModel.controller.appPrefs.incognito.set(true)
               listExpanded.value = false
             }

@@ -117,6 +117,12 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
+  /** [hasModalOpen], but a modal already dismissed and only waiting out its close animation
+   * does not count. Together with [isLastModalOpenNotClosing] this separates "covered by
+   * another modal" from "dismissed", which the last-position test alone cannot. */
+  fun isModalOpenNotClosing(id: ModalViewId): Boolean =
+    modalViews.withIndex().any { (i, m) -> m.id == id && i !in toRemove }
+
   /** [isLastModalOpen], but a modal already dismissed and only waiting out its close
    * animation does not count - [closeModal] leaves it in [modalViews] until then. Separate
    * from [isLastModalOpen], which gates secondary chat teardown on the existing behaviour. */
