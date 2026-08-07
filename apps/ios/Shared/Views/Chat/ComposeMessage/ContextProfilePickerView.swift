@@ -275,6 +275,16 @@ struct ContextProfilePickerView: View {
             await MainActor.run {
                 // Unconditional: the switch only removes this view when it succeeded
                 showAddProfile = false
+                // Registered here rather than trusting the resync: changeActiveUserAsync_
+                // calls apiSetActiveUserAsync and listUsersAsync before the MainActor.run
+                // that writes m.users, so a throw leaves both lists without the profile and
+                // a retry with the same name is refused as a duplicate.
+                if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
+                    chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
+                }
+                if !users.contains(where: { $0.userId == newUser.userId }) {
+                    users.append(newUser)
+                }
                 // Only if it switched, which the active user tells us: the prepared chat
                 // is then gone from the reloaded list and would render blank.
                 if chatModel.currentUser?.userId == newUser.userId && chatModel.chatId == chat.id {
@@ -284,10 +294,10 @@ struct ContextProfilePickerView: View {
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))
             return
         }
-        // Below the branch above, which returns: adding it there would leave two entries
-        // flagged activeUser, and its own resync refreshes the list anyway. Above the guard
-        // below, which returns without refreshing either list - the profile exists by now,
-        // so it has to appear in both or the next attempt at the same name is a duplicate.
+        // Below the branch above, which returns and registers its own copy: appending here
+        // as well would leave two entries flagged activeUser. Above the guard below, which
+        // returns without refreshing either list - the profile exists by now, so it has to
+        // appear in both or the next attempt at the same name is a duplicate.
         // users is otherwise only filled in onAppear.
         await MainActor.run {
             if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
@@ -325,7 +335,14 @@ struct ContextProfilePickerView: View {
     /// would just detach the error from the tap that caused it - master alerted at once.
     private func changeProfile(_ newUser: User, dismissingSheet: Bool = false) {
         func report(_ title: String, _ message: String? = nil) {
-            if dismissingSheet { alertAfterDismissal(title, message) } else { showAlert(title, message: message) }
+            // Both hop to main: this runs inside the Task below, and showAlert presents a
+            // UIAlertController. alertAfterDismissal does it via asyncAfter, so the
+            // immediate path has to do it too rather than calling showAlert here.
+            if dismissingSheet {
+                alertAfterDismissal(title, message)
+            } else {
+                DispatchQueue.main.async { showAlert(title, message: message) }
+            }
         }
         Task {
             defer { Task { @MainActor in changingProfile = false } }

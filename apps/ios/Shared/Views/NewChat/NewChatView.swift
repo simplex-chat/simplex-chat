@@ -636,9 +636,14 @@ private struct ActiveProfilePicker: View {
                 // previous profile if it threw. Not newUser unconditionally, or a failed
                 // switch leaves the checkmark on a profile that is not active.
                 selectedProfile = chatModel.currentUser ?? selectedProfile
-                // The resync refreshed chatModel.users but not this snapshot, which is
-                // otherwise only filled in onAppear: without it the picker lists the old
-                // profiles, none matches the active one, and no row shows a checkmark.
+                // Registered here rather than trusting the resync: changeActiveUserAsync_
+                // calls apiSetActiveUserAsync and listUsersAsync before the MainActor.run
+                // that writes m.users, so a throw leaves that list untouched.
+                if !chatModel.users.contains(where: { $0.user.userId == newUser.userId }) {
+                    chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
+                }
+                // And this snapshot is otherwise only filled in onAppear, so without it the
+                // picker lists the old profiles and no row shows a checkmark.
                 profiles = chatModel.users.map { $0.user }
             }
             alertAfterDismissal(NSLocalizedString("Error changing chat profile", comment: "alert title"))

@@ -46,6 +46,7 @@ import chat.simplex.common.views.usersettings.DeleteImageButton
 import chat.simplex.common.views.usersettings.EditImageButton
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -399,11 +400,17 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
               // failure, which would stack with the one below reporting the same thing.
               runCatching { controller.changeActiveUser_(newUser.remoteHostId, newUser.userId, null) }
                 .onFailure { Log.e(TAG, "createProfileForInvitation: resync failed: ${it.stackTraceToString()}") }
+              // Not relying on that resync to list it: changeActiveUser_ writes currentUser
+              // inside its mutex before it calls listUsers, so a host that drops between the
+              // two leaves the model pointing at a profile its own list does not contain.
+              if (chatModel.remoteHostId() == rhId && chatModel.users.none { it.user.userId == newUser.userId }) {
+                chatModel.users.add(UserInfo(newUser, 0))
+              }
               AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
               return@withApi
             }
-            // Below the branch above, which returns: adding it there would leave two entries
-            // flagged activeUser, and its own resync refreshes the list anyway. Above the
+            // Below the branch above, which returns and registers its own copy: appending
+            // here as well would leave two entries flagged activeUser. Above the
             // check below, which returns without listing it - the profile exists by now, so
             // it has to be in the list or the next attempt at the same name is a duplicate.
             // Just this row, not a listUsers refresh: that clears and refills the whole list
@@ -441,8 +448,11 @@ fun createProfileForInvitation(rhId: Long?, onCreated: suspend (User) -> Unit) {
             try {
               onCreated(newUser)
             } catch (e: Exception) {
-              // changeActiveUser_ throws, and withApi does not catch - the global handler
-              // would close a modal or clear chatId with nothing said about the failure.
+              // Not a cancellation: this catch exists because changeActiveUser_ throws and
+              // withApi does not catch, so the global handler would close a modal or clear
+              // chatId with nothing said - but reporting a cancelled coroutine as a failure
+              // would be wrong, and rethrowing keeps it cancelling.
+              if (e is CancellationException) throw e
               Log.e(TAG, "createProfileForInvitation: moving the invitation failed: ${e.stackTraceToString()}")
               AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user))
             }

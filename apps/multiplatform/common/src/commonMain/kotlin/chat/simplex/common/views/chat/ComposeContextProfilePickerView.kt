@@ -328,9 +328,11 @@ fun ComposeContextProfilePickerView(
 
       // Emitted last, so with reverseLayout it renders at the top of the expanded
       // list - furthest from the compose box, with the current selection nearest.
+      // The divider goes under the row, not over it: reverseLayout flips the items, not the
+      // content of one, so emitting it first would draw a line along the list's top edge.
       item {
-        Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
         NewProfileOption()
+        Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
       }
     }
   }

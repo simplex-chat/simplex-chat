@@ -562,3 +562,28 @@ switches user mid-creation — and it had nothing to contribute. `newUser` is th
 record, and a profile created a moment ago has no unread messages, so appending the one row
 is both correct and strictly less to go wrong. The later re-check of the active user did not
 help: it runs after the list has already been clobbered.
+
+## 11. The partial-failure window in the resync, and what is left open
+
+Review kept arriving at the same place from two directions, so it is worth stating once.
+`changeActiveUser_` writes `chatModel.currentUser` **inside its mutex, before** it calls
+`listUsers`; `changeActiveUserAsync_` likewise runs `apiSetActiveUserAsync` and
+`listUsersAsync` **before** the `MainActor.run` that assigns `m.users`. So a throw between
+those steps leaves the current user pointing at a profile the list does not contain. The
+comment that used to say the resync "refreshes them anyway" was simply wrong on that path,
+and both the Kotlin and the two iOS stale-core branches now register the profile themselves
+rather than relying on it. Reachable only with an outdated remote host *and* a mid-call
+failure, but the cost of covering it is three `if`s.
+
+Still open, and not fixable within this branch:
+
+- **`withApi` is a detached `CoroutineScope(Dispatchers.Main)` that nothing cancels.**
+  Backgrounding right after Create lets the flow finish unattended and switch the active
+  profile while the app is invisible; process death between the create and the reassignment
+  leaves a complete, non-active, empty profile with the invitation still on the old one and
+  nothing to reconcile it — the only recovery is deleting it in Settings. This failure mode
+  is **new**: before `keepActiveUser`, creating a profile always activated it, so a
+  half-finished create was self-evident. Fixing it needs a scope tied to a lifecycle, which
+  is a change to `withApi` itself and well outside a feature branch.
+- **The iOS half has never been compiled or run.** Every reachable call site has been
+  checked against its declaration by hand, twice, but that is not a compiler. See §7.
