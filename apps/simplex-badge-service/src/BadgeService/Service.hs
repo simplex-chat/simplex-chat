@@ -113,14 +113,8 @@ badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
 handleServiceRequest :: ChatController -> User -> AgentInvId -> J.Object -> IO ()
 handleServiceRequest cc User {userId} reqId _reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
+      respObj = KM.fromList [("type", J.String "error"), ("code", J.toJSON BSEUnsupportedVersion)]
   logInfo $ "badge service request " <> reqIdT
-  sendChatCmd cc (APISendServiceResponse userId reqId $ errorResponse BSEUnsupportedVersion) >>= \case
+  sendChatCmd cc (APISendServiceResponse userId reqId respObj) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
-
-errorResponse :: BadgeServiceErrorCode -> J.Object
-errorResponse errCode =
-  KM.fromList
-    [ ("type", J.String "error"),
-      ("code", J.toJSON errCode)
-    ]
