@@ -79,12 +79,6 @@
     <string name="about_simplex_chat">O SimpleX Chat</string>
     <string name="above_then_preposition_continuation">potom:</string>
     <string name="color_primary">Sfarbenie</string>
-    <string name="accept_contact_button"></string>
-    <string name="onboarding_conditions_accept"></string>
-    <string name="accept"></string>
-    <string name="accept_call_on_lock_screen"></string>
-    <string name="accept_feature"></string>
-    <string name="accept_pending_member_button"></string>
     <string name="network_enable_socks_info">Pristupovať k serverom cez SOCKS proxy na porte %d? Pred povolením tejto možnosti musí byť spustená proxy</string>
     <string name="relay_status_active">aktívny</string>
     <string name="servers_info_subscriptions_connections_subscribed">aktívne spojenia</string>
