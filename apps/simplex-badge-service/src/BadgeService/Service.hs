@@ -6,7 +6,6 @@
 module BadgeService.Service
   ( welcomeGetOpts,
     badgeService,
-    badgeService_,
     badgeServiceCLI,
   )
 where
@@ -54,15 +53,11 @@ welcomeGetOpts = do
   pure opts
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> IO ()
-badgeService = badgeService_ (pure ())
-
--- Runs onStarted after postStartHook completes (address exists, service_requests set); used by tests.
-badgeService_ :: IO () -> BadgeServiceOpts -> ChatConfig -> IO ()
-badgeService_ onStarted opts cfg = do
+badgeService opts cfg = do
   let chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
-            postStartHook = Just $ \cc -> badgePostStartHook opts cc >> onStarted
+            postStartHook = Just $ badgePostStartHook opts
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc ->
     forever $ do

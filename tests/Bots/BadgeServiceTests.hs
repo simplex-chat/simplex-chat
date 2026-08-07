@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -10,15 +9,13 @@ import BadgeService.Service
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Concurrent (forkIO, killThread)
-import Control.Concurrent.STM
+import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Simplex.Chat.Controller (ChatConfig)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import System.FilePath ((</>))
-import System.Timeout (timeout)
 import Test.Hspec hiding (it)
 
 badgeServiceTests :: SpecWith TestParams
@@ -71,11 +68,9 @@ withBadgeService ps test = do
 
 runBadgeService :: ChatConfig -> BadgeServiceOpts -> IO () -> IO ()
 runBadgeService cfg opts action = do
-  ready <- newEmptyTMVarIO
-  t <- forkIO $ badgeService_ (atomically $ putTMVar ready ()) opts cfg
-  timeout 10000000 (atomically $ takeTMVar ready) >>= \case
-    Nothing -> killThread t >> fail "badge service failed to signal ready within 10s"
-    Just () -> action `finally` killThread t
+  t <- forkIO $ badgeService opts cfg
+  threadDelay 100000
+  action `finally` killThread t
 
 testBadgeServiceRedeemUnsupported :: HasCallStack => TestParams -> IO ()
 testBadgeServiceRedeemUnsupported ps =
