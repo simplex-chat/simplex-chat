@@ -411,3 +411,38 @@ Three more, from a later round:
   newly created profile got `max + 1` and landed last there; now it gets `0` and lands
   first. Cosmetic, and arguably an improvement in that one picker, but it does mean the
   new profile appears at opposite ends of the two platforms' compose pickers.
+
+## 9. A pre-existing bug found next door, deliberately left alone
+
+`IncognitoUserOption` in `newchat/NewChatView.kt` writes the app-wide incognito preference
+*before* the call that can fail, and never rolls it back:
+
+```kotlin
+appPreferences.incognito.set(true)                                  // written unconditionally
+val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+if (conn != null) { … }                                             // on failure nothing is undone
+```
+
+`apiSetConnectionIncognito` returns `null` on any error, so a failure leaves the connection
+non-incognito while `appPreferences.incognito` is now `true`.
+
+Nothing looks wrong at the time. The row reads
+`remember { chatModel.showingInvitation.value?.conn?.incognito ?: appPrefs.incognito.get() }`,
+which consults the *connection* first — and that was not updated, so the row correctly
+stays unticked. It surfaces later: the next connection started with `showingInvitation`
+null falls through to the preference, so it silently defaults to incognito and the contact
+sees an unfamiliar random profile name.
+
+Low severity, for two reasons. The call uses `sendCmd`, not `sendCmdWithRetry`, and both
+error branches alert — so the user is told *this* action failed; only the lingering
+preference is silent. And it fails toward more privacy, not less.
+
+**The fix is to move that one line inside `if (conn != null)`.** Nothing between the two
+statements reads the preference, so there is no reason it is set early. It was written,
+verified against the compiler, and then reverted: this is untouched master code, and the
+branch should not fix a bug it did not cause. Worth a separate one-line PR.
+
+This is the exact mirror of a bug this branch *did* have to fix — `selectProfileAsync`
+called `incognito.set(false)` before the connection move, which with the picker now staying
+open on failure produced "preference off, Incognito still ticked". Same shape, opposite
+direction; see §4.
