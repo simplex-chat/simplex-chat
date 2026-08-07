@@ -54,10 +54,11 @@ welcomeGetOpts = do
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> IO ()
 badgeService opts cfg = do
+  env <- newServiceState
   let chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
-            postStartHook = Just $ badgePostStartHook opts
+            postStartHook = Just $ badgePostStartHook opts env
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc ->
     forever $ do
@@ -79,7 +80,7 @@ badgeServiceCLI opts = do
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
-            postStartHook = Just $ badgePostStartHookCLI opts env,
+            postStartHook = Just $ badgePostStartHook opts env,
             eventHook = Just eventHook
           }
   raceAny_
@@ -98,19 +99,16 @@ badgePreStartHook :: BadgeServiceOpts -> ChatController -> IO ()
 badgePreStartHook opts ChatController {config, chatStore} =
   runBadgeServiceMigrations opts config chatStore
 
-badgePostStartHook :: BadgeServiceOpts -> ChatController -> IO ()
-badgePostStartHook BadgeServiceOpts {noAddress, testing} cc = do
+badgePostStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
+badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
   -- SREQ delivery gates on this flag; Core starts serviceRequests=False, so the hook must set it.
   atomically $ writeTVar (processServiceRequests cc) True
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     -- DR required for service RPC; autoAccept off because badge service ignores contact events.
-    Just _ -> unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
-
-badgePostStartHookCLI :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
-badgePostStartHookCLI opts env cc = do
-  badgePostStartHook opts cc
-  void $ atomically $ tryPutTMVar (serviceCC env) cc
+    Just _ -> do
+      unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
+      void $ atomically $ tryPutTMVar (serviceCC env) cc
 
 handleServiceRequest :: ChatController -> User -> AgentInvId -> J.Object -> IO ()
 handleServiceRequest cc User {userId} reqId _reqData = do
