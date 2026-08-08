@@ -52,6 +52,7 @@ actual fun PlatformTextField(
   showVoiceButton: Boolean,
   onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
+  onEscape: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
   focusRequester: FocusRequester?,
   onDone: () -> Unit,
@@ -178,6 +179,11 @@ actual fun PlatformTextField(
               }
             }
           }
+        else if (it.key == Key.Escape && it.type == KeyEventType.KeyDown &&
+            cs.contextItem !is ComposeContextItem.NoContextItem) {
+          onEscape()
+          true
+        }
         else false
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
