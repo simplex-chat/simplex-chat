@@ -47,6 +47,9 @@ fun BuyNameView(rhId: Long?, close: () -> Unit) {
   // A name can be bought as a gift, so pointing it here is a default, not a
   // rule. Off means it is registered pointing nowhere, ready to be given away.
   val pointAtMe = rememberSaveable { mutableStateOf(true) }
+  // Without an address there is nothing to point at, and leaving the switch on
+  // would register the name pointing nowhere while claiming otherwise.
+  LaunchedEffect(myLink) { if (myLink == null) pointAtMe.value = false }
 
   // Re-quote as the user types, but only once they have stopped.
   LaunchedEffect(label.value) {
@@ -70,24 +73,36 @@ fun BuyNameView(rhId: Long?, close: () -> Unit) {
         val link = if (pointAtMe.value) myLink else null
         val reg = chatModel.controller.apiNameBuy(rhId, label.value.trim().lowercase(), years.value, paid.token, link)
         if (reg != null) {
-          val keySaved = chatModel.controller.apiNameStatus(rhId)?.nameKeySaved ?: true
+          // The switch already said whether this name is for this profile, so
+          // it is acted on rather than asked again. Chaining dialogs here was
+          // also unexitable: dismissing one pushed the next, and the dismiss
+          // then popped the pushed one instead.
+          if (pointAtMe.value) {
+            try {
+              chatModel.updateUser(chatModel.controller.apiSetUserDomain(rhId, reg.nameFqdn))
+            } catch (e: Exception) {
+              Log.e(TAG, "apiSetUserDomain after buy: ${e.message}")
+            }
+          }
+          val keySaved = chatModel.controller.apiNameStatus(rhId)?.nameKeySaved ?: false
           close()
-          if (keySaved) {
-            if (pointAtMe.value) offerSetPrimaryName(rhId, reg.nameFqdn)
-            else AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.names_bought_title),
-              text = generalGetString(MR.strings.names_bought_for_other).format(reg.nameFqdn),
-            )
-          } else {
-            // C8: for most users this is the first backup the app has ever
-            // offered, so it comes before anything cosmetic.
+          if (!keySaved) {
+            // The only backup this profile has, and it did not exist until now.
             AlertManager.shared.showAlertDialog(
               title = generalGetString(MR.strings.names_bought_title),
-              text = generalGetString(MR.strings.names_bought_text).format(reg.nameFqdn),
+              text = generalGetString(
+                if (pointAtMe.value) MR.strings.names_bought_text else MR.strings.names_bought_for_other
+              ).format(reg.nameFqdn),
               confirmText = generalGetString(MR.strings.names_bought_save_key),
               dismissText = generalGetString(MR.strings.names_bought_later),
               onConfirm = { ModalManager.start.showModalCloseable { c -> NameRecoveryKeyView(rhId, c) } },
-              onDismiss = { if (pointAtMe.value) offerSetPrimaryName(rhId, reg.nameFqdn) },
+            )
+          } else {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.names_bought_title),
+              text = generalGetString(
+                if (pointAtMe.value) MR.strings.names_bought_text else MR.strings.names_bought_for_other
+              ).format(reg.nameFqdn),
             )
           }
         }
@@ -104,6 +119,7 @@ fun BuyNameView(rhId: Long?, close: () -> Unit) {
     checking = checking.value,
     buying = buying.value,
     pointAtMe = pointAtMe,
+    canPoint = myLink != null,
     buy = { confirmBuy(label.value, pointAtMe.value) { doBuy() } },
   )
 }
@@ -129,6 +145,7 @@ private fun BuyNameLayout(
   checking: Boolean,
   buying: Boolean,
   pointAtMe: MutableState<Boolean>,
+  canPoint: Boolean,
   buy: () -> Unit,
 ) {
   ColumnWithScrollBar {
@@ -209,14 +226,18 @@ private fun BuyNameLayout(
     SectionView {
       SectionItemView {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-          Text(stringResource(MR.strings.names_buy_point_at_me))
-          DefaultSwitch(checked = pointAtMe.value, onCheckedChange = { pointAtMe.value = it })
+          Text(stringResource(MR.strings.names_buy_point_at_me), color = if (canPoint) Color.Unspecified else MaterialTheme.colors.secondary)
+          DefaultSwitch(checked = pointAtMe.value, enabled = canPoint, onCheckedChange = { pointAtMe.value = it })
         }
       }
     }
     SectionTextFooter(
-      if (pointAtMe.value) stringResource(MR.strings.names_buy_point_at_me_on)
-      else stringResource(MR.strings.names_buy_point_at_me_off)
+      when {
+        !canPoint -> stringResource(MR.strings.names_buy_no_address)
+        pointAtMe.value -> stringResource(MR.strings.names_buy_point_at_me_on)
+        else -> stringResource(MR.strings.names_buy_point_at_me_off)
+      },
+      if (canPoint) MaterialTheme.colors.secondary else WarningOrange
     )
 
     if (!NamePayment.isLive) {

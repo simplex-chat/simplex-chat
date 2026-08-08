@@ -965,6 +965,10 @@ data ChatResponse
   | CRNamesOwned {user :: User, ownedNames :: [Text]}
   | CRNameInfo {user :: User, nameFqdn :: Text, nameOwner :: Text, nameContact :: [Text], nameChannel :: [Text], nameExpires :: Int, nameEditCredits :: Int}
   | CRNameIntentRelayed {user :: User, nameAction :: Text, nameFqdn :: Text, nameTxHash :: Text}
+  | -- | A gift was relayed. Carries the ephemeral public key so the client can
+    -- put it in the message it sends the recipient: with it they can use the
+    -- name at once, without waiting for a scan of the chain announcement.
+    CRNameGifted {user :: User, nameFqdn :: Text, nameTxHash :: Text, nameEphemeralPubKey :: Text}
   | CRNamesIncoming {user :: User, incomingNames :: [IncomingName]}
   | CRNameAccepted {user :: User, nameOneTimeAddr :: Text, acceptedNames :: [Text]}
   | CRNameDeclined {user :: User, nameOneTimeAddr :: Text}

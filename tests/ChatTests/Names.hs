@@ -27,6 +27,7 @@ chatNamesTests = do
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
   it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
   it "gift a name to a contact by name, using their published meta-address" testGiftByContactName
+  it "gift to a raw address is found by scanning, with no message" testGiftByMetaAddress
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
@@ -334,13 +335,41 @@ testGiftByContactName ps = withSmpServerAndNames $ \_reg ->
       alice ##> "/names gift alicechat @bob"
       alice <## "gift alicechat.simplex done"
       alice <##. "tx "
-      -- Bob was told nothing. The announcement is all he has.
+      -- bob is told, and his client records the destination from the message
+      bob <# "alice> You were given the SimpleX name alicechat.simplex"
+      -- The transfer message carries the ephemeral key, so bob's client records
+      -- the destination on arrival. No rescan.
+      bob ##> "/names incoming"
+      bob <## "names sent to you, not yet accepted:"
+      bob <##. "  alicechat.simplex at 0x"
+      bob <## ""
+      bob <## "accepting links this profile to the name on chain; declining leaves no trace"
+
+-- | The other half of discovery: a gift to a raw address sends no message, so
+-- the recipient finds it only by scanning the chain announcement. This is the
+-- path a restored device takes, where there is no message to read.
+testGiftByMetaAddress :: HasCallStack => TestParams -> IO ()
+testGiftByMetaAddress ps = withSmpServerAndNames $ \_reg ->
+  testChat2 aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      bob ##> "/names address"
+      bob <##. "name address"
+      metaLine <- getTermLine bob
+      let meta = reverse . takeWhile (/= ' ') . reverse $ metaLine
+      alice ##> "/names buy scanchat"
+      alice <## "registered scanchat.simplex"
+      alice <##. "tx "
+      alice ##> ("/names gift scanchat " <> meta)
+      alice <## "gift scanchat.simplex done"
+      alice <##. "tx "
+      -- No contact, so no message: bob has been told nothing at all.
       bob ##> "/names incoming"
       bob <## "no names have been sent to you"
       bob ##> "/names rescan"
       bob <## "found 1 name(s) sent to you - see /names incoming"
       bob ##> "/names incoming"
       bob <## "names sent to you, not yet accepted:"
-      bob <##. "  alicechat.simplex at 0x"
+      bob <##. "  scanchat.simplex at 0x"
       bob <## ""
       bob <## "accepting links this profile to the name on chain; declining leaves no trace"

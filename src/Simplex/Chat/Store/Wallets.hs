@@ -23,6 +23,7 @@ module Simplex.Chat.Store.Wallets
     OneTimeAddress (..),
     recordOneTimeAddress,
     getIncomingAddresses,
+    getAcceptedAddresses,
     getOneTimeAddress,
     acceptOneTimeAddress,
     declineOneTimeAddress,
@@ -103,13 +104,21 @@ bindAccount db User {userId} AccountRef {arSeedId = SeedId sId, arIndex} =
 getOrCreateAccountRef :: DB.Connection -> User -> IO ByteString -> IO (WalletSeed, AccountRef)
 getOrCreateAccountRef db user mkSeed = do
   existing <- getAccountRef db user
-  seeds <- getWalletSeeds db
-  s <- case listToMaybe seeds of
-    Just s -> pure s
-    Nothing -> liftIO mkSeed >>= createWalletSeed db
-  case existing of
-    Just r | arSeedId r == wsId s -> pure (s, r)
-    _ -> do
+  -- Load the seed this profile is actually bound to. Picking the first row in
+  -- the table instead would silently re-bind a profile whenever a second seed
+  -- exists - which is exactly what importing a recovery key creates - throwing
+  -- away the imported key and moving the profile to a new account index, so
+  -- the names it already owned stop being derivable too.
+  bound <- case existing of
+    Just r -> fmap (\s -> (r, s)) <$> getWalletSeed db (arSeedId r)
+    Nothing -> pure Nothing
+  case bound of
+    Just (r, s) -> pure (s, r)
+    Nothing -> do
+      seeds <- getWalletSeeds db
+      s <- case listToMaybe seeds of
+        Just s -> pure s
+        Nothing -> liftIO mkSeed >>= createWalletSeed db
       ix <- takeAccountIndex db (wsId s)
       let r = AccountRef {arSeedId = wsId s, arIndex = ix}
       bindAccount db user r
@@ -193,6 +202,21 @@ getIncomingAddresses db User {userId} c =
         SELECT chain, address, ephemeral_pub_key, accepted_at
         FROM wallet_one_time_addresses
         WHERE user_id = ? AND chain = ? AND accepted_at IS NULL
+        ORDER BY wallet_one_time_address_id
+      |]
+      (userId, chainText c)
+
+-- | Destinations the user accepted. These hold names they own just as much as
+-- the main account does, so anything listing "your names" must include them.
+getAcceptedAddresses :: DB.Connection -> User -> Chain -> IO [OneTimeAddress]
+getAcceptedAddresses db User {userId} c =
+  rights . map toOneTimeAddress
+    <$> DB.query
+      db
+      [sql|
+        SELECT chain, address, ephemeral_pub_key, accepted_at
+        FROM wallet_one_time_addresses
+        WHERE user_id = ? AND chain = ? AND accepted_at IS NOT NULL
         ORDER BY wallet_one_time_address_id
       |]
       (userId, chainText c)

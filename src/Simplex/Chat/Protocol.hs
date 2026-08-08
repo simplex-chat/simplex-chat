@@ -631,6 +631,7 @@ data MsgContentTag
   | MCVoice_
   | MCFile_
   | MCReport_
+  | MCAssetTransfer_
   | MCChat_
   | MCUnknown_ Text
   deriving (Eq, Show)
@@ -644,6 +645,7 @@ instance StrEncoding MsgContentTag where
     MCFile_ -> "file"
     MCVoice_ -> "voice"
     MCReport_ -> "report"
+    MCAssetTransfer_ -> "assetTransfer"
     MCChat_ -> "chat"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
@@ -654,6 +656,7 @@ instance StrEncoding MsgContentTag where
     "voice" -> Right MCVoice_
     "file" -> Right MCFile_
     "report" -> Right MCReport_
+    "assetTransfer" -> Right MCAssetTransfer_
     "chat" -> Right MCChat_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
@@ -723,8 +726,27 @@ data MsgContent
   | MCVoice {text :: Text, duration :: Int}
   | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
+  | -- | Something was handed over in-app: a name now, a token later. The app
+    -- renders this from 'transfer', so the wording is localised by the reader
+    -- rather than sent in the sender's language; 'text' is only the fallback
+    -- shown by clients too old to know this type.
+    MCAssetTransfer {text :: Text, transfer :: AssetTransfer}
   | MCChat {text :: Text, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
+  deriving (Eq, Show)
+
+-- | What was handed over. 'kind' selects the wording and the screen to open, so
+-- adding a token transfer later is a new kind rather than a new message type.
+--
+-- 'ephemeralPubKey' is what makes the transfer usable immediately: with it the
+-- recipient derives the destination on receipt and never has to scan. The
+-- on-chain announcement carries the same value and exists for the case where
+-- this message is lost, or the device is restored from the recovery key alone.
+data AssetTransfer = AssetTransfer
+  { kind :: Text,
+    asset :: Text,
+    ephemeralPubKey :: Maybe Text
+  }
   deriving (Eq, Show)
 
 data MsgChatLink
@@ -756,6 +778,7 @@ msgContentText = \case
     where
       msg = "report " <> safeDecodeUtf8 (strEncode reason)
   MCChat {text} -> text
+  MCAssetTransfer {text} -> text
   MCUnknown {text} -> text
 
 durationText :: Int -> Text
@@ -787,6 +810,7 @@ isMedia = \case
 isReport :: MsgContent -> Bool
 isReport = \case
   MCReport {} -> True
+  MCAssetTransfer {} -> True
   _ -> False
 
 msgContentTag :: MsgContent -> MsgContentTag
@@ -798,6 +822,7 @@ msgContentTag = \case
   MCVoice {} -> MCVoice_
   MCFile {} -> MCFile_
   MCReport {} -> MCReport_
+  MCAssetTransfer {} -> MCAssetTransfer_
   MCChat {} -> MCChat_
   MCUnknown {tag} -> MCUnknown_ tag
 
@@ -810,6 +835,8 @@ newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
 $(JQ.deriveJSON defaultJSON ''InlineFileInvitation)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
+
+$(JQ.deriveJSON defaultJSON ''AssetTransfer)
 
 $(JQ.deriveJSON defaultJSON ''LinkOwnerSig)
 
@@ -852,6 +879,10 @@ instance FromJSON MsgContent where
         duration <- v .: "duration"
         pure MCVoice {text, duration}
       MCFile_ -> MCFile <$> v .: "text"
+      MCAssetTransfer_ -> do
+        text <- v .: "text"
+        transfer <- v .: "transfer"
+        pure MCAssetTransfer {text, transfer}
       MCReport_ -> do
         text <- v .: "text"
         reason <- v .: "reason"
@@ -883,6 +914,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
     MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
+    MCAssetTransfer {text, transfer} -> J.object ["type" .= MCAssetTransfer_, "text" .= text, "transfer" .= transfer]
     MCChat {text, chatLink, ownerSig} -> J.object $ ("ownerSig" .=? ownerSig) ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
@@ -893,6 +925,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
+    MCAssetTransfer {text, transfer} -> J.pairs $ "type" .= MCAssetTransfer_ <> "text" .= text <> "transfer" .= transfer
     MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
 
 $(JQ.deriveJSON defaultJSON ''MsgContainer)

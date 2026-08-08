@@ -366,6 +366,15 @@ fun FramedItemView(
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, stripLink = mc.chatLink.connLinkStr)
                 }
               }
+              // Rendered from the payload, in the reader's language: the text
+              // the sender composed is only a fallback for older clients.
+              is MsgContent.MCAssetTransfer -> {
+                Text(
+                  assetTransferText(mc.transfer, ci.chatDir.sent),
+                  style = MaterialTheme.typography.body1,
+                  modifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF * 1.5f, vertical = DEFAULT_PADDING_HALF),
+                )
+              }
               is MsgContent.MCReport -> {
                 val prefix = buildAnnotatedString {
                   withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {

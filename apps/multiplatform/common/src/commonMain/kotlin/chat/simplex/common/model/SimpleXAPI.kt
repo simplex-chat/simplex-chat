@@ -1138,6 +1138,18 @@ object ChatController {
     return null
   }
 
+  // Binds this profile to an existing recovery key. The core creates the seed
+  // and binds the profile to it; finding what the key already owns is a
+  // separate rescan, because it needs the chain rather than the phrase.
+  suspend fun apiNameRecoveryKeyImport(rh: Long?, phrase: String): Boolean {
+    val userId = currentUserId("apiNameRecoveryKeyImport")
+    val r = sendCmd(rh, CC.ApiNameRecoveryKeyImport(userId, phrase))
+    if (r is API.Result && r.res is CR.NameRecoveryKey) return true
+    Log.e(TAG, "apiNameRecoveryKeyImport bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.names_import_failed), "${r.responseType}: ${r.details}")
+    return false
+  }
+
   suspend fun apiNameRecoveryKeySaved(rh: Long?): Boolean {
     val userId = currentUserId("apiNameRecoveryKeySaved")
     val r = sendCmd(rh, CC.ApiNameRecoveryKeySaved(userId))
@@ -1171,13 +1183,13 @@ object ChatController {
     return null
   }
 
-  suspend fun apiNameGift(rh: Long?, label: String, recipient: String): Boolean {
+  suspend fun apiNameGift(rh: Long?, label: String, recipient: String): CR.NameGifted? {
     val userId = currentUserId("apiNameGift")
     val r = sendCmd(rh, CC.ApiNameGift(userId, label, recipient))
-    if (r is API.Result && r.res is CR.NameIntentRelayed) return true
+    if (r is API.Result && r.res is CR.NameGifted) return r.res
     Log.e(TAG, "apiNameGift bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.names_gift_failed), "${r.responseType}: ${r.details}")
-    return false
+    return null
   }
 
   private suspend fun apiGetChatTags(rh: Long?): List<ChatTag>?{
@@ -6768,6 +6780,7 @@ sealed class CR {
   @Serializable @SerialName("namesOwned") class NamesOwned(val user: User, val ownedNames: List<String>): CR()
   @Serializable @SerialName("nameQuoted") class NameQuoted(val user: User, val nameLabel: String, val nameAvailable: Boolean, val namePriceCents: Int): CR()
   @Serializable @SerialName("nameRegistered") class NameRegistered(val user: User, val nameFqdn: String, val nameTxHash: String): CR()
+  @Serializable @SerialName("nameGifted") class NameGifted(val user: User, val nameFqdn: String, val nameTxHash: String, val nameEphemeralPubKey: String): CR()
   @Serializable @SerialName("nameIntentRelayed") class NameIntentRelayed(val user: User, val nameAction: String, val nameFqdn: String, val nameTxHash: String): CR()
   @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User, val updatedUser: User): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: UserRef, val toContact: Contact): CR()
@@ -6972,6 +6985,7 @@ sealed class CR {
     is NameKeyExported -> "nameKeyExported"
     is NameRescanned -> "nameRescanned"
     is NameIntentRelayed -> "nameIntentRelayed"
+    is NameGifted -> "nameGifted"
     is NameRecoveryKey -> "nameRecoveryKey"
     is NamesOwned -> "namesOwned"
     is NameQuoted -> "nameQuoted"
@@ -7171,6 +7185,7 @@ sealed class CR {
     is NameKeyExported -> withUser(user, nameOneTimeAddr)
     is NameRescanned -> withUser(user, rescanFound.toString())
     is NameIntentRelayed -> withUser(user, "$nameAction $nameFqdn: $nameTxHash")
+    is NameGifted -> withUser(user, "$nameFqdn: $nameTxHash")
     is NameRecoveryKey -> withUser(user, "saved: $recoveryKeySaved")
     is NamesOwned -> withUser(user, ownedNames.joinToString(", "))
     is NameQuoted -> withUser(user, "$nameLabel available: $nameAvailable, $namePriceCents cents")

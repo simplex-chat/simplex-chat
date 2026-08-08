@@ -332,6 +332,8 @@ quoteContent mc qmc ciFile_
       MCVoice {} -> False
       MCReport {} -> False
       MCChat {} -> True
+      -- a quote of a transfer is just its fallback text, nothing large
+      MCAssetTransfer {} -> False
       MCUnknown {} -> True
     qText = msgContentText qmc
     getFileName :: CIFile d -> String

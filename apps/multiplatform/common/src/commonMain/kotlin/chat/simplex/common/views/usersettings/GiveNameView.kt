@@ -44,7 +44,7 @@ fun GiveNameView(rhId: Long?, fqdn: String, close: () -> Unit) {
       } else {
         canReceive.forEach { ct ->
           SectionItemView(click = {
-            if (!busy.value) confirmGive(rhId, label, fqdn, ct) { close() }
+            if (!busy.value) confirmGive(rhId, label, fqdn, ct, busy) { close() }
           }, disabled = busy.value) {
             Text(ct.profile.profileViewName)
           }
@@ -59,7 +59,7 @@ fun GiveNameView(rhId: Long?, fqdn: String, close: () -> Unit) {
   }
 }
 
-private fun confirmGive(rhId: Long?, label: String, fqdn: String, ct: Contact, onDone: () -> Unit) {
+private fun confirmGive(rhId: Long?, label: String, fqdn: String, ct: Contact, busy: MutableState<Boolean>, onDone: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.names_give_confirm_title),
     // Irreversible without their cooperation: after this they own it, not you.
@@ -68,13 +68,23 @@ private fun confirmGive(rhId: Long?, label: String, fqdn: String, ct: Contact, o
     destructive = true,
     onConfirm = {
       withBGApi {
-        if (chatModel.controller.apiNameGift(rhId, label, "@${ct.profile.displayName}")) {
+        busy.value = true
+        try {
+        // localDisplayName, not profile.displayName: the core resolves this
+        // against local_display_name, which is deduplicated. Two contacts
+        // called "alice" would otherwise send the name to whichever one the
+        // core happened to match, irreversibly.
+        val gifted = chatModel.controller.apiNameGift(rhId, label, "@${ct.localDisplayName}")
+        if (gifted != null) {
+          // The core sends the transfer message itself, so every client
+          // behaves the same and this does not send a second one.
           AlertManager.shared.showAlertMsg(
             title = generalGetString(MR.strings.names_give_sent_title),
             text = generalGetString(MR.strings.names_give_sent_text).format(fqdn, ct.profile.profileViewName),
           )
           onDone()
         }
+        } finally { busy.value = false }
       }
     }
   )

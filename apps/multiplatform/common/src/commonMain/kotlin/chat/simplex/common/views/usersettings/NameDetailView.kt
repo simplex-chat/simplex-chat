@@ -120,7 +120,7 @@ private fun NameDetailLayout(
       SectionItemView {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
           Text(stringResource(MR.strings.names_detail_expires))
-          Text(expiryText(info.nameExpires), color = expiryColor(info.nameExpires))
+          Text(expiryText(info.nameExpires.toLong()), color = expiryColor(info.nameExpires.toLong()))
         }
       }
       SectionItemView {
@@ -172,21 +172,25 @@ fun offerSetPrimaryName(rhId: Long?, fqdn: String, onDone: () -> Unit = {}) {
   )
 }
 
-private fun expiryDays(expires: Int): Long {
+// Integer division truncates toward zero, so a name that expired an hour ago
+// gave 0 and rendered as "Today" in orange - the exact window in which it is
+// being released to anyone. floorDiv keeps expired negative.
+private fun expiryDays(expires: Long): Long {
   val now = System.currentTimeMillis() / 1000
-  return (expires - now) / 86400
+  return Math.floorDiv(expires - now, 86400L)
 }
 
-private fun expiryText(expires: Int): String {
+private fun expiryText(expires: Long): String {
   val d = expiryDays(expires)
   return when {
     d < 0 -> generalGetString(MR.strings.names_detail_expired)
     d == 0L -> generalGetString(MR.strings.names_detail_expires_today)
-    else -> Instant.fromEpochSeconds(expires.toLong()).toString().substring(0, 10)
+    d < 30 -> generalGetString(MR.strings.names_detail_expires_in_days).format(d)
+    else -> Instant.fromEpochSeconds(expires).toString().substring(0, 10)
   }
 }
 
-private fun expiryColor(expires: Int): Color {
+private fun expiryColor(expires: Long): Color {
   val d = expiryDays(expires)
   return if (d < 0) Color.Red else if (d < 30) WarningOrange else Color.Unspecified
 }

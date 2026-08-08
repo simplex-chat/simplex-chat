@@ -32,20 +32,23 @@ fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
   val hasKey = remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) {
-    names.value = chatModel.controller.apiNameList(rhId)
-    incomingCount.value = chatModel.controller.apiNameIncoming(rhId)?.size ?: 0
-    // Deliberately not asking for the receiving address here: that would create
-    // the wallet and tell every contact about it, for someone who only opened a
-    // settings screen. It comes into existence on the first purchase.
+    // Status first, and nothing else until it says a wallet exists. Every other
+    // name call goes through userWalletAccount, which creates the seed as a
+    // side effect - so asking for the list first would give a wallet to anyone
+    // who merely opened this screen.
     val st = chatModel.controller.apiNameStatus(rhId)
     hasKey.value = st?.nameHasWallet ?: false
     keySaved.value = st?.nameKeySaved ?: true
+    if (hasKey.value) {
+      names.value = chatModel.controller.apiNameList(rhId)
+      incomingCount.value = chatModel.controller.apiNameIncoming(rhId)?.size ?: 0
+    } else {
+      names.value = emptyList()
+    }
   }
 
-  // Development overlay: names owned through the wallet sit alongside a name
-  // claimed on this profile the legacy way (registered externally, via the
-  // dApp). Resolution and display are shared; ownership is not, so the two are
-  // listed separately and wallet actions are offered only where they apply.
+  // Development overlay: a name claimed on this profile the legacy way, i.e.
+  // registered elsewhere. Shown for reference; wallet actions do not apply.
   val claimed = chatModel.currentUser.value?.profile?.contactDomain?.domain
 
   SimplexNamesLayout(
@@ -117,6 +120,11 @@ private fun SimplexNamesLayout(
           Text(incomingCount.toString(), color = MaterialTheme.colors.primary)
         }
       }
+      SettingsActionItem(
+        painterResource(MR.images.ic_download),
+        stringResource(MR.strings.names_import_title),
+        click = { ModalManager.start.showModalCloseable { c -> ImportRecoveryKeyView(rhId, c) } },
+      )
       if (hasKey) SettingsActionItem(
         painterResource(MR.images.ic_lock),
         stringResource(MR.strings.names_recovery_key_title),

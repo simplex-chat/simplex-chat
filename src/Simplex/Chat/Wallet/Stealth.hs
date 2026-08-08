@@ -23,6 +23,8 @@ module Simplex.Chat.Wallet.Stealth
     exportOneTimeKey,
     metaAddressHex,
     parseMetaAddressHex,
+    bytesHex,
+    parseHexBytes,
   )
 where
 
@@ -113,12 +115,21 @@ metaAddressHex = toHex . St.metaAddressBytes
 parseMetaAddressHex :: ByteString -> Either String St.StealthMetaAddress
 parseMetaAddressHex = St.parseMetaAddress <=< fromHex
 
+-- | Hex for values that travel as text: the ephemeral key in a transfer
+-- message, and the exported one-time key.
+bytesHex :: ByteString -> ByteString
+bytesHex = toHex
+
 toHex :: ByteString -> ByteString
 toHex = B.concatMap $ \w -> B.pack [hexDigit (w `div` 16), hexDigit (w `mod` 16)]
   where
     hexDigit n
       | n < 10 = 0x30 + n
       | otherwise = 0x57 + n
+
+-- | Decode hex that arrived as text, e.g. an ephemeral key in a message.
+parseHexBytes :: ByteString -> Either String ByteString
+parseHexBytes = fromHex
 
 fromHex :: ByteString -> Either String ByteString
 fromHex bs

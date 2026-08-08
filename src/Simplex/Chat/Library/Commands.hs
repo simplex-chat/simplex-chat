@@ -1045,6 +1045,7 @@ processChatCommand cxt nm = \case
                 MCFile t -> t /= ""
                 MCReport {} -> True
                 MCChat {} -> True
+                MCAssetTransfer {} -> True
                 MCUnknown {} -> True
   -- TODO [knocking] forward from / to scope
   APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) sendAsGroup fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
@@ -2457,7 +2458,12 @@ processChatCommand cxt nm = \case
       RegPending -> throwCmdError "registration is still pending, try again"
   APINameList userId -> withUserId userId $ \user -> do
     (_, pk) <- userWalletAccount user
-    ns <- nameSvc $ namesOwnedBy namesService (W.accountAddress pk)
+    -- A name accepted from someone else sits at a one-time address, not the
+    -- main account. Listing only the main account would hide every gift the
+    -- user accepted, which is where they would look for it.
+    accepted <- withStore' $ \db -> WS.getAcceptedAddresses db user W.ChainEth
+    let addrs = W.accountAddress pk : map WS.otaAddress accepted
+    ns <- concat <$> mapM (\a -> nameSvc $ namesOwnedBy namesService a) addrs
     pure $ CRNamesOwned user (map safeDecodeUtf8 ns)
   APINameInfo userId fqdn -> withUserId userId $ \user -> do
     r <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
@@ -2471,7 +2477,11 @@ processChatCommand cxt nm = \case
         (fromIntegral $ nrvExpires r)
         (fromIntegral $ nrvEditCredits r)
   APINameSetLink userId fqdn newLink -> withUserId userId $ \user -> do
-    (_, pk) <- userWalletAccount user
+    -- Sign with whatever key owns this name. A name received as a gift is held
+    -- by a one-time address, not the profile's main account, so signing with
+    -- the main key would be rejected as not-the-owner and a gifted name could
+    -- never be pointed anywhere.
+    pk <- nameSigningKey user fqdn
     n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
     tx <-
       nameRelay pk $
@@ -2492,13 +2502,15 @@ processChatCommand cxt nm = \case
     --
     -- @name takes it from the contact's profile, which is the whole point of
     -- publishing it there: no handshake, nothing to paste.
-    ma <- case T.stripPrefix "@" recipient of
+    (ma, ct_) <- case T.stripPrefix "@" recipient of
       Just cName -> do
-        Contact {profile = LocalProfile {metaAddress = ma_}} <- withFastStore $ \db -> getContactByName db cxt user cName
+        ct@Contact {profile = LocalProfile {metaAddress = ma_}} <- withFastStore $ \db -> getContactByName db cxt user cName
         case ma_ of
-          Nothing -> throwCmdError "that contact has not published a meta-address - they need a newer app version"
-          Just ma' -> nameEither . parseMetaAddressHex $ encodeUtf8 ma'
-      Nothing -> nameEither . parseMetaAddressHex $ encodeUtf8 recipient
+          Nothing -> throwCmdError "that contact cannot receive names yet - they need a newer app version"
+          Just ma' -> (,Just ct) <$> nameEither (parseMetaAddressHex $ encodeUtf8 ma')
+      -- A raw meta-address has no contact to message, so the recipient finds it
+      -- by scanning the announcement instead.
+      Nothing -> (,Nothing) <$> nameEither (parseMetaAddressHex $ encodeUtf8 recipient)
     g <- asks random
     dest <- nameEither =<< liftIO (giftDestination g ma)
     n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
@@ -2511,7 +2523,21 @@ processChatCommand cxt nm = \case
             tiNonce = n,
             tiDeadline = nameDeadline
           }
-    pure $ CRNameIntentRelayed user "gift" (label <> ".simplex") tx
+    let fqdn = label <> ".simplex"
+        ephHex = safeDecodeUtf8 . bytesHex $ St.sdEphemeralPubKey dest
+    -- Tell the recipient, in a form their app understands. The ephemeral key
+    -- travels with it, so their client records the destination on arrival
+    -- instead of scanning the chain for it. Sent from here rather than from a
+    -- client so every client behaves the same, and via sendDirectContactMessage
+    -- rather than a nested command, which would emit this command's response
+    -- twice.
+    forM_ ct_ $ \ct -> do
+      let mc = MCAssetTransfer {text = "You were given the SimpleX name " <> fqdn, transfer = AssetTransfer {kind = "simplexName", asset = fqdn, ephemeralPubKey = Just ephHex}}
+      -- Protocol message only. Creating a local chat item here made this
+      -- command's own response be emitted twice; the sender's bubble is the
+      -- client's business, not the core's.
+      void $ sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
+    pure $ CRNameGifted user fqdn tx ephHex
   APINameIncoming userId -> withUserId userId $ \user -> do
     rows <- withStore' $ \db -> WS.getIncomingAddresses db user W.ChainEth
     ns <- forM rows $ \r -> IncomingName (nameAddrText $ WS.otaAddress r) <$> namesAt (WS.otaAddress r)
@@ -6357,6 +6383,18 @@ namePoll pid n
       nameSvc (registrationStatus namesService pid) >>= \case
         RegPending -> liftIO (threadDelay 50000) >> namePoll pid (n - 1)
         r -> pure r
+
+-- | The key that owns a name: the profile's main account, or the one-time
+-- account it was received at.
+nameSigningKey :: User -> Text -> CM W.WalletAccount
+nameSigningKey user fqdn = do
+  (_, pk) <- userWalletAccount user
+  rec' <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
+  if nrvOwner rec' == W.accountAddress pk
+    then pure pk
+    else do
+      ota <- oneTimeAccountFor user (nrvOwner rec')
+      pure W.WalletAccount {W.waRef = W.waRef pk, W.waKey = otaKey ota}
 
 -- | Sign an intent with the profile key and hand it to the relayer.
 nameRelay :: W.WalletAccount -> Intent -> CM Text

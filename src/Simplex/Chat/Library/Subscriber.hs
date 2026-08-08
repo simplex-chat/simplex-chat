@@ -39,7 +39,7 @@ import qualified Data.Set as S
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.UUID as UUID
@@ -50,6 +50,9 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Files (getChatTempDirectory)
 import Simplex.Chat.Library.Internal
+import qualified Simplex.Chat.Store.Wallets as WS
+import qualified Simplex.Chat.Wallet as W
+import Simplex.Chat.Wallet.Stealth (oneTimeAccount, otaAddress, parseHexBytes)
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
@@ -1862,10 +1865,33 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     messageError :: Text -> CM ()
     messageError = toView . CEvtMessageError user "error"
 
+    -- | Record a destination handed over in a message, so it is usable at once.
+    --
+    -- The sender's ephemeral key is enough to derive the one-time address, so a
+    -- gift appears under "names sent to you" on arrival instead of waiting for
+    -- the recipient to scan the chain. The on-chain announcement carries the
+    -- same key and covers the case where this message never arrives, or the
+    -- device is restored from the recovery key alone.
+    --
+    -- Best effort throughout: anything unrecognised leaves the message as an
+    -- ordinary one rather than failing delivery.
+    recordAssetTransfer :: AssetTransfer -> CM ()
+    recordAssetTransfer AssetTransfer {kind, ephemeralPubKey}
+      | kind /= "simplexName" = pure ()
+      | otherwise = forM_ ephemeralPubKey $ \ephHex ->
+          forM_ (eitherToMaybe . parseHexBytes $ encodeUtf8 ephHex) $ \eph -> do
+            ref_ <- withStore' $ \db -> WS.getAccountRef db user
+            forM_ ref_ $ \ref -> do
+              w_ <- withStore' $ \db -> WS.getWalletSeed db (W.arSeedId ref)
+              forM_ w_ $ \w ->
+                forM_ (eitherToMaybe $ W.deriveStealthKeys w W.ChainEth (W.arIndex ref) >>= (`oneTimeAccount` eph)) $ \ota ->
+                  withStore' $ \db -> WS.recordOneTimeAddress db user W.ChainEth (otaAddress ota) eph
+
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       let MsgContainer {content = c, file = fInv_} = mc
       content <- case c of
+        MCAssetTransfer {transfer} -> recordAssetTransfer transfer $> c
         MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> do
           keepSig <- case contactConn ct of
             Nothing -> pure False

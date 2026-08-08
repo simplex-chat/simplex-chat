@@ -2370,6 +2370,24 @@ object GroupTypeSerializer : KSerializer<GroupType> {
   }
 }
 
+/**
+ * What was handed over. [kind] selects the wording and the screen to open, so a
+ * token transfer later is a new kind rather than a new message type.
+ *
+ * [ephemeralPubKey] is what makes it usable at once: the recipient derives the
+ * destination on receipt instead of scanning the chain for it.
+ */
+@Serializable
+data class AssetTransfer(
+  val kind: String,
+  val asset: String,
+  val ephemeralPubKey: String? = null,
+) {
+  companion object {
+    const val KIND_SIMPLEX_NAME = "simplexName"
+  }
+}
+
 /** A name sitting at a one-time address, waiting to be accepted or declined. */
 @Serializable
 data class IncomingName(
@@ -4561,6 +4579,10 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
+  // Something handed over in-app: a name now, a token later. The reader renders
+  // it from `transfer`, so wording is localised by the recipient rather than
+  // sent in the sender's language; `text` is the fallback for older clients.
+  @Serializable(with = MsgContentSerializer::class) class MCAssetTransfer(override val text: String, val transfer: AssetTransfer): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -4679,6 +4701,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             val reason = decoder.json.decodeFromString<ReportReason>(json["reason"].toString())
             MsgContent.MCReport(text, reason)
           }
+          "assetTransfer" -> {
+            val t2 = decoder.json.decodeFromString<AssetTransfer>(json["transfer"].toString())
+            MsgContent.MCAssetTransfer(text, t2)
+          }
           "chat" -> {
             val chatLink = decoder.json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
             val ownerSig = json["ownerSig"]?.let { decoder.json.decodeFromJsonElement<LinkOwnerSig>(it) }
@@ -4731,6 +4757,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         buildJsonObject {
           put("type", "file")
           put("text", value.text)
+        }
+      is MsgContent.MCAssetTransfer ->
+        buildJsonObject {
+          put("type", "assetTransfer")
+          put("text", value.text)
+          put("transfer", json.encodeToJsonElement(value.transfer))
         }
       is MsgContent.MCReport ->
         buildJsonObject {
