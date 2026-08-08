@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun NameRecoveryKeyView(rhId: Long?, close: () -> Unit) {
   val phrase = remember { mutableStateOf<String?>(null) }
+  val loadFailed = remember { mutableStateOf(false) }
   val saved = remember { mutableStateOf(false) }
   val revealed = remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
@@ -48,11 +49,14 @@ fun NameRecoveryKeyView(rhId: Long?, close: () -> Unit) {
     if (r != null) {
       phrase.value = r.recoveryPhrase
       saved.value = r.recoveryKeySaved
+    } else {
+      loadFailed.value = true
     }
   }
 
   NameRecoveryKeyLayout(
     phrase = phrase.value,
+    loadFailed = loadFailed.value,
     saved = saved.value,
     revealed = revealed.value,
     reveal = { revealed.value = true },
@@ -70,6 +74,7 @@ fun NameRecoveryKeyView(rhId: Long?, close: () -> Unit) {
 @Composable
 private fun NameRecoveryKeyLayout(
   phrase: String?,
+  loadFailed: Boolean,
   saved: Boolean,
   revealed: Boolean,
   reveal: () -> Unit,
@@ -88,7 +93,11 @@ private fun NameRecoveryKeyLayout(
 
     SectionDividerSpaced(maxTopPadding = true)
 
-    if (phrase == null) {
+    if (loadFailed) {
+      SectionView {
+        SectionItemView { Text(stringResource(MR.strings.names_list_load_failed), color = WarningOrange) }
+      }
+    } else if (phrase == null) {
       SectionView {
         SectionItemView { Text(stringResource(MR.strings.names_recovery_key_none), color = MaterialTheme.colors.secondary) }
       }

@@ -159,7 +159,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRNameGifted u fqdn tx _eph -> ttyUser u ["gift " <> plain fqdn <> " done", "tx " <> plain tx]
   CRNameRenewed u fqdn expires reReg ->
     ttyUser u [(if reReg then "registered again: " else "renewed: ") <> plain fqdn, "expires " <> sShow expires]
-  CRNameStatus u hasWallet keySaved ->
+  CRNameStatus u hasWallet keySaved _anySeed ->
     ttyUser u [if hasWallet then (if keySaved then "wallet ready, recovery key saved" else "wallet ready, recovery key NOT saved") else "no wallet yet - people cannot send you names"]
   CRNamesIncoming u ns
     | null ns -> ttyUser u ["no names have been sent to you"]

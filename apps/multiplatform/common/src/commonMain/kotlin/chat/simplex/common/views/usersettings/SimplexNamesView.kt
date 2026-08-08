@@ -31,6 +31,7 @@ fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
   val keySaved = remember { mutableStateOf(true) }
   val hasKey = remember { mutableStateOf(false) }
   val loadFailed = remember { mutableStateOf(false) }
+  val anySeed = remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) {
     // Status first, and nothing else until it says a wallet exists. Every other
@@ -43,6 +44,7 @@ fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
     loadFailed.value = st == null
     hasKey.value = st?.nameHasWallet ?: false
     keySaved.value = st?.nameKeySaved ?: true
+    anySeed.value = st?.nameAnySeed ?: false
     if (hasKey.value) {
       names.value = chatModel.controller.apiNameList(rhId)
       incomingCount.value = chatModel.controller.apiNameIncoming(rhId)?.size ?: 0
@@ -63,6 +65,7 @@ fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
     keySaved = keySaved.value,
     hasKey = hasKey.value,
     loadFailed = loadFailed.value,
+    hasOtherSeed = anySeed.value,
     rhId = rhId,
   )
 }
@@ -75,6 +78,7 @@ private fun SimplexNamesLayout(
   keySaved: Boolean,
   hasKey: Boolean,
   loadFailed: Boolean,
+  hasOtherSeed: Boolean,
   rhId: Long?,
 ) {
   ColumnWithScrollBar {
@@ -140,7 +144,7 @@ private fun SimplexNamesLayout(
       if (!hasKey) SettingsActionItem(
         painterResource(MR.images.ic_add),
         stringResource(MR.strings.names_setup_title),
-        click = { ModalManager.start.showModalCloseable { c -> WalletSetupView(rhId, hasOtherSeed = false, onDone = c) } },
+        click = { ModalManager.start.showModalCloseable { c -> WalletSetupView(rhId, hasOtherSeed = hasOtherSeed, onDone = c) } },
         textColor = MaterialTheme.colors.primary,
         iconColor = MaterialTheme.colors.primary,
       )

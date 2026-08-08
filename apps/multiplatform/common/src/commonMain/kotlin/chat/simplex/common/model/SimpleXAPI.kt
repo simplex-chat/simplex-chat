@@ -3061,6 +3061,12 @@ object ChatController {
         r.chatItems.forEach { chatItem ->
           val cInfo = chatItem.chatInfo
           val cItem = chatItem.chatItem
+          // A name arriving is the one incoming event with no other signal, so
+          // the settings badge is bumped here rather than only when the names
+          // screen is opened - otherwise it can never draw the user to a name.
+          if (!cItem.chatDir.sent && cItem.content.msgContent is MsgContent.MCAssetTransfer) {
+            chatModel.namesWaiting.value = chatModel.namesWaiting.value + 1
+          }
           if (active(r.user)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.addChatItem(rhId, cInfo, cItem)
@@ -6797,7 +6803,7 @@ sealed class CR {
   @Serializable @SerialName("nameAddress") class NameAddress(val user: User, val nameAddress: String, val nameAccount: Int, val nameMetaAddress: String): CR()
   @Serializable @SerialName("nameInfo") class NameInfo(val user: User, val nameFqdn: String, val nameOwner: String, val nameContact: List<String>, val nameChannel: List<String>, val nameExpires: Int, val nameEditCredits: Int): CR()
   @Serializable @SerialName("nameRenewed") class NameRenewed(val user: User, val nameFqdn: String, val nameExpires: Int, val nameReRegistered: Boolean): CR()
-  @Serializable @SerialName("nameStatus") class NameStatus(val user: User, val nameHasWallet: Boolean, val nameKeySaved: Boolean): CR()
+  @Serializable @SerialName("nameStatus") class NameStatus(val user: User, val nameHasWallet: Boolean, val nameKeySaved: Boolean, val nameAnySeed: Boolean = false): CR()
   @Serializable @SerialName("namesIncoming") class NamesIncoming(val user: User, val incomingNames: List<IncomingName>): CR()
   @Serializable @SerialName("nameAccepted") class NameAccepted(val user: User, val nameOneTimeAddr: String, val acceptedNames: List<String>): CR()
   @Serializable @SerialName("nameDeclined") class NameDeclined(val user: User, val nameOneTimeAddr: String): CR()

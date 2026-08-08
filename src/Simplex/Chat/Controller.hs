@@ -964,7 +964,7 @@ data ChatResponse
   | CRNameAddress {user :: User, nameAddress :: Text, nameAccount :: Int, nameMetaAddress :: Text}
   | -- | Read-only: never creates a wallet. Screens use this to decide what to
     -- offer, so that opening one cannot create keys or notify contacts.
-    CRNameStatus {user :: User, nameHasWallet :: Bool, nameKeySaved :: Bool}
+    CRNameStatus {user :: User, nameHasWallet :: Bool, nameKeySaved :: Bool, nameAnySeed :: Bool}
   | CRNameRecoveryKey {user :: User, recoveryPhrase :: Text, recoveryKeySaved :: Bool}
   | CRNameQuoted {user :: User, nameLabel :: Text, nameAvailable :: Bool, namePriceCents :: Int}
   | CRNameRegistered {user :: User, nameFqdn :: Text, nameTxHash :: Text}

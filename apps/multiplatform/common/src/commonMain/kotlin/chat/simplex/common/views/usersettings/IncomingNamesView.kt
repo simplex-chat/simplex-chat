@@ -77,8 +77,11 @@ fun IncomingNamesView(rhId: Long?, close: () -> Unit) {
         if (found != null) {
           AlertManager.shared.showAlertMsg(
             title = generalGetString(MR.strings.names_rescan_done_title),
-            text = if (found == 0) generalGetString(MR.strings.names_rescan_none)
-            else generalGetString(MR.strings.names_rescan_found).format(found)
+            text = when (found) {
+              0 -> generalGetString(MR.strings.names_rescan_none)
+              1 -> generalGetString(MR.strings.names_rescan_found_one)
+              else -> generalGetString(MR.strings.names_rescan_found).format(found)
+            }
           )
         }
       }

@@ -29,10 +29,15 @@ import kotlinx.datetime.Instant
 @Composable
 fun NameDetailView(rhId: Long?, fqdn: String, close: () -> Unit) {
   val info = remember { mutableStateOf<CR.NameInfo?>(null) }
+  val loadFailed = remember { mutableStateOf(false) }
   val busy = remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
 
-  suspend fun reload() { info.value = chatModel.controller.apiNameInfo(rhId, fqdn) }
+  suspend fun reload() {
+    val r = chatModel.controller.apiNameInfo(rhId, fqdn)
+    info.value = r
+    loadFailed.value = r == null
+  }
   LaunchedEffect(Unit) { reload() }
 
   val myLink = chatModel.userAddress.value?.connLinkContact?.simplexChatUri(short = true)
@@ -40,6 +45,7 @@ fun NameDetailView(rhId: Long?, fqdn: String, close: () -> Unit) {
   NameDetailLayout(
     fqdn = fqdn,
     info = info.value,
+    loadFailed = loadFailed.value,
     myLink = myLink,
     busy = busy.value,
     repoint = {
@@ -74,9 +80,9 @@ fun NameDetailView(rhId: Long?, fqdn: String, close: () -> Unit) {
           withBGApi {
             busy.value = true
             try {
-              val paid = NamePayment.purchaseFor("renew:$fqdn", 1) ?: return@withBGApi
+              val paid = NamePayment.purchaseFor("renew:$rhId:$fqdn", 1) ?: return@withBGApi
               val r = chatModel.controller.apiNameRenew(rhId, fqdn, 1, paid.token)
-              if (r != null) NamePayment.spent("renew:$fqdn")
+              if (r != null) NamePayment.spent("renew:$rhId:$fqdn")
               if (r != null) {
                 reload()
                 AlertManager.shared.showAlertMsg(
@@ -99,6 +105,7 @@ fun NameDetailView(rhId: Long?, fqdn: String, close: () -> Unit) {
 private fun NameDetailLayout(
   fqdn: String,
   info: CR.NameInfo?,
+  loadFailed: Boolean,
   myLink: String?,
   busy: Boolean,
   repoint: () -> Unit,
@@ -112,7 +119,14 @@ private fun NameDetailLayout(
     }
 
     if (info == null) {
-      SectionView { SectionItemView { Text(stringResource(MR.strings.names_incoming_loading), color = MaterialTheme.colors.secondary) } }
+      SectionView {
+        SectionItemView {
+          Text(
+            if (loadFailed) stringResource(MR.strings.names_list_load_failed) else stringResource(MR.strings.names_incoming_loading),
+            color = if (loadFailed) WarningOrange else MaterialTheme.colors.secondary
+          )
+        }
+      }
       SectionBottomSpacer()
       return@ColumnWithScrollBar
     }
@@ -159,6 +173,7 @@ private fun NameDetailLayout(
           Text(info.nameEditCredits.toString(), color = MaterialTheme.colors.secondary)
         }
       }
+      SectionTextFooter(stringResource(MR.strings.names_detail_changes_footer))
       // The app sends no expiry notifications, so the only reminder that will
       // actually reach the user is one in their own calendar.
       SectionItemView(click = {
@@ -238,6 +253,7 @@ private fun expiryText(expires: Long): String {
   return when {
     d < 0 -> generalGetString(MR.strings.names_detail_expired)
     d == 0L -> generalGetString(MR.strings.names_detail_expires_today)
+    d == 1L -> generalGetString(MR.strings.names_detail_expires_tomorrow)
     d < 30 -> generalGetString(MR.strings.names_detail_expires_in_days).format(d)
     else -> Instant.fromEpochSeconds(expires).toString().substring(0, 10)
   }

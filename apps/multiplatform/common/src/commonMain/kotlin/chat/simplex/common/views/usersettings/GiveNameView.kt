@@ -52,7 +52,8 @@ fun GiveNameView(rhId: Long?, fqdn: String, close: () -> Unit) {
       }
     }
     SectionTextFooter(
-      if (cannotReceive > 0) stringResource(MR.strings.names_give_some_cannot).format(cannotReceive)
+      if (cannotReceive == 1) stringResource(MR.strings.names_give_one_cannot)
+      else if (cannotReceive > 0) stringResource(MR.strings.names_give_some_cannot).format(cannotReceive)
       else stringResource(MR.strings.names_give_footer)
     )
     SectionBottomSpacer()

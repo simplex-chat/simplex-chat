@@ -69,13 +69,13 @@ fun BuyNameView(rhId: Long?, close: () -> Unit) {
         val label = label.value.trim().lowercase()
         // Keyed on what is being bought, so a retry after a failed
         // registration reuses the receipt instead of charging again.
-        val paid = NamePayment.purchaseFor("buy:$label:${years.value}", years.value)
+        val paid = NamePayment.purchaseFor("buy:$rhId:$label:${years.value}", years.value)
         if (paid == null) return@launch // cancelled: nothing charged, nothing registered
         // Bought to be used, so it points at this profile from the moment it
         // exists rather than needing a second trip through the detail screen.
         val link = if (pointAtMe.value) myLink else null
         val reg = chatModel.controller.apiNameBuy(rhId, label, years.value, paid.token, link)
-        if (reg != null) NamePayment.spent("buy:$label:${years.value}")
+        if (reg != null) NamePayment.spent("buy:$rhId:$label:${years.value}")
         if (reg != null) {
           // The switch already said whether this name is for this profile, so
           // it is acted on rather than asked again. Chaining dialogs here was

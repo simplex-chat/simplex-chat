@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 fun ImportRecoveryKeyView(rhId: Long?, close: () -> Unit) {
   val phrase = rememberSaveable { mutableStateOf("") }
   val working = remember { mutableStateOf(false) }
-  val hasWallet = remember { mutableStateOf(false) }
+  val hasWallet = remember { mutableStateOf<Boolean?>(null) }
   val scope = rememberCoroutineScope()
 
   LaunchedEffect(Unit) {
@@ -62,6 +62,17 @@ fun ImportRecoveryKeyView(rhId: Long?, close: () -> Unit) {
 
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.names_import_title))
+
+    if (hasWallet.value == true) {
+      // The core refuses to import over an existing key, so say so plainly
+      // rather than warn about a replacement that will not happen.
+      SectionView {
+        SectionItemView { Text(stringResource(MR.strings.names_import_already), color = MaterialTheme.colors.secondary) }
+      }
+      SectionBottomSpacer()
+      return@ColumnWithScrollBar
+    }
+
     SectionTextFooter(stringResource(MR.strings.names_import_intro))
 
     SectionView(stringResource(MR.strings.names_import_section).uppercase()) {
@@ -77,25 +88,15 @@ fun ImportRecoveryKeyView(rhId: Long?, close: () -> Unit) {
     }
     SectionTextFooter(
       if (phrase.value.isBlank()) stringResource(MR.strings.names_import_hint)
+      else if (words.size == 1) stringResource(MR.strings.names_import_word_count_one)
       else stringResource(MR.strings.names_import_word_count).format(words.size),
       if (phrase.value.isBlank() || looksComplete) MaterialTheme.colors.secondary else WarningOrange
     )
 
-    if (hasWallet.value) {
-      // Switching keys is not additive: names held by the current key are no
-      // longer reachable from this profile afterwards.
-      SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.names_import_replace_section).uppercase()) {
-        SectionItemView { Text(stringResource(MR.strings.names_import_replace_warning), color = Color.Red) }
-      }
-    }
-
     SectionDividerSpaced(maxTopPadding = true)
     SectionView {
       SectionItemView(
-        click = if (working.value || !looksComplete) null else {
-          { if (hasWallet.value) confirmReplace { doImport() } else doImport() }
-        },
+        click = if (working.value || !looksComplete) null else { { doImport() } },
         disabled = working.value || !looksComplete,
       ) {
         Text(
@@ -108,12 +109,4 @@ fun ImportRecoveryKeyView(rhId: Long?, close: () -> Unit) {
   }
 }
 
-private fun confirmReplace(proceed: () -> Unit) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.names_import_replace_title),
-    text = generalGetString(MR.strings.names_import_replace_text),
-    confirmText = generalGetString(MR.strings.names_import_action),
-    destructive = true,
-    onConfirm = proceed,
-  )
-}
+

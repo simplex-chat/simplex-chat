@@ -2413,13 +2413,14 @@ processChatCommand cxt nm = \case
         r <- withStore' $ \db -> WS.bindNewAccountOnSeed db user w
         -- Contacts need the new address before they can send anything to it.
         void $ publishMetaAddress user
-        pure $ CRNameStatus user True (W.wsBackedUp w)
+        pure $ CRNameStatus user True (W.wsBackedUp w) True
   APINameStatus userId -> withUserId userId $ \user -> do
     ref <- withStore' $ \db -> WS.getAccountRef db user
     saved <- case ref of
       Nothing -> pure False
       Just r -> maybe False W.wsBackedUp <$> withStore' (\db -> WS.getWalletSeed db (W.arSeedId r))
-    pure $ CRNameStatus user (isJust ref) saved
+    anySeed <- not . null <$> withStore' WS.getWalletSeeds
+    pure $ CRNameStatus user (isJust ref) saved anySeed
   APINameAddress userId -> withUserId userId $ \user -> do
     -- Asking to see your address is an explicit act, so publishing here is
     -- fine - it is how someone can receive a name before buying one. What must
@@ -2594,10 +2595,11 @@ processChatCommand cxt nm = \case
     -- twice.
     forM_ ct_ $ \ct -> do
       let mc = MCAssetTransfer {text = "You were given the SimpleX name " <> fqdn, transfer = AssetTransfer {kind = "simplexName", asset = fqdn, ephemeralPubKey = Just ephHex}}
-      -- Protocol message only. Creating a local chat item here made this
-      -- command's own response be emitted twice; the sender's bubble is the
-      -- client's business, not the core's.
-      void $ sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
+      -- Best-effort: the transfer already landed on chain above, so a failed
+      -- notification must not fail the command and report the gift as failed
+      -- for a name that has already moved. Protocol message only; the sender's
+      -- bubble is the client's business.
+      (void (sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc)) `catchAllErrors` \_ -> pure ()
     -- The profile must stop advertising a name it no longer owns, or contacts
     -- keep seeing it and the user's own list reports it as not managed here.
     let User {profile = LocalProfile {contactDomain}} = user

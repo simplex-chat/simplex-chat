@@ -3217,6 +3217,7 @@
   <string name="names_rescan_done_title">Check complete</string>
   <string name="names_rescan_none">No new names found.</string>
   <string name="names_rescan_found">Found %d names sent to you — see the list above.</string>
+  <string name="names_rescan_found_one">Found a name sent to you — see the list above.</string>
   <string name="names_title">SimpleX names</string>
   <string name="names_your_names">Your names</string>
   <string name="names_none_yet">You do not have a name yet</string>
@@ -3248,7 +3249,7 @@
   <string name="names_buy_taken">That name is already taken.</string>
   <string name="names_buy_action">Buy this name — %s</string>
   <string name="names_buy_working">Registering…</string>
-  <string name="names_buy_failed">Could not get the name</string>
+  <string name="names_buy_failed">Could not buy the name</string>
   <string name="names_bought_title">The name is yours</string>
   <string name="names_bought_text">%s now points at this profile.</string>
   <string name="names_bought_save_key">Save recovery key</string>
@@ -3286,6 +3287,7 @@
   <string name="names_give_nobody">None of your contacts can receive a name yet.</string>
   <string name="names_give_footer">Only contacts who can receive names are listed.</string>
   <string name="names_give_some_cannot">%d of your contacts cannot receive names yet — they need a newer app version, or to turn receiving on.</string>
+  <string name="names_give_one_cannot">One of your contacts cannot receive names yet — they need a newer app version, or to turn receiving on.</string>
   <string name="names_give_confirm_title">Give the name away?</string>
   <string name="names_give_confirm_text">%1$s will belong to %2$s. Only they will be able to change or move it after this.</string>
   <string name="names_give_action">Give it away</string>
@@ -3311,24 +3313,22 @@
   <string name="names_buy_no_address">You do not have a SimpleX address yet, so there is nothing for the name to point at. Create one first, or buy the name to give away.</string>
   <string name="names_transfer_sent">You sent the SimpleX name %s</string>
   <string name="names_transfer_received">You were sent the SimpleX name %s — open SimpleX names to accept it</string>
-  <string name="names_transfer_unknown">You were given a SimpleX name. Update SimpleX to accept it.</string>
+  <string name="names_transfer_unknown">You were sent a SimpleX name. Update SimpleX to accept it.</string>
   <string name="names_import_title">Restore names from a recovery key</string>
   <string name="names_import_intro">If you have a recovery key from another device, enter it here to get your names back. Nothing is bought and no one is contacted.</string>
   <string name="names_import_section">Recovery key</string>
   <string name="names_import_placeholder">your recovery words, separated by spaces</string>
   <string name="names_import_hint">Enter the words in the order they were shown to you.</string>
   <string name="names_import_word_count">%d words entered — a recovery key has 12, 15, 18, 21 or 24.</string>
+  <string name="names_import_word_count_one">1 word entered — a recovery key has 12, 15, 18, 21 or 24.</string>
   <string name="names_import_action">Restore</string>
   <string name="names_import_working">Restoring…</string>
   <string name="names_import_failed">That recovery key was not accepted</string>
   <string name="names_import_done_title">Restored</string>
-  <string name="names_import_done_none">No names were found for that recovery key yet.</string>
-  <string name="names_import_done_found">Found %d names sent to you.</string>
-  <string name="names_import_replace_section">This will replace your current key</string>
-  <string name="names_import_replace_warning">This profile already has a recovery key. Restoring a different one means names held by the current key can no longer be reached from this profile.</string>
-  <string name="names_import_replace_title">Replace your recovery key?</string>
-  <string name="names_import_replace_text">Names held by your current key will no longer be reachable from this profile. Make sure you have saved it first.</string>
+  <string name="names_import_done_none">Recovery key added. Open Your names to see what it holds.</string>
+  <string name="names_import_done_found">Recovery key added, and %d names were sent to you. Check Your names and names sent to you.</string>
   <string name="names_detail_expires_in_days">In %d days</string>
+  <string name="names_detail_expires_tomorrow">Tomorrow</string>
   <string name="names_detail_changes_footer">Pointing this name somewhere new uses one change. Extending the name adds 10 more.</string>
   <string name="names_renew_action">Extend this name</string>
   <string name="names_renew_title">Extend this name?</string>
@@ -3354,4 +3354,5 @@
   <string name="names_setup_footer_shared">Using the key you already have means one set of words to write down, and it covers every profile. A separate key keeps this profile\'s names unconnected to your others, but is a second thing to keep safe.</string>
   <string name="names_setup_footer_first">You will be shown the key afterwards. Write it down — it is the only way to get your names back if you lose this device.</string>
   <string name="names_setup_failed">Could not set up names for this profile</string>
+  <string name="names_import_already">This profile already has a recovery key, so you cannot import a different one here. To use another key, set up a new profile and import it there.</string>
 </resources>
