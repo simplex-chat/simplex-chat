@@ -39,7 +39,7 @@ import Data.Word (Word8, Word16, Word32)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Store
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (TextEncoding (..), textParseJSON, textToEncoding, textToJSON)
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version (VersionScope)
 import Simplex.Messaging.Version.Internal (Version (..))
 
@@ -248,8 +248,6 @@ data BadgeServiceErrorCode
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
 
--- Wire form is snake_case per docs/protocol/badges-rpc.schema.json.
--- Written by hand because enumJSON $ dropPrefix "BSE" would emit camelCase.
 instance TextEncoding BadgeServiceErrorCode where
   textEncode = \case
     BSEBadRequest -> "bad_request"
