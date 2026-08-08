@@ -104,6 +104,8 @@ We would love to have you join the development! You can help us with:
 - writing a tutorial or recipes about hosting servers, chat bots, etc.
 - developing features - please connect to us via chat so we can help you get started.
 
+To build the apps yourself, see the [contributing guide](./docs/CONTRIBUTING.md) and [building the core library](./docs/contributing/CORE-LIBS.md) - the Haskell core all apps link against has to be built first.
+
 ## Help translating SimpleX Chat
 
 Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps, website and documents are translated to many other languages.
