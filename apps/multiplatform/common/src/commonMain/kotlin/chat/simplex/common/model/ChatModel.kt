@@ -433,7 +433,10 @@ object ChatModel {
         } else if (currentCInfo is ChatInfo.Group && newCInfo is ChatInfo.Group && newCInfo.groupChatScope != null) {
           newCInfo = newCInfo.copy(groupInfo = newCInfo.groupInfo, groupChatScope = null)
         }
-        chats[i] = chats[i].copy(chatInfo = newCInfo)
+        val updatedChat = chats[i].copy(chatInfo = newCInfo)
+        // muted chat does not count towards user unread counter, so it is updated when notifications change
+        currentUser.value?.let { changeUserUnreadCounter(rhId, it, chats[i], updatedChat) }
+        chats[i] = updatedChat
       }
     }
 
@@ -490,6 +493,7 @@ object ChatModel {
     suspend fun replaceChat(rhId: Long?, id: String, chat: Chat) {
       val i = getChatIndex(rhId, id)
       if (i >= 0) {
+        currentUser.value?.let { changeUserUnreadCounter(rhId, it, chats[i], chat) }
         chats[i] = chat
       } else {
         // invalid state, correcting
@@ -557,11 +561,11 @@ object ChatModel {
             chatItems = arrayListOf(newPreviewItem),
             chatStats =
             if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-              increaseUnreadCounter(rhId, currentUser.value!!)
               chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
             } else
               chat.chatStats
           )
+          changeUserUnreadCounter(rhId, currentUser.value!!, chat, chatsContext.chats[i])
           updateChatTagReadInPrimaryContext(chatsContext.chats[i], wasUnread)
         }
         // pop chat
@@ -621,7 +625,7 @@ object ChatModel {
             chats[i] = chat.copy(chatItems = arrayListOf(cItem))
             if (pItem.isRcvNew && !cItem.isRcvNew) {
               // status changed from New to Read, update counter
-              decreaseCounterInPrimaryContext(rhId, cInfo.id)
+              decreaseCounterInPrimaryContext(rhId, cInfo.id, cItem.meta.userMention)
             }
           }
         } else {
@@ -671,7 +675,7 @@ object ChatModel {
       // update chat list
       if (cInfo.groupChatScope() == null) {
         if (cItem.isRcvNew) {
-          decreaseCounterInPrimaryContext(rhId, cInfo.id)
+          decreaseCounterInPrimaryContext(rhId, cInfo.id, cItem.meta.userMention)
         }
         // update preview
         val i = getChatIndex(rhId, cInfo.id)
@@ -723,7 +727,7 @@ object ChatModel {
           for (item in chatItems.value) {
             if (isRemovedMemberItem(item)) {
               if (item.isRcvNew) {
-                decreaseCounterInPrimaryContext(rhId, groupInfo.id)
+                decreaseCounterInPrimaryContext(rhId, groupInfo.id, item.meta.userMention)
               }
               if (item.isActiveReport) {
                 decreaseGroupReportsCounter(rhId, groupInfo.id)
@@ -768,9 +772,9 @@ object ChatModel {
       // clear preview
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
-        decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount)
         val chatBefore = chats[i]
         chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
+        changeUserUnreadCounter(rhId, currentUser.value!!, chatBefore, chats[i])
         markChatTagRead(chatBefore)
       }
       // clear current chat
@@ -841,10 +845,10 @@ object ChatModel {
           val wasUnread = chat.unreadTag
           val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
           val unreadMentions = if (itemIds != null) chat.chatStats.unreadMentions - mentionsMarkedRead else 0
-          decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions)
           )
+          changeUserUnreadCounter(remoteHostId, currentUser.value!!, chat, chats[chatIdx])
           updateChatTagReadInPrimaryContext(chats[chatIdx], wasUnread)
         }
       }
@@ -886,7 +890,7 @@ object ChatModel {
       return markedRead to mentionsMarkedRead
     }
 
-    private fun decreaseCounterInPrimaryContext(rhId: Long?, chatId: ChatId) {
+    private fun decreaseCounterInPrimaryContext(rhId: Long?, chatId: ChatId, userMention: Boolean) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
       if (secondaryContextFilter != null) return
 
@@ -896,12 +900,13 @@ object ChatModel {
       val chat = chats[chatIndex]
       val unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0)
       val wasUnread = chat.unreadTag
-      decreaseUnreadCounter(rhId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
       chats[chatIndex] = chat.copy(
         chatStats = chat.chatStats.copy(
           unreadCount = unreadCount,
+          unreadMentions = if (userMention) kotlin.math.max(chat.chatStats.unreadMentions - 1, 0) else chat.chatStats.unreadMentions,
         )
       )
+      changeUserUnreadCounter(rhId, currentUser.value!!, chat, chats[chatIndex])
       updateChatTagReadInPrimaryContext(chats[chatIndex], wasUnread)
     }
 
@@ -982,6 +987,12 @@ object ChatModel {
 
     fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
       changeUnreadCounterInPrimaryContext(rhId, user, 1)
+    }
+
+    // updates unread counter of the user profile by the difference of what the chat contributes to it - see Chat.userUnreadCount
+    private fun changeUserUnreadCounter(rhId: Long?, user: UserLike, prevChat: Chat, updatedChat: Chat) {
+      val by = updatedChat.userUnreadCount - prevChat.userUnreadCount
+      if (by != 0) changeUnreadCounterInPrimaryContext(rhId, user, by)
     }
 
     fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
@@ -1423,6 +1434,13 @@ data class Chat(
     All -> chatStats.unreadChat || chatStats.unreadCount > 0
     Mentions -> chatStats.unreadChat || chatStats.unreadMentions > 0
     else -> chatStats.unreadChat
+  }
+
+  // what this chat adds to unread counter of its user profile - has to match getUsersInfo in Profiles.hs
+  val userUnreadCount: Int get() = when (chatInfo.chatSettings?.enableNtfs) {
+    All -> if (chatStats.unreadCount > 0) chatStats.unreadCount else if (chatStats.unreadChat) 1 else 0
+    Mentions -> if (chatStats.unreadMentions > 0) chatStats.unreadMentions else if (chatStats.unreadChat) 1 else 0
+    else -> 0
   }
 
   val id: String get() = chatInfo.id

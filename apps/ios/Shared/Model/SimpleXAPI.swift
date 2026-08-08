@@ -1869,6 +1869,8 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
 
 func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
     do {
+        // markAllChatItemsRead resets chat stats of the same chat object, so it has to be read before
+        let unreadChat = chat.chatStats.unreadChat
         if chat.chatStats.unreadCount > 0 {
             let cInfo = chat.chatInfo
             try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
@@ -1876,7 +1878,7 @@ func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
                 withAnimation { ChatModel.shared.markAllChatItemsRead(im, cInfo) }
             }
         }
-        if chat.chatStats.unreadChat {
+        if unreadChat {
             await markChatUnread(chat, unreadChat: false)
         }
     } catch {

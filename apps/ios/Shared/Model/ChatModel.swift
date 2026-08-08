@@ -567,12 +567,15 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
+            let prevUserUnread = chats[i].userUnreadCount
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
                 chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
             } else {
                 chats[i].chatInfo = cInfo
             }
             chats[i].created = Date.now
+            // muted chat does not count towards user unread counter, so it is updated when notifications change
+            if let user = currentUser { changeUnreadCounter(user: user, by: chats[i].userUnreadCount - prevUserUnread) }
         }
     }
 
@@ -959,8 +962,10 @@ final class ChatModel: ObservableObject {
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
             let wasUnread = chat.unreadTag
+            let prevUserUnread = chat.userUnreadCount
             chat.chatStats.unreadChat = unreadChat
             ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
+            self.changeUnreadCounter(user: self.currentUser!, by: chat.userUnreadCount - prevUserUnread)
         }
     }
 
@@ -1103,11 +1108,12 @@ final class ChatModel: ObservableObject {
 
     func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
+        let prevUserUnread = chats[chatIndex].userUnreadCount
         let stats = chats[chatIndex].chatStats
         chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
         chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: count)
+        changeUnreadCounter(user: currentUser!, by: chats[chatIndex].userUnreadCount - prevUserUnread)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
@@ -1115,10 +1121,7 @@ final class ChatModel: ObservableObject {
     }
 
     func decreaseUnreadCounter(user: any UserLike, chat: Chat) {
-        let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions
-                ? chat.chatStats.unreadMentions
-                : chat.chatStats.unreadCount
-        decreaseUnreadCounter(user: user, by: by)
+        decreaseUnreadCounter(user: user, by: chat.userUnreadCount)
     }
 
     func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
@@ -1126,6 +1129,7 @@ final class ChatModel: ObservableObject {
     }
 
     private func changeUnreadCounter(user: any UserLike, by: Int) {
+        if by == 0 { return }
         if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
             users[i].unreadCount += by
         }
@@ -1136,11 +1140,7 @@ final class ChatModel: ObservableObject {
     func totalUnreadCountForAllUsers() -> Int {
         var unread: Int = 0
         for chat in chats {
-            switch chat.chatInfo.chatSettings?.enableNtfs {
-            case .all: unread += chat.chatStats.unreadCount
-            case .mentions: unread += chat.chatStats.unreadMentions
-            default: ()
-            }
+            unread += chat.userUnreadCount
         }
         for u in users {
             if !u.user.activeUser {
@@ -1388,6 +1388,15 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         case .all: chatStats.unreadChat || chatStats.unreadCount > 0
         case .mentions: chatStats.unreadChat || chatStats.unreadMentions > 0
         default: chatStats.unreadChat
+        }
+    }
+
+    // what this chat adds to unread counter of its user profile - has to match getUsersInfo in Profiles.hs
+    var userUnreadCount: Int {
+        switch chatInfo.chatSettings?.enableNtfs {
+        case .all: chatStats.unreadCount > 0 ? chatStats.unreadCount : (chatStats.unreadChat ? 1 : 0)
+        case .mentions: chatStats.unreadMentions > 0 ? chatStats.unreadMentions : (chatStats.unreadChat ? 1 : 0)
+        default: 0
         }
     }
 
