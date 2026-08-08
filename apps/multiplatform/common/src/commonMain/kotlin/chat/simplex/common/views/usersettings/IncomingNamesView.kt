@@ -38,6 +38,7 @@ fun IncomingNamesView(rhId: Long?, close: () -> Unit) {
     // Read-only: opening this screen must not create keys by itself.
     canReceive.value = chatModel.controller.apiNameStatus(rhId)?.nameHasWallet ?: false
     incoming.value = if (canReceive.value) chatModel.controller.apiNameIncoming(rhId) ?: emptyList() else emptyList()
+    chatModel.namesWaiting.value = incoming.value.size
     loading.value = false
   }
 
@@ -53,7 +54,9 @@ fun IncomingNamesView(rhId: Long?, close: () -> Unit) {
         // Creates the wallet and publishes the receiving address to contacts.
         val addr = chatModel.controller.apiNameAddress(rhId)
         reload()
-        if (addr != null) {
+        if (addr == null) {
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.names_setup_failed), "")
+        } else {
           // A recovery key now exists and is unsaved, and it is the only way
           // back to anything received here.
           AlertManager.shared.showAlertDialog(
@@ -171,8 +174,12 @@ private fun confirmAccept(rhId: Long?, item: IncomingName, onDone: () -> Unit) {
     confirmText = generalGetString(MR.strings.names_incoming_accept),
     onConfirm = {
       withBGApi {
-        chatModel.controller.apiNameAccept(rhId, item.inAddress)
+        val accepted = chatModel.controller.apiNameAccept(rhId, item.inAddress)
         onDone()
+        // The dialog says the name can be shown on the profile afterwards, so
+        // offer it here rather than leaving the user on an empty screen to
+        // work out where the name went.
+        accepted?.firstOrNull()?.let { offerSetPrimaryName(rhId, it) }
       }
     }
   )

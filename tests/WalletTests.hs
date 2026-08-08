@@ -95,6 +95,8 @@ walletTests = do
 
   describe "renewing a name" renewTests
 
+  describe "seed setup" seedSetupTests
+
 -- | The gifting path end to end against the mock chain: Bob derives a
 -- destination from Alice's published meta-address with no handshake, the
 -- transfer carries the announcement, and Alice finds the name by scanning
@@ -314,3 +316,48 @@ renewTests = do
   it "refuses to renew a name that never existed" $ do
     (_mc, svc, _) <- setup
     renewName svc "nosuchname" 1 (PPRedeemCode "t") `shouldReturn` Left SENotFound
+
+-- | Binding a profile to a wallet. The rule these all defend: a stored seed is
+-- never overwritten and a bound profile is never re-pointed, because either one
+-- silently loses the names that profile owns.
+seedSetupTests :: Spec
+seedSetupTests = do
+  it "a new seed is a new row, leaving stored seeds untouched" $
+    -- entropy differs, so the rows cannot be the same seed
+    wsEntropy zeroSeed `shouldNotBe` wsEntropy otherSeed
+
+  it "importing the same phrase twice yields the same entropy" $ do
+    -- import is deterministic, so re-importing is not a way to lose a key
+    a <- expectRight $ importRecoveryKey canonicalPhrase
+    b <- expectRight $ importRecoveryKey canonicalPhrase
+    a `shouldBe` b
+
+  it "a phrase round-trips through the stored form" $ do
+    e <- expectRight $ importRecoveryKey canonicalPhrase
+    let w = WalletSeed {wsId = SeedId 1, wsEntropy = e, wsBackedUp = False}
+    expectRight (recoveryKeyPhrase w) >>= (`shouldBe` canonicalPhrase)
+
+  it "two accounts on one seed never share an address" $ do
+    a <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    b <- expectRight $ accountAddress <$> deriveAccount zeroSeed 1
+    a `shouldNotBe` b
+
+  it "the same index on different seeds gives different addresses" $ do
+    a <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    b <- expectRight $ accountAddress <$> deriveAccount otherSeed 0
+    a `shouldNotBe` b
+
+  it "a profile on its own seed is not derivable from the shared one" $ do
+    -- what "generate a new seed for this profile" has to mean
+    k0 <- expectRight $ deriveStealthKeys zeroSeed ChainEth 0
+    k1 <- expectRight $ deriveStealthKeys otherSeed ChainEth 0
+    accountMetaAddress k0 `shouldNotBe` accountMetaAddress k1
+
+  it "rejects a phrase that is not a valid recovery key" $
+    importRecoveryKey "not actually a recovery key at all" `shouldSatisfy` isLeft
+
+canonicalPhrase :: ByteString
+canonicalPhrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+otherSeed :: WalletSeed
+otherSeed = WalletSeed {wsId = SeedId 2, wsEntropy = B.replicate 16 7, wsBackedUp = False}

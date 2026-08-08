@@ -66,22 +66,31 @@ fun BuyNameView(rhId: Long?, close: () -> Unit) {
     scope.launch {
       buying.value = true
       try {
-        val paid = NamePayment.purchase(years.value)
+        val label = label.value.trim().lowercase()
+        // Keyed on what is being bought, so a retry after a failed
+        // registration reuses the receipt instead of charging again.
+        val paid = NamePayment.purchaseFor("buy:$label:${years.value}", years.value)
         if (paid == null) return@launch // cancelled: nothing charged, nothing registered
         // Bought to be used, so it points at this profile from the moment it
         // exists rather than needing a second trip through the detail screen.
         val link = if (pointAtMe.value) myLink else null
-        val reg = chatModel.controller.apiNameBuy(rhId, label.value.trim().lowercase(), years.value, paid.token, link)
+        val reg = chatModel.controller.apiNameBuy(rhId, label, years.value, paid.token, link)
+        if (reg != null) NamePayment.spent("buy:$label:${years.value}")
         if (reg != null) {
           // The switch already said whether this name is for this profile, so
           // it is acted on rather than asked again. Chaining dialogs here was
           // also unexitable: dismissing one pushed the next, and the dismiss
           // then popped the pushed one instead.
+          var claimFailed = false
           if (pointAtMe.value) {
             try {
               chatModel.updateUser(chatModel.controller.apiSetUserDomain(rhId, reg.nameFqdn))
             } catch (e: Exception) {
+              // The name is registered and points here, but the profile claim
+              // failed - usually because there is no short link yet. Saying
+              // "now points at this profile" here would be false.
               Log.e(TAG, "apiSetUserDomain after buy: ${e.message}")
+              claimFailed = true
             }
           }
           val keySaved = chatModel.controller.apiNameStatus(rhId)?.nameKeySaved ?: false
@@ -91,7 +100,9 @@ fun BuyNameView(rhId: Long?, close: () -> Unit) {
             AlertManager.shared.showAlertDialog(
               title = generalGetString(MR.strings.names_bought_title),
               text = generalGetString(
-                if (pointAtMe.value) MR.strings.names_bought_text else MR.strings.names_bought_for_other
+                if (!pointAtMe.value) MR.strings.names_bought_for_other
+                else if (claimFailed) MR.strings.names_bought_not_shown
+                else MR.strings.names_bought_text
               ).format(reg.nameFqdn),
               confirmText = generalGetString(MR.strings.names_bought_save_key),
               dismissText = generalGetString(MR.strings.names_bought_later),
@@ -101,7 +112,9 @@ fun BuyNameView(rhId: Long?, close: () -> Unit) {
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.names_bought_title),
               text = generalGetString(
-                if (pointAtMe.value) MR.strings.names_bought_text else MR.strings.names_bought_for_other
+                if (!pointAtMe.value) MR.strings.names_bought_for_other
+                else if (claimFailed) MR.strings.names_bought_not_shown
+                else MR.strings.names_bought_text
               ).format(reg.nameFqdn),
             )
           }
@@ -192,27 +205,13 @@ private fun BuyNameLayout(
     }
 
     SectionDividerSpaced(maxTopPadding = true)
-    SectionView {
-      when {
-        quote == null || !quote.nameAvailable -> {}
-        else -> {
-          SectionItemView(click = if (buying) null else buy, disabled = buying) {
-            Text(
-              if (buying) stringResource(MR.strings.names_buy_working)
-              else stringResource(MR.strings.names_buy_action).format(priceText(quote.namePriceCents, years.value)),
-              color = if (buying) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-            )
-          }
-        }
-      }
-    }
-
-
-    SectionDividerSpaced(maxTopPadding = true)
     SectionView(stringResource(MR.strings.names_buy_term).uppercase()) {
       SectionItemView {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-          Text(stringResource(MR.strings.names_buy_years).format(years.value))
+          Text(
+            if (years.value == 1) stringResource(MR.strings.names_buy_year_one)
+            else stringResource(MR.strings.names_buy_years).format(years.value)
+          )
           Row {
             TextButton(onClick = { if (years.value > 1) years.value-- }, enabled = years.value > 1) { Text("−") }
             TextButton(onClick = { if (years.value < 10) years.value++ }, enabled = years.value < 10) { Text("+") }
@@ -239,6 +238,23 @@ private fun BuyNameLayout(
       },
       if (canPoint) MaterialTheme.colors.secondary else WarningOrange
     )
+
+    SectionDividerSpaced(maxTopPadding = true)
+    SectionView {
+      when {
+        quote == null || !quote.nameAvailable -> {}
+        else -> {
+          SectionItemView(click = if (buying) null else buy, disabled = buying) {
+            Text(
+              if (buying) stringResource(MR.strings.names_buy_working)
+              else stringResource(MR.strings.names_buy_action).format(priceText(quote.namePriceCents, years.value)),
+              color = if (buying) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+            )
+          }
+        }
+      }
+    }
+
 
     if (!NamePayment.isLive) {
       SectionDividerSpaced(maxTopPadding = true)

@@ -37,4 +37,28 @@ object NamePayment {
 
   /** Whether real billing is wired up. False means purchases are simulated. */
   val isLive: Boolean = false
+
+  /**
+   * Receipts paid for but not yet spent, keyed by what they were bought for.
+   *
+   * Registration can fail after the charge — the name was taken in between, the
+   * service was down, the poll timed out. Without this the token dies with the
+   * coroutine and the only way forward is to pay again for something already
+   * paid for. Holding it means a retry re-submits the same receipt, which is
+   * what makes the idempotency the real service requires reachable at all.
+   */
+  private val unspent = mutableMapOf<String, String>()
+
+  /** Reuse a receipt already bought for [key], or buy one. */
+  suspend fun purchaseFor(key: String, years: Int): Result? {
+    unspent[key]?.let { return Result(it) }
+    val r = purchase(years) ?: return null
+    unspent[key] = r.token
+    return r
+  }
+
+  /** Called once the receipt has been accepted, so it is not offered again. */
+  fun spent(key: String) {
+    unspent.remove(key)
+  }
 }

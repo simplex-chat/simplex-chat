@@ -1079,6 +1079,17 @@ object ChatController {
     return null
   }
 
+  // "existing" | "new" | "import <phrase>" - the core refuses if this profile
+  // already has keys, so this can never displace a stored seed.
+  suspend fun apiNameSetup(rh: Long?, setup: String): Boolean {
+    val userId = currentUserId("apiNameSetup")
+    val r = sendCmd(rh, CC.ApiNameSetup(userId, setup))
+    if (r is API.Result && r.res is CR.NameStatus) return true
+    Log.e(TAG, "apiNameSetup bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.names_setup_failed), "${r.responseType}: ${r.details}")
+    return false
+  }
+
   suspend fun apiNameStatus(rh: Long?): CR.NameStatus? {
     val userId = currentUserId("apiNameStatus")
     val r = sendCmd(rh, CC.ApiNameStatus(userId))
@@ -3946,6 +3957,7 @@ sealed class CC {
   class ApiGetChatTags(val userId: Long): CC()
   class ApiNameAddress(val userId: Long): CC()
   class ApiNameStatus(val userId: Long): CC()
+  class ApiNameSetup(val userId: Long, val setup: String): CC()
   class ApiNameRenew(val userId: Long, val fqdn: String, val years: Int, val payment: String): CC()
   class ApiNameInfo(val userId: Long, val fqdn: String): CC()
   class ApiNameSetLink(val userId: Long, val fqdn: String, val link: String): CC()
@@ -4152,6 +4164,7 @@ sealed class CC {
     is ApiGetChatTags -> "/_get tags $userId"
     is ApiNameAddress -> "/_name address $userId"
     is ApiNameStatus -> "/_name status $userId"
+    is ApiNameSetup -> "/_name setup $userId $setup"
     is ApiNameRenew -> "/_name renew $userId $fqdn $years $payment"
     is ApiNameInfo -> "/_name info $userId $fqdn"
     is ApiNameSetLink -> "/_name link $userId $fqdn $link"
@@ -4380,6 +4393,7 @@ sealed class CC {
     is ApiGetChatTags -> "apiGetChatTags"
     is ApiNameAddress -> "apiNameAddress"
     is ApiNameStatus -> "apiNameStatus"
+    is ApiNameSetup -> "apiNameSetup"
     is ApiNameRenew -> "apiNameRenew"
     is ApiNameInfo -> "apiNameInfo"
     is ApiNameSetLink -> "apiNameSetLink"

@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -17,6 +18,8 @@ module Simplex.Chat.Store.Wallets
     setSeedBackedUp,
     getAccountRef,
     getOrCreateAccountRef,
+    boundAccount,
+    bindNewAccountOnSeed,
     bindAccount,
     getNextAccountIndex,
     reserveAccounts,
@@ -95,6 +98,28 @@ bindAccount db User {userId} AccountRef {arSeedId = SeedId sId, arIndex} =
     db
     "UPDATE users SET wallet_seed_id = ?, wallet_account_index = ? WHERE user_id = ?"
     (sId, fromIntegral arIndex :: Int64, userId)
+
+-- | The seed and account this profile is bound to, or Nothing if it has never
+-- used the wallet. Creates nothing: callers that need a wallet ask the user
+-- first, so a profile is never given keys as a side effect of reading.
+boundAccount :: DB.Connection -> User -> IO (Maybe (WalletSeed, AccountRef))
+boundAccount db user =
+  getAccountRef db user >>= \case
+    Nothing -> pure Nothing
+    Just r -> fmap (\s -> (s, r)) <$> getWalletSeed db (arSeedId r)
+
+-- | Bind this profile to an existing seed at a fresh account index.
+--
+-- Additive by construction: it inserts nothing into @wallet_seeds@ and rewrites
+-- only this profile's row, so no other profile's binding and no stored seed can
+-- be affected. The index comes from the seed's high-water mark, so two profiles
+-- on one seed can never share an account.
+bindNewAccountOnSeed :: DB.Connection -> User -> WalletSeed -> IO AccountRef
+bindNewAccountOnSeed db user s = do
+  ix <- takeAccountIndex db (wsId s)
+  let r = AccountRef {arSeedId = wsId s, arIndex = ix}
+  bindAccount db user r
+  pure r
 
 -- | Bind this profile to a seed, creating one from @mkSeed@ if the database has
 -- none yet, and allocating the next free account index.

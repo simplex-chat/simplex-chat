@@ -2391,6 +2391,29 @@ processChatCommand cxt nm = \case
       _ -> throwError e
     connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APINameSetupWallet userId setup -> withUserId userId $ \user -> do
+    existing <- withStore' $ \db -> WS.boundAccount db user
+    case existing of
+      -- Never silently re-point a profile that already has keys: doing so is
+      -- what made an import discard the imported seed and orphan the names the
+      -- profile already owned.
+      Just _ -> throwCmdError "this profile already has a recovery key"
+      Nothing -> do
+        g <- asks random
+        w <- case setup of
+          WSExistingSeed ->
+            withStore' (\db -> WS.getWalletSeeds db) >>= \case
+              (s : _) -> pure s
+              [] -> withStore' . flip WS.createWalletSeed =<< liftIO (atomically $ W.newSeed B39.MS128 g)
+          WSNewSeed -> withStore' . flip WS.createWalletSeed =<< liftIO (atomically $ W.newSeed B39.MS128 g)
+          -- Additive: a new row alongside whatever is stored, never over it.
+          WSImportSeed phrase -> do
+            seed <- nameEither . W.importRecoveryKey $ encodeUtf8 phrase
+            withStore' $ \db -> WS.createWalletSeed db seed
+        r <- withStore' $ \db -> WS.bindNewAccountOnSeed db user w
+        -- Contacts need the new address before they can send anything to it.
+        void $ publishMetaAddress user
+        pure $ CRNameStatus user True (W.wsBackedUp w)
   APINameStatus userId -> withUserId userId $ \user -> do
     ref <- withStore' $ \db -> WS.getAccountRef db user
     saved <- case ref of
@@ -2415,12 +2438,11 @@ processChatCommand cxt nm = \case
     (w, _) <- userWalletAccount user
     phrase <- nameEither $ W.recoveryKeyPhrase w
     pure $ CRNameRecoveryKey user (safeDecodeUtf8 phrase) (W.wsBackedUp w)
-  APINameRecoveryKeyImport userId phrase -> withUserId userId $ \user -> do
-    seed <- nameEither . W.importRecoveryKey $ encodeUtf8 phrase
-    w <- withStore' $ \db -> WS.createWalletSeed db seed
-    let r = W.AccountRef {W.arSeedId = W.wsId w, W.arIndex = 0}
-    withStore' $ \db -> WS.bindAccount db user r
-    pure $ CRNameRecoveryKey user phrase (W.wsBackedUp w)
+  APINameRecoveryKeyImport userId phrase -> withUserId userId $ \user ->
+    -- Routed through the same explicit setup as everything else, so an import
+    -- can only ever add a seed alongside what is stored and can never re-point
+    -- a profile that already has keys.
+    processChatCommand cxt nm $ APINameSetupWallet userId (WSImportSeed phrase)
   APINameRecoveryKeySaved userId -> withUserId userId $ \user -> do
     (w, _) <- userWalletAccount user
     withStore' $ \db -> WS.setSeedBackedUp db (W.wsId w) True
@@ -2484,12 +2506,21 @@ processChatCommand cxt nm = \case
     (_, pk) <- userWalletAccount user
     let label = fromMaybe fqdn $ T.stripSuffix ".simplex" fqdn
         payment = PPRedeemCode (encodeUtf8 payToken)
-    r <- liftIO $ renewName namesService (encodeUtf8 label) years payment
-    case r of
-      Right expires -> pure $ CRNameRenewed user fqdn (fromIntegral expires) False
-      -- Past the grace period the registration is gone, so extending is not
-      -- possible and the name has to be bought again. That only works if no one
-      -- else took it in the meantime, which the purchase itself enforces.
+    -- Decide before paying, and then make exactly one paid call. Trying to
+    -- extend and falling back to buying would submit the same receipt twice,
+    -- and a real store receipt is consumed by the first call.
+    rec_ <- liftIO $ resolveName namesService (encodeUtf8 fqdn)
+    case rec_ of
+      Right r | nrvOwner r /= W.accountAddress pk -> do
+        -- Someone else holds it now. Extending would pay to renew their
+        -- registration and report it as the user's own.
+        accepted <- withStore' $ \db -> WS.getAcceptedAddresses db user W.ChainEth
+        if nrvOwner r `elem` map WS.otaAddress accepted
+          then renewOwned label years payment fqdn user
+          else throwCmdError "this name now belongs to someone else"
+      Right _ -> renewOwned label years payment fqdn user
+      -- No registration at all: past grace, or never existed. Buying is the
+      -- only path, and it fails by itself if someone else has taken it.
       Left SENotFound -> do
         let req =
               BuyRequest
@@ -2567,6 +2598,11 @@ processChatCommand cxt nm = \case
       -- command's own response be emitted twice; the sender's bubble is the
       -- client's business, not the core's.
       void $ sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
+    -- The profile must stop advertising a name it no longer owns, or contacts
+    -- keep seeing it and the user's own list reports it as not managed here.
+    let User {profile = LocalProfile {contactDomain}} = user
+        claimed = safeDecodeUtf8 . strEncode . claimDomain <$> contactDomain
+    when (claimed == Just fqdn) . void . processChatCommand cxt nm $ APISetUserDomain userId Nothing
     pure $ CRNameGifted user fqdn tx ephHex
   APINameIncoming userId -> withUserId userId $ \user -> do
     rows <- withStore' $ \db -> WS.getIncomingAddresses db user W.ChainEth
@@ -2600,6 +2636,7 @@ processChatCommand cxt nm = \case
     pure $ CRNameRescanned user (length found)
   NameAddress -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameAddress userId
   NameStatus -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameStatus userId
+  NameSetup setup -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameSetupWallet userId setup
   NameRenew n y -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRenew userId n y "dev-cli-payment"
   NameRecoveryKey -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKey userId
   NameRecoveryKeyImport phrase -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeyImport userId phrase
@@ -5955,6 +5992,7 @@ chatCommandP =
       "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
       "/_name address " *> (APINameAddress <$> A.decimal),
       "/_name status " *> (APINameStatus <$> A.decimal),
+      "/_name setup " *> (APINameSetupWallet <$> A.decimal <* A.space <*> walletSetupP),
       "/_name renew " *> (APINameRenew <$> A.decimal <* A.space <*> nameWordP <* A.space <*> A.decimal <* A.space <*> (safeDecodeUtf8 <$> A.takeTill (== ' '))),
       "/_name key import " *> (APINameRecoveryKeyImport <$> A.decimal <* A.space <*> textP),
       "/_name key saved " *> (APINameRecoveryKeySaved <$> A.decimal),
@@ -5972,6 +6010,7 @@ chatCommandP =
       "/_name rescan " *> (APINameRescan <$> A.decimal),
       "/names address" $> NameAddress,
       "/names status" $> NameStatus,
+      "/names setup " *> (NameSetup <$> walletSetupP),
       "/names renew " *> (NameRenew <$> nameWordP <*> (A.space *> A.decimal <|> pure 1)),
       "/names key import " *> (NameRecoveryKeyImport <$> textP),
       "/names key saved" $> NameRecoveryKeySaved,
@@ -6223,6 +6262,10 @@ chatCommandP =
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""
       pure $ if T.null descr then Nothing else Just $ T.take 160 descr
     textP = safeDecodeUtf8 <$> A.takeByteString
+    walletSetupP =
+      ("existing" $> WSExistingSeed)
+        <|> ("new" $> WSNewSeed)
+        <|> ("import " *> (WSImportSeed <$> textP))
     nameWordP = safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
@@ -6428,6 +6471,13 @@ nameSigningKey user fqdn = do
     else do
       ota <- oneTimeAccountFor user (nrvOwner rec')
       pure W.WalletAccount {W.waRef = W.waRef pk, W.waKey = otaKey ota}
+
+-- | Extend a registration the user holds.
+renewOwned :: Text -> Int -> PaymentProof -> Text -> User -> CM ChatResponse
+renewOwned label years payment fqdn user =
+  liftIO (renewName namesService (encodeUtf8 label) years payment) >>= \case
+    Right expires -> pure $ CRNameRenewed user fqdn (fromIntegral expires) False
+    Left e -> throwCmdError . B.unpack $ serviceErrorText e
 
 -- | Sign an intent with the profile key and hand it to the relayer.
 nameRelay :: W.WalletAccount -> Intent -> CM Text

@@ -153,6 +153,8 @@ object ChatModel {
   var terminalsVisible = setOf<Boolean>()
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
+  // Names sent to this profile and not yet accepted or declined.
+  val namesWaiting = mutableStateOf(0)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent

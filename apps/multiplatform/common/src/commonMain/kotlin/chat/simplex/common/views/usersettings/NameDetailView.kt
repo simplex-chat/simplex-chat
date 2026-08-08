@@ -74,8 +74,9 @@ fun NameDetailView(rhId: Long?, fqdn: String, close: () -> Unit) {
           withBGApi {
             busy.value = true
             try {
-              val paid = NamePayment.purchase(1) ?: return@withBGApi
+              val paid = NamePayment.purchaseFor("renew:$fqdn", 1) ?: return@withBGApi
               val r = chatModel.controller.apiNameRenew(rhId, fqdn, 1, paid.token)
+              if (r != null) NamePayment.spent("renew:$fqdn")
               if (r != null) {
                 reload()
                 AlertManager.shared.showAlertMsg(

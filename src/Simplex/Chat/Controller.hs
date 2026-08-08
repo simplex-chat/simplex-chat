@@ -546,6 +546,9 @@ data ChatCommand
   | APIVerifyContactDomain {contactId :: ContactId}
   | APINameAddress {userId :: UserId}
   | APINameStatus {userId :: UserId}
+  | -- | Bind this profile to a wallet, explicitly. There is no implicit
+    -- creation: a profile gets keys only when the user chooses how.
+    APINameSetupWallet {userId :: UserId, walletSetup :: WalletSetup}
   | APINameRenew {userId :: UserId, nameFqdn :: Text, nameYears :: Int, namePaymentToken :: Text}
   | APINameRecoveryKey {userId :: UserId}
   | APINameRecoveryKeyImport {userId :: UserId, recoveryPhrase :: Text}
@@ -563,6 +566,7 @@ data ChatCommand
   | APINameRescan {userId :: UserId}
   | NameAddress
   | NameStatus
+  | NameSetup {walletSetup :: WalletSetup}
   | NameRenew {nameFqdn :: Text, nameYears :: Int}
   | NameRecoveryKey
   | NameRecoveryKeyImport {recoveryPhrase :: Text}
@@ -1418,6 +1422,23 @@ data SwitchProgress = SwitchProgress
   }
   deriving (Show)
 
+-- | How a profile should get its wallet the first time it needs one.
+--
+-- The default is 'WSExistingSeed': one recovery key covers every profile, so
+-- there is one thing to write down. The alternatives exist because a profile
+-- kept separate on purpose should be able to have keys that are not derivable
+-- from the others, and because a restored key has to be able to arrive without
+-- displacing anything already stored.
+data WalletSetup
+  = -- | Derive a new account from the seed already in this database.
+    WSExistingSeed
+  | -- | Generate a new seed for this profile alone.
+    WSNewSeed
+  | -- | Import a recovery key. Always stored alongside existing seeds, never
+    -- over them.
+    WSImportSeed {setupPhrase :: Text}
+  deriving (Show)
+
 -- | A name this profile holds, with enough to show its state without a second
 -- round trip per name.
 data OwnedName = OwnedName
@@ -1900,6 +1921,8 @@ $(JQ.deriveJSON defaultJSON ''NtfConn)
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
 $(JQ.deriveJSON defaultJSON ''SwitchProgress)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "WS") ''WalletSetup)
 
 $(JQ.deriveJSON defaultJSON ''OwnedName)
 
