@@ -31,10 +31,13 @@ import kotlinx.coroutines.launch
 fun IncomingNamesView(rhId: Long?, close: () -> Unit) {
   val incoming = remember { mutableStateOf(emptyList<IncomingName>()) }
   val loading = remember { mutableStateOf(true) }
+  val canReceive = remember { mutableStateOf(true) }
   val scope = rememberCoroutineScope()
 
   suspend fun reload() {
-    incoming.value = chatModel.controller.apiNameIncoming(rhId) ?: emptyList()
+    // Read-only: opening this screen must not create keys by itself.
+    canReceive.value = chatModel.controller.apiNameStatus(rhId)?.nameHasWallet ?: false
+    incoming.value = if (canReceive.value) chatModel.controller.apiNameIncoming(rhId) ?: emptyList() else emptyList()
     loading.value = false
   }
 
@@ -43,6 +46,26 @@ fun IncomingNamesView(rhId: Long?, close: () -> Unit) {
   IncomingNamesLayout(
     incoming = incoming.value,
     loading = loading.value,
+    canReceive = canReceive.value,
+    enableReceiving = {
+      scope.launch {
+        loading.value = true
+        // Creates the wallet and publishes the receiving address to contacts.
+        val addr = chatModel.controller.apiNameAddress(rhId)
+        reload()
+        if (addr != null) {
+          // A recovery key now exists and is unsaved, and it is the only way
+          // back to anything received here.
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.names_receive_enabled_title),
+            text = generalGetString(MR.strings.names_receive_enabled_text),
+            confirmText = generalGetString(MR.strings.names_bought_save_key),
+            dismissText = generalGetString(MR.strings.names_bought_later),
+            onConfirm = { ModalManager.start.showModalCloseable { c -> NameRecoveryKeyView(rhId, c) } },
+          )
+        }
+      }
+    },
     rescan = {
       scope.launch {
         loading.value = true
@@ -67,6 +90,8 @@ fun IncomingNamesView(rhId: Long?, close: () -> Unit) {
 private fun IncomingNamesLayout(
   incoming: List<IncomingName>,
   loading: Boolean,
+  canReceive: Boolean,
+  enableReceiving: () -> Unit,
   rescan: () -> Unit,
   accept: (IncomingName) -> Unit,
   decline: (IncomingName) -> Unit,
@@ -75,7 +100,21 @@ private fun IncomingNamesLayout(
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.names_incoming_title))
 
-    if (incoming.isEmpty()) {
+    if (!canReceive && !loading) {
+      // Without a wallet there is nowhere for a name to be sent, so this is the
+      // one thing worth offering.
+      SectionView {
+        SectionItemView { Text(stringResource(MR.strings.names_receive_off), color = MaterialTheme.colors.secondary) }
+        SettingsActionItem(
+          painterResource(MR.images.ic_check),
+          stringResource(MR.strings.names_receive_enable),
+          enableReceiving,
+          textColor = MaterialTheme.colors.primary,
+          iconColor = MaterialTheme.colors.primary,
+        )
+      }
+      SectionTextFooter(stringResource(MR.strings.names_receive_off_footer))
+    } else if (incoming.isEmpty()) {
       SectionView {
         SectionItemView {
           Text(
@@ -85,7 +124,7 @@ private fun IncomingNamesLayout(
           )
         }
       }
-      SectionTextFooter(stringResource(MR.strings.names_incoming_none_footer))
+      SectionTextFooter(stringResource(MR.strings.names_incoming_ready_footer))
     } else {
       SectionView(stringResource(MR.strings.names_incoming_section).uppercase()) {
         incoming.forEach { item ->
@@ -109,6 +148,7 @@ private fun IncomingNamesLayout(
       SectionTextFooter(stringResource(MR.strings.names_incoming_footer))
     }
 
+    if (canReceive) {
     SectionDividerSpaced(maxTopPadding = true)
     SectionView {
       SettingsActionItem(
@@ -119,6 +159,7 @@ private fun IncomingNamesLayout(
       )
     }
     SectionTextFooter(stringResource(MR.strings.names_rescan_footer))
+    }
     SectionBottomSpacer()
   }
 }

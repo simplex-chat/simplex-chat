@@ -545,11 +545,12 @@ data ChatCommand
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
   | APIVerifyContactDomain {contactId :: ContactId}
   | APINameAddress {userId :: UserId}
+  | APINameStatus {userId :: UserId}
   | APINameRecoveryKey {userId :: UserId}
   | APINameRecoveryKeyImport {userId :: UserId, recoveryPhrase :: Text}
   | APINameRecoveryKeySaved {userId :: UserId}
   | APINameQuote {userId :: UserId, nameLabel :: Text}
-  | APINameBuy {userId :: UserId, nameLabel :: Text, nameLink :: Maybe Text}
+  | APINameBuy {userId :: UserId, nameLabel :: Text, nameYears :: Int, namePaymentToken :: Text, nameLink :: Maybe Text}
   | APINameList {userId :: UserId}
   | APINameInfo {userId :: UserId, nameFqdn :: Text}
   | APINameSetLink {userId :: UserId, nameFqdn :: Text, nameLink_ :: Text}
@@ -560,11 +561,12 @@ data ChatCommand
   | APINameExportKey {userId :: UserId, nameOneTimeAddress :: Text}
   | APINameRescan {userId :: UserId}
   | NameAddress
+  | NameStatus
   | NameRecoveryKey
   | NameRecoveryKeyImport {recoveryPhrase :: Text}
   | NameRecoveryKeySaved
   | NameQuoteCmd {nameLabel :: Text}
-  | NameBuy {nameLabel :: Text, nameLink :: Maybe Text}
+  | NameBuy {nameLabel :: Text, nameYears :: Int, namePaymentToken :: Text, nameLink :: Maybe Text}
   | NameList
   | NameInfo {nameFqdn :: Text}
   | NameSetLink {nameFqdn :: Text, nameLink_ :: Text}
@@ -954,6 +956,9 @@ data ChatResponse
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRAppSettings {appSettings :: AppSettings}
   | CRNameAddress {user :: User, nameAddress :: Text, nameAccount :: Int, nameMetaAddress :: Text}
+  | -- | Read-only: never creates a wallet. Screens use this to decide what to
+    -- offer, so that opening one cannot create keys or notify contacts.
+    CRNameStatus {user :: User, nameHasWallet :: Bool, nameKeySaved :: Bool}
   | CRNameRecoveryKey {user :: User, recoveryPhrase :: Text, recoveryKeySaved :: Bool}
   | CRNameQuoted {user :: User, nameLabel :: Text, nameAvailable :: Bool, namePriceCents :: Int}
   | CRNameRegistered {user :: User, nameFqdn :: Text, nameTxHash :: Text}

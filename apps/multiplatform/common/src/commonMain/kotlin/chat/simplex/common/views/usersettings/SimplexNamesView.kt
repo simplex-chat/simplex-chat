@@ -10,9 +10,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -31,21 +28,32 @@ import dev.icerock.moko.resources.compose.stringResource
 fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
   val names = remember { mutableStateOf<List<String>?>(null) }
   val incomingCount = remember { mutableStateOf(0) }
-  val address = remember { mutableStateOf<CR.NameAddress?>(null) }
   val keySaved = remember { mutableStateOf(true) }
+  val hasKey = remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) {
     names.value = chatModel.controller.apiNameList(rhId)
     incomingCount.value = chatModel.controller.apiNameIncoming(rhId)?.size ?: 0
-    address.value = chatModel.controller.apiNameAddress(rhId)
-    keySaved.value = chatModel.controller.apiNameRecoveryKey(rhId)?.recoveryKeySaved ?: true
+    // Deliberately not asking for the receiving address here: that would create
+    // the wallet and tell every contact about it, for someone who only opened a
+    // settings screen. It comes into existence on the first purchase.
+    val st = chatModel.controller.apiNameStatus(rhId)
+    hasKey.value = st?.nameHasWallet ?: false
+    keySaved.value = st?.nameKeySaved ?: true
   }
+
+  // Development overlay: names owned through the wallet sit alongside a name
+  // claimed on this profile the legacy way (registered externally, via the
+  // dApp). Resolution and display are shared; ownership is not, so the two are
+  // listed separately and wallet actions are offered only where they apply.
+  val claimed = chatModel.currentUser.value?.profile?.contactDomain?.domain
 
   SimplexNamesLayout(
     names = names.value,
+    claimed = claimed,
     incomingCount = incomingCount.value,
-    address = address.value,
     keySaved = keySaved.value,
+    hasKey = hasKey.value,
     rhId = rhId,
   )
 }
@@ -53,12 +61,12 @@ fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
 @Composable
 private fun SimplexNamesLayout(
   names: List<String>?,
+  claimed: String?,
   incomingCount: Int,
-  address: CR.NameAddress?,
   keySaved: Boolean,
+  hasKey: Boolean,
   rhId: Long?,
 ) {
-  val clipboard = LocalClipboardManager.current
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.names_title))
 
@@ -66,13 +74,40 @@ private fun SimplexNamesLayout(
       when {
         names == null -> SectionItemView { Text(stringResource(MR.strings.names_incoming_loading), color = MaterialTheme.colors.secondary) }
         names.isEmpty() -> SectionItemView { Text(stringResource(MR.strings.names_none_yet), color = MaterialTheme.colors.secondary) }
-        else -> names.forEach { n -> SectionItemView { Text(n) } }
+        else -> names.forEach { n ->
+          SectionItemView(click = { ModalManager.start.showModalCloseable { c -> NameDetailView(rhId, n, c) } }) { Text(n) }
+        }
       }
     }
     SectionTextFooter(stringResource(MR.strings.names_your_names_footer))
 
+    if (claimed != null && names?.contains(claimed) != true) {
+      SectionDividerSpaced(maxTopPadding = true)
+      SectionView(stringResource(MR.strings.names_legacy_section).uppercase()) {
+        SectionItemView(click = {
+          AlertManager.shared.showAlertMsg(
+            title = claimed,
+            text = generalGetString(MR.strings.names_legacy_explain),
+          )
+        }) {
+          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(claimed)
+            Text(stringResource(MR.strings.names_legacy_tag), color = MaterialTheme.colors.secondary)
+          }
+        }
+      }
+      SectionTextFooter(stringResource(MR.strings.names_legacy_footer))
+    }
+
     SectionDividerSpaced(maxTopPadding = true)
     SectionView {
+      SettingsActionItem(
+        painterResource(MR.images.ic_add),
+        stringResource(MR.strings.names_buy_title),
+        click = { ModalManager.start.showModalCloseable { close -> BuyNameView(rhId, close) } },
+        textColor = MaterialTheme.colors.primary,
+        iconColor = MaterialTheme.colors.primary,
+      )
       SettingsActionItemWithContent(
         painterResource(MR.images.ic_mail),
         stringResource(MR.strings.names_incoming_title),
@@ -82,7 +117,7 @@ private fun SimplexNamesLayout(
           Text(incomingCount.toString(), color = MaterialTheme.colors.primary)
         }
       }
-      SettingsActionItem(
+      if (hasKey) SettingsActionItem(
         painterResource(MR.images.ic_lock),
         stringResource(MR.strings.names_recovery_key_title),
         click = { ModalManager.start.showModalCloseable { close -> NameRecoveryKeyView(rhId, close) } },
@@ -91,22 +126,6 @@ private fun SimplexNamesLayout(
         textColor = if (keySaved) Color.Unspecified else WarningOrange,
         iconColor = if (keySaved) MaterialTheme.colors.secondary else WarningOrange,
       )
-    }
-
-    if (address != null) {
-      SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.names_meta_address_section).uppercase()) {
-        SectionItemView(padding = PaddingValues(DEFAULT_PADDING)) {
-          Text(address.nameMetaAddress, fontFamily = FontFamily.Monospace, maxLines = 3)
-        }
-        SectionItemView(click = {
-          clipboard.setText(AnnotatedString(address.nameMetaAddress))
-          showToast(generalGetString(MR.strings.copied))
-        }) {
-          Text(stringResource(MR.strings.names_meta_address_copy), color = MaterialTheme.colors.primary)
-        }
-      }
-      SectionTextFooter(stringResource(MR.strings.names_meta_address_footer))
     }
 
     SectionBottomSpacer()

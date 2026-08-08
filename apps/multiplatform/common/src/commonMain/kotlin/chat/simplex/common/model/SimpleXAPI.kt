@@ -1051,6 +1051,33 @@ object ChatController {
     return emptyList()
   }
 
+  // Read-only: safe to call when a screen opens, unlike apiNameAddress or
+  // apiNameRecoveryKey, both of which create the wallet as a side effect.
+  suspend fun apiNameInfo(rh: Long?, fqdn: String): CR.NameInfo? {
+    val userId = currentUserId("apiNameInfo")
+    val r = sendCmd(rh, CC.ApiNameInfo(userId, fqdn))
+    if (r is API.Result && r.res is CR.NameInfo) return r.res
+    Log.e(TAG, "apiNameInfo bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiNameSetLink(rh: Long?, fqdn: String, link: String): Boolean {
+    val userId = currentUserId("apiNameSetLink")
+    val r = sendCmd(rh, CC.ApiNameSetLink(userId, fqdn, link))
+    if (r is API.Result && r.res is CR.NameIntentRelayed) return true
+    Log.e(TAG, "apiNameSetLink bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.names_repoint_failed), "${r.responseType}: ${r.details}")
+    return false
+  }
+
+  suspend fun apiNameStatus(rh: Long?): CR.NameStatus? {
+    val userId = currentUserId("apiNameStatus")
+    val r = sendCmd(rh, CC.ApiNameStatus(userId))
+    if (r is API.Result && r.res is CR.NameStatus) return r.res
+    Log.e(TAG, "apiNameStatus bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiNameIncoming(rh: Long?): List<IncomingName>? {
     val userId = currentUserId("apiNameIncoming")
     val r = sendCmd(rh, CC.ApiNameIncoming(userId))
@@ -1115,6 +1142,25 @@ object ChatController {
     val userId = currentUserId("apiNameRecoveryKeySaved")
     val r = sendCmd(rh, CC.ApiNameRecoveryKeySaved(userId))
     return r is API.Result && r.res is CR.NameRecoveryKey
+  }
+
+  suspend fun apiNameQuote(rh: Long?, label: String): CR.NameQuoted? {
+    val userId = currentUserId("apiNameQuote")
+    val r = sendCmd(rh, CC.ApiNameQuote(userId, label))
+    if (r is API.Result && r.res is CR.NameQuoted) return r.res
+    Log.e(TAG, "apiNameQuote bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  // The payment proof is obtained by the caller before this is called: the core
+  // forwards it and never mints one.
+  suspend fun apiNameBuy(rh: Long?, label: String, years: Int, payment: String, link: String?): CR.NameRegistered? {
+    val userId = currentUserId("apiNameBuy")
+    val r = sendCmd(rh, CC.ApiNameBuy(userId, label, years, payment, link))
+    if (r is API.Result && r.res is CR.NameRegistered) return r.res
+    Log.e(TAG, "apiNameBuy bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.names_buy_failed), "${r.responseType}: ${r.details}")
+    return null
   }
 
   suspend fun apiNameList(rh: Long?): List<String>? {
@@ -3878,6 +3924,9 @@ sealed class CC {
   class ApiGetSettings(val settings: AppSettings): CC()
   class ApiGetChatTags(val userId: Long): CC()
   class ApiNameAddress(val userId: Long): CC()
+  class ApiNameStatus(val userId: Long): CC()
+  class ApiNameInfo(val userId: Long, val fqdn: String): CC()
+  class ApiNameSetLink(val userId: Long, val fqdn: String, val link: String): CC()
   class ApiNameIncoming(val userId: Long): CC()
   class ApiNameAccept(val userId: Long, val address: String): CC()
   class ApiNameDecline(val userId: Long, val address: String): CC()
@@ -3889,7 +3938,7 @@ sealed class CC {
   class ApiNameRecoveryKeyImport(val userId: Long, val phrase: String): CC()
   class ApiNameList(val userId: Long): CC()
   class ApiNameQuote(val userId: Long, val label: String): CC()
-  class ApiNameBuy(val userId: Long, val label: String, val link: String?): CC()
+  class ApiNameBuy(val userId: Long, val label: String, val years: Int, val payment: String, val link: String?): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val scope: GroupChatScope?, val contentTag: MsgContentTag?, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatContentTypes(val type: ChatType, val id: Long, val scope: GroupChatScope?): CC()
@@ -4080,6 +4129,9 @@ sealed class CC {
     is ApiGetSettings -> "/_get app settings ${json.encodeToString(settings)}"
     is ApiGetChatTags -> "/_get tags $userId"
     is ApiNameAddress -> "/_name address $userId"
+    is ApiNameStatus -> "/_name status $userId"
+    is ApiNameInfo -> "/_name info $userId $fqdn"
+    is ApiNameSetLink -> "/_name link $userId $fqdn $link"
     is ApiNameIncoming -> "/_name incoming $userId"
     is ApiNameAccept -> "/_name accept $userId $address"
     is ApiNameDecline -> "/_name decline $userId $address"
@@ -4091,7 +4143,7 @@ sealed class CC {
     is ApiNameRecoveryKeyImport -> "/_name key import $userId $phrase"
     is ApiNameList -> "/_name list $userId"
     is ApiNameQuote -> "/_name quote $userId $label"
-    is ApiNameBuy -> "/_name buy $userId $label${if (link != null) " $link" else ""}"
+    is ApiNameBuy -> "/_name buy $userId $label $years $payment${if (link != null) " $link" else ""}"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> {
       val tag = if (contentTag == null) {
@@ -4304,6 +4356,9 @@ sealed class CC {
     is ApiGetSettings -> "apiGetSettings"
     is ApiGetChatTags -> "apiGetChatTags"
     is ApiNameAddress -> "apiNameAddress"
+    is ApiNameStatus -> "apiNameStatus"
+    is ApiNameInfo -> "apiNameInfo"
+    is ApiNameSetLink -> "apiNameSetLink"
     is ApiNameIncoming -> "apiNameIncoming"
     is ApiNameAccept -> "apiNameAccept"
     is ApiNameDecline -> "apiNameDecline"
@@ -6702,6 +6757,8 @@ sealed class CR {
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
   @Serializable @SerialName("nameAddress") class NameAddress(val user: User, val nameAddress: String, val nameAccount: Int, val nameMetaAddress: String): CR()
+  @Serializable @SerialName("nameInfo") class NameInfo(val user: User, val nameFqdn: String, val nameOwner: String, val nameContact: List<String>, val nameChannel: List<String>, val nameExpires: Int, val nameEditCredits: Int): CR()
+  @Serializable @SerialName("nameStatus") class NameStatus(val user: User, val nameHasWallet: Boolean, val nameKeySaved: Boolean): CR()
   @Serializable @SerialName("namesIncoming") class NamesIncoming(val user: User, val incomingNames: List<IncomingName>): CR()
   @Serializable @SerialName("nameAccepted") class NameAccepted(val user: User, val nameOneTimeAddr: String, val acceptedNames: List<String>): CR()
   @Serializable @SerialName("nameDeclined") class NameDeclined(val user: User, val nameOneTimeAddr: String): CR()
@@ -6908,6 +6965,8 @@ sealed class CR {
     is UserProfileUpdated -> "userProfileUpdated"
     is NameAddress -> "nameAddress"
     is NamesIncoming -> "namesIncoming"
+    is NameStatus -> "nameStatus"
+    is NameInfo -> "nameInfo"
     is NameAccepted -> "nameAccepted"
     is NameDeclined -> "nameDeclined"
     is NameKeyExported -> "nameKeyExported"
@@ -7105,6 +7164,8 @@ sealed class CR {
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
     is NameAddress -> withUser(user, "address: $nameAddress\naccount: $nameAccount\nmeta: $nameMetaAddress")
     is NamesIncoming -> withUser(user, json.encodeToString(incomingNames))
+    is NameStatus -> withUser(user, "wallet: $nameHasWallet, key saved: $nameKeySaved")
+    is NameInfo -> withUser(user, "$nameFqdn expires $nameExpires, credits $nameEditCredits")
     is NameAccepted -> withUser(user, "$nameOneTimeAddr: ${acceptedNames.joinToString(", ")}")
     is NameDeclined -> withUser(user, nameOneTimeAddr)
     is NameKeyExported -> withUser(user, nameOneTimeAddr)

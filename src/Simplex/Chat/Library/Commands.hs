@@ -2390,7 +2390,17 @@ processChatCommand cxt nm = \case
       _ -> throwError e
     connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APINameStatus userId -> withUserId userId $ \user -> do
+    ref <- withStore' $ \db -> WS.getAccountRef db user
+    saved <- case ref of
+      Nothing -> pure False
+      Just r -> maybe False W.wsBackedUp <$> withStore' (\db -> WS.getWalletSeed db (W.arSeedId r))
+    pure $ CRNameStatus user (isJust ref) saved
   APINameAddress userId -> withUserId userId $ \user -> do
+    -- Asking to see your address is an explicit act, so publishing here is
+    -- fine - it is how someone can receive a name before buying one. What must
+    -- not happen is a screen calling this on open, which would create a wallet
+    -- and notify every contact for a user who did nothing.
     (_, pk) <- userWalletAccount user
     user' <- publishMetaAddress user
     ks <- userStealthKeys user'
@@ -2418,14 +2428,16 @@ processChatCommand cxt nm = \case
   APINameQuote userId label -> withUserId userId $ \user -> do
     q <- nameSvc $ quoteName namesService (encodeUtf8 label)
     pure $ CRNameQuoted user label (nqAvailable q) (nqPriceCents q)
-  APINameBuy userId label link_ -> withUserId userId $ \user -> do
+  APINameBuy userId label years payToken link_ -> withUserId userId $ \user -> do
     (_, pk) <- userWalletAccount user
+    -- The proof comes from the client, which is where the store receipt is
+    -- obtained. The service validates it; nothing here interprets it.
     let req =
           BuyRequest
             { brLabel = encodeUtf8 label,
               brOwner = W.accountAddress pk,
-              brYears = 1,
-              brPayment = PPRedeemCode "dev-mock-payment",
+              brYears = years,
+              brPayment = PPRedeemCode (encodeUtf8 payToken),
               brContactLink = encodeUtf8 <$> link_,
               brChannelLink = Nothing
             }
@@ -2433,6 +2445,10 @@ processChatCommand cxt nm = \case
     reg <- namePoll pid (20 :: Int)
     case reg of
       RegConfirmed {rsTxHash} -> do
+        -- The wallet now genuinely exists, so contacts are told how to send to
+        -- it. Doing this on first purchase rather than on first screen view is
+        -- what keeps seed creation lazy.
+        void $ publishMetaAddress user
         let fqdn = label <> ".simplex"
         rec' <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
         unless (nrvOwner rec' == W.accountAddress pk) $ throwCmdError "registered name is not owned by this profile"
@@ -2527,11 +2543,12 @@ processChatCommand cxt nm = \case
     withStore' $ \db -> WS.setScannedTo db user cursor'
     pure $ CRNameRescanned user (length found)
   NameAddress -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameAddress userId
+  NameStatus -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameStatus userId
   NameRecoveryKey -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKey userId
   NameRecoveryKeyImport phrase -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeyImport userId phrase
   NameRecoveryKeySaved -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeySaved userId
   NameQuoteCmd l -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameQuote userId l
-  NameBuy l lnk -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameBuy userId l lnk
+  NameBuy l y t lnk -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameBuy userId l y t lnk
   NameList -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameList userId
   NameInfo n -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameInfo userId n
   NameSetLink n l -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameSetLink userId n l
@@ -5880,11 +5897,12 @@ chatCommandP =
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
       "/_name address " *> (APINameAddress <$> A.decimal),
+      "/_name status " *> (APINameStatus <$> A.decimal),
       "/_name key import " *> (APINameRecoveryKeyImport <$> A.decimal <* A.space <*> textP),
       "/_name key saved " *> (APINameRecoveryKeySaved <$> A.decimal),
       "/_name key " *> (APINameRecoveryKey <$> A.decimal),
       "/_name quote " *> (APINameQuote <$> A.decimal <* A.space <*> nameWordP),
-      "/_name buy " *> (APINameBuy <$> A.decimal <* A.space <*> nameWordP <*> optional (A.space *> textP)),
+      "/_name buy " *> (APINameBuy <$> A.decimal <* A.space <*> nameWordP <* A.space <*> A.decimal <* A.space <*> (safeDecodeUtf8 <$> A.takeTill (== ' ')) <*> optional (A.space *> textP)),
       "/_name list " *> (APINameList <$> A.decimal),
       "/_name info " *> (APINameInfo <$> A.decimal <* A.space <*> nameWordP),
       "/_name link " *> (APINameSetLink <$> A.decimal <* A.space <*> nameWordP <* A.space <*> textP),
@@ -5895,11 +5913,12 @@ chatCommandP =
       "/_name export " *> (APINameExportKey <$> A.decimal <* A.space <*> textP),
       "/_name rescan " *> (APINameRescan <$> A.decimal),
       "/names address" $> NameAddress,
+      "/names status" $> NameStatus,
       "/names key import " *> (NameRecoveryKeyImport <$> textP),
       "/names key saved" $> NameRecoveryKeySaved,
       "/names key" $> NameRecoveryKey,
       "/names quote " *> (NameQuoteCmd <$> nameWordP),
-      "/names buy " *> (NameBuy <$> nameWordP <*> optional (A.space *> textP)),
+      "/names buy " *> (NameBuy <$> nameWordP <*> (A.space *> A.decimal <|> pure 1) <*> pure "dev-cli-payment" <*> optional (A.space *> textP)),
       "/names list" $> NameList,
       "/names info " *> (NameInfo <$> nameWordP),
       "/names link " *> (NameSetLink <$> nameWordP <* A.space <*> textP),

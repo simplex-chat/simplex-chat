@@ -156,6 +156,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
       [ "name address (account " <> sShow acct <> "): " <> plain addr,
         "meta-address (share this to be sent names): " <> plain meta
       ]
+  CRNameStatus u hasWallet keySaved ->
+    ttyUser u [if hasWallet then (if keySaved then "wallet ready, recovery key saved" else "wallet ready, recovery key NOT saved") else "no wallet yet - people cannot send you names"]
   CRNamesIncoming u ns
     | null ns -> ttyUser u ["no names have been sent to you"]
     | otherwise ->
