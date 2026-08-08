@@ -16,7 +16,8 @@ directorySchemaMigrations = sortOn name $ map migration schemaMigrations
 
 schemaMigrations :: [(String, Text, Maybe Text)]
 schemaMigrations =
-  [ ("20250924_directory_schema", m20250924_directory_schema, Just down_m20250924_directory_schema)
+  [ ("20250924_directory_schema", m20250924_directory_schema, Just down_m20250924_directory_schema),
+    ("20260801_directory_contact_regs", m20260801_directory_contact_regs, Just down_m20260801_directory_contact_regs)
   ]
 
 m20250924_directory_schema :: Text
@@ -49,4 +50,30 @@ DROP INDEX idx_sx_directory_group_regs_owner_member_id;
 DROP INDEX idx_sx_directory_group_regs_owner_contact_id_user_group_reg_id;
 
 DROP TABLE sx_directory_group_regs;
+  |]
+
+m20260801_directory_contact_regs :: Text
+m20260801_directory_contact_regs =
+  T.pack
+    [r|
+CREATE TABLE sx_directory_contact_regs(
+  contact_reg_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  contact_id BIGINT REFERENCES contacts(contact_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+  peer_type TEXT NOT NULL,
+  contact_reg_status TEXT NOT NULL,
+  contact_promoted SMALLINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
+);
+
+CREATE UNIQUE INDEX idx_sx_directory_contact_regs_contact_id ON sx_directory_contact_regs(contact_id);
+  |]
+
+down_m20260801_directory_contact_regs :: Text
+down_m20260801_directory_contact_regs =
+  T.pack
+    [r|
+DROP INDEX idx_sx_directory_contact_regs_contact_id;
+
+DROP TABLE sx_directory_contact_regs;
   |]

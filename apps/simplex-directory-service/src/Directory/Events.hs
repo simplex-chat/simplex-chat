@@ -61,6 +61,8 @@ data DirectoryEvent
   | DEServiceRemovedFromGroup GroupInfo
   | DEGroupDeleted GroupInfo
   | DEChatLinkReceived {contact :: Contact, chatItemId :: ChatItemId, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
+  | DEContactLinkCheck Contact
+  | DEContactUpdated {fromContact :: Contact, toContact :: Contact}
   | DEMemberUpdated {groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | DEUnsupportedMessage Contact ChatItemId
   | DEItemEditIgnored Contact
@@ -80,6 +82,7 @@ crDirectoryEvent = \case
 crDirectoryEvent_ :: ChatEvent -> Maybe DirectoryEvent
 crDirectoryEvent_ = \case
   CEvtContactConnected {contact} -> Just $ DEContactConnected contact
+  CEvtContactUpdated {fromContact, toContact} -> Just $ DEContactUpdated {fromContact, toContact}
   CEvtReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CEvtUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
   CEvtGroupUpdated {fromGroup, toGroup, member_} -> (\member -> DEGroupUpdated {member, fromGroup, toGroup}) <$> member_
@@ -130,6 +133,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCSearchNext_ :: DirectoryCmdTag 'DRUser
   DCAllGroups_ :: DirectoryCmdTag 'DRUser
   DCRecentGroups_ :: DirectoryCmdTag 'DRUser
+  DCFindContacts_ :: DirectoryCmdTag 'DRUser
   DCSubmitGroup_ :: DirectoryCmdTag 'DRUser
   DCConfirmDuplicateGroup_ :: DirectoryCmdTag 'DRUser
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
@@ -163,14 +167,19 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCSearchNext :: DirectoryCmd 'DRUser
   DCAllGroups :: DirectoryCmd 'DRUser
   DCRecentGroups :: DirectoryCmd 'DRUser
+  DCFindContacts :: ChatPeerType -> Maybe Text -> DirectoryCmd 'DRUser
   DCSubmitGroup :: ConnReqContact -> DirectoryCmd 'DRUser
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
+  DCDeleteContact :: Maybe (ContactId, ContactName) -> DirectoryCmd 'DRUser
   DCMemberRole :: UserGroupRegId -> Maybe GroupName -> Maybe GroupMemberRole -> DirectoryCmd 'DRUser
   DCGroupFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
   DCShowUpgradeGroupLink :: GroupId -> Maybe GroupName -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId, promote :: Maybe Bool} -> DirectoryCmd 'DRAdmin
+  DCApproveContact :: ContactId -> ContactName -> GroupApprovalId -> DirectoryCmd 'DRAdmin
+  DCSuspendContact :: ContactId -> ContactName -> DirectoryCmd 'DRAdmin
+  DCResumeContact :: ContactId -> ContactName -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
@@ -181,6 +190,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   -- DCAddBlockedWord :: Text -> DirectoryCmd 'DRAdmin
   -- DCRemoveBlockedWord :: Text -> DirectoryCmd 'DRAdmin
   DCPromoteGroup :: GroupId -> GroupName -> Bool -> DirectoryCmd 'DRSuperUser
+  DCPromoteContact :: ContactId -> ContactName -> Bool -> DirectoryCmd 'DRSuperUser
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -207,6 +217,8 @@ directoryCmdP ft =
         "next" -> u DCSearchNext_
         "all" -> u DCAllGroups_
         "new" -> u DCRecentGroups_
+        "find" -> u DCFindContacts_
+        "?" -> u DCFindContacts_
         "submit" -> u DCSubmitGroup_
         "confirm" -> u DCConfirmDuplicateGroup_
         "list" -> u DCListUserGroups_
@@ -247,10 +259,20 @@ directoryCmdP ft =
       DCSearchNext_ -> pure DCSearchNext
       DCAllGroups_ -> pure DCAllGroups
       DCRecentGroups_ -> pure DCRecentGroups
+      DCFindContacts_ -> do
+        _ <- A.takeWhile isSpace
+        pt <- (A.string "business" $> CPTBusiness) <|> (A.string "biz" $> CPTBusiness) <|> (A.string "bot" $> CPTBot)
+        search <- (spacesP *> (Just <$> A.takeText)) <|> pure Nothing
+        pure $ DCFindContacts pt search
       DCSubmitGroup_ -> fmap DCSubmitGroup . strDecode . encodeUtf8 <$?> (spacesP *> A.takeText)
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
-      DCDeleteGroup_ -> gc DCDeleteGroup
+      DCDeleteGroup_ -> spacesP *> (contactDel <|> groupDel)
+        where
+          contactDel =
+            (A.char '@' *> (((\i n -> DCDeleteContact (Just (i, n))) <$> A.decimal <*> (A.char ':' *> displayNameTextP)) <|> pure (DCDeleteContact Nothing)))
+              <|> ((A.string "address" <|> A.string "addr") $> DCDeleteContact Nothing)
+          groupDel = DCDeleteGroup <$> A.decimal <*> (A.char ':' *> displayNameTextP)
       DCMemberRole_ -> do
         (groupId, displayName_) <- gc_ (,)
         memberRole_ <- optional $ spacesP *> ("member" $> GRMember <|> "observer" $> GRObserver)
@@ -283,13 +305,19 @@ directoryCmdP ft =
               <|> pure PCAll
       DCShowUpgradeGroupLink_ -> gc_ DCShowUpgradeGroupLink
       DCApproveGroup_ -> do
-        (groupId, displayName) <- gc (,)
-        groupApprovalId <- A.space *> A.decimal
-        promote <- Just <$> (" promote=" *> onOffP) <|> pure Nothing
-        pure DCApproveGroup {groupId, displayName, groupApprovalId, promote}
+        _ <- spacesP
+        addr <- (A.char '@' $> True) <|> pure False
+        theId <- A.decimal
+        displayName <- A.char ':' *> displayNameTextP
+        approvalId <- A.space *> A.decimal
+        if addr
+          then pure $ DCApproveContact theId displayName approvalId
+          else do
+            promote <- Just <$> (" promote=" *> onOffP) <|> pure Nothing
+            pure DCApproveGroup {groupId = theId, displayName, groupApprovalId = approvalId, promote}
       DCRejectGroup_ -> gc DCRejectGroup
-      DCSuspendGroup_ -> gc DCSuspendGroup
-      DCResumeGroup_ -> gc DCResumeGroup
+      DCSuspendGroup_ -> gcOrAddr DCSuspendGroup DCSuspendContact
+      DCResumeGroup_ -> gcOrAddr DCResumeGroup DCResumeContact
       DCListLastGroups_ -> DCListLastGroups <$> (A.space *> A.decimal <|> pure 10)
       DCListPendingGroups_ -> DCListPendingGroups <$> (A.space *> A.decimal <|> pure 10)
       DCSendToGroupOwner_ -> do
@@ -300,12 +328,21 @@ directoryCmdP ft =
       -- DCAddBlockedWord_ -> DCAddBlockedWord <$> wordP
       -- DCRemoveBlockedWord_ -> DCRemoveBlockedWord <$> wordP
       DCPromoteGroup_ -> do
-        (groupId, displayName) <- gc (,)
+        _ <- spacesP
+        addr <- (A.char '@' $> True) <|> pure False
+        i <- A.decimal
+        n <- A.char ':' *> displayNameTextP
         promote <- A.space *> onOffP
-        pure $ DCPromoteGroup groupId displayName promote
+        pure $ if addr then DCPromoteContact i n promote else DCPromoteGroup i n promote
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (spacesP *> A.takeText)
       where
         gc f = f <$> (spacesP *> A.decimal) <*> (A.char ':' *> displayNameTextP)
+        gcOrAddr groupF contactF = do
+          _ <- spacesP
+          addr <- (A.char '@' $> True) <|> pure False
+          i <- A.decimal
+          n <- A.char ':' *> displayNameTextP
+          pure $ if addr then contactF i n else groupF i n
         gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
         -- wordP = spacesP *> A.takeTill isSpace
         spacesP = A.takeWhile1 isSpace
@@ -318,17 +355,22 @@ directoryCmdTag = \case
   DCSearchNext -> "next"
   DCAllGroups -> "all"
   DCRecentGroups -> "new"
+  DCFindContacts {} -> "find"
   DCSubmitGroup _ -> "submit"
   DCConfirmDuplicateGroup {} -> "confirm"
   DCListUserGroups -> "list"
   DCDeleteGroup {} -> "delete"
+  DCDeleteContact {} -> "delete"
   DCApproveGroup {} -> "approve"
+  DCApproveContact {} -> "approve"
   DCMemberRole {} -> "role"
   DCGroupFilter {} -> "filter"
   DCShowUpgradeGroupLink {} -> "link"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
+  DCSuspendContact {} -> "suspend"
   DCResumeGroup {} -> "resume"
+  DCResumeContact {} -> "resume"
   DCListLastGroups _ -> "last"
   DCListPendingGroups _ -> "pending"
   DCSendToGroupOwner {} -> "owner"
@@ -336,6 +378,7 @@ directoryCmdTag = \case
   -- DCAddBlockedWord _ -> "block_word"
   -- DCRemoveBlockedWord _ -> "unblock_word"
   DCPromoteGroup {} -> "promote"
+  DCPromoteContact {} -> "promote"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"
