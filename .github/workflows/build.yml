@@ -15,6 +15,7 @@ on:
       - "apps/simplex-chat/**"
       - "apps/simplex-bot/**"
       - "apps/simplex-bot-advanced/**"
+      - "apps/simplex-badge-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
       - "tests/**"

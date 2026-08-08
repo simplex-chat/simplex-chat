@@ -1,0 +1,378 @@
+{
+  "metadata": {
+    "description": "JTD schema for badge service RPC requests and responses, see badges-rpc.md."
+  },
+  "definitions": {
+    "base64url": {
+      "type": "string",
+      "metadata": {"format": "base64url encoded string"}
+    },
+    "purchaseKey": {
+      "ref": "base64url",
+      "metadata": {"comment": "must match the RPC transport key"}
+    },
+    "currencyAmount": {
+      "type": "uint32",
+      "metadata": {"comment": "USD etc. are in minor units, following Stripe etc. convention"}
+    },
+    "badgeInfo": {
+      "properties": {
+        "badgeType": {"type": "string"},
+        "badgeExtra": {"type": "string"}
+      },
+      "optionalProperties": {
+        "badgeExpiry": {"type": "timestamp"}
+      }
+    },
+    "badgeRequest": {
+      "properties": {
+        "masterKey": {"ref": "base64url"},
+        "badgeInfo": {"ref": "badgeInfo"}
+      }
+    },
+    "credential": {
+      "properties": {
+        "badgeKeyIdx": {"type": "uint16"},
+        "masterKey": {"ref": "base64url"},
+        "signature": {"ref": "base64url"},
+        "badgeInfo": {"ref": "badgeInfo"}
+      }
+    },
+    "paymentVia": {
+      "discriminator": "type",
+      "mapping": {
+        "card": {
+          "properties": {"provider": {"enum": ["stripe"]}}
+        },
+        "crypto": {
+          "properties": {"currency": {"enum": ["btc", "xmr"]}}
+        }
+      }
+    },
+    "paymentTo": {
+      "discriminator": "type",
+      "mapping": {
+        "card": {
+          "properties": {
+            "provider": {"enum": ["stripe"]},
+            "url": {"type": "string"}
+          }
+        },
+        "crypto": {
+          "properties": {
+            "currency": {"enum": ["btc", "xmr"]},
+            "address": {"type": "string"},
+            "cryptoAmount": {"type": "string"}
+          }
+        }
+      }
+    },
+    "payment": {
+      "discriminator": "type",
+      "mapping": {
+        "apple": {
+          "properties": {"jws": {"type": "string"}}
+        },
+        "google": {
+          "properties": {"token": {"type": "string"}}
+        },
+        "invoice": {
+          "properties": {"invoiceId": {"type": "string"}}
+        },
+        "code": {
+          "properties": {"code": {"type": "string"}}
+        }
+      }
+    },
+    "upgrade": {
+      "properties": {
+        "fromPurchaseKey": {"ref": "base64url"},
+        "receipt": {"type": "string"},
+        "receiptSignature": {"ref": "base64url"},
+        "balance": {"ref": "balance"}
+      }
+    },
+    "catalog": {
+      "properties": {
+        "prices": {"elements": {"ref": "badgePrice"}},
+        "offers": {"elements": {"ref": "badgeOffer"}}
+      }
+    },
+    "badgePrice": {
+      "properties": {
+        "priceId": {"type": "string"},
+        "badgeType": {"type": "string"},
+        "monthPrice": {"ref": "currencyAmount"},
+        "currency": {"type": "string"},
+        "status": {"ref": "badgeItemStatus"},
+        "createdAt": {"type": "timestamp"}
+      }
+    },
+    "badgeOffer": {
+      "properties": {
+        "offerId": {"type": "string"},
+        "months": {"type": "uint8"},
+        "discount": {"ref": "offerDiscount"},
+        "status": {"ref": "badgeItemStatus"},
+        "createdAt": {"type": "timestamp"}
+      },
+      "optionalProperties": {
+        "priceId": {
+          "type": "string",
+          "metadata": {"comment": "absent applies to any price"}
+        }
+      }
+    },
+    "offerDiscount": {
+      "discriminator": "type",
+      "mapping": {
+        "freeMonths": {
+          "properties": {"freeMonths": {"type": "uint8"}}
+        },
+        "discount": {
+          "properties": {
+            "discount": {
+              "type": "uint8",
+              "metadata": {"comment": "percent"}
+            }
+          }
+        }
+      }
+    },
+    "badgeItemStatus": {
+      "enum": ["active", "deprecated", "disabled"],
+      "metadata": {"comment": "disabled is not sent"}
+    },
+    "statement": {
+      "properties": {
+        "entries": {"elements": {"ref": "ledgerEntry"}}
+      },
+      "optionalProperties": {
+        "previousEntryId": {
+          "type": "string",
+          "metadata": {"comment": "matches the client's asserted entryId, absent for the full ledger"}
+        }
+      }
+    },
+    "balance": {
+      "properties": {
+        "lastEntry": {"ref": "ledgerEntry"}
+      }
+    },
+    "ledgerEntry": {
+      "properties": {
+        "entryId": {"type": "string"},
+        "changeMonths": {"type": "int16"},
+        "balanceMonths": {"type": "uint16"},
+        "balanceStartTs": {"type": "timestamp"},
+        "balanceBadgeType": {"type": "string"},
+        "createdAt": {"type": "timestamp"},
+        "entryType": {"ref": "ledgerEntryType"}
+      },
+      "optionalProperties": {
+        "wasPausedSince": {"type": "timestamp"}
+      }
+    },
+    "ledgerEntryType": {
+      "discriminator": "type",
+      "mapping": {
+        "credit": {
+          "properties": {"credit": {"ref": "ledgerCredit"}}
+        },
+        "debit": {
+          "properties": {"debit": {"ref": "ledgerDebit"}}
+        }
+      }
+    },
+    "ledgerCredit": {
+      "discriminator": "type",
+      "mapping": {
+        "payment": {
+          "optionalProperties": {
+            "invoiceId": {
+              "type": "string",
+              "metadata": {"comment": "absent for store and code payments"}
+            }
+          }
+        },
+        "charge": {
+          "properties": {"chargeId": {"type": "string"}}
+        },
+        "support": {
+          "optionalProperties": {}
+        },
+        "transferIn": {
+          "properties": {"fromPurchaseKey": {"ref": "base64url"}}
+        },
+        "opening": {
+          "optionalProperties": {}
+        }
+      }
+    },
+    "ledgerDebit": {
+      "discriminator": "type",
+      "mapping": {
+        "refund": {
+          "optionalProperties": {}
+        },
+        "upgrade": {
+          "properties": {"toPurchaseKey": {"ref": "base64url"}}
+        },
+        "transferOut": {
+          "properties": {"toPurchaseKey": {"ref": "base64url"}}
+        },
+        "support": {
+          "optionalProperties": {}
+        },
+        "badge": {
+          "optionalProperties": {}
+        },
+        "lapse": {
+          "optionalProperties": {}
+        }
+      }
+    },
+    "request": {
+      "properties": {
+        "version": {"type": "uint16"},
+        "request": {"ref": "command"}
+      },
+      "optionalProperties": {
+        "purchaseKey": {
+          "ref": "purchaseKey",
+          "metadata": {"comment": "optional for getBadgeCatalog, required for other commands"}
+        }
+      }
+    },
+    "command": {
+      "discriminator": "type",
+      "mapping": {
+        "getBadgeCatalog": {
+          "optionalProperties": {}
+        },
+        "getBadgeInvoice": {
+          "properties": {
+            "priceId": {"type": "string"},
+            "badgeInfo": {"ref": "badgeInfo"},
+            "paymentVia": {"ref": "paymentVia"}
+          },
+          "optionalProperties": {
+            "offerId": {
+              "type": "string",
+              "metadata": {"comment": "absent for 1 month at the badge price"}
+            },
+            "upgrade": {
+              "ref": "upgrade",
+              "metadata": {"comment": "upgrade non-store badge"}
+            }
+          }
+        },
+        "purchaseBadge": {
+          "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
+            "payment": {"ref": "payment"}
+          },
+          "optionalProperties": {
+            "upgrade": {
+              "ref": "upgrade",
+              "metadata": {"comment": "upgrade store 1-time badge"}
+            }
+          }
+        },
+        "upgradeBadgeSubscription": {
+          "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
+            "payment": {
+              "ref": "payment",
+              "metadata": {"comment": "store payments only"}
+            },
+            "balance": {"ref": "balance"}
+          }
+        },
+        "issueBadge": {
+          "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
+            "balance": {"ref": "balance"}
+          }
+        },
+        "pauseBadge": {
+          "optionalProperties": {}
+        },
+        "transferBadge": {
+          "properties": {
+            "badgeRequest": {"ref": "badgeRequest"},
+            "receipt": {"type": "string"}
+          }
+        }
+      }
+    },
+    "response": {
+      "discriminator": "type",
+      "mapping": {
+        "badgeCatalog": {
+          "properties": {
+            "catalog": {"ref": "catalog"}
+          },
+          "optionalProperties": {
+            "badgeStatement": {
+              "ref": "statement",
+              "metadata": {"comment": "for signed getBadgeCatalog"}
+            }
+          }
+        },
+        "badgeInvoice": {
+          "properties": {
+            "invoiceId": {"type": "string"},
+            "badgeType": {"type": "string"},
+            "months": {"type": "uint8"},
+            "price": {"ref": "currencyAmount"},
+            "amount": {
+              "ref": "currencyAmount",
+              "metadata": {"comment": "price - discount - credit"}
+            },
+            "currency": {"type": "string"},
+            "expiresAt": {"type": "timestamp"},
+            "paymentTo": {"ref": "paymentTo"}
+          },
+          "optionalProperties": {
+            "discount": {
+              "ref": "currencyAmount",
+              "metadata": {"comment": "discount amount from monthly price"}
+            },
+            "credit": {
+              "ref": "currencyAmount",
+              "metadata": {"comment": "credit for upgrade"}
+            }
+          }
+        },
+        "badgeCredential": {
+          "properties": {
+            "statement": {"ref": "statement"}
+          },
+          "optionalProperties": {
+            "credential": {
+              "ref": "credential",
+              "metadata": {"comment": "absent when no balance to issueBadge or no current credential for pause"}
+            },
+            "receipt": {
+              "type": "string",
+              "metadata": {"comment": "not provided for lifetime badges"}
+            }
+          }
+        },
+        "error": {
+          "properties": {
+            "code": {
+              "type": "string",
+              "metadata": {"comment": "BadgeServiceErrorCode"}
+            }
+          },
+          "optionalProperties": {
+            "message": {"type": "string"},
+            "retryAfter": {"type": "uint32"}
+          }
+        }
+      }
+    }
+  }
+}
