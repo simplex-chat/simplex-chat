@@ -2388,6 +2388,13 @@ data class AssetTransfer(
   }
 }
 
+/** A name this profile holds, with enough to show its state in a list. */
+@Serializable
+data class OwnedName(
+  val onFqdn: String,
+  val onExpires: Int,
+)
+
 /** A name sitting at a one-time address, waiting to be accepted or declined. */
 @Serializable
 data class IncomingName(

@@ -26,7 +26,7 @@ import dev.icerock.moko.resources.compose.stringResource
 // users it is the only backup they have.
 @Composable
 fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
-  val names = remember { mutableStateOf<List<String>?>(null) }
+  val names = remember { mutableStateOf<List<OwnedName>?>(null) }
   val incomingCount = remember { mutableStateOf(0) }
   val keySaved = remember { mutableStateOf(true) }
   val hasKey = remember { mutableStateOf(false) }
@@ -63,7 +63,7 @@ fun SimplexNamesView(rhId: Long?, close: () -> Unit) {
 
 @Composable
 private fun SimplexNamesLayout(
-  names: List<String>?,
+  names: List<OwnedName>?,
   claimed: String?,
   incomingCount: Int,
   keySaved: Boolean,
@@ -78,13 +78,21 @@ private fun SimplexNamesLayout(
         names == null -> SectionItemView { Text(stringResource(MR.strings.names_incoming_loading), color = MaterialTheme.colors.secondary) }
         names.isEmpty() -> SectionItemView { Text(stringResource(MR.strings.names_none_yet), color = MaterialTheme.colors.secondary) }
         else -> names.forEach { n ->
-          SectionItemView(click = { ModalManager.start.showModalCloseable { c -> NameDetailView(rhId, n, c) } }) { Text(n) }
+          val expired = n.onExpires.toLong() - System.currentTimeMillis() / 1000 < 0
+          SectionItemView(click = { ModalManager.start.showModalCloseable { c -> NameDetailView(rhId, n.onFqdn, c) } }) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              // Expired names stay listed - they are still recoverable until
+              // someone else takes them - but read as inactive.
+              Text(n.onFqdn, color = if (expired) MaterialTheme.colors.secondary else Color.Unspecified)
+              if (expired) Text(stringResource(MR.strings.names_list_expired), color = MaterialTheme.colors.secondary)
+            }
+          }
         }
       }
     }
     SectionTextFooter(stringResource(MR.strings.names_your_names_footer))
 
-    if (claimed != null && names?.contains(claimed) != true) {
+    if (claimed != null && names?.any { it.onFqdn == claimed } != true) {
       SectionDividerSpaced(maxTopPadding = true)
       SectionView(stringResource(MR.strings.names_legacy_section).uppercase()) {
         SectionItemView(click = {

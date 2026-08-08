@@ -546,6 +546,7 @@ data ChatCommand
   | APIVerifyContactDomain {contactId :: ContactId}
   | APINameAddress {userId :: UserId}
   | APINameStatus {userId :: UserId}
+  | APINameRenew {userId :: UserId, nameFqdn :: Text, nameYears :: Int, namePaymentToken :: Text}
   | APINameRecoveryKey {userId :: UserId}
   | APINameRecoveryKeyImport {userId :: UserId, recoveryPhrase :: Text}
   | APINameRecoveryKeySaved {userId :: UserId}
@@ -562,6 +563,7 @@ data ChatCommand
   | APINameRescan {userId :: UserId}
   | NameAddress
   | NameStatus
+  | NameRenew {nameFqdn :: Text, nameYears :: Int}
   | NameRecoveryKey
   | NameRecoveryKeyImport {recoveryPhrase :: Text}
   | NameRecoveryKeySaved
@@ -962,13 +964,18 @@ data ChatResponse
   | CRNameRecoveryKey {user :: User, recoveryPhrase :: Text, recoveryKeySaved :: Bool}
   | CRNameQuoted {user :: User, nameLabel :: Text, nameAvailable :: Bool, namePriceCents :: Int}
   | CRNameRegistered {user :: User, nameFqdn :: Text, nameTxHash :: Text}
-  | CRNamesOwned {user :: User, ownedNames :: [Text]}
+  | CRNamesOwned {user :: User, ownedNames :: [OwnedName]}
   | CRNameInfo {user :: User, nameFqdn :: Text, nameOwner :: Text, nameContact :: [Text], nameChannel :: [Text], nameExpires :: Int, nameEditCredits :: Int}
   | CRNameIntentRelayed {user :: User, nameAction :: Text, nameFqdn :: Text, nameTxHash :: Text}
   | -- | A gift was relayed. Carries the ephemeral public key so the client can
     -- put it in the message it sends the recipient: with it they can use the
     -- name at once, without waiting for a scan of the chain announcement.
     CRNameGifted {user :: User, nameFqdn :: Text, nameTxHash :: Text, nameEphemeralPubKey :: Text}
+  | -- | @nameReRegistered@ is True when the grace period had passed and the
+    -- name had to be bought again rather than extended: the same outcome for
+    -- the user, a different act on chain, and only possible while no one else
+    -- has taken it.
+    CRNameRenewed {user :: User, nameFqdn :: Text, nameExpires :: Int, nameReRegistered :: Bool}
   | CRNamesIncoming {user :: User, incomingNames :: [IncomingName]}
   | CRNameAccepted {user :: User, nameOneTimeAddr :: Text, acceptedNames :: [Text]}
   | CRNameDeclined {user :: User, nameOneTimeAddr :: Text}
@@ -1408,6 +1415,14 @@ data SwitchProgress = SwitchProgress
   { queueDirection :: QueueDirection,
     switchPhase :: SwitchPhase,
     connectionStats :: ConnectionStats
+  }
+  deriving (Show)
+
+-- | A name this profile holds, with enough to show its state without a second
+-- round trip per name.
+data OwnedName = OwnedName
+  { onFqdn :: Text,
+    onExpires :: Int
   }
   deriving (Show)
 
@@ -1885,6 +1900,8 @@ $(JQ.deriveJSON defaultJSON ''NtfConn)
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
 $(JQ.deriveJSON defaultJSON ''SwitchProgress)
+
+$(JQ.deriveJSON defaultJSON ''OwnedName)
 
 $(JQ.deriveJSON defaultJSON ''IncomingName)
 

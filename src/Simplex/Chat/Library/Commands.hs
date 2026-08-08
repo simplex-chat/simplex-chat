@@ -2464,7 +2464,11 @@ processChatCommand cxt nm = \case
     accepted <- withStore' $ \db -> WS.getAcceptedAddresses db user W.ChainEth
     let addrs = W.accountAddress pk : map WS.otaAddress accepted
     ns <- concat <$> mapM (\a -> nameSvc $ namesOwnedBy namesService a) addrs
-    pure $ CRNamesOwned user (map safeDecodeUtf8 ns)
+    -- Resolve each so the list can show expiry without the UI asking per name.
+    owned <- forM ns $ \n -> do
+      rec' <- nameSvc $ resolveName namesService n
+      pure OwnedName {onFqdn = safeDecodeUtf8 n, onExpires = fromIntegral (nrvExpires rec')}
+    pure $ CRNamesOwned user owned
   APINameInfo userId fqdn -> withUserId userId $ \user -> do
     r <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
     pure $
@@ -2476,6 +2480,32 @@ processChatCommand cxt nm = \case
         (map safeDecodeUtf8 $ nrvChannel r)
         (fromIntegral $ nrvExpires r)
         (fromIntegral $ nrvEditCredits r)
+  APINameRenew userId fqdn years payToken -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    let label = fromMaybe fqdn $ T.stripSuffix ".simplex" fqdn
+        payment = PPRedeemCode (encodeUtf8 payToken)
+    r <- liftIO $ renewName namesService (encodeUtf8 label) years payment
+    case r of
+      Right expires -> pure $ CRNameRenewed user fqdn (fromIntegral expires) False
+      -- Past the grace period the registration is gone, so extending is not
+      -- possible and the name has to be bought again. That only works if no one
+      -- else took it in the meantime, which the purchase itself enforces.
+      Left SENotFound -> do
+        let req =
+              BuyRequest
+                { brLabel = encodeUtf8 label,
+                  brOwner = W.accountAddress pk,
+                  brYears = years,
+                  brPayment = payment,
+                  brContactLink = Nothing,
+                  brChannelLink = Nothing
+                }
+        pid <- nameSvc $ buyName namesService req
+        namePoll pid (20 :: Int) >>= \case
+          RegConfirmed {rsExpires} -> pure $ CRNameRenewed user fqdn (fromIntegral rsExpires) True
+          RegFailed e -> throwCmdError $ "could not register the name again: " <> B.unpack e
+          RegPending -> throwCmdError "registration is taking too long, try again"
+      Left e -> throwCmdError . B.unpack $ serviceErrorText e
   APINameSetLink userId fqdn newLink -> withUserId userId $ \user -> do
     -- Sign with whatever key owns this name. A name received as a gift is held
     -- by a one-time address, not the profile's main account, so signing with
@@ -2570,6 +2600,7 @@ processChatCommand cxt nm = \case
     pure $ CRNameRescanned user (length found)
   NameAddress -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameAddress userId
   NameStatus -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameStatus userId
+  NameRenew n y -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRenew userId n y "dev-cli-payment"
   NameRecoveryKey -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKey userId
   NameRecoveryKeyImport phrase -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeyImport userId phrase
   NameRecoveryKeySaved -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeySaved userId
@@ -5924,6 +5955,7 @@ chatCommandP =
       "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
       "/_name address " *> (APINameAddress <$> A.decimal),
       "/_name status " *> (APINameStatus <$> A.decimal),
+      "/_name renew " *> (APINameRenew <$> A.decimal <* A.space <*> nameWordP <* A.space <*> A.decimal <* A.space <*> (safeDecodeUtf8 <$> A.takeTill (== ' '))),
       "/_name key import " *> (APINameRecoveryKeyImport <$> A.decimal <* A.space <*> textP),
       "/_name key saved " *> (APINameRecoveryKeySaved <$> A.decimal),
       "/_name key " *> (APINameRecoveryKey <$> A.decimal),
@@ -5940,6 +5972,7 @@ chatCommandP =
       "/_name rescan " *> (APINameRescan <$> A.decimal),
       "/names address" $> NameAddress,
       "/names status" $> NameStatus,
+      "/names renew " *> (NameRenew <$> nameWordP <*> (A.space *> A.decimal <|> pure 1)),
       "/names key import " *> (NameRecoveryKeyImport <$> textP),
       "/names key saved" $> NameRecoveryKeySaved,
       "/names key" $> NameRecoveryKey,

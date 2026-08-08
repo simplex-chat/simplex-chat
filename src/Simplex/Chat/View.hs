@@ -157,6 +157,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
         "meta-address (share this to be sent names): " <> plain meta
       ]
   CRNameGifted u fqdn tx _eph -> ttyUser u ["gift " <> plain fqdn <> " done", "tx " <> plain tx]
+  CRNameRenewed u fqdn expires reReg ->
+    ttyUser u [(if reReg then "registered again: " else "renewed: ") <> plain fqdn, "expires " <> sShow expires]
   CRNameStatus u hasWallet keySaved ->
     ttyUser u [if hasWallet then (if keySaved then "wallet ready, recovery key saved" else "wallet ready, recovery key NOT saved") else "no wallet yet - people cannot send you names"]
   CRNamesIncoming u ns
@@ -198,7 +200,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
       ]
   CRNameRegistered u name tx -> ttyUser u ["registered " <> plain name, "tx " <> plain tx]
   CRNamesOwned u [] -> ttyUser u ["you own no names"]
-  CRNamesOwned u ns -> ttyUser u $ "your names:" : map (("  " <>) . plain) ns
+  CRNamesOwned u ns -> ttyUser u $ "your names:" : map (\OwnedName {onFqdn, onExpires} -> "  " <> plain onFqdn <> " (expires " <> sShow onExpires <> ")") ns
   CRNameInfo u name owner contact channel expires credits ->
     ttyUser u $
       [ plain name,

@@ -1070,6 +1070,15 @@ object ChatController {
     return false
   }
 
+  suspend fun apiNameRenew(rh: Long?, fqdn: String, years: Int, payment: String): CR.NameRenewed? {
+    val userId = currentUserId("apiNameRenew")
+    val r = sendCmd(rh, CC.ApiNameRenew(userId, fqdn, years, payment))
+    if (r is API.Result && r.res is CR.NameRenewed) return r.res
+    Log.e(TAG, "apiNameRenew bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.names_renew_failed), "${r.responseType}: ${r.details}")
+    return null
+  }
+
   suspend fun apiNameStatus(rh: Long?): CR.NameStatus? {
     val userId = currentUserId("apiNameStatus")
     val r = sendCmd(rh, CC.ApiNameStatus(userId))
@@ -1175,7 +1184,7 @@ object ChatController {
     return null
   }
 
-  suspend fun apiNameList(rh: Long?): List<String>? {
+  suspend fun apiNameList(rh: Long?): List<OwnedName>? {
     val userId = currentUserId("apiNameList")
     val r = sendCmd(rh, CC.ApiNameList(userId))
     if (r is API.Result && r.res is CR.NamesOwned) return r.res.ownedNames
@@ -3937,6 +3946,7 @@ sealed class CC {
   class ApiGetChatTags(val userId: Long): CC()
   class ApiNameAddress(val userId: Long): CC()
   class ApiNameStatus(val userId: Long): CC()
+  class ApiNameRenew(val userId: Long, val fqdn: String, val years: Int, val payment: String): CC()
   class ApiNameInfo(val userId: Long, val fqdn: String): CC()
   class ApiNameSetLink(val userId: Long, val fqdn: String, val link: String): CC()
   class ApiNameIncoming(val userId: Long): CC()
@@ -4142,6 +4152,7 @@ sealed class CC {
     is ApiGetChatTags -> "/_get tags $userId"
     is ApiNameAddress -> "/_name address $userId"
     is ApiNameStatus -> "/_name status $userId"
+    is ApiNameRenew -> "/_name renew $userId $fqdn $years $payment"
     is ApiNameInfo -> "/_name info $userId $fqdn"
     is ApiNameSetLink -> "/_name link $userId $fqdn $link"
     is ApiNameIncoming -> "/_name incoming $userId"
@@ -4369,6 +4380,7 @@ sealed class CC {
     is ApiGetChatTags -> "apiGetChatTags"
     is ApiNameAddress -> "apiNameAddress"
     is ApiNameStatus -> "apiNameStatus"
+    is ApiNameRenew -> "apiNameRenew"
     is ApiNameInfo -> "apiNameInfo"
     is ApiNameSetLink -> "apiNameSetLink"
     is ApiNameIncoming -> "apiNameIncoming"
@@ -6770,6 +6782,7 @@ sealed class CR {
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
   @Serializable @SerialName("nameAddress") class NameAddress(val user: User, val nameAddress: String, val nameAccount: Int, val nameMetaAddress: String): CR()
   @Serializable @SerialName("nameInfo") class NameInfo(val user: User, val nameFqdn: String, val nameOwner: String, val nameContact: List<String>, val nameChannel: List<String>, val nameExpires: Int, val nameEditCredits: Int): CR()
+  @Serializable @SerialName("nameRenewed") class NameRenewed(val user: User, val nameFqdn: String, val nameExpires: Int, val nameReRegistered: Boolean): CR()
   @Serializable @SerialName("nameStatus") class NameStatus(val user: User, val nameHasWallet: Boolean, val nameKeySaved: Boolean): CR()
   @Serializable @SerialName("namesIncoming") class NamesIncoming(val user: User, val incomingNames: List<IncomingName>): CR()
   @Serializable @SerialName("nameAccepted") class NameAccepted(val user: User, val nameOneTimeAddr: String, val acceptedNames: List<String>): CR()
@@ -6777,7 +6790,7 @@ sealed class CR {
   @Serializable @SerialName("nameKeyExported") class NameKeyExported(val user: User, val nameOneTimeAddr: String, val nameOneTimeKey: String): CR()
   @Serializable @SerialName("nameRescanned") class NameRescanned(val user: User, val rescanFound: Int): CR()
   @Serializable @SerialName("nameRecoveryKey") class NameRecoveryKey(val user: User, val recoveryPhrase: String, val recoveryKeySaved: Boolean): CR()
-  @Serializable @SerialName("namesOwned") class NamesOwned(val user: User, val ownedNames: List<String>): CR()
+  @Serializable @SerialName("namesOwned") class NamesOwned(val user: User, val ownedNames: List<OwnedName>): CR()
   @Serializable @SerialName("nameQuoted") class NameQuoted(val user: User, val nameLabel: String, val nameAvailable: Boolean, val namePriceCents: Int): CR()
   @Serializable @SerialName("nameRegistered") class NameRegistered(val user: User, val nameFqdn: String, val nameTxHash: String): CR()
   @Serializable @SerialName("nameGifted") class NameGifted(val user: User, val nameFqdn: String, val nameTxHash: String, val nameEphemeralPubKey: String): CR()
@@ -6979,6 +6992,7 @@ sealed class CR {
     is NameAddress -> "nameAddress"
     is NamesIncoming -> "namesIncoming"
     is NameStatus -> "nameStatus"
+    is NameRenewed -> "nameRenewed"
     is NameInfo -> "nameInfo"
     is NameAccepted -> "nameAccepted"
     is NameDeclined -> "nameDeclined"
@@ -7179,6 +7193,7 @@ sealed class CR {
     is NameAddress -> withUser(user, "address: $nameAddress\naccount: $nameAccount\nmeta: $nameMetaAddress")
     is NamesIncoming -> withUser(user, json.encodeToString(incomingNames))
     is NameStatus -> withUser(user, "wallet: $nameHasWallet, key saved: $nameKeySaved")
+    is NameRenewed -> withUser(user, "$nameFqdn expires $nameExpires, re-registered: $nameReRegistered")
     is NameInfo -> withUser(user, "$nameFqdn expires $nameExpires, credits $nameEditCredits")
     is NameAccepted -> withUser(user, "$nameOneTimeAddr: ${acceptedNames.joinToString(", ")}")
     is NameDeclined -> withUser(user, nameOneTimeAddr)
@@ -7187,7 +7202,7 @@ sealed class CR {
     is NameIntentRelayed -> withUser(user, "$nameAction $nameFqdn: $nameTxHash")
     is NameGifted -> withUser(user, "$nameFqdn: $nameTxHash")
     is NameRecoveryKey -> withUser(user, "saved: $recoveryKeySaved")
-    is NamesOwned -> withUser(user, ownedNames.joinToString(", "))
+    is NamesOwned -> withUser(user, ownedNames.joinToString(", ") { it.onFqdn })
     is NameQuoted -> withUser(user, "$nameLabel available: $nameAvailable, $namePriceCents cents")
     is NameRegistered -> withUser(user, "$nameFqdn: $nameTxHash")
     is UserPrivacy -> withUser(user, json.encodeToString(updatedUser))

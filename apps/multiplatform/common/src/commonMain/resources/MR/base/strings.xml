@@ -3330,4 +3330,17 @@
   <string name="names_import_replace_text">Names held by your current key will no longer be reachable from this profile. Make sure you have saved it first.</string>
   <string name="names_detail_expires_in_days">In %d days</string>
   <string name="names_detail_changes_footer">Each time you point this name somewhere new it uses one change. At zero you cannot move it again.</string>
+  <string name="names_renew_action">Extend this name</string>
+  <string name="names_renew_title">Extend this name?</string>
+  <string name="names_renew_text">%s will be yours for another year.</string>
+  <string name="names_renew_done_title">Extended</string>
+  <string name="names_renew_done">%s is yours for another year.</string>
+  <string name="names_renew_done_again">%s had expired, so it was registered again. It is yours for another year.</string>
+  <string name="names_renew_failed">Could not extend the name</string>
+  <string name="names_expired_note">This name has expired. Extend it to keep it — until someone else takes it, it is still yours.</string>
+  <string name="names_list_expired">expired</string>
+  <string name="names_remind_action">Remind me a week before</string>
+  <string name="names_remind_title">SimpleX name %s expires</string>
+  <string name="names_remind_description">Extend it in SimpleX to keep it. Once it expires and the grace period ends, anyone can take it.</string>
+  <string name="names_remind_none">No calendar app to add a reminder to.</string>
 </resources>

@@ -65,6 +65,31 @@ fun NameDetailView(rhId: Long?, fqdn: String, close: () -> Unit) {
         )
       }
     },
+    renew = {
+      AlertManager.shared.showAlertDialog(
+        title = generalGetString(MR.strings.names_renew_title),
+        text = generalGetString(MR.strings.names_renew_text).format(fqdn),
+        confirmText = generalGetString(MR.strings.names_renew_action),
+        onConfirm = {
+          withBGApi {
+            busy.value = true
+            try {
+              val paid = NamePayment.purchase(1) ?: return@withBGApi
+              val r = chatModel.controller.apiNameRenew(rhId, fqdn, 1, paid.token)
+              if (r != null) {
+                reload()
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.names_renew_done_title),
+                  text = generalGetString(
+                    if (r.nameReRegistered) MR.strings.names_renew_done_again else MR.strings.names_renew_done
+                  ).format(fqdn),
+                )
+              }
+            } finally { busy.value = false }
+          }
+        }
+      )
+    },
     gift = { ModalManager.start.showModalCloseable { c -> GiveNameView(rhId, fqdn, c) } },
   )
 }
@@ -76,10 +101,14 @@ private fun NameDetailLayout(
   myLink: String?,
   busy: Boolean,
   repoint: () -> Unit,
+  renew: () -> Unit,
   gift: () -> Unit,
 ) {
   ColumnWithScrollBar {
     AppBarTitle(fqdn)
+    if (info != null && expiryDays(info.nameExpires.toLong()) < 0) {
+      SectionTextFooter(stringResource(MR.strings.names_expired_note), Color.Red)
+    }
 
     if (info == null) {
       SectionView { SectionItemView { Text(stringResource(MR.strings.names_incoming_loading), color = MaterialTheme.colors.secondary) } }
@@ -129,12 +158,35 @@ private fun NameDetailLayout(
           Text(info.nameEditCredits.toString(), color = MaterialTheme.colors.secondary)
         }
       }
+      // The app sends no expiry notifications, so the only reminder that will
+      // actually reach the user is one in their own calendar.
+      SectionItemView(click = {
+        val ok = addCalendarReminder(
+          generalGetString(MR.strings.names_remind_title).format(fqdn),
+          generalGetString(MR.strings.names_remind_description),
+          info.nameExpires.toLong(),
+        )
+        if (!ok) showToast(generalGetString(MR.strings.names_remind_none))
+      }) {
+        Text(stringResource(MR.strings.names_remind_action), color = MaterialTheme.colors.primary)
+      }
     }
     // Nothing renews by itself, so say when it ends rather than implying it continues.
     SectionTextFooter(stringResource(MR.strings.names_detail_no_autorenew))
 
     SectionDividerSpaced(maxTopPadding = true)
     SectionView {
+      // Offered whenever the name can still be recovered: while live, through
+      // the grace period, and after it if no one else has taken it - past grace
+      // this buys the name again, which is the same thing to the user.
+      SettingsActionItem(
+        painterResource(MR.images.ic_refresh),
+        stringResource(MR.strings.names_renew_action),
+        renew,
+        textColor = MaterialTheme.colors.primary,
+        iconColor = MaterialTheme.colors.primary,
+        disabled = busy,
+      )
       SettingsActionItem(
         painterResource(MR.images.ic_id_card),
         stringResource(MR.strings.names_give_title),

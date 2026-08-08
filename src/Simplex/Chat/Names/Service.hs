@@ -146,6 +146,15 @@ data NamesService = NamesService
     -- confirmed with 'resolveName', so a lying service can withhold names but
     -- cannot invent them.
     namesOwnedBy :: Address -> IO (Either ServiceError [ByteString]),
+    -- | Extend a registration. Works while the name is live and through the
+    -- grace period after it expires. Past grace it fails with 'SENotFound':
+    -- the registration is gone and the name has to be bought again, which is
+    -- the same act for the user but a different one on chain.
+    --
+    -- Ungated, mirroring the contract: anyone may renew anyone's name. Credits
+    -- are therefore added, never set, so a stranger's renewal cannot shrink an
+    -- owner's allowance.
+    renewName :: ByteString -> Int -> PaymentProof -> IO (Either ServiceError Integer),
     currentNonce :: Address -> IO (Either ServiceError Integer),
     -- | Relayed edits left on a name, for display before the user tries one.
     editCreditsFor :: ByteString -> IO (Either ServiceError Integer)

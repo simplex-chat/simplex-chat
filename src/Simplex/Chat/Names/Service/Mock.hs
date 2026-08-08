@@ -29,6 +29,8 @@ module Simplex.Chat.Names.Service.Mock
     chainOwnerOf,
     chainRecords,
     setPendingRounds,
+    advanceClock,
+    gracePeriod,
     setPaymentValidator,
     setRegistrarCredits,
     registrarCredits,
@@ -85,6 +87,11 @@ data MockChain = MockChain
 
 -- | Relayed record edits granted per year of registration. AB's figure: ten a
 -- year is plenty, and it is what bounds the relayer's gas exposure per name.
+-- | How long after expiry a name is still the owner's to renew. Matches the
+-- registrar's grace period; past it, anyone may register the name.
+gracePeriod :: Integer
+gracePeriod = 90 * 86400
+
 editCreditsPerYear :: Integer
 editCreditsPerYear = 10
 
@@ -127,6 +134,10 @@ newMockChain = do
 -- 60-second commit-reveal wait. 0 makes registration immediate.
 setPendingRounds :: MockChain -> Int -> IO ()
 setPendingRounds c n = atomically $ writeTVar (mcPendingRounds c) n
+
+-- | Move the mock's clock forward, to reach expiry and grace boundaries.
+advanceClock :: MockChain -> Integer -> IO ()
+advanceClock c d = atomically $ modifyTVar' (mcNow c) (+ d)
 
 -- | Swap in a validator that rejects some payments, to exercise the failure UI.
 setPaymentValidator :: MockChain -> (PaymentProof -> Either ByteString ()) -> IO ()
@@ -182,6 +193,7 @@ mockNamesService c =
       announcementsFrom = anns,
       resolveName = resolve,
       namesOwnedBy = ownedBy,
+      renewName = renew,
       currentNonce = nonceOf,
       editCreditsFor = editCredits
     }
@@ -189,7 +201,13 @@ mockNamesService c =
     quote label = case validLabel label of
       Left e -> pure $ Left e
       Right () -> do
-        taken <- atomically $ M.member (fqdn label) <$> readTVar (mcNames c)
+        -- Same rule as buy: a name in its grace period is still its owner's.
+        taken <- atomically $ do
+          names <- readTVar (mcNames c)
+          now <- readTVar (mcNow c)
+          pure $ case M.lookup (fqdn label) names of
+            Nothing -> False
+            Just e -> neExpires e + gracePeriod > now
         pure . Right $
           NameQuote {nqLabel = label, nqAvailable = not taken, nqPriceCents = priceCents label 1, nqYears = 1}
 
@@ -202,7 +220,11 @@ mockNamesService c =
           Right () -> atomically $ do
             names <- readTVar (mcNames c)
             credits <- readTVar (mcRegistrarCredits c)
-            if M.member (fqdn brLabel) names
+            now <- readTVar (mcNow c)
+            let taken = case M.lookup (fqdn brLabel) names of
+                  Nothing -> False
+                  Just e -> neExpires e + gracePeriod > now
+            if taken
               then pure $ Left SENameTaken
               else if credits <= 0
               then pure $ Left SENoRegistrarCredits
@@ -261,6 +283,30 @@ mockNamesService c =
                 nrvExpires = neExpires,
                 nrvEditCredits = neEditCredits
               }
+
+    -- After expiry a name is still the owner's for this long; only past it can
+    -- anyone else take it.
+    renew label years payment = do
+      validate <- readTVarIO (mcValidatePayment c)
+      case validate payment of
+        Left e -> pure $ Left (SEPaymentRejected e)
+        Right () -> atomically $ do
+          names <- readTVar (mcNames c)
+          now <- readTVar (mcNow c)
+          case M.lookup (fqdn label) names of
+            Nothing -> pure $ Left SENotFound
+            Just e
+              | neExpires e + gracePeriod <= now -> pure $ Left SENotFound
+              | otherwise -> do
+                  -- Extend from the later of now and the current expiry, so
+                  -- renewing early adds time rather than throwing it away, and
+                  -- renewing in grace does not backdate the new term.
+                  let expires' = max now (neExpires e) + fromIntegral years * 31536000
+                  modifyTVar' (mcNames c) $
+                    M.insert
+                      (fqdn label)
+                      e {neExpires = expires', neEditCredits = neEditCredits e + editCreditsPerYear * fromIntegral years}
+                  pure $ Right expires'
 
     ownedBy owner = atomically $ do
       names <- readTVar (mcNames c)

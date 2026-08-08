@@ -93,6 +93,8 @@ walletTests = do
 
   describe "receiving a gifted name" receivingTests
 
+  describe "renewing a name" renewTests
+
 -- | The gifting path end to end against the mock chain: Bob derives a
 -- destination from Alice's published meta-address with no handshake, the
 -- transfer carries the announcement, and Alice finds the name by scanning
@@ -214,3 +216,101 @@ hex :: ByteString -> String
 hex = concatMap byte . B.unpack
   where
     byte w = let s = showHex w "" in if length s == 1 then '0' : s else s
+
+-- | Renewal, around the boundaries where it changes behaviour: the expiry
+-- itself, the end of the grace period, and someone else taking the name.
+renewTests :: Spec
+renewTests = do
+  it "extends from the current expiry, so renewing early does not lose time" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    exp0 <- nrvExpires <$> expectRightIO (resolveName svc "renewme.simplex")
+    exp1 <- expectRightIO $ renewName svc "renewme" 1 (PPRedeemCode "t")
+    -- a year added to the old expiry, not to now
+    exp1 - exp0 `shouldBe` 31536000
+
+  it "adds edit credits rather than replacing them" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    exp0 <- nrvEditCredits <$> expectRightIO (resolveName svc "renewme.simplex")
+    _ <- expectRightIO $ renewName svc "renewme" 1 (PPRedeemCode "t")
+    exp1 <- nrvEditCredits <$> expectRightIO (resolveName svc "renewme.simplex")
+    -- an unauthenticated renewal must never shrink the owner's allowance
+    exp1 `shouldBe` exp0 + editCreditsPerYear
+
+  it "still works after expiry, while in the grace period" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    advanceClock mc (31536000 + 86400) -- a day past expiry
+    stale <- nrvExpires <$> expectRightIO (resolveName svc "renewme.simplex")
+    exp1 <- expectRightIO $ renewName svc "renewme" 1 (PPRedeemCode "t")
+    -- extended from now, not backdated from the stale expiry
+    exp1 `shouldSatisfy` (> stale)
+
+  it "refuses once the grace period has passed" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    advanceClock mc (31536000 + gracePeriod + 1)
+    renewName svc "renewme" 1 (PPRedeemCode "t") `shouldReturn` Left SENotFound
+
+  it "the name is still the owner's during grace: nobody else can take it" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    advanceClock mc (31536000 + 86400)
+    q <- expectRightIO $ quoteName svc "renewme"
+    nqAvailable q `shouldBe` False
+
+  it "becomes available to anyone once grace has passed" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    advanceClock mc (31536000 + gracePeriod + 1)
+    q <- expectRightIO $ quoteName svc "renewme"
+    nqAvailable q `shouldBe` True
+
+  it "an expired but untaken name is still listed as the owner's" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    advanceClock mc (31536000 + gracePeriod + 1)
+    owned <- expectRightIO $ namesOwnedBy svc ownerA
+    -- past grace and unclaimed: still recoverable by buying it again
+    owned `shouldBe` ["renewme.simplex"]
+
+  it "disappears from the list once someone else registers it" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    otherA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 5
+    giveName mc "renewme.simplex" ownerA
+    advanceClock mc (31536000 + gracePeriod + 1)
+    giveName mc "renewme.simplex" otherA
+    expectRightIO (namesOwnedBy svc ownerA) `shouldReturn` []
+    expectRightIO (namesOwnedBy svc otherA) `shouldReturn` ["renewme.simplex"]
+
+  it "cannot be renewed once someone else holds it" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    otherA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 5
+    giveName mc "renewme.simplex" ownerA
+    advanceClock mc (31536000 + gracePeriod + 1)
+    giveName mc "renewme.simplex" otherA
+    -- renewal now extends the new holder's registration, not the old owner's:
+    -- the old owner has no claim, which is what losing a name means
+    e <- expectRightIO (resolveName svc "renewme.simplex")
+    nrvOwner e `shouldBe` otherA
+
+  it "rejects a renewal whose payment is refused" $ do
+    (mc, svc, _) <- setup
+    ownerA <- expectRight $ accountAddress <$> deriveAccount zeroSeed 0
+    giveName mc "renewme.simplex" ownerA
+    setPaymentValidator mc (const $ Left "declined")
+    renewName svc "renewme" 1 (PPRedeemCode "t") `shouldReturn` Left (SEPaymentRejected "declined")
+
+  it "refuses to renew a name that never existed" $ do
+    (_mc, svc, _) <- setup
+    renewName svc "nosuchname" 1 (PPRedeemCode "t") `shouldReturn` Left SENotFound
