@@ -764,13 +764,14 @@ struct ChatListSearchBar: View {
 
     private func toggleFilterButton() -> some View {
         let showUnread = chatTagsModel.activeFilter == .unread
+        let hasUnread = m.chats.contains { !$0.chatInfo.chatDeleted && !$0.chatInfo.contactCard && $0.unreadTag }
         return ZStack {
             Color.clear
                 .frame(width: 22, height: 22)
             Image(systemName: showUnread ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(showUnread ? theme.colors.primary : theme.colors.secondary)
+                .foregroundColor(showUnread || hasUnread ? theme.colors.primary : theme.colors.secondary)
                 .frame(width: showUnread ? 22 : 16, height: showUnread ? 22 : 16)
                 .onTapGesture {
                     if chatTagsModel.activeFilter == .unread {
