@@ -2498,7 +2498,7 @@ processChatCommand cxt nm = \case
     pure $ CRNameIntentRelayed user "gift" (label <> ".simplex") tx
   APINameIncoming userId -> withUserId userId $ \user -> do
     rows <- withStore' $ \db -> WS.getIncomingAddresses db user W.ChainEth
-    ns <- forM rows $ \r -> (nameAddrText (WS.otaAddress r),) <$> namesAt (WS.otaAddress r)
+    ns <- forM rows $ \r -> IncomingName (nameAddrText $ WS.otaAddress r) <$> namesAt (WS.otaAddress r)
     pure $ CRNamesIncoming user ns
   APINameAccept userId addrText -> withUserId userId $ \user -> do
     addr <- nameEither $ parseAddress (encodeUtf8 addrText)

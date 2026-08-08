@@ -161,7 +161,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     | otherwise ->
         ttyUser u $
           "names sent to you, not yet accepted:"
-            : map (\(addr, names) -> "  " <> plain (T.intercalate ", " names) <> " at " <> plain addr) ns
+            : map (\IncomingName {inAddress, inNames} -> "  " <> plain (T.intercalate ", " inNames) <> " at " <> plain inAddress) ns
             <> ["", "accepting links this profile to the name on chain; declining leaves no trace"]
   CRNameAccepted u addr names ->
     ttyUser u ["accepted " <> plain (T.intercalate ", " names) <> " at " <> plain addr]

@@ -2053,7 +2053,11 @@ data class Profile(
   // the badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
   // but preserved so passing a link profile back to the core (apiPrepareContact) keeps the proof
   val badge: BadgeProof? = null,
-  val contactDomain: SimplexDomainClaim? = null
+  val contactDomain: SimplexDomainClaim? = null,
+  // published stealth meta-address (hex): lets a contact send this profile a
+  // name with no handshake. Not an address and never on chain - holding it
+  // confers only the ability to send. Absent on incognito profiles.
+  val metaAddress: String? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
@@ -2062,7 +2066,7 @@ data class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain, metaAddress = metaAddress)
 
   companion object {
     val sampleData = Profile(
@@ -2087,13 +2091,14 @@ data class LocalProfile(
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
   val contactDomain: SimplexDomainClaim? = null,
-  val contactDomainVerified: Boolean? = null
+  val contactDomainVerified: Boolean? = null,
+  val metaAddress: String? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
+  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain, metaAddress = metaAddress)
 
   companion object {
     val sampleData = LocalProfile(
@@ -2364,6 +2369,13 @@ object GroupTypeSerializer : KSerializer<GroupType> {
     encoder.encodeString(stringValue)
   }
 }
+
+/** A name sitting at a one-time address, waiting to be accepted or declined. */
+@Serializable
+data class IncomingName(
+  val inAddress: String,
+  val inNames: List<String>
+)
 
 @Serializable
 data class SimplexDomainClaim(

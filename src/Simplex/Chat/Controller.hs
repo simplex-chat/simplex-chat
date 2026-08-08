@@ -960,7 +960,7 @@ data ChatResponse
   | CRNamesOwned {user :: User, ownedNames :: [Text]}
   | CRNameInfo {user :: User, nameFqdn :: Text, nameOwner :: Text, nameContact :: [Text], nameChannel :: [Text], nameExpires :: Int, nameEditCredits :: Int}
   | CRNameIntentRelayed {user :: User, nameAction :: Text, nameFqdn :: Text, nameTxHash :: Text}
-  | CRNamesIncoming {user :: User, incomingNames :: [(Text, [Text])]}
+  | CRNamesIncoming {user :: User, incomingNames :: [IncomingName]}
   | CRNameAccepted {user :: User, nameOneTimeAddr :: Text, acceptedNames :: [Text]}
   | CRNameDeclined {user :: User, nameOneTimeAddr :: Text}
   | CRNameKeyExported {user :: User, nameOneTimeAddr :: Text, nameOneTimeKey :: Text}
@@ -1399,6 +1399,14 @@ data SwitchProgress = SwitchProgress
   { queueDirection :: QueueDirection,
     switchPhase :: SwitchPhase,
     connectionStats :: ConnectionStats
+  }
+  deriving (Show)
+
+-- | A name sitting at a one-time address, not yet accepted. Named fields
+-- rather than a tuple so typed clients decode it without positional guessing.
+data IncomingName = IncomingName
+  { inAddress :: Text,
+    inNames :: [Text]
   }
   deriving (Show)
 
@@ -1868,6 +1876,8 @@ $(JQ.deriveJSON defaultJSON ''NtfConn)
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
 $(JQ.deriveJSON defaultJSON ''SwitchProgress)
+
+$(JQ.deriveJSON defaultJSON ''IncomingName)
 
 $(JQ.deriveJSON defaultJSON ''RatchetSyncProgress)
 

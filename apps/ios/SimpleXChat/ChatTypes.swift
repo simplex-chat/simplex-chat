@@ -122,7 +122,8 @@ public struct Profile: Codable, NamedChat, Hashable {
         contactLink: String? = nil,
         preferences: Preferences? = nil,
         peerType: ChatPeerType? = nil,
-        contactDomain: SimplexDomainClaim? = nil
+        contactDomain: SimplexDomainClaim? = nil,
+        metaAddress: String? = nil
     ) {
         self.displayName = displayName
         self.fullName = fullName
@@ -132,6 +133,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.contactLink = contactLink
         self.preferences = preferences
         self.contactDomain = contactDomain
+        self.metaAddress = metaAddress
     }
 
     public var displayName: String
@@ -146,6 +148,10 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var badge: BadgeProof?
     public var localAlias: String { get { "" } }
     public var contactDomain: SimplexDomainClaim?
+    // published stealth meta-address (hex): lets a contact send this profile a
+    // name with no handshake. Not an address and never on chain - holding it
+    // confers only the ability to send. Absent on incognito profiles.
+    public var metaAddress: String?
 
     public var profileDescription: String? { description }
 
@@ -173,7 +179,8 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         localBadge: LocalBadge? = nil,
         localAlias: String,
         contactDomain: SimplexDomainClaim? = nil,
-        contactDomainVerified: Bool? = nil
+        contactDomainVerified: Bool? = nil,
+        metaAddress: String? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -188,6 +195,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.localAlias = localAlias
         self.contactDomain = contactDomain
         self.contactDomainVerified = contactDomainVerified
+        self.metaAddress = metaAddress
     }
 
     public var profileId: Int64
@@ -203,6 +211,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localAlias: String
     public var contactDomain: SimplexDomainClaim?
     public var contactDomainVerified: Bool?
+    public var metaAddress: String?
 
     public var profileDescription: String? { description }
 
