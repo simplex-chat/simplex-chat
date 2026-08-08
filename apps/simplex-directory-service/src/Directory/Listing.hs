@@ -32,8 +32,10 @@ import Data.Time.Clock
 import Data.Time.Clock.System
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Directory.Store
+import Directory.Util (descriptionContainsLink)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Types
+import Simplex.Chat.View (simplexChatContact)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
@@ -107,7 +109,13 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
           let gtStr = case gt' of GTChannel -> "channel"; _ -> "group"
               linkLine = "Link to join the " <> gtStr <> " " <> displayName <> ": " <> decodeUtf8 (strEncode sLnk)
            in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
-        Nothing -> description
+        Nothing -> case connLinkContact <$> gLink_ of
+          Just gLink@(CCLink cReq sLnk_)
+            | not (maybe False (descriptionContainsLink gLink) description) ->
+                let linkText = maybe (strEncode $ simplexChatContact cReq) strEncode sLnk_
+                    linkLine = "Link to join the group " <> displayName <> ": " <> decodeUtf8 linkText
+                 in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
+          _ -> description
       entry groupLink =
         let de =
               DirectoryEntry

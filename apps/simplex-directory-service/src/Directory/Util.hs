@@ -1,4 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -10,7 +12,9 @@ import Control.Monad.Except
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
+import Simplex.Chat.Markdown (Format (..), FormattedText (..), parseMaybeMarkdownList)
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (catchAll)
@@ -29,3 +33,13 @@ withDB cxt ChatController {chatStore} action = do
     Left e -> logError $ "Database error: " <> cxt <> " " <> T.pack e
     Right _ -> pure ()
   pure r_
+
+matchesGroupLink :: CreatedLinkContact -> FormattedText -> Bool
+matchesGroupLink (CCLink cReq sLnk_) = \case
+  FormattedText (Just SimplexLink {simplexUri = ACL SCMContact cLink}) _ -> case cLink of
+    CLFull cReq' -> sameConnReqContact cReq' cReq
+    CLShort sLnk' -> maybe False (sameShortLinkContact sLnk') sLnk_
+  _ -> False
+
+descriptionContainsLink :: CreatedLinkContact -> Text -> Bool
+descriptionContainsLink gLink = maybe False (any (matchesGroupLink gLink)) . parseMaybeMarkdownList
