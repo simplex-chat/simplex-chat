@@ -158,6 +158,22 @@ enum ChatCommand: ChatCmdProtocol {
     case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiSetAddressSettings(userId: Int64, addressSettings: AddressSettings)
     case apiSetUserDomain(userId: Int64, simplexDomain: String?)
+    case apiNameStatus(userId: Int64)
+    case apiNameSetup(userId: Int64, setup: String)
+    case apiNameAddress(userId: Int64)
+    case apiNameList(userId: Int64)
+    case apiNameQuote(userId: Int64, label: String)
+    case apiNameBuy(userId: Int64, label: String, years: Int, payment: String, link: String?)
+    case apiNameInfo(userId: Int64, fqdn: String)
+    case apiNameSetLink(userId: Int64, fqdn: String, link: String)
+    case apiNameRenew(userId: Int64, fqdn: String, years: Int, payment: String)
+    case apiNameGift(userId: Int64, label: String, recipient: String)
+    case apiNameIncoming(userId: Int64)
+    case apiNameAccept(userId: Int64, address: String)
+    case apiNameDecline(userId: Int64, address: String)
+    case apiNameRescan(userId: Int64)
+    case apiNameRecoveryKey(userId: Int64)
+    case apiNameRecoveryKeySaved(userId: Int64)
     case apiVerifyContactDomain(contactId: Int64)
     case apiVerifyGroupDomain(groupId: Int64)
     case apiAcceptContact(incognito: Bool, contactReqId: Int64)
@@ -380,6 +396,22 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiSetAddressSettings(userId, addressSettings): return "/_address_settings \(userId) \(encodeJSON(addressSettings))"
             case let .apiSetUserDomain(userId, simplexDomain): return "/_set domain \(userId)" + (simplexDomain.map { " " + $0 } ?? "")
+            case let .apiNameStatus(userId): return "/_name status \(userId)"
+            case let .apiNameSetup(userId, setup): return "/_name setup \(userId) \(setup)"
+            case let .apiNameAddress(userId): return "/_name address \(userId)"
+            case let .apiNameList(userId): return "/_name list \(userId)"
+            case let .apiNameQuote(userId, label): return "/_name quote \(userId) \(label)"
+            case let .apiNameBuy(userId, label, years, payment, link): return "/_name buy \(userId) \(label) \(years) \(payment)" + (link.map { " " + $0 } ?? "")
+            case let .apiNameInfo(userId, fqdn): return "/_name info \(userId) \(fqdn)"
+            case let .apiNameSetLink(userId, fqdn, link): return "/_name link \(userId) \(fqdn) \(link)"
+            case let .apiNameRenew(userId, fqdn, years, payment): return "/_name renew \(userId) \(fqdn) \(years) \(payment)"
+            case let .apiNameGift(userId, label, recipient): return "/_name gift \(userId) \(label) \(recipient)"
+            case let .apiNameIncoming(userId): return "/_name incoming \(userId)"
+            case let .apiNameAccept(userId, address): return "/_name accept \(userId) \(address)"
+            case let .apiNameDecline(userId, address): return "/_name decline \(userId) \(address)"
+            case let .apiNameRescan(userId): return "/_name rescan \(userId)"
+            case let .apiNameRecoveryKey(userId): return "/_name key \(userId)"
+            case let .apiNameRecoveryKeySaved(userId): return "/_name key saved \(userId)"
             case let .apiSetPublicGroupAccess(groupId, access): return "/_public group access #\(groupId) \(encodeJSON(access))"
             case let .apiVerifyContactDomain(contactId): return "/_verify domain @\(contactId)"
             case let .apiVerifyGroupDomain(groupId): return "/_verify domain #\(groupId)"
@@ -567,6 +599,22 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiSetProfileAddress: return "apiSetProfileAddress"
             case .apiSetAddressSettings: return "apiSetAddressSettings"
             case .apiSetUserDomain: return "apiSetUserDomain"
+            case .apiNameStatus: return "apiNameStatus"
+            case .apiNameSetup: return "apiNameSetup"
+            case .apiNameAddress: return "apiNameAddress"
+            case .apiNameList: return "apiNameList"
+            case .apiNameQuote: return "apiNameQuote"
+            case .apiNameBuy: return "apiNameBuy"
+            case .apiNameInfo: return "apiNameInfo"
+            case .apiNameSetLink: return "apiNameSetLink"
+            case .apiNameRenew: return "apiNameRenew"
+            case .apiNameGift: return "apiNameGift"
+            case .apiNameIncoming: return "apiNameIncoming"
+            case .apiNameAccept: return "apiNameAccept"
+            case .apiNameDecline: return "apiNameDecline"
+            case .apiNameRescan: return "apiNameRescan"
+            case .apiNameRecoveryKey: return "apiNameRecoveryKey"
+            case .apiNameRecoveryKeySaved: return "apiNameRecoveryKeySaved"
             case .apiVerifyContactDomain: return "apiVerifyContactDomain"
             case .apiVerifyGroupDomain: return "apiVerifyGroupDomain"
             case .apiAcceptContact: return "apiAcceptContact"
@@ -1015,6 +1063,22 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
+    // SimpleX names
+    case nameStatus(user: User, nameHasWallet: Bool, nameKeySaved: Bool, nameAnySeed: Bool)
+    case nameAddress(user: User, nameAddress: String, nameAccount: Int, nameMetaAddress: String)
+    case namesOwned(user: User, ownedNames: [OwnedName])
+    case nameQuoted(user: User, nameLabel: String, nameAvailable: Bool, namePriceCents: Int)
+    case nameRegistered(user: User, nameFqdn: String, nameTxHash: String)
+    case nameInfo(user: User, nameFqdn: String, nameOwner: String, nameContact: [String], nameChannel: [String], nameExpires: Int, nameEditCredits: Int)
+    case nameIntentRelayed(user: User, nameAction: String, nameFqdn: String, nameTxHash: String)
+    case nameGifted(user: User, nameFqdn: String, nameTxHash: String, nameEphemeralPubKey: String)
+    case nameRenewed(user: User, nameFqdn: String, nameExpires: Int, nameReRegistered: Bool)
+    case namesIncoming(user: User, incomingNames: [IncomingName])
+    case nameAccepted(user: User, nameOneTimeAddr: String, acceptedNames: [String])
+    case nameDeclined(user: User, nameOneTimeAddr: String)
+    case nameKeyExported(user: User, nameOneTimeAddr: String, nameOneTimeKey: String)
+    case nameRescanned(user: User, rescanFound: Int)
+    case nameRecoveryKey(user: User, recoveryPhrase: String, recoveryKeySaved: Bool)
 
     var responseType: String {
         switch self {
@@ -1066,6 +1130,21 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .archiveExported: "archiveExported"
         case .archiveImported: "archiveImported"
         case .appSettings: "appSettings"
+        case .nameStatus: "nameStatus"
+        case .nameAddress: "nameAddress"
+        case .namesOwned: "namesOwned"
+        case .nameQuoted: "nameQuoted"
+        case .nameRegistered: "nameRegistered"
+        case .nameInfo: "nameInfo"
+        case .nameIntentRelayed: "nameIntentRelayed"
+        case .nameGifted: "nameGifted"
+        case .nameRenewed: "nameRenewed"
+        case .namesIncoming: "namesIncoming"
+        case .nameAccepted: "nameAccepted"
+        case .nameDeclined: "nameDeclined"
+        case .nameKeyExported: "nameKeyExported"
+        case .nameRescanned: "nameRescanned"
+        case .nameRecoveryKey: "nameRecoveryKey"
         }
     }
 

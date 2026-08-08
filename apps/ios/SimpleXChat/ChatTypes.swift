@@ -2734,6 +2734,26 @@ public struct PublicGroupAccess: Codable, Hashable {
     public var allowEmbedding: Bool = false
 }
 
+// What was handed over in an in-app transfer: a name now, a token later.
+// `kind` selects the wording and the screen to open. `ephemeralPubKey` lets the
+// recipient record the destination on receipt instead of scanning.
+public struct AssetTransfer: Codable, Hashable {
+    public var kind: String
+    public var asset: String
+    public var ephemeralPubKey: String?
+    public static let kindSimplexName = "simplexName"
+}
+
+public struct OwnedName: Codable, Hashable {
+    public var onFqdn: String
+    public var onExpires: Int
+}
+
+public struct IncomingName: Codable, Hashable {
+    public var inAddress: String
+    public var inNames: [String]
+}
+
 public struct SimplexDomainClaim: Codable, Hashable {
     public init(domain: String, proof: SimplexDomainProof? = nil) {
         self.domain = domain
@@ -4953,6 +4973,7 @@ public enum MsgContent: Equatable, Hashable {
     case file(String)
     case report(text: String, reason: ReportReason)
     case chat(text: String, chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
+    case assetTransfer(text: String, transfer: AssetTransfer)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -4970,6 +4991,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .file(text): return text
         case let .report(text, _): return text
         case let .chat(text, _, _): return text
+        case let .assetTransfer(text, _): return text
         case let .unknown(_, text): return text
         }
     }
@@ -5033,12 +5055,14 @@ public enum MsgContent: Equatable, Hashable {
         case reason
         case chatLink
         case ownerSig
+        case transfer
     }
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
         switch (lhs, rhs) {
         case let (.text(lt), .text(rt)): return lt == rt
         case let (.link(lt, lp), .link(rt, rp)): return lt == rt && lp == rp
+        case let (.assetTransfer(lt, lx), .assetTransfer(rt, rx)): return lt == rt && lx == rx
         case let (.image(lt, li), .image(rt, ri)): return lt == rt && li == ri
         case let (.video(lt, li, ld), .video(rt, ri, rd)): return lt == rt && li == ri && ld == rd
         case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
@@ -5089,6 +5113,10 @@ extension MsgContent: Decodable {
                 let chatLink = try container.decode(MsgChatLink.self, forKey: CodingKeys.chatLink)
                 let ownerSig = try container.decodeIfPresent(LinkOwnerSig.self, forKey: CodingKeys.ownerSig)
                 self = .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
+            case "assetTransfer":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let transfer = try container.decode(AssetTransfer.self, forKey: CodingKeys.transfer)
+                self = .assetTransfer(text: text, transfer: transfer)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -5135,6 +5163,10 @@ extension MsgContent: Encodable {
             try container.encode(text, forKey: .text)
             try container.encode(chatLink, forKey: .chatLink)
             try container.encodeIfPresent(ownerSig, forKey: .ownerSig)
+        case let .assetTransfer(text, transfer):
+            try container.encode("assetTransfer", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(transfer, forKey: .transfer)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
