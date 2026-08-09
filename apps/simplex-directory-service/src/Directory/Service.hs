@@ -582,11 +582,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             GroupProfile {displayName = dn, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma} = p
             GroupProfile {displayName = dn', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma'} = p'
-            descrWords = maybe [] (T.words . T.replace ("Link to join the group " <> dn <> ":") "" . withoutLink)
-            withoutLink descr = case gLink_ of
+            -- drop the recommended link line (link token and prefix) so adding or removing it is not a content change
+            descrWords = maybe [] $ case gLink_ of
               Just GroupLink {connLinkContact} ->
-                maybe descr (T.concat . map ftText . filter (not . matchesGroupLink connLinkContact)) (parseMaybeMarkdownList descr)
-              Nothing -> descr
+                T.words . T.replace (groupLinkLinePrefix dn) "" . withoutLink connLinkContact
+              Nothing -> T.words
+            withoutLink gl descr =
+              maybe descr (T.concat . map ftText . filter (not . matchesGroupLink gl)) $ parseMaybeMarkdownList descr
             ftText (FormattedText _ t) = t
         checkRolesSendToApprove gr gaId = do
           (badRolesMsg <$$> getGroupRolesStatus toGroup gr) >>= \case
@@ -1048,7 +1050,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           \/list - list the groups you registered.\n\
           \`/role <ID>` - view and set default member role for your group.\n\
           \`/filter <ID>` - view and set spam filter settings for group.\n\
-          \`/link <ID>` - view and upgrade group link.\n\
+          \`/link <ID>` - view group link.\n\
           \`/delete <ID>:<NAME>` - remove the group you submitted from directory, with _ID_ and _name_ as shown by /list command.\n\n\
           \To search for groups, send the search text."
       DCSearchGroup s ft -> case ft >>= groupLinkUri of
@@ -1252,7 +1254,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               case groupRegStatus gr of
                 GRSPendingApproval gaId
                   | gaId == groupApprovalId -> do
-                      let GroupInfo {groupProfile = GroupProfile {publicGroup = pg_}} = g
+                      let GroupInfo {groupProfile = GroupProfile {publicGroup = pg_, description = descr_}} = g
                           isPublicGroup_ = isJust pg_
                           gt = maybe "group" groupTypeStr' pg_
                       getDuplicateGroup g >>= \case
@@ -1271,19 +1273,22 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                                         | otherwise = False
                                   setGroupStatusPromo sendReply st env cc gr GRSActive grPromoted' $ do
                                     let approved = "The " <> gt <> " " <> userGroupReference' gr n <> " is approved"
-                                    let linkStr = maybe "" (\l -> "Link to join the group " <> n <> ": " <> groupLinkText l <> "\nWe recommend adding this link to the group welcome message.\n") gLink'
-                                    let commands
+                                        addLink = maybe False (\l -> not $ maybe False (descriptionContainsLink l) descr_) gLink'
+                                        commands
                                           | isPublicGroup_ = ""
                                           | otherwise =
                                               "\n\nSupported commands:\n"
                                                 <> ("/'filter " <> tshow ugrId <> "' - to configure anti-spam filter.\n")
                                                 <> ("/'role " <> tshow ugrId <> "' - to set default member role.\n")
-                                                <> ("/'link " <> tshow ugrId <> "' - to view/upgrade group link.")
+                                                <> ("/'link " <> tshow ugrId <> "' - to view group link.")
                                     notifyOwner gr $
                                       (approved <> " and listed in directory - please moderate it!\n")
-                                        <> linkStr
-                                        <> "_Please note_: if you change the " <> gt <> " profile it will be hidden from directory until it is re-approved."
+                                        <> ( if addLink
+                                               then "To help people join, copy the next message with the group link and add it to the end of the group welcome message. The group will remain listed. Any other change to the group profile hides it from the directory until it is re-approved."
+                                               else "_Please note_: if you change the " <> gt <> " profile it will be hidden from directory until it is re-approved."
+                                           )
                                         <> commands
+                                    when addLink $ forM_ gLink' $ \l -> notifyOwner gr $ groupLinkLine n (groupLinkText l)
                                     invited <-
                                       forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
                                         inviteToOwnersGroup og gr $ \case
@@ -1447,21 +1452,22 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       where
         replyMsg = (Just ciId, MCText reply)
         foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _) = do
-          linkStr_ <- groupLinkLine g p
+          linkStr_ <- foundGroupLinkLine g p
           let membersStr = "_" <> membersCountStr p groupSummary <> "_"
               showId = if isAdminUser ct then tshow groupId <> ". " else ""
               text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] <> linkStr_ <> [membersStr] <> knockingStr memberAdmission
           pure (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
         moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
 
-    groupLinkLine :: GroupInfo -> GroupProfile -> IO [Text]
-    groupLinkLine g GroupProfile {displayName = n, description, publicGroup} = case publicGroup of
+    -- link line for a non-public group in search results, unless its welcome message already contains it
+    foundGroupLinkLine :: GroupInfo -> GroupProfile -> IO [Text]
+    foundGroupLinkLine g GroupProfile {displayName = n, description, publicGroup} = case publicGroup of
       Just _ -> pure []
       Nothing ->
         withDB' "getGroupLink" cc (\db -> runExceptT $ getGroupLink db user g) >>= \case
           Right (Right GroupLink {connLinkContact = gLink})
             | not (maybe False (descriptionContainsLink gLink) description) ->
-                pure ["Link to join the group " <> n <> ": " <> groupLinkText gLink]
+                pure [groupLinkLine n (groupLinkText gLink)]
           _ -> pure []
 
     withGroupAndReg :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()

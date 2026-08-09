@@ -1814,15 +1814,13 @@ approveRegistration_ su u n gId ugId gaId = do
 groupApprovedNotification :: TestCC -> String -> Int -> IO String
 groupApprovedNotification u n ugId = do
   u <# ("'SimpleX Directory'> The group ID " <> show ugId <> " (" <> n <> ") is approved and listed in directory - please moderate it!")
-  welcomeWithLink <- getTermLine u
-  u <## "We recommend adding this link to the group welcome message."
-  u <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+  u <## "To help people join, copy the next message with the group link and add it to the end of the group welcome message. The group will remain listed. Any other change to the group profile hides it from the directory until it is re-approved."
   u <## ""
   u <## "Supported commands:"
   u <## ("/'filter " <> show ugId <> "' - to configure anti-spam filter.")
   u <## ("/'role " <> show ugId <> "' - to set default member role.")
-  u <## ("/'link " <> show ugId <> "' - to view/upgrade group link.")
-  pure welcomeWithLink
+  u <## ("/'link " <> show ugId <> "' - to view group link.")
+  dropStrPrefix "'SimpleX Directory'> " . dropTime <$> getTermLine u
 
 groupUpdatedHidden :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
 groupUpdatedHidden superUser u n byMember = do
@@ -2010,7 +2008,7 @@ testHelpNoAudio ps =
       bob <## "/list - list the groups you registered."
       bob <## "`/role <ID>` - view and set default member role for your group."
       bob <## "`/filter <ID>` - view and set spam filter settings for group."
-      bob <## "`/link <ID>` - view and upgrade group link."
+      bob <## "`/link <ID>` - view group link."
       bob <## "`/delete <ID>:<NAME>` - remove the group you submitted from directory, with ID and name as shown by /list command."
       bob <## ""
       bob <## "To search for groups, send the search text."

@@ -32,7 +32,6 @@ import Data.Time.Clock
 import Data.Time.Clock.System
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Directory.Store
-import Directory.Util (descriptionContainsLink)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Types
 import Simplex.Chat.View (simplexChatContact)
@@ -41,6 +40,23 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import System.Directory
 import System.FilePath
+
+-- the line the directory recommends adding to the group welcome message
+groupLinkLine :: Text -> Text -> Text
+groupLinkLine name link = groupLinkLinePrefix name <> link
+
+groupLinkLinePrefix :: Text -> Text
+groupLinkLinePrefix name = "Link to join the group " <> name <> ": "
+
+matchesGroupLink :: CreatedLinkContact -> FormattedText -> Bool
+matchesGroupLink (CCLink cReq sLnk_) = \case
+  FormattedText (Just SimplexLink {simplexUri = ACL SCMContact cLink}) _ -> case cLink of
+    CLFull cReq' -> sameConnReqContact cReq' cReq
+    CLShort sLnk' -> maybe False (sameShortLinkContact sLnk') sLnk_
+  _ -> False
+
+descriptionContainsLink :: CreatedLinkContact -> Text -> Bool
+descriptionContainsLink gLink = maybe False (any (matchesGroupLink gLink)) . parseMaybeMarkdownList
 
 directoryDataPath :: String
 directoryDataPath = "data"
@@ -113,7 +129,7 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
           Just gLink@(CCLink cReq sLnk_)
             | not (maybe False (descriptionContainsLink gLink) description) ->
                 let linkText = maybe (strEncode $ simplexChatContact cReq) strEncode sLnk_
-                    linkLine = "Link to join the group " <> displayName <> ": " <> decodeUtf8 linkText
+                    linkLine = groupLinkLine displayName $ decodeUtf8 linkText
                  in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
           _ -> description
       entry groupLink =
