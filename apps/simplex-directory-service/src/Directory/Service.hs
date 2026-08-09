@@ -238,7 +238,7 @@ directoryCommands =
       "Group settings"
       [ CBCCommand "role" "View new member role" idParam,
         CBCCommand "filter" "Anti-spam filter" idParam,
-        CBCCommand "link" "View and upgrade group link" idParam,
+        CBCCommand "link" "View group link" idParam,
         CBCCommand "delete" "Remove a group from directory" (Just "<ID>:'<NAME>'")
       ]
   ]
@@ -1120,7 +1120,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just mRole -> do
               setGroupLinkRole cc g mRole >>= \case
                 Just gLink -> sendReply $ initialRole n mRole <> "\n" <> onlyViaLink gLink
-                Nothing -> sendReply $ roleError gr n $ "Error: the initial member role for the group " <> n <> " was NOT upgated."
+                Nothing -> sendReply $ roleError gr n $ "Error: the initial member role for the group " <> n <> " was NOT updated."
         where
           initialRole n mRole = "The initial member role for the group " <> n <> " is set to *" <> textEncode mRole <> "*\n"
           onlyViaLink gLink = "*Please note*: it applies only to members joining via this link: " <> groupLinkText gLink
