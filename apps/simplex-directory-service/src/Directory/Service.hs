@@ -1052,9 +1052,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       DCSearchGroup s ft -> case ft >>= groupLinkUri of
         Just uri ->
           getRegisteredGroupByLink uri >>= \case
-            Just (g, gr)
+            Just (g, gr, ccLink)
               | isAdmin -> sendGroupsInfo ct ciId True ([(g, gr)], 1)
-              | groupRegStatus gr == GRSActive -> sendFoundGroups "Found group:" [(g, gr, Nothing)] 0
+              | groupRegStatus gr == GRSActive -> sendFoundGroups "Found group:" [(g, gr, Just ccLink)] 0
             _
               | isAdmin -> sendReply "This link is not registered in the directory"
               | otherwise -> sendReply linkNotFound
@@ -1232,41 +1232,44 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               sendReply notFound
             Right (gs, n) -> do
               let moreGroups = n - length gs
-              updateSearchRequest searchType $ last gs
-              sendFoundGroups (replyStr gs n) gs moreGroups
+                  gs' = map (\(g, gr, gLink_) -> (g, gr, (\GroupLink {connLinkContact = cl} -> cl) <$> gLink_)) gs
+              updateSearchRequest searchType $ last gs'
+              sendFoundGroups (replyStr gs' n) gs' moreGroups
             Left e -> sendReply $ "Error: searchListedGroups. Please notify the developers.\n" <> T.pack e
         allGroupsReply sortName gs n =
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
            in tshow n <> " group(s) listed" <> more <> "."
-        updateSearchRequest :: SearchType -> (GroupInfo, GroupReg, Maybe GroupLink) -> IO ()
+        updateSearchRequest :: SearchType -> (GroupInfo, GroupReg, Maybe CreatedLinkContact) -> IO ()
         updateSearchRequest searchType (GroupInfo {groupId}, _, _) = do
           searchTime <- getCurrentTime
           let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
           atomically $ TM.insert (contactId' ct) search searchRequests
+        getRegisteredGroupByLink :: AConnectionLink -> IO (Maybe (GroupInfo, GroupReg, CreatedLinkContact))
         getRegisteredGroupByLink uri =
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget uri)) PRMNever Nothing) >>= \case
-            Right (CRConnectionPlan _ _ _ _ (CPGroupLink glp)) -> case glp of
-              GLPOwnLink g -> groupReg g
-              GLPKnown {groupInfo = g} -> groupReg g
-              GLPConnectingProhibit (Just g) -> groupReg g
+            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) _ _ (CPGroupLink glp)) -> case glp of
+              GLPOwnLink g -> groupReg g ccLink
+              GLPKnown {groupInfo = g} -> groupReg g ccLink
+              GLPConnectingProhibit (Just g) -> groupReg g ccLink
               _ -> pure Nothing
             _ -> pure Nothing
           where
-            groupReg g = fmap (g,) . eitherToMaybe <$> getGroupReg cc (groupId' g)
+            groupReg :: GroupInfo -> CreatedLinkContact -> IO (Maybe (GroupInfo, GroupReg, CreatedLinkContact))
+            groupReg g ccLink = fmap (\gr -> (g, gr, ccLink)) . eitherToMaybe <$> getGroupReg cc (groupId' g)
         sendFoundGroups reply gs moreGroups =
           void . forkIO $ sendComposedMessages_ cc (SRDirect $ contactId' ct) msgs
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _, gLink_) =
+            foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _, cLink_) =
               let membersStr = "_" <> membersCountStr p groupSummary <> "_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
-                  text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] <> foundGroupLinkLine p gLink_ <> [membersStr] <> knockingStr memberAdmission
+                  text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] <> foundGroupLinkLine p cLink_ <> [membersStr] <> knockingStr memberAdmission
                in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
             moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
         -- link line for a non-public group in search results, unless its welcome message already contains it
-        foundGroupLinkLine GroupProfile {displayName = n, description, publicGroup} gLink_ = case (publicGroup, gLink_) of
-          (Nothing, Just GroupLink {connLinkContact = gLink})
+        foundGroupLinkLine GroupProfile {displayName = n, description, publicGroup} cLink_ = case (publicGroup, cLink_) of
+          (Nothing, Just gLink)
             | not (maybe False (descriptionContainsLink gLink) description) -> [groupLinkLine n (groupLinkText gLink)]
           _ -> []
     deAdminCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRAdmin -> IO ()
@@ -1340,8 +1343,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 Nothing ->
                   sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
                     Right CRGroupLinkCreated {groupLink = GroupLink {connLinkContact}} -> pure $ Right $ Just connLinkContact
-                    Right r -> pure $ Left $ "Error creating group link, unexpected response: " <> tshow r
-                    Left e -> pure $ Left $ "Error creating group link: " <> tshow e
+                    Left (ChatError e) -> pure $ Left $ case e of
+                      CEGroupUserRole {} -> "Failed creating group link, as service is no longer an admin."
+                      CEGroupMemberUserRemoved -> "Failed creating group link, as service is removed from the group."
+                      CEGroupNotJoined _ -> unexpectedError "group not joined"
+                      CEGroupMemberNotActive -> unexpectedError "service membership is not active"
+                      _ -> unexpectedError "can't create group link"
+                    _ -> pure $ Left $ unexpectedError "can't create group link"
           DCRejectGroup _gaId _gName -> pure ()
           DCSuspendGroup groupId gName -> do
             let groupRef = groupReference' groupId gName
@@ -1559,6 +1567,9 @@ setGroupLinkRole cc GroupInfo {groupId} mRole = resp <$> sendChatCmd cc (APIGrou
     resp = \case
       Right (CRGroupLink {groupLink = GroupLink {connLinkContact}}) -> Just connLinkContact
       _ -> Nothing
+
+unexpectedError :: Text -> Text
+unexpectedError err = "Unexpected error: " <> err <> ", please notify the developers."
 
 strEncodeTxt :: StrEncoding a => a -> Text
 strEncodeTxt = safeDecodeUtf8 . strEncode
