@@ -37,7 +37,7 @@ module Directory.Store
     getAllGroupRegs_,
     getDuplicateGroupRegs,
     getGroupReg,
-    getGroupAndReg,
+    getGroupAndRegLink,
     listLastGroups,
     listPendingGroups,
     getAllListedGroups,
@@ -331,11 +331,11 @@ getGroupReg_ db gId =
       |]
       (Only gId)
 
-getGroupAndReg :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupReg))
-getGroupAndReg cc user@User {userId, userContactId} gId =
-  withDB "getGroupAndReg" cc $ \db -> do
+getGroupAndRegLink :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupReg, Maybe GroupLink))
+getGroupAndRegLink cc user@User {userId, userContactId} gId =
+  withDB "getGroupAndRegLink" cc $ \db -> do
     currentTs <- liftIO getCurrentTime
-    ExceptT $ firstRow (toGroupInfoReg currentTs (storeCxt cc) user) ("group " ++ show gId ++ " not found") $
+    ExceptT $ firstRow (toGroupInfoRegLink currentTs (storeCxt cc) user) ("group " ++ show gId ++ " not found") $
       DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
 
 getUserGroupReg :: ChatController -> User -> ContactId -> UserGroupRegId -> IO (Either String (GroupInfo, GroupReg))

@@ -1054,9 +1054,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           getRegisteredGroupByLink uri >>= \case
             Just (g, gr)
               | isAdmin -> sendGroupsInfo ct ciId True ([(g, gr)], 1)
-              | groupRegStatus gr == GRSActive -> do
-                  gLink_ <- eitherToMaybe <$> getGroupLink' cc user g
-                  sendFoundGroups "Found group:" [(g, gr, gLink_)] 0
+              | groupRegStatus gr == GRSActive -> sendFoundGroups "Found group:" [(g, gr, Nothing)] 0
             _
               | isAdmin -> sendReply "This link is not registered in the directory"
               | otherwise -> sendReply linkNotFound
@@ -1275,7 +1273,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deAdminCommand ct ciId cmd
       | knownCt `elem` adminUsers || knownCt `elem` superUsers = case cmd of
           DCApproveGroup {groupId, displayName = n, groupApprovalId, promote} ->
-            withGroupAndReg sendReply groupId n $ \g gr@GroupReg {userGroupRegId = ugrId, promoted} ->
+            withGroupRegLink sendReply groupId n $ \g gr@GroupReg {userGroupRegId = ugrId, promoted} curLink_ ->
               case groupRegStatus gr of
                 GRSPendingApproval gaId
                   | gaId == groupApprovalId -> do
@@ -1292,7 +1290,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                               let grPromoted'
                                     | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
                                     | otherwise = False
-                              gLink_ <- if isPublicGroup_ then pure (Right Nothing) else approvedGroupLink g
+                              gLink_ <- if isPublicGroup_ then pure (Right Nothing) else approvedGroupLink g curLink_
                               case gLink_ of
                                 Left e -> sendReply e
                                 Right gLink' ->
@@ -1334,19 +1332,16 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 status -> sendReply $ "Error: the group " <> groupRef <> " status is " <> groupRegStatusText status <> ", it is not pending approval."
             where
               groupRef = groupReference' groupId n
-              approvedGroupLink g =
-                withDB' "getGroupLink" cc (\db -> runExceptT $ getGroupLink db user g) >>= \case
-                  Right (Right gLink) ->
-                    updateGroupLinkData cc user g gLink >>= \case
-                      Right GroupLink {connLinkContact} -> pure $ Right $ Just connLinkContact
-                      Left e -> pure $ Left $ "Error updating group link data: " <> tshow e
-                  Right (Left SEGroupLinkNotFound {}) ->
-                    sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
-                      Right CRGroupLinkCreated {groupLink = GroupLink {connLinkContact}} -> pure $ Right $ Just connLinkContact
-                      Right r -> pure $ Left $ "Error creating group link, unexpected response: " <> tshow r
-                      Left e -> pure $ Left $ "Error creating group link: " <> tshow e
-                  Right (Left e) -> pure $ Left $ "Error reading group link: " <> tshow e
-                  Left e -> pure $ Left $ "Error reading group link: " <> T.pack e
+              approvedGroupLink g = \case
+                Just gLink ->
+                  updateGroupLinkData cc user g gLink >>= \case
+                    Right GroupLink {connLinkContact} -> pure $ Right $ Just connLinkContact
+                    Left e -> pure $ Left $ "Error updating group link data: " <> tshow e
+                Nothing ->
+                  sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
+                    Right CRGroupLinkCreated {groupLink = GroupLink {connLinkContact}} -> pure $ Right $ Just connLinkContact
+                    Right r -> pure $ Left $ "Error creating group link, unexpected response: " <> tshow r
+                    Left e -> pure $ Left $ "Error creating group link: " <> tshow e
           DCRejectGroup _gaId _gName -> pure ()
           DCSuspendGroup groupId gName -> do
             let groupRef = groupReference' groupId gName
@@ -1454,18 +1449,25 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     mkSendReply :: Contact -> ChatItemId -> Text -> IO ()
     mkSendReply ct ciId = sendComposedMessage cc ct (Just ciId) . MCText
 
+    withGroupRegLink :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
+    withGroupRegLink sendReply gId = withGroupRegLink_ sendReply gId . Just
+
+    withGroupRegLink_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
+    withGroupRegLink_ sendReply gId gName_ action =
+      getGroupAndRegLink cc user gId >>= \case
+        Left e -> sendReply $ "Group " <> tshow gId <> " error (getGroup): " <> T.pack e
+        Right (g@GroupInfo {groupProfile = GroupProfile {displayName}}, gr, gLink_)
+          | maybe False (displayName ==) gName_ ->
+              action g gr gLink_
+          | otherwise ->
+              sendReply $ "Group ID " <> tshow gId <> " has the display name " <> displayName
+
     withGroupAndReg :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()
     withGroupAndReg sendReply gId = withGroupAndReg_ sendReply gId . Just
 
     withGroupAndReg_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()
     withGroupAndReg_ sendReply gId gName_ action =
-      getGroupAndReg cc user gId >>= \case
-        Left e -> sendReply $ "Group " <> tshow gId <> " error (getGroup): " <> T.pack e
-        Right (g@GroupInfo {groupProfile = GroupProfile {displayName}}, gr)
-          | maybe False (displayName ==) gName_ ->
-              action g gr
-          | otherwise ->
-              sendReply $ "Group ID " <> tshow gId <> " has the display name " <> displayName
+      withGroupRegLink_ sendReply gId gName_ $ \g gr _ -> action g gr
 
     getOwnersInfo :: [(GroupInfo, GroupReg)] -> IO [((GroupInfo, GroupReg), Maybe (Either String Contact))]
     getOwnersInfo gs =
