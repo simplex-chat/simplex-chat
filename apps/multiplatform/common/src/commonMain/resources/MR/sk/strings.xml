@@ -216,7 +216,6 @@
     <string name="test_relay_to_retrieve_name"><![CDATA[<b>Test relé</b> pre načítanie jeho mena]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Využíva viac batérie</b> Aplikácia bude vždy bežať na pozadí - notifikácie sa zobrazia okamžite.]]></string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi zariadenie</b>: prosím povoľte Spustenie na pozadí v systémových nastaveniach aby Vám fungovali notifikácie.]]></string>
-    <string name="use_camera_button"></string>
     <string name="cancel_verb">Zrušiť</string>
     <string name="button_cancel_and_delete_channel">Zrušiť a odstrániť kanál</string>
     <string name="cancel_creating_channel_question">Zrušiť vytvorenie kanálu?</string>
@@ -386,7 +385,6 @@
     <string name="button_channel_relays">Relé chatu</string>
     <string name="chat_relays">Relé chatu</string>
     <string name="channel_relays_title">Relé chatu</string>
-    <string name="your_chats"></string>
     <string name="chat_with_admins_is_prohibited">Chaty so správcami sú zakázané.</string>
     <string name="member_support">Chaty s členmi</string>
     <string name="settings_section_title_chat_theme">Téma chatu</string>
@@ -493,11 +491,6 @@
     <string name="connected_to_desktop">Pripojené k PC</string>
     <string name="connected_to_mobile">Pripojený k mobilu</string>
     <string name="v6_4_connect_faster">Pripojte sa rýchlejšie! 🚀</string>
-    <string name="server_connecting"></string>
-    <string name="group_member_status_connecting"></string>
-    <string name="relay_conn_status_connecting"></string>
-    <string name="display_name_connecting"></string>
-    <string name="contact_connection_pending"></string>
     <string name="info_row_connection_failed">Pripojenie zlyhalo</string>
     <string name="connection_not_ready">Pripojenie nie je pripravené</string>
     <string name="connection_timeout">Časový limit pripojenia vypršal</string>
