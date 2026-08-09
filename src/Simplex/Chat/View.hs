@@ -126,7 +126,11 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRChatContentTypes cts -> [plain $ "Chat content types: " <> T.intercalate ", " (map (safeDecodeUtf8 . strEncode) cts)]
   CRChatTags u tags -> ttyUser u [viewJSON tags]
-  CRServerTestResult u srv testFailure serverInfo -> ttyUser u $ viewServerTestResult srv testFailure <> maybe [] (\case Left err -> [plain $ "Server Info Error: " <> T.pack err]; Right i -> [plain $ "Server Info: " <> tshow i]) serverInfo
+  CRServerTestResult u srv testFailure info -> ttyUser u $ viewServerTestResult srv testFailure <> maybe [] viewServerInfo info
+    where
+      viewServerInfo = \case
+        Left e -> [plain $ "Server Info Error: " <> T.pack e]
+        Right i -> [plain $ "Server Info: " <> tshow i]
   CRChatRelayTestResult u relayProfile_ relayTestFailure_ -> ttyUser u $ viewRelayTestResult relayProfile_ relayTestFailure_
   CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
   CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
