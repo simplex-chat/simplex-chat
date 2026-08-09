@@ -1675,8 +1675,9 @@ processChatCommand cxt nm = \case
       aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
         Just Refl -> pure $ AUS SDBNew $ newUserServer srv
         Nothing -> throwCmdError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
-  APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
-    lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
+  APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user -> do
+    r <- lift $ withAgent' $ \a -> testProtocolServer a nm (aUserId user) server
+    pure $ uncurry (CRServerTestResult user srv) $ either ((,Nothing) . Just) (Nothing,) r
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APITestProtoServer userId srv
   APITestChatRelay userId address -> withUserId userId $ \user -> do
