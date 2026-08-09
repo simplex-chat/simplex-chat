@@ -1054,7 +1054,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           getRegisteredGroupByLink uri >>= \case
             Just (g, gr)
               | isAdmin -> sendGroupsInfo ct ciId True ([(g, gr)], 1)
-              | groupRegStatus gr == GRSActive -> sendFoundGroups "Found group:" [(g, gr)] 0
+              | groupRegStatus gr == GRSActive -> do
+                  gLink_ <- eitherToMaybe <$> getGroupLink' cc user g
+                  sendFoundGroups "Found group:" [(g, gr, gLink_)] 0
             _
               | isAdmin -> sendReply "This link is not registered in the directory"
               | otherwise -> sendReply linkNotFound
@@ -1238,8 +1240,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         allGroupsReply sortName gs n =
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
            in tshow n <> " group(s) listed" <> more <> "."
-        updateSearchRequest :: SearchType -> (GroupInfo, GroupReg) -> IO ()
-        updateSearchRequest searchType (GroupInfo {groupId}, _) = do
+        updateSearchRequest :: SearchType -> (GroupInfo, GroupReg, Maybe GroupLink) -> IO ()
+        updateSearchRequest searchType (GroupInfo {groupId}, _, _) = do
           searchTime <- getCurrentTime
           let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
           atomically $ TM.insert (contactId' ct) search searchRequests
@@ -1254,27 +1256,21 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             groupReg g = fmap (g,) . eitherToMaybe <$> getGroupReg cc (groupId' g)
         sendFoundGroups reply gs moreGroups =
-          void . forkIO $ do
-            msgs <- mapM foundGroup gs
-            sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| msgs <> [moreMsg | moreGroups > 0]
+          void . forkIO $ sendComposedMessages_ cc (SRDirect $ contactId' ct) msgs
           where
+            msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _) = do
-              linkStr_ <- foundGroupLinkLine g p
+            foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _, gLink_) =
               let membersStr = "_" <> membersCountStr p groupSummary <> "_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
-                  text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] <> linkStr_ <> [membersStr] <> knockingStr memberAdmission
-              pure (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
+                  text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] <> foundGroupLinkLine p gLink_ <> [membersStr] <> knockingStr memberAdmission
+               in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
             moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
         -- link line for a non-public group in search results, unless its welcome message already contains it
-        foundGroupLinkLine g GroupProfile {displayName = n, description, publicGroup} = case publicGroup of
-          Just _ -> pure []
-          Nothing ->
-            withDB' "getGroupLink" cc (\db -> runExceptT $ getGroupLink db user g) >>= \case
-              Right (Right GroupLink {connLinkContact = gLink})
-                | not (maybe False (descriptionContainsLink gLink) description) ->
-                    pure [groupLinkLine n (groupLinkText gLink)]
-              _ -> pure []
+        foundGroupLinkLine GroupProfile {displayName = n, description, publicGroup} gLink_ = case (publicGroup, gLink_) of
+          (Nothing, Just GroupLink {connLinkContact = gLink})
+            | not (maybe False (descriptionContainsLink gLink) description) -> [groupLinkLine n (groupLinkText gLink)]
+          _ -> []
     deAdminCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRAdmin -> IO ()
     deAdminCommand ct ciId cmd
       | knownCt `elem` adminUsers || knownCt `elem` superUsers = case cmd of
