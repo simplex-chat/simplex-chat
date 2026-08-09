@@ -329,7 +329,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     DEContactLeftGroup ctId g -> deContactLeftGroup ctId g
     DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
     DEGroupDeleted g -> deGroupDeleted g
-    DEChatLinkReceived {contact = ct, chatItemId = ciId, chatLink, ownerSig} -> deChatLinkReceived ct ciId chatLink ownerSig
+    DEChatLinkReceived {contact = ct, chatLink, ownerSig} -> deChatLinkReceived ct chatLink ownerSig
     DEMemberUpdated {groupInfo = g, fromMember, toMember} -> deMemberUpdated g fromMember toMember
     DEUnsupportedMessage _ct _ciId -> pure ()
     DEItemEditIgnored _ct -> pure ()
@@ -900,8 +900,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         notifyOwner gr $ "The " <> gt <> " " <> userGroupReference gr g <> " is deleted.\n\nThe " <> gt <> " is no longer listed in the directory."
         notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " is deleted)."
 
-    deChatLinkReceived :: Contact -> ChatItemId -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
-    deChatLinkReceived ct _ciId (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) =
+    deChatLinkReceived :: Contact -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
+    deChatLinkReceived ct (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) =
       case groupType of
         GTUnknown tag -> sendMessage cc ct $ "Unsupported group type: " <> T.pack (show tag)
         gt -> do
@@ -912,13 +912,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Right (CRConnectionPlan _ (ACCL SCMContact ccLink) _ _ plan) ->
               handleGroupLinkPlan ct ccLink mId ownerSig gt' plan
             _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
-    deChatLinkReceived ct ciId (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just pg}}) _ =
-      getRegisteredGroupByLink (ACL SCMContact $ CLShort connLink) >>= \case
-        Just (g, gr)
-          | isAdminUser ct -> sendGroupsInfo ct ciId True ([(g, gr)], 1)
-          | groupRegStatus gr == GRSActive -> sendFoundGroups ct ciId ("Found " <> groupTypeStr' pg <> ":") [(g, gr)] 0
-        _ -> sendMessage cc ct $ "To add a " <> groupTypeStr' pg <> " to directory you must be the owner."
-    deChatLinkReceived ct _ciId _ _ =
+    deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just pg}}) _ =
+      sendMessage cc ct $ "To add a " <> groupTypeStr' pg <> " to directory you must be the owner."
+    deChatLinkReceived ct _ _ =
       sendMessage cc ct "Only channels can be added to directory via link."
 
     groupTypeStr :: GroupType -> Text
@@ -1058,7 +1054,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           getRegisteredGroupByLink uri >>= \case
             Just (g, gr)
               | isAdmin -> sendGroupsInfo ct ciId True ([(g, gr)], 1)
-              | groupRegStatus gr == GRSActive -> sendFoundGroups ct ciId "Found group:" [(g, gr)] 0
+              | groupRegStatus gr == GRSActive -> sendFoundGroups "Found group:" [(g, gr)] 0
             _
               | isAdmin -> sendReply "This link is not registered in the directory"
               | otherwise -> sendReply linkNotFound
@@ -1218,7 +1214,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       where
-        isAdmin = isAdminUser ct
+        knownCt = knownContact ct
+        isAdmin = knownCt `elem` adminUsers || knownCt `elem` superUsers
         withUserGroupReg ugrId = withUserGroupReg_ ugrId . Just
         withUserGroupReg_ ugrId gName_ action =
           getUserGroupReg cc user (contactId' ct) ugrId >>= \case
@@ -1236,7 +1233,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Right (gs, n) -> do
               let moreGroups = n - length gs
               updateSearchRequest searchType $ last gs
-              sendFoundGroups ct ciId (replyStr gs n) gs moreGroups
+              sendFoundGroups (replyStr gs n) gs moreGroups
             Left e -> sendReply $ "Error: searchListedGroups. Please notify the developers.\n" <> T.pack e
         allGroupsReply sortName gs n =
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
@@ -1246,6 +1243,38 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           searchTime <- getCurrentTime
           let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
           atomically $ TM.insert (contactId' ct) search searchRequests
+        getRegisteredGroupByLink uri =
+          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget uri)) PRMNever Nothing) >>= \case
+            Right (CRConnectionPlan _ _ _ _ (CPGroupLink glp)) -> case glp of
+              GLPOwnLink g -> groupReg g
+              GLPKnown {groupInfo = g} -> groupReg g
+              GLPConnectingProhibit (Just g) -> groupReg g
+              _ -> pure Nothing
+            _ -> pure Nothing
+          where
+            groupReg g = fmap (g,) . eitherToMaybe <$> getGroupReg cc (groupId' g)
+        sendFoundGroups reply gs moreGroups =
+          void . forkIO $ do
+            msgs <- mapM foundGroup gs
+            sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| msgs <> [moreMsg | moreGroups > 0]
+          where
+            replyMsg = (Just ciId, MCText reply)
+            foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _) = do
+              linkStr_ <- foundGroupLinkLine g p
+              let membersStr = "_" <> membersCountStr p groupSummary <> "_"
+                  showId = if isAdmin then tshow groupId <> ". " else ""
+                  text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] <> linkStr_ <> [membersStr] <> knockingStr memberAdmission
+              pure (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
+            moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
+        -- link line for a non-public group in search results, unless its welcome message already contains it
+        foundGroupLinkLine g GroupProfile {displayName = n, description, publicGroup} = case publicGroup of
+          Just _ -> pure []
+          Nothing ->
+            withDB' "getGroupLink" cc (\db -> runExceptT $ getGroupLink db user g) >>= \case
+              Right (Right GroupLink {connLinkContact = gLink})
+                | not (maybe False (descriptionContainsLink gLink) description) ->
+                    pure [groupLinkLine n (groupLinkText gLink)]
+              _ -> pure []
     deAdminCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRAdmin -> IO ()
     deAdminCommand ct ciId cmd
       | knownCt `elem` adminUsers || knownCt `elem` superUsers = case cmd of
@@ -1264,13 +1293,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                           rolesOk <- if isPublicGroup_ then pure (Right GRSOk) else getGroupRolesStatus g gr
                           case rolesOk of
                             Right GRSOk -> do
+                              let grPromoted'
+                                    | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
+                                    | otherwise = False
                               gLink_ <- if isPublicGroup_ then pure (Right Nothing) else approvedGroupLink g
                               case gLink_ of
                                 Left e -> sendReply e
-                                Right gLink' -> do
-                                  let grPromoted'
-                                        | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
-                                        | otherwise = False
+                                Right gLink' ->
                                   setGroupStatusPromo sendReply st env cc gr GRSActive grPromoted' $ do
                                     let approved = "The " <> gt <> " " <> userGroupReference' gr n <> " is approved"
                                         addLink = maybe False (\l -> not $ maybe False (descriptionContainsLink l) descr_) gLink'
@@ -1428,47 +1457,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     mkSendReply :: Contact -> ChatItemId -> Text -> IO ()
     mkSendReply ct ciId = sendComposedMessage cc ct (Just ciId) . MCText
-
-    isAdminUser :: Contact -> Bool
-    isAdminUser ct = let kc = knownContact ct in kc `elem` adminUsers || kc `elem` superUsers
-
-    getRegisteredGroupByLink :: AConnectionLink -> IO (Maybe (GroupInfo, GroupReg))
-    getRegisteredGroupByLink uri =
-      sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget uri)) PRMNever Nothing) >>= \case
-        Right (CRConnectionPlan _ _ _ _ (CPGroupLink glp)) -> case glp of
-          GLPOwnLink g -> groupReg g
-          GLPKnown {groupInfo = g} -> groupReg g
-          GLPConnectingProhibit (Just g) -> groupReg g
-          _ -> pure Nothing
-        _ -> pure Nothing
-      where
-        groupReg g = fmap (g,) . eitherToMaybe <$> getGroupReg cc (groupId' g)
-
-    sendFoundGroups :: Contact -> ChatItemId -> Text -> [(GroupInfo, GroupReg)] -> Int -> IO ()
-    sendFoundGroups ct ciId reply gs moreGroups =
-      void . forkIO $ do
-        groupMsgs <- mapM foundGroup gs
-        sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| groupMsgs <> [moreMsg | moreGroups > 0]
-      where
-        replyMsg = (Just ciId, MCText reply)
-        foundGroup (g@GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _) = do
-          linkStr_ <- foundGroupLinkLine g p
-          let membersStr = "_" <> membersCountStr p groupSummary <> "_"
-              showId = if isAdminUser ct then tshow groupId <> ". " else ""
-              text = T.unlines $ [showId <> groupInfoText (simplexNameStr <$> verifiedGroupDomain g) p] <> linkStr_ <> [membersStr] <> knockingStr memberAdmission
-          pure (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
-        moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
-
-    -- link line for a non-public group in search results, unless its welcome message already contains it
-    foundGroupLinkLine :: GroupInfo -> GroupProfile -> IO [Text]
-    foundGroupLinkLine g GroupProfile {displayName = n, description, publicGroup} = case publicGroup of
-      Just _ -> pure []
-      Nothing ->
-        withDB' "getGroupLink" cc (\db -> runExceptT $ getGroupLink db user g) >>= \case
-          Right (Right GroupLink {connLinkContact = gLink})
-            | not (maybe False (descriptionContainsLink gLink) description) ->
-                pure [groupLinkLine n (groupLinkText gLink)]
-          _ -> pure []
 
     withGroupAndReg :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()
     withGroupAndReg sendReply gId = withGroupAndReg_ sendReply gId . Just
