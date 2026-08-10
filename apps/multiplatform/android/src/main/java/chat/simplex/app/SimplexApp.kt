@@ -341,6 +341,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
 
+      override fun androidLoadPlayStoreCountry() = loadPlayStoreCountry()
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {
