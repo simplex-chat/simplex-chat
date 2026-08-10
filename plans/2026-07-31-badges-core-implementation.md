@@ -126,6 +126,7 @@ Protocol types — `src/Simplex/Chat/Badges/Service.hs`, one constructor/field p
 - `BadgeServiceRequest`
 - `BadgeServiceCommand`
 - `ServicePaymentMethod`
+- `ServiceInvoice`
 - `CardProvider`
 - `CryptoCurrency`
 - `CurrencyAmount`
@@ -159,7 +160,7 @@ A request is an envelope: `version`; `purchaseKey`? (optional for `getBadgeCatal
 | request `type` | request fields (beyond `purchaseKey`, `version`) | response `type` | response fields |
 |---|---|---|---|
 | `getBadgeCatalog` (signature optional) | — | `badgeCatalog` | `catalog`<br>`badgeStatement`? (for signed requests) |
-| `getBadgeInvoice` | `priceId`<br>`offerId`? (absent for 1 month at the badge price)<br>`badgeInfo {badgeType, badgeExpiry?, badgeExtra}`<br>`paymentVia` — `card`: `provider`; `crypto`: `currency`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeInvoice` | `invoiceId`<br>`badgeType`<br>`months`<br>`price`<br>`discount`?<br>`credit`?<br>`amount` (= price − discount − credit)<br>`currency`<br>`expiresAt`<br>`paymentTo` — `card`: `provider`, `url`; `crypto`: `currency`, `address`, `cryptoAmount` |
+| `getBadgeInvoice` | `priceId`<br>`offerId`? (absent for 1 month at the badge price)<br>`badgeInfo {badgeType, badgeExpiry?, badgeExtra}`<br>`paymentVia` — `card`: `provider`; `crypto`: `currency`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeInvoice` | `invoice` — `invoiceId`, `price`, `discount`?, `credit`?, `amount` (= price − discount − credit), `currency`, `expiresAt`, `paymentTo` — `card`: `provider`, `url`; `crypto`: `currency`, `address`, `cryptoAmount`<br>`badgeType`<br>`months` |
 | `purchaseBadge` | `badgeRequest` — `masterKey`, `badgeInfo`<br>`payment` — `apple`: `jws`; `google`: `token`; `invoice`: `invoiceId`; `code`: `code`; `receipt`: `receipt` (transfer, post-MVP)<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeCredential` | `credential`<br>`receipt`? (not provided for lifetime badges)<br>`statement` |
 | `upgradeBadgeSubscription` | `badgeRequest`<br>`payment` — `apple`: `jws`; `google`: `token`<br>`balance` | `badgeCredential` | `credential`?<br>`statement` |
 | `issueBadge` | `badgeRequest`<br>`balance` | `badgeCredential` | `credential`? (absent when the balance is exhausted)<br>`statement` |

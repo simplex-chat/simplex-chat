@@ -17,6 +17,7 @@ module Simplex.Chat.Badges.Service
     ServicePayment (..),
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
+    ServiceInvoice (..),
     ServicePaymentDestination (..),
     BadgeServiceErrorCode (..),
     BadgeCatalog (..),
@@ -119,16 +120,9 @@ data BadgeServiceResponse
         badgeStatement :: Maybe BadgeStatement -- for signed getBadgeCatalog
       }
   | BSPBadgeInvoice
-      { invoiceId :: InvoiceId,
+      { invoice :: ServiceInvoice,
         badgeType :: BadgeType,
-        months :: Word8,
-        price :: CurrencyAmount,
-        discount :: Maybe CurrencyAmount, -- discount amount from monthly price
-        credit :: Maybe CurrencyAmount, -- credit for upgrade
-        amount :: CurrencyAmount,
-        currency :: Text,
-        expiresAt :: UTCTime,
-        paymentTo :: ServicePaymentDestination
+        months :: Word8
       }
   | BSPBadgeCredential
       { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause
@@ -140,6 +134,18 @@ data BadgeServiceResponse
         message :: Maybe Text,
         retryAfter :: Maybe Word32
       }
+
+data ServiceInvoice = ServiceInvoice
+  { invoiceId :: InvoiceId,
+    price :: CurrencyAmount,
+    discount :: Maybe CurrencyAmount, -- discount amount from the price
+    credit :: Maybe CurrencyAmount, -- credit for upgrade
+    amount :: CurrencyAmount, -- price - discount - credit
+    currency :: Text,
+    expiresAt :: UTCTime,
+    paymentTo :: ServicePaymentDestination
+  }
+  deriving (Show)
 
 data ServicePaymentDestination
   = SPDCard
