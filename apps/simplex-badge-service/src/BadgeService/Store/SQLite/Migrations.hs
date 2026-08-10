@@ -31,7 +31,7 @@ m20260806_badge_service_schema =
     <> withPrefix
       servicePrefix
       [sql|
-ALTER TABLE @badge_purchases ADD COLUMN receipt_hash BLOB;
+ALTER TABLE @payments ADD COLUMN receipt_hash BLOB;
 |]
 
 down_m20260806_badge_service_schema :: Query

@@ -30,6 +30,7 @@ CREATE TABLE @invoices(
   currency TEXT NOT NULL,
   payment_url TEXT,
   payment_address TEXT,
+  payment_crypto_currency TEXT,
   payment_crypto_amount TEXT,
   expires_at TIMESTAMPTZ NOT NULL,
   status TEXT NOT NULL,
@@ -46,7 +47,7 @@ CREATE TABLE @payments(
   currency TEXT,
   status TEXT NOT NULL,
   exception TEXT,
-  renews_at TIMESTAMPTZ,
+  subscription_renews_at TIMESTAMPTZ,
   grace_until TIMESTAMPTZ,
   cancelled SMALLINT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL,
@@ -57,7 +58,7 @@ CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
 
 CREATE INDEX @idx_payments_invoice ON @payments(invoice_id);
 
-CREATE TABLE @charges(
+CREATE TABLE @subscription_charges(
   charge_id TEXT NOT NULL PRIMARY KEY,
   payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
   provider_charge_ref TEXT NOT NULL,
@@ -144,7 +145,7 @@ CREATE TABLE @badge_ledger(
   entry_credit_type TEXT,
   entry_debit_type TEXT,
   payment_id TEXT REFERENCES @payments,
-  charge_id TEXT REFERENCES @charges,
+  charge_id TEXT REFERENCES @subscription_charges,
   from_purchase_id BIGINT REFERENCES @badge_purchases,
   to_purchase_id BIGINT REFERENCES @badge_purchases
 );
@@ -184,7 +185,7 @@ DROP TABLE @badge_ledger;
 DROP TABLE @badge_subscription_changes;
 DROP TABLE @badge_invoices;
 DROP TABLE @badge_purchases;
-DROP TABLE @charges;
+DROP TABLE @subscription_charges;
 DROP TABLE @payments;
 DROP TABLE @invoices;
 DROP TABLE @badge_offers;
@@ -199,8 +200,6 @@ ALTER TABLE badge_purchases ADD COLUMN user_id BIGINT REFERENCES users ON DELETE
 
 ALTER TABLE badge_purchases ADD COLUMN purchase_priv_key BYTEA;
 
-ALTER TABLE badge_purchases ADD COLUMN receipt_code TEXT;
-
 ALTER TABLE badge_purchases ADD COLUMN alert_acked_kind TEXT;
 
 ALTER TABLE badge_purchases ADD COLUMN alert_acked_episode TEXT;
@@ -208,6 +207,8 @@ ALTER TABLE badge_purchases ADD COLUMN alert_acked_episode TEXT;
 ALTER TABLE badge_purchases ADD COLUMN alert_snooze_until TIMESTAMPTZ;
 
 ALTER TABLE payments ADD COLUMN evidence BYTEA;
+
+ALTER TABLE payments ADD COLUMN receipt_code TEXT;
 
 ALTER TABLE badge_ledger ADD COLUMN entry_type_unknown SMALLINT NOT NULL DEFAULT 0;
 

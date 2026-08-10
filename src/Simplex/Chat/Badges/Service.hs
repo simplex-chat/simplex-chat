@@ -82,10 +82,6 @@ data BadgeServiceCommand
         balance :: BadgeBalance
       }
   | BSCPauseBadge
-  | BSCTransferBadge
-      { badgeRequest :: BadgeRequest,
-        receipt :: Text
-      }
 
 data ServicePaymentMethod
   = SPMCard {provider :: CardProvider}
@@ -107,6 +103,7 @@ data ServicePayment
   | SPGoogle {token :: Text}
   | SPInvoice {invoiceId :: InvoiceId}
   | SPCode {code :: Text}
+  | SPReceipt {receipt :: Text} -- transfer of unissued months
   deriving (Show)
 
 data BadgeUpgrade = BadgeUpgrade

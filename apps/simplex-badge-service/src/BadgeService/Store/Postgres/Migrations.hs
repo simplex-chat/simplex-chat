@@ -30,7 +30,7 @@ m20260806_badge_service_schema =
     <> withPrefix
       servicePrefix
       [r|
-ALTER TABLE @badge_purchases ADD COLUMN receipt_hash BYTEA;
+ALTER TABLE @payments ADD COLUMN receipt_hash BYTEA;
 |]
 
 down_m20260806_badge_service_schema :: Text

@@ -81,6 +81,14 @@
         },
         "code": {
           "properties": {"code": {"type": "string"}}
+        },
+        "receipt": {
+          "properties": {
+            "receipt": {
+              "type": "string",
+              "metadata": {"comment": "transfer of unissued months"}
+            }
+          }
         }
       }
     },
@@ -297,12 +305,6 @@
         },
         "pauseBadge": {
           "optionalProperties": {}
-        },
-        "transferBadge": {
-          "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
-            "receipt": {"type": "string"}
-          }
         }
       }
     },

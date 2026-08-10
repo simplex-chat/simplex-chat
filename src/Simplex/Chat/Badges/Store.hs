@@ -9,7 +9,7 @@ module Simplex.Chat.Badges.Store
     BadgePlan (..),
     BadgeItemStatus (..),
     OfferDiscount (..),
-    BadgeProvider (..),
+    PaymentProvider (..),
     BadgePaymentStatus (..),
     BadgePurchaseStatus (..),
     LedgerEntryType (..),
@@ -62,7 +62,7 @@ data OfferDiscount
   deriving (Eq, Show)
 
 -- unconfirmed draft
-data BadgeProvider = BPRApple | BPRGoogle | BPRStripe | BPRBtc | BPRXmr | BPRCode
+data PaymentProvider = PPApple | PPGoogle | PPStripe | PPCrypto | PPCode | PPReceipt
   deriving (Eq, Show)
 
 -- unconfirmed draft
@@ -133,7 +133,7 @@ data BadgePayment = BadgePayment
     months :: Maybe Int,
     amount :: Maybe Int64,
     currency :: Maybe Text,
-    provider :: BadgeProvider,
+    provider :: PaymentProvider,
     providerRef :: Maybe Text,
     invoiceUrl :: Maybe Text,
     invoiceAddress :: Maybe Text,
