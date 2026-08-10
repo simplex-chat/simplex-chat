@@ -9764,8 +9764,9 @@ alert subtitle</note>
         <target>Pour cacher les messages indésirables.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To make SimpleX Network last." xml:space="preserve">
+      <trans-unit id="To make SimpleX Network last." xml:space="preserve" approved="no">
         <source>To make SimpleX Network last.</source>
+        <target state="translated">Pour que le réseau SimpleX perdure.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
@@ -9820,8 +9821,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour enregistrer un message vocal, veuillez accorder la permission d'utiliser le microphone.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To resolve names" xml:space="preserve">
+      <trans-unit id="To resolve names" xml:space="preserve" approved="no">
         <source>To resolve names</source>
+        <target state="translated">Pour résoudre les noms</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
@@ -9834,8 +9836,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour envoyer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To send commands you must be connected." xml:space="preserve">
+      <trans-unit id="To send commands you must be connected." xml:space="preserve" approved="no">
         <source>To send commands you must be connected.</source>
+        <target state="translated">Vous devez être connecté pour envoyer des commandes.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -9843,8 +9846,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour prendre en charge les notifications push instantanées, la base de données du chat doit être migrée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
+      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve" approved="no">
         <source>To use another profile after connection attempt, delete the chat and use the link again.</source>
+        <target state="translated">Pour utiliser un autre profil après une tentative de connexion, supprimez la discussion et utilisez à nouveau le lien.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
@@ -9857,8 +9861,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify keys with this subscriber, compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify keys with this subscriber, compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify keys with this subscriber, compare (or scan) the code on your devices.</source>
+        <target state="translated">Pour vérifier les clés avec cet abonné, comparez (ou scannez) le code sur vos appareils.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -9866,8 +9871,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Basculer en mode incognito lors de la connexion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Token status: %@." xml:space="preserve">
+      <trans-unit id="Token status: %@." xml:space="preserve" approved="no">
         <source>Token status: %@.</source>
+        <target state="translated">Statut du jeton : %@.</target>
         <note>token status</note>
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
