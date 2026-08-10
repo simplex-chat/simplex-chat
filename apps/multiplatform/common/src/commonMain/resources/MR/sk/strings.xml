@@ -778,7 +778,6 @@
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Vaša aktuálna chatová databáza bude VYMAZANÁ a NAHRADENÁ importovanou databázou.\nToto je nezvratné – váš profil, kontakty, správy a súbory budú nezvratne stratené.</string>
     <string name="delete_and_notify_contact">Vymazať a informovať kontakt</string>
     <string name="chat_ttl_options_footer">Vymazať správy chatu z vášho zariadenia.</string>
-    <string name="delete_chat_profile"></string>
     <string name="delete_member_support_chat_alert_title">Vymazať chat s členom?</string>
     <string name="share_text_deleted_at">Vymazané: %s</string>
     <string name="delete_member_message__question">Vymazať správu člena?</string>
