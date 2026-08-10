@@ -9714,8 +9714,9 @@ alert subtitle</note>
         <target state="translated">Voici votre lien pour le canal %@ !</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
+      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve" approved="no">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <target state="translated">Ce lien nécessite une version plus récente. Mettez l'application à jour ou demandez à votre contact d'envoyer un lien compatible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
@@ -9723,8 +9724,9 @@ alert subtitle</note>
         <target>Ce lien a été utilisé avec un autre appareil mobile, veuillez créer un nouveau lien sur le bureau.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This message was deleted or not received yet." xml:space="preserve">
+      <trans-unit id="This message was deleted or not received yet." xml:space="preserve" approved="no">
         <source>This message was deleted or not received yet.</source>
+        <target state="translated">Ce message a été supprimé ou n'a pas encore été reçu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -9732,8 +9734,9 @@ alert subtitle</note>
         <target>Ce paramètre s'applique aux messages de votre profil de chat actuel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
+      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve" approved="no">
         <source>This setting is for your current profile **%@**.</source>
+        <target state="translated">Ce paramètre concerne votre profil actuel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
