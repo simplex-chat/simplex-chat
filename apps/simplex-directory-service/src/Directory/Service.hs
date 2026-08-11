@@ -1126,14 +1126,14 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           isGroupLink _ = False
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
-          Just SearchRequest {searchType, searchTime, lastGroup} -> do
+          Just SearchRequest {searchType, searchTime, searchCursor} -> do
             currentTime <- getCurrentTime
             if diffUTCTime currentTime searchTime > 300 -- 5 minutes
               then do
                 atomically $ TM.delete (contactId' ct) searchRequests
                 showAllGroups
               else
-                sendFoundListedGroups searchType (Just lastGroup) "No more groups" $ \gs _ ->
+                sendFoundListedGroups searchType (Just searchCursor) "No more groups" $ \gs _ ->
                   "Sending " <> tshow (length gs) <> " more group(s)."
           Nothing -> showAllGroups
         where
@@ -1280,8 +1280,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               | maybe True (displayName ==) gName_ -> action g gr
               | otherwise -> sendReply $ "Group ID " <> tshow ugrId <> " has the display name " <> displayName
         sendReply = mkSendReply ct ciId
-        sendFoundListedGroups searchType lastGroup_ notFound replyStr =
-          searchListedGroups cc user searchType lastGroup_ searchResults >>= \case
+        sendFoundListedGroups searchType cursor_ notFound replyStr =
+          searchListedGroups cc user searchType cursor_ searchResults >>= \case
             Right ([], _) -> do
               atomically $ TM.delete (contactId' ct) searchRequests
               sendReply notFound
@@ -1294,9 +1294,10 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
            in tshow n <> " group(s) listed" <> more <> "."
         updateSearchRequest :: SearchType -> (GroupInfo, GroupReg) -> IO ()
-        updateSearchRequest searchType (GroupInfo {groupId}, _) = do
+        updateSearchRequest searchType (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}) = do
           searchTime <- getCurrentTime
-          let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
+          let searchCursor = SearchCursor {lastMembers = currentMembers, lastCreatedAt = createdAt, lastGroupId = groupId}
+              search = SearchRequest {searchType, searchTime, searchCursor}
           atomically $ TM.insert (contactId' ct) search searchRequests
         sendFoundGroups reply gs moreGroups =
           void . forkIO $ sendComposedMessages_ cc (SRDirect $ contactId' ct) msgs

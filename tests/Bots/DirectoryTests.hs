@@ -44,6 +44,7 @@ directoryServiceTests = do
   it "should join found group via link" testJoinGroup
   it "should support group names with spaces" testGroupNameWithSpaces
   it "should return more groups in search, all and recent groups" testSearchGroups
+  it "should page from the sort key, not group ID" testSearchGroupsPaging
   it "should invite to owners' group if specified" testInviteToOwnersGroup
   it "should re-invite owner who left owners' group" testInviteOwnerAfterLeavingOwnersGroup
   describe "de-listing the group" $ do
@@ -581,6 +582,68 @@ testSearchGroups ps =
         "MyGroup term1 term2 term3 term4 term5",
         "Another"
       ]
+    receivedGroup :: TestCC -> Int -> Int -> IO ()
+    receivedGroup u ix count = do
+      u <#. ("'SimpleX Directory'> " <> groups !! ix)
+      u <## "Welcome message:"
+      u <##. "Link to join the group "
+      u <## (show count <> " members")
+
+-- Paging must continue from the sort key, not from group_id: here the last registered
+-- group has the most members, so it sorts first, and a group_id cursor would send it again.
+testSearchGroupsPaging :: HasCallStack => TestParams -> IO ()
+testSearchGroupsPaging ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        forM_ [1 .. 4 :: Int] $ \i -> registerGroupId superUser bob (groups !! (i - 1)) "" i i
+        connectUsers bob cath
+        fullAddMember "groupD" "" bob cath GRMember
+        joinGroup "groupD" cath bob
+        cath <## "#groupD: member 'SimpleX Directory_1' is connected"
+        cath <## "contact and member are merged: 'SimpleX Directory', #groupD 'SimpleX Directory_1'"
+        cath <## "use @'SimpleX Directory' <message> to send messages"
+        -- /all: members desc, so groupD (3) precedes the groups registered before it
+        cath #> "@'SimpleX Directory' /all"
+        cath <# "'SimpleX Directory'> > /all"
+        cath <## "      4 group(s) listed, sending top 3."
+        receivedGroup cath 3 3
+        receivedGroup cath 0 2
+        receivedGroup cath 1 2
+        cath <# "'SimpleX Directory'> Send /next for 1 more result(s)."
+        cath #> "@'SimpleX Directory' /next"
+        cath <# "'SimpleX Directory'> > /next"
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 2 2
+        -- /new: created_at desc, in reverse registration order
+        cath #> "@'SimpleX Directory' /new"
+        cath <# "'SimpleX Directory'> > /new"
+        cath <## "      4 group(s) listed, sending the most recent 3."
+        receivedGroup cath 3 3
+        receivedGroup cath 2 2
+        receivedGroup cath 1 2
+        cath <# "'SimpleX Directory'> Send /next for 1 more result(s)."
+        cath #> "@'SimpleX Directory' /next"
+        cath <# "'SimpleX Directory'> > /next"
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 0 2
+        -- text search sorts as /all does
+        cath #> "@'SimpleX Directory' group"
+        cath <# "'SimpleX Directory'> > group"
+        cath <## "      Found 4 group(s), sending top 3."
+        receivedGroup cath 3 3
+        receivedGroup cath 0 2
+        receivedGroup cath 1 2
+        cath <# "'SimpleX Directory'> Send /next for 1 more result(s)."
+        cath #> "@'SimpleX Directory' /next"
+        cath <# "'SimpleX Directory'> > /next"
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 2 2
+  where
+    groups :: [String]
+    groups = ["groupA", "groupB", "groupC", "groupD"]
     receivedGroup :: TestCC -> Int -> Int -> IO ()
     receivedGroup u ix count = do
       u <#. ("'SimpleX Directory'> " <> groups !! ix)
