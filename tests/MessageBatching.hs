@@ -33,6 +33,7 @@ import Simplex.Chat.Protocol
     GrpMsgForward (GrpMsgForward),
     MsgContent (MCText),
     VerifiedMsg (VMUnsigned),
+    maxBatchElementCount,
     maxEncodedMsgLength,
     mcSimple,
   )
@@ -45,6 +46,7 @@ batchingTests = describe "message batching tests" $ do
   testBatchingCorrectness
   testBinaryBatchingCorrectness
   it "image x.msg.new and x.msg.file.descr should fit into single batch" testImageFitsSingleBatch
+  it "splits a batch that exceeds the element count limit" testBatchElementCountLimit
   it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
   it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
 
@@ -149,6 +151,14 @@ testImageFitsSingleBatch = do
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
   runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
+
+-- elements are far below maxEncodedMsgLength, so only the element count guard can split this
+testBatchElementCountLimit :: IO ()
+testBatchElementCountLimit = do
+  let msgs = replicate (maxBatchElementCount + 1) "a"
+      (errs, batches) = partitionEithers $ batchMessages BMJson maxEncodedMsgLength (map Right msgs)
+  errs `shouldBe` []
+  map (\(MsgBatch _ ms) -> length ms) batches `shouldBe` [1, maxBatchElementCount]
 
 testRelayBatchAllLarge :: IO ()
 testRelayBatchAllLarge = do

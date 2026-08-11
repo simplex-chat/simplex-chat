@@ -909,6 +909,10 @@ maxCompressedMsgLength = 13380
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
 
+-- Applies to all batch formats; 255 is the maximum for the 1-byte count in the binary batch format.
+maxBatchElementCount :: Int
+maxBatchElementCount = 255
+
 -- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
 -- promotion cap over the promoted (member/moderator/admin) set.
 maxGroupRosterSize :: Int
@@ -953,10 +957,13 @@ encodeChatMessage maxSize msg = do
 
 parseChatMessages :: ByteString -> [Either String AParsedMsg]
 parseChatMessages "" = [Left "empty string"]
-parseChatMessages msg = case B.head msg of
+parseChatMessages msg = checkBatchLimit $ case B.head msg of
   'X' -> decodeCompressed (B.tail msg)
   c -> parseUncompressed c msg
   where
+    checkBatchLimit ms
+      | null (drop maxBatchElementCount ms) = ms
+      | otherwise = [Left "too many messages in batch"]
     parseUncompressed c s = case c of
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map (fmap plainMsg . parseItem) v

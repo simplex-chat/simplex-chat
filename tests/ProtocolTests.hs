@@ -9,6 +9,9 @@ module ProtocolTests where
 
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
+import Data.List (isInfixOf)
+import qualified Data.List.NonEmpty as L
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
@@ -16,8 +19,10 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
@@ -27,6 +32,22 @@ protocolTests :: Spec
 protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
+  batchLimitTests
+
+batchLimitTests :: Spec
+batchLimitTests = describe "Chat message batch limits" $ do
+  it "parses a JSON batch at the element count limit" $
+    length (parseChatMessages $ jsonBatch maxBatchElementCount) `shouldBe` maxBatchElementCount
+  it "rejects a JSON batch above the element count limit" $
+    batchError (jsonBatch $ maxBatchElementCount + 1) `shouldSatisfy` isInfixOf "too many messages in batch"
+  it "rejects compressed blocks that together exceed the element count limit" $
+    batchError (compressedBatch 2 maxBatchElementCount) `shouldSatisfy` isInfixOf "too many messages in batch"
+  where
+    jsonBatch n = "[" <> B.intercalate "," (replicate n "{}") <> "]"
+    compressedBatch k n = markCompressedBatch . smpEncode . L.fromList $ replicate k (compress1 $ jsonBatch n)
+    batchError s = case parseChatMessages s of
+      [Left e] -> e
+      rs -> "expected a single error, got " <> show (length rs) <> " results"
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
