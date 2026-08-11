@@ -774,6 +774,7 @@ fileprivate struct CreateUpdateAddressShortLink: View {
 fileprivate struct InvestInSimpleXChat: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
+    @State private var showGetStakeSheet = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -788,13 +789,8 @@ fileprivate struct InvestInSimpleXChat: View {
                 Text(verbatim: "Equity crowdfunding launched!")
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
-                if let url = URL("https://wefunder.com/simplexchat") {
-                    ExternalLink(destination: url) {
-                        HStack {
-                            Text(verbatim: "Learn more on Wefunder")
-                            Image(systemName: "arrow.up.right.circle")
-                        }
-                    }
+                Button { showGetStakeSheet = true } label: {
+                    Text(verbatim: "Learn more")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -804,6 +800,42 @@ fileprivate struct InvestInSimpleXChat: View {
                 .frame(width: UIScreen.main.bounds.width / 5)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(isPresented: $showGetStakeSheet) {
+            GetStakeView()
+        }
+    }
+}
+
+fileprivate struct GetStakeView: View {
+    var body: some View {
+        List {
+            Text(verbatim: "Get a stake in SimpleX Chat")
+                .font(.largeTitle)
+                .bold()
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            VStack(alignment: .leading, spacing: 18) {
+                Text(verbatim: "SimpleX is the first messaging network without user IDs. Nobody can see who you talk to, and no one can take away the groups, channels and audiences you build — this design cannot be retrofitted into any existing network.")
+                Text(verbatim: "Over 480,000 people use SimpleX Chat every month, sending 20 million messages a day — with zero paid marketing. Users have donated over $650,000.")
+                Text(verbatim: "Messaging stays free for users. We plan to earn from what creators and businesses pay for: public network names, business messaging, and servers for big channels.")
+                Text(verbatim: "We launched equity crowdfunding — by investing, you benefit from the company growth, and help build the network that people own.")
+                if let url = URL(string: "https://wefunder.com/simplexchat") {
+                    ExternalLink(destination: url) {
+                        HStack {
+                            Text(verbatim: "Learn more on Wefunder")
+                            Image(systemName: "arrow.up.right.circle")
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+        }
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 
