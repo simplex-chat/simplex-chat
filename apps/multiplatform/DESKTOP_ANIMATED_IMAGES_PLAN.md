@@ -63,7 +63,9 @@ Two optimisations were measured and **rejected**:
 What was kept: decoding is confined to two threads of the shared pool, so untrusted decode work cannot starve
 the coroutines that deliver messages; and frames are only decoded while they can be seen — not while the app
 sits in the tray, and not while the image is behind the privacy blur, where each frame would otherwise be
-decoded, uploaded and then blurred away again for nobody.
+decoded, uploaded and then blurred away again for nobody. The chat list preview stays a still image for
+the same reason: it is a 36dp box that the desktop layout keeps on screen the whole time, so animating it
+would hold a raster and spend a frame of work per listed chat, without pause.
 
 ## Verification
 

@@ -19,8 +19,11 @@ import kotlin.math.max
 
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
+  // Decoded once instead of on every recomposition, because an animation recomposes this on every frame
+  val still = remember(data) { getBitmapFromByteArray(data, false) ?: MR.images.decentralized.image.toComposeImageBitmap() }
+  val frame = rememberAnimatedImage(data, still)
   Image(
-    getBitmapFromByteArray(data, false) ?: MR.images.decentralized.image.toComposeImageBitmap(),
+    frame.value,
     contentDescription = stringResource(MR.strings.image_descr),
     contentScale = ContentScale.Fit,
     modifier = modifier,
