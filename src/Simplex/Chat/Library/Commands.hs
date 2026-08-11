@@ -1692,7 +1692,8 @@ processChatCommand cxt nm = \case
           Just RelayAddressLinkData {relayProfile} -> do
             let failWithProfile step e =
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
-            lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+            -- only the compatibility of the URI matters here; the result was discarded
+            lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
               Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
               Just _ -> do
                 let chatV = initialChatVersion
@@ -3373,7 +3374,7 @@ processChatCommand cxt nm = \case
               _ -> throwChatError $ CEException "connection already started (past prepared status)"
         where
           joinNewConn subMode = do
-            -- possible improvement: use agent connRequestPQSupport to determine pqSupport here;
+            -- possible improvement: use agent connRequestAgentVersion to determine pqSupport here;
             -- for joinPreparedConn below - same + encodeConnInfoPQ;
             -- same for auto-accept on xGrpDirectInv
             acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
@@ -3761,10 +3762,10 @@ processChatCommand cxt nm = \case
     connectViaInvitation user@User {userId} incognito (CCLink cReq@(CRInvitationUri crData e2e) sLnk_) contactId_ =
       withInvitationLock "connect" (strEncode cReq) $ do
         subMode <- chatReadVar subscriptionMode
-        lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
+        lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
           Nothing -> throwChatError CEInvalidConnReq
           -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
-          Just (_, pqSup') -> do
+          Just _ -> do
             let chatV = initialChatVersion
             withFastStore' (\db -> getConnectionEntityByConnReq db cxt user cReqs) >>= \case
               Nothing -> joinNewConn chatV
@@ -3775,6 +3776,11 @@ processChatCommand cxt nm = \case
                     joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile)
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
+              -- connRequestPQSupport used to weaken the requested PQSupportOn to what
+              -- the negotiated agent and e2e versions could carry, and bound the result
+              -- here. Both floors are now above the thresholds it checked (agent 6 >
+              -- pqdr 5, e2e 3..3 = pqRatchet 3), so it can only return what was asked.
+              pqSup' = PQSupportOn
               joinNewConn chatV = do
                 -- [incognito] generate profile to send
                 incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -3922,9 +3928,11 @@ processChatCommand cxt nm = \case
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
       -- 0) toggle disabled - PQSupportOff
-      -- 1) toggle enabled, address supports PQ (connRequestPQSupport returns Just True) - PQSupportOn, enable support with compression
-      -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
-      lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+      -- 1) toggle enabled - PQSupportOn, enable support with compression
+      -- Case 2 (address does not support PQ) is unreachable now that the agent floor
+      -- is 6 and the e2e range is 3..3: every peer we accept supports PQ, so only the
+      -- compatibility of the URI is still worth asking about.
+      lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
         Just _ -> do
           let chatV = initialChatVersion
@@ -4254,7 +4262,7 @@ processChatCommand cxt nm = \case
         addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
         addRelay relay@UserChatRelay {address} = fmap (relay,) . tryAllErrors $ do
           (_, _, cReq) <- getShortLinkConnReq nm user address
-          lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+          lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
             Just _ -> do
               let chatV = initialChatVersion

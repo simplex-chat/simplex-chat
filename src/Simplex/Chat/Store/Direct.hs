@@ -199,7 +199,7 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
         -- TODO (proposed):
         -- - add agent version 8 for short links
         -- - update agentToChatVersion to convert 8 to 16
-        -- - return and correctly set peer's range from link (via connRequestPQSupport)
+        -- - return and correctly set peer's range from link (via connRequestAgentVersion)
         peerChatVRange = chatInitialVRange, -- this is 1-1
         connLevel = 0,
         viaContact = Nothing,

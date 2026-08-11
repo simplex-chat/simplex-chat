@@ -1201,7 +1201,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               case cReq of
                 CRContactUri crData@ConnReqUriData {crClientData} e2e -> do
                   let pqSup = PQSupportOff
-                  lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+                  -- connRequestAgentVersion replaced connRequestPQSupport: with the
+                  -- agent floor at 6 and the e2e range at 3..3, PQ is always supported,
+                  -- so the only thing left to learn here is whether the URI is
+                  -- compatible at all. The result was already discarded below.
+                  lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
                     Nothing -> throwChatError CEInvalidConnReq
                     Just _ -> do
                       let chatV = initialChatVersion

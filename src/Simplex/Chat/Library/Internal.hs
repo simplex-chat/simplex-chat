@@ -2940,8 +2940,11 @@ connRequestPQEncryption = \case
   CRContactUri _ rks -> pqEnc . snd <$> rks
   CRInvitationUri _ e2e -> Just $ pqEnc e2e
   where
-    pqEnc (CR.E2ERatchetParamsUri vr' _ _ pq) =
-      PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
+    -- The version gate is gone: supportedE2EEncryptVRange is 3..3 on this build
+    -- (minSupportedE2EEncryptVersion = _pqRatchetE2EEncryptVersion, Ratchet.hs:147),
+    -- and the agent refuses a peer whose e2e range does not intersect ours
+    -- (Agent.hs:1475) before this is reached, so maxVersion vr' >= 3 always held.
+    pqEnc (CR.E2ERatchetParamsUri _ _ _ pq) = PQEncryption $ isJust pq
 
 createRcvFeatureItems :: User -> Contact -> Contact -> CM' ()
 createRcvFeatureItems user ct ct' =
