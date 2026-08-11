@@ -47,7 +47,7 @@ Entry differences from `DirectoryEntry`: `welcomeMessage` dropped (it carries th
 
 `10968` is the constant to size against, not the raw 11,106 — it is the chat layer's already-correct expression of the same agent limit.
 
-**Entries per page is still bounded by images.** `image` is base64 of already-compressed JPEG/PNG, so compression recovers roughly the base64 expansion and no more: a near-cap 12,500-character image lands at roughly 9,400 bytes, against a 10,968 budget. One image-bearing entry per response; two will not fit whatever the page size. `searchResults` (default 10) is therefore not the binding constraint — the envelope is. See the open question in §6 on how the UI fills a list under that constraint.
+**Entries per page is still bounded by images.** `image` is base64 of already-compressed JPEG/PNG, so compression recovers roughly the base64 expansion and no more: a near-cap 12,500-character image lands at roughly 9,400 bytes, against a 10,968 budget. One image-bearing entry per response; two will not fit whatever the page size. `searchResults` (default 10) is therefore not the binding constraint — the envelope is. The app shows whatever fits and pages the rest manually (§6); streaming the response is the eventual fix and is out of scope here.
 
 **Handler.** Add `DEServiceRequest` to `DirectoryEvent` (Events.hs:48) and a `CEvtServiceRequest` case to `crDirectoryEvent_` (:81); in `directoryServiceEvent` (Service.hs:321) decode, search, reply with `APISendServiceResponse`. Malformed JSON never reaches the bot — the core rejects it before emitting the event (Subscriber.hs:1367-1374), so the handler only ever sees a well-formed object and only has to answer for a wrong shape or unknown method, which returns the error envelope, never a chat message. The response must likewise be a JSON object: the core decodes it into `J.Object` and fails the whole call otherwise (Commands.hs:1455).
 
@@ -163,7 +163,13 @@ On Kotlin that branch is `if (appPlatform.isAndroid) AndroidOnboardingCards()`, 
 
 Directory only — the Names section is bounded at two rows. The view model holds `entries`, `cursor`, `loading`, `error`; no count, since nothing renders one.
 
-**Open — how the list fills, given roughly one image-bearing entry per response (§1).** A user-tapped "Show more" per result is not a search experience, and each request is a full DR handshake, so the round trips are not cheap. The options are: keep tap-to-continue and accept a short list; auto-request the next page on arrival until N entries or a budget is reached, filling progressively; or send a smaller image for search results than the 12,500-character profile cap, which needs a re-encode the directory cannot currently do. This is a product call and it changes §5 and §6 — settle it before building the view model. "Show more" is the last row of the Directory section: it re-calls with the stored cursor, appends de-duplicated by key, and disappears when the cursor is `Nothing`; on failure it becomes a retry row. Changing the search text discards both sections and the cursor, as do profile and remote-host switches — `activeChatTagFilter` already clears `searchText` (ChatListView.kt:1034) and must clear results with it.
+The app renders exactly what the response carries — as many entries as fit the envelope, which is often a single group when the entry has a full-size image (§1). A short first page is acceptable; the app does not try to disguise it.
+
+Filling the list is manual. **"Show more"** is the last row of the Directory section: it re-calls with the stored cursor, appends de-duplicated by key, and disappears when the cursor is `Nothing`; on failure it becomes a retry row. No auto-paging and no prefetch — each request is a full DR handshake, so filling in the background would multiply handshakes for results the user has not asked for.
+
+Streaming the response is the eventual answer to the one-entry page and is out of scope here (see the closing section). It changes how entries arrive, not this view model, which already accumulates pages behind a cursor.
+
+Changing the search text discards both sections and the cursor, as do profile and remote-host switches — `activeFilter` already clears `searchText` (ChatListView.kt:1034) and must clear results with it.
 
 ## 7. Warning
 
