@@ -93,7 +93,17 @@ Because the switch is opt-in, a deployment that omits it fails silently — ever
 
 **The address is upgradable in place; the published link does not change.** Requests need address ratchet keys or fail with `ASENotDRAddress` (agent Agent.hs:1739-1740), and `APICreateMyAddress` generates them only when `pqRatchet` is `Just` (Commands.hs:2439-2443), which the bot's start-up path is not. But `setConnShortLink` **creates keys when there are none** (agent Agent.hs:1171-1178), so `APIRotateAddressRatchetKeys` (Commands.hs:2478, `rotateKeys = True`) or `APIAddMyAddressShortLink userId (Just True)` (:2474) upgrades the existing address, reusing the same `shortLinkKey` and `linkId` (agent Agent.hs:1181-1185) so the link string is unchanged. `keepAddressKeys` retains earlier generations (:1057-1060), so rotating does not break in-flight requests. Nothing needs recreating and no published link is invalidated.
 
-**Only the short link carries the keys.** `setMyAddressData` leaves `connFullLink` untouched (Commands.hs:4039) and that link was built with `useDR = False`, while `serviceRequest_` reads the keys off the resolved URI — so any full-link path yields `ASENotDRAddress` permanently. The app MUST use the short link (§3). Note the links shipped today are full links to the older directory address (WhatsNewView.kt:512, :575; WhatsNewView.swift:293, :355), and no directory short-link constant exists in the codebase yet — obtaining and publishing it is a prerequisite, not a code change.
+**Only the short link carries the keys.** `setMyAddressData` leaves `connFullLink` untouched (Commands.hs:4039) and that link was built with `useDR = False`, while `serviceRequest_` reads the keys off the resolved URI — so any full-link path yields `ASENotDRAddress` permanently. The app MUST use the short link (§3).
+
+The directory's short link is published in `docs/DIRECTORY.md`:
+
+```
+https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok
+```
+
+`/a#` is the contact-address short-link form (`'A' -> CCTContact`, agent Agent/Protocol.hs:1772). The links shipped in the apps today are unrelated to this: they are full links used only as "learn more" targets on the What's New cards (WhatsNewView.kt:512, :575; WhatsNewView.swift:293, :355, the latter inlined in the localized string and so duplicated across every `.lproj`). They stay as they are.
+
+The remaining deployment step is rotating the live address's ratchet keys so it carries DR keys. That keeps the link above unchanged, so nothing published anywhere needs updating.
 
 Cover the upgrade with a test: `/ad`, rotate, start a responder with `service_requests=on`, expect the exchange of `testServiceRequestResponse` (Direct.hs:1903) instead of `ASENotDRAddress`. Do not extend `testServiceRequestNonDRAddress` (:1966) — it has no responder and can only observe failure.
 
@@ -101,7 +111,7 @@ Cover the upgrade with a test: `/ad`, rotate, start a responder with `service_re
 
 Kotlin `CC.APISendServiceRequest(userId, target, timeoutSec, request: JsonObject)` with `cmdString` matching the parser (Commands.hs:5523 — `/_service_request <userId> <target>[ timeout=<s>][ sign_key=<k>] <json>`; the request is never signed, see §1), a `CR.ServiceResponse` case, and `apiSearchDirectory(rh, text, cursor)` wrapping the envelope. iOS: the same as a `ChatCommand` case plus a response case in `ChatResponse1` (AppAPITypes.swift:819), which already carries the command-result cases.
 
-The app ships the directory's **short link** as a constant; it cannot cache a resolved target, since `APISendServiceRequest` resolves internally and returns only the response.
+`APISendServiceRequest` stays general — it takes the target, and will carry requests to services other than the directory. The directory's **short link** (§2) is therefore a constant in the app, declared once per platform in Kotlin and Swift and referenced only by `apiSearchDirectory`. Two copies is the accepted cost of keeping the command address-agnostic; do not push the address down into the core or the command. The app cannot cache a resolved target either, since `APISendServiceRequest` resolves internally and returns only the response.
 
 The call blocks until reply or timeout — pass `requestTimeout` of **10 s**, and use `withLongRunningApi` (Utils.kt:43), not the single-threaded `withBGApi` (:38). Show progress through the existing `ConnectProgressManager` (ChatModel.kt:55-78, ChatModel.swift:303-329): `startConnectProgress(text, onCancel)` when the request goes out, `stopConnectProgress()` when it returns. It already withholds the spinner for 1 s, and the search bar already renders it (ChatListView.kt:522, ChatListView.swift:670); `onCancel` gives the user a way out of the wait.
 

@@ -115,7 +115,8 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
   DirectoryOpts
     { coreOptions =
         testCoreOpts
-          { dbOptions =
+          { serviceRequests = True,
+            dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
                 {dbSchemaPrefix = "client_" <> serviceDbPrefix}
