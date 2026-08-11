@@ -94,6 +94,7 @@ directoryServiceTests = do
     it "should reject audio command in DM" testAudioCommandInDM
   describe "public group registration" $ do
     it "should register channel via shared link card" testRegisterChannelViaCard
+    it "should register contact address via card" testRegisterContactViaCard
     it "should suggest share via chat when link sent as text" testLinkAsTextSearch
     it "should reject card shared by non-owner" testNonOwnerSharesCard
     it "should delete channel registration and leave" testDeleteChannelRegistration
@@ -2120,6 +2121,40 @@ testRegisterChannelViaCard ps =
         bob <## "The channel is no longer listed in the directory."
         superUser <# "'SimpleX Directory'> The channel ID 1 (news) is de-listed (channel owner left)."
         relay <## "#news: 'SimpleX Directory' left the group (signed)"
+
+-- a bot/business operator registers its own contact address by sending a signed card, then an admin approves it
+testRegisterContactViaCard :: HasCallStack => TestParams -> IO ()
+testRegisterContactViaCard ps =
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob -> do
+      -- bob connects to the directory
+      bob `connectVia` dsLink
+      -- bob creates an address and publishes it in the profile (required for the listing)
+      bob ##> "/ad"
+      _ <- getContactLink bob True
+      bob ##> "/pa on"
+      bob <## "new contact address set"
+      -- bob sends the signed address card to the directory
+      bob ##> "/share address @'SimpleX Directory'"
+      bob <# "@'SimpleX Directory' contact address of @bob (signed):"
+      _ <- getTermLine bob -- address link
+      _ <- getTermLine bob -- ownerSig JSON
+      -- the directory verifies ownership and the published address, then asks admins to approve
+      bob <# "'SimpleX Directory'> Your address is submitted to the directory and pending approval."
+      superUser <# "'SimpleX Directory'> New address to approve: /approve @3:bob 1"
+      -- superuser approves
+      let approve = "/approve @3:bob 1"
+      superUser #> ("@'SimpleX Directory' " <> approve)
+      superUser <# ("'SimpleX Directory'> > " <> approve)
+      superUser <## "      Address 3 (bob) approved!"
+      bob <# "'SimpleX Directory'> Your address is approved and listed in the directory."
+      bob <## "Please note: if you change your profile the listing will be hidden until it is re-approved."
+      -- the listed business is found by a targeted search (default search stays groups-only)
+      bob #> "@'SimpleX Directory' /find business"
+      bob <# "'SimpleX Directory'> > /find business"
+      bob <## "      Found 1 business(es)."
+      bob <#. "'SimpleX Directory'> bob"
+      _ <- getTermLine bob -- address link line
 
 -- owner sets a name; directory verifies name<->link consistency and shows the verified name to the admin
 testDirectoryChannelName :: HasCallStack => TestParams -> IO ()

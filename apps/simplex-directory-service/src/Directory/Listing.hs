@@ -52,11 +52,13 @@ promotedFileName = "promoted.json"
 listingImageFolder :: String
 listingImageFolder = "images"
 
-data DirectoryEntryType = DETGroup
-  { groupType :: Maybe GroupType,
-    admission :: Maybe GroupMemberAdmission,
-    summary :: GroupSummary
-  }
+data DirectoryEntryType
+  = DETGroup
+      { groupType :: Maybe GroupType,
+        admission :: Maybe GroupMemberAdmission,
+        summary :: GroupSummary
+      }
+  | DETContact {peerType :: ChatPeerType}
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "DET") ''DirectoryEntryType)
 
@@ -130,36 +132,67 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
           entry . toPublicLink . connLinkContact <$> gLink_
   where
     toPublicLink (CCLink fullLink shortLink) = PublicLink (Just fullLink) shortLink
-    imgFileData :: PublicLink -> ImageData -> Maybe (FilePath, ByteString)
-    imgFileData PublicLink {connFullLink, connShortLink} (ImageData img) =
-      let (img', imgExt) =
-            fromMaybe (img, ".jpg") $
-              (,".jpg") <$> T.stripPrefix "data:image/jpg;base64," img
-                <|> (,".png") <$> T.stripPrefix "data:image/png;base64," img
-          linkHash = case connFullLink of
-            Just fl -> strEncode fl
-            Nothing -> maybe "" strEncode connShortLink
-          imgName = B.unpack $ B64URL.encodeUnpadded $ BA.convert $ (CH.hash :: ByteString -> Digest MD5) linkHash
-          imgFile = listingImageFolder </> imgName <> imgExt
-       in case B64.decode $ encodeUtf8 img' of
-            Right img'' -> Just (imgFile, img'')
-            Left _ -> Nothing
 
-generateListing :: FilePath -> [(GroupInfo, GroupReg, Maybe GroupLink)] -> IO ()
-generateListing dir gs = do
+imgFileData :: PublicLink -> ImageData -> Maybe (FilePath, ByteString)
+imgFileData PublicLink {connFullLink, connShortLink} (ImageData img) =
+  let (img', imgExt) =
+        fromMaybe (img, ".jpg") $
+          (,".jpg") <$> T.stripPrefix "data:image/jpg;base64," img
+            <|> (,".png") <$> T.stripPrefix "data:image/png;base64," img
+      linkHash = case connFullLink of
+        Just fl -> strEncode fl
+        Nothing -> maybe "" strEncode connShortLink
+      imgName = B.unpack $ B64URL.encodeUnpadded $ BA.convert $ (CH.hash :: ByteString -> Digest MD5) linkHash
+      imgFile = listingImageFolder </> imgName <> imgExt
+   in case B64.decode $ encodeUtf8 img' of
+        Right img'' -> Just (imgFile, img'')
+        Left _ -> Nothing
+
+contactDirectoryEntry :: UTCTime -> Contact -> ChatPeerType -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
+contactDirectoryEntry now ct@Contact {profile = LocalProfile {displayName, shortDescr, description, image, contactLink}, createdAt, chatTs} peerType =
+  case contactLink of
+    Just cl ->
+      let pubLink = toPublicLink cl
+          imgData = imgFileData pubLink =<< image
+          de =
+            DirectoryEntry
+              { entryType = DETContact peerType,
+                displayName,
+                simplexName = shortNameInfoStr . SimplexNameInfo NTContact <$> verifiedContactDomain ct,
+                groupLink = pubLink,
+                shortDescr = toFormattedText <$> shortDescr,
+                welcomeMessage = toFormattedText <$> description,
+                imageFile = fst <$> imgData,
+                activeAt = recentRoundedTime 900 now $ fromMaybe createdAt chatTs,
+                createdAt = recentRoundedTime 86400 now createdAt
+              }
+       in Just (de, imgData)
+    Nothing -> Nothing
+  where
+    toPublicLink = \case
+      CLFull fullLink -> PublicLink (Just fullLink) Nothing
+      CLShort shortLink -> PublicLink Nothing (Just shortLink)
+
+generateListing :: FilePath -> [(GroupInfo, GroupReg, Maybe GroupLink)] -> [(Contact, ContactReg)] -> IO ()
+generateListing dir gs cs = do
   createDirectoryIfMissing True dir
   oldDirs <- filter ((directoryDataPath <> ".") `isPrefixOf`) <$> listDirectory dir
   ts <- getCurrentTime
   let newDirPath = directoryDataPath <> "." <> iso8601Show ts <> "/"
       newDir = dir </> newDirPath
   createDirectoryIfMissing True (newDir </> listingImageFolder)
-  gs' <-
-    fmap catMaybes $ forM gs $ \(g, gr, link_) ->
-      forM (groupDirectoryEntry ts g link_) $ \(g', img) -> do
+  let writeEntry (e, img) = do
         forM_ img $ \(imgFile, imgData) -> B.writeFile (newDir </> imgFile) imgData
-        pure (g', gr)
-  saveListing newDir listingFileName gs'
-  saveListing newDir promotedFileName $ filter (\(_, GroupReg {promoted}) -> promoted) gs'
+        pure e
+  gEntries <-
+    fmap catMaybes $ forM gs $ \(g, GroupReg {promoted}, link_) ->
+      forM (groupDirectoryEntry ts g link_) $ \ei -> (,promoted) <$> writeEntry ei
+  cEntries <-
+    fmap catMaybes $ forM cs $ \(ct, ContactReg {peerType, contactPromoted}) ->
+      forM (contactDirectoryEntry ts ct peerType) $ \ei -> (,contactPromoted) <$> writeEntry ei
+  let entries = gEntries ++ cEntries
+  saveListing newDir listingFileName entries
+  saveListing newDir promotedFileName $ filter snd entries
   -- atomically update the link
   let newSymLink = newDir <> ".link"
       symLink = dir </> directoryDataPath

@@ -50,11 +50,14 @@ import Directory.Util
 import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller
+import Control.Monad.Reader (runReaderT)
+import Data.Int (Int64)
 import Simplex.Chat.Core
+import Simplex.Chat.Library.Internal (updateKnownContactFromLink)
 import Simplex.Chat.Markdown (Format (..), FormattedText (..), SimplexLinkType (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (GroupShortLinkData (..), LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
+import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, getGroupMemberByMemberId, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
@@ -204,12 +207,17 @@ linkCheckThread_ opts env@ServiceState {eventQ}
       forever $ do
         threadDelay $ linkCheckInterval opts * 1000000
         u <- readTVarIO $ currentUser cc
-        forM_ u $ \user ->
+        forM_ u $ \user -> do
           withDB' "linkCheckThread" cc (\db -> getAllGroupRegs_ db (storeCxt cc) user) >>= \case
             Left e -> logError $ "linkCheckThread error: " <> T.pack e
             Right grs -> forM_ grs $ \(gInfo, gr) ->
               unless (groupRemoved $ groupRegStatus gr) $
                 atomically $ writeTQueue eventQ $ DEGroupLinkCheck gInfo
+          getAllContactRegs cc user >>= \case
+            Left e -> logError $ "linkCheckThread contacts error: " <> T.pack e
+            Right crs -> forM_ crs $ \(ct, ContactReg {contactRegStatus}) ->
+              unless (groupRemoved contactRegStatus) $
+                atomically $ writeTQueue eventQ $ DEContactLinkCheck ct
   | otherwise = Nothing
 
 directoryPreStartHook :: DirectoryOpts -> ChatController -> IO ()
@@ -334,6 +342,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
     DEGroupDeleted g -> deGroupDeleted g
     DEChatLinkReceived {contact = ct, chatLink, ownerSig} -> deChatLinkReceived ct chatLink ownerSig
+    DEContactLinkCheck ct -> deContactLinkCheck ct
+    DEContactUpdated {fromContact, toContact} -> deContactUpdated fromContact toContact
     DEMemberUpdated {groupInfo = g, fromMember, toMember} -> deMemberUpdated g fromMember toMember
     DEUnsupportedMessage _ct _ciId -> pure ()
     DEItemEditIgnored _ct -> pure ()
@@ -974,8 +984,139 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
             _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
     deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just pg}}) _ =
       sendMessage cc ct $ "To add a " <> groupTypeStr' pg <> " to directory you must be the owner."
+    deChatLinkReceived ct (MCLContact {connLink}) (Just ownerSig) =
+      sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget (ACL SCMContact (CLShort connLink)))) PRMAllGroups (Just ownerSig)) >>= \case
+        Right (CRConnectionPlan _ _ _ _ (CPContactAddress cap)) -> handleContactAddressPlan ct connLink cap
+        Right _ -> sendMessage cc ct "Error: unexpected plan for the address. Please report it to directory admins."
+        _ -> sendMessage cc ct "Error: could not verify the address. Please report it to directory admins."
+    deChatLinkReceived ct (MCLContact {}) Nothing =
+      sendMessage cc ct "To add your address to the directory you must send it yourself; the owner signature is required."
     deChatLinkReceived ct _ _ =
       sendMessage cc ct "Only channels can be added to directory via link."
+
+    handleContactAddressPlan :: Contact -> ShortLinkContact -> ContactAddressPlan -> IO ()
+    handleContactAddressPlan ct connLink = \case
+      CAPOk {contactSLinkData_ = Just ContactShortLinkData {profile}, ownerVerification = Just OVVerified} ->
+        registerContactAddress ct connLink profile
+      CAPOk {ownerVerification = Just (OVFailed reason)} ->
+        sendMessage cc ct $ "Address ownership verification failed: " <> reason
+      CAPKnown ct' -> registerContactAddress ct' connLink (contactLinkProfile ct')
+      CAPContactViaAddress ct' -> registerContactAddress ct' connLink (contactLinkProfile ct')
+      _ -> sendMessage cc ct "Error: could not verify the address ownership. Please report it to directory admins."
+      where
+        contactLinkProfile Contact {profile} = fromLocalProfile profile
+
+    registerContactAddress :: Contact -> ShortLinkContact -> Profile -> IO ()
+    registerContactAddress ct connLink Profile {contactLink, peerType, displayName} =
+      case contactLinkShort contactLink of
+        Just addr | addr == connLink -> case resolvedPeerType peerType of
+          Just pt ->
+            getContactRegByContactId cc (contactId' ct) >>= \case
+              Left e -> logError $ "getContactRegByContactId: " <> T.pack e
+              Right (Just _) ->
+                setContactStatus (contactId' ct) (GRSPendingApproval 1) $ do
+                  sendMessage cc ct "Your address registration is updated and pending approval."
+                  notifyAdminUsers approveCmd
+              Right Nothing ->
+                addContactRegStore cc ct pt (GRSPendingApproval 1) >>= \case
+                  Left e -> do
+                    logError $ "addContactRegStore: " <> T.pack e
+                    sendMessage cc ct "Error registering your address. Please report it to directory admins."
+                  Right _ -> do
+                    _ <- refreshContactFromLink ct
+                    sendMessage cc ct "Your address is submitted to the directory and pending approval."
+                    notifyAdminUsers approveCmd
+          Nothing -> sendMessage cc ct "This account type cannot be added to the directory."
+        _ -> sendMessage cc ct "Please add this address to your profile, then re-send it."
+      where
+        approveCmd = "New address to approve: /approve @" <> tshow (contactId' ct) <> ":" <> viewName displayName <> " 1"
+
+    resolvedPeerType :: Maybe ChatPeerType -> Maybe ChatPeerType
+    resolvedPeerType = \case
+      Just (CPTUnknown _) -> Nothing
+      Just CPTBot -> Just CPTBot
+      _ -> Just CPTBusiness
+
+    contactLinkShort :: Maybe ConnLinkContact -> Maybe ShortLinkContact
+    contactLinkShort = \case
+      Just (CLShort sl) -> Just sl
+      _ -> Nothing
+
+    refreshContactFromLink :: Contact -> IO (Maybe (Contact, Bool))
+    refreshContactFromLink ct =
+      runReaderT (runExceptT (updateKnownContactFromLink user ct)) cc >>= \case
+        Right r -> pure $ Just r
+        Left e -> Nothing <$ logError ("updateKnownContactFromLink: " <> tshow e)
+
+    setContactStatus :: ContactId -> GroupRegStatus -> IO () -> IO ()
+    setContactStatus ctId crStatus' continue =
+      setContactRegStatusStore cc ctId crStatus' >>= \case
+        Left e -> logError $ "setContactRegStatusStore " <> tshow ctId <> ": " <> T.pack e
+        Right (crStatus, _) -> do
+          let status = grDirectoryStatus crStatus
+              status' = grDirectoryStatus crStatus'
+          when ((status == DSListed || status' == DSListed) && status /= status') $ listingsUpdated env
+          continue
+
+    deContactLinkCheck :: Contact -> IO ()
+    deContactLinkCheck ct =
+      refreshContactFromLink ct >>= \case
+        Just (ct', True) -> reapproveContact ct' "the address profile changed"
+        _ -> pure ()
+
+    deContactUpdated :: Contact -> Contact -> IO ()
+    deContactUpdated fromCt toCt =
+      getContactRegByContactId cc (contactId' toCt) >>= \case
+        Right (Just ContactReg {contactRegStatus}) | not (groupRemoved contactRegStatus) ->
+          case (contactLinkShort (contactLinkOf fromCt), contactLinkShort (contactLinkOf toCt)) of
+            (Just _, Nothing) -> suspendContact toCt "your address was removed from your profile; add it back to be listed again"
+            (Just a, Just b) | a /= b -> removeContact toCt "your address changed; please register the new address"
+            _
+              | visibleChanged fromCt toCt -> reapproveContact toCt "your profile changed"
+              | otherwise -> pure ()
+        _ -> pure ()
+      where
+        contactLinkOf Contact {profile = LocalProfile {contactLink}} = contactLink
+
+    visibleChanged :: Contact -> Contact -> Bool
+    visibleChanged Contact {profile = a} Contact {profile = b} =
+      dn a /= dn b
+        || fn a /= fn b
+        || sd a /= sd b
+        || ds a /= ds b
+        || im a /= im b
+        || pt a /= pt b
+      where
+        dn LocalProfile {displayName} = displayName
+        fn LocalProfile {fullName} = fullName
+        sd LocalProfile {shortDescr} = shortDescr
+        ds LocalProfile {description} = description
+        im LocalProfile {image} = image
+        pt LocalProfile {peerType} = peerType
+
+    reapproveContact :: Contact -> Text -> IO ()
+    reapproveContact ct reason =
+      getContactRegByContactId cc (contactId' ct) >>= \case
+        Right (Just ContactReg {contactRegStatus}) | reapprovable contactRegStatus ->
+          setContactStatus (contactId' ct) (GRSPendingApproval 1) $ do
+            sendMessage cc ct $ "Your address listing is hidden pending re-approval (" <> reason <> ")."
+            notifyAdminUsers $ "Address re-approval needed: /approve @" <> tshow (contactId' ct) <> ":" <> viewName (contactDisplayName ct) <> " 1"
+        _ -> pure ()
+      where
+        reapprovable = \case GRSActive -> True; GRSPendingApproval _ -> True; _ -> False
+
+    suspendContact :: Contact -> Text -> IO ()
+    suspendContact ct reason =
+      setContactStatus (contactId' ct) GRSSuspended $
+        sendMessage cc ct ("Your address listing is suspended: " <> reason <> ".")
+
+    removeContact :: Contact -> Text -> IO ()
+    removeContact ct reason =
+      setContactStatus (contactId' ct) GRSRemoved $
+        sendMessage cc ct ("Your address listing was removed: " <> reason <> ".")
+
+    contactDisplayName :: Contact -> Text
+    contactDisplayName Contact {profile = LocalProfile {displayName}} = displayName
 
     groupTypeStr :: GroupType -> Text
     groupTypeStr = \case
@@ -1126,20 +1267,31 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           isGroupLink _ = False
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
-          Just SearchRequest {searchType, searchTime, lastGroup} -> do
+          Just SearchRequest {target, searchType, searchTime, lastId} -> do
             currentTime <- getCurrentTime
             if diffUTCTime currentTime searchTime > 300 -- 5 minutes
               then do
                 atomically $ TM.delete (contactId' ct) searchRequests
                 showAllGroups
-              else
-                sendFoundListedGroups searchType (Just lastGroup) "No more groups" $ \gs _ ->
-                  "Sending " <> tshow (length gs) <> " more group(s)."
+              else case target of
+                TGroups ->
+                  sendFoundListedGroups searchType (Just lastId) "No more groups" $ \gs _ ->
+                    "Sending " <> tshow (length gs) <> " more group(s)."
+                TContacts pt ->
+                  sendFoundContacts pt searchType (Just lastId) "No more results" $ \cs _ ->
+                    "Sending " <> tshow (length cs) <> " more result(s)."
           Nothing -> showAllGroups
         where
           showAllGroups = deUserCommand ct ciId DCAllGroups
       DCAllGroups -> sendFoundListedGroups STAll Nothing "No groups listed" $ allGroupsReply "top"
       DCRecentGroups -> sendFoundListedGroups STRecent Nothing "No groups listed" $ allGroupsReply "the most recent"
+      DCFindContacts pt search ->
+        sendFoundContacts pt (maybe STAll STSearch search) Nothing notFound $ \cs n ->
+          let more = if n > length cs then ", sending top " <> tshow (length cs) else ""
+           in "Found " <> tshow n <> " " <> label <> more <> "."
+        where
+          label = case pt of CPTBot -> "bot(s)"; _ -> "business(es)"
+          notFound = "No " <> label <> " found."
       DCSubmitGroup _link -> pure ()
       DCConfirmDuplicateGroup ugrId gName ->
         withUserGroupReg ugrId gName $ \g@GroupInfo {groupProfile = GroupProfile {displayName}} gr@GroupReg {groupRegStatus} -> case groupRegStatus of
@@ -1152,7 +1304,12 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
       DCListUserGroups ->
         getUserGroupRegs cc user (contactId' ct) >>= \case
           Left e -> sendReply $ "Error reading groups: " <> T.pack e
-          Right gs -> sendGroupsInfo ct ciId isAdmin (gs, length gs)
+          Right gs -> do
+            sendGroupsInfo ct ciId isAdmin (gs, length gs)
+            getContactRegByContactId cc (contactId' ct) >>= \case
+              Right (Just ContactReg {contactRegStatus}) ->
+                sendReply $ "Your address registration status: " <> groupRegStatusText contactRegStatus <> "."
+              _ -> pure ()
       DCDeleteGroup gId gName ->
         (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \g@GroupInfo {groupProfile = GroupProfile {displayName, publicGroup = pg_}} GroupReg {dbGroupId} -> do
           let gt = maybe "group" groupTypeStr' pg_
@@ -1161,6 +1318,21 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               sendReply $ (if isAdmin then "The " <> gt <> " " else "Your " <> gt <> " ") <> displayName <> " is deleted from the directory"
               when (isJust pg_) $ leavePublicGroup g
             Left e -> sendReply $ "Error deleting " <> gt <> " " <> displayName <> ": " <> T.pack e
+      DCDeleteContact ref
+        | isJust ref && not isAdmin -> sendReply "Only admins can delete another contact's address."
+        | otherwise ->
+            let (delId, nameStr) = case ref of
+                  Just (cid, n) -> (cid, viewName n)
+                  Nothing -> (contactId' ct, viewContactName ct)
+             in getContactRegByContactId cc delId >>= \case
+                  Left e -> sendReply $ "Error: " <> T.pack e
+                  Right Nothing -> sendReply $ if isAdmin && isJust ref then "No address registration for " <> nameStr <> "." else "You have no registered address."
+                  Right (Just ContactReg {contactRegStatus}) ->
+                    deleteContactReg cc delId >>= \case
+                      Left e -> sendReply $ "Error deleting address: " <> T.pack e
+                      Right () -> do
+                        when (grDirectoryStatus contactRegStatus == DSListed) $ listingsUpdated env
+                        sendReply $ (if isAdmin && isJust ref then "The address " <> nameStr <> " is" else "Your address is") <> " deleted from the directory."
       DCMemberRole gId gName_ mRole_ ->
         (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr ->
           ifPublicGroup g (sendReply "This command is not available for public groups.") $ do
@@ -1287,16 +1459,36 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               sendReply notFound
             Right (gs, n) -> do
               let moreGroups = n - length gs
-              updateSearchRequest searchType $ last gs
+              updateSearchReq TGroups searchType $ let (GroupInfo {groupId}, _) = last gs in groupId
               sendFoundGroups (replyStr gs n) gs moreGroups
             Left e -> sendReply $ "Error: searchListedGroups. Please notify the developers.\n" <> T.pack e
+        sendFoundContacts pt searchType lastReg_ notFound replyStr =
+          searchListedContacts cc user pt searchType lastReg_ searchResults >>= \case
+            Right ([], _) -> do
+              atomically $ TM.delete (contactId' ct) searchRequests
+              sendReply notFound
+            Right (cs, n) -> do
+              let more = n - length cs
+              updateSearchReq (TContacts pt) searchType $ let (_, ContactReg {contactRegId}) = last cs in contactRegId
+              void . forkIO $ sendComposedMessages_ cc (SRDirect $ contactId' ct) (foundContactMsgs (replyStr cs n) cs more)
+            Left e -> sendReply $ "Error: searchListedContacts. Please notify the developers.\n" <> T.pack e
+        foundContactMsgs reply cs more = replyMsg :| map foundContact cs <> [moreMsg | more > 0]
+          where
+            replyMsg = (Just ciId, MCText reply)
+            foundContact (Contact {profile = LocalProfile {displayName, shortDescr, description, image = image_, contactLink}}, _) =
+              let descr = maybe "" (\d -> " (" <> d <> ")") shortDescr
+                  welcome = maybe "" ("\n" <>) description
+                  link = maybe "" (\l -> "\n" <> strEncodeTxt l) contactLink
+                  text = displayName <> descr <> welcome <> link
+               in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
+            moreMsg = (Nothing, MCText $ "Send /next for " <> tshow more <> " more result(s).")
         allGroupsReply sortName gs n =
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
            in tshow n <> " group(s) listed" <> more <> "."
-        updateSearchRequest :: SearchType -> (GroupInfo, GroupReg) -> IO ()
-        updateSearchRequest searchType (GroupInfo {groupId}, _) = do
+        updateSearchReq :: SearchTarget -> SearchType -> Int64 -> IO ()
+        updateSearchReq target searchType lastId = do
           searchTime <- getCurrentTime
-          let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
+          let search = SearchRequest {target, searchType, searchTime, lastId}
           atomically $ TM.insert (contactId' ct) search searchRequests
         sendFoundGroups reply gs moreGroups =
           void . forkIO $ sendComposedMessages_ cc (SRDirect $ contactId' ct) msgs
@@ -1364,6 +1556,17 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                 _ -> sendReply $ "Error: the group " <> groupRef <> " is not pending approval."
             where
               groupRef = groupReference' groupId n
+          DCApproveContact contactId n contactApprovalId ->
+            getContactReg cc user contactId >>= \case
+              Left e -> sendReply $ "Error: address " <> tshow contactId <> " not found: " <> T.pack e
+              Right (ct', ContactReg {contactRegStatus}) -> case contactRegStatus of
+                GRSPendingApproval gaId
+                  | gaId == contactApprovalId ->
+                      setContactStatus contactId GRSActive $ do
+                        sendMessage cc ct' "Your address is approved and listed in the directory.\n_Please note_: if you change your profile the listing will be hidden until it is re-approved."
+                        sendReply $ "Address " <> tshow contactId <> " (" <> viewName n <> ") approved!"
+                  | otherwise -> sendReply "Incorrect approval code"
+                _ -> sendReply $ "Error: address " <> tshow contactId <> " is not pending approval."
           DCRejectGroup _gaId _gName -> pure ()
           DCSuspendGroup groupId gName -> do
             let groupRef = groupReference' groupId gName
@@ -1385,6 +1588,22 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                   sendReply "Group listing resumed!"
                   notifyOtherSuperUsers $ groupStr <> " listing resumed by " <> viewName (localDisplayName' ct)
                 _ -> sendReply $ "The group " <> groupRef <> " is not suspended, can't be resumed."
+          DCSuspendContact contactId n ->
+            getContactReg cc user contactId >>= \case
+              Left e -> sendReply $ "Error: address " <> tshow contactId <> " not found: " <> T.pack e
+              Right (ct', ContactReg {contactRegStatus}) -> case contactRegStatus of
+                GRSActive -> setContactStatus contactId GRSSuspended $ do
+                  sendMessage cc ct' $ "Your address (" <> viewName n <> ") is suspended and hidden from the directory. Please contact the administrators."
+                  sendReply "Address suspended!"
+                _ -> sendReply $ "Address " <> tshow contactId <> " is not active, can't be suspended."
+          DCResumeContact contactId n ->
+            getContactReg cc user contactId >>= \case
+              Left e -> sendReply $ "Error: address " <> tshow contactId <> " not found: " <> T.pack e
+              Right (ct', ContactReg {contactRegStatus}) -> case contactRegStatus of
+                GRSSuspended -> setContactStatus contactId GRSActive $ do
+                  sendMessage cc ct' $ "Your address (" <> viewName n <> ") is listed in the directory again!"
+                  sendReply "Address listing resumed!"
+                _ -> sendReply $ "Address " <> tshow contactId <> " is not suspended, can't be resumed."
           DCListLastGroups count ->
             listLastGroups cc user count >>= \case
               Left e -> sendReply $ "Error reading groups: " <> T.pack e
@@ -1452,6 +1671,19 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               if promote' /= promoted
                 then setGroupPromoted sendReply env cc gr promote' notify
                 else notify
+          DCPromoteContact contactId _n promote' ->
+            getContactReg cc user contactId >>= \case
+              Left e -> sendReply $ "Error: address " <> tshow contactId <> " not found: " <> T.pack e
+              Right (_, ContactReg {contactRegStatus, contactPromoted}) -> do
+                let notify = sendReply $ "Address promotion " <> (if promote' then "enabled" <> (if contactRegStatus == GRSActive then "." else ", but the address is not listed.") else "disabled.")
+                if promote' /= contactPromoted
+                  then
+                    setContactPromotedStore cc contactId promote' >>= \case
+                      Left e -> sendReply $ "Error updating promotion: " <> T.pack e
+                      Right (status, _) -> do
+                        when (status == DSListed) $ listingsUpdated env
+                        notify
+                  else notify
           DCExecuteCommand cmdStr ->
             sendChatCmdStr cc cmdStr >>= \case
               Right r -> do
@@ -1550,8 +1782,11 @@ setGroupPromoted sendReply env cc GroupReg {dbGroupId = gId} grPromoted' continu
 updateGroupListingFiles :: ChatController -> User -> FilePath -> IO ()
 updateGroupListingFiles cc u dir =
   getAllListedGroups cc u >>= \case
-    Right gs -> generateListing dir gs
     Left e -> logError $ "generateListing error: failed to read groups: " <> T.pack e
+    Right gs ->
+      getAllListedContacts cc u >>= \case
+        Left e -> logError $ "generateListing error: failed to read contacts: " <> T.pack e
+        Right cs -> generateListing dir gs cs
 
 getContact' :: ChatController -> User -> ContactId -> IO (Either String Contact)
 getContact' cc user ctId = withDB "getContact" cc $ \db ->  withExceptT show $ getContact db (storeCxt cc) user ctId
