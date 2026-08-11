@@ -154,11 +154,10 @@ testImageFitsSingleBatch = do
 
 -- elements are far below maxEncodedMsgLength, so only the element count guard can split this
 testBatchElementCountLimit :: IO ()
-testBatchElementCountLimit = do
-  let msgs = replicate (maxBatchElementCount + 1) "a"
-      (errs, batches) = partitionEithers $ batchMessages BMJson maxEncodedMsgLength (map Right msgs)
-  errs `shouldBe` []
-  map (\(MsgBatch _ ms) -> length ms) batches `shouldBe` [1, maxBatchElementCount]
+testBatchElementCountLimit =
+  runBatcherTest' BMJson maxEncodedMsgLength (replicate (maxBatchElementCount + 1) "a") [] ["a", batched]
+  where
+    batched = "[" <> B.intercalate "," (replicate maxBatchElementCount "a") <> "]"
 
 testRelayBatchAllLarge :: IO ()
 testRelayBatchAllLarge = do
