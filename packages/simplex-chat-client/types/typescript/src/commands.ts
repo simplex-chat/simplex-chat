@@ -168,6 +168,35 @@ export namespace APIChatItemReaction {
   }
 }
 
+// Share user address card
+// Network usage: no.
+export interface APIShareMyAddress {
+  toSendRef: T.ChatRef
+}
+
+export namespace APIShareMyAddress {
+  export type Response = CR.ChatMsgContent
+
+  export function cmdString(self: APIShareMyAddress): string {
+    return '/_share address' + T.ChatRef.cmdString(self.toSendRef)
+  }
+}
+
+// Share channel address
+// Network usage: no.
+export interface APIShareChatMsgContent {
+  shareChatRef: T.ChatRef
+  toSendRef: T.ChatRef
+}
+
+export namespace APIShareChatMsgContent {
+  export type Response = CR.ChatMsgContent
+
+  export function cmdString(self: APIShareChatMsgContent): string {
+    return '/_share chat content ' + T.ChatRef.cmdString(self.shareChatRef) + ' ' + T.ChatRef.cmdString(self.toSendRef)
+  }
+}
+
 // File commands
 // Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.
 
@@ -416,6 +445,20 @@ export namespace APIUpdateGroupProfile {
 
   export function cmdString(self: APIUpdateGroupProfile): string {
     return '/_group_profile #' + self.groupId + ' ' + JSON.stringify(self.groupProfile)
+  }
+}
+
+// Verify group domain
+// Network usage: interactive.
+export interface APIVerifyGroupDomain {
+  groupId: number // int64
+}
+
+export namespace APIVerifyGroupDomain {
+  export type Response = CR.GroupDomainVerified
+
+  export function cmdString(self: APIVerifyGroupDomain): string {
+    return '/_verify domain #' + self.groupId
   }
 }
 

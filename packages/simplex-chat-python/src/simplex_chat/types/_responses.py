@@ -36,6 +36,11 @@ class ChatItemsDeleted(TypedDict):
     byUser: bool
     timed: bool
 
+class ChatMsgContent(TypedDict):
+    type: Literal["chatMsgContent"]
+    user: "T.User"
+    msgContent: "T.MsgContent"
+
 class ChatRunning(TypedDict):
     type: Literal["chatRunning"]
 
@@ -173,6 +178,12 @@ class GroupsList(TypedDict):
     type: Literal["groupsList"]
     user: "T.User"
     groups: list["T.GroupInfo"]
+
+class GroupDomainVerified(TypedDict):
+    type: Literal["groupDomainVerified"]
+    user: "T.User"
+    groupInfo: "T.GroupInfo"
+    verificationFailure: NotRequired[str]
 
 class Invitation(TypedDict):
     type: Literal["invitation"]
@@ -319,6 +330,7 @@ ChatResponse = (
     | ChatItemReaction
     | ChatItemUpdated
     | ChatItemsDeleted
+    | ChatMsgContent
     | ChatRunning
     | ChatStarted
     | ChatStopped
@@ -345,6 +357,7 @@ ChatResponse = (
     | GroupMembers
     | GroupUpdated
     | GroupsList
+    | GroupDomainVerified
     | Invitation
     | LeftMemberUser
     | MemberAccepted
@@ -371,4 +384,4 @@ ChatResponse = (
     | ApiChats
 )
 
-ChatResponse_Tag = Literal["acceptingContactRequest", "activeUser", "chatItemNotChanged", "chatItemReaction", "chatItemUpdated", "chatItemsDeleted", "chatRunning", "chatStarted", "chatStopped", "cmdOk", "chatCmdError", "connectionPlan", "contactAlreadyExists", "contactConnectionDeleted", "contactDeleted", "contactPrefsUpdated", "contactRequestRejected", "contactsList", "groupDeletedUser", "groupLink", "groupLinkCreated", "groupLinkDeleted", "groupCreated", "publicGroupCreated", "publicGroupCreationFailed", "groupRelays", "groupRelaysAdded", "groupRelaysAddFailed", "relayGroupAllowed", "groupMembers", "groupUpdated", "groupsList", "invitation", "leftMemberUser", "memberAccepted", "membersBlockedForAllUser", "membersRoleUser", "newChatItems", "rcvFileAccepted", "rcvFileAcceptedSndCancelled", "rcvFileCancelled", "sentConfirmation", "sentGroupInvitation", "sentInvitation", "serviceReplyAccepted", "sndFileCancelled", "userAcceptedGroupSent", "userContactLink", "userContactLinkCreated", "userContactLinkDeleted", "userContactLinkUpdated", "userDeletedMembers", "userProfileUpdated", "userProfileNoChange", "usersList", "apiChats"]
+ChatResponse_Tag = Literal["acceptingContactRequest", "activeUser", "chatItemNotChanged", "chatItemReaction", "chatItemUpdated", "chatItemsDeleted", "chatMsgContent", "chatRunning", "chatStarted", "chatStopped", "cmdOk", "chatCmdError", "connectionPlan", "contactAlreadyExists", "contactConnectionDeleted", "contactDeleted", "contactPrefsUpdated", "contactRequestRejected", "contactsList", "groupDeletedUser", "groupLink", "groupLinkCreated", "groupLinkDeleted", "groupCreated", "publicGroupCreated", "publicGroupCreationFailed", "groupRelays", "groupRelaysAdded", "groupRelaysAddFailed", "relayGroupAllowed", "groupMembers", "groupUpdated", "groupsList", "groupDomainVerified", "invitation", "leftMemberUser", "memberAccepted", "membersBlockedForAllUser", "membersRoleUser", "newChatItems", "rcvFileAccepted", "rcvFileAcceptedSndCancelled", "rcvFileCancelled", "sentConfirmation", "sentGroupInvitation", "sentInvitation", "serviceReplyAccepted", "sndFileCancelled", "userAcceptedGroupSent", "userContactLink", "userContactLinkCreated", "userContactLinkDeleted", "userContactLinkUpdated", "userDeletedMembers", "userProfileUpdated", "userProfileNoChange", "usersList", "apiChats"]

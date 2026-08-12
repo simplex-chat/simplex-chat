@@ -264,6 +264,8 @@
     "index-hero-h1": "Be<br>Free",
     "index-hero-h2": "In Your Network",
     "index-hero-p1": "The first network without user IDs.<br>You own your contacts, groups and channels.",
+    "index-hero-invest": "Invest in SimpleX Chat.",
+    "index-hero-invest-cta": "Learn more on Wefunder.",
     "index-hero-download-desktop-btn-title": "Download SimpleX Desktop App",
     "index-testflight-title": "SimpleX iOS beta-release on TestFlight",
     "index-f-droid-title": "SimpleX app via F-Droid",
@@ -370,7 +372,7 @@
     "file-proto-h-4": "Independent data routers",
     "file-proto-p-4": "When file is split to fragments, it is sent via network routers operated by independent parties. No operator can see the actual file size or name. Even if a router is compromised, it can only see encrypted fragments of fixed size. File fragments are cached by network routers for approximately 48 hours.",
     "file-proto-spec": "Read the XFTP protocol specification →",
-    "links": "Links",
+    "links": "Community",
     "links-title": "Community Links",
     "links-all-languages": "All languages"
 }

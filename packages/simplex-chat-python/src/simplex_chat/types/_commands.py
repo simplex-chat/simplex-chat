@@ -149,6 +149,31 @@ def APIChatItemReaction_cmd_string(self: APIChatItemReaction) -> str:
 APIChatItemReaction_Response = CR.ChatItemReaction | CR.ChatCmdError
 
 
+# Share user address card
+# Network usage: no.
+class APIShareMyAddress(TypedDict):
+    toSendRef: "T.ChatRef"
+
+
+def APIShareMyAddress_cmd_string(self: APIShareMyAddress) -> str:
+    return '/_share address' + T.ChatRef_cmd_string(self['toSendRef'])
+
+APIShareMyAddress_Response = CR.ChatMsgContent
+
+
+# Share channel address
+# Network usage: no.
+class APIShareChatMsgContent(TypedDict):
+    shareChatRef: "T.ChatRef"
+    toSendRef: "T.ChatRef"
+
+
+def APIShareChatMsgContent_cmd_string(self: APIShareChatMsgContent) -> str:
+    return '/_share chat content ' + T.ChatRef_cmd_string(self['shareChatRef']) + ' ' + T.ChatRef_cmd_string(self['toSendRef'])
+
+APIShareChatMsgContent_Response = CR.ChatMsgContent
+
+
 # File commands
 # Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.
 
@@ -366,6 +391,18 @@ def APIUpdateGroupProfile_cmd_string(self: APIUpdateGroupProfile) -> str:
     return '/_group_profile #' + str(self['groupId']) + ' ' + json.dumps(self['groupProfile'])
 
 APIUpdateGroupProfile_Response = CR.GroupUpdated | CR.ChatCmdError
+
+
+# Verify group domain
+# Network usage: interactive.
+class APIVerifyGroupDomain(TypedDict):
+    groupId: int  # int64
+
+
+def APIVerifyGroupDomain_cmd_string(self: APIVerifyGroupDomain) -> str:
+    return '/_verify domain #' + str(self['groupId'])
+
+APIVerifyGroupDomain_Response = CR.GroupDomainVerified
 
 
 # Group link commands
