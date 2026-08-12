@@ -782,10 +782,11 @@ fileprivate struct InvestInSimpleXChat: View {
                 .scaledToFit()
                 .cornerRadius(12)
                 .onTapGesture { showGetStakeSheet = true }
-            Text(verbatim: "Equity crowdfunding launched")
-                .multilineTextAlignment(.leading)
-            Button { showGetStakeSheet = true } label: {
-                Text(verbatim: "Learn more")
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: "Equity crowdfunding launched")
+                Button { showGetStakeSheet = true } label: {
+                    Text(verbatim: "Learn more")
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -810,37 +811,23 @@ fileprivate struct GetStakeView: View {
     @EnvironmentObject var chatModel: ChatModel
 
     var body: some View {
-        VStack {
-            List {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
                 Text(verbatim: "Get a stake in SimpleX Chat")
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(verbatim: "We launched equity crowdfunding — by investing, you benefit from the company growth, and help build the network that people own.")
-                    ForEach(getStakeSlides, id: \.image) { slide in
-                        Image(slide.image)
-                            .resizable()
-                            .scaledToFit()
-                            .cornerRadius(12)
-                        if let text = slide.text {
-                            Text(verbatim: text)
-                        }
+                Text(verbatim: "We launched equity crowdfunding — by investing, you benefit from the company growth, and help build the network that people own.")
+                ForEach(getStakeSlides, id: \.image) { slide in
+                    Image(slide.image)
+                        .resizable()
+                        .scaledToFit()
+                        .cornerRadius(12)
+                    if let text = slide.text {
+                        Text(verbatim: text)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            }
-            .frame(maxHeight: .infinity, alignment: .top)
-
-            Spacer()
-
-            VStack {
                 Button {
                     if let url = URL(string: "https://wefunder.com/simplexchat") {
                         openExternalLink(url)
@@ -849,7 +836,7 @@ fileprivate struct GetStakeView: View {
                     Text(verbatim: "Learn more on Wefunder")
                 }
                 .buttonStyle(OnboardingButtonStyle())
-                .padding(.bottom)
+                .padding(.top)
 
                 Button {
                     dismiss()
@@ -861,6 +848,7 @@ fileprivate struct GetStakeView: View {
                         .font(.callout)
                 }
                 .disabled(chatModel.chatRunning != true)
+                .frame(maxWidth: .infinity)
             }
             .padding()
         }
