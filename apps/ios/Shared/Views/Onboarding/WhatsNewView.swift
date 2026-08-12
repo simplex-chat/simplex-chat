@@ -776,7 +776,7 @@ fileprivate struct InvestInSimpleXChat: View {
     @State private var showGetStakeSheet = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("You can now invest in SimpleX Chat").font(.title3).bold()
             (Text("Equity crowdfunding launched.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
                 .multilineTextAlignment(.leading)
@@ -785,6 +785,7 @@ fileprivate struct InvestInSimpleXChat: View {
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(12)
+                .padding(.vertical, 4)
                 .onTapGesture { showGetStakeSheet = true }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -794,14 +795,14 @@ fileprivate struct InvestInSimpleXChat: View {
     }
 }
 
-fileprivate let getStakeSlides: [(text: LocalizedStringKey, image: String)] = [
-    ("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.", "crowdfunding_00"),
-    ("For most of human history, conversations were private by default, and the communities people built belonged to them. Internet changed it. SimpleX goal is to restore privacy and return ownership to the people.", "crowdfunding_04"),
-    ("All users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free.", "crowdfunding_05"),
-    ("Each group of users makes the network more valuable to the rest, driving organic growth.", "crowdfunding_06"),
-    ("Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network.", "crowdfunding_07"),
-    ("Other networks rely on user IDs to route messages, and large platforms monetize them – removing IDs would require rebuilding from scratch.", "crowdfunding_10"),
-    ("The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company.", "crowdfunding_11"),
+fileprivate let getStakeSlides: [(image: String, text: LocalizedStringKey?)] = [
+    ("crowdfunding_00", "For most of human history, conversations were private by default, and the communities people built belonged to them. Internet changed it. SimpleX goal is to restore privacy and return ownership to the people."),
+    ("crowdfunding_04", "All users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free."),
+    ("crowdfunding_05", "Each group of users makes the network more valuable to the rest, driving organic growth."),
+    ("crowdfunding_06", "Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network."),
+    ("crowdfunding_07", "Other networks rely on user IDs to route messages, and large platforms monetize them – removing IDs would require rebuilding from scratch."),
+    ("crowdfunding_10", "The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company."),
+    ("crowdfunding_11", nil),
 ]
 
 fileprivate struct GetStakeView: View {
@@ -816,12 +817,17 @@ fileprivate struct GetStakeView: View {
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical)
+                Text("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
                 ForEach(getStakeSlides, id: \.image) { slide in
-                    Text(slide.text)
-                    Image(slide.image)
-                        .resizable()
-                        .scaledToFit()
-                        .cornerRadius(12)
+                    VStack(alignment: .leading, spacing: 9) {
+                        Image(slide.image)
+                            .resizable()
+                            .scaledToFit()
+                            .cornerRadius(12)
+                        if let text = slide.text {
+                            Text(text)
+                        }
+                    }
                 }
                 Button {
                     if let url = URL(string: "https://wefunder.com/simplexchat") {
