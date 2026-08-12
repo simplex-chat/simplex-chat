@@ -1856,7 +1856,7 @@
     <string name="cannot_share_message_alert_text">Les paramètres de chat sélectionnés ne permettent pas l\'envoi de ce message.</string>
     <string name="servers_info_subscriptions_connections_subscribed">Connections actives</string>
     <string name="all_users">Tous les profiles</string>
-    <string name="acknowledged">Reçu avec accusé de réception</string>
+    <string name="acknowledged">Reçu</string>
     <string name="app_check_for_updates_download_completed_title">La mise à jour de l\'app est téléchargée</string>
     <string name="completed">Complétées</string>
     <string name="current_user">Profil actuel</string>
