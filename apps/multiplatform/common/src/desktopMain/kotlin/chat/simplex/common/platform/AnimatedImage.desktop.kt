@@ -142,7 +142,7 @@ private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame
         // busy machine should not turn a cheap animation into a still. Expensive ones overrun every frame.
         if (System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000) slowFrames++ else slowFrames = 0
         if (slowFrames >= 2) {
-          Log.d(TAG, "Animation too expensive to decode, keeping the still image")
+          Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
         // A new wrapper around the same raster, so the state sees a change - as the video surface does.
