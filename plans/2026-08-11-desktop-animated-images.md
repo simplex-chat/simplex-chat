@@ -48,9 +48,9 @@ Measured on a 1244x554 GIF and its WebP equivalent:
 | 2000x891 GIF | 180.6 ms | 100% of one core |
 
 Typical animations are close to free; the whole cost problem is the pathological tail. So an animation whose
-frames take more than 100ms to decode, twice in a row, stops and keeps the still. Two in a row because this
-is wall time: a single frame can overrun by being descheduled, and a busy machine should not turn a cheap
-animation into a still.
+frames take more than 100ms to decode, twice in a row, stops on the frame it reached. Two in a row because
+this is wall time: a single frame can overrun by being descheduled, and a busy machine should not turn a
+cheap animation into a still.
 
 Two optimisations were measured and **rejected**:
 
@@ -64,7 +64,7 @@ What was kept: decoding is confined to two threads of the shared pool, so untrus
 the coroutines that deliver messages; and frames are only decoded while they can be seen — not while the app
 sits in the tray, and not while the image is behind the privacy blur, where each frame would otherwise be
 decoded, uploaded and then blurred away again for nobody. The chat list preview stays a still image for
-the same reason: it is a 36dp box that the desktop layout keeps on screen the whole time, so animating it
+the same reason: it is a 36sp box that the desktop layout keeps on screen the whole time, so animating it
 would hold a raster and spend a frame of work per listed chat, without pause.
 
 ## Verification
@@ -78,7 +78,9 @@ would hold a raster and spend a frame of work per listed chat, without pause.
 
 ## Deliberately not in this change
 
-- **WebP still images do not decode on desktop at all.** `getLoadedImage` uses ImageIO, which has no WebP
-  reader, so a received `.webp` never reaches this code and picking one to send is dropped. Separate fix.
+- **WebP still images do not decode on desktop at all.** Desktop decodes images with ImageIO, which has no
+  WebP reader, so a received `.webp` never loads and picking one to send is dropped. Both the chat item and
+  the full screen viewer reach this code only after that decode has succeeded, so until that separate fix
+  lands it is GIFs that animate in the app, and the WebP path here is exercised by measurement only.
 - **The decode raster is left to the collector.** Releasing it explicitly needs to know which thread Compose
   Desktop draws on, and skiko uses a different redrawer per platform; guessing risks a use-after-free.
