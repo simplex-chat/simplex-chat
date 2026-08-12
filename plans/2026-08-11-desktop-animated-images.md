@@ -4,14 +4,14 @@
 
 `SimpleAndAnimatedImageView` on desktop drew a single `BitmapPainter` and carried the marker
 `// LALAL make it animated too`. Android decodes animations with coil, iOS with SwiftyGif, and desktop showed
-the first frame and stopped. `ImageFullScreenView.kt` carried a matching marker over the image branch.
+the first frame and stopped. `ImageFullScreenView` carried a matching marker over the image branch.
 
 ## Why this shape
 
 **Skia's `Codec`, which skiko already puts on the desktop classpath.** No new dependency. It decodes both GIF
 and animated WebP, reports per-frame durations and repeat counts, and supports random access into frames.
 
-**Not `components-animatedimage`** (already declared in `common/build.gradle.kts`, unused). Its `animate()`
+**Not `components-animatedimage`** (already a declared dependency, unused). Its `animate()`
 ignores the result of `allocPixels` and decodes inside composition. A 35-byte GIF declaring 65535x65535 asks
 for a 17GB raster; `allocPixels` returns false, and the following `readPixels` throws
 `IllegalArgumentException` from inside the composition — a remote crash from anyone who can send a file. It
