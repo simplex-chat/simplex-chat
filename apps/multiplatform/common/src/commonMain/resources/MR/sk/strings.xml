@@ -867,7 +867,6 @@
     <string name="v7_0_channels_previews">Vytvoriť webový náhľad</string>
     <string name="color_mode_dark">Tmavý</string>
     <string name="theme_dark">Tmavý</string>
-    <string name="chat_theme_apply_to_dark_mode"></string>
     <string name="dark_theme">Tmavá téma</string>
     <string name="database_downgrade">Downgrade databázy</string>
     <string name="developer_options">ID databázy a možnosti izolácie transportu.</string>
