@@ -12,6 +12,39 @@ import SimpleXChat
 import SwiftyGif
 import Combine
 
+@propertyWrapper
+struct StateObservedObject<Object: ObservableObject>: DynamicProperty {
+    @StateObject private var storage: Storage
+
+    init(wrappedValue: Object) {
+        _storage = StateObject(wrappedValue: Storage(wrappedValue))
+    }
+
+    var wrappedValue: Object {
+        get { storage.value }
+        nonmutating set { storage.value = newValue }
+    }
+
+    private final class Storage: ObservableObject {
+        @Published var value: Object {
+            didSet { observeValue() }
+        }
+
+        private var cancellable: AnyCancellable?
+
+        init(_ value: Object) {
+            self.value = value
+            observeValue()
+        }
+
+        private func observeValue() {
+            cancellable = value.objectWillChange.sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+        }
+    }
+}
+
 private let memberImageSize: CGFloat = 34
 
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
@@ -47,7 +80,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
-    @State @ObservedObject var chat: Chat
+    @StateObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
@@ -907,7 +940,7 @@ struct ChatView: View {
                 return Group {
                     if case .chatBanner = ci.content {
                         VStack {
-                            ChatBannerView(chat: $chat)
+                            ChatBannerView(chat: chat)
                                 .padding(.bottom, 90)
                                 .padding(.top, 8)
 
@@ -934,7 +967,7 @@ struct ChatView: View {
                         : (g.size.width - 32) * 0.84
                         ChatItemWithMenu(
                             im: im,
-                            chat: $chat,
+                            chat: chat,
                             index: index,
                             isLastItem: index == mergedItems.boxedValue.items.count - 1,
                             chatItem: ci,
@@ -1004,7 +1037,7 @@ struct ChatView: View {
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-        @Binding @ObservedObject var chat: Chat
+        @ObservedObject var chat: Chat
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -1697,7 +1730,7 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
-        @Binding @ObservedObject var chat: Chat
+        @ObservedObject var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let index: Int
         let isLastItem: Bool
