@@ -42,7 +42,7 @@ private struct FeatureView {
     let view: () -> any View
 }
 
-private let isInUS = SKStorefront().countryCode == "USA"
+private let isInUS = true // SKStorefront().countryCode == "USA"
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -808,15 +808,10 @@ fileprivate struct InvestInSimpleXChat: View {
 
 fileprivate let getStakeSlides: [(image: String, text: String?)] = [
     ("crowdfunding_00", "For most of human history, conversations were private by default, and the communities people built belonged to them."),
-    ("crowdfunding_01", "User identification gives networks power over users — to surveil their private life, to sell their data, and to revoke access."),
-    ("crowdfunding_02", "The solution is not better policies or stronger encryption — it is a different architecture, without user IDs."),
-    ("crowdfunding_03", "It takes power from the network and gives it back to the users."),
     ("crowdfunding_04", "All of them found SimpleX Chat without any paid marketing — and donated over $650,000, paying for something they could use for free."),
     ("crowdfunding_05", "Each user group makes the network more valuable to the rest, driving organic growth."),
     ("crowdfunding_06", "Some projects define themselves as SimpleX-first, running all communications of their applications over SimpleX Network."),
     ("crowdfunding_07", "Other networks rely on user IDs to route messages, and large platforms monetize them — removing IDs would require rebuilding from scratch."),
-    ("crowdfunding_08", "None of the existing networks can provide identity-free messaging."),
-    ("crowdfunding_09", "The first planned revenue products are public network names, business messaging, and paid servers for big channels."),
     ("crowdfunding_10", "The protocol is licensed to the foundation permanently — the network remains available regardless of who owns the company."),
     ("crowdfunding_11", nil),
 ]
