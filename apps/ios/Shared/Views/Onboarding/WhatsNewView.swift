@@ -668,7 +668,7 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "v7.0",
+        version: "v7.0 ",
         post: nil,
         features: (isInUS ? [
             .view(FeatureView(
@@ -800,9 +800,9 @@ fileprivate let getStakeSlides: [(image: String, text: LocalizedStringKey?)] = [
     ("crowdfunding_04", "All users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free."),
     ("crowdfunding_05", "Each group of users makes the network more valuable to the rest, driving organic growth."),
     ("crowdfunding_06", "Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network."),
-    ("crowdfunding_07", "Other networks rely on user IDs to route messages, and large platforms monetize them – removing IDs would require rebuilding from scratch."),
+    ("crowdfunding_07", "Other networks rely on user IDs to deliver messages, and large platforms monetize them. Removing IDs would require rebuilding."),
     ("crowdfunding_10", "The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company."),
-    ("crowdfunding_11", nil),
+    ("crowdfunding_11", "Read about how we plan the make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."),
 ]
 
 fileprivate struct GetStakeView: View {
@@ -816,10 +816,11 @@ fileprivate struct GetStakeView: View {
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.vertical)
+                    .padding(.top)
                 Text("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
+                    .padding(.bottom)
                 ForEach(getStakeSlides, id: \.image) { slide in
-                    VStack(alignment: .leading, spacing: 9) {
+                    VStack(alignment: .leading) {
                         Image(slide.image)
                             .resizable()
                             .scaledToFit()
@@ -828,16 +829,17 @@ fileprivate struct GetStakeView: View {
                             Text(text)
                         }
                     }
+                    .padding(.bottom)
                 }
+
                 Button {
                     if let url = URL(string: "https://wefunder.com/simplexchat") {
                         openExternalLink(url)
                     }
                 } label: {
-                    Text(verbatim: "Learn more on Wefunder")
+                    Text("Learn more on Wefunder")
                 }
                 .buttonStyle(OnboardingButtonStyle())
-                .padding(.top)
 
                 Button {
                     dismiss()
@@ -845,7 +847,7 @@ fileprivate struct GetStakeView: View {
                         ChatModel.shared.appOpenUrl = simplexTeamURL
                     }
                 } label: {
-                    Text(verbatim: "or ask SimpleX team")
+                    Text("or ask SimpleX team")
                         .font(.callout)
                 }
                 .disabled(chatModel.chatRunning != true)
