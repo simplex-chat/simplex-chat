@@ -917,11 +917,11 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     version = "v7.0",
     post = null,
     features = listOf(
-      VersionFeature.FeatureView(
-        icon = null,
-        titleId = MR.strings.v7_0_invest,
-        view = { _ -> InvestInSimpleXChatView() }
-      ),
+//       VersionFeature.FeatureView(
+//         icon = null,
+//         titleId = MR.strings.v7_0_invest,
+//         view = { _ -> InvestInSimpleXChatView() }
+//       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_alternate_email,
         titleId = MR.strings.v7_0_simplex_names,
@@ -956,57 +956,57 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-private const val WEFUNDER_URL = "https://wefunder.com/simplexchat"
-
-@Composable
-private fun InvestInSimpleXChatView() {
-  if (platform.androidIsPlayStoreBuild) {
-    LaunchedEffect(Unit) { if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry() }
-    if (androidPlayStoreCountry.value != "US") return
-  }
-  val uriHandler = LocalUriHandler.current
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
-    Column(modifier = Modifier.weight(1f)) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(bottom = 4.dp)
-      ) {
-        Icon(painterResource(MR.images.ic_redeem), stringResource(MR.strings.v7_0_invest), tint = MaterialTheme.colors.secondary)
-        Text(
-          generalGetString(MR.strings.v7_0_invest),
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.h4,
-          fontWeight = FontWeight.Medium,
-          modifier = Modifier.padding(bottom = 6.dp)
-        )
-      }
-      Text(generalGetString(MR.strings.v7_0_invest_descr), fontSize = 15.sp, modifier = Modifier.padding(bottom = 4.dp))
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null
-          ) {
-            uriHandler.openExternalLink(WEFUNDER_URL)
-          }
-      ) {
-        Text(stringResource(MR.strings.v7_0_invest_learn_more), color = MaterialTheme.colors.primary, fontSize = 15.sp)
-        Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.v7_0_invest_learn_more), tint = MaterialTheme.colors.primary)
-      }
-    }
-    if (BuildConfigCommon.SIMPLEX_ASSETS) {
-      Image(
-        painterResource(if (isInDarkTheme()) MR.images.own_stake_light else MR.images.own_stake),
-        contentDescription = null,
-        modifier = Modifier.width(80.dp)
-      )
-    }
-  }
-}
+// private const val WEFUNDER_URL = "https://wefunder.com/simplexchat"
+//
+// @Composable
+// private fun InvestInSimpleXChatView() {
+//   if (platform.androidIsPlayStoreBuild) {
+//     LaunchedEffect(Unit) { if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry() }
+//     if (androidPlayStoreCountry.value != "US") return
+//   }
+//   val uriHandler = LocalUriHandler.current
+//   Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
+//     Column(modifier = Modifier.weight(1f)) {
+//       Row(
+//         verticalAlignment = Alignment.CenterVertically,
+//         horizontalArrangement = Arrangement.spacedBy(8.dp),
+//         modifier = Modifier.padding(bottom = 4.dp)
+//       ) {
+//         Icon(painterResource(MR.images.ic_redeem), stringResource(MR.strings.v7_0_invest), tint = MaterialTheme.colors.secondary)
+//         Text(
+//           generalGetString(MR.strings.v7_0_invest),
+//           maxLines = 2,
+//           overflow = TextOverflow.Ellipsis,
+//           style = MaterialTheme.typography.h4,
+//           fontWeight = FontWeight.Medium,
+//           modifier = Modifier.padding(bottom = 6.dp)
+//         )
+//       }
+//       Text(generalGetString(MR.strings.v7_0_invest_descr), fontSize = 15.sp, modifier = Modifier.padding(bottom = 4.dp))
+//       Row(
+//         verticalAlignment = Alignment.CenterVertically,
+//         horizontalArrangement = Arrangement.spacedBy(8.dp),
+//         modifier = Modifier
+//           .clickable(
+//             interactionSource = remember { MutableInteractionSource() },
+//             indication = null
+//           ) {
+//             uriHandler.openExternalLink(WEFUNDER_URL)
+//           }
+//       ) {
+//         Text(stringResource(MR.strings.v7_0_invest_learn_more), color = MaterialTheme.colors.primary, fontSize = 15.sp)
+//         Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.v7_0_invest_learn_more), tint = MaterialTheme.colors.primary)
+//       }
+//     }
+//     if (BuildConfigCommon.SIMPLEX_ASSETS) {
+//       Image(
+//         painterResource(if (isInDarkTheme()) MR.images.own_stake_light else MR.images.own_stake),
+//         contentDescription = null,
+//         modifier = Modifier.width(80.dp)
+//       )
+//     }
+//   }
+// }
 
 @Composable
 fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
