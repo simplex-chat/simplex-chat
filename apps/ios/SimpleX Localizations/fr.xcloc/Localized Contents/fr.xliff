@@ -10699,8 +10699,9 @@ Repeat join request?</source>
 Répéter la demande d'adhésion ?</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
+      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve" approved="no">
         <source>You are connected to the server used to receive messages from this connection.</source>
+        <target state="translated">Vous êtes connecté au serveur utilisé pour recevoir les messages de cette connexion.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -10708,8 +10709,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous êtes invité·e au groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
+      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve" approved="no">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
+        <target state="translated">Vous n'êtes pas connecté au serveur utilisé pour recevoir les messages de cette connexion (aucun abonnement).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10742,8 +10744,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez l'activer ultérieurement via Paramètres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can enable them later via app Your privacy settings." xml:space="preserve">
+      <trans-unit id="You can enable them later via app Your privacy settings." xml:space="preserve" approved="no">
         <source>You can enable them later via app Your privacy settings.</source>
+        <target state="translated">Vous pourrez les activer plus tard dans les paramètres « Votre vie privée ».</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can give another try." xml:space="preserve">
@@ -10781,8 +10784,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez configurer l'aperçu des notifications sur l'écran de verrouillage via les paramètres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share a link or a QR code - anybody will be able to join the channel." xml:space="preserve">
+      <trans-unit id="You can share a link or a QR code - anybody will be able to join the channel." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the channel.</source>
+        <target state="translated">Vous pouvez partager un lien ou un QR code : n'importe qui pourra rejoindre le canal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
@@ -10805,8 +10809,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez toujours voir la conversation avec %@ dans la liste des discussions.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can support SimpleX starting from v7 of the app." xml:space="preserve">
+      <trans-unit id="You can support SimpleX starting from v7 of the app." xml:space="preserve" approved="no">
         <source>You can support SimpleX starting from v7 of the app.</source>
+        <target state="translated">Vous pouvez soutenir SimpleX à partir de la version 7 de l'application.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
@@ -10833,14 +10838,18 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous ne pouvez pas envoyer de messages !</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="You commit to:&#10;- Only legal content in public groups&#10;- Respect other users - no spam" xml:space="preserve">
+      <trans-unit id="You commit to:&#10;- Only legal content in public groups&#10;- Respect other users - no spam" xml:space="preserve" approved="no">
         <source>You commit to:
 - Only legal content in public groups
 - Respect other users - no spam</source>
+        <target state="translated">Vous vous engagez à :
+- Ne publier que du contenu légal dans les groupes publics
+- Respecter les autres utilisateurs ; pas de spam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You connected to the channel via this relay link." xml:space="preserve">
+      <trans-unit id="You connected to the channel via this relay link." xml:space="preserve" approved="no">
         <source>You connected to the channel via this relay link.</source>
+        <target state="translated">Vous vous êtes connecté au canal via ce lien du relais.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
@@ -10910,16 +10919,19 @@ Répéter la demande de connexion ?</target>
         <target>Vous avez envoyé une invitation de groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You should receive notifications." xml:space="preserve">
+      <trans-unit id="You should receive notifications." xml:space="preserve" approved="no">
         <source>You should receive notifications.</source>
+        <target state="translated">Vous devriez recevoir des notifications.</target>
         <note>token info</note>
       </trans-unit>
-      <trans-unit id="You were born without an account" xml:space="preserve">
+      <trans-unit id="You were born without an account" xml:space="preserve" approved="no">
         <source>You were born without an account</source>
+        <target state="translated">Vous êtes né sans compte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be able to send messages **only after your request is accepted**." xml:space="preserve">
+      <trans-unit id="You will be able to send messages **only after your request is accepted**." xml:space="preserve" approved="no">
         <source>You will be able to send messages **only after your request is accepted**.</source>
+        <target state="translated">Vous pourrez envoyer des messages **uniquement après l'acceptation de votre demande**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
@@ -10952,8 +10964,9 @@ Répéter la demande de connexion ?</target>
         <target>Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu'ils sont actifs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will stop receiving messages from this channel. Chat history will be preserved." xml:space="preserve">
+      <trans-unit id="You will stop receiving messages from this channel. Chat history will be preserved." xml:space="preserve" approved="no">
         <source>You will stop receiving messages from this channel. Chat history will be preserved.</source>
+        <target state="translated">Vous ne recevrez plus de messages provenant de ce canal. L'historique des discussions sera conservé.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
@@ -10991,8 +11004,9 @@ Répéter la demande de connexion ?</target>
         <target>Votre adresse SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX name" xml:space="preserve">
+      <trans-unit id="Your SimpleX name" xml:space="preserve" approved="no">
         <source>Your SimpleX name</source>
+        <target state="translated">Votre nom SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
@@ -11005,8 +11019,9 @@ Répéter la demande de connexion ?</target>
         <target>Vos appels</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your channel" xml:space="preserve">
+      <trans-unit id="Your channel" xml:space="preserve" approved="no">
         <source>Your channel</source>
+        <target state="translated">Votre canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
@@ -11024,8 +11039,9 @@ Répéter la demande de connexion ?</target>
         <target>Vos profils de discussion</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+      <trans-unit id="Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve" approved="no">
         <source>Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+        <target state="translated">Votre conversation a été déplacée vers %@, mais une erreur inattendue s'est produite lors de la redirection vers le profil.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
@@ -11060,8 +11076,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Vos contacts resteront connectés.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." xml:space="preserve">
+      <trans-unit id="Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." xml:space="preserve" approved="no">
         <source>Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public.</source>
+        <target state="translated">Vos conversations vous appartiennent, comme avant Internet. Le réseau n'est pas un lieu que vous visitez, mais un lieu que vous créez et possédez. Et personne ne peut vous le retirer, que vous le rendiez privé ou public.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve">
@@ -11089,9 +11106,11 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Votre réseau</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your new channel %@ is connected to %d of %d relays.&#10;If you cancel, the channel will be deleted - you can create it again." xml:space="preserve">
+      <trans-unit id="Your new channel %@ is connected to %d of %d relays.&#10;If you cancel, the channel will be deleted - you can create it again." xml:space="preserve" approved="no">
         <source>Your new channel %1$@ is connected to %2$d of %3$d relays.
 If you cancel, the channel will be deleted - you can create it again.</source>
+        <target state="translated">Votre nouveau canal %1$@ est connecté à %2$d relais sur %3$d.
+Si vous annulez, le canal sera supprimé : vous pourrez le recréer.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
@@ -11109,9 +11128,11 @@ If you cancel, the channel will be deleted - you can create it again.</source>
         <target>Votre profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile **%@** will be shared with channel relays and subscribers.&#10;Relays can access channel messages." xml:space="preserve">
+      <trans-unit id="Your profile **%@** will be shared with channel relays and subscribers.&#10;Relays can access channel messages." xml:space="preserve" approved="no">
         <source>Your profile **%@** will be shared with channel relays and subscribers.
 Relays can access channel messages.</source>
+        <target state="translated">Votre profil **%@** sera partagé avec les relais et les abonnés du canal.
+Les relais peuvent accéder aux messages du canal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile **%@** will be shared." xml:space="preserve">
