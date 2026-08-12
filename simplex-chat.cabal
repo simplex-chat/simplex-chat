@@ -523,6 +523,7 @@ executable simplex-directory-service
       Directory.Events
       Directory.Listing
       Directory.Options
+      Directory.Rpc
       Directory.Search
       Directory.Service
       Directory.Store
@@ -628,6 +629,7 @@ test-suite simplex-chat-test
       Directory.Events
       Directory.Listing
       Directory.Options
+      Directory.Rpc
       Directory.Search
       Directory.Service
       Directory.Store

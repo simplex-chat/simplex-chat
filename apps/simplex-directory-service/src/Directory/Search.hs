@@ -1,9 +1,13 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Directory.Search where
 
+import qualified Data.Aeson.TH as JQ
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Types
+import Simplex.Messaging.Parsers (defaultJSON)
 
 data SearchRequest = SearchRequest
   { searchType :: SearchType,
@@ -20,3 +24,5 @@ data SearchCursor = SearchCursor
   }
 
 data SearchType = STAll | STRecent | STSearch Text
+
+$(JQ.deriveJSON defaultJSON ''SearchCursor)

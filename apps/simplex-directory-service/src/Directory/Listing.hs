@@ -123,13 +123,8 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
                 }
             imgData = imgFileData groupLink =<< image
          in (de, imgData)
-   in case publicGroup of
-        Just PublicGroupProfile {groupLink = sLnk} ->
-          Just $ entry $ PublicLink Nothing (Just sLnk)
-        Nothing ->
-          entry . toPublicLink . connLinkContact <$> gLink_
+   in entry <$> groupPublicLink g gLink_
   where
-    toPublicLink (CCLink fullLink shortLink) = PublicLink (Just fullLink) shortLink
     imgFileData :: PublicLink -> ImageData -> Maybe (FilePath, ByteString)
     imgFileData PublicLink {connFullLink, connShortLink} (ImageData img) =
       let (img', imgExt) =
@@ -144,6 +139,14 @@ groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSumma
        in case B64.decode $ encodeUtf8 img' of
             Right img'' -> Just (imgFile, img'')
             Left _ -> Nothing
+
+-- a public group publishes its own link in the profile; other groups only have the link the service created
+groupPublicLink :: GroupInfo -> Maybe GroupLink -> Maybe PublicLink
+groupPublicLink GroupInfo {groupProfile = GroupProfile {publicGroup}} gLink_ = case publicGroup of
+  Just PublicGroupProfile {groupLink = sLnk} -> Just $ PublicLink Nothing (Just sLnk)
+  Nothing -> toPublicLink . connLinkContact <$> gLink_
+  where
+    toPublicLink (CCLink fullLink shortLink) = PublicLink (Just fullLink) shortLink
 
 generateListing :: FilePath -> [(GroupInfo, GroupReg, Maybe GroupLink)] -> IO ()
 generateListing dir gs = do

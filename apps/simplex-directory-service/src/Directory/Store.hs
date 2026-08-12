@@ -38,6 +38,7 @@ module Directory.Store
     listPendingGroups,
     getAllListedGroups,
     getAllListedGroups_,
+    getGroupLinks,
     searchListedGroups,
     verifiedGroupDomain,
     groupRegStatusText,
@@ -339,6 +340,12 @@ getAllListedGroups_ db cxt user@User {userId, userContactId} = do
     >>= mapM (withGroupLink . toGroupInfoReg currentTs cxt user)
   where
     withGroupLink (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
+
+-- only the RPC search needs links, so they are read for the returned page rather than in the search query
+getGroupLinks :: ChatController -> User -> [GroupInfo] -> IO (Either String [Maybe GroupLink])
+getGroupLinks cc user gs =
+  withDB' "getGroupLinks" cc $ \db ->
+    mapM (\g -> eitherToMaybe <$> runExceptT (getGroupLink db user g)) gs
 
 searchListedGroups :: ChatController -> User -> SearchType -> Maybe SearchCursor -> Int -> IO (Either String ([(GroupInfo, GroupReg)], Int))
 searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageSize =

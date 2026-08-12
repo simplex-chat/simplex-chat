@@ -1451,8 +1451,9 @@ processChatCommand cxt nm = \case
         pure $ CRContactRequestRejected user cReq ct_
   APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user -> do
     cReq <- resolveServiceTarget user sendTarget
-    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) (LB.toStrict $ J.encode request)
-    resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
+    reqData <- either throwCmdError pure $ compressServiceBody $ LB.toStrict $ J.encode request
+    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) reqData
+    resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' =<< decompressServiceBody respData
     pure $ CRServiceResponse user resp
     where
       resolveServiceTarget user = \case
@@ -1471,8 +1472,15 @@ processChatCommand cxt nm = \case
           resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
-    connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
+    respData <- either throwCmdError pure $ compressServiceBody $ LB.toStrict $ J.encode responseData
+    connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId respData
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
+  APIRejectServiceRequest userId requestId reason -> withUserId userId $ \user -> do
+    let AgentInvId invId = requestId
+    -- a reason is required for the requester to fail fast; without it the request is
+    -- dropped silently and the caller waits out its timeout
+    withAgent $ \a -> rejectServiceRequest a NRMInteractive (aUserId user) invId (encodeUtf8 <$> reason)
+    ok user
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5522,6 +5530,7 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
+      "/_reject_service_request " *> (APIRejectServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (A.space *> (safeDecodeUtf8 <$> A.takeByteString))),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),

@@ -42,10 +42,13 @@ Entry differences from `DirectoryEntry`: `welcomeMessage` dropped (it carries th
 
 **The response MUST be compressed, exactly as conn info is.** A service response is the same payload class as conn info — both are padded to `e2eEncConnInfoLength` — and the chat layer already compresses that class: `encodeConnInfoPQ` (Internal.hs:2250-2261) compresses with `compressedBatchMsgBody_` when PQ is on and the body exceeds `maxCompressedInfoLength` = **10,968** (Protocol.hs:939-940, defined as `maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent`), and fails over the cap after compressing. The service path must do the same:
 
-- directory side: encode the response JSON, compress with `compressedBatchMsgBody_` (Protocol.hs:1005, marker `'X'`) when over `maxCompressedInfoLength`, and treat still-over-cap as an internal error rather than attempting the send;
-- requester side: `APISendServiceRequest` currently decodes the reply as raw JSON (`J.eitherDecodeStrict' respData`, Commands.hs:1455) and must first undo the marker and `decompress1`, mirroring the chat parser at Protocol.hs:957 (`'X' -> decodeCompressed`). `compress1`/`decompress1` are agent-side (`Simplex.Messaging.Compression`), so both ends already have them. Apply the same to the request direction (Subscriber.hs:1369) for symmetry, though search requests are far below the cap.
+Compression belongs in the **core**, not in the directory: `APISendServiceResponse` takes a `J.Object` (Controller.hs:415) and encodes it itself, so a handler has no way to hand it compressed bytes. It is also generic — any service, not just the directory, needs it. `compressServiceBody` / `decompressServiceBody` (Protocol.hs, beside `compressedBatchMsgBody_`) wrap the same `'X'` marker and `maxCompressedInfoLength` bound, and are applied symmetrically at all four points: request encode and response decode in `APISendServiceRequest`, response encode in `APISendServiceResponse`, and request decode on the `SREQ` path (Subscriber.hs). A JSON payload never starts with `'X'`, so the marker is unambiguous and payloads under the bound stay uncompressed.
+
+Decompression MUST bound the expanded size against `maxDecompressedMsgLength` — without it a small payload from an untrusted peer can expand without limit.
 
 `10968` is the constant to size against, not the raw 11,106 — it is the chat layer's already-correct expression of the same agent limit.
+
+The directory handler and the apps therefore see plain JSON and do nothing about compression.
 
 **Entries per page is still bounded by images.** `image` is base64 of already-compressed JPEG/PNG, so compression recovers roughly the base64 expansion and no more: a near-cap 12,500-character image lands at roughly 9,400 bytes, against a 10,968 budget. One image-bearing entry per response; two will not fit whatever the page size. `searchResults` (default 10) is therefore not the binding constraint — the envelope is. The app shows whatever fits and pages the rest manually (§6); streaming the response is the eventual fix and is out of scope here.
 

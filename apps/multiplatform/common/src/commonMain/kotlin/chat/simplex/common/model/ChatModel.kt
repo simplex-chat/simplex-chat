@@ -45,15 +45,22 @@ import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
+// A directory search and a connection can overlap - tapping a result starts a connection while
+// the search is still running - so the single progress slot records its owner: a late search
+// result must not clear the spinner that now belongs to the connection.
+enum class ConnectProgressOwner { Connect, DirectorySearch }
+
 object ConnectProgressManager {
   private val connectInProgress = mutableStateOf<String?>(null)
   private val connectProgressByTimeout = mutableStateOf(false)
   private var onCancel: (() -> Unit)? = null
+  private var owner: ConnectProgressOwner? = null
 
   private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-  fun startConnectProgress(text: String, onCancel: (() -> Unit)? = null) {
+  fun startConnectProgress(text: String, owner: ConnectProgressOwner = ConnectProgressOwner.Connect, onCancel: (() -> Unit)? = null) {
     connectInProgress.value = text
+    this.owner = owner
     this.onCancel = onCancel
     coroutineScope.launch {
       delay(1000)
@@ -61,15 +68,22 @@ object ConnectProgressManager {
     }
   }
 
-  fun stopConnectProgress() {
+  fun stopConnectProgress(owner: ConnectProgressOwner = ConnectProgressOwner.Connect) {
+    if (this.owner != null && this.owner != owner) return
     connectInProgress.value = null
+    this.owner = null
     onCancel = null
     connectProgressByTimeout.value = false
   }
 
+  // a user-initiated cancel, and the takeover in planAndConnect, cancel whatever is running
   fun cancelConnectProgress() {
-    onCancel?.invoke()
-    stopConnectProgress()
+    val cancel = onCancel
+    owner = null
+    onCancel = null
+    connectInProgress.value = null
+    connectProgressByTimeout.value = false
+    cancel?.invoke()
   }
 
   val showConnectProgress: String? get() =
