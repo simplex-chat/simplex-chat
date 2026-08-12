@@ -777,14 +777,14 @@ fileprivate struct InvestInSimpleXChat: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(verbatim: "You can now invest in SimpleX Chat").font(.title3).bold()
+            Text("You can now invest in SimpleX Chat").font(.title3).bold()
+            (Text("Equity crowdfunding launched.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+                .multilineTextAlignment(.leading)
+                .onTapGesture { showGetStakeSheet = true }
             Image("crowdfunding_00")
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(12)
-                .onTapGesture { showGetStakeSheet = true }
-            (Text(verbatim: "Equity crowdfunding launched. ") + Text(verbatim: "Learn more").foregroundColor(theme.colors.primary))
-                .multilineTextAlignment(.leading)
                 .onTapGesture { showGetStakeSheet = true }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -794,14 +794,14 @@ fileprivate struct InvestInSimpleXChat: View {
     }
 }
 
-fileprivate let getStakeSlides: [(text: String, image: String)] = [
-    ("We launched equity crowdfunding — by investing, you benefit from the company growth, and help build the network that people own.", "crowdfunding_00"),
-    ("For most of human history, conversations were private by default, and the communities people built belonged to them.", "crowdfunding_04"),
-    ("All of them found SimpleX Chat without any paid marketing — and donated over $650,000, paying for something they could use for free.", "crowdfunding_05"),
-    ("Each user group makes the network more valuable to the rest, driving organic growth.", "crowdfunding_06"),
-    ("Some projects define themselves as SimpleX-first, running all communications of their applications over SimpleX Network.", "crowdfunding_07"),
-    ("Other networks rely on user IDs to route messages, and large platforms monetize them — removing IDs would require rebuilding from scratch.", "crowdfunding_10"),
-    ("The protocol is licensed to the foundation permanently — the network remains available regardless of who owns the company.", "crowdfunding_11"),
+fileprivate let getStakeSlides: [(text: LocalizedStringKey, image: String)] = [
+    ("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.", "crowdfunding_00"),
+    ("For most of human history, conversations were private by default, and the communities people built belonged to them. Internet changed it. SimpleX goal is to restore privacy and return ownership to the people.", "crowdfunding_04"),
+    ("All users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free.", "crowdfunding_05"),
+    ("Each group of users makes the network more valuable to the rest, driving organic growth.", "crowdfunding_06"),
+    ("Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network.", "crowdfunding_07"),
+    ("Other networks rely on user IDs to route messages, and large platforms monetize them – removing IDs would require rebuilding from scratch.", "crowdfunding_10"),
+    ("The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company.", "crowdfunding_11"),
 ]
 
 fileprivate struct GetStakeView: View {
@@ -811,13 +811,13 @@ fileprivate struct GetStakeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(verbatim: "Get a stake in SimpleX Chat")
+                Text("Get a stake in SimpleX Chat")
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical)
                 ForEach(getStakeSlides, id: \.image) { slide in
-                    Text(verbatim: slide.text)
+                    Text(slide.text)
                     Image(slide.image)
                         .resizable()
                         .scaledToFit()
