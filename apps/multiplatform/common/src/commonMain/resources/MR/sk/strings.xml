@@ -79,7 +79,7 @@
     <string name="about_simplex_chat">O SimpleX Chat</string>
     <string name="above_then_preposition_continuation">potom:</string>
     <string name="color_primary">Sfarbenie</string>
-    <string name="network_enable_socks_info">Pristupovať k serverom cez SOCKS proxy na porte %d? Pred povolením tejto možnosti musí byť spustená proxy</string>
+    <string name="network_enable_socks_info">Pristupovať k serverom cez SOCKS proxy na porte %d? Pred povolením tejto možnosti musí byť spustená proxy.</string>
     <string name="relay_status_active">aktívny</string>
     <string name="servers_info_subscriptions_connections_subscribed">aktívne spojenia</string>
     <string name="add_button">Pridať</string>
@@ -130,13 +130,13 @@
     <string name="chat_theme_apply_to_all_modes">Všetky farebné režimy</string>
     <string name="v5_1_self_destruct_passcode_descr">Všetky dáta sa pri zadaní vymažú.</string>
     <string name="content_filter_all_messages">Všetky správy</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Všetky správy a súbory sú odoslané s <b> koncovým šifrovaním</b>, s post-quantovým zabezpečením v priamych správach.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Všetky správy a súbory sú odoslané s <b>koncovým šifrovaním</b>, s post-quantovým zabezpečením v priamych správach.]]></string>
     <string name="block_member_desc">Všetky nové správy od %s budú skryté!</string>
     <string name="block_members_desc">Všetky nové správy od týchto členov budú skryté!</string>
     <string name="turn_off_battery_optimization_button">Povoliť</string>
     <string name="allow_verb">Povoliť</string>
     <string name="allow_calls_question">Povoliť volanie?</string>
-    <string name="allow_calls_only_if">Povoliť hovory pokiaľ ich Váš kontakt povolí.</string>
+    <string name="allow_calls_only_if">Povoliť hovory pokiaľ ich váš kontakt povolí.</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Povoliť downgrade</string>
     <string name="allow_chat_with_admins">Povoliť členom chat so správcami.</string>
     <string name="allow_message_reactions">Povoliť reakcie na správy.</string>
