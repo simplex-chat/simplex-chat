@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -965,8 +966,8 @@ parseChatMessages msg = checkBatchLimit $ case B.head msg of
       | ms `lengthLE` maxBatchElementCount = ms
       | otherwise = [Left "too many messages in batch"]
     lengthLE :: [a] -> Int -> Bool
-    lengthLE [] n = n >= 0
-    lengthLE (_ : xs) n = n > 0 && lengthLE xs (n - 1)
+    [] `lengthLE` !n = n >= 0
+    (_ : xs) `lengthLE` !n = n > 0 && xs `lengthLE` (n - 1)
     parseUncompressed c s = case c of
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map (fmap plainMsg . parseItem) v
