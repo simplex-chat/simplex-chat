@@ -810,7 +810,7 @@ fileprivate struct GetStakeView: View {
     @EnvironmentObject var chatModel: ChatModel
 
     var body: some View {
-        ScrollView {
+        ZoomablePageView {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Get a stake in SimpleX Chat")
                     .font(.largeTitle)
