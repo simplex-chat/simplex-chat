@@ -45,9 +45,11 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
     var id: String { connectLink ?? displayName }
 }
 
+// entries stay as JSONValue so they can be decoded one by one: an entry the app cannot decode
+// must not fail the whole response, as it would on a future directory field
 private struct DirectorySearchResponse: Decodable {
     var type: String
-    var entries: [DirectorySearchEntry]?
+    var entries: [JSONValue]?
     var searchCursor: JSONValue?
 }
 
@@ -69,5 +71,8 @@ func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? 
     guard let r: DirectorySearchResponse = decodeJSONValue(resp), r.type == "searchResults" else {
         return nil
     }
-    return DirectorySearchResults(entries: r.entries ?? [], cursor: r.searchCursor)
+    let entries = (r.entries ?? []).compactMap { (e: JSONValue) -> DirectorySearchEntry? in
+        decodeJSONValue(e)
+    }
+    return DirectorySearchResults(entries: entries, cursor: r.searchCursor)
 }

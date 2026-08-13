@@ -663,7 +663,10 @@ testDirectorySearchRpc ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         -- cath never connects to the directory: the request goes to the address
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
-        cath <##. "service response: {\"entries\":[{"
+        resp <- getTermLine cath
+        resp `shouldStartWith` "service response: {\"entries\":[{"
+        -- the last page carries no cursor, so the client does not spend a round trip finding out
+        resp `shouldNotContain` "searchCursor"
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"nothing matches this\"}")
         cath <## "service response: {\"entries\":[],\"type\":\"searchResults\"}"
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"nonsense\"}")

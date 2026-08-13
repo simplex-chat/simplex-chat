@@ -9,10 +9,12 @@ module Directory.Rpc where
 import qualified Data.Aeson.TH as JQ
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Directory.Listing
 import Directory.Search
 import Directory.Store
+import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Types
 import Simplex.Messaging.SimplexName (SimplexNameInfo (..), SimplexNameType (..), shortNameInfoStr)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
@@ -61,7 +63,9 @@ searchEntry now g@GroupInfo {groupProfile, chatTs, createdAt = groupCreatedAt, g
           simplexName = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g,
           groupLink,
           shortDescr,
-          image,
+          -- a profile received from its owner is not size-checked, so bound what is relayed
+          -- rather than passing an arbitrarily large data URI on to the apps
+          image = image >>= \img@(ImageData t) -> if T.length t > maxProfileImageSize then Nothing else Just img,
           activeAt = recentRoundedTime 900 now $ fromMaybe groupCreatedAt chatTs,
           createdAt = recentRoundedTime 86400 now groupCreatedAt
         }

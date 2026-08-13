@@ -1477,9 +1477,10 @@ processChatCommand cxt nm = \case
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIRejectServiceRequest userId requestId reason -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
-    -- a reason is required for the requester to fail fast; without it the request is
-    -- dropped silently and the caller waits out its timeout
-    withAgent $ \a -> rejectServiceRequest a NRMInteractive (aUserId user) invId (encodeUtf8 <$> reason)
+    -- A reason is required for the requester to fail fast; without it the request is dropped
+    -- silently and the caller waits out its timeout. Async, so a service shedding load does
+    -- not block on a network round trip per rejected request.
+    withAgent $ \a -> rejectServiceRequestAsync a "" (aUserId user) invId (encodeUtf8 <$> reason)
     ok user
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call

@@ -27,6 +27,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Class
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -371,7 +372,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         else reject "service is busy"
       where
         releaseSlot = atomically $ modifyTVar' serviceRequestsInFlight (subtract 1)
-        -- rejecting is cheaper than answering and fails the caller immediately
+        -- runs on the shared event loop, so it must not block on the network: the reject
+        -- is enqueued, like the response is
         reject reason =
           sendChatCmd cc (APIRejectServiceRequest userId reqId $ Just reason) >>= \case
             Right _ -> pure ()
@@ -379,41 +381,54 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         requestResponse = case JT.parseMaybe JT.parseJSON (J.Object req) of
           Nothing -> pure $ DRError "unsupported request"
           Just DRSearch {searchText, searchCursor} -> directorySearch searchText searchCursor
-        respond resp = case J.toJSON resp of
-          J.Object o ->
-            sendChatCmd cc (APISendServiceResponse userId reqId o) >>= \case
-              Right _ -> pure ()
-              Left e -> logError $ "service response error: " <> tshow e
-          _ -> logError "service response is not an object"
+        respond resp =
+          sendChatCmd cc (APISendServiceResponse userId reqId $ responseObject resp) >>= \case
+            Right _ -> pure ()
+            Left e -> logError $ "service response error: " <> tshow e
+        responseObject resp = case J.toJSON resp of
+          J.Object o -> o
+          -- unreachable: DirectoryResponse encodes as a tagged object; kept for totality
+          _ -> JM.fromList [("type", J.String "error"), ("errorMessage", J.String "internal error")]
     directorySearch :: Text -> Maybe SearchCursor -> IO DirectoryResponse
     directorySearch searchText cursor_ =
       searchListedGroups cc user (STSearch searchText) cursor_ searchResults >>= \case
         Left e -> logError ("searchListedGroups error: " <> T.pack e) $> DRError "search failed"
-        Right (gs, _) ->
+        Right (gs, n) ->
           getGroupLinks cc user (map fst gs) >>= \case
             Left e -> logError ("getGroupLinks error: " <> T.pack e) $> DRError "search failed"
             Right links -> do
               now <- getCurrentTime
-              -- rows without a link are dropped, so entries and their cursors must stay paired
-              let rows = [(gr, e) | (gr, Just e) <- zipWith (\gr@(g, _) l -> (gr, searchEntry now g l)) gs links]
-              pure $ searchResults_ $ fitRows rows
+              let rows = zipWith (\gr@(g, _) l -> (gr, searchEntry now g l)) gs links
+                  -- rows with no link cannot be connected to, so they are not sent
+                  entryRows = [(gr, e) | (gr, Just e) <- rows]
+                  (sent, lastFitted) = fitPage entryRows
+                  fittedAll = length sent == length entryRows
+                  -- when the whole page fitted, the cursor covers every row read, including
+                  -- rows dropped for having no link; otherwise it stops where sending stopped
+                  cursorRow = if fittedAll then fst <$> lastMaybe rows else lastFitted
+                  more = not fittedAll || n > length gs
+              pure
+                DRSearchResults
+                  { entries = map snd sent,
+                    searchCursor = if more then rowCursor <$> cursorRow else Nothing
+                  }
       where
-        -- send as many entries as the padded envelope allows; a lone entry that does not fit
-        -- is sent without its image, so paging always makes progress
-        fitRows [] = []
-        fitRows rows
-          | fits rows = rows
-          | [(gr, e)] <- rows = [(gr, dropImage e)]
-          | otherwise = fitRows $ init rows
+        -- Send as many entries as the padded envelope allows, and report the last row consumed
+        -- so the cursor can move past rows that were read but not sent. A lone entry that does
+        -- not fit is retried without its image; if it still does not fit it is skipped rather
+        -- than sent, or every retry would land on it again and paging would stall there.
+        fitPage [] = ([], Nothing)
+        fitPage rows
+          | fits rows = (rows, fst <$> lastMaybe rows)
+          | [(gr, _)] <- rows = (if fits noImage then noImage else [], Just gr)
+          | otherwise = fitPage $ init rows
+          where
+            noImage = [(gr, dropImage e) | (gr, e) <- rows]
         dropImage :: DirectorySearchEntry -> DirectorySearchEntry
         dropImage e = e {image = Nothing}
-        fits = isRight . compressServiceBody . LB.toStrict . J.encode . searchResults_
-        searchResults_ rows =
-          DRSearchResults
-            { entries = map snd rows,
-              -- the cursor is the last row actually sent, so truncated rows are not skipped
-              searchCursor = rowCursor . fst <$> lastMaybe rows
-            }
+        fits rows = isRight $ compressServiceBody $ LB.toStrict $ J.encode $ page rows
+        page rows =
+          DRSearchResults {entries = map snd rows, searchCursor = rowCursor . fst <$> lastMaybe rows}
         lastMaybe = foldl' (\_ x -> Just x) Nothing
         rowCursor (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}) =
           SearchCursor {lastMembers = currentMembers, lastCreatedAt = createdAt, lastGroupId = groupId}
