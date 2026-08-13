@@ -438,6 +438,14 @@ struct SettingsView: View {
             }
 
             Section(header: Text("Support the project").foregroundColor(theme.colors.secondary)) {
+                if isInUS {
+                    NavigationLink {
+                        GetStakeView()
+                            .navigationBarTitle("", displayMode: .inline)
+                    } label: {
+                        settingsRow("dollarsign.circle", color: theme.colors.secondary) { Text("Crowdfunding on Wefunder") }
+                    }
+                }
                 settingsRow("keyboard", color: theme.colors.secondary) {
                     ExternalLink("Contribute", destination: URL(string: "https://github.com/simplex-chat/simplex-chat#contribute")!)
                 }

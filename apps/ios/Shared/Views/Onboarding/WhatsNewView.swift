@@ -42,7 +42,7 @@ private struct FeatureView {
     let view: () -> any View
 }
 
-private let isInUS = true // SKStorefront().countryCode == "USA"
+let isInUS = true // SKStorefront().countryCode == "USA"
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -805,7 +805,7 @@ fileprivate let getStakeSlides: [(image: String, text: LocalizedStringKey?)] = [
     ("crowdfunding_11", "Read about how we plan the make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."),
 ]
 
-fileprivate struct GetStakeView: View {
+struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
 
