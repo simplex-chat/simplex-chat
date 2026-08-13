@@ -781,12 +781,14 @@ fileprivate struct InvestInSimpleXChat: View {
             (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
                 .multilineTextAlignment(.leading)
                 .onTapGesture { showGetStakeSheet = true }
+            #if SIMPLEX_ASSETS
             Image("crowdfunding_00")
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(12)
                 .padding(.vertical, 4)
                 .onTapGesture { showGetStakeSheet = true }
+            #endif
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showGetStakeSheet) {
@@ -795,14 +797,49 @@ fileprivate struct InvestInSimpleXChat: View {
     }
 }
 
-fileprivate let getStakeSlides: [(image: String, text: LocalizedStringKey?)] = [
-    ("crowdfunding_00", "For most of human history, conversations were private by default, and the communities people built belonged to them. Internet changed it. SimpleX goal is to restore privacy and return ownership to the people."),
-    ("crowdfunding_04", "All users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free."),
-    ("crowdfunding_05", "Each group of users makes the network more valuable to the rest, driving organic growth."),
-    ("crowdfunding_06", "Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network."),
-    ("crowdfunding_07", "Other networks rely on user IDs to deliver messages, and large platforms monetize them. Removing IDs would require rebuilding."),
-    ("crowdfunding_10", "The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company."),
-    ("crowdfunding_11", "Read about how we plan the make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."),
+fileprivate let getStakeSlides: [(image: String, heading: LocalizedStringKey, info: LocalizedStringKey?, text: LocalizedStringKey?)] = [
+    (
+        "crowdfunding_00",
+        "The first and the only messaging network without any user IDs",
+        "3M downloads, 480,000 monthly users.",
+        "SimpleX network is growing roughly 50% every six months – and you can now own a part of the company that builds it."
+    ),
+    (
+        "crowdfunding_04",
+        "480,000+ users joined on their own",
+        nil,
+        "All users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free."
+    ),
+    (
+        "crowdfunding_05",
+        "SimpleX is a network, not an app",
+        "Users, creators, businesses, developers and operators all arrived organically – the cold start solved.",
+        "Each group of users makes the network more valuable to the rest, driving organic growth."
+    ),
+    (
+        "crowdfunding_06",
+        "Developers already bet on SimpleX success",
+        "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
+        "Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network."
+    ),
+    (
+        "crowdfunding_07",
+        "Why SimpleX can't be copied",
+        "Only SimpleX combines scalable delivery, ownership that can't be revoked, and participants that can't be identified.",
+        "Other networks rely on user IDs to deliver messages, and large platforms monetize them. Removing IDs would require rebuilding."
+    ),
+    (
+        "crowdfunding_10",
+        "An open network others can build on",
+        "The SimpleX Network Consortium agreement ensures that no single company controls the network, while protecting SimpleX Chat business.",
+        "The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company."
+    ),
+    (
+        "crowdfunding_11",
+        "We are building a network that people own",
+        "We invite you to invest and become part of it.",
+        "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
+    ),
 ]
 
 struct GetStakeView: View {
@@ -821,10 +858,17 @@ struct GetStakeView: View {
                     .padding(.bottom)
                 ForEach(getStakeSlides, id: \.image) { slide in
                     VStack(alignment: .leading) {
+                        #if SIMPLEX_ASSETS
                         Image(slide.image)
                             .resizable()
                             .scaledToFit()
                             .cornerRadius(12)
+                        #else
+                        Text(slide.heading).font(.title3).bold()
+                        if let info = slide.info {
+                            Text(info)
+                        }
+                        #endif
                         if let text = slide.text {
                             Text(text)
                         }
