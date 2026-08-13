@@ -778,7 +778,7 @@ fileprivate struct InvestInSimpleXChat: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("You can now invest in SimpleX Chat").font(.title3).bold()
-            (Text("Equity crowdfunding launched.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
                 .multilineTextAlignment(.leading)
                 .onTapGesture { showGetStakeSheet = true }
             Image("crowdfunding_00")
