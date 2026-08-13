@@ -881,7 +881,7 @@ struct GetStakeView: View {
                         openExternalLink(url)
                     }
                 } label: {
-                    Text("Learn more on Wefunder")
+                    Text(verbatim: "Learn more on Wefunder")
                 }
                 .buttonStyle(OnboardingButtonStyle())
 
@@ -891,7 +891,7 @@ struct GetStakeView: View {
                         ChatModel.shared.appOpenUrl = simplexTeamURL
                     }
                 } label: {
-                    Text("or ask SimpleX team")
+                    Text(verbatim: "or ask SimpleX team")
                         .font(.callout)
                 }
                 .disabled(chatModel.chatRunning != true)
