@@ -133,6 +133,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connLink: String, resolveMode: PlanResolveMode, linkOwnerSig: LinkOwnerSig?)
+    case apiSendServiceRequest(userId: Int64, target: String, timeoutSec: Double?, requestJSON: String)
     case apiPrepareContact(userId: Int64, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData, verifiedDomain: SimplexDomain?)
     case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain?)
     case apiChangePreparedContactUser(contactId: Int64, newUserId: Int64)
@@ -355,6 +356,9 @@ enum ChatCommand: ChatCmdProtocol {
                 let resolveStr = resolveMode == .unknown ? "" : " resolve=\(resolveMode.rawValue)"
                 let sigStr = if let linkOwnerSig { " sig=\(encodeJSON(linkOwnerSig))" } else { "" }
                 return "/_connect plan \(userId) \(connLink)\(resolveStr)\(sigStr)"
+            case let .apiSendServiceRequest(userId, target, timeoutSec, requestJSON):
+                let timeoutStr = if let timeoutSec { " timeout=\(timeoutSec)" } else { "" }
+                return "/_service_request \(userId) \(target)\(timeoutStr) \(requestJSON)"
             case let .apiPrepareContact(userId, connLink, contactShortLinkData, verifiedDomain): return "/_prepare contact \(userId) \(connLink.cmdString)\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(contactShortLinkData))"
             case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData, verifiedDomain): return "/_prepare group \(userId) \(connLink.cmdString) direct=\(onOff(directLink))\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(groupShortLinkData))"
             case let .apiChangePreparedContactUser(contactId, newUserId): return "/_set contact user @\(contactId) \(newUserId)"
@@ -543,6 +547,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiSetConnectionIncognito: return "apiSetConnectionIncognito"
             case .apiChangeConnectionUser: return "apiChangeConnectionUser"
             case .apiConnectPlan: return "apiConnectPlan"
+            case .apiSendServiceRequest: return "apiSendServiceRequest"
             case .apiPrepareContact: return "apiPrepareContact"
             case .apiPrepareGroup: return "apiPrepareGroup"
             case .apiChangePreparedContactUser: return "apiChangePreparedContactUser"
@@ -821,6 +826,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
     case connectionPlan(user: UserRef, connLink: CreatedConnLink, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
+    case serviceResponse(user: UserRef, responseData: JSONValue)
     case newPreparedChat(user: UserRef, chat: ChatData)
     case contactUserChanged(user: UserRef, fromContact: Contact, newUser: UserRef, toContact: Contact)
     case groupUserChanged(user: UserRef, fromGroup: GroupInfo, newUser: UserRef, toGroup: GroupInfo)
@@ -865,6 +871,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case .connectionIncognitoUpdated: "connectionIncognitoUpdated"
         case .connectionUserChanged: "connectionUserChanged"
         case .connectionPlan: "connectionPlan"
+        case .serviceResponse: "serviceResponse"
         case .newPreparedChat: "newPreparedChat"
         case .contactUserChanged: "contactUserChanged"
         case .groupUserChanged: "groupUserChanged"

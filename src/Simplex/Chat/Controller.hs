@@ -413,6 +413,7 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
+  | APIRejectServiceRequest {userId :: UserId, requestId :: AgentInvId, rejectionReason :: Maybe Text}
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId

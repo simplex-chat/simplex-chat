@@ -1366,7 +1366,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           _ -> pure ()
       SREQ invId sigKey_ payload ->
         chatReadVar processServiceRequests >>= \case
-          True -> case J.eitherDecodeStrict' payload of
+          True -> case J.eitherDecodeStrict' =<< decompressServiceBody payload of
             Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
             Left _ -> dropSReq
           False -> dropSReq
