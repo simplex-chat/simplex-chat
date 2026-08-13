@@ -341,6 +341,19 @@ actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolea
     VideoPlayerInterface.PreviewAndDuration(null, 0, 0)
   }
 
+actual suspend fun hasVideoTrack(uri: URI): Boolean {
+  val mmr = MediaMetadataRetriever()
+  return try {
+    mmr.setDataSource(androidAppContext, uri.toUri())
+    mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+  } catch (e: Exception) {
+    Log.e(TAG, "Utils.android hasVideoTrack error: ${e.message}")
+    false
+  } finally {
+    mmr.release()
+  }
+}
+
 actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encodeToString(this, Base64.DEFAULT)
 
 actual fun String.toByteArrayFromBase64ForPassphrase(): ByteArray = Base64.decode(this, Base64.DEFAULT)

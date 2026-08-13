@@ -859,8 +859,8 @@ enum ConnectTarget {
 func strConnectTarget(_ str: String) -> ConnectTarget? {
     let parsedMd = parseSimpleXMarkdown(str)
     let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
-    return if links.count == 1, case let .simplexLink(_, linkType, _, smpHosts) = links[0].format {
-        .link(text: links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    return if links.count == 1, case let .simplexLink(showText, linkType, simplexUri, smpHosts) = links[0].format {
+        .link(text: showText != nil ? simplexUri : links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
     } else if links.isEmpty,
               let nameFt = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } }),
               case let .simplexName(nameInfo) = nameFt.format {
