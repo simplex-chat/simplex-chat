@@ -378,19 +378,24 @@ useServers as opDomains uss =
       xftp' = useServerCfgs SPXFTP as opDomains $ concatMap (servers' SPXFTP) uss
    in (smp', xftp')
 
-execChatCommand :: Maybe RemoteHostId -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
-execChatCommand rh s retryNum =
+execChatCommand :: CommandSource -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
+execChatCommand src s retryNum =
   case parseChatCommand s of
     Left e -> pure $ chatCmdError e
-    Right cmd -> case rh of
-      Just rhId
+    Right cmd -> case src of
+      CSRemoteHost rhId
         | allowRemoteCommand cmd -> execRemoteCommand rhId cmd s retryNum
         | otherwise -> pure $ Left $ ChatErrorRemoteHost (RHId rhId) $ RHELocalCommand
-      _ -> do
-        cc@ChatController {config = ChatConfig {chatHooks}} <- ask
-        case preCmdHook chatHooks of
-          Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
-          Nothing -> execChatCommand' cmd retryNum
+      CSRemoteCtrl
+        | allowRemoteCommand cmd -> execLocal cmd
+        | otherwise -> pure $ Left $ ChatErrorRemoteCtrl $ RCEProtocolError $ RPEInvalidBody "prohibited command"
+      CSLocal -> execLocal cmd
+  where
+    execLocal cmd = do
+      cc@ChatController {config = ChatConfig {chatHooks}} <- ask
+      case preCmdHook chatHooks of
+        Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
+        Nothing -> execChatCommand' cmd retryNum
 
 execChatCommand' :: ChatCommand -> Int -> CM' (Either ChatError ChatResponse)
 execChatCommand' cmd retryNum = handleCommandError $ do
@@ -3603,7 +3608,7 @@ processChatCommand cxt nm = \case
   ConfirmRemoteCtrl rcId -> withUser_ $ do
     (rc, ctrlAppInfo) <- confirmRemoteCtrl rcId
     pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion}
-  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId
+  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand CSRemoteCtrl) sessId
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
