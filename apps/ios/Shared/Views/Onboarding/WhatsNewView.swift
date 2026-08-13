@@ -797,18 +797,18 @@ fileprivate struct InvestInSimpleXChat: View {
     }
 }
 
-fileprivate let getStakeSlides: [(image: String, heading: LocalizedStringKey, info: LocalizedStringKey?, text: LocalizedStringKey?)] = [
+fileprivate let getStakeSlides: [(image: String, heading: String, info: String?, text: String?)] = [
     (
         "crowdfunding_00",
         "The first and the only messaging network without any user IDs",
-        "3M downloads, 480,000 monthly users.",
-        "SimpleX network is growing roughly 50% every six months – and you can now own a part of the company that builds it."
+        nil,
+        "SimpleX users have been more than doubling every year – and you can now acquire a stake in the company that builds it."
     ),
     (
         "crowdfunding_04",
         "480,000+ users joined on their own",
         nil,
-        "All users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free."
+        "All these users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free."
     ),
     (
         "crowdfunding_05",
@@ -849,12 +849,12 @@ struct GetStakeView: View {
     var body: some View {
         ZoomablePageView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Get a stake in SimpleX Chat")
+                Text(verbatim: "Get a stake in SimpleX Chat")
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top)
-                Text("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
+                Text(verbatim: "By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
                     .padding(.bottom)
                 ForEach(getStakeSlides, id: \.image) { slide in
                     VStack(alignment: .leading) {
