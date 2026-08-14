@@ -8,6 +8,7 @@
 // Spec: spec/client/navigation.md
 
 import SwiftUI
+import StoreKit
 import SimpleXChat
 
 private struct VersionDescription {
@@ -40,6 +41,8 @@ private struct FeatureView {
     let title: LocalizedStringKey
     let view: () -> any View
 }
+
+private let isInUS = SKStorefront().countryCode == "USA"
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -667,7 +670,13 @@ private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
         version: "v7.0",
         post: nil,
-        features: [
+        features: (isInUS ? [
+            .view(FeatureView(
+                icon: nil,
+                title: "Invest in SimpleX Chat",
+                view: { InvestInSimpleXChat() }
+            ))
+        ] : []) + [
             .feature(Description(
                 icon: "at",
                 title: "SimpleX public names (BETA)",
@@ -807,6 +816,42 @@ fileprivate struct CreateUpdateAddressShortLink: View {
                     .modifier(ThemedBackground(grouped: true))
             }
         }
+    }
+}
+
+fileprivate struct InvestInSimpleXChat: View {
+    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .center, spacing: 4) {
+                    Image(systemName: "dollarsign.circle")
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(theme.colors.secondary)
+                        .frame(minWidth: 30, alignment: .center)
+                    Text(verbatim: "Invest in SimpleX Chat").font(.title3).bold()
+                }
+                Text(verbatim: "Equity crowdfunding launched!")
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                if let url = URL("https://wefunder.com/simplexchat") {
+                    ExternalLink(destination: url) {
+                        HStack {
+                            Text(verbatim: "Learn more on Wefunder")
+                            Image(systemName: "arrow.up.right.circle")
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Image(colorScheme == .light ? "own-stake" : "own-stake-light")
+                .resizable()
+                .scaledToFill()
+                .frame(width: UIScreen.main.bounds.width / 5)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

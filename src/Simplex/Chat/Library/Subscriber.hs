@@ -48,7 +48,7 @@ import Data.Word (Word32)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
-import Simplex.Chat.Files (getChatTempDirectory)
+import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
@@ -101,7 +101,6 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
-import qualified System.FilePath as FP
 import System.Mem.Weak (Weak)
 import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
@@ -916,7 +915,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 if useRelays' gInfo''
                   then do
                     introduceInChannel cxt user gInfo'' m'
-                    when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
+                    case mStatus of
+                      GSMemPendingApproval -> pure ()
+                      GSMemPendingReview -> pure ()
+                      _ -> when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
                   else case mStatus of
                     GSMemPendingApproval -> pure ()
                     GSMemPendingReview -> introduceToModerators cxt user gInfo'' m'
@@ -1963,7 +1965,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       pure (ft', CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
 
     mkValidFileInvitation :: FileInvitation -> FileInvitation
-    mkValidFileInvitation fInv@FileInvitation {fileName} = fInv {fileName = FP.makeValid $ FP.takeFileName fileName}
+    mkValidFileInvitation fInv@FileInvitation {fileName} = fInv {fileName = safeFileNameStr fileName}
 
     validateFileInvitation :: FileInvitation -> CM FileInvitation
     validateFileInvitation fInv@FileInvitation {fileName, fileSize}
@@ -3885,7 +3887,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
-    withVerifiedMsg :: MsgEncodingI e => GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
+    withVerifiedMsg :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
     withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
       case verified of
         Just verifiedMsg -> Just <$> action verifiedMsg

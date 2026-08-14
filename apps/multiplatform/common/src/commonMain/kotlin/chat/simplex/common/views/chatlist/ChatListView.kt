@@ -184,6 +184,8 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     val showWhatsNew = shouldShowWhatsNew(chatModel)
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
     if (showWhatsNew || showUpdatedConditions) {
+      // Requested here, so that the country is known by the time the modal opens
+      platform.androidLoadPlayStoreCountry()
       delay(1000L)
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
     }
