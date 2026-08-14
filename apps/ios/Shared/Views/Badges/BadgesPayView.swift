@@ -66,6 +66,8 @@ struct BadgesPayView: View {
     let level: BadgeLevel
     @State private var selectedPeriod: BadgePeriod = .monthly
     @State private var purchasing = false
+    // presented from this view, not AlertManager: its host is behind the sheet these views open in
+    @State private var alert: SomeAlert?
 
     var body: some View {
         GeometryReader { g in
@@ -122,6 +124,7 @@ struct BadgesPayView: View {
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
+        .alert(item: $alert) { $0.alert }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {
@@ -188,9 +191,12 @@ struct BadgesPayView: View {
                     switch outcome {
                     case let .purchased(receipt): showPurchasedAlert(receipt, invoiceId)
                     case .pending:
-                        showAlert(
-                            NSLocalizedString("Purchase pending", comment: "alert title"),
-                            message: NSLocalizedString("The purchase is awaiting approval. This build does not deliver purchases approved later.", comment: "alert message")
+                        alert = SomeAlert(
+                            alert: mkAlert(
+                                title: "Purchase pending",
+                                message: "The purchase is awaiting approval. This build does not deliver purchases approved later."
+                            ),
+                            id: "badgePurchasePending"
                         )
                     case .cancelled: break
                     }
@@ -199,7 +205,13 @@ struct BadgesPayView: View {
                 logger.error("BadgesPayView.purchase: \(String(describing: error))")
                 await MainActor.run {
                     purchasing = false
-                    showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: String(describing: error))
+                    alert = SomeAlert(
+                        alert: Alert(
+                            title: Text("Purchase error"),
+                            message: Text(verbatim: String(describing: error))
+                        ),
+                        id: "badgePurchaseError"
+                    )
                 }
             }
         }
@@ -222,15 +234,17 @@ struct BadgesPayView: View {
         if let environment = receipt.environment { lines.append("Environment: \(environment)") }
         lines.append("Signature: \(receipt.signatureVerified ? "verified" : "unverified")")
         lines.append("Token: \(receipt.jws.count) bytes")
-        showAlert(
-            NSLocalizedString("Purchase successful", comment: "alert title"),
-            message: lines.joined(separator: "\n"),
-            actions: {[
-                UIAlertAction(title: "Copy token", style: .default) { _ in
-                    UIPasteboard.general.string = receipt.jws
-                },
-                okAlertAction
-            ]}
+        let summary = lines.joined(separator: "\n")
+        // logged as well as shown: the alert races StoreKit's own sheets, the log always lands
+        logger.debug("badge purchase succeeded\n\(summary)")
+        alert = SomeAlert(
+            alert: Alert(
+                title: Text("Purchase successful"),
+                message: Text(verbatim: summary),
+                primaryButton: .default(Text(verbatim: "Copy token")) { UIPasteboard.general.string = receipt.jws },
+                secondaryButton: .cancel(Text("Ok"))
+            ),
+            id: "badgePurchased"
         )
     }
 
