@@ -104,7 +104,10 @@ final class BadgeStore: ObservableObject {
             let byId = Dictionary(loaded.map { ($0.id, $0) }, uniquingKeysWith: { p, _ in p })
             let missing = badgeProductIds.filter { byId[$0] == nil }
             if !missing.isEmpty {
-                logger.warning("BadgeStore.load: no product returned for \(missing.joined(separator: ", "))")
+                // the store drops ids it cannot resolve without saying why, so the storefront and
+                // the bundle the request was made for are logged with them
+                let storefront = await Storefront.current
+                logger.warning("BadgeStore.load: no product returned for \(missing.joined(separator: ", ")) - bundle \(Bundle.main.bundleIdentifier ?? "?"), storefront \(storefront?.countryCode ?? "none"), canMakePayments \(AppStore.canMakePayments)")
             }
             await MainActor.run {
                 products = byId
