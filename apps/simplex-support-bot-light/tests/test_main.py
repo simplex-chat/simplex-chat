@@ -125,6 +125,16 @@ def test_any_other_chat_error_keeps_its_detail():
     assert "userNotFound" in startup_error(e)
 
 
+def test_a_rejected_command_is_quoted_as_the_core_wrote_it():
+    # The core puts what the caller did wrong in the message, and the tag says
+    # nothing; printing the raw dict instead would bury it.
+    e = ChatAPIError(
+        "chat command error: error",
+        {"type": "error", "errorType": {"type": "commandError", "message": "Profile image"}},
+    )
+    assert startup_error(e) == "Profile image"
+
+
 def test_an_error_without_detail_is_rendered_plainly():
     assert startup_error(ValueError("no active user after start")) == "no active user after start"
 

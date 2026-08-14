@@ -82,6 +82,9 @@ def startup_error(e: Exception) -> str:
             "group or a past customer; the core keeps every display name unique. "
             "Choose another name."
         )
+    command_error = getattr(e, "command_error", None)
+    if command_error is not None:
+        return command_error
     chat_error = getattr(e, "chat_error", None)
     return f"{e} {chat_error}" if chat_error else str(e)
 
