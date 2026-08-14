@@ -1,5 +1,21 @@
 # Links to Community Publications
 
+## SimpleX Chat: Private Monero Communities — and Now a Chance to Invest
+
+Monerica
+
+Article
+
+SimpleX Chat calls itself “the messaging network that can’t identify you,” and that is not marketing hyperbole — it is the actual design. For a privacy community built around Monero, that combination of unlinkable messaging and unlinkable money is a natural fit. This post looks at why SimpleX matters, the growing set of private Monero communities already running on it, and the news that users can now buy a stake in the project itself through an equity crowdfunding round on Wefunder.
+
+Image: simplex-monero-investing.jpg
+
+Language: English
+
+Date: Aug 10, 2026
+
+https://blog.monerica.com/articles/simplex-chat-private-monero-communities
+
 ## SimpleX Chat: Product Showcase - Removing User Identifiers From Messaging
 
 Help Net Security
@@ -200,19 +216,19 @@ https://opennet.ru/65337/
 
 ## Vitalik Buterin Donates $765K in Ethereum to Privacy Messaging Apps
 
-Yahoo Finance
+Decrypt
 
 News
 
-Yahoo Finance reports that Vitalik Buterin donated approximately $765,000 in Ethereum to privacy messaging apps Session and SimpleX. Buterin praised both apps for advancing permissionless account creation and metadata privacy, while acknowledging neither is perfect and both need improvements in user experience and security.
+Decrypt reports that Vitalik Buterin donated approximately $765,000 in Ethereum to privacy messaging apps Session and SimpleX. Buterin praised both apps for advancing permissionless account creation and metadata privacy, while acknowledging neither is perfect and both need improvements in user experience and security.
 
-Image: yahoo-finance-buterin.jpg
+Image: decrypt-buterin.jpg
 
 Language: English
 
 Date: Nov 2025
 
-https://finance.yahoo.com/news/vitalik-buterin-donates-765k-ethereum-190102367.html
+https://decrypt.co/350253/vitalik-buterin-donates-765k-in-ethereum-to-privacy-messaging-apps
 
 ## Vitalik Buterin Supports Privacy-Focused Messaging Platforms With Significant Ethereum Donation
 
@@ -2543,24 +2559,6 @@ Date: May 22, 2022
 
 https://www.youtube.com/watch?v=N0prtSOyeUU
 
-## Kostiantyn Korsun: Zaluzhnyi and Messengers
-
-(Kostyantyn Korsun: Zaluzhnyy i mesendzhery)
-
-Tverezo.info
-
-Article
-
-This Ukrainian article, written by Kostyantyn Korsun, discusses General Zaluzhny's essay on technology in modern warfare and the Ukrainian military's widespread reliance on Signal for encrypted communications despite formal prohibitions. While focused on Signal's role in military contexts and the US Defense Secretary's controversy over using Signal for classified data, the article addresses the broader topic of encrypted messengers in sensitive operational environments.
-
-Image: tverezo-korsun-zaluzhnyi.jpg
-
-Language: Ukrainian
-
-Date: 2025
-
-https://tverezo.info/post/205151
-
 ## Top 10 Most Secure Messaging Apps in 2024
 
 (Top 10 mest sikre besked-apps i 2024)
@@ -3780,6 +3778,8 @@ Review
 
 This Monerica directory page lists several Monero-focused SimpleX Chat communities spanning multiple languages and regions, including groups for Monero discussion in Slovenian, German, Italian, and Hebrew. It includes an automated bot that sends hourly Monero price updates via SimpleX.
 
+Monerica is established in 2022.
+
 Image: monerica-simplex-communities.jpg
 
 Language: English
@@ -3819,22 +3819,6 @@ Language: English
 Date: 2024 (estimated)
 
 https://www.anarsec.guide/posts/e2ee/
-
-## Join Beginner Privacy on SimpleX
-
-Beginner Privacy
-
-Community
-
-The Beginner Privacy community selected SimpleX Chat as their primary communication platform for its strong privacy features. The page provides setup instructions for beginners across Linux, Mac, Windows, iOS, and Android, emphasizing accessibility through both graphical and command-line interfaces.
-
-Image: beginner-privacy-simplex-group.jpg
-
-Language: English
-
-Date: 2025 (estimated)
-
-https://beginnerprivacy.com/about/join-simplex-group/
 
 ## Sofwul.cz: E-Commerce with SimpleX Contact
 

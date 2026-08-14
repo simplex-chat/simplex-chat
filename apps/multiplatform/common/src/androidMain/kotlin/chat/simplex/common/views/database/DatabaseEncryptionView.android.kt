@@ -42,10 +42,9 @@ actual fun SavePassphraseSetting(
       }
       Text(
         stringResource(MR.strings.save_passphrase_in_keychain),
-        Modifier.padding(end = 24.dp),
+        Modifier.weight(1f).padding(end = 24.dp),
         color = Color.Unspecified
       )
-      Spacer(Modifier.fillMaxWidth().weight(1f))
       DefaultSwitch(
         checked = useKeychain,
         onCheckedChange = onCheckedChange,

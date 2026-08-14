@@ -378,19 +378,24 @@ useServers as opDomains uss =
       xftp' = useServerCfgs SPXFTP as opDomains $ concatMap (servers' SPXFTP) uss
    in (smp', xftp')
 
-execChatCommand :: Maybe RemoteHostId -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
-execChatCommand rh s retryNum =
+execChatCommand :: CommandSource -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
+execChatCommand src s retryNum =
   case parseChatCommand s of
     Left e -> pure $ chatCmdError e
-    Right cmd -> case rh of
-      Just rhId
+    Right cmd -> case src of
+      CSRemoteHost rhId
         | allowRemoteCommand cmd -> execRemoteCommand rhId cmd s retryNum
         | otherwise -> pure $ Left $ ChatErrorRemoteHost (RHId rhId) $ RHELocalCommand
-      _ -> do
-        cc@ChatController {config = ChatConfig {chatHooks}} <- ask
-        case preCmdHook chatHooks of
-          Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
-          Nothing -> execChatCommand' cmd retryNum
+      CSRemoteCtrl
+        | allowRemoteCommand cmd -> execLocal cmd
+        | otherwise -> pure $ Left $ ChatErrorRemoteCtrl $ RCEProtocolError $ RPEInvalidBody "prohibited command"
+      CSLocal -> execLocal cmd
+  where
+    execLocal cmd = do
+      cc@ChatController {config = ChatConfig {chatHooks}} <- ask
+      case preCmdHook chatHooks of
+        Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
+        Nothing -> execChatCommand' cmd retryNum
 
 execChatCommand' :: ChatCommand -> Int -> CM' (Either ChatError ChatResponse)
 execChatCommand' cmd retryNum = handleCommandError $ do
@@ -1675,8 +1680,9 @@ processChatCommand cxt nm = \case
       aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
         Just Refl -> pure $ AUS SDBNew $ newUserServer srv
         Nothing -> throwCmdError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
-  APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
-    lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
+  APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user -> do
+    r <- lift $ withAgent' $ \a -> testProtocolServer a nm (aUserId user) server
+    pure $ uncurry (CRServerTestResult user srv) $ either ((,Nothing) . Just) (Nothing,) r
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APITestProtoServer userId srv
   APITestChatRelay userId address -> withUserId userId $ \user -> do
@@ -3602,7 +3608,7 @@ processChatCommand cxt nm = \case
   ConfirmRemoteCtrl rcId -> withUser_ $ do
     (rc, ctrlAppInfo) <- confirmRemoteCtrl rcId
     pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion}
-  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId
+  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand CSRemoteCtrl) sessId
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -4054,11 +4060,12 @@ processChatCommand cxt nm = \case
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> Bool -> CM ChatResponse
-    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n', image = img'} domainVerified = do
+    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'} domainVerified = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
       checkProfileImageSize img'
       checkGroupProfileSize p'
+      when (useRelays' gInfo && isJust (ma' >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
       gInfo' <- withStore $ \db -> do
         g <- updateGroupProfile db user gInfo p'
@@ -4210,10 +4217,11 @@ processChatCommand cxt nm = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
     newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> MemberId -> Maybe GroupKeys -> Maybe Int64 -> CM GroupInfo
-    newGroup user incognito gProfile@GroupProfile {displayName, image} useRelays memberId groupKeys_ publicMemberCount_ = do
+    newGroup user incognito gProfile@GroupProfile {displayName, image, memberAdmission} useRelays memberId groupKeys_ publicMemberCount_ = do
       checkValidName displayName
       checkProfileImageSize image
       checkGroupProfileSize gProfile
+      when (useRelays && isJust (memberAdmission >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile useRelays memberId groupKeys_ publicMemberCount_
