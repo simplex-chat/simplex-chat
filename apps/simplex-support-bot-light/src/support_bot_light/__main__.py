@@ -14,7 +14,7 @@ from simplex_chat import Bot, BotProfile, ChatError, SqliteDb
 from simplex_chat.core import ChatInitError
 from simplex_chat.types import CEvt
 
-from . import business, commands, handlers, health, names, setup
+from . import business, commands, handlers, health, setup
 from .config import Config, ConfigError, load_config
 from .context import BotContext
 
@@ -97,9 +97,8 @@ def build_bot(config: Config) -> Bot:
     added to; without it every customer would get a plain direct chat and the
     bot would have nothing to do.
 
-    The profile is applied after the client starts rather than by the startup
-    sync: the name the core will accept can only be read from the database,
-    which nothing can read until then. See `_apply_profile`.
+    The profile is applied after the client starts, not by the startup sync, so
+    that a name the core refuses does not stop the bot. See `_apply_profile`.
     """
     return Bot(
         profile=bot_profile(config),
@@ -123,20 +122,13 @@ async def _run(config: Config) -> None:
     await _serve(config, bot)
 
 
-async def _apply_profile(bot: Bot, user_id: int, config: Config) -> None:
-    """Apply the configured profile, keeping the current name if it is refused.
+async def _apply_profile(bot: Bot) -> None:
+    """Apply the configured profile once the database can be reached.
 
-    A rename the core refuses cannot be undone, so `names` declines the ones it
-    can see coming. The fallback here is for the one collision it cannot see: a
-    `display_names` row orphaned by an earlier half-commit belongs to no
-    contact, group or member.
-
-    Any other failure to write the profile is treated the same way. The profile
-    update broadcasts to every contact, so it is also the startup step most
-    likely to fail after long downtime, and answering customers matters more
-    than an avatar.
+    The core refuses a display name another contact or group holds, and the
+    profile update broadcasts to every contact, so it is the startup step most
+    likely to fail. Answering customers matters more than a name or an avatar.
     """
-    bot.profile.display_name = await names.usable(bot.api, user_id, config.display_name)
     try:
         await bot.sync_profile()
     except ChatError as e:
@@ -152,7 +144,7 @@ async def _serve(config: Config, bot: Bot) -> None:
         if user is None:
             raise RuntimeError("no active user after start")
         user_id = user["userId"]
-        await _apply_profile(bot, user_id, config)
+        await _apply_profile(bot)
         roster_group_id = await setup.ensure_roster_group(bot.api, user_id, config)
         ctx = BotContext(
             api=bot.api,

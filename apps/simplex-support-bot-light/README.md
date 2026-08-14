@@ -178,12 +178,8 @@ fenced inside markdown files.
   whose roster pass already finished are never revisited, so joining the roster
   never grants access to earlier conversations.
 - Changing `bot.display_name` after the first start is not always possible. The core keeps every
-  display name unique across contacts, groups and members, and refuses a collision in a way that
-  cannot be undone, so the bot checks first and keeps the current name if the new one is taken —
-  saying who holds it. Two kinds of holder are invisible to that check (a contact with no
-  connection, and a business chat's `<Customer>_1` member row); colliding with one of those leaves
-  the database needing manual repair, and the bot will then decline to rename at all rather than
-  destroy the row holding the stale name.
+  display name unique across contacts, groups and members, so a name a past customer or a roster
+  member already holds is refused. The bot logs that and keeps serving under the name it has.
 - There is no command to remove someone else from the roster; see above.
 - Reconnections from a known customer emit `businessRequestAlreadyAccepted`
   rather than `acceptingBusinessRequest` and are ignored, so members who joined

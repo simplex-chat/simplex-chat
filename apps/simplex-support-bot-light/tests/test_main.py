@@ -2,9 +2,8 @@ import pytest
 from simplex_chat import Bot, BotProfile, SqliteDb
 from simplex_chat.core import ChatAPIError
 
-from support_bot_light import handlers, health, names
+from support_bot_light import handlers, health
 from support_bot_light.__main__ import (
-    _apply_profile,
     _register,
     _run,
     _serve,
@@ -270,8 +269,8 @@ async def test_serve_closes_the_health_endpoint_afterwards(api):
 
 
 async def test_the_bot_serves_after_a_refused_rename(api, caplog):
-    # The rename half-lands in the core and cannot be undone from here, so the
-    # choice is between answering customers and applying a name.
+    # The core keeps display names unique; a refused one is not a reason to
+    # leave customers unanswered.
     refused = ChatAPIError("x", {"storeError": {"type": "duplicateName"}})
     bot = FakeBot(serve_api(api), sync_error=refused)
     await _serve(CONFIG, bot)
@@ -282,19 +281,6 @@ async def test_the_bot_serves_after_a_refused_rename(api, caplog):
 async def test_the_profile_is_applied_after_start(api, monkeypatch):
     bot = FakeBot(serve_api(api))
     await _serve(CONFIG, bot)
-    assert bot.syncs == 1
-
-
-async def test_the_name_the_database_allows_is_the_one_applied(api, monkeypatch):
-    # The core refuses a name already in use, so the check decides what is
-    # applied — not the config.
-    async def taken(_api, _user_id, _wanted):
-        return "Support"
-
-    monkeypatch.setattr(names, "usable", taken)
-    bot = FakeBot(api)
-    await _apply_profile(bot, USER_ID, Config("Helpdesk", "./x", "hi", "R", "owner"))
-    assert bot.profile.display_name == "Support"
     assert bot.syncs == 1
 
 
