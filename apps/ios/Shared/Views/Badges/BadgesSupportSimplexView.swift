@@ -62,6 +62,8 @@ struct BadgesSupportSimplexView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+        // preloaded here so the level screen shows store prices without a placeholder pass
+        .task { await BadgeStore.shared.load() }
     }
 
     private func whyBuiltButton() -> some View {
