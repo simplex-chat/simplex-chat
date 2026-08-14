@@ -7931,6 +7931,10 @@ Query: UPDATE users SET active_user = 0
 Plan:
 SCAN users
 
+Query: UPDATE users SET active_user = 0 WHERE user_id != ?
+Plan:
+SCAN users
+
 Query: UPDATE users SET active_user = 1, active_order = ? WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
