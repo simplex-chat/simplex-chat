@@ -1,6 +1,11 @@
 package chat.simplex.common.views.onboarding
 
+import SectionBottomSpacer
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -8,15 +13,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.BuildConfigCommon
@@ -32,9 +48,11 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
+import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
+import kotlin.math.absoluteValue
 
 @Composable
 fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Boolean = false, close: () -> Unit) {
@@ -914,14 +932,15 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     )
   ),
   VersionDescription(
-    version = "v7.0",
+    // the trailing space differs from the previously released "v7.0", so that What's new is shown again
+    version = "v7.0 ",
     post = null,
     features = listOf(
-//       VersionFeature.FeatureView(
-//         icon = null,
-//         titleId = MR.strings.v7_0_invest,
-//         view = { _ -> InvestInSimpleXChatView() }
-//       ),
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v7_0_invest,
+        view = { modalManager -> InvestInSimpleXChatView(modalManager) }
+      ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_alternate_email,
         titleId = MR.strings.v7_0_simplex_names,
@@ -956,57 +975,243 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-// private const val WEFUNDER_URL = "https://wefunder.com/simplexchat"
-//
-// @Composable
-// private fun InvestInSimpleXChatView() {
-//   if (platform.androidIsPlayStoreBuild) {
-//     LaunchedEffect(Unit) { if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry() }
-//     if (androidPlayStoreCountry.value != "US") return
-//   }
-//   val uriHandler = LocalUriHandler.current
-//   Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 12.dp)) {
-//     Column(modifier = Modifier.weight(1f)) {
-//       Row(
-//         verticalAlignment = Alignment.CenterVertically,
-//         horizontalArrangement = Arrangement.spacedBy(8.dp),
-//         modifier = Modifier.padding(bottom = 4.dp)
-//       ) {
-//         Icon(painterResource(MR.images.ic_redeem), stringResource(MR.strings.v7_0_invest), tint = MaterialTheme.colors.secondary)
-//         Text(
-//           generalGetString(MR.strings.v7_0_invest),
-//           maxLines = 2,
-//           overflow = TextOverflow.Ellipsis,
-//           style = MaterialTheme.typography.h4,
-//           fontWeight = FontWeight.Medium,
-//           modifier = Modifier.padding(bottom = 6.dp)
-//         )
-//       }
-//       Text(generalGetString(MR.strings.v7_0_invest_descr), fontSize = 15.sp, modifier = Modifier.padding(bottom = 4.dp))
-//       Row(
-//         verticalAlignment = Alignment.CenterVertically,
-//         horizontalArrangement = Arrangement.spacedBy(8.dp),
-//         modifier = Modifier
-//           .clickable(
-//             interactionSource = remember { MutableInteractionSource() },
-//             indication = null
-//           ) {
-//             uriHandler.openExternalLink(WEFUNDER_URL)
-//           }
-//       ) {
-//         Text(stringResource(MR.strings.v7_0_invest_learn_more), color = MaterialTheme.colors.primary, fontSize = 15.sp)
-//         Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.v7_0_invest_learn_more), tint = MaterialTheme.colors.primary)
-//       }
-//     }
-//     if (BuildConfigCommon.SIMPLEX_ASSETS) {
-//       Image(
-//         painterResource(if (isInDarkTheme()) MR.images.own_stake_light else MR.images.own_stake),
-//         contentDescription = null,
-//         modifier = Modifier.width(80.dp)
-//       )
-//     }
-//   }
-// }
+private const val WEFUNDER_URL = "https://wefunder.com/simplexchat"
+
+// Google Play policy restricts promoting investments, so Play builds only show it in the US
+@Composable
+fun crowdfundingAvailable(): Boolean {
+  if (!platform.androidIsPlayStoreBuild) return true
+  LaunchedEffect(Unit) {
+    if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry()
+  }
+  return androidPlayStoreCountry.value == "US"
+}
+
+@Composable
+private fun InvestInSimpleXChatView(modalManager: ModalManager) {
+  if (!crowdfundingAvailable()) return
+  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(close) } }
+  Column(modifier = Modifier.padding(bottom = 12.dp)) {
+    Text(
+      generalGetString(MR.strings.v7_0_invest),
+      style = MaterialTheme.typography.h4,
+      fontWeight = FontWeight.Medium,
+      modifier = Modifier.padding(bottom = 6.dp)
+    )
+    Text(
+      buildAnnotatedString {
+        append(generalGetString(MR.strings.v7_0_invest_descr))
+        append(" ")
+        withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+          append(generalGetString(MR.strings.learn_more))
+        }
+      },
+      fontSize = 15.sp,
+      modifier = Modifier
+        .pointerHoverIcon(PointerIcon.Hand)
+        .clickable(
+          interactionSource = remember { MutableInteractionSource() },
+          indication = null,
+          onClick = showGetStake
+        )
+    )
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(MR.images.crowdfunding_00),
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier
+          .padding(top = 8.dp)
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(12.dp))
+          .pointerHoverIcon(PointerIcon.Hand)
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = showGetStake
+          )
+      )
+    }
+  }
+}
+
+private class CrowdfundingSlide(
+  val image: ImageResource,
+  val heading: String,
+  val info: String?,
+  val text: String,
+)
+
+// not localized: the page is only shown to US investors, and the text duplicates the images
+private val getStakeSlides: List<CrowdfundingSlide> = listOf(
+  CrowdfundingSlide(
+    MR.images.crowdfunding_00,
+    "The first and the only messaging network without any user IDs",
+    null,
+    "SimpleX users have been more than doubling every year – and you can now acquire a stake in the company that builds it."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_04,
+    "480,000+ users joined on their own",
+    null,
+    "All these users found SimpleX Chat without any paid marketing – and donated over \$650,000, paying for something they could use for free."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_05,
+    "SimpleX is a network, not an app",
+    "Users, creators, businesses, developers and operators all arrived organically – the cold start solved.",
+    "Each group of users makes the network more valuable to the rest, driving organic growth."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_06,
+    "Developers already bet on SimpleX success",
+    "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
+    "Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_07,
+    "Why SimpleX can't be copied",
+    "Only SimpleX combines scalable delivery, ownership that can't be revoked, and participants that can't be identified.",
+    "Other networks rely on user IDs to deliver messages, and large platforms monetize them. Removing IDs would require rebuilding."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_10,
+    "An open network others can build on",
+    "The SimpleX Network Consortium agreement ensures that no single company controls the network, while protecting SimpleX Chat business.",
+    "The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company."
+  ),
+  CrowdfundingSlide(
+    MR.images.crowdfunding_11,
+    "We are building a network that people own",
+    "We invite you to invest and become part of it.",
+    "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
+  ),
+)
+
+@Composable
+fun GetStakeView(close: () -> Unit) {
+  val uriHandler = LocalUriHandler.current
+  val stopped = chatModel.chatRunning.value == false
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle("Get a stake in SimpleX Chat", withPadding = false)
+    Text("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
+
+    getStakeSlides.forEach { slide ->
+      Column(Modifier.padding(top = DEFAULT_PADDING * 1.5f)) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(slide.image),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).pinchZoom().fullScreenOnClick(slide.image)
+          )
+        } else {
+          Text(slide.heading, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Medium)
+          if (slide.info != null) {
+            Text(slide.info, Modifier.padding(top = 4.dp))
+          }
+        }
+        Text(slide.text, Modifier.padding(top = 8.dp))
+      }
+    }
+
+    Column(
+      Modifier.fillMaxWidth().padding(top = DEFAULT_PADDING * 2),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      OnboardingActionButton(
+        if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        labelId = MR.strings.v7_0_invest_learn_more,
+        onboarding = null,
+        onclick = { uriHandler.openExternalLink(WEFUNDER_URL) }
+      )
+      if (!chatModel.desktopNoUserNoRemote) {
+        TextButtonBelowOnboardingButton(
+          "or ask SimpleX team",
+          onClick = if (stopped) null else ({
+            close()
+            uriHandler.openVerifiedSimplexUri(simplexTeamUri)
+          })
+        )
+      }
+    }
+    SectionBottomSpacer()
+  }
+}
+
+// there is no pinch gesture with a mouse, so on desktop a slide is opened full screen instead
+@Composable
+private fun Modifier.fullScreenOnClick(image: ImageResource): Modifier {
+  if (!appPlatform.isDesktop) return this
+  return pointerHoverIcon(PointerIcon.Hand).clickable(
+    interactionSource = remember { MutableInteractionSource() },
+    indication = null
+  ) {
+    ModalManager.fullscreen.showCustomModal { close ->
+      BackHandler(onBack = close)
+      Box(
+        Modifier
+          .fillMaxSize()
+          .background(Color.Black)
+          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = close),
+        contentAlignment = Alignment.Center
+      ) {
+        Image(painterResource(image), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+      }
+    }
+  }
+}
+
+private const val MAX_SLIDE_ZOOM = 5f
+
+/**
+ * The slide images contain small text that is unreadable at screen width, so they can be pinch-zoomed in place.
+ * Android only: pinch is unavailable with a mouse.
+ */
+@Composable
+private fun Modifier.pinchZoom(): Modifier {
+  if (!appPlatform.isAndroid) return this
+  var scale by remember { mutableStateOf(1f) }
+  var offsetX by remember { mutableStateOf(0f) }
+  var offsetY by remember { mutableStateOf(0f) }
+  var size by remember { mutableStateOf(IntSize.Zero) }
+  return this
+    .onGloballyPositioned { size = it.size }
+    .graphicsLayer {
+      scaleX = scale
+      scaleY = scale
+      translationX = offsetX
+      translationY = offsetY
+    }
+    .pointerInput(Unit) {
+      awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        var taken: Boolean? = null
+        do {
+          val event = awaitPointerEvent()
+          val multiTouch = event.changes.count { it.pressed } > 1
+          if (multiTouch || scale > 1f) {
+            scale = (scale * event.calculateZoom()).coerceIn(1f, MAX_SLIDE_ZOOM)
+            val pan = event.calculatePan()
+            // the content is scaled around its center, so it can be panned by half of the overflow in each direction
+            val maxX = size.width * (scale - 1f) / 2
+            val maxY = size.height * (scale - 1f) / 2
+            val pannedY = offsetY + pan.y * scale
+            // the clamp is applied even when the gesture is not taken: at scale 1 both bounds
+            // are 0, which resets the offsets after zooming back out
+            offsetX = (offsetX + pan.x * scale).coerceIn(-maxX, maxX)
+            offsetY = pannedY.coerceIn(-maxY, maxY)
+            // two fingers always mean zoom, taken without a touch slop: waiting for one would let
+            // the enclosing column reach its own slop first and scroll the page. A one finger drag
+            // is left to the column at the edges, decided once so it cannot alternate mid drag
+            if (multiTouch) taken = true
+            else if (taken == null && pan.y != 0f) taken = pannedY.absoluteValue < maxY
+            if (taken == true) event.changes.forEach { if (it.pressed) it.consume() }
+          }
+        } while (event.changes.any { it.pressed })
+      }
+    }
+}
 
 @Composable
 fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
