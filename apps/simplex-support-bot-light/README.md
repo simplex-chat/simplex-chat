@@ -21,6 +21,12 @@ docker compose logs -f support-bot-light
 Without `bot-config/config.toml` the bot exits with `config file not found` and
 Docker retries it five times before giving up.
 
+Run it detached, as above. Under an attached `docker compose up`, Ctrl+C stops
+the container but compose does not return: the restart policy brings it back and
+compose re-attaches. That is a property of the policy, not of the bot, which
+stops on SIGINT and SIGTERM in under half a second. To run attached, either
+press Ctrl+C twice or use `docker compose up --abort-on-container-exit`.
+
 Edit `bot-config/config.toml` before starting, and place the avatar beside it
 if `bot.image` is set. See [Configuration](#configuration). Use the template in
 `bot-config/`, not the top-level one: its paths are container paths.
