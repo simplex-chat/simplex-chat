@@ -143,11 +143,12 @@ struct BadgesPayView: View {
                 if let percent = savingsPercent(period) {
                     Text("Save \(percent)%")
                         .font(.caption)
-                        .foregroundColor(theme.colors.primary)
+                        .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
                 }
             }
             .multilineTextAlignment(.center)
             .padding(.vertical, 30)
+            .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16))

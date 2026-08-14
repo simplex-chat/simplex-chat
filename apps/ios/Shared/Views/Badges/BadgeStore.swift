@@ -80,7 +80,7 @@ final class BadgeStore: ObservableObject {
         switch state {
         case .notLoaded, .loading: return .loading
         case .loaded, .failed:
-            if let p = products[badgeProductId(level, period)] { return .price(p.displayPrice) }
+            if let p = products[badgeProductId(level, period)] { return .price(compactPrice(p)) }
             return .unavailable
         }
     }
@@ -153,6 +153,17 @@ final class BadgeStore: ObservableObject {
             return false
         }
     }
+}
+
+// drops the fraction from whole amounts ("$7", not "$7.00") in the product's own currency style;
+// Product.displayPrice remains the exact form for views that need the cents
+private func compactPrice(_ product: Product) -> String {
+    var whole = Decimal()
+    var price = product.price
+    NSDecimalRound(&whole, &price, 0, .plain)
+    return whole == product.price
+        ? product.price.formatted(product.priceFormatStyle.precision(.fractionLength(0)))
+        : product.displayPrice
 }
 
 private func storeReceipt(_ jws: String, _ t: Transaction, _ signatureVerified: Bool) -> BadgeStoreReceipt {

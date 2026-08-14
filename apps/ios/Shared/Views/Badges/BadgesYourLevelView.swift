@@ -123,6 +123,7 @@ struct BadgesYourLevelView: View {
                     .padding(.bottom, 20)
             }
             .multilineTextAlignment(.center)
+            .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16))
