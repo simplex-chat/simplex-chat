@@ -1680,7 +1680,7 @@ server test step */
 "Contact preferences" = "联系人偏好设置";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "来自群的联络请求";
+"Contact requests in groups" = "来自群的联络请求";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "联系人应当接受…";

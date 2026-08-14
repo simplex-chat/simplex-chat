@@ -3526,6 +3526,7 @@ class User(TypedDict):
     sendRcptsContacts: bool
     sendRcptsSmallGroups: bool
     autoAcceptMemberContacts: bool
+    autoAcceptGroupInvitations: bool
     userMemberProfileUpdatedAt: NotRequired[str]  # ISO-8601 timestamp
     userChatRelay: bool
     clientService: bool

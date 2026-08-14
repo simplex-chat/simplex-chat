@@ -61,6 +61,7 @@ This file is generated automatically.
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
 - [APISetUserAutoAcceptMemberContacts](#apisetuserautoacceptmembercontacts)
+- [APISetUserAutoAcceptGroupInvitations](#apisetuserautoacceptgroupinvitations)
 
 [User profile commands](#user-profile-commands)
 - [ShowActiveUser](#showactiveuser)
@@ -1957,6 +1958,43 @@ Set auto-accept member contacts.
 
 ```python
 '/_set accept member contacts ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetUserAutoAcceptGroupInvitations
+
+Set auto-accept group invitations.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- onOff: bool
+
+**Syntax**:
+
+```
+/_set accept group invitations <userId> on|off
+```
+
+```javascript
+'/_set accept group invitations ' + userId + ' ' + (onOff ? 'on' : 'off') // JavaScript
+```
+
+```python
+'/_set accept group invitations ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
 ```
 
 **Responses**:

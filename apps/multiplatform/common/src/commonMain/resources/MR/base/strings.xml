@@ -1206,6 +1206,7 @@
   <string name="stop_sharing_address">Stop sharing address?</string>
   <string name="stop_sharing">Stop sharing</string>
   <string name="auto_accept_contact">Auto-accept</string>
+  <string name="group_invitations">Group invitations</string>
   <string name="sent_to_your_contact_after_connection">Sent to your contact after connection.</string>
   <string name="address_welcome_message">Welcome message</string>
   <string name="enter_welcome_message_optional">Enter welcome message… (optional)</string>
@@ -1602,7 +1603,7 @@
   <string name="settings_section_title_chats">Chats</string>
   <string name="settings_section_title_files">Files</string>
   <string name="settings_section_title_delivery_receipts">Send delivery receipts to</string>
-  <string name="settings_section_title_contact_requests_from_groups">Contact requests from groups</string>
+  <string name="settings_section_title_contact_requests_from_groups">Contact requests in groups</string>
   <string name="settings_section_title_about">About</string>
   <string name="settings_section_title_contact">Contact</string>
   <string name="settings_section_title_support_project">Support the project</string>

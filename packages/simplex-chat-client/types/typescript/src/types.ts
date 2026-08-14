@@ -5042,6 +5042,7 @@ export interface User {
   sendRcptsContacts: boolean
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
+  autoAcceptGroupInvitations: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
   userChatRelay: boolean
   clientService: boolean

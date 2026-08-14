@@ -42,6 +42,7 @@ module Simplex.Chat.Store.Profiles
     updateUserContactReceipts,
     updateUserGroupReceipts,
     updateUserAutoAcceptMemberContacts,
+    updateUserAutoAcceptGroupInvitations,
     updateUserProfile,
     setUserBadge,
     setUserProfileContactLink,
@@ -140,12 +141,13 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
         sendRcptsContacts = True
         sendRcptsSmallGroups = True
         autoAcceptMemberContacts = False
+        autoAcceptGroupInvitations = False
     order <- getNextActiveOrder db
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?)"
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, auto_accept_group_invitations, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?,?)"
       ( (auId, displayName, BI activeUser, BI userChatRelay, order)
-          :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI clientService, currentTs, currentTs)
+          :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, BI clientService, currentTs, currentTs)
       )
     userId <- insertedRowId db
     DB.execute
@@ -163,7 +165,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -327,6 +329,10 @@ updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOv
 updateUserAutoAcceptMemberContacts :: DB.Connection -> User -> Bool -> IO ()
 updateUserAutoAcceptMemberContacts db User {userId} autoAccept =
   DB.execute db "UPDATE users SET auto_accept_member_contacts = ? WHERE user_id = ?" (BI autoAccept, userId)
+
+updateUserAutoAcceptGroupInvitations :: DB.Connection -> User -> Bool -> IO ()
+updateUserAutoAcceptGroupInvitations db User {userId} autoAccept =
+  DB.execute db "UPDATE users SET auto_accept_group_invitations = ? WHERE user_id = ?" (BI autoAccept, userId)
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'

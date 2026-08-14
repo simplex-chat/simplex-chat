@@ -637,6 +637,19 @@ def APISetUserAutoAcceptMemberContacts_cmd_string(self: APISetUserAutoAcceptMemb
 APISetUserAutoAcceptMemberContacts_Response = CR.CmdOk | CR.ChatCmdError
 
 
+# Set auto-accept group invitations.
+# Network usage: no.
+class APISetUserAutoAcceptGroupInvitations(TypedDict):
+    userId: int  # int64
+    onOff: bool
+
+
+def APISetUserAutoAcceptGroupInvitations_cmd_string(self: APISetUserAutoAcceptGroupInvitations) -> str:
+    return '/_set accept group invitations ' + str(self['userId']) + ' ' + ('on' if self['onOff'] else 'off')
+
+APISetUserAutoAcceptGroupInvitations_Response = CR.CmdOk | CR.ChatCmdError
+
+
 # User profile commands
 # Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).
 

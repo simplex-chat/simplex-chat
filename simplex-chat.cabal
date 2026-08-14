@@ -152,6 +152,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
           Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
           Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
+          Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
   else
       exposed-modules:
@@ -321,6 +322,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260714_member_security_code
           Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
           Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
+          Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
           Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
   other-modules:

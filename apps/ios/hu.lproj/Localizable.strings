@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Partnerbeállítások";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Partneri kapcsolatkérések a csoportokból";
+"Contact requests in groups" = "Partneri kapcsolatkérések a csoportokból";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "a partnernek el kell fogadnia…";
