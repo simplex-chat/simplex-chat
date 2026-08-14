@@ -115,9 +115,8 @@ def build_bot(config: Config) -> Bot:
 
 async def _run(config: Config) -> None:
     bot = build_bot(config)
-    # Installed before the client starts, because starting one runs database
-    # migrations, address creation and profile sync; a signal there would
-    # otherwise hit the default disposition and kill the process mid-write.
+    # Before the client starts: a signal during migrations would otherwise hit
+    # the default disposition and kill the process mid-write.
     bot.install_signal_handlers()
     await _serve(config, bot)
 
