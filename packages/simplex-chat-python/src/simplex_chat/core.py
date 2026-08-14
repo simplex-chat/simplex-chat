@@ -33,16 +33,25 @@ class ChatAPIError(ChatError):
     @property
     def error_type(self) -> str | None:
         """Tag of the nested `errorType`, e.g. `noActiveUser`, or None."""
-        return self._nested_type("errorType")
+        return self._nested("errorType").get("type")
 
     @property
     def store_error_type(self) -> str | None:
         """Tag of the nested `storeError`, e.g. `duplicateName`, or None."""
-        return self._nested_type("storeError")
+        return self._nested("storeError").get("type")
 
-    def _nested_type(self, key: str) -> str | None:
+    @property
+    def command_error(self) -> str | None:
+        """What the core says the caller did wrong, or None.
+
+        The only part of a `commandError` worth reading: the tag says nothing.
+        """
+        error = self._nested("errorType")
+        return error.get("message") if error.get("type") == "commandError" else None
+
+    def _nested(self, key: str) -> dict[str, Any]:
         nested = (self.chat_error or {}).get(key)  # type: ignore[attr-defined]
-        return nested.get("type") if isinstance(nested, dict) else None
+        return nested if isinstance(nested, dict) else {}
 
 
 class ChatInitError(Exception):

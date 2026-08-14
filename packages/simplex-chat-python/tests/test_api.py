@@ -54,6 +54,19 @@ def test_error_type_reads_the_nested_tag():
     assert e.store_error_type is None
 
 
+def test_command_error_carries_the_message():
+    # The tag is always "commandError"; the message is the whole content.
+    e = ChatAPIError(
+        "x", {"type": "error", "errorType": {"type": "commandError", "message": "name too long"}}
+    )
+    assert e.command_error == "name too long"
+
+
+def test_command_error_of_another_failure():
+    e = ChatAPIError("x", {"type": "errorStore", "storeError": {"type": "duplicateName"}})
+    assert e.command_error is None
+
+
 def test_error_tags_of_an_unrelated_error():
     e = ChatAPIError("x", {"type": "errorAgent", "agentError": {"type": "CRITICAL"}})
     assert e.error_type is None
