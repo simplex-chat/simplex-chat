@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "simplex-support-bot-light"
+version = "0.1.0"
+description = "SimpleX bot that adds a self-service roster to incoming business chats"
+readme = "README.md"
+license = "AGPL-3.0-only"
+requires-python = ">=3.11"
+dependencies = ["simplex-chat>=7.0.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "pyright>=1.1.380", "ruff>=0.6"]
+
+[project.scripts]
+support-bot-light = "support_bot_light.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/support_bot_light"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["src/support_bot_light"]
+exclude = ["**/__pycache__", "**/.venv*"]
