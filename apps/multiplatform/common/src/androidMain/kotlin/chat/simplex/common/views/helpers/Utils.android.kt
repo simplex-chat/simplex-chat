@@ -233,7 +233,8 @@ actual fun getFileName(uri: URI): String? {
       val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
       cursor.moveToFirst()
       // Can make an exception
-      cursor.getString(nameIndex)
+      // the provider controls this value, and callers use it as a bare file name
+      cursor.getString(nameIndex)?.let { File(it).name }
     }
   } catch (e: Exception) {
     null
