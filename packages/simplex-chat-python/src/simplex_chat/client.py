@@ -14,7 +14,7 @@ import os
 import signal as _signal
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Generic, Literal, TypeVar, overload
+from typing import Any, Generic, Literal, Self, TypeVar, overload
 
 from . import util
 from .api import ChatApi, ChatCommandError, ContactAlreadyExistsError, Db
@@ -58,7 +58,7 @@ class ParsedCommand:
 class Message(Generic[C]):
     chat_item: T.AChatItem
     content: C
-    client: "Client"
+    client: Client
 
     @property
     def chat_info(self) -> T.ChatInfo:
@@ -71,7 +71,7 @@ class Message(Generic[C]):
             return c.get("text")  # type: ignore[return-value]
         return None
 
-    async def reply(self, text: str) -> "Message[T.MsgContent]":
+    async def reply(self, text: str) -> Message[T.MsgContent]:
         items = await self.client.api.api_send_text_reply(self.chat_item, text)
         ci = items[0]
         content = ci["chatItem"]["content"]
@@ -79,7 +79,7 @@ class Message(Generic[C]):
         msg_content: T.MsgContent = content["msgContent"]  # type: ignore[index]
         return Message(chat_item=ci, content=msg_content, client=self.client)
 
-    async def reply_content(self, content: T.MsgContent) -> "Message[T.MsgContent]":
+    async def reply_content(self, content: T.MsgContent) -> Message[T.MsgContent]:
         items = await self.client.api.api_send_messages(
             self.chat_info, [{"msgContent": content, "mentions": {}}]
         )
@@ -162,6 +162,11 @@ class Client:
         self._api: ChatApi | None = None
         self._serving = False
         self._stop_event = asyncio.Event()
+        # Set by Bot once its address is known, so a later `sync_profile()`
+        # embeds the same link the startup sync would have.
+        self._contact_link: str | None = None
+        self._signal_handlers_installed = False
+        self._interrupts = 0
         self._message_handlers: list[tuple[Callable[[Message[Any]], bool], MessageHandler]] = []
         self._command_handlers: list[
             tuple[tuple[str, ...], Callable[[Message[Any]], bool], CommandHandler]
@@ -183,6 +188,26 @@ class Client:
         if self._api is None:
             raise RuntimeError("Client not initialized — call run() or use `async with client:`")
         return self._api
+
+    @property
+    def profile(self) -> Profile:
+        """The profile this client identifies with.
+
+        Mutable: change a field and call `sync_profile()` to apply it.
+        """
+        return self._profile
+
+    @profile.setter
+    def profile(self, profile: Profile) -> None:
+        self._profile = profile
+
+    @property
+    def stop_requested(self) -> bool:
+        """Whether `stop()` has been called, including during startup.
+
+        Sticky: a caller doing its own setup can unwind instead of serving.
+        """
+        return self._stop_event.is_set()
 
     # ------------------------------------------------------------------ #
     # Decorators
@@ -312,16 +337,12 @@ class Client:
     # Lifecycle
     # ------------------------------------------------------------------ #
 
-    async def __aenter__(self) -> "Client":
+    async def __aenter__(self) -> Self:
         # Order matters: libsimplex `/_start` requires an active user, so
         # ensure (or create) the user first, THEN start the chat, THEN
         # do post-start setup (profile sync; Bot adds address sync).
-        # Clear `_stop_event` here (not in `serve_forever`/`events`) so that
-        # a `stop()` call landing between `__aenter__` and the receive loop
-        # — e.g. a signal handler firing while signal handlers are being
-        # wired up — is preserved and causes the loop to exit immediately
-        # on entry.
-        self._stop_event.clear()
+        # `_stop_event` is never cleared: a stop requested during startup has
+        # to survive into the receive loop. A stopped client is spent.
         self._api = await ChatApi.init(self._db, self._confirm_migrations)
         try:
             user = await self._ensure_active_user()
@@ -372,7 +393,7 @@ class Client:
         Default (Client): sync profile only. Bot overrides to also sync its
         address and embed the connection link in the profile.
         """
-        await self._maybe_sync_profile(user, contact_link=None)
+        await self._maybe_sync_profile(user)
 
     def run(self) -> None:
         """Blocking entry: runs serve_forever() with SIGINT/SIGTERM handlers installed.
@@ -390,32 +411,38 @@ class Client:
             )
 
         async def _main() -> None:
+            # Before startup: a signal during migrations would otherwise hit
+            # the default disposition and kill the process mid-write.
+            self.install_signal_handlers()
             async with self:
-                loop = asyncio.get_running_loop()
-                # First Ctrl+C → graceful stop (~500ms, bounded by the
-                # receive-loop poll interval). Second Ctrl+C → force-exit
-                # immediately (in case stop_chat / close hang on a wedged
-                # FFI call). Standard CLI UX (jupyter, ipython, …).
-                sigint_count = 0
-
-                def on_interrupt() -> None:
-                    nonlocal sigint_count
-                    sigint_count += 1
-                    if sigint_count == 1:
-                        log.info("stopping... (press Ctrl+C again to force exit)")
-                        self.stop()
-                    else:
-                        os._exit(130)  # 128 + SIGINT
-
-                if hasattr(_signal, "SIGINT"):
-                    try:
-                        loop.add_signal_handler(_signal.SIGINT, on_interrupt)
-                        loop.add_signal_handler(_signal.SIGTERM, self.stop)
-                    except NotImplementedError:  # Windows
-                        _signal.signal(_signal.SIGINT, lambda *_: on_interrupt())
                 await self.serve_forever()
 
         asyncio.run(_main())
+
+    def install_signal_handlers(self) -> None:
+        """Route SIGINT and SIGTERM to `stop()`. Idempotent.
+
+        `run()` calls this itself; call it directly when driving the client
+        yourself. First Ctrl+C stops, a second force-exits. Needs a running loop.
+        """
+        if self._signal_handlers_installed or not hasattr(_signal, "SIGINT"):
+            return
+        self._signal_handlers_installed = True
+
+        def on_interrupt() -> None:
+            self._interrupts += 1
+            if self._interrupts == 1:
+                log.info("stopping... (press Ctrl+C again to force exit)")
+                self.stop()
+            else:
+                os._exit(130)  # 128 + SIGINT
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.add_signal_handler(_signal.SIGINT, on_interrupt)
+            loop.add_signal_handler(_signal.SIGTERM, self.stop)
+        except NotImplementedError:  # Windows
+            _signal.signal(_signal.SIGINT, lambda *_: on_interrupt())
 
     async def serve_forever(self) -> None:
         if self._serving:
@@ -450,10 +477,7 @@ class Client:
         self._serving = True
         try:
             while not self._stop_event.is_set():
-                try:
-                    event = await self.api.recv_chat_event(wait_us=500_000)
-                except asyncio.CancelledError:
-                    raise
+                event = await self.api.recv_chat_event(wait_us=500_000)
                 if event is None:
                     continue
                 try:
@@ -551,7 +575,7 @@ class Client:
         text: str,
         *,
         timeout: float = 30.0,
-    ) -> "Message[T.MsgContent]":
+    ) -> Message[T.MsgContent]:
         """Send text to a direct contact and wait for the next reply from them.
 
         Waiters are FIFO per contact_id: two concurrent calls to the same
@@ -815,20 +839,35 @@ class Client:
         log.info("user: %s", user["profile"]["displayName"])
         return user
 
-    async def _maybe_sync_profile(self, user: T.User, *, contact_link: str | None) -> None:
+    async def sync_profile(self) -> bool:
+        """Apply the current `profile` to the active user. True if it changed.
+
+        For what the startup sync cannot know yet, such as a display name that
+        depends on the database. Raises `ChatAPIError` if the core refuses it.
+        """
+        user = await self.api.api_get_active_user()
+        if user is None:
+            raise RuntimeError("no active user")
+        return await self._sync_profile(user)
+
+    async def _maybe_sync_profile(self, user: T.User) -> bool:
+        """The startup sync — `sync_profile()` unless the caller opted out."""
+        if not self._update_profile:
+            return False
+        return await self._sync_profile(user)
+
+    async def _sync_profile(self, user: T.User) -> bool:
         """Update the user profile on the wire if its fields changed.
 
-        `contact_link` is only set by Bot (to embed its address). Mirrors
+        `_contact_link` is only set by Bot (to embed its address). Mirrors
         Node `updateBotUserProfile` (bot.ts:199-214). Field-by-field
         comparison because user["profile"] is LocalProfile (has extra
         fields profileId, localAlias, preferences, peerType) so a full
         dict equality would always differ.
         """
-        if not self._update_profile:
-            return
         new_profile = self._profile_to_wire()
-        if contact_link is not None:
-            new_profile["contactLink"] = contact_link
+        if self._contact_link is not None:
+            new_profile["contactLink"] = self._contact_link
         cur = user["profile"]
         changed = (
             cur["displayName"] != new_profile["displayName"]
@@ -842,6 +881,7 @@ class Client:
         if changed:
             log.info("profile changed, updating...")
             await self.api.api_update_profile(user["userId"], new_profile)
+        return changed
 
     def _profile_to_wire(self) -> T.Profile:
         """Convert the user-facing Profile dataclass to wire format.
