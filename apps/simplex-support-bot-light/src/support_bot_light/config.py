@@ -20,11 +20,11 @@ MAX_PROFILE_IMAGE_SIZE = 12500
 
 # Raw bytes that still fit once base64 and the "data:image/png;base64," prefix
 # are added. Checked before the file is read.
+MAX_IMAGE_BYTES = (MAX_PROFILE_IMAGE_SIZE - 22) // 4 * 3
+
 # The welcome is sent as a chat message, so it is held below the core's wire
 # limit (maxEncodedMsgLength) with room to spare rather than at it.
 MAX_WELCOME_BYTES = 12000
-
-MAX_IMAGE_BYTES = (MAX_PROFILE_IMAGE_SIZE - 22) // 4 * 3
 
 # On unless switched off, so a deployment is monitorable without being
 # configured for it. Loopback, because the endpoint has no authentication.
@@ -32,7 +32,8 @@ DEFAULT_HEALTH_HOST = "127.0.0.1"
 DEFAULT_HEALTH_PORT = 8080
 MAX_PORT = 65535
 
-# Tag in the data:image/<tag>;base64, prefix. The core recognises jpg, not jpeg.
+# Tag in the data:image/<tag>;base64, prefix. The core accepts any "data:" string;
+# the clients strip only the png and jpg prefixes, so jpeg renders as nothing.
 IMAGE_EXTENSION_TAGS = {".png": "png", ".jpg": "jpg", ".jpeg": "jpg"}
 
 
