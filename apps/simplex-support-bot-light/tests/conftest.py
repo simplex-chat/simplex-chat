@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from simplex_chat import Message
+from simplex_chat import Message, util
 from simplex_chat.core import ChatAPIError
 
 USER_ID = 1
@@ -40,7 +40,7 @@ class FakeChatApi:
         self._next_contact_id = 100
         self._next_item_id = 1000
         self._member_contacts_created: set[tuple[int, int]] = set()
-        self.raw_commands: list[str] = []
+        self.accepted_member_contacts: list[int] = []
 
     def _check(self, name: str) -> None:
         if name in self.fail_on:
@@ -61,6 +61,18 @@ class FakeChatApi:
                     c.pop("customData", None)
                 else:
                     c["customData"] = custom_data
+
+    async def api_merge_contact_custom_data(self, contact: dict, key: str, value) -> None:
+        # Mirrors ChatApi: the column is replaced wholesale, so a merge is a
+        # read-modify-write through the same set command.
+        await self.api_set_contact_custom_data(
+            contact["contactId"], util.merged_custom_data(contact.get("customData"), key, value)
+        )
+
+    async def api_merge_group_custom_data(self, group: dict, key: str, value) -> None:
+        await self.api_set_group_custom_data(
+            group["groupId"], util.merged_custom_data(group.get("customData"), key, value)
+        )
 
     async def api_create_member_contact(self, group_id: int, group_member_id: int) -> dict:
         self._check("api_create_member_contact")
@@ -84,6 +96,15 @@ class FakeChatApi:
             if c["contactId"] == contact_id:
                 c["contactGrpInvSent"] = True
         return make_contact(contact_id, "invited", grp_inv_sent=True)
+
+    async def api_accept_member_contact(self, contact_id: int) -> dict:
+        self._check("api_accept_member_contact")
+        self.accepted_member_contacts.append(contact_id)
+        for c in self.contacts:
+            if c["contactId"] == contact_id:
+                c.setdefault("groupDirectInv", {})["groupDirectInvStartedConnection"] = True
+                return c
+        return make_contact(contact_id, "accepted")
 
     async def api_list_members(self, group_id: int) -> list[dict]:
         self._check("api_list_members")
@@ -144,11 +165,6 @@ class FakeChatApi:
         link = f"https://simplex.chat/contact#/?v=2&group={group_id}"
         self.group_links[group_id] = link
         return link
-
-    async def send_chat_cmd(self, cmd: str):
-        self._check("send_chat_cmd")
-        self.raw_commands.append(cmd)
-        return {"type": "memberContactAccepted"}
 
     async def api_get_group_link_str(self, group_id: int) -> str:
         self._check("api_get_group_link_str")

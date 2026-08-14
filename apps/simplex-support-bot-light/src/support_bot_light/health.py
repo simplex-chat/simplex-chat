@@ -6,9 +6,10 @@ import asyncio
 import contextlib
 import logging
 
+from simplex_chat import ChatError
+
 from .config import ConfigError, Health
 from .context import BotContext
-from .errors import CHAT_ERRORS
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class Probe:
         """
         try:
             await self._ctx.api.api_list_members(self._ctx.roster_group_id)
-        except CHAT_ERRORS:
+        except ChatError:
             log.warning("health probe failed", exc_info=True)
             return False
         except Exception:

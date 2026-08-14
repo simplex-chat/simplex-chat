@@ -599,7 +599,7 @@ async def test_dm_accepts_a_connection_the_member_started(ctx, api):
     api.contacts.append(make_contact(7, "Kit", grp_member_id=None, conn_status="prepared"))
     msg = make_group_message(api, make_member(1, contact_id=7, name="Kit"), "/dm")
     await handlers.dm(ctx, msg)
-    assert api.raw_commands == ["/_accept member contact @7"]
+    assert api.accepted_member_contacts == [7]
     assert api.custom_data[-1][1]["supportBotLight"]["roster"] == "pending"
     assert api.replies == [messages.ACCEPTING]
 
@@ -609,7 +609,7 @@ async def test_dm_still_reports_a_genuinely_dead_contact(ctx, api):
     api.contacts.append(make_contact(7, "sh", grp_member_id=None, conn_status="deleted"))
     msg = make_group_message(api, make_member(1, contact_id=7, name="sh"), "/dm")
     await handlers.dm(ctx, msg)
-    assert api.raw_commands == []
+    assert api.accepted_member_contacts == []
     assert api.replies == [messages.CONNECTION_LOST]
 
 
@@ -624,7 +624,7 @@ async def test_dm_does_not_re_accept_a_connection_already_started(ctx, api):
     api.contacts.append(contact)
     msg = make_group_message(api, make_member(1, contact_id=7, name="Kit"), "/dm")
     await handlers.dm(ctx, msg)
-    assert api.raw_commands == []
+    assert api.accepted_member_contacts == []
     assert api.replies == [messages.ACCEPTING]
 
 
@@ -637,7 +637,7 @@ async def test_dm_accepts_an_invitation_not_yet_started(ctx, api):
     api.contacts.append(contact)
     msg = make_group_message(api, make_member(1, contact_id=7, name="Kit"), "/dm")
     await handlers.dm(ctx, msg)
-    assert api.raw_commands == ["/_accept member contact @7"]
+    assert api.accepted_member_contacts == [7]
 
 
 async def test_dm_reports_a_handshake_in_progress_as_connecting(ctx, api):
@@ -656,7 +656,7 @@ async def test_dm_reports_a_handshake_in_progress_as_connecting(ctx, api):
     msg = make_group_message(api, make_member(1, contact_id=7, name="Kit"), "/dm")
     await handlers.dm(ctx, msg)
     assert api.replies == [messages.CONNECTING]
-    assert api.raw_commands == []
+    assert api.accepted_member_contacts == []
 
 
 async def test_dm_marks_an_unmarked_member_whose_connection_is_completing(ctx, api):
@@ -697,7 +697,7 @@ async def test_dm_reports_a_dead_connection_even_after_we_accepted(ctx, api):
     api.contacts.append(contact)
     msg = make_group_message(api, make_member(1, contact_id=7, name="Alice"), "/dm")
     await handlers.dm(ctx, msg)
-    assert api.raw_commands == []
+    assert api.accepted_member_contacts == []
     assert api.replies == [messages.CONNECTION_LOST]
 
 

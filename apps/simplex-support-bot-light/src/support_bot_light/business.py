@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import logging
 
+from simplex_chat import ChatError
 from simplex_chat.types import CEvt, T
 
 from . import messages, roster
 from .context import BotContext
-from .errors import CHAT_ERRORS
 from .text import safe_name
 
 log = logging.getLogger(__name__)
@@ -30,19 +30,17 @@ async def _mark_rostered(ctx: BotContext, group: T.GroupInfo) -> None:
     people who joined the roster later to every conversation the bot has ever
     handled.
     """
-    data: dict[str, object] = dict(group.get("customData") or {})
-    existing = data.get(roster.NAMESPACE)
+    existing = (group.get("customData") or {}).get(roster.NAMESPACE)
     mark: dict[str, object] = dict(existing) if isinstance(existing, dict) else {}
     mark[ROSTERED] = True
-    data[roster.NAMESPACE] = mark
-    await ctx.api.api_set_group_custom_data(group["groupId"], data)
+    await ctx.api.api_merge_group_custom_data(group, roster.NAMESPACE, mark)
 
 
 async def _mark(ctx: BotContext, group: T.GroupInfo) -> None:
     """Mark the chat, containing the failure: the next start re-derives it."""
     try:
         await _mark_rostered(ctx, group)
-    except CHAT_ERRORS:
+    except ChatError:
         log.warning("could not mark business chat %s as rostered", group["groupId"], exc_info=True)
 
 
@@ -62,7 +60,7 @@ async def _add_missing(
             # invitation.
             await ctx.api.api_add_member(group_id, entry.contact_id, ctx.config.member_role)
             added.append(entry.name)
-        except CHAT_ERRORS:
+        except ChatError:
             log.exception("failed adding %s to business chat %s", entry.name, group_id)
             failed.append(entry.name)
     return added, failed
@@ -100,7 +98,7 @@ async def reconcile_chats(ctx: BotContext, groups: list[T.GroupInfo] | None = No
         entries = await _roster_for_chats(ctx)
         if groups is None:
             groups = await ctx.api.api_list_groups(ctx.user_id)
-    except CHAT_ERRORS:
+    except ChatError:
         log.warning("could not reconcile business chats on startup", exc_info=True)
         return
 
@@ -113,7 +111,7 @@ async def reconcile_chats(ctx: BotContext, groups: list[T.GroupInfo] | None = No
         group_id = group["groupId"]
         try:
             added, failed = ([], []) if not entries else await _add_missing(ctx, group_id, entries)
-        except CHAT_ERRORS:
+        except ChatError:
             log.warning("could not reconcile business chat %s", group_id, exc_info=True)
             continue
         repaired += 1
@@ -165,7 +163,7 @@ async def on_business_request(ctx: BotContext, evt: CEvt.AcceptingBusinessReques
     try:
         entries = await _roster_for_chats(ctx)
         added, failed = ([], []) if not entries else await _add_missing(ctx, group_id, entries)
-    except CHAT_ERRORS:
+    except ChatError:
         log.exception("failed reading roster for business chat %s", group_id)
         await ctx.post_to_roster(messages.BUSINESS_FAILED_LOG.format(customer=customer))
         return

@@ -1,22 +1,15 @@
-import asyncio
-import os
-import signal
-from types import SimpleNamespace
-
 import pytest
 from simplex_chat import Bot, BotProfile, SqliteDb
 from simplex_chat.core import ChatAPIError
 
-from support_bot_light import handlers, health
+from support_bot_light import handlers, health, names
 from support_bot_light.__main__ import (
-    _install_signal_handlers,
+    _apply_profile,
     _register,
     _run,
     _serve,
-    _usable_name,
     bot_profile,
     build_bot,
-    name_taken,
     startup_error,
 )
 from support_bot_light.config import Config, Health
@@ -117,84 +110,13 @@ async def test_registered_handlers_call_the_matching_handler(api, monkeypatch):
 
     for name in ("dm", "list_roster", "leave", "help_cmd"):
         monkeypatch.setattr(handlers, name, spy(name))
-    for names, _predicate, handler in bot._command_handlers:
-        await handler(make_group_message(api, make_member(1), f"/{names[0]}"), None)
+    for keywords, _predicate, handler in bot._command_handlers:
+        await handler(make_group_message(api, make_member(1), f"/{keywords[0]}"), None)
     assert called == ["dm", "list_roster", "leave", "help_cmd"]
 
 
-class StopSpy:
-    """A Bot stand-in that records stop() calls."""
-
-    def __init__(self):
-        self.stops = 0
-
-    def stop(self):
-        self.stops += 1
-
-
-async def stopper_for() -> tuple:
-    """The SIGINT and SIGTERM callbacks, plus the Stopper they belong to."""
-    installed = {}
-    loop = asyncio.get_running_loop()
-    original = loop.add_signal_handler
-    loop.add_signal_handler = lambda sig, cb: installed.__setitem__(sig, cb)
-    try:
-        stopper = _install_signal_handlers()
-    finally:
-        loop.add_signal_handler = original
-    return installed[signal.SIGINT], installed[signal.SIGTERM], stopper
-
-
-async def test_no_signal_means_no_stop_requested():
-    _interrupt, _terminate, stopper = await stopper_for()
-    assert stopper.requested is False
-
-
-async def test_a_signal_before_any_client_is_started_is_not_lost():
-    # The first client start runs migrations and address creation; a signal
-    # there must not hit the default disposition.
-    _interrupt, terminate, stopper = await stopper_for()
-    terminate()
-    assert stopper.requested is True
-
-    bot = StopSpy()
-    stopper.attach(bot)
-    assert bot.stops == 0  # nothing to stop when the signal arrived
-
-
-async def test_sigterm_asks_the_attached_bot_to_stop():
-    _interrupt, terminate, stopper = await stopper_for()
-    bot = StopSpy()
-    stopper.attach(bot)
-    terminate()
-    assert bot.stops == 1 and stopper.requested is True
-
-
-async def test_a_replacement_bot_receives_the_stop():
-    # The name probe and the serving bot are different clients.
-    _interrupt, terminate, stopper = await stopper_for()
-    probe, serving = StopSpy(), StopSpy()
-    stopper.attach(probe)
-    stopper.attach(serving)
-    terminate()
-    assert (probe.stops, serving.stops) == (0, 1)
-
-
-async def test_first_sigint_stops_gracefully_and_the_second_forces_exit(monkeypatch):
-    interrupt, _terminate, stopper = await stopper_for()
-    bot = StopSpy()
-    stopper.attach(bot)
-    interrupt()
-    assert bot.stops == 1 and stopper.requested is True
-
-    exits: list[int] = []
-    monkeypatch.setattr(os, "_exit", exits.append)
-    interrupt()
-    assert exits == [130] and bot.stops == 1
-
-
 def test_a_taken_display_name_is_explained():
-    # The core reports it as a bare errorStore; the cause is in chat_error.
+    # The core reports it as a bare errorStore; the cause is in the store error.
     e = ChatAPIError("chat command error: errorStore", {"storeError": {"type": "duplicateName"}})
     assert "bot.display_name" in startup_error(e)
 
@@ -217,103 +139,25 @@ def test_the_bot_opens_a_business_address():
     assert bot._welcome == "hi"
 
 
-TAKEN = ChatAPIError("chat command error: errorStore", {"storeError": {"type": "duplicateName"}})
-
-
-async def fake_usable_name(config):
-    return config.display_name
-
-
-def test_name_taken_only_matches_the_core_s_duplicate_name():
-    assert name_taken(TAKEN) is True
-    assert name_taken(ChatAPIError("x", {"storeError": {"type": "userNotFound"}})) is False
-    assert name_taken(ValueError("no active user after start")) is False
-
-
-def run_with(monkeypatch, *, serve, requested=False, built=None):
-    """Drive _run with the client starts replaced."""
-
-    def fake_build(config, *, update_profile=True, display_name=None):
-        if built is not None:
-            built.append(update_profile)
-        return update_profile
-
-    class FakeStopper:
-        requested = False
-
-        def attach(self, bot):
-            return bot
-
-    stopper = FakeStopper()
-    stopper.requested = requested
-
-    async def fake_usable_name(config, _stopper):
-        return config.display_name
-
-    monkeypatch.setattr("support_bot_light.__main__.build_bot", fake_build)
-    monkeypatch.setattr("support_bot_light.__main__._serve", serve)
-    monkeypatch.setattr("support_bot_light.__main__._usable_name", fake_usable_name)
-    monkeypatch.setattr("support_bot_light.__main__._install_signal_handlers", lambda: stopper)
-    return stopper
-
-
-def test_the_bot_serves_without_the_profile_when_the_name_is_refused(monkeypatch):
-    # The rename half-lands in the core and cannot be undone from here, so the
-    # choice is between answering customers and applying a name.
-    built: list[bool] = []
-    served: list[bool] = []
-
-    async def fake_serve(config, bot, stopper):
-        served.append(bot)
-        if bot is True:  # the attempt that applies the profile
-            raise TAKEN
-
-    run_with(monkeypatch, serve=fake_serve, built=built)
-    asyncio.run(_run(CONFIG))
-    assert built == [True, False]
-    assert served == [True, False]
-
-
-def test_a_signal_during_the_refused_attempt_is_not_retried(monkeypatch):
-    served: list[bool] = []
-
-    async def fake_serve(config, bot, stopper):
-        served.append(bot)
-        raise TAKEN
-
-    run_with(monkeypatch, serve=fake_serve, requested=True)
-    asyncio.run(_run(CONFIG))
-    assert served == []  # the signal arrived before the first serve
-
-
-def test_any_other_startup_error_still_stops_the_bot(monkeypatch):
-    async def fake_serve(config, bot, stopper):
-        raise ChatAPIError("x", {"storeError": {"type": "userNotFound"}})
-
-    run_with(monkeypatch, serve=fake_serve)
-    with pytest.raises(ChatAPIError):
-        asyncio.run(_run(CONFIG))
-
-
-def test_a_signal_during_the_name_probe_stops_before_serving(monkeypatch):
-    served: list[bool] = []
-
-    async def fake_serve(config, bot, stopper):
-        served.append(bot)
-
-    run_with(monkeypatch, serve=fake_serve, requested=True)
-    asyncio.run(_run(CONFIG))
-    assert served == []
+def test_the_bot_does_not_apply_its_profile_while_starting():
+    # The name the core will accept is only knowable from the database, which
+    # nothing can read until the client has started. _apply_profile does it.
+    assert build_bot(CONFIG)._update_profile is False
 
 
 class FakeBot:
     """A Bot stand-in for _serve: an async context manager with an api."""
 
-    def __init__(self, api):
+    def __init__(self, api, sync_error: Exception | None = None):
         self.api = api
+        self.profile = BotProfile(display_name="Support")
         self.served = 0
+        self.syncs = 0
+        self.sync_error = sync_error
+        self.signal_handlers = 0
         self._command_handlers = []
         self._event_handlers = {}
+        self.stop_requested = False
         self.stopped = False
 
     async def __aenter__(self):
@@ -321,6 +165,15 @@ class FakeBot:
 
     async def __aexit__(self, *_exc):
         return False
+
+    def install_signal_handlers(self):
+        self.signal_handlers += 1
+
+    async def sync_profile(self) -> bool:
+        self.syncs += 1
+        if self.sync_error is not None:
+            raise self.sync_error
+        return True
 
     def on_command(self, *_names, **_kw):
         def register(handler):
@@ -343,13 +196,6 @@ class FakeBot:
         self.stopped = True
 
 
-class RunStopper:
-    requested = False
-
-    def attach(self, bot):
-        return bot
-
-
 def serve_api(api):
     """The fake api with the calls _serve makes before serving."""
 
@@ -370,7 +216,7 @@ def serve_api(api):
 
 async def test_serve_wires_the_handlers_and_serves(api):
     bot = FakeBot(serve_api(api))
-    await _serve(CONFIG, bot, RunStopper())
+    await _serve(CONFIG, bot)
     assert bot.served == 1
     assert len(bot._command_handlers) == 4  # nothing is delivered without these
     assert set(bot._event_handlers) == {
@@ -393,15 +239,14 @@ async def test_serve_reads_the_group_listing_once(api):
         return await original(user_id, **kw)
 
     api.api_list_groups = counted
-    await _serve(CONFIG, bot, RunStopper())
+    await _serve(CONFIG, bot)
     assert calls["n"] == 2  # one for discovery, one shared by both passes
 
 
 async def test_serve_does_not_begin_serving_after_a_signal(api):
-    stopper = RunStopper()
-    stopper.requested = True
     bot = FakeBot(serve_api(api))
-    await _serve(CONFIG, bot, stopper)
+    bot.stop_requested = True
+    await _serve(CONFIG, bot)
     assert bot.served == 0
 
 
@@ -418,39 +263,54 @@ async def test_serve_closes_the_health_endpoint_afterwards(api):
 
     health.serve = spy
     try:
-        await _serve(config, bot, RunStopper())
+        await _serve(config, bot)
     finally:
         health.serve = original
     assert servers and not servers[0].is_serving()
 
 
-def test_the_name_probe_never_applies_the_profile(monkeypatch):
-    # Applying it is the write that can half-commit, which is what the probe
-    # exists to decide about.
-    kwargs: list[dict] = []
+async def test_the_bot_serves_after_a_refused_rename(api, caplog):
+    # The rename half-lands in the core and cannot be undone from here, so the
+    # choice is between answering customers and applying a name.
+    refused = ChatAPIError("x", {"storeError": {"type": "duplicateName"}})
+    bot = FakeBot(serve_api(api), sync_error=refused)
+    await _serve(CONFIG, bot)
+    assert bot.served == 1
+    assert "bot.display_name" in caplog.text
 
-    class Probe:
-        api = None
 
-        async def __aenter__(self):
-            return self
+async def test_the_profile_is_applied_after_start(api, monkeypatch):
+    bot = FakeBot(serve_api(api))
+    await _serve(CONFIG, bot)
+    assert bot.syncs == 1
 
-        async def __aexit__(self, *_exc):
-            return False
 
-    def fake_build(config, **kw):
-        kwargs.append(kw)
-        return Probe()
+async def test_the_name_the_database_allows_is_the_one_applied(api, monkeypatch):
+    # The core refuses a name already in use, so the check decides what is
+    # applied — not the config.
+    async def taken(_api, _user_id, _wanted):
+        return "Support"
 
-    async def fake_active_user():
-        return None
+    monkeypatch.setattr(names, "usable", taken)
+    bot = FakeBot(api)
+    await _apply_profile(bot, USER_ID, Config("Helpdesk", "./x", "hi", "R", "owner"))
+    assert bot.profile.display_name == "Support"
+    assert bot.syncs == 1
 
-    Probe.api = SimpleNamespace(api_get_active_user=fake_active_user)
-    monkeypatch.setattr("support_bot_light.__main__.build_bot", fake_build)
 
-    class Stopper:
-        def attach(self, bot):
-            return bot
+async def test_run_installs_signal_handlers_before_starting(monkeypatch):
+    # Startup runs migrations and address creation; a signal there would
+    # otherwise kill the process mid-write.
+    order: list[str] = []
+    bot = FakeBot(None)
 
-    assert asyncio.run(_usable_name(CONFIG, Stopper())) == CONFIG.display_name
-    assert kwargs == [{"update_profile": False}]
+    def build(_config):
+        return bot
+
+    async def serve(_config, b):
+        order.append(f"serve:{b.signal_handlers}")
+
+    monkeypatch.setattr("support_bot_light.__main__.build_bot", build)
+    monkeypatch.setattr("support_bot_light.__main__._serve", serve)
+    await _run(CONFIG)
+    assert order == ["serve:1"]

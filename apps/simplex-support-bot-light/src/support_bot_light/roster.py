@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal
 
-from simplex_chat import ChatApi
+from simplex_chat import ChatApi, util
 from simplex_chat.types import T
 
 from .text import safe_name
@@ -48,8 +48,7 @@ def connecting(contact: T.Contact) -> bool:
     with `contactGroupMemberId` cleared, which is indistinguishable by shape
     from a connection the peer deleted. Only the status separates them.
     """
-    status = (contact.get("activeConn") or {}).get("connStatus") or {}
-    tag = status.get("type")
+    tag = util.conn_status(contact)
     return tag is not None and tag not in DEAD_STATUSES
 
 
@@ -66,8 +65,7 @@ def awaiting_accept(contact: T.Contact) -> bool:
         # The record survives acceptance; only this flag moves, and the core
         # rejects a second accept with "connection already started".
         return not inv.get("groupDirectInvStartedConnection", False)
-    status = (contact.get("activeConn") or {}).get("connStatus") or {}
-    return status.get("type") == "prepared"
+    return util.conn_status(contact) == "prepared"
 
 
 def accept_started(contact: T.Contact) -> bool:
@@ -83,8 +81,7 @@ def accept_started(contact: T.Contact) -> bool:
     inv = contact.get("groupDirectInv")
     if inv is None or not inv.get("groupDirectInvStartedConnection", False):
         return False
-    status = (contact.get("activeConn") or {}).get("connStatus") or {}
-    return status.get("type") not in DEAD_STATUSES
+    return util.conn_status(contact) not in DEAD_STATUSES
 
 
 def contact_usable(contact: T.Contact) -> bool:
@@ -94,8 +91,7 @@ def contact_usable(contact: T.Contact) -> bool:
     has accepted anything, so the contact merely existing proves nothing — only
     a connected connection does.
     """
-    status = (contact.get("activeConn") or {}).get("connStatus") or {}
-    return status.get("type") in READY_STATUSES
+    return util.conn_status(contact) in READY_STATUSES
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,23 +135,13 @@ def entry_of(contact: T.Contact) -> RosterEntry | None:
 
 
 async def mark(api: ChatApi, contact: T.Contact, state: RosterState, since: str) -> None:
-    """Write the roster mark, preserving any other keys in the blob.
-
-    `api_set_contact_custom_data` replaces the whole column, so this is
-    read-modify-write even though this bot is the only expected writer.
-    """
-    data = dict(contact.get("customData") or {})
-    data[NAMESPACE] = {"roster": state, "since": since}
-    await api.api_set_contact_custom_data(contact["contactId"], data)
+    """Write the roster mark, preserving any other keys in the blob."""
+    await api.api_merge_contact_custom_data(contact, NAMESPACE, {"roster": state, "since": since})
 
 
 async def unmark(api: ChatApi, contact: T.Contact) -> None:
     """Remove the roster mark, leaving any other keys and the contact intact."""
-    data = dict(contact.get("customData") or {})
-    if NAMESPACE not in data:
-        return
-    del data[NAMESPACE]
-    await api.api_set_contact_custom_data(contact["contactId"], data or None)
+    await api.api_merge_contact_custom_data(contact, NAMESPACE, None)
 
 
 async def load(api: ChatApi, user_id: int) -> list[RosterEntry]:

@@ -27,11 +27,10 @@ from __future__ import annotations
 
 import logging
 
-from simplex_chat import ChatApi
+from simplex_chat import ChatApi, ChatError
 from simplex_chat.types import T
 
 from . import setup
-from .errors import CHAT_ERRORS
 
 log = logging.getLogger(__name__)
 
@@ -114,7 +113,7 @@ async def usable(api: ChatApi, user_id: int, wanted: str) -> str:
             )
             return current
         holder = await taken_by(api, user_id, wanted, groups)
-    except CHAT_ERRORS:
+    except ChatError:
         # Reading the names failed, so nothing is known about the collision.
         # Attempting the rename risks the half-commit; keeping the current name
         # risks nothing.

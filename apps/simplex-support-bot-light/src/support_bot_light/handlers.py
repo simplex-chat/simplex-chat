@@ -6,12 +6,11 @@ import functools
 import logging
 from collections.abc import Awaitable, Callable
 
-from simplex_chat import Message
+from simplex_chat import ChatError, Message
 from simplex_chat.types import T
 
 from . import messages, roster, setup
 from .context import BotContext
-from .errors import CHAT_ERRORS
 from .text import safe_name
 
 log = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ def _reply_on_error(fn: Callable[[BotContext, Message], Awaitable[None]]):
     async def wrapper(ctx: BotContext, msg: Message) -> None:
         try:
             await fn(ctx, msg)
-        except CHAT_ERRORS:
+        except ChatError:
             log.exception("%s failed", fn.__name__)
             await msg.reply(messages.COMMAND_FAILED)
 
@@ -100,8 +99,7 @@ async def dm(ctx: BotContext, msg: Message) -> None:
                 # They connected to us from the group rather than accepting our
                 # request. Accept it and mark them pending; contactConnected
                 # then promotes them exactly as it would the other way round.
-                # The library exposes no wrapper for this command.
-                await ctx.api.send_chat_cmd(f"/_accept member contact @{contact['contactId']}")
+                await ctx.api.api_accept_member_contact(contact["contactId"])
                 since = entry.since if entry else roster.utc_now()
                 await roster.mark(ctx.api, contact, roster.PENDING, since)
                 await msg.reply(messages.ACCEPTING)
@@ -144,7 +142,7 @@ async def dm(ctx: BotContext, msg: Message) -> None:
             await ctx.api.api_send_member_contact_invitation(
                 contact["contactId"], messages.INVITATION_TEXT
             )
-        except CHAT_ERRORS:
+        except ChatError:
             log.warning("invitation resend to contact %s failed", contact["contactId"])
             await msg.reply(messages.INVITATION_FAILED)
             return
@@ -156,7 +154,7 @@ async def dm(ctx: BotContext, msg: Message) -> None:
     new_contact_id = contact["contactId"]
     try:
         await ctx.api.api_send_member_contact_invitation(new_contact_id, messages.INVITATION_TEXT)
-    except CHAT_ERRORS:
+    except ChatError:
         log.warning("invitation to contact %s failed to send", new_contact_id)
         await msg.reply(messages.INVITATION_FAILED)
         return
@@ -181,7 +179,7 @@ async def contact_ready(ctx: BotContext, contact_id: int) -> None:
             # `active()` will consult, so promote only on what it will see.
             return
         await roster.mark(ctx.api, contact, roster.ACTIVE, entry.since)
-    except CHAT_ERRORS:
+    except ChatError:
         # Nobody is waiting on a reply here, so without this the failure is a
         # bare traceback from the library and the person is stranded pending.
         log.warning("could not promote contact %s", contact_id, exc_info=True)
@@ -204,7 +202,7 @@ async def reconcile_roster(ctx: BotContext, groups: list[T.GroupInfo] | None = N
         contacts = await ctx.api.api_list_contacts(ctx.user_id)
         if groups is None:
             groups = await ctx.api.api_list_groups(ctx.user_id)
-    except CHAT_ERRORS:
+    except ChatError:
         # Startup must not fail because the catch-up pass could not run.
         log.warning("could not reconcile the roster on startup", exc_info=True)
         return
@@ -230,7 +228,7 @@ async def reconcile_roster(ctx: BotContext, groups: list[T.GroupInfo] | None = N
                 await roster.mark(ctx.api, contact, roster.ACTIVE, entry.since)
                 log.info("promoted %s on startup: their connection is ready", entry.name)
                 await ctx.post_to_roster(messages.NOW_ACTIVE.format(name=entry.name))
-        except CHAT_ERRORS:
+        except ChatError:
             # One bad contact must not abandon the rest of the pass.
             log.warning("could not reconcile contact %s", entry.contact_id, exc_info=True)
 
@@ -261,7 +259,7 @@ async def member_gone(ctx: BotContext, group_id: int, member: T.GroupMember) -> 
         if entry is None:
             return
         await roster.unmark(ctx.api, contact)
-    except CHAT_ERRORS:
+    except ChatError:
         # The only failure in the bot that the roster group would not hear
         # about, and it is the one on the access-control path. Access is not at
         # risk — every add re-reads roster group membership — but the operator

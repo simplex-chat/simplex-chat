@@ -5,12 +5,11 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from simplex_chat import ChatApi
+from simplex_chat import ChatApi, ChatError
 from simplex_chat.types import T
 
 from . import commands, roster
 from .config import Config
-from .errors import CHAT_ERRORS
 
 log = logging.getLogger(__name__)
 
@@ -61,11 +60,11 @@ async def _get_or_create_group_link(api: ChatApi, group_id: int) -> str | None:
     """
     try:
         return await api.api_get_group_link_str(group_id)
-    except CHAT_ERRORS:
+    except ChatError:
         pass
     try:
         return await api.api_create_group_link(group_id, JOIN_ROLE)
-    except CHAT_ERRORS:
+    except ChatError:
         log.warning(
             "Could not get or create a join link for roster group %s", group_id, exc_info=True
         )
@@ -93,7 +92,7 @@ async def ensure_roster_group(api: ChatApi, user_id: int, config: Config) -> int
         group = marked[0]
         try:
             await _sync_preferences(api, group)
-        except CHAT_ERRORS:
+        except ChatError:
             # The menu is a convenience; the commands work when typed. The core
             # requires owner rights to update the profile, so an operator who
             # demotes the bot would otherwise brick every later start.

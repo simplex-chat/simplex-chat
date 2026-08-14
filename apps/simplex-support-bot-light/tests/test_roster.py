@@ -70,9 +70,11 @@ async def test_unmark_clears_blob_when_nothing_left(api):
     assert api.custom_data[-1] == (7, None)
 
 
-async def test_unmark_is_a_noop_when_not_marked(api):
-    await roster.unmark(api, make_contact(7, "sh"))
-    assert api.custom_data == []
+async def test_unmark_of_an_unmarked_contact_takes_nothing_away(api):
+    contact = make_contact(7, "sh", {"otherBot": {"keep": 1}})
+    api.contacts.append(contact)
+    await roster.unmark(api, contact)
+    assert api.custom_data[-1] == (7, {"otherBot": {"keep": 1}})
 
 
 async def test_load_returns_marked_contacts_sorted_case_insensitively(api):

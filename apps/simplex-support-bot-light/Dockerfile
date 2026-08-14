@@ -32,10 +32,13 @@ ENV VIRTUAL_ENV=/home/supportbot/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Pinned because pyproject.toml declares a floor and there is no lockfile.
+# 7.1.0b0 is the first release carrying the client APIs this bot uses
+# (install_signal_handlers, sync_profile, api_accept_member_contact,
+# api_merge_*_custom_data); it has to be on PyPI for this build to succeed.
 # libsimplex is pre-fetched into the supportbot cache, before COPY so editing bot
 # code does not re-download it, and after USER so the runtime user finds it.
 RUN uv venv --python 3.12 "$VIRTUAL_ENV" && \
-    uv pip install "simplex-chat==7.0.0" && \
+    uv pip install "simplex-chat==7.1.0b0" && \
     python -m simplex_chat install --backend sqlite
 
 COPY --chown=supportbot:supportbot . /home/supportbot/app

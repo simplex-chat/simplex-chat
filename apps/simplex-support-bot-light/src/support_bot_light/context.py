@@ -5,10 +5,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 
-from simplex_chat import ChatApi
+from simplex_chat import ChatApi, ChatError
 
 from .config import Config
-from .errors import CHAT_ERRORS
 
 log = logging.getLogger(__name__)
 
@@ -33,5 +32,5 @@ class BotContext:
         """
         try:
             await self.api.api_send_text_message(["group", self.roster_group_id], text)
-        except CHAT_ERRORS:
+        except ChatError:
             log.warning("could not post to the roster group: %s", text, exc_info=True)
