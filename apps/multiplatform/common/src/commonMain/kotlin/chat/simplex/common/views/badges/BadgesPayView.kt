@@ -163,7 +163,8 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
     val percent = savingsPercent(level, period)
     if (percent != null) {
       Text(
-        stringResource(MR.strings.badges_savings).format(percent),
+        // the percent sign is in the argument, not the resource: adjustFormatting rejects %%
+        stringResource(MR.strings.badges_savings).format("$percent%"),
         style = MaterialTheme.typography.caption,
         color = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         textAlign = TextAlign.Center

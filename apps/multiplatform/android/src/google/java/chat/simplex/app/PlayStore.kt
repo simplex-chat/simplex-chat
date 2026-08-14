@@ -49,6 +49,11 @@ suspend fun loadBadgeProducts(productIds: List<String>): List<BadgeProduct> {
   // does not have to be inferred from the id
   val details = queryBadgeProducts(client, productIds, BillingClient.ProductType.INAPP) +
       queryBadgeProducts(client, productIds, BillingClient.ProductType.SUBS)
+  if (details.size < productIds.size) {
+    // Play drops ids it cannot resolve without saying why, so the package it was asked for and the
+    // store country are logged with them - a debug build's applicationIdSuffix is a common cause
+    Log.w(TAG, "loadBadgeProducts: Play returned ${details.size} of ${productIds.size} - package ${androidAppContext.packageName}, country ${androidPlayStoreCountry.value ?: "none"}")
+  }
   badgeProductDetails = details.associateBy { it.productId }
   return details.mapNotNull { it.badgeProduct() }
 }
