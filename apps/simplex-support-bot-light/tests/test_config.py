@@ -270,3 +270,17 @@ def test_health_host_can_be_set(tmp_path):
 def test_invalid_health_settings_are_rejected(tmp_path, section):
     with pytest.raises(ConfigError):
         load_config(write(tmp_path, VALID + "\n" + section))
+
+
+def test_a_missing_config_points_at_the_template(tmp_path):
+    # Under Docker this is a restart loop until the operator acts, so the error
+    # has to say what the action is.
+    (tmp_path / "config.toml.example").write_text(VALID, encoding="utf-8")
+    with pytest.raises(ConfigError, match="copy config.toml.example to config.toml"):
+        load_config(tmp_path / "config.toml")
+
+
+def test_a_missing_config_without_a_template_says_only_that(tmp_path):
+    with pytest.raises(ConfigError, match="not found") as raised:
+        load_config(tmp_path / "config.toml")
+    assert "copy" not in str(raised.value)

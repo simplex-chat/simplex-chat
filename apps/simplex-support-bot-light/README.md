@@ -12,11 +12,14 @@ self-service: people join it from a command menu in a separate roster group.
 The supported way to run the bot. From `apps/simplex-support-bot-light`:
 
 ```bash
-cp bot-config/config.toml.example bot-config/config.toml
-sudo chown -R 1000:1000 state && chmod 0700 state   # see Ownership below
+cp bot-config/config.toml.example bot-config/config.toml   # required; edit it before starting
+sudo chown -R 1000:1000 state && chmod 0700 state          # see Ownership below
 docker compose up --build -d
 docker compose logs -f support-bot-light
 ```
+
+Without `bot-config/config.toml` the bot exits with `config file not found` and
+Docker retries it five times before giving up.
 
 Edit `bot-config/config.toml` before starting, and place the avatar beside it
 if `bot.image` is set. See [Configuration](#configuration). Use the template in

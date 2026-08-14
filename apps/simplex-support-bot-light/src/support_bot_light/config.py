@@ -69,7 +69,11 @@ def load_config(path: Path) -> Config:
     try:
         raw = tomllib.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as e:
-        raise ConfigError(f"config file not found: {path}") from e
+        # Names, not a command: under Docker this directory is mounted
+        # read-only, so the copy is made on the host.
+        template = path.with_name(path.name + ".example")
+        hint = f" — copy {template.name} to {path.name} and edit it" if template.exists() else ""
+        raise ConfigError(f"config file not found: {path}{hint}") from e
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"invalid TOML in {path}: {e}") from e
     except UnicodeDecodeError as e:
