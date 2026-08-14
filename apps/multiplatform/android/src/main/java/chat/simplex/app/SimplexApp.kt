@@ -26,6 +26,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgeProduct
+import chat.simplex.common.views.badges.BadgePurchaseOutcome
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
@@ -342,6 +344,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
 
       override fun androidLoadPlayStoreCountry() = loadPlayStoreCountry()
+
+      override suspend fun androidLoadBadgeProducts(productIds: List<String>): List<BadgeProduct> = loadBadgeProducts(productIds)
+
+      override suspend fun androidPurchaseBadge(productId: String, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(productId, invoiceId)
 
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable

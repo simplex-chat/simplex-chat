@@ -40,12 +40,6 @@ enum class BadgeLevel {
       Legend -> MR.strings.badges_level_legend_files
     }
 
-  val priceAmount: String
-    get() = when (this) {
-      Supporter -> "$7"
-      Legend -> "$70"
-    }
-
   val tagline: StringResource
     get() = when (this) {
       Supporter -> MR.strings.badges_level_supporter_tagline
@@ -62,6 +56,8 @@ enum class BadgeLevel {
 @Composable
 fun BadgesYourLevelView() {
   var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
+
+  LaunchedEffect(Unit) { BadgeStore.load() }
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
@@ -139,7 +135,7 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
     )
     Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
     Text(stringResource(level.filesDescription), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
-    Text(stringResource(MR.strings.badges_price_monthly).format(level.priceAmount), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
+    Text(BadgePeriod.Monthly.priceText(BadgeStore.price(level, BadgePeriod.Monthly)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
   }
 }
 
