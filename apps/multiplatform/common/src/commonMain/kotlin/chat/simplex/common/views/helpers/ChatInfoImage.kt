@@ -245,7 +245,7 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
   }
 }
 
-private fun badgeImage(t: BadgeType): ImageResource = when (t) {
+fun badgeImage(t: BadgeType): ImageResource = when (t) {
   is BadgeType.Legend -> MR.images.badge_legend
   is BadgeType.Investor -> MR.images.badge_investor
   else -> MR.images.badge_supporter // Supporter + Unknown
