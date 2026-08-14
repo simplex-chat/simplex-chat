@@ -145,7 +145,7 @@ struct BadgesPayView: View {
                     .font(.body)
                 if let percent = savingsPercent(period) {
                     Text("Save \(percent)%")
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
                 }
             }
