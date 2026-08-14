@@ -1,0 +1,17 @@
+services:
+  support-bot-light:
+    build:
+      context: .
+    restart: unless-stopped
+    volumes:
+      # Directory, not a single file: bot.image resolves relative paths against
+      # the directory holding config.toml.
+      - ./bot-config:/etc/support-bot-light:ro
+      # Holds the bot's identity, address, roster group and roster. Deleting it
+      # means a new address and every roster member redoing the handshake.
+      - ./state:/data
+    stop_grace_period: 30s
+    ports:
+      # GET /health. Published on the host loopback because the endpoint has no
+      # authentication; widen it only for a monitoring system that needs it.
+      - "127.0.0.1:8080:8080"

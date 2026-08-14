@@ -1,0 +1,19 @@
+.venv/
+.venv-*/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.pyright_cache/
+.mypy_cache/
+
+*.db
+*.db-*
+
+plans/
+state/
+
+# Supplied at runtime via the bind mount, never baked into the image.
+bot-config/
+config.toml
