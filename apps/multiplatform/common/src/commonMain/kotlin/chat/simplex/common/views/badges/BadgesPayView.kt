@@ -224,13 +224,15 @@ private fun showPurchasedAlert(receipt: BadgeStoreReceipt, invoiceId: String, cl
     invoiceId -> "yes"
     else -> "mismatch: ${receipt.invoiceId}"
   }
-  val summary = listOf(
+  val lines = mutableListOf(
     "Product: ${receipt.productId}",
     "Invoice: $invoiceId",
     "Invoice returned by Google: $returnedInvoice",
-    "Order: ${receipt.orderId ?: "none"}",
-    "Token: ${receipt.token.length} bytes"
-  ).joinToString("\n")
+    "Order: ${receipt.orderId ?: "none"}"
+  )
+  if (receipt.environment != null) lines.add("Environment: ${receipt.environment}")
+  lines.add("Token: ${receipt.token.length} bytes")
+  val summary = lines.joinToString("\n")
   // logged as well as shown: the log always lands even when the alert is missed
   Log.d(TAG, "badge purchase succeeded\n$summary")
   AlertManager.shared.showAlertDialog(

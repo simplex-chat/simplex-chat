@@ -55,7 +55,26 @@ data class BadgeStoreReceipt(
   val token: String,
   val productId: String,
   val orderId: String?,
-  val invoiceId: String?
+  val invoiceId: String?,
+  // only set for test products - a real Play purchase has no environment to report
+  val environment: String? = null
+)
+
+// TODO [badges] Play Billing has no offline configuration, so there is no analogue of the iOS
+// .storekit file. Set to true to price the screens and walk the purchase flow without Play Console
+// products; the purchase is simulated and its receipt says so.
+const val useBadgeTestProducts = false
+
+private fun testProduct(level: BadgeLevel, period: BadgePeriod, priceMicros: Long) =
+  BadgeProduct(badgeProductId(level, period), "\$${priceMicros / 1_000_000}.00", priceMicros, "USD")
+
+private val testBadgeProducts: List<BadgeProduct> = listOf(
+  testProduct(BadgeLevel.Supporter, BadgePeriod.OneMonth, 7_000_000),
+  testProduct(BadgeLevel.Supporter, BadgePeriod.Monthly, 7_000_000),
+  testProduct(BadgeLevel.Supporter, BadgePeriod.Annual, 42_000_000),
+  testProduct(BadgeLevel.Legend, BadgePeriod.OneMonth, 70_000_000),
+  testProduct(BadgeLevel.Legend, BadgePeriod.Monthly, 70_000_000),
+  testProduct(BadgeLevel.Legend, BadgePeriod.Annual, 420_000_000)
 )
 
 sealed class BadgePurchaseOutcome {
@@ -106,7 +125,7 @@ object BadgeStore {
   suspend fun load() {
     if (!startLoading()) return
     try {
-      val loaded = platform.androidLoadBadgeProducts(badgeProductIds)
+      val loaded = if (useBadgeTestProducts) testBadgeProducts else platform.androidLoadBadgeProducts(badgeProductIds)
       val byId = loaded.associateBy { it.productId }
       val missing = badgeProductIds.filter { !byId.containsKey(it) }
       if (missing.isNotEmpty()) {
@@ -123,6 +142,17 @@ object BadgeStore {
   suspend fun purchase(level: BadgeLevel, period: BadgePeriod, invoiceId: String): BadgePurchaseOutcome {
     val productId = badgeProductId(level, period)
     if (!products.value.containsKey(productId)) throw BadgeStoreError.ProductUnavailable(productId)
+    if (useBadgeTestProducts) {
+      return BadgePurchaseOutcome.Purchased(
+        BadgeStoreReceipt(
+          token = "test-${UUID.randomUUID()}",
+          productId = productId,
+          orderId = null,
+          invoiceId = invoiceId,
+          environment = "test products"
+        )
+      )
+    }
     return platform.androidPurchaseBadge(productId, invoiceId)
   }
 
