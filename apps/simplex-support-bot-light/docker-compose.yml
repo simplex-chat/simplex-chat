@@ -1,7 +1,10 @@
 services:
   support-bot-light:
     build:
-      context: .
+      # The repository root: the image is built from the Haskell core and the
+      # Python library in this tree, neither of them released.
+      context: ../..
+      dockerfile: apps/simplex-support-bot-light/Dockerfile
     # Bounded on purpose. A config that will not load is not fixed by retrying,
     # and an unbounded policy turns it into a log flood that also makes Ctrl+C
     # wait out the grace period. Five is enough to ride out a transient fault.

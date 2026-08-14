@@ -1,0 +1,39 @@
+# The build context is the repository root. Exclude everything, then add back
+# what the image is built from, one directory level at a time.
+*
+
+!cabal.project
+!simplex-chat.cabal
+!README.md
+!PRIVACY.md
+!src
+
+!scripts
+scripts/*
+!scripts/cabal.project.local.linux
+
+!packages
+packages/*
+!packages/simplex-chat-python
+
+!apps
+apps/*
+!apps/simplex-support-bot-light
+
+# Build output, caches, and anything holding an identity or a secret.
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+**/.venv
+**/.venv-*
+**/.pytest_cache
+**/.ruff_cache
+**/.pyright_cache
+**/.mypy_cache
+**/dist
+**/*.db
+**/*.db-*
+apps/simplex-support-bot-light/plans
+apps/simplex-support-bot-light/state
+apps/simplex-support-bot-light/bot-config
+apps/simplex-support-bot-light/config.toml

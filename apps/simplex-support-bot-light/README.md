@@ -64,10 +64,14 @@ directory for that reason.
 ## Manual installation
 
 ```bash
-uv venv && uv pip install -e '.[dev]'
+uv venv && uv pip install -e ../../packages/simplex-chat-python && uv pip install -e '.[dev]'
 cp config.toml.example config.toml
 uv run support-bot-light --config config.toml
 ```
+
+The library comes from this repository: the APIs the bot uses are not in the
+published `simplex-chat` package. `libsimplex` is downloaded from the matching
+release on first use unless `SIMPLEX_LIBS_DIR` points at a local build.
 
 `--config` defaults to `config.toml` in the working directory. `Ctrl+C` stops
 the bot; a second `Ctrl+C` exits immediately.
