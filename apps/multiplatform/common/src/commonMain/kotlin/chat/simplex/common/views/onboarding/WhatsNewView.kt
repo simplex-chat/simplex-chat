@@ -1,6 +1,5 @@
 package chat.simplex.common.views.onboarding
 
-import SectionBottomSpacer
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -15,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
@@ -48,7 +48,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.common.views.usersettings.showAddShortLinkAlert
-import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -977,6 +976,11 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
 
 private const val WEFUNDER_URL = "https://wefunder.com/simplexchat"
 
+private const val CROWDFUNDING_CONTACT_URI = "https://smp11.simplex.im/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo"
+
+// the center modal takes the remaining width of the window, so the image is limited to its design width
+private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
+
 // Google Play policy restricts promoting investments, so Play builds only show it in the US
 @Composable
 fun crowdfundingAvailable(): Boolean {
@@ -1022,6 +1026,7 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
         contentScale = ContentScale.FillWidth,
         modifier = Modifier
           .padding(top = 8.dp)
+          .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
           .fillMaxWidth()
           .clip(RoundedCornerShape(12.dp))
           .pointerHoverIcon(PointerIcon.Hand)
@@ -1092,9 +1097,9 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
 fun GetStakeView(close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+  ColumnWithScrollBar(Modifier.pinchZoom().padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle("Get a stake in SimpleX Chat", withPadding = false)
-    Text("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
+    Text("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.", lineHeight = 24.sp)
 
     getStakeSlides.forEach { slide ->
       Column(Modifier.padding(top = DEFAULT_PADDING * 1.5f)) {
@@ -1103,15 +1108,15 @@ fun GetStakeView(close: () -> Unit) {
             painterResource(slide.image),
             contentDescription = null,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).pinchZoom().fullScreenOnClick(slide.image)
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).fullScreenOnClick(slide.image)
           )
         } else {
           Text(slide.heading, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Medium)
           if (slide.info != null) {
-            Text(slide.info, Modifier.padding(top = 4.dp))
+            Text(slide.info, Modifier.padding(top = 4.dp), lineHeight = 24.sp)
           }
         }
-        Text(slide.text, Modifier.padding(top = 8.dp))
+        Text(slide.text, Modifier.padding(top = 8.dp), lineHeight = 24.sp)
       }
     }
 
@@ -1130,12 +1135,11 @@ fun GetStakeView(close: () -> Unit) {
           "or ask SimpleX team",
           onClick = if (stopped) null else ({
             close()
-            uriHandler.openVerifiedSimplexUri(simplexTeamUri)
+            uriHandler.openVerifiedSimplexUri(CROWDFUNDING_CONTACT_URI)
           })
         )
       }
     }
-    SectionBottomSpacer()
   }
 }
 
@@ -1162,10 +1166,10 @@ private fun Modifier.fullScreenOnClick(image: ImageResource): Modifier {
   }
 }
 
-private const val MAX_SLIDE_ZOOM = 5f
+private const val MAX_PAGE_ZOOM = 5f
 
 /**
- * The slide images contain small text that is unreadable at screen width, so they can be pinch-zoomed in place.
+ * The slide images contain small text that is unreadable at screen width, so the page can be pinch-zoomed.
  * Android only: pinch is unavailable with a mouse.
  */
 @Composable
@@ -1185,15 +1189,16 @@ private fun Modifier.pinchZoom(): Modifier {
     }
     .pointerInput(Unit) {
       awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
+        // the initial pass, as the scroll of the same column is applied after this modifier and would take the gesture first
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
         var taken: Boolean? = null
         do {
-          val event = awaitPointerEvent()
+          val event = awaitPointerEvent(PointerEventPass.Initial)
           val multiTouch = event.changes.count { it.pressed } > 1
           if (multiTouch || scale > 1f) {
-            scale = (scale * event.calculateZoom()).coerceIn(1f, MAX_SLIDE_ZOOM)
+            scale = (scale * event.calculateZoom()).coerceIn(1f, MAX_PAGE_ZOOM)
             val pan = event.calculatePan()
-            // the content is scaled around its center, so it can be panned by half of the overflow in each direction
+            // the page is scaled around its center, so it can be panned by half of the overflow in each direction
             val maxX = size.width * (scale - 1f) / 2
             val maxY = size.height * (scale - 1f) / 2
             val pannedY = offsetY + pan.y * scale
@@ -1202,8 +1207,8 @@ private fun Modifier.pinchZoom(): Modifier {
             offsetX = (offsetX + pan.x * scale).coerceIn(-maxX, maxX)
             offsetY = pannedY.coerceIn(-maxY, maxY)
             // two fingers always mean zoom, taken without a touch slop: waiting for one would let
-            // the enclosing column reach its own slop first and scroll the page. A one finger drag
-            // is left to the column at the edges, decided once so it cannot alternate mid drag
+            // the scroll reach its own slop first and scroll the page. A one finger drag is left
+            // to the scroll at the edges, decided once so it cannot alternate mid drag
             if (multiTouch) taken = true
             else if (taken == null && pan.y != 0f) taken = pannedY.absoluteValue < maxY
             if (taken == true) event.changes.forEach { if (it.pressed) it.consume() }
