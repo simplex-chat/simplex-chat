@@ -23,10 +23,12 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -974,9 +976,9 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   return v != lastVersion
 }
 
-private const val WEFUNDER_URL = "https://wefunder.com/simplexchat"
+private const val WEFUNDER_URL = "https://wefunder.com/simplex.chat?utm_source=app"
 
-private const val CROWDFUNDING_CONTACT_URI = "https://smp11.simplex.im/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo"
+private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im"
 
 // the center modal takes the remaining width of the window, so the image is limited to its design width
 private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
@@ -1098,8 +1100,19 @@ fun GetStakeView(close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
   ColumnWithScrollBar(Modifier.pinchZoom().padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle("Get a stake in SimpleX Chat", withPadding = false)
-    Text("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.", lineHeight = 24.sp)
+    AppBarTitle("Get a stake in\nSimpleX Chat", withPadding = false)
+    Text(
+      buildAnnotatedString {
+        append("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
+        // only the link is clickable, the rest of the paragraph is not
+        withLink(LinkAnnotation.Url(WEFUNDER_URL) { uriHandler.openExternalLink(WEFUNDER_URL) }) {
+          withStyle(SpanStyle(color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold)) {
+            append(" Learn more and invest on Wefunder.")
+          }
+        }
+      },
+      lineHeight = 24.sp
+    )
 
     getStakeSlides.forEach { slide ->
       Column(Modifier.padding(top = DEFAULT_PADDING * 1.5f)) {
