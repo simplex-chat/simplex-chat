@@ -965,9 +965,10 @@ parseChatMessages msg = checkBatchLimit $ case B.head msg of
     checkBatchLimit ms
       | ms `lengthLE` maxBatchElementCount = ms
       | otherwise = [Left "too many messages in batch"]
+    -- defined prefix: GHC 8.10 does not parse a bang operand in an infix definition
     lengthLE :: [a] -> Int -> Bool
-    [] `lengthLE` !n = n >= 0
-    (_ : xs) `lengthLE` !n = n > 0 && xs `lengthLE` (n - 1)
+    lengthLE [] !n = n >= 0
+    lengthLE (_ : xs) !n = n > 0 && lengthLE xs (n - 1)
     parseUncompressed c s = case c of
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map (fmap plainMsg . parseItem) v
