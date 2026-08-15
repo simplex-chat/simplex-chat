@@ -5,6 +5,10 @@ services:
       # Python library in this tree, neither of them released.
       context: ../..
       dockerfile: apps/simplex-support-bot-light/Dockerfile
+      args:
+        # Defaults to 1000. Set both to your own ids to own ./state yourself.
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
     # Bounded on purpose. A config that will not load is not fixed by retrying,
     # and an unbounded policy turns it into a log flood that also makes Ctrl+C
     # wait out the grace period. Five is enough to ride out a transient fault.

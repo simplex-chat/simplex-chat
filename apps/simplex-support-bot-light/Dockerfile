@@ -80,16 +80,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uv /usr/local/bin/uv
 
-# 1000:1000 must own ./state on the host; a bind mount keeps host ownership.
-# ubuntu:24.04 ships a default user at those ids, so drop it first.
-RUN if existing_user=$(getent passwd 1000 | cut -d: -f1) && [ -n "${existing_user}" ]; then \
+# The ids that must own ./state on the host; a bind mount keeps host ownership.
+# Build with your own to avoid needing root to read the bot's state:
+#   USER_UID=$(id -u) USER_GID=$(id -g) docker compose build
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# ubuntu:24.04 ships a default user at 1000, so drop whoever holds the ids.
+RUN if existing_user=$(getent passwd ${USER_UID} | cut -d: -f1) && [ -n "${existing_user}" ]; then \
         userdel -r "${existing_user}" 2>/dev/null || userdel "${existing_user}"; \
     fi && \
-    if existing_group=$(getent group 1000 | cut -d: -f1) && [ -n "${existing_group}" ]; then \
+    if existing_group=$(getent group ${USER_GID} | cut -d: -f1) && [ -n "${existing_group}" ]; then \
         groupdel "${existing_group}" 2>/dev/null || true; \
     fi && \
-    groupadd -g 1000 supportbot && \
-    useradd -u 1000 -g 1000 -m -d /home/supportbot supportbot
+    groupadd -g ${USER_GID} supportbot && \
+    useradd -u ${USER_UID} -g ${USER_GID} -m -d /home/supportbot supportbot
 
 # Applies only when /data is not bind-mounted; a bind mount keeps the host
 # directory's ownership and mode.
