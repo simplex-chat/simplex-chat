@@ -777,7 +777,7 @@ fileprivate struct InvestInSimpleXChat: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("You can now invest in SimpleX Chat").font(.title3).bold()
+            Text("You can now invest in SimpleX Chat! 🚀").font(.title3).bold()
             (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
                 .multilineTextAlignment(.leading)
                 .onTapGesture { showGetStakeSheet = true }
@@ -842,6 +842,10 @@ fileprivate let getStakeSlides: [(image: String, heading: String, info: String?,
     ),
 ]
 
+private let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app")!
+
+private let simplexCrowdfundingURL = URL("simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
+
 struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
@@ -849,13 +853,16 @@ struct GetStakeView: View {
     var body: some View {
         ZoomablePageView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(verbatim: "Get a stake in SimpleX Chat")
+                Text(verbatim: "Get a stake in\nSimpleX Chat")
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top)
-                Text(verbatim: "By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
-                    .padding(.bottom)
+                (Text(verbatim: "By investing, you can benefit from the company growth, and help us build the future of private and secure communications.") + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
+                    .multilineTextAlignment(.leading)
+                    .onTapGesture {
+                        UIApplication.shared.open(wefunderURL)
+                    }
+                .padding(.bottom)
                 ForEach(getStakeSlides, id: \.image) { slide in
                     VStack(alignment: .leading) {
                         #if SIMPLEX_ASSETS
@@ -877,9 +884,7 @@ struct GetStakeView: View {
                 }
 
                 Button {
-                    if let url = URL(string: "https://wefunder.com/simplexchat") {
-                        openExternalLink(url)
-                    }
+                    UIApplication.shared.open(wefunderURL)
                 } label: {
                     Text(verbatim: "Learn more on Wefunder")
                 }
