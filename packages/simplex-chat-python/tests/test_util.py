@@ -1,3 +1,5 @@
+import pytest
+
 from simplex_chat import util
 
 
@@ -224,3 +226,22 @@ def test_conn_status_without_a_connection():
 
 def test_conn_status_with_a_null_connection():
     assert util.conn_status({"activeConn": None}) is None
+
+
+def test_check_profile_image_accepts_what_the_apps_decode():
+    png = "data:image/png;base64,AAA"
+    jpg = "data:image/jpg;base64,AAA"
+    assert util.check_profile_image(png) == png
+    assert util.check_profile_image(jpg) == jpg
+
+
+def test_check_profile_image_rejects_another_media_type():
+    # image/jpeg is the easy mistake: the file extension is .jpeg, and the
+    # core stores it, but no client strips that prefix before decoding.
+    with pytest.raises(ValueError, match="must start with"):
+        util.check_profile_image("data:image/jpeg;base64,AAA")
+
+
+def test_check_profile_image_rejects_a_remote_url():
+    with pytest.raises(ValueError, match="must start with"):
+        util.check_profile_image("https://simplex.chat/logo.png")

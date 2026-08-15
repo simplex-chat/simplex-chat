@@ -135,6 +135,22 @@ def merged_custom_data(
     return data or None
 
 
+# The apps decode these two and nothing else (base64ToBitmap in mobile and
+# desktop), while the core stores any string starting with "data:".
+PROFILE_IMAGE_PREFIXES = ("data:image/png;base64,", "data:image/jpg;base64,")
+
+
+def check_profile_image(image: str) -> str:
+    """`image` unchanged, or ValueError if no client could render it.
+
+    An image the apps cannot decode is still stored and broadcast, and shows
+    as an empty avatar to everyone.
+    """
+    if image.startswith(PROFILE_IMAGE_PREFIXES):
+        return image
+    raise ValueError(f"profile image must start with {' or '.join(PROFILE_IMAGE_PREFIXES)}")
+
+
 def conn_status(contact: T.Contact) -> str | None:
     """Tag of a contact's active connection status, or None if it has none.
 

@@ -897,7 +897,7 @@ class Client:
         if self._profile.short_descr is not None:
             p["shortDescr"] = self._profile.short_descr
         if self._profile.image is not None:
-            p["image"] = self._profile.image
+            p["image"] = util.check_profile_image(self._profile.image)
         return p
 
     # ------------------------------------------------------------------ #

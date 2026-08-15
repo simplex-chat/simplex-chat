@@ -838,3 +838,14 @@ def test_profile_can_be_replaced(monkeypatch):
     c, _ = _client_with_stub_api(monkeypatch)
     c.profile = Profile(display_name="other", full_name="Other")
     assert c._profile_to_wire() == {"displayName": "other", "fullName": "Other"}
+
+
+def test_the_profile_image_is_checked_before_it_is_sent(monkeypatch):
+    """An image the apps cannot decode is stored and broadcast by the core,
+    and then shows as an empty avatar to every contact."""
+    c, _ = _client_with_stub_api(monkeypatch)
+    c.profile = Profile(display_name="x", image="data:image/jpeg;base64,AAA")
+    with pytest.raises(ValueError, match="must start with"):
+        c._profile_to_wire()
+    c.profile = Profile(display_name="x", image="data:image/png;base64,AAA")
+    assert c._profile_to_wire()["image"] == "data:image/png;base64,AAA"
