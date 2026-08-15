@@ -37,3 +37,4 @@ apps/simplex-support-bot-light/plans
 apps/simplex-support-bot-light/state
 apps/simplex-support-bot-light/bot-config
 apps/simplex-support-bot-light/config.toml
+apps/simplex-support-bot-light/.env

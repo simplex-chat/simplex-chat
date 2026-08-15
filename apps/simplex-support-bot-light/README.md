@@ -13,8 +13,9 @@ The supported way to run the bot. From `apps/simplex-support-bot-light`:
 
 ```bash
 cp bot-config/config.toml.example bot-config/config.toml   # required; edit it before starting
-chmod 0700 state                                           # see Ownership below
-USER_UID=$(id -u) USER_GID=$(id -g) docker compose up --build -d
+printf 'USER_UID=%s\nUSER_GID=%s\n' "$(id -u)" "$(id -g)" > .env   # see Ownership below
+chmod 0700 state
+docker compose up --build -d
 docker compose logs -f support-bot-light
 ```
 
@@ -47,22 +48,18 @@ member must repeat the handshake. Back it up.
 
 ### Ownership
 
-Docker does not adjust the ownership or mode of a bind-mount source, so `./state`
-must be owned by the uid the container runs as, or the bot cannot create its
-databases. That uid is a build argument, so build with your own and the state
-stays yours:
+Docker does not adjust the ownership of a bind-mount source, so `./state` must be
+owned by the uid the container runs as. Set it in `.env`, which compose reads on
+every invocation:
 
 ```bash
-USER_UID=$(id -u) USER_GID=$(id -g) docker compose build
+printf 'USER_UID=%s\nUSER_GID=%s\n' "$(id -u)" "$(id -g)" > .env
 ```
 
-Both default to 1000. Building with other ids and then running an image built
-with the defaults is the one way to get this wrong: `./state` would need
-`sudo chown -R 1000:1000 state`, and the databases would come back owned by a
-uid that is not yours. Running as root is not supported.
+Both ids default to 1000. Root is not supported.
 
-On a shared host, restrict the directory as well: the databases hold the bot's
-identity keys.
+The databases hold the bot's identity keys. On a shared host, restrict the
+directory as well:
 
 ```bash
 chmod 0700 state
