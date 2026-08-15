@@ -844,7 +844,7 @@ fileprivate let getStakeSlides: [(image: String, heading: String, info: String?,
 
 private let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app")!
 
-private let simplexCrowdfundingURL = URL("simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
+private let simplexCrowdfundingURL = URL(string: "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
 
 struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -893,7 +893,7 @@ struct GetStakeView: View {
                 Button {
                     dismiss()
                     DispatchQueue.main.async {
-                        ChatModel.shared.appOpenUrl = simplexTeamURL
+                        ChatModel.shared.appOpenUrl = simplexCrowdfundingURL
                     }
                 } label: {
                     Text(verbatim: "or ask SimpleX team")
