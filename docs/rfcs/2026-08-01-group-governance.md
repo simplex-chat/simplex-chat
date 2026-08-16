@@ -96,23 +96,34 @@ Every rule below is stated first and argued in [Appendix A](#appendix-a-rational
 
 ### Prerequisites
 
-Three things must exist before governance can be enabled. None is part of governance itself.
+Two things must exist before governance can be enabled. Neither is part of governance itself, and one of them is
+already being built.
 
-**Member signing keys in p2p groups.** Channels already give every member a per-group Ed25519 key
-(`GroupMember.memberPubKey`); `MemberInfo` already carries `memberKey` in `XGrpMemNew`, `XGrpMemIntro` and
-`XGrpMemFwd`; and `withVerifiedMsg` already checks `CBGroup` signatures. What is missing is generating and persisting
-the keypair, populating `memberPubKey`, and pinning received keys as `applyMemberKeyRole` does for channels. Existing
-members announce their key on upgrade. **The key must be pinned from the direct handshake, not from the introducer**,
-so `XGrpMemInfo` must carry the member's key and that value is what gets pinned.
+**Member signing keys in p2p groups**, which
+[PR #7312](https://github.com/simplex-chat/simplex-chat/pull/7312) implements. It generates a per-group Ed25519
+keypair (`createUserMemberKey`), distributes the public key through `XInfo`, `XContact` at join and `XGrpLinkMem`
+behind a new chat version, and pins it on receive with the same pin-or-reject rule as `applyMemberKeyRole`. Its
+design doc is `plans/2026-07-26-p2p-member-keys.md` on that branch. Governance depends on it and adds nothing to it.
 
-**A per-group identity.** Every signature binds a `groupIdentity` so that a member key cannot be replayed across
-groups. p2p groups have no such identifier today: `publicGroupId` lives in `GroupKeys`, which is `Nothing` outside
-channels, and the p2p verification branch binds only `(memberId, pubKey)`.
+How it establishes the key is what governance relies on. An introducing admin must not be the source of the key it
+introduces, since it can MITM the introduction and hand the victim a key it holds itself. #7312 makes the **subject
+self-certify**: `XContact` at join is an unsigned trust-on-first-use delivery, and the joiner's allow-reply `XInfo`
+is *signed with the joiner's own key*, so the key is confirmed by a signature from the member it belongs to and the
+introducer is never the trust anchor.
 
 **A role-cap bug fix.** `xGrpMemIntro` accepts the introduced member's role verbatim: its p2p branch omits the
 `memberRole < memRole` half of `checkHostRole` (`Subscriber.hs:3223`), so an admin can introduce a member carrying
 `GROwner` into a victim's local view. This is a pre-existing hole with consequences beyond governance. The relay
-branch above it (`Subscriber.hs:3213-3221`) caps via `unknownMemberRole` and is the template.
+branch above it (`Subscriber.hs:3213-3221`) caps via `unknownMemberRole` and is the template. Still unfixed on the
+#7312 branch as of 2026-08-16, and more pressing there, since role is one of the things a member signature will be
+asserting.
+
+**Signatures need no separate group identifier.** A member key cannot be replayed across groups, because the p2p
+signature binding is `smpEncode (memberId, memberKey)` where the channel binding is
+`smpEncode (publicGroupId, memberId)` (`groupBindingData`), and #7312 generates the member key **per group**. The
+binding therefore differs per group and a signature made in one group cannot verify in another, so the per-group key
+does the job `publicGroupId` does for channels. Governance events bind `governanceId`, which distinguishes
+governance instances within a group, and rely on the `CBGroup` prefix for the group itself.
 
 ### Enabling governance
 
@@ -122,7 +133,7 @@ Enabling requires an **authorising set**: all current owners for a group that ha
 current members for an ownerless group, each signing with their member key. The set must be non-empty.
 
 The initiator broadcasts `x.grp.gov.enable` with a random 256-bit `governanceId`, the parameters, the initial admin
-set, and signed bytes `smpEncode ("SXGG", groupIdentity, governanceId, params, memberSetHash, admins)`. Receivers
+set, and signed bytes `smpEncode ("SXGG", governanceId, params, memberSetHash, admins)`. Receivers
 validate, and fail closed on any failure, that:
 
 1. the group is **not already governed**. An identical repeat is a no-op; a different genesis for a governed group is
@@ -178,12 +189,12 @@ XGrpGovPropose
   , prevProposalHash :: ByteString    -- proposal *held* at the previous version,
                                       -- or the genesis hash at govVersion = 2
   , proposer :: MemberId, sig :: Signature }
-  -- proposalHash = sha256 (smpEncode ("SXGP", groupIdentity, governanceId, govVersion, action,
+  -- proposalHash = sha256 (smpEncode ("SXGP", governanceId, govVersion, action,
   --                                   prevProposalHash, proposer))
 
 XGrpGovVote
   { governanceId, proposalHash, voter :: MemberId, vote :: Aye | Nay, sig }
-  -- sig over smpEncode ("SXGV", groupIdentity, governanceId, proposalHash, voter, vote)
+  -- sig over smpEncode ("SXGV", governanceId, proposalHash, voter, vote)
 
 XGrpGovCert
   { governanceId, proposalHash, votes :: [(MemberId, Vote, Signature)] }
@@ -260,7 +271,7 @@ On receiving `x.grp.gov.cert`, a member:
    unconditional **and** its action is `GAReplaceAdmins`;
 6. if the certificate is stale, meaning for a version the receiver has already passed, or arrived by catch-up,
    requires **attestations**: `min(3, N)` distinct members outside the certificate's aye set must have signed
-   `smpEncode ("SXGS", groupIdentity, governanceId, govVersion, proposalHash)` for *that proposal*, where `N` counts
+   `smpEncode ("SXGS", governanceId, govVersion, proposalHash)` for *that proposal*, where `N` counts
    the receiver's electorate outside the aye set and excludes the receiver itself. A member attests only a certificate
    it has itself applied. At `N = 0` no attestation is required and the certificate must instead be unconditional;
 7. applies atomically:
@@ -318,8 +329,8 @@ certificates, mandate order and the admin-set rule all operate on the enfranchis
 members, and `E` counts enfranchised members.
 
 What is verified is a fingerprint of the member's **governance key**, not the pairwise connection. A verifier
-publishes its result as a signed claim over `smpEncode ("SXGKV", groupIdentity, governanceId, proposalHash, subject,
-subjectKey)`, and that claim is an aye vote on `GAEnfranchise`.
+publishes its result as a signed claim over `smpEncode ("SXGKV", governanceId, proposalHash, subject, subjectKey)`,
+and that claim is an aye vote on `GAEnfranchise`.
 
 Mechanically this is an ordinary referendum on `GAEnfranchise MemberId`, reusing the certificate, ripeness, mandate
 order and audit trail unchanged. Four clauses are specific to it:
@@ -340,9 +351,8 @@ member to a thirty-member electorate means sixteen people each comparing a finge
 - `Protocol.hs`: `GovAction` (`GAReplaceAdmins`, `GARemoveMembers`, and `GAEnfranchise` for tier 2), the five event
   types and tags (added to `isForwardedGroupMsg`), deterministic binary encodings with domain separation
   (`SXGG`/`SXGP`/`SXGV`/`SXGS`/`SXGKV`).
-- **Prerequisites:** the `xGrpMemIntro` role cap, for all p2p groups rather than only governed ones; a per-group
-  identity; per-group member keypairs for p2p governed groups, population of `memberPubKey` on join and introduction,
-  and TOFU pinning as in `applyMemberKeyRole`.
+- **Prerequisites:** the `xGrpMemIntro` role cap, for all p2p groups rather than only governed ones. Per-group member
+  keys land with [#7312](https://github.com/simplex-chat/simplex-chat/pull/7312) and need nothing from governance.
 - **Tier 2 only:** a single-member fingerprint over the governance key, comparison UI presenting it as a property of
   the person rather than of the session, and a p2p-writable store column. The only key-derived code today is
   `channelMemberCode` (`Types.hs:1912-1920`), which is pairwise and channel-only; p2p uses the double-ratchet AD hash,
@@ -455,15 +465,23 @@ and then the membership.
 
 ## Key pinning
 
-In p2p the introducing admin builds `MemberInfo` from its own database, and the direct connection that follows carries
-no key at all: `XGrpMemInfo` exchanges only a member id and profile. Pinning the introducer's copy would let an admin
-hand every later joiner's victim a key it holds itself, sign that joiner's votes, and see the joiner's real votes
-rejected as a conflicting binding, invisibly and for every member added after enabling. So the introducer's copy is a
-hint to be confirmed rather than the trust anchor.
+Governance needs each member's key to come from somewhere an admin does not control. In p2p the introducing admin
+builds `MemberInfo` from its own database, so pinning the introducer's copy would let an admin hand every later
+joiner's victim a key it holds itself, sign that joiner's votes, and see the joiner's real votes rejected as a
+conflicting binding, invisibly and for every member added after enabling.
+
+[#7312](https://github.com/simplex-chat/simplex-chat/pull/7312) resolves this without governance needing to specify
+anything. The joiner's allow-reply `XInfo` is signed with the joiner's own key, so the key is confirmed by a
+signature from the member it belongs to, and the unsigned `XContact` at join is only the trust-on-first-use delivery
+that the signed reply confirms. The introducer is never the trust anchor. Self-certification by the subject is what
+makes this sound: confirming the key over the direct handshake instead would still leave the introducer able to
+substitute the invitation that sets that handshake up, whereas a signature from the member itself cannot be
+manufactured by anyone who does not hold that member's key.
 
 The `xGrpMemIntro` role cap matters beyond governance: a fake `GROwner` in a victim's local view satisfies every
 owner-gated check there. `memInfo` reaches `createIntroReMember` verbatim (`Subscriber.hs:3232`) and the role is
-written straight through (`Store/Groups.hs:2495`).
+written straight through: `createIntroReMember` (`Store/Groups.hs:2596`) forwards to `createNewMember_`
+(`:2427`), which destructures the role at `:2433` and inserts it at `:2454` with no clamping.
 
 ## Genesis
 
