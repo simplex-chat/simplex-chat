@@ -840,6 +840,7 @@ struct GetStakeView: View {
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
+                    .if(!fromSettings) { $0.padding(.top) }
                 if fromSettings {
                     slideImage(getStakeSlides[0])
                 }
