@@ -647,7 +647,7 @@ time interval</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
-        <target state="translated">Une connexion TCP distincte sera utilisée **pour chaque profil de conversation que vous avez dans l'application**.</target>
+        <target state="translated">Une connexion TCP distincte sera utilisée **pour chaque profil de messagerie que vous avez dans l'application**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
@@ -1640,7 +1640,7 @@ au sein de votre réseau</target>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target state="translated">Par profil de conversation (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
+        <target state="translated">Par profil de messagerie (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1747,7 +1747,7 @@ new chat action</note>
       </trans-unit>
       <trans-unit id="Change chat profiles" xml:space="preserve" approved="no">
         <source>Change chat profiles</source>
-        <target state="translated">Changer les profils de conversation</target>
+        <target state="translated">Changer les profils de messagerie</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -1969,7 +1969,7 @@ alert subtitle</note>
       </trans-unit>
       <trans-unit id="Chat profile" xml:space="preserve" approved="no">
         <source>Chat profile</source>
-        <target state="translated">Profil de la conversation</target>
+        <target state="translated">Profil de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat relay" xml:space="preserve" approved="no">
@@ -2941,12 +2941,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve" approved="no">
         <source>Delete chat profile</source>
-        <target state="translated">Supprimer le profil de conversation</target>
+        <target state="translated">Supprimer le profil de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile?" xml:space="preserve" approved="no">
         <source>Delete chat profile?</source>
-        <target state="translated">Supprimer le profil de la conversation ?</target>
+        <target state="translated">Supprimer le profil de messagerie ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat with member?" xml:space="preserve" approved="no">
@@ -2996,7 +2996,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete files for all chat profiles" xml:space="preserve" approved="no">
         <source>Delete files for all chat profiles</source>
-        <target state="translated">Effacer les fichiers de tous les profils de conversation</target>
+        <target state="translated">Effacer les fichiers de tous les profils de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete for everyone" xml:space="preserve">
@@ -3848,7 +3848,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error changing chat profile" xml:space="preserve" approved="no">
         <source>Error changing chat profile</source>
-        <target state="translated">Erreur lors du changement du profil de conversation</target>
+        <target state="translated">Erreur lors du changement du profil de messagerie</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error changing connection profile" xml:space="preserve">
@@ -4552,7 +4552,7 @@ server test error</note>
       </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve" approved="no">
         <source>For chat profile %@:</source>
-        <target state="translated">Pour le profil de la conversation %@ :</target>
+        <target state="translated">Pour le profil de messagerie %@ :</target>
         <note>servers error
 servers warning</note>
       </trans-unit>
@@ -4857,7 +4857,7 @@ Erreur : %2$@</target>
       </trans-unit>
       <trans-unit id="Hidden chat profiles" xml:space="preserve" approved="no">
         <source>Hidden chat profiles</source>
-        <target state="translated">Profils de conversations cachés</target>
+        <target state="translated">Profils de messagerie cachés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden profile password" xml:space="preserve">
@@ -5306,7 +5306,7 @@ D'autres améliorations sont à venir !</target>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve" approved="no">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
-        <target state="translated">Cela permet d'avoir plusieurs connexions anonymes sans aucune donnée partagée entre elles dans un même profil de conversation.</target>
+        <target state="translated">Cela permet d'avoir plusieurs connexions anonymes sans aucune donnée partagée entre elles dans un même profil de messagerie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
@@ -6034,7 +6034,7 @@ Voici votre lien pour le groupe %@ !</target>
       </trans-unit>
       <trans-unit id="Multiple chat profiles" xml:space="preserve" approved="no">
         <source>Multiple chat profiles</source>
-        <target state="translated">Plusieurs profils de conversation</target>
+        <target state="translated">Plusieurs profils de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mute" xml:space="preserve">
@@ -7284,7 +7284,7 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
         <source>Protect your chat profiles with a password!</source>
-        <target state="translated">Protégez vos profils de conversation par un mot de passe !</target>
+        <target state="translated">Protégez vos profils de messagerie par un mot de passe !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol background timeout" xml:space="preserve">
@@ -7796,7 +7796,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve" approved="no">
         <source>Restart the app to create a new chat profile</source>
-        <target state="translated">Redémarrez l'appli pour créer un nouveau profil de conversation</target>
+        <target state="translated">Redémarrez l'appli pour créer un nouveau profil de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to use imported chat database" xml:space="preserve" approved="no">
@@ -8193,7 +8193,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Select chat profile" xml:space="preserve" approved="no">
         <source>Select chat profile</source>
-        <target state="translated">Sélectionner un profil de conversation</target>
+        <target state="translated">Sélectionner un profil de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Selected %lld" xml:space="preserve">
@@ -8353,7 +8353,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve" approved="no">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <target state="translated">L'envoi d'accusés de réception sera activé pour tous les contacts dans tous les profils de conversation visibles.</target>
+        <target state="translated">L'envoi d'accusés de réception sera activé pour tous les contacts dans tous les profils de messagerie visibles.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
@@ -9230,7 +9230,7 @@ L'adresse du relais a été utilisée pour configurer ce relais pour le canal.</
       </trans-unit>
       <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve" approved="no">
         <source>Switch chat profile for 1-time invitations.</source>
-        <target state="translated">Changer de profil de conversation pour les invitations à usage unique.</target>
+        <target state="translated">Changer de profil de messagerie pour les invitations à usage unique.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -9585,12 +9585,12 @@ vos contacts et vos groupes.</target>
       </trans-unit>
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new connections of your current chat profile **%@**.</source>
-        <target state="translated">Les serveurs pour les nouvelles connexions de votre profil de conversation actuel **%@**.</target>
+        <target state="translated">Les serveurs pour les nouvelles connexions de votre profil de messagerie actuel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new files of your current chat profile **%@**.</source>
-        <target state="translated">Les serveurs pour les nouveaux fichiers de votre profil de conversation actuel **%@**.</target>
+        <target state="translated">Les serveurs pour les nouveaux fichiers de votre profil de messagerie actuel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
@@ -9731,7 +9731,7 @@ alert subtitle</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
-        <target state="translated">Ce paramètre s'applique aux messages de votre profil de conversation actuel **%@**.</target>
+        <target state="translated">Ce paramètre s'applique aux messages de votre profil de messagerie actuel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve" approved="no">
@@ -9828,7 +9828,7 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target state="translated">Pour révéler votre profil caché, entrez le mot de passe dans le champ de recherche de la page **Vos profils de conversation**.</target>
+        <target state="translated">Pour révéler votre profil caché, entrez le mot de passe dans le champ de recherche de la page **Vos profils de messagerie**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To send" xml:space="preserve">
@@ -9983,7 +9983,7 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
       </trans-unit>
       <trans-unit id="Unhide chat profile" xml:space="preserve" approved="no">
         <source>Unhide chat profile</source>
-        <target state="translated">Afficher le profil de la conversation</target>
+        <target state="translated">Afficher le profil de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide profile" xml:space="preserve">
@@ -10654,7 +10654,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve" approved="no">
         <source>You already have a chat profile with the same display name. Please choose another name.</source>
-        <target state="translated">Vous avez déjà un profil de conversation avec le même nom d’affichage. Veuillez choisir un autre nom.</target>
+        <target state="translated">Vous avez déjà un profil de messagerie avec le même nom d’affichage. Veuillez choisir un autre nom.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@." xml:space="preserve">
@@ -11037,7 +11037,7 @@ Répéter la demande de connexion ?</target>
       </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
         <source>Your chat profiles</source>
-        <target state="translated">Vos profils de conversation</target>
+        <target state="translated">Vos profils de messagerie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve" approved="no">
@@ -11501,8 +11501,9 @@ marked deleted chat item preview text</note>
         <target>contact non prêt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact should accept…" xml:space="preserve">
+      <trans-unit id="contact should accept…" xml:space="preserve" approved="no">
         <source>contact should accept…</source>
+        <target state="translated">Le contact devrait accepter…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="contributor" xml:space="preserve">
@@ -12450,9 +12451,9 @@ dernier message reçu : %2$@</target>
         <target>%d nouveaux événements</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="From %d chat(s)" xml:space="preserve">
+      <trans-unit id="From %d chat(s)" xml:space="preserve" approved="no">
         <source>From %d chat(s)</source>
-        <target>De %d discussion(s)</target>
+        <target state="translated">De %d conversations(s)</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
@@ -12554,9 +12555,9 @@ dernier message reçu : %2$@</target>
         <target>La phrase secrète de la base de données est différente de celle enregistrée dans la keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
         <source>Database passphrase is required to open chat.</source>
-        <target>La phrase secrète de la base de données est nécessaire pour ouvrir le chat.</target>
+        <target state="translated">La phrase secrète de la base de données est nécessaire pour ouvrir la messagerie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database upgrade required" xml:space="preserve">
@@ -12634,9 +12635,9 @@ dernier message reçu : %2$@</target>
         <target>Veuillez créer un profil dans l'app SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>Les paramètres de chat sélectionnés ne permettent pas l'envoi de ce message.</target>
+        <target state="translated">Les paramètres de conversation sélectionnés ne permettent pas l'envoi de ce message.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
