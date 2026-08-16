@@ -879,6 +879,7 @@ struct GetStakeView: View {
             }
             .padding()
         }
+        .ignoresSafeArea(edges: .bottom)
         .modifier(ThemedBackground(grouped: true))
     }
 
