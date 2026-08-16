@@ -42,7 +42,7 @@ private struct FeatureView {
     let view: () -> any View
 }
 
-let isInUS = SKStorefront().countryCode == "USA"
+let isInUS = true // SKStorefront().countryCode == "USA"
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -782,7 +782,7 @@ fileprivate struct InvestInSimpleXChat: View {
                 .multilineTextAlignment(.leading)
                 .onTapGesture { showGetStakeSheet = true }
             #if SIMPLEX_ASSETS
-            Image("crowdfunding_00")
+            Image("crowdfunding_1")
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(12)
@@ -792,52 +792,34 @@ fileprivate struct InvestInSimpleXChat: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showGetStakeSheet) {
-            GetStakeView()
+            GetStakeView(fromSettings: false)
         }
     }
 }
 
-fileprivate let getStakeSlides: [(image: String, heading: String, info: String?, text: String?)] = [
+fileprivate let getStakeSlides: [(image: String, heading: String, info: String?, text: String)] = [
     (
-        "crowdfunding_00",
+        "crowdfunding_1",
         "The first and the only messaging network without any user IDs",
         nil,
-        "SimpleX users have been more than doubling every year – and you can now acquire a stake in the company that builds it."
+        "By investing, you can benefit from the company growth, and help us build the future of private and secure communications."
     ),
     (
-        "crowdfunding_04",
+        "crowdfunding_2",
         "480,000+ users joined on their own",
         nil,
-        "All these users found SimpleX Chat without any paid marketing – and donated over $650,000, paying for something they could use for free."
+        "SimpleX users have been more than doubling every year without any paid marketing, and donated over $650,000."
     ),
     (
-        "crowdfunding_05",
-        "SimpleX is a network, not an app",
-        "Users, creators, businesses, developers and operators all arrived organically – the cold start solved.",
-        "Each group of users makes the network more valuable to the rest, driving organic growth."
-    ),
-    (
-        "crowdfunding_06",
+        "crowdfunding_3",
         "Developers already bet on SimpleX success",
         "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
-        "Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network."
+        "Developers built some ex Some projects describe themselves as SimpleX-first, running their services over SimpleX Network."
     ),
     (
-        "crowdfunding_07",
-        "Why SimpleX can't be copied",
-        "Only SimpleX combines scalable delivery, ownership that can't be revoked, and participants that can't be identified.",
-        "Other networks rely on user IDs to deliver messages, and large platforms monetize them. Removing IDs would require rebuilding."
-    ),
-    (
-        "crowdfunding_10",
-        "An open network others can build on",
-        "The SimpleX Network Consortium agreement ensures that no single company controls the network, while protecting SimpleX Chat business.",
-        "The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company."
-    ),
-    (
-        "crowdfunding_11",
-        "We are building a network that people own",
-        "We invite you to invest and become part of it.",
+        "crowdfunding_4",
+        "Revenue plan: free for users, channels & businesses pay",
+        "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
         "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
     ),
 ]
@@ -849,6 +831,7 @@ private let simplexCrowdfundingURL = URL(string: "simplex:/a#JxGcOA1_QhlmVFzYYab
 struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
+    var fromSettings: Bool
 
     var body: some View {
         ZoomablePageView {
@@ -857,28 +840,19 @@ struct GetStakeView: View {
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
-                (Text(verbatim: "By investing, you can benefit from the company growth, and help us build the future of private and secure communications.") + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
+                if fromSettings {
+                    slideImage(getStakeSlides[0])
+                }
+                (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
                     .multilineTextAlignment(.leading)
                     .onTapGesture {
                         UIApplication.shared.open(wefunderURL)
                     }
                 .padding(.bottom)
-                ForEach(getStakeSlides, id: \.image) { slide in
+                ForEach(getStakeSlides[1...3], id: \.image) { slide in
                     VStack(alignment: .leading) {
-                        #if SIMPLEX_ASSETS
-                        Image(slide.image)
-                            .resizable()
-                            .scaledToFit()
-                            .cornerRadius(12)
-                        #else
-                        Text(slide.heading).font(.title3).bold()
-                        if let info = slide.info {
-                            Text(info)
-                        }
-                        #endif
-                        if let text = slide.text {
-                            Text(text)
-                        }
+                        slideImage(slide)
+                        Text(slide.text)
                     }
                     .padding(.bottom)
                 }
@@ -905,6 +879,21 @@ struct GetStakeView: View {
             .padding()
         }
         .modifier(ThemedBackground(grouped: true))
+    }
+
+    @ViewBuilder
+    func slideImage(_ slide: (image: String, heading: String, info: String?, text: String?)) -> some View {
+        #if SIMPLEX_ASSETS
+        Image(slide.image)
+            .resizable()
+            .scaledToFit()
+            .cornerRadius(12)
+        #else
+        Text(slide.heading).font(.title3).bold()
+        if let info = slide.info {
+            Text(info)
+        }
+        #endif
     }
 }
 

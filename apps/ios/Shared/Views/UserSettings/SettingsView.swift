@@ -384,7 +384,7 @@ struct SettingsView: View {
             if isInUS {
                 Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
-                        GetStakeView()
+                        GetStakeView(fromSettings: true)
                             .navigationBarTitle("", displayMode: .inline)
                     } label: {
                         settingsRow("dollarsign.circle", color: theme.colors.secondary) { Text("Crowdfunding on Wefunder") }
