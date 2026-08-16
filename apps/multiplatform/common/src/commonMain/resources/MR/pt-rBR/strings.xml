@@ -437,7 +437,7 @@
     <string name="description_you_shared_one_time_link_incognito">você compartilhou um link anônimo de uso único</string>
     <string name="simplex_link_mode">Links SimpleX</string>
     <string name="contact_developers">Por favor, atualize o app e contate os desenvolvedores.</string>
-    <string name="error_smp_test_server_auth">O servidor requer autorização para criar filas, verifique a senha</string>
+    <string name="error_smp_test_server_auth">O servidor exige autorização para criar filas. Verifique a senha.</string>
     <string name="reveal_verb">Revelar</string>
     <string name="icon_descr_server_status_pending">Pendente</string>
     <string name="prohibit_direct_messages">Proibir o envio de mensagens diretas para membros.</string>
@@ -547,7 +547,7 @@
     <string name="simplex_link_mode_browser_warning">Abrir o link no navegador pode reduzir a privacidade e a segurança da conexão. Links SimpleX não confiáveis ficarão vermelhos.</string>
     <string name="invalid_connection_link">Link de conexão inválido</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor SMP estejam no formato correto, separados por linhas e não estejam duplicados.</string>
-    <string name="sender_may_have_deleted_the_connection_request">O remetente pode ter excluído a solicitação de conexão.</string>
+    <string name="sender_may_have_deleted_the_connection_request">O remetente excluiu a solicitação de conexão.</string>
     <string name="periodic_notifications_disabled">Notificações periódicas estão desativadas!</string>
     <string name="service_notifications_disabled">As notificações instantâneas estão desativadas!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Para melhorar a privacidade, <b>SimpleX é executado em segundo plano</b> em vez de usar notificações push.]]></string>
@@ -579,7 +579,7 @@
     <string name="message_deletion_prohibited">A exclusão irreversível de mensagens é proibida neste bate-papo.</string>
     <string name="prohibit_sending_voice">Proibir o envio de mensagens de voz.</string>
     <string name="v4_3_voice_messages_desc">No máximo 40 segundos, recebido instantaneamente.</string>
-    <string name="observer_cant_send_message_title">Você não pode enviar mensagens!</string>
+    <string name="observer_cant_send_message_title">observador</string>
     <string name="observer_cant_send_message_desc">Por favor, contate o administrador do grupo.</string>
     <string name="markdown_in_messages">Markdown em mensagens</string>
     <string name="smp_servers">Servidores SMP</string>
@@ -1131,7 +1131,7 @@
     <string name="invite_friends">Convide amigos</string>
     <string name="email_invite_subject">Vamos conversar no SimpleX</string>
     <string name="you_can_create_it_later">Você pode criá-lo mais tarde</string>
-    <string name="share_address">Compartilhar endereço</string>
+    <string name="share_address">Compartilhar endereço…</string>
     <string name="you_can_share_this_address_with_your_contacts">Você pode compartilhar este endereço com seus contatos para que eles possam se conectar com %s.</string>
     <string name="group_welcome_preview">Prévia</string>
     <string name="color_secondary">Secundária</string>
@@ -1330,7 +1330,7 @@
     <string name="not_compatible">Não compatível!</string>
     <string name="invalid_qr_code">QR Code inválido</string>
     <string name="correct_name_to">Corrigir nome para %s?</string>
-    <string name="rcv_group_event_member_created_contact">diretamente conectado</string>
+    <string name="rcv_group_event_member_created_contact">conexão solicitada</string>
     <string name="connect_plan_this_is_your_own_simplex_address">Este é o seu próprio endereço SimpleX!</string>
     <string name="desktop_connection_terminated">Conexão encerrada</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Este link é seu link para o grupo <b>%1$s</b>!]]></string>
@@ -1341,7 +1341,7 @@
     <string name="note_folder_local_display_name">Notas privadas</string>
     <string name="system_restricted_background_in_call_desc">O aplicativo pode ser fechado após 1 minuto em segundo plano.</string>
     <string name="search_or_paste_simplex_link">Procurar e colar link SimpleX</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Adicionar contato</b>: para criar um novo link de convite, ou conectar pelo link que você recebeu.]]></string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Adicionar contato</b>: para criar um novo link de convite ou conectar-se por um link recebido.]]></string>
     <string name="share_this_1_time_link">Compartilhe este link de convite único</string>
     <string name="alert_text_encryption_renegotiation_failed">Renegociação de criptografia falhou.</string>
     <string name="rcv_group_and_other_events">e %d outros eventos</string>
@@ -1376,11 +1376,11 @@
     <string name="connect_plan_repeat_join_request">Repetir o pedido para se juntar?</string>
     <string name="in_developing_desc">Este recurso ainda não é compatível. Experimente o próximo lançamento.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Você já pediu para se conectar por este endereço!</string>
-    <string name="connect_plan_already_connecting">Você já está se conectando!</string>
+    <string name="connect_plan_already_connecting">Já está se conectando!</string>
     <string name="connect_plan_connect_to_yourself">Conectar-se a você mesmo?</string>
     <string name="connect_plan_open_group">Abrir grupo</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Você já está se conectando ao grupo por este link.</string>
-    <string name="connect_plan_already_joining_the_group">Você já está entrando no grupo!</string>
+    <string name="connect_plan_already_joining_the_group">Já está entrando no grupo!</string>
     <string name="connect_plan_connect_via_link">Conectar via link?</string>
     <string name="call_service_notification_audio_call">Chamada de áudio</string>
     <string name="call_service_notification_end_call">Finalizar chamada</string>
@@ -1595,7 +1595,7 @@
     <string name="multicast_discoverable_via_local_network">Descobrível via rede local</string>
     <string name="possible_slow_function_desc">A execução da função está demorando muito: %1$d segundos: %2$s</string>
     <string name="possible_slow_function_title">Função lenta</string>
-    <string name="member_contact_send_direct_message">enviar mensagem direta</string>
+    <string name="member_contact_send_direct_message">enviar para conectar</string>
     <string name="retry_verb">Tentar novamente</string>
     <string name="open_database_folder">Abrir a pasta do banco de dados</string>
     <string name="terminal_always_visible">Mostrar console em uma nova janela</string>
@@ -2123,7 +2123,7 @@
     <string name="enable_sending_member_reports">Permitir denunciar mensagens aos moderadores.</string>
     <string name="v6_3_better_privacy_and_security">Melhorias de privacidade e segurança</string>
     <string name="v6_3_organize_chat_lists_descr">Não perca mensagens importantes.</string>
-    <string name="connect_plan_chat_already_exists">Chat já existente!</string>
+    <string name="connect_plan_chat_already_exists">O chat já existe!</string>
     <string name="debug_logs">Ativar logs</string>
     <string name="block_members_for_all_question">Bloquear membros para todos?</string>
     <string name="v6_1_delete_many_messages_descr">Apagar ou moderar até 200 mensagens.</string>
@@ -2260,9 +2260,9 @@
     <string name="smp_servers_new_server">Novo servidor</string>
     <string name="no_chats_found">Nenhum chat encontrado</string>
     <string name="disable_automatic_deletion_message">As mensagens nesta conversa nunca serão apagadas.</string>
-    <string name="restore_passphrase_can_not_be_read_desc">A frase-senha na Keystore não pôde ser lida. Isso pode ter acontecido após uma atualização do sistema incompatível com o aplicativo. Se não for o caso, entre em contato com os desenvolvedores.</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Não foi possível ler a senha no Keystore. Isso pode ter ocorrido após uma atualização do sistema incompatível com o aplicativo. Se não for esse o caso, entre em contato com os desenvolvedores.</string>
     <string name="only_chat_owners_can_change_prefs">Somente os proprietários do chat podem alterar as preferências.</string>
-    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">A frase-senha na Keystore não pôde ser lida, insira-a manualmente. Isso pode ter acontecido após uma atualização do sistema incompatível com o aplicativo. Se não for o caso, entre em contato com os desenvolvedores.</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Não foi possível ler a senha no Keystore. Insira-a manualmente. Isso pode ter ocorrido após uma atualização do sistema incompatível com o aplicativo. Se não for esse o caso, entre em contato com os desenvolvedores.</string>
     <string name="chat_list_groups">Grupos</string>
     <string name="chat_archive">Ou importar arquivo compactado</string>
     <string name="list_menu">Lista</string>
@@ -2364,7 +2364,7 @@
     <string name="xftp_servers_per_user">Os servidores para novos arquivos do seu perfil de chat atual</string>
     <string name="connection_error_quota_desc">A conexão atingiu o limite de tentativas - seu contato pode estar offline.</string>
     <string name="connection_error_quota">Mensagens não entregues</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">Chats privados, grupos e seus contatos não são acessíveis aos operadores de servidor.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Os operadores se comprometem com:\n- Independência\n- Uso mínimo de metadados\n- Execução de código aberto verificado</string>
     <string name="onboarding_conditions_accept">Aceitar</string>
     <string name="onboarding_conditions_by_using_you_agree">Ao usar o SimpleX Chat, você concorda em:\n- enviar apenas conteúdo legal em grupos públicos.\n- respeitar outros usuários – sem spam.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Política de privacidade e condições de uso.</string>
@@ -2414,7 +2414,7 @@
     <string name="webpage_code_footer">Adicione este código à sua página da web. Ele exibirá a prévia do seu canal/grupo.</string>
     <string name="advanced_options">Opções avançadas</string>
     <string name="advanced_settings">Configurações avançadas</string>
-    <string name="a_link_for_one_person">Um link para uma pessoa se conectar</string>
+    <string name="a_link_for_one_person">Link para uma pessoa se conectar</string>
     <string name="content_filter_all_messages">Todas as mensagens</string>
     <string name="allow_anyone_to_embed">Permitir que qualquer pessoa insira</string>
     <string name="allow_files_and_media_only_if">Permitir arquivos e mídias apenas se seu contato permitir.</string>
@@ -2834,4 +2834,11 @@
     <string name="short_descr">Biografia:</string>
     <string name="cant_send_message_alert_title">Você não pode enviar mensagens!</string>
     <string name="you_are_subscriber">inscrito</string>
+    <string name="cant_send_commands_alert_text">Para enviar comandos, você precisa estar conectado.</string>
+    <string name="cant_send_message_you_left">você saiu</string>
+    <string name="save_admission_question">Salvar configurações de admissão?</string>
+    <string name="error_relay_test_failed_at_step">O teste falhou na etapa %s.</string>
+    <string name="share_profile_via_link_alert_text">O endereço será curto e permitirá compartilhar seu perfil.</string>
+    <string name="share_group_profile_via_link_alert_text">O link será curto e permitirá compartilhar o perfil do grupo</string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Você poderá enviar mensagens <b>somente após sua solicitação ser aceita</b>.]]></string>
 </resources>
