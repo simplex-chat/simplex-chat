@@ -814,7 +814,7 @@ fileprivate let getStakeSlides: [(image: String, heading: String, info: String?,
         "crowdfunding_3",
         "Developers already bet on SimpleX success",
         "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
-        "Everything developers build on SimpleX Network increases its value to the users, and can also bring the new users to SimpleX Chat."
+        "Every service developers build on SimpleX Network may increase its value, and bring new users to SimpleX Chat."
     ),
     (
         "crowdfunding_4",
