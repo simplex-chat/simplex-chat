@@ -2480,7 +2480,6 @@
     <string name="cancel_creating_channel_question">Cancelar a criação do canal?</string>
     <string name="cant_broadcast_message">não é possível transmitir</string>
     <string name="context_user_picker_cant_change_profile_alert_title">Não é possível alterar o perfil</string>
-    <string name="v6_4_1_new_interface_languages_descr"></string>
     <string name="channel_role_label">canal</string>
     <string name="chat_banner_channel">Canal</string>
     <string name="info_row_channel">Canal</string>
