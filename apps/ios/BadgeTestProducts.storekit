@@ -1,4 +1,14 @@
 {
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
   "identifier" : "B4D6E1A0",
   "nonRenewingSubscriptions" : [
 
@@ -43,7 +53,51 @@
     "_locale" : "en_US",
     "_storefront" : "USA",
     "_storeKitErrors" : [
-
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
     ]
   },
   "subscriptionGroups" : [
@@ -77,7 +131,10 @@
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "SimpleX Supporter Badge (Month)",
           "subscriptionGroupID" : "3020000001",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
           "adHocOffers" : [
@@ -102,7 +159,10 @@
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "SimpleX Supporter Badge (Year)",
           "subscriptionGroupID" : "3020000001",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
           "adHocOffers" : [
@@ -127,7 +187,10 @@
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "SimpleX Legend Badge (Month)",
           "subscriptionGroupID" : "3020000001",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         },
         {
           "adHocOffers" : [
@@ -152,13 +215,16 @@
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "SimpleX Legend Badge (Year)",
           "subscriptionGroupID" : "3020000001",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         }
       ]
     }
   ],
   "version" : {
-    "major" : 3,
+    "major" : 4,
     "minor" : 0
   }
 }
