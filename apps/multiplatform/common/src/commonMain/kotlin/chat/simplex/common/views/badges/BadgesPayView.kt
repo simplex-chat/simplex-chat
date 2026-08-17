@@ -56,8 +56,6 @@ enum class BadgePeriod {
     }
   }
 
-  // OnboardingActionButton takes a resource id, so the price states map to (id, arg) here rather
-  // than to a formatted string as on iOS
   fun payLabel(price: BadgePrice): Pair<StringResource, String?> = when (price) {
     is BadgePrice.Loading -> MR.strings.badges_price_loading to null
     is BadgePrice.Unavailable -> MR.strings.badges_price_unavailable to null
@@ -163,8 +161,7 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
     val percent = savingsPercent(level, period)
     if (percent != null) {
       Text(
-        // the percent sign is in the argument, not the resource: adjustFormatting rejects %%
-        stringResource(MR.strings.badges_savings).format("$percent%"),
+        stringResource(MR.strings.badges_savings).format("${percent}%"),
         style = MaterialTheme.typography.body2,
         color = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         textAlign = TextAlign.Center
@@ -235,7 +232,6 @@ private fun showPurchasedAlert(receipt: BadgeStoreReceipt, invoiceId: String, cl
   if (receipt.environment != null) lines.add("Environment: ${receipt.environment}")
   lines.add("Token: ${receipt.token.length} bytes")
   val summary = lines.joinToString("\n")
-  // logged as well as shown: the log always lands even when the alert is missed
   Log.d(TAG, "badge purchase succeeded\n$summary")
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.badges_purchase_successful),

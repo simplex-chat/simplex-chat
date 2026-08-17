@@ -70,9 +70,9 @@ data class BadgeStoreReceipt(
   val environment: String? = null
 )
 
-// TODO [badges] Play Billing has no offline configuration, so there is no analogue of the iOS
-// .storekit file. Set to true to price the screens and walk the purchase flow without Play Console
-// products; the purchase is simulated and its receipt says so.
+// TODO [badges] Play Billing has no offline product configuration. Set to true to price the screens
+// and walk the purchase flow without Play Console products; the purchase is simulated and its
+// receipt says so.
 const val useBadgeTestProducts = false
 
 private fun testProduct(level: BadgeLevel, period: BadgePeriod, priceMicros: Long) =
@@ -110,8 +110,7 @@ object BadgeStore {
   private enum class LoadState { NotLoaded, Loading, Loaded, Failed }
 
   private val state = mutableStateOf(LoadState.NotLoaded)
-  // snapshot state, unlike the plain dictionary on iOS: Compose tracks reads per value, so a
-  // composable that only reads the products would not recompose when they arrive
+  // snapshot state so a composable reading only the products still recomposes when they arrive
   private val products = mutableStateOf<Map<String, BadgeProduct>>(emptyMap())
 
   fun price(level: BadgeLevel, period: BadgePeriod): BadgePrice = when (state.value) {
@@ -122,7 +121,6 @@ object BadgeStore {
     }
   }
 
-  // percentage the annual subscription saves against 12 monthly payments
   fun annualSavings(level: BadgeLevel): Int? {
     val monthly = products.value[badgeProductId(level, BadgePeriod.Monthly)] ?: return null
     val annual = products.value[badgeProductId(level, BadgePeriod.Annual)] ?: return null
