@@ -169,6 +169,18 @@ struct FramedItemView: View {
             case let .link(_, preview):
                 CILinkView(linkPreview: preview, maxWidth: maxWidth)
                 ciMsgContentView(chatItem)
+            case let .assetTransfer(_, transfer):
+                // Rendered from the payload, in the reader's language; tapping
+                // opens SimpleX names. The sender's text is only a fallback.
+                Text(assetTransferText(transfer, sent: chatItem.chatDir.sent))
+                    .foregroundColor(chatItem.chatDir.sent ? theme.colors.onBackground : theme.colors.primary)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .overlay(DetermineWidth())
+                    .simultaneousGesture(TapGesture().onEnded {
+                        if !chatItem.chatDir.sent {
+                            openSimplexNames()
+                        }
+                    })
             case let .chat(text, chatLink, ownerSig):
                 let hasText = text != chatLink.connLinkStr
                 CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, ownerSig: ownerSig, hasText: hasText)
@@ -463,4 +475,20 @@ struct FramedItemView_Deleted_Previews: PreviewProvider {
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 200))
     }
+}
+
+func assetTransferText(_ t: AssetTransfer, sent: Bool) -> String {
+    switch t.kind {
+    case AssetTransfer.kindSimplexName:
+        return sent
+            ? String.localizedStringWithFormat(NSLocalizedString("You sent the SimpleX name %@", comment: "chat item"), t.asset)
+            : String.localizedStringWithFormat(NSLocalizedString("You were sent the SimpleX name %@ — open SimpleX names to accept it", comment: "chat item"), t.asset)
+    default:
+        return NSLocalizedString("You were sent a SimpleX name. Update SimpleX to accept it.", comment: "chat item")
+    }
+}
+
+// Best effort: present the names screen from the current top controller.
+@MainActor func openSimplexNames() {
+    ChatModel.shared.showingNamesFromChat = true
 }

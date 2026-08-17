@@ -153,6 +153,8 @@ object ChatModel {
   var terminalsVisible = setOf<Boolean>()
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
+  // Names sent to this profile and not yet accepted or declined.
+  val namesWaiting = mutableStateOf(0)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent
@@ -2053,7 +2055,11 @@ data class Profile(
   // the badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
   // but preserved so passing a link profile back to the core (apiPrepareContact) keeps the proof
   val badge: BadgeProof? = null,
-  val contactDomain: SimplexDomainClaim? = null
+  val contactDomain: SimplexDomainClaim? = null,
+  // published stealth meta-address (hex): lets a contact send this profile a
+  // name with no handshake. Not an address and never on chain - holding it
+  // confers only the ability to send. Absent on incognito profiles.
+  val metaAddress: String? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
@@ -2062,7 +2068,7 @@ data class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain, metaAddress = metaAddress)
 
   companion object {
     val sampleData = Profile(
@@ -2087,13 +2093,14 @@ data class LocalProfile(
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
   val contactDomain: SimplexDomainClaim? = null,
-  val contactDomainVerified: Boolean? = null
+  val contactDomainVerified: Boolean? = null,
+  val metaAddress: String? = null
 ): NamedChat {
   override val profileDescription: String? get() = description
 
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
+  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, description, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain, metaAddress = metaAddress)
 
   companion object {
     val sampleData = LocalProfile(
@@ -2364,6 +2371,38 @@ object GroupTypeSerializer : KSerializer<GroupType> {
     encoder.encodeString(stringValue)
   }
 }
+
+/**
+ * What was handed over. [kind] selects the wording and the screen to open, so a
+ * token transfer later is a new kind rather than a new message type.
+ *
+ * [ephemeralPubKey] is what makes it usable at once: the recipient derives the
+ * destination on receipt instead of scanning the chain for it.
+ */
+@Serializable
+data class AssetTransfer(
+  val kind: String,
+  val asset: String,
+  val ephemeralPubKey: String? = null,
+) {
+  companion object {
+    const val KIND_SIMPLEX_NAME = "simplexName"
+  }
+}
+
+/** A name this profile holds, with enough to show its state in a list. */
+@Serializable
+data class OwnedName(
+  val onFqdn: String,
+  val onExpires: Int,
+)
+
+/** A name sitting at a one-time address, waiting to be accepted or declined. */
+@Serializable
+data class IncomingName(
+  val inAddress: String,
+  val inNames: List<String>
+)
 
 @Serializable
 data class SimplexDomainClaim(
@@ -4549,6 +4588,10 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
+  // Something handed over in-app: a name now, a token later. The reader renders
+  // it from `transfer`, so wording is localised by the recipient rather than
+  // sent in the sender's language; `text` is the fallback for older clients.
+  @Serializable(with = MsgContentSerializer::class) class MCAssetTransfer(override val text: String, val transfer: AssetTransfer): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -4667,6 +4710,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             val reason = decoder.json.decodeFromString<ReportReason>(json["reason"].toString())
             MsgContent.MCReport(text, reason)
           }
+          "assetTransfer" -> {
+            val t2 = decoder.json.decodeFromString<AssetTransfer>(json["transfer"].toString())
+            MsgContent.MCAssetTransfer(text, t2)
+          }
           "chat" -> {
             val chatLink = decoder.json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
             val ownerSig = json["ownerSig"]?.let { decoder.json.decodeFromJsonElement<LinkOwnerSig>(it) }
@@ -4719,6 +4766,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         buildJsonObject {
           put("type", "file")
           put("text", value.text)
+        }
+      is MsgContent.MCAssetTransfer ->
+        buildJsonObject {
+          put("type", "assetTransfer")
+          put("text", value.text)
+          put("transfer", json.encodeToJsonElement(value.transfer))
         }
       is MsgContent.MCReport ->
         buildJsonObject {

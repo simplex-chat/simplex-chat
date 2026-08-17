@@ -108,8 +108,21 @@ fun itemSegmentDisplayText(ft: FormattedText, ci: ChatItem, linkMode: SimplexLin
 
 // Full display text for a chat item — joins segment display texts.
 fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String {
+  // A transfer carries data, not prose: the wording is chosen here, in the
+  // reader's language, rather than in whatever language the sender was using.
+  val mc = ci.content.msgContent
+  if (mc is MsgContent.MCAssetTransfer) return assetTransferText(mc.transfer, ci.chatDir.sent)
   val formattedText = ci.formattedText ?: return ci.text
   return formattedText.joinToString("") { itemSegmentDisplayText(it, ci, linkMode) }
+}
+
+// Wording for a transfer, by kind. An unknown kind falls back to the sender's
+// text, which is what keeps older and newer clients readable to each other.
+fun assetTransferText(t: AssetTransfer, sent: Boolean): String = when (t.kind) {
+  AssetTransfer.KIND_SIMPLEX_NAME ->
+    if (sent) generalGetString(MR.strings.names_transfer_sent).format(t.asset)
+    else generalGetString(MR.strings.names_transfer_received).format(t.asset)
+  else -> generalGetString(MR.strings.names_transfer_unknown)
 }
 
 // Display-only prefix rendered before ci.text (e.g. "Spam: " for reports).

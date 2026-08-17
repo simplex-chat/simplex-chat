@@ -363,6 +363,9 @@ class ChannelRelaysModel: ObservableObject {
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
+    // Names sent to this profile and not yet accepted or declined.
+    @Published var namesWaiting = 0
+    @Published var showingNamesFromChat = false
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
     @Published var currentUser: User? {
         didSet {

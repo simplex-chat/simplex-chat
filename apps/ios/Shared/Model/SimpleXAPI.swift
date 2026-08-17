@@ -1379,6 +1379,132 @@ func showSetSimplexNameError<R>(_ r: APIResult<R>, isChannel: Bool) async {
     }
 }
 
+// MARK: - SimpleX names
+
+func apiNameStatus() async -> ChatResponse2? {
+    guard let userId = try? currentUserId("apiNameStatus") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameStatus(userId: userId))
+    if case let .result(res) = r, case .nameStatus = res { return res }
+    logger.error("apiNameStatus error: \(responseError(r.unexpected))")
+    return nil
+}
+
+func apiNameSetup(_ setup: String) async -> Bool {
+    guard let userId = try? currentUserId("apiNameSetup") else { return false }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameSetup(userId: userId, setup: setup))
+    if case let .result(res) = r, case .nameStatus = res { return true }
+    await MainActor.run { showAlert(NSLocalizedString("Could not set up names for this profile", comment: "alert title"), message: responseError(r.unexpected)) }
+    return false
+}
+
+func apiNameAddress() async -> String? {
+    guard let userId = try? currentUserId("apiNameAddress") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameAddress(userId: userId))
+    if case let .result(.nameAddress(_, addr, _, _)) = r { return addr }
+    logger.error("apiNameAddress error: \(responseError(r.unexpected))")
+    return nil
+}
+
+func apiNameList() async -> [OwnedName]? {
+    guard let userId = try? currentUserId("apiNameList") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameList(userId: userId))
+    if case let .result(.namesOwned(_, names)) = r { return names }
+    logger.error("apiNameList error: \(responseError(r.unexpected))")
+    return nil
+}
+
+func apiNameQuote(_ label: String) async -> (available: Bool, priceCents: Int)? {
+    guard let userId = try? currentUserId("apiNameQuote") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameQuote(userId: userId, label: label))
+    if case let .result(.nameQuoted(_, _, available, price)) = r { return (available, price) }
+    logger.error("apiNameQuote error: \(responseError(r.unexpected))")
+    return nil
+}
+
+func apiNameBuy(_ label: String, years: Int, payment: String, link: String?) async -> String? {
+    guard let userId = try? currentUserId("apiNameBuy") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameBuy(userId: userId, label: label, years: years, payment: payment, link: link))
+    if case let .result(.nameRegistered(_, fqdn, _)) = r { return fqdn }
+    await MainActor.run { showAlert(NSLocalizedString("Could not buy the name", comment: "alert title"), message: responseError(r.unexpected)) }
+    return nil
+}
+
+func apiNameInfo(_ fqdn: String) async -> ChatResponse2? {
+    guard let userId = try? currentUserId("apiNameInfo") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameInfo(userId: userId, fqdn: fqdn))
+    if case let .result(res) = r, case .nameInfo = res { return res }
+    logger.error("apiNameInfo error: \(responseError(r.unexpected))")
+    return nil
+}
+
+func apiNameSetLink(_ fqdn: String, link: String) async -> Bool {
+    guard let userId = try? currentUserId("apiNameSetLink") else { return false }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameSetLink(userId: userId, fqdn: fqdn, link: link))
+    if case .result(.nameIntentRelayed) = r { return true }
+    await MainActor.run { showAlert(NSLocalizedString("Could not update the name", comment: "alert title"), message: responseError(r.unexpected)) }
+    return false
+}
+
+func apiNameRenew(_ fqdn: String, years: Int, payment: String) async -> (expires: Int, reRegistered: Bool)? {
+    guard let userId = try? currentUserId("apiNameRenew") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameRenew(userId: userId, fqdn: fqdn, years: years, payment: payment))
+    if case let .result(.nameRenewed(_, _, expires, reReg)) = r { return (expires, reReg) }
+    await MainActor.run { showAlert(NSLocalizedString("Could not extend the name", comment: "alert title"), message: responseError(r.unexpected)) }
+    return nil
+}
+
+func apiNameGift(_ label: String, recipient: String) async -> Bool {
+    guard let userId = try? currentUserId("apiNameGift") else { return false }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameGift(userId: userId, label: label, recipient: recipient))
+    if case .result(.nameGifted) = r { return true }
+    await MainActor.run { showAlert(NSLocalizedString("Could not give the name away", comment: "alert title"), message: responseError(r.unexpected)) }
+    return false
+}
+
+func apiNameIncoming() async -> [IncomingName]? {
+    guard let userId = try? currentUserId("apiNameIncoming") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameIncoming(userId: userId))
+    if case let .result(.namesIncoming(_, names)) = r { return names }
+    logger.error("apiNameIncoming error: \(responseError(r.unexpected))")
+    return nil
+}
+
+func apiNameAccept(_ address: String) async -> [String]? {
+    guard let userId = try? currentUserId("apiNameAccept") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameAccept(userId: userId, address: address))
+    if case let .result(.nameAccepted(_, _, names)) = r { return names }
+    await MainActor.run { showAlert(NSLocalizedString("Could not accept the name", comment: "alert title"), message: responseError(r.unexpected)) }
+    return nil
+}
+
+func apiNameDecline(_ address: String) async -> Bool {
+    guard let userId = try? currentUserId("apiNameDecline") else { return false }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameDecline(userId: userId, address: address))
+    if case .result(.nameDeclined) = r { return true }
+    return false
+}
+
+func apiNameRescan() async -> Int? {
+    guard let userId = try? currentUserId("apiNameRescan") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameRescan(userId: userId))
+    if case let .result(.nameRescanned(_, found)) = r { return found }
+    return nil
+}
+
+func apiNameRecoveryKey() async -> (phrase: String, saved: Bool)? {
+    guard let userId = try? currentUserId("apiNameRecoveryKey") else { return nil }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameRecoveryKey(userId: userId))
+    if case let .result(.nameRecoveryKey(_, phrase, saved)) = r { return (phrase, saved) }
+    return nil
+}
+
+func apiNameRecoveryKeySaved() async -> Bool {
+    guard let userId = try? currentUserId("apiNameRecoveryKeySaved") else { return false }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiNameRecoveryKeySaved(userId: userId))
+    if case .result(.nameRecoveryKey) = r { return true }
+    return false
+}
+
 func apiSetUserDomain(_ simplexDomain: String?) async throws -> User {
     let userId = try currentUserId("apiSetUserDomain")
     let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiSetUserDomain(userId: userId, simplexDomain: simplexDomain))
@@ -2531,7 +2657,13 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
+                }
+                // A name arriving is the one incoming event with no other
+                // signal, so the settings badge is bumped on arrival.
+                if case .sndReceived = cItem.meta.itemStatus {} else if case .rcvNew = cItem.meta.itemStatus, case .assetTransfer = cItem.content.msgContent {
+                    m.namesWaiting += 1
+                }
+                if !active(user) && cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
                     m.increaseUnreadCounter(user: user)
                 }
             }

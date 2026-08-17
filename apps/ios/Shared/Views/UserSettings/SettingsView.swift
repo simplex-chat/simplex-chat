@@ -319,6 +319,22 @@ struct SettingsView: View {
                 .disabled(chatModel.chatRunning != true)
 
                 NavigationLink {
+                    SimplexNamesView()
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    settingsRow("at", color: theme.colors.secondary) {
+                        HStack {
+                            Text("SimpleX names")
+                            if chatModel.namesWaiting > 0 {
+                                Spacer()
+                                Text("\(chatModel.namesWaiting)").foregroundColor(theme.colors.primary)
+                            }
+                        }
+                    }
+                }
+                .disabled(chatModel.chatRunning != true)
+
+                NavigationLink {
                     helpAndSupportView
                 } label: {
                     settingsRow("questionmark", color: theme.colors.secondary) { Text("Help & support") }

@@ -96,6 +96,12 @@ fun SettingsLayout(
     SectionView {
       SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) })
       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.your_privacy), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
+      SettingsActionItemWithContent(painterResource(MR.images.ic_alternate_email), stringResource(MR.strings.names_title), click = { ModalManager.start.showModalCloseable { close -> SimplexNamesView(chatModel.remoteHostId(), close) } }, disabled = stopped) {
+        // Names arrive while the user is elsewhere; without this the only
+        // place a waiting name is visible is inside the feature itself.
+        val waiting = chatModel.namesWaiting.value
+        if (waiting > 0) Text(waiting.toString(), color = MaterialTheme.colors.primary)
+      }
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) })
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)

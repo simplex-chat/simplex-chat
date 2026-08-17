@@ -263,6 +263,8 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   val fileName = chatItem.file?.fileName ?: ""
   return when (val mc = chatItem.content.msgContent) {
     is MsgContent.MCText -> ComposePreview.NoPreview
+    // A transfer is not composed or edited by hand, so it previews as nothing.
+    is MsgContent.MCAssetTransfer -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     // TODO: include correct type
     is MsgContent.MCImage -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
@@ -728,6 +730,7 @@ fun ComposeView(
     fun updateMsgContent(msgContent: MsgContent): MsgContent {
       return when (msgContent) {
         is MsgContent.MCText -> checkLinkPreview()
+        is MsgContent.MCAssetTransfer -> msgContent
         is MsgContent.MCLink -> checkLinkPreview()
         is MsgContent.MCImage -> MsgContent.MCImage(msgText, image = msgContent.image)
         is MsgContent.MCVideo -> MsgContent.MCVideo(msgText, image = msgContent.image, duration = msgContent.duration)
