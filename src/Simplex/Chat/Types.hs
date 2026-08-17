@@ -711,7 +711,13 @@ data Profile = Profile
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     badge :: Maybe BadgeProof,
-    contactDomain :: Maybe SimplexDomainClaim
+    contactDomain :: Maybe SimplexDomainClaim,
+    -- | Published stealth meta-address, hex. Lets a contact send a name with no
+    -- handshake; holding it confers only the ability to send, never the ability
+    -- to find what was sent (see the 20260807 migration). Always NULL on
+    -- incognito profiles, which would otherwise carry a correlator straight
+    -- back to the user's main identity.
+    metaAddress :: Maybe Text
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -747,7 +753,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing, metaAddress = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -801,7 +807,8 @@ data LocalProfile = LocalProfile
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
     contactDomain :: Maybe SimplexDomainClaim,
-    contactDomainVerified :: Maybe Bool
+    contactDomainVerified :: Maybe Bool,
+    metaAddress :: Maybe Text
   }
   deriving (Eq, Show)
 
@@ -809,15 +816,15 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
-  LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge, contactDomain, metaAddress} localAlias now badgeVerified contactDomainVerified =
+  LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified, metaAddress}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, contactDomain} =
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, localBadge, contactDomain, metaAddress} =
   -- the name proof is re-signed on each send
-  Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
+  Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain, metaAddress}
   where
     wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case

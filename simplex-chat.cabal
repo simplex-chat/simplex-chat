@@ -41,6 +41,12 @@ library
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
       Simplex.Chat.Names
+      Simplex.Chat.Names.Service
+      Simplex.Chat.Names.Service.Default
+      Simplex.Chat.Names.Service.Mock
+      Simplex.Chat.Names.Snrc
+      Simplex.Chat.Wallet
+      Simplex.Chat.Wallet.Stealth
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -82,6 +88,7 @@ library
       Simplex.Chat.Store.Files
       Simplex.Chat.Store.Groups
       Simplex.Chat.Store.Messages
+      Simplex.Chat.Store.Wallets
       Simplex.Chat.Store.NoteFolders
       Simplex.Chat.Store.Profiles
       Simplex.Chat.Store.RelayRequests
@@ -153,6 +160,8 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
           Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
           Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
+          Simplex.Chat.Store.Postgres.Migrations.M20260806_wallet_seeds
+          Simplex.Chat.Store.Postgres.Migrations.M20260807_profile_meta_address
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -323,6 +332,8 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
           Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
           Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
+          Simplex.Chat.Store.SQLite.Migrations.M20260806_wallet_seeds
+          Simplex.Chat.Store.SQLite.Migrations.M20260807_profile_meta_address
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -395,6 +406,28 @@ library
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
       , text >=1.2.4.0 && <1.3
+
+executable simplex-names-demo
+  if flag(client_library)
+      buildable: False
+  main-is: Main.hs
+  other-modules:
+      Paths_simplex_chat
+  hs-source-dirs:
+      apps/simplex-names-demo
+  default-extensions:
+      StrictData
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , crypton ==0.34.*
+    , simplex-chat
+    , simplexmq
+    , stm
+  default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
 
 executable simplex-bot
   if flag(client_library)
@@ -611,6 +644,7 @@ test-suite simplex-chat-test
       RemoteTests
       ValidNames
       ViewTests
+      WalletTests
       API.Docs.Commands
       API.Docs.Events
       API.Docs.Generate

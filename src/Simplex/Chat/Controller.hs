@@ -544,6 +544,44 @@ data ChatCommand
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
   | APIVerifyContactDomain {contactId :: ContactId}
+  | APINameAddress {userId :: UserId}
+  | APINameStatus {userId :: UserId}
+  | -- | Bind this profile to a wallet, explicitly. There is no implicit
+    -- creation: a profile gets keys only when the user chooses how.
+    APINameSetupWallet {userId :: UserId, walletSetup :: WalletSetup}
+  | APINameRenew {userId :: UserId, nameFqdn :: Text, nameYears :: Int, namePaymentToken :: Text}
+  | APINameRecoveryKey {userId :: UserId}
+  | APINameRecoveryKeyImport {userId :: UserId, recoveryPhrase :: Text}
+  | APINameRecoveryKeySaved {userId :: UserId}
+  | APINameQuote {userId :: UserId, nameLabel :: Text}
+  | APINameBuy {userId :: UserId, nameLabel :: Text, nameYears :: Int, namePaymentToken :: Text, nameLink :: Maybe Text}
+  | APINameList {userId :: UserId}
+  | APINameInfo {userId :: UserId, nameFqdn :: Text}
+  | APINameSetLink {userId :: UserId, nameFqdn :: Text, nameLink_ :: Text}
+  | APINameGift {userId :: UserId, nameLabel :: Text, nameRecipient :: Text}
+  | APINameIncoming {userId :: UserId}
+  | APINameAccept {userId :: UserId, nameOneTimeAddress :: Text}
+  | APINameDecline {userId :: UserId, nameOneTimeAddress :: Text}
+  | APINameExportKey {userId :: UserId, nameOneTimeAddress :: Text}
+  | APINameRescan {userId :: UserId}
+  | NameAddress
+  | NameStatus
+  | NameSetup {walletSetup :: WalletSetup}
+  | NameRenew {nameFqdn :: Text, nameYears :: Int}
+  | NameRecoveryKey
+  | NameRecoveryKeyImport {recoveryPhrase :: Text}
+  | NameRecoveryKeySaved
+  | NameQuoteCmd {nameLabel :: Text}
+  | NameBuy {nameLabel :: Text, nameYears :: Int, namePaymentToken :: Text, nameLink :: Maybe Text}
+  | NameList
+  | NameInfo {nameFqdn :: Text}
+  | NameSetLink {nameFqdn :: Text, nameLink_ :: Text}
+  | NameGift {nameLabel :: Text, nameRecipient :: Text}
+  | NameIncoming
+  | NameAccept {nameOneTimeAddress :: Text}
+  | NameDecline {nameOneTimeAddress :: Text}
+  | NameExportKey {nameOneTimeAddress :: Text}
+  | NameRescan
   | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -923,6 +961,30 @@ data ChatResponse
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRAppSettings {appSettings :: AppSettings}
+  | CRNameAddress {user :: User, nameAddress :: Text, nameAccount :: Int, nameMetaAddress :: Text}
+  | -- | Read-only: never creates a wallet. Screens use this to decide what to
+    -- offer, so that opening one cannot create keys or notify contacts.
+    CRNameStatus {user :: User, nameHasWallet :: Bool, nameKeySaved :: Bool, nameAnySeed :: Bool}
+  | CRNameRecoveryKey {user :: User, recoveryPhrase :: Text, recoveryKeySaved :: Bool}
+  | CRNameQuoted {user :: User, nameLabel :: Text, nameAvailable :: Bool, namePriceCents :: Int}
+  | CRNameRegistered {user :: User, nameFqdn :: Text, nameTxHash :: Text}
+  | CRNamesOwned {user :: User, ownedNames :: [OwnedName]}
+  | CRNameInfo {user :: User, nameFqdn :: Text, nameOwner :: Text, nameContact :: [Text], nameChannel :: [Text], nameExpires :: Int, nameEditCredits :: Int}
+  | CRNameIntentRelayed {user :: User, nameAction :: Text, nameFqdn :: Text, nameTxHash :: Text}
+  | -- | A gift was relayed. Carries the ephemeral public key so the client can
+    -- put it in the message it sends the recipient: with it they can use the
+    -- name at once, without waiting for a scan of the chain announcement.
+    CRNameGifted {user :: User, nameFqdn :: Text, nameTxHash :: Text, nameEphemeralPubKey :: Text}
+  | -- | @nameReRegistered@ is True when the grace period had passed and the
+    -- name had to be bought again rather than extended: the same outcome for
+    -- the user, a different act on chain, and only possible while no one else
+    -- has taken it.
+    CRNameRenewed {user :: User, nameFqdn :: Text, nameExpires :: Int, nameReRegistered :: Bool}
+  | CRNamesIncoming {user :: User, incomingNames :: [IncomingName]}
+  | CRNameAccepted {user :: User, nameOneTimeAddr :: Text, acceptedNames :: [Text]}
+  | CRNameDeclined {user :: User, nameOneTimeAddr :: Text}
+  | CRNameKeyExported {user :: User, nameOneTimeAddr :: Text, nameOneTimeKey :: Text}
+  | CRNameRescanned {user :: User, rescanFound :: Int}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
@@ -1357,6 +1419,39 @@ data SwitchProgress = SwitchProgress
   { queueDirection :: QueueDirection,
     switchPhase :: SwitchPhase,
     connectionStats :: ConnectionStats
+  }
+  deriving (Show)
+
+-- | How a profile should get its wallet the first time it needs one.
+--
+-- The default is 'WSExistingSeed': one recovery key covers every profile, so
+-- there is one thing to write down. The alternatives exist because a profile
+-- kept separate on purpose should be able to have keys that are not derivable
+-- from the others, and because a restored key has to be able to arrive without
+-- displacing anything already stored.
+data WalletSetup
+  = -- | Derive a new account from the seed already in this database.
+    WSExistingSeed
+  | -- | Generate a new seed for this profile alone.
+    WSNewSeed
+  | -- | Import a recovery key. Always stored alongside existing seeds, never
+    -- over them.
+    WSImportSeed {setupPhrase :: Text}
+  deriving (Show)
+
+-- | A name this profile holds, with enough to show its state without a second
+-- round trip per name.
+data OwnedName = OwnedName
+  { onFqdn :: Text,
+    onExpires :: Int
+  }
+  deriving (Show)
+
+-- | A name sitting at a one-time address, not yet accepted. Named fields
+-- rather than a tuple so typed clients decode it without positional guessing.
+data IncomingName = IncomingName
+  { inAddress :: Text,
+    inNames :: [Text]
   }
   deriving (Show)
 
@@ -1826,6 +1921,12 @@ $(JQ.deriveJSON defaultJSON ''NtfConn)
 $(JQ.deriveJSON defaultJSON ''NtfMsgAckInfo)
 
 $(JQ.deriveJSON defaultJSON ''SwitchProgress)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "WS") ''WalletSetup)
+
+$(JQ.deriveJSON defaultJSON ''OwnedName)
+
+$(JQ.deriveJSON defaultJSON ''IncomingName)
 
 $(JQ.deriveJSON defaultJSON ''RatchetSyncProgress)
 

@@ -25,6 +25,7 @@ import Test.Hspec hiding (it)
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
+import WalletTests
 #if defined(dbPostgres)
 import Control.Exception (bracket_)
 import PostgresSchemaDump
@@ -69,6 +70,7 @@ main = do
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests
+      describe "Wallet derivation" walletTests
       describe "Message batching" batchingTests
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests

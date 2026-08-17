@@ -169,6 +169,8 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
 import Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
 import Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
 import Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
+import Simplex.Chat.Store.SQLite.Migrations.M20260806_wallet_seeds
+import Simplex.Chat.Store.SQLite.Migrations.M20260807_profile_meta_address
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -337,7 +339,9 @@ schemaMigrations =
     ("20260715_profile_description", m20260715_profile_description, Just down_m20260715_profile_description),
     ("20260716_signed_history", m20260716_signed_history, Just down_m20260716_signed_history),
     ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles),
-    ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection)
+    ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection),
+    ("20260806_wallet_seeds", m20260806_wallet_seeds, Just down_m20260806_wallet_seeds),
+    ("20260807_profile_meta_address", m20260807_profile_meta_address, Just down_m20260807_profile_meta_address)
   ]
 
 -- | The list of migrations in ascending order by date

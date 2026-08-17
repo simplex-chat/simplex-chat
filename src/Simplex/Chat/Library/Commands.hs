@@ -58,6 +58,15 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import Simplex.Chat.Names.Service
+import Simplex.Chat.Names.Service.Default (nameDeployment, namesService)
+import Simplex.Chat.Names.Snrc
+import qualified Simplex.Chat.Wallet as W
+import Simplex.Chat.Wallet.Stealth
+import qualified Simplex.Chat.Store.Wallets as WS
+import qualified Simplex.Messaging.Eth.Stealth as St
+import qualified Simplex.Messaging.Crypto.BIP39 as B39
+import Simplex.Messaging.Eth.Address (Address, checksumAddress, parseAddress)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1036,6 +1045,7 @@ processChatCommand cxt nm = \case
                 MCFile t -> t /= ""
                 MCReport {} -> True
                 MCChat {} -> True
+                MCAssetTransfer {} -> True
                 MCUnknown {} -> True
   -- TODO [knocking] forward from / to scope
   APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) sendAsGroup fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
@@ -2381,6 +2391,269 @@ processChatCommand cxt nm = \case
       _ -> throwError e
     connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APINameSetupWallet userId setup -> withUserId userId $ \user -> do
+    existing <- withStore' $ \db -> WS.boundAccount db user
+    case existing of
+      -- Never silently re-point a profile that already has keys: doing so is
+      -- what made an import discard the imported seed and orphan the names the
+      -- profile already owned.
+      Just _ -> throwCmdError "this profile already has a recovery key"
+      Nothing -> do
+        g <- asks random
+        w <- case setup of
+          WSExistingSeed ->
+            withStore' (\db -> WS.getWalletSeeds db) >>= \case
+              (s : _) -> pure s
+              [] -> withStore' . flip WS.createWalletSeed =<< liftIO (atomically $ W.newSeed B39.MS128 g)
+          WSNewSeed -> withStore' . flip WS.createWalletSeed =<< liftIO (atomically $ W.newSeed B39.MS128 g)
+          -- Additive: a new row alongside whatever is stored, never over it.
+          WSImportSeed phrase -> do
+            seed <- nameEither . W.importRecoveryKey $ encodeUtf8 phrase
+            withStore' $ \db -> WS.createWalletSeed db seed
+        r <- withStore' $ \db -> WS.bindNewAccountOnSeed db user w
+        -- Contacts need the new address before they can send anything to it.
+        void $ publishMetaAddress user
+        pure $ CRNameStatus user True (W.wsBackedUp w) True
+  APINameStatus userId -> withUserId userId $ \user -> do
+    ref <- withStore' $ \db -> WS.getAccountRef db user
+    saved <- case ref of
+      Nothing -> pure False
+      Just r -> maybe False W.wsBackedUp <$> withStore' (\db -> WS.getWalletSeed db (W.arSeedId r))
+    anySeed <- not . null <$> withStore' WS.getWalletSeeds
+    pure $ CRNameStatus user (isJust ref) saved anySeed
+  APINameAddress userId -> withUserId userId $ \user -> do
+    -- Asking to see your address is an explicit act, so publishing here is
+    -- fine - it is how someone can receive a name before buying one. What must
+    -- not happen is a screen calling this on open, which would create a wallet
+    -- and notify every contact for a user who did nothing.
+    (_, pk) <- userWalletAccount user
+    user' <- publishMetaAddress user
+    ks <- userStealthKeys user'
+    pure $
+      CRNameAddress
+        user'
+        (nameAddrText $ W.accountAddress pk)
+        (fromIntegral . W.arIndex $ W.waRef pk)
+        (safeDecodeUtf8 . metaAddressHex $ W.accountMetaAddress ks)
+  APINameRecoveryKey userId -> withUserId userId $ \user -> do
+    (w, _) <- userWalletAccount user
+    phrase <- nameEither $ W.recoveryKeyPhrase w
+    pure $ CRNameRecoveryKey user (safeDecodeUtf8 phrase) (W.wsBackedUp w)
+  APINameRecoveryKeyImport userId phrase -> withUserId userId $ \user ->
+    -- Routed through the same explicit setup as everything else, so an import
+    -- can only ever add a seed alongside what is stored and can never re-point
+    -- a profile that already has keys.
+    processChatCommand cxt nm $ APINameSetupWallet userId (WSImportSeed phrase)
+  APINameRecoveryKeySaved userId -> withUserId userId $ \user -> do
+    (w, _) <- userWalletAccount user
+    withStore' $ \db -> WS.setSeedBackedUp db (W.wsId w) True
+    phrase <- nameEither $ W.recoveryKeyPhrase w
+    pure $ CRNameRecoveryKey user (safeDecodeUtf8 phrase) True
+  APINameQuote userId label -> withUserId userId $ \user -> do
+    q <- nameSvc $ quoteName namesService (encodeUtf8 label)
+    pure $ CRNameQuoted user label (nqAvailable q) (nqPriceCents q)
+  APINameBuy userId label years payToken link_ -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    -- The proof comes from the client, which is where the store receipt is
+    -- obtained. The service validates it; nothing here interprets it.
+    let req =
+          BuyRequest
+            { brLabel = encodeUtf8 label,
+              brOwner = W.accountAddress pk,
+              brYears = years,
+              brPayment = PPRedeemCode (encodeUtf8 payToken),
+              brContactLink = encodeUtf8 <$> link_,
+              brChannelLink = Nothing
+            }
+    pid <- nameSvc $ buyName namesService req
+    reg <- namePoll pid (20 :: Int)
+    case reg of
+      RegConfirmed {rsTxHash} -> do
+        -- The wallet now genuinely exists, so contacts are told how to send to
+        -- it. Doing this on first purchase rather than on first screen view is
+        -- what keeps seed creation lazy.
+        void $ publishMetaAddress user
+        let fqdn = label <> ".simplex"
+        rec' <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
+        unless (nrvOwner rec' == W.accountAddress pk) $ throwCmdError "registered name is not owned by this profile"
+        pure $ CRNameRegistered user fqdn (safeDecodeUtf8 rsTxHash)
+      RegFailed e -> throwCmdError $ "registration failed: " <> B.unpack e
+      RegPending -> throwCmdError "registration is still pending, try again"
+  APINameList userId -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    -- A name accepted from someone else sits at a one-time address, not the
+    -- main account. Listing only the main account would hide every gift the
+    -- user accepted, which is where they would look for it.
+    accepted <- withStore' $ \db -> WS.getAcceptedAddresses db user W.ChainEth
+    let addrs = W.accountAddress pk : map WS.otaAddress accepted
+    ns <- concat <$> mapM (\a -> nameSvc $ namesOwnedBy namesService a) addrs
+    -- Resolve each so the list can show expiry without the UI asking per name.
+    owned <- forM ns $ \n -> do
+      rec' <- nameSvc $ resolveName namesService n
+      pure OwnedName {onFqdn = safeDecodeUtf8 n, onExpires = fromIntegral (nrvExpires rec')}
+    pure $ CRNamesOwned user owned
+  APINameInfo userId fqdn -> withUserId userId $ \user -> do
+    r <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
+    pure $
+      CRNameInfo
+        user
+        fqdn
+        (nameAddrText $ nrvOwner r)
+        (map safeDecodeUtf8 $ nrvContact r)
+        (map safeDecodeUtf8 $ nrvChannel r)
+        (fromIntegral $ nrvExpires r)
+        (fromIntegral $ nrvEditCredits r)
+  APINameRenew userId fqdn years payToken -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    let label = fromMaybe fqdn $ T.stripSuffix ".simplex" fqdn
+        payment = PPRedeemCode (encodeUtf8 payToken)
+    -- Decide before paying, and then make exactly one paid call. Trying to
+    -- extend and falling back to buying would submit the same receipt twice,
+    -- and a real store receipt is consumed by the first call.
+    rec_ <- liftIO $ resolveName namesService (encodeUtf8 fqdn)
+    case rec_ of
+      Right r | nrvOwner r /= W.accountAddress pk -> do
+        -- Someone else holds it now. Extending would pay to renew their
+        -- registration and report it as the user's own.
+        accepted <- withStore' $ \db -> WS.getAcceptedAddresses db user W.ChainEth
+        if nrvOwner r `elem` map WS.otaAddress accepted
+          then renewOwned label years payment fqdn user
+          else throwCmdError "this name now belongs to someone else"
+      Right _ -> renewOwned label years payment fqdn user
+      -- No registration at all: past grace, or never existed. Buying is the
+      -- only path, and it fails by itself if someone else has taken it.
+      Left SENotFound -> do
+        let req =
+              BuyRequest
+                { brLabel = encodeUtf8 label,
+                  brOwner = W.accountAddress pk,
+                  brYears = years,
+                  brPayment = payment,
+                  brContactLink = Nothing,
+                  brChannelLink = Nothing
+                }
+        pid <- nameSvc $ buyName namesService req
+        namePoll pid (20 :: Int) >>= \case
+          RegConfirmed {rsExpires} -> pure $ CRNameRenewed user fqdn (fromIntegral rsExpires) True
+          RegFailed e -> throwCmdError $ "could not register the name again: " <> B.unpack e
+          RegPending -> throwCmdError "registration is taking too long, try again"
+      Left e -> throwCmdError . B.unpack $ serviceErrorText e
+  APINameSetLink userId fqdn newLink -> withUserId userId $ \user -> do
+    -- Sign with whatever key owns this name. A name received as a gift is held
+    -- by a one-time address, not the profile's main account, so signing with
+    -- the main key would be rejected as not-the-owner and a gifted name could
+    -- never be pointed anywhere.
+    pk <- nameSigningKey user fqdn
+    n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
+    tx <-
+      nameRelay pk $
+        SetTextRecord
+          { sxName = encodeUtf8 fqdn,
+            sxKey = contactRecordKey,
+            sxValue = encodeUtf8 newLink,
+            sxNonce = n,
+            sxDeadline = nameDeadline
+          }
+    pure $ CRNameIntentRelayed user "link" fqdn tx
+  APINameGift userId label recipient -> withUserId userId $ \user -> do
+    (_, pk) <- userWalletAccount user
+    -- The recipient is a published meta-address, not an address: sending to a
+    -- plain address would link them to the name for every chain observer. The
+    -- destination is derived here, once, and the ephemeral key rides the
+    -- transfer so they can rediscover it from their recovery phrase alone.
+    --
+    -- @name takes it from the contact's profile, which is the whole point of
+    -- publishing it there: no handshake, nothing to paste.
+    (ma, ct_) <- case T.stripPrefix "@" recipient of
+      Just cName -> do
+        ct@Contact {profile = LocalProfile {metaAddress = ma_}} <- withFastStore $ \db -> getContactByName db cxt user cName
+        case ma_ of
+          Nothing -> throwCmdError "that contact cannot receive names yet - they need a newer app version"
+          Just ma' -> (,Just ct) <$> nameEither (parseMetaAddressHex $ encodeUtf8 ma')
+      -- A raw meta-address has no contact to message, so the recipient finds it
+      -- by scanning the announcement instead.
+      Nothing -> (,Nothing) <$> nameEither (parseMetaAddressHex $ encodeUtf8 recipient)
+    g <- asks random
+    dest <- nameEither =<< liftIO (giftDestination g ma)
+    n <- nameSvc $ currentNonce namesService (W.accountAddress pk)
+    tx <-
+      nameRelayAnnouncing pk (Just $ announcementOf dest) $
+        TransferName
+          { tiFrom = W.accountAddress pk,
+            tiTo = St.sdAddress dest,
+            tiLabel = encodeUtf8 label,
+            tiNonce = n,
+            tiDeadline = nameDeadline
+          }
+    let fqdn = label <> ".simplex"
+        ephHex = safeDecodeUtf8 . bytesHex $ St.sdEphemeralPubKey dest
+    -- Tell the recipient, in a form their app understands. The ephemeral key
+    -- travels with it, so their client records the destination on arrival
+    -- instead of scanning the chain for it. Sent from here rather than from a
+    -- client so every client behaves the same, and via sendDirectContactMessage
+    -- rather than a nested command, which would emit this command's response
+    -- twice.
+    forM_ ct_ $ \ct -> do
+      let mc = MCAssetTransfer {text = "You were given the SimpleX name " <> fqdn, transfer = AssetTransfer {kind = "simplexName", asset = fqdn, ephemeralPubKey = Just ephHex}}
+      -- Best-effort: the transfer already landed on chain above, so a failed
+      -- notification must not fail the command and report the gift as failed
+      -- for a name that has already moved. Protocol message only; the sender's
+      -- bubble is the client's business.
+      (void (sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc)) `catchAllErrors` \_ -> pure ()
+    -- The profile must stop advertising a name it no longer owns, or contacts
+    -- keep seeing it and the user's own list reports it as not managed here.
+    let User {profile = LocalProfile {contactDomain}} = user
+        claimed = safeDecodeUtf8 . strEncode . claimDomain <$> contactDomain
+    when (claimed == Just fqdn) . void . processChatCommand cxt nm $ APISetUserDomain userId Nothing
+    pure $ CRNameGifted user fqdn tx ephHex
+  APINameIncoming userId -> withUserId userId $ \user -> do
+    rows <- withStore' $ \db -> WS.getIncomingAddresses db user W.ChainEth
+    ns <- forM rows $ \r -> IncomingName (nameAddrText $ WS.otaAddress r) <$> namesAt (WS.otaAddress r)
+    pure $ CRNamesIncoming user ns
+  APINameAccept userId addrText -> withUserId userId $ \user -> do
+    addr <- nameEither $ parseAddress (encodeUtf8 addrText)
+    _ <- oneTimeAccountFor user addr
+    ns <- namesAt addr
+    -- Accepting is the act that links this profile to the name on chain. The
+    -- record rewrite and the edit-credit top-up that pay for it are Workstream
+    -- A and D; until those exist this records the decision only.
+    withStore' $ \db -> WS.acceptOneTimeAddress db user W.ChainEth addr
+    pure $ CRNameAccepted user (nameAddrText addr) ns
+  APINameDecline userId addrText -> withUserId userId $ \user -> do
+    addr <- nameEither $ parseAddress (encodeUtf8 addrText)
+    withStore' $ \db -> WS.declineOneTimeAddress db user W.ChainEth addr
+    pure $ CRNameDeclined user (nameAddrText addr)
+  APINameExportKey userId addrText -> withUserId userId $ \user -> do
+    addr <- nameEither $ parseAddress (encodeUtf8 addrText)
+    ota <- oneTimeAccountFor user addr
+    pure $ CRNameKeyExported user (nameAddrText addr) (safeDecodeUtf8 $ exportOneTimeKey ota)
+  APINameRescan userId -> withUserId userId $ \user -> do
+    ks <- userStealthKeys user
+    cursor <- withStore' $ \db -> WS.getScannedTo db user
+    (as, cursor') <- nameSvc $ announcementsFrom namesService cursor
+    let found = scanAnnouncements ks as
+    forM_ found $ \(an, addr) ->
+      withStore' $ \db -> WS.recordOneTimeAddress db user W.ChainEth addr (anEphemeralPubKey an)
+    withStore' $ \db -> WS.setScannedTo db user cursor'
+    pure $ CRNameRescanned user (length found)
+  NameAddress -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameAddress userId
+  NameStatus -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameStatus userId
+  NameSetup setup -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameSetupWallet userId setup
+  NameRenew n y -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRenew userId n y "dev-cli-payment"
+  NameRecoveryKey -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKey userId
+  NameRecoveryKeyImport phrase -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeyImport userId phrase
+  NameRecoveryKeySaved -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRecoveryKeySaved userId
+  NameQuoteCmd l -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameQuote userId l
+  NameBuy l y t lnk -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameBuy userId l y t lnk
+  NameList -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameList userId
+  NameInfo n -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameInfo userId n
+  NameSetLink n l -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameSetLink userId n l
+  NameGift l r -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameGift userId l r
+  NameIncoming -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameIncoming userId
+  NameAccept a -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameAccept userId a
+  NameDecline a -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameDecline userId a
+  NameExportKey a -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameExportKey userId a
+  NameRescan -> withUser $ \User {userId} -> processChatCommand cxt nm $ APINameRescan userId
   APIVerifyContactDomain contactId -> withUser $ \user -> do
     ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
@@ -3959,6 +4232,24 @@ processChatCommand cxt nm = \case
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
     updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
+    -- | Put this profile's stealth meta-address into the profile, so contacts
+    -- can send it a name with no handshake. Idempotent, and a no-op unless the
+    -- value changed - which it does when a different recovery key is imported,
+    -- and that change must reach contacts or gifts land at an address this
+    -- device can no longer find.
+    --
+    -- Incognito profiles are unaffected: they are generated per connection by
+    -- 'Simplex.Chat.ProfileGenerator' and never carry a meta-address.
+    publishMetaAddress :: User -> CM User
+    publishMetaAddress user@User {profile = lp} = do
+      ks <- userStealthKeys user
+      let ma = Just . safeDecodeUtf8 . metaAddressHex $ W.accountMetaAddress ks
+          p@Profile {metaAddress = published} = fromLocalProfile lp
+      if published == ma
+        then pure user
+        else do
+          _ <- updateProfile user (p {metaAddress = ma} :: Profile)
+          fromMaybe user <$> (asks currentUser >>= readTVarIO)
     updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
     updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
@@ -5701,6 +5992,42 @@ chatCommandP =
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
+      "/_name address " *> (APINameAddress <$> A.decimal),
+      "/_name status " *> (APINameStatus <$> A.decimal),
+      "/_name setup " *> (APINameSetupWallet <$> A.decimal <* A.space <*> walletSetupP),
+      "/_name renew " *> (APINameRenew <$> A.decimal <* A.space <*> nameWordP <* A.space <*> A.decimal <* A.space <*> (safeDecodeUtf8 <$> A.takeTill (== ' '))),
+      "/_name key import " *> (APINameRecoveryKeyImport <$> A.decimal <* A.space <*> textP),
+      "/_name key saved " *> (APINameRecoveryKeySaved <$> A.decimal),
+      "/_name key " *> (APINameRecoveryKey <$> A.decimal),
+      "/_name quote " *> (APINameQuote <$> A.decimal <* A.space <*> nameWordP),
+      "/_name buy " *> (APINameBuy <$> A.decimal <* A.space <*> nameWordP <* A.space <*> A.decimal <* A.space <*> (safeDecodeUtf8 <$> A.takeTill (== ' ')) <*> optional (A.space *> textP)),
+      "/_name list " *> (APINameList <$> A.decimal),
+      "/_name info " *> (APINameInfo <$> A.decimal <* A.space <*> nameWordP),
+      "/_name link " *> (APINameSetLink <$> A.decimal <* A.space <*> nameWordP <* A.space <*> textP),
+      "/_name gift " *> (APINameGift <$> A.decimal <* A.space <*> nameWordP <* A.space <*> textP),
+      "/_name incoming " *> (APINameIncoming <$> A.decimal),
+      "/_name accept " *> (APINameAccept <$> A.decimal <* A.space <*> textP),
+      "/_name decline " *> (APINameDecline <$> A.decimal <* A.space <*> textP),
+      "/_name export " *> (APINameExportKey <$> A.decimal <* A.space <*> textP),
+      "/_name rescan " *> (APINameRescan <$> A.decimal),
+      "/names address" $> NameAddress,
+      "/names status" $> NameStatus,
+      "/names setup " *> (NameSetup <$> walletSetupP),
+      "/names renew " *> (NameRenew <$> nameWordP <*> (A.space *> A.decimal <|> pure 1)),
+      "/names key import " *> (NameRecoveryKeyImport <$> textP),
+      "/names key saved" $> NameRecoveryKeySaved,
+      "/names key" $> NameRecoveryKey,
+      "/names quote " *> (NameQuoteCmd <$> nameWordP),
+      "/names buy " *> (NameBuy <$> nameWordP <*> (A.space *> A.decimal <|> pure 1) <*> pure "dev-cli-payment" <*> optional (A.space *> textP)),
+      "/names list" $> NameList,
+      "/names info " *> (NameInfo <$> nameWordP),
+      "/names link " *> (NameSetLink <$> nameWordP <* A.space <*> textP),
+      "/names gift " *> (NameGift <$> nameWordP <* A.space <*> textP),
+      "/names incoming" $> NameIncoming,
+      "/names accept " *> (NameAccept <$> textP),
+      "/names decline " *> (NameDecline <$> textP),
+      "/names export " *> (NameExportKey <$> textP),
+      "/names rescan" $> NameRescan,
       "/_verify domain #" *> (APIVerifyGroupDomain <$> A.decimal),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
@@ -5906,7 +6233,7 @@ chatCommandP =
     newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing, metaAddress = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -5915,7 +6242,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing, metaAddress = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
@@ -5937,6 +6264,11 @@ chatCommandP =
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""
       pure $ if T.null descr then Nothing else Just $ T.take 160 descr
     textP = safeDecodeUtf8 <$> A.takeByteString
+    walletSetupP =
+      ("existing" $> WSExistingSeed)
+        <|> ("new" $> WSNewSeed)
+        <|> ("import " *> (WSImportSeed <$> textP))
+    nameWordP = safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace)
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
@@ -6099,3 +6431,97 @@ mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar (
         validFirstNameChar = isLetter c || cat == DecimalNumber || cat == OtherSymbol
         validFirstChar = validFirstNameChar || cat == CurrencySymbol || cat == MathSymbol
         prohibited = ".,;/\\#@'\"`~" :: String
+
+-- SimpleX names helpers -------------------------------------------------------
+--
+-- The service is the mock today (see Simplex.Chat.Names.Service.Default); these
+-- helpers do not know that, so swapping in the SMP-backed client changes only
+-- that module.
+
+-- | The profile's derived key, creating the seed and binding on first use.
+-- Single-seed by construction: the binding reuses the database's first wallet.
+userWalletAccount :: User -> CM (W.WalletSeed, W.WalletAccount)
+userWalletAccount user = do
+  g <- asks random
+  (w, r) <- withStore' $ \db -> WS.getOrCreateAccountRef db user (atomically $ W.newSeed B39.MS128 g)
+  pk <- nameEither $ W.deriveAccount w (W.arIndex r)
+  pure (w, pk)
+
+nameEither :: Either String a -> CM a
+nameEither = either throwCmdError pure
+
+nameSvc :: IO (Either ServiceError a) -> CM a
+nameSvc act = liftIO act >>= either (throwCmdError . B.unpack . serviceErrorText) pure
+
+-- | Poll registration to completion, standing in for the commit-reveal wait.
+namePoll :: PurchaseId -> Int -> CM RegistrationStatus
+namePoll pid n
+  | n <= 0 = pure RegPending
+  | otherwise =
+      nameSvc (registrationStatus namesService pid) >>= \case
+        RegPending -> liftIO (threadDelay 50000) >> namePoll pid (n - 1)
+        r -> pure r
+
+-- | The key that owns a name: the profile's main account, or the one-time
+-- account it was received at.
+nameSigningKey :: User -> Text -> CM W.WalletAccount
+nameSigningKey user fqdn = do
+  (_, pk) <- userWalletAccount user
+  rec' <- nameSvc $ resolveName namesService (encodeUtf8 fqdn)
+  if nrvOwner rec' == W.accountAddress pk
+    then pure pk
+    else do
+      ota <- oneTimeAccountFor user (nrvOwner rec')
+      pure W.WalletAccount {W.waRef = W.waRef pk, W.waKey = otaKey ota}
+
+-- | Extend a registration the user holds.
+renewOwned :: Text -> Int -> PaymentProof -> Text -> User -> CM ChatResponse
+renewOwned label years payment fqdn user =
+  liftIO (renewName namesService (encodeUtf8 label) years payment) >>= \case
+    Right expires -> pure $ CRNameRenewed user fqdn (fromIntegral expires) False
+    Left e -> throwCmdError . B.unpack $ serviceErrorText e
+
+-- | Sign an intent with the profile key and hand it to the relayer.
+nameRelay :: W.WalletAccount -> Intent -> CM Text
+nameRelay pk = nameRelayAnnouncing pk Nothing
+
+nameRelayAnnouncing :: W.WalletAccount -> Maybe Announcement -> Intent -> CM Text
+nameRelayAnnouncing pk announce intent = do
+  digest <- nameEither $ intentDigest nameDeployment intent
+  sig <- nameEither $ W.signDigest pk digest
+  safeDecodeUtf8 <$> nameSvc (relayIntent namesService SignedIntent {siIntent = intent, siSignature = sig} announce)
+
+-- | The profile's stealth keys, on the same seed and account index as its
+-- main address.
+userStealthKeys :: User -> CM W.StealthKeys
+userStealthKeys user = do
+  g <- asks random
+  (w, r) <- withStore' $ \db -> WS.getOrCreateAccountRef db user (atomically $ W.newSeed B39.MS128 g)
+  nameEither $ W.deriveStealthKeys w W.ChainEth (W.arIndex r)
+
+-- | Re-derive the key for a destination this profile has recorded. Fails if it
+-- was never seen: the ephemeral key is what makes the address reachable, and it
+-- is not recoverable from the address itself.
+oneTimeAccountFor :: User -> Address -> CM OneTimeAccount
+oneTimeAccountFor user addr = do
+  row <- withStore' $ \db -> WS.getOneTimeAddress db user W.ChainEth addr
+  case row of
+    Nothing -> throwCmdError "no received name at that address - try /names rescan"
+    Just r -> do
+      ks <- userStealthKeys user
+      nameEither $ oneTimeAccount ks (WS.otaEphemeralPubKey r)
+
+announcementOf :: St.StealthDestination -> Announcement
+announcementOf d = Announcement {anEphemeralPubKey = St.sdEphemeralPubKey d, anViewTag = St.sdViewTag d}
+
+namesAt :: Address -> CM [Text]
+namesAt addr = map safeDecodeUtf8 <$> nameSvc (namesOwnedBy namesService addr)
+
+
+
+nameAddrText :: Address -> Text
+nameAddrText = safeDecodeUtf8 . checksumAddress
+
+-- | Intents expire; the mock's clock is fixed, so this is a fixed horizon.
+nameDeadline :: Integer
+nameDeadline = 1786000000 + 3600

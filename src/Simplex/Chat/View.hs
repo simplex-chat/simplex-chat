@@ -34,6 +34,7 @@ import Data.Text.Encoding (decodeLatin1)
 import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 import qualified Network.HTTP.Types as Q
@@ -149,6 +150,68 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
+  CRNameAddress u addr acct meta ->
+    ttyUser
+      u
+      [ "name address (account " <> sShow acct <> "): " <> plain addr,
+        "meta-address (share this to be sent names): " <> plain meta
+      ]
+  CRNameGifted u fqdn tx _eph -> ttyUser u ["gift " <> plain fqdn <> " done", "tx " <> plain tx]
+  CRNameRenewed u fqdn expires reReg ->
+    ttyUser u [(if reReg then "registered again: " else "renewed: ") <> plain fqdn, "expires " <> sShow expires]
+  CRNameStatus u hasWallet keySaved _anySeed ->
+    ttyUser u [if hasWallet then (if keySaved then "wallet ready, recovery key saved" else "wallet ready, recovery key NOT saved") else "no wallet yet - people cannot send you names"]
+  CRNamesIncoming u ns
+    | null ns -> ttyUser u ["no names have been sent to you"]
+    | otherwise ->
+        ttyUser u $
+          "names sent to you, not yet accepted:"
+            : map (\IncomingName {inAddress, inNames} -> "  " <> plain (T.intercalate ", " inNames) <> " at " <> plain inAddress) ns
+            <> ["", "accepting links this profile to the name on chain; declining leaves no trace"]
+  CRNameAccepted u addr names ->
+    ttyUser u ["accepted " <> plain (T.intercalate ", " names) <> " at " <> plain addr]
+  CRNameDeclined u addr -> ttyUser u ["declined the name at " <> plain addr <> " - nothing was written on chain"]
+  CRNameKeyExported u addr key ->
+    ttyUser
+      u
+      [ "private key for " <> plain addr <> ":",
+        "",
+        plain key,
+        "",
+        "this key controls that one address and nothing else - not your other names, not your recovery key"
+      ]
+  CRNameRescanned u found ->
+    ttyUser u [if found == 0 then "no new names found" else "found " <> sShow found <> " name(s) sent to you - see /names incoming"]
+  CRNameRecoveryKey u phrase saved ->
+    ttyUser u $
+      [ "name recovery key:",
+        "",
+        plain phrase,
+        ""
+      ]
+        <> if saved
+          then ["you marked this as saved"]
+          else ["write this down and keep it offline - it is the only way to recover your names", "then run /names key saved"]
+  CRNameQuoted u label avail cents ->
+    ttyUser u
+      [ plain label <> ".simplex: "
+          <> (if avail then "available" else "taken")
+          <> ", " <> plain (moneyText cents) <> "/year"
+      ]
+  CRNameRegistered u name tx -> ttyUser u ["registered " <> plain name, "tx " <> plain tx]
+  CRNamesOwned u [] -> ttyUser u ["you own no names"]
+  CRNamesOwned u ns -> ttyUser u $ "your names:" : map (\OwnedName {onFqdn, onExpires} -> "  " <> plain onFqdn <> " (expires " <> sShow onExpires <> ")") ns
+  CRNameInfo u name owner contact channel expires credits ->
+    ttyUser u $
+      [ plain name,
+        "  owner    " <> plain owner,
+        "  expires  " <> plain (expiryText expires),
+        "  changes  " <> sShow credits <> " relayed record changes left"
+      ]
+        <> ["  contact  " <> plain l | l <- contact]
+        <> ["  channel  " <> plain l | l <- channel]
+  CRNameIntentRelayed u action name tx ->
+    ttyUser u [plain action <> " " <> plain name <> " done", "tx " <> plain tx]
   CRGroupDomainVerified u g result -> ttyUser u $ viewDomainVerified NTPublicGroup (groupSimplexDomain g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -1146,6 +1209,14 @@ groupSimplexDomain :: GroupInfo -> Maybe SimplexDomain
 groupSimplexDomain GroupInfo {groupProfile = GroupProfile {publicGroup}} =
   claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
 
+expiryText :: Int -> Text
+expiryText t = T.pack . formatTime defaultTimeLocale "%Y-%m-%d" . posixSecondsToUTCTime $ fromIntegral t
+
+moneyText :: Int -> Text
+moneyText cents = T.pack $ "$" <> show (cents `div` 100) <> "." <> pad (cents `mod` 100)
+  where
+    pad n = let str = show n in if length str < 2 then '0' : str else str
+
 viewDomainVerified :: SimplexNameType -> Maybe SimplexDomain -> Maybe Text -> [StyledString]
 viewDomainVerified nameType domain_ result =
   let nameStr = maybe "name" (\d -> "SimpleX name " <> shortNameInfoStr (SimplexNameInfo nameType d)) domain_
@@ -1969,12 +2040,15 @@ viewSwitchPhase = \case
   SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> UserProfileUpdateSummary -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, description, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', description = description', image = image', contactLink = contactLink', preferences = prefs'} summary =
+viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, description, image, contactLink, preferences, metaAddress = ma} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', description = description', image = image', contactLink = contactLink', preferences = prefs', metaAddress = ma'} summary =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     UserProfileUpdateSummary {updateSuccesses = s, updateFailures = f} = summary
     profileUpdated
-      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' && contactLink == contactLink' = []
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' && contactLink == contactLink' =
+          -- Publishing a meta-address changes nothing a reader would notice, so
+          -- say so explicitly rather than reporting an empty update.
+          ["meta-address published, contacts can now send you names" <> notified | ma /= ma']
       | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
       | n == n' && fullName == fullName' && shortDescr == shortDescr' && description == description' = [if isNothing image' then "profile image removed" else "profile image updated"]
       | n == n' && fullName == fullName' && shortDescr == shortDescr' = ["user description " <> (if maybe True T.null description' then "removed" else "changed to " <> maybe "" plain description') <> notified]
