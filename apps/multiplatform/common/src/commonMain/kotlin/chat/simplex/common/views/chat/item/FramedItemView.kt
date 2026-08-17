@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -23,6 +24,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.usersettings.SimplexNamesView
 import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
@@ -365,6 +367,25 @@ fun FramedItemView(
                 if (hasText) {
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, stripLink = mc.chatLink.connLinkStr)
                 }
+              }
+              // Rendered from the payload, in the reader's language: the text
+              // the sender composed is only a fallback for older clients.
+              is MsgContent.MCAssetTransfer -> {
+                // The message says to open SimpleX names, so it takes you
+                // there: the alternative is four manual steps from a bubble
+                // the user may never see again.
+                Text(
+                  assetTransferText(mc.transfer, ci.chatDir.sent),
+                  style = MaterialTheme.typography.body1,
+                  color = if (ci.chatDir.sent) Color.Unspecified else MaterialTheme.colors.primary,
+                  modifier = Modifier
+                    .padding(horizontal = DEFAULT_PADDING_HALF * 1.5f, vertical = DEFAULT_PADDING_HALF)
+                    .clickable(enabled = !ci.chatDir.sent) {
+                      ModalManager.start.showModalCloseable { close ->
+                        SimplexNamesView(chatModel.remoteHostId(), close)
+                      }
+                    },
+                )
               }
               is MsgContent.MCReport -> {
                 val prefix = buildAnnotatedString {
