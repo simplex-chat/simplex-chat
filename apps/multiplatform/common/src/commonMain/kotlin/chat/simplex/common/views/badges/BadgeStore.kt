@@ -21,8 +21,6 @@ fun badgeProductId(level: BadgeLevel, period: BadgePeriod): String = when (level
   }
 }
 
-// the store sells one-time products and subscriptions through separate APIs, and a single Play
-// query cannot mix them
 enum class BadgeProductType { OneTime, Subscription }
 
 val BadgePeriod.productType: BadgeProductType

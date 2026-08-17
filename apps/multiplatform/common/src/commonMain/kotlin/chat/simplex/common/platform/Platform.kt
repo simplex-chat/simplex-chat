@@ -34,8 +34,7 @@ interface PlatformInterface {
   fun androidIsXiaomiDevice(): Boolean = false
   // Requests the Google Play account country into [androidPlayStoreCountry]
   fun androidLoadPlayStoreCountry() {}
-  // Play Billing, only implemented in the google flavor. A single Play query cannot mix product
-  // types, so the ids are passed already grouped.
+  // Play Billing, only implemented in the google flavor
   // TODO [badges] desktop and foss pay via Stripe/crypto - these defaults leave them without any
   // product until that path is implemented
   suspend fun androidLoadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> = emptyList()
