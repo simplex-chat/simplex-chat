@@ -42,7 +42,7 @@ private struct FeatureView {
     let view: () -> any View
 }
 
-private let isInUS = SKStorefront().countryCode == "USA"
+let isInUS = true // SKStorefront().countryCode == "USA"
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -668,12 +668,12 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "v7.0",
+        version: "v7.0 ",
         post: nil,
         features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
-                title: "Invest in SimpleX Chat",
+                title: "You can now invest in SimpleX Chat",
                 view: { InvestInSimpleXChat() }
             ))
         ] : []) + [
@@ -772,38 +772,130 @@ fileprivate struct CreateUpdateAddressShortLink: View {
 }
 
 fileprivate struct InvestInSimpleXChat: View {
-    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
+    @State private var showGetStakeSheet = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .center, spacing: 4) {
-                    Image(systemName: "dollarsign.circle")
-                        .symbolRenderingMode(.monochrome)
-                        .foregroundColor(theme.colors.secondary)
-                        .frame(minWidth: 30, alignment: .center)
-                    Text(verbatim: "Invest in SimpleX Chat").font(.title3).bold()
-                }
-                Text(verbatim: "Equity crowdfunding launched!")
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
-                if let url = URL("https://wefunder.com/simplexchat") {
-                    ExternalLink(destination: url) {
-                        HStack {
-                            Text(verbatim: "Learn more on Wefunder")
-                            Image(systemName: "arrow.up.right.circle")
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Image(colorScheme == .light ? "own-stake" : "own-stake-light")
+        VStack(alignment: .leading, spacing: 4) {
+            Text("You can now invest in SimpleX Chat! 🚀").font(.title3).bold()
+            (Text("Crowdfunding on Wefunder.") + Text(verbatim: " ") + Text("Learn more").foregroundColor(theme.colors.primary))
+                .multilineTextAlignment(.leading)
+                .onTapGesture { showGetStakeSheet = true }
+            #if SIMPLEX_ASSETS
+            Image("crowdfunding_1")
                 .resizable()
-                .scaledToFill()
-                .frame(width: UIScreen.main.bounds.width / 5)
+                .scaledToFit()
+                .cornerRadius(12)
+                .padding(.vertical, 4)
+                .onTapGesture { showGetStakeSheet = true }
+            #endif
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(isPresented: $showGetStakeSheet) {
+            GetStakeView(fromSettings: false)
+        }
+    }
+}
+
+fileprivate let getStakeSlides: [(image: String, heading: String, info: String?, text: String)] = [
+    (
+        "crowdfunding_1",
+        "The first and the only messaging network without any user IDs",
+        nil,
+        "By investing, you can benefit from the company growth, and help us build the future of private and secure communications."
+    ),
+    (
+        "crowdfunding_2",
+        "480,000+ users joined on their own",
+        nil,
+        "SimpleX users have been more than doubling every year without any paid marketing, and donated over $650,000."
+    ),
+    (
+        "crowdfunding_3",
+        "Developers already bet on SimpleX success",
+        "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
+        "Every service developers build on SimpleX Network may increase its value, and bring new users to SimpleX Chat."
+    ),
+    (
+        "crowdfunding_4",
+        "Revenue plan: free for users, channels & businesses pay",
+        "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
+        "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
+    ),
+]
+
+private let wefunderURL = URL(string: "https://wefunder.com/simplex.chat?utm_source=app")!
+
+private let simplexCrowdfundingURL = URL(string: "simplex:/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo?h=smp11.simplex.im")!
+
+struct GetStakeView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var chatModel: ChatModel
+    var fromSettings: Bool
+
+    var body: some View {
+        ZoomablePageView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text(verbatim: "Get a stake in\nSimpleX Chat")
+                    .font(.largeTitle)
+                    .bold()
+                    .fixedSize(horizontal: false, vertical: true)
+                    .if(!fromSettings) { $0.padding(.top) }
+                if fromSettings {
+                    slideImage(getStakeSlides[0])
+                }
+                (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))
+                    .multilineTextAlignment(.leading)
+                    .onTapGesture {
+                        UIApplication.shared.open(wefunderURL)
+                    }
+                .padding(.bottom)
+                ForEach(getStakeSlides[1...3], id: \.image) { slide in
+                    VStack(alignment: .leading) {
+                        slideImage(slide)
+                        Text(slide.text)
+                    }
+                    .padding(.bottom)
+                }
+
+                Button {
+                    UIApplication.shared.open(wefunderURL)
+                } label: {
+                    Text(verbatim: "Learn more on Wefunder")
+                }
+                .buttonStyle(OnboardingButtonStyle())
+
+                Button {
+                    dismiss()
+                    DispatchQueue.main.async {
+                        ChatModel.shared.appOpenUrl = simplexCrowdfundingURL
+                    }
+                } label: {
+                    Text(verbatim: "or ask SimpleX team")
+                        .font(.callout)
+                }
+                .disabled(chatModel.chatRunning != true)
+                .frame(maxWidth: .infinity)
+            }
+            .padding()
+        }
+        .ignoresSafeArea(edges: .bottom)
+        .modifier(ThemedBackground(grouped: true))
+    }
+
+    @ViewBuilder
+    func slideImage(_ slide: (image: String, heading: String, info: String?, text: String?)) -> some View {
+        #if SIMPLEX_ASSETS
+        Image(slide.image)
+            .resizable()
+            .scaledToFit()
+            .cornerRadius(12)
+        #else
+        Text(slide.heading).font(.title3).bold()
+        if let info = slide.info {
+            Text(info)
+        }
+        #endif
     }
 }
 
