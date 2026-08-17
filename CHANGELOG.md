@@ -1,5 +1,16 @@
 # Release History
 
+## Unreleased
+
+SimpleX names v2 (in development, core only):
+- Non-custodial in-app name registration: BIP-39/32 wallet and ERC-5564 stealth
+  addresses (via simplexmq), a names-service interface with an in-memory mock
+  that verifies real EIP-712 signatures, per-profile derived accounts, and
+  signed-intent commands for transfer, record edits and gifting.
+- CLI and end-to-end tests only in this change; the GUIs follow in a stacked PR,
+  and the flow runs against the mock, not a deployed contract.
+- Design: docs/rfcs/2026-08-05-simplex-names-v2.md
+
 ## v6.5
 
 30 April, 2026
