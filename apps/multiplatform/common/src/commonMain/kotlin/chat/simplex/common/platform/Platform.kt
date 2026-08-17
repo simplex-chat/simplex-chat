@@ -9,6 +9,10 @@ import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatId
 import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.views.badges.BadgeProduct
+import chat.simplex.common.views.badges.BadgePurchaseOutcome
+import chat.simplex.common.views.badges.BadgeStoreError
+import chat.simplex.common.views.badges.BadgeStoreProductId
 import kotlinx.coroutines.Job
 import java.io.Closeable
 
@@ -31,6 +35,14 @@ interface PlatformInterface {
   fun androidIsXiaomiDevice(): Boolean = false
   // Requests the Google Play account country into [androidPlayStoreCountry]
   fun androidLoadPlayStoreCountry() {}
+  // Play Billing, only implemented in the google flavor
+  // TODO [badges] desktop and foss pay via Stripe/crypto - these defaults leave them without any
+  // product until that path is implemented
+  suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> {
+    Log.w(TAG, "androidLoadBadgeProducts: no store on this platform")
+    return emptyList()
+  }
+  suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = throw BadgeStoreError.StoreUnavailable
   val androidApiLevel: Int? get() = null
   // The build distributed via Google Play, which has to follow its policies
   val androidIsPlayStoreBuild: Boolean get() = false

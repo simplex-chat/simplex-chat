@@ -33,6 +33,9 @@ import chat.simplex.res.MR
 @Composable
 fun BadgesSupportSimplexView() {
   // TODO [badges] gate on user badge status (no badge → this view, active → "Manage your badge")
+  // preloaded here so the level screen shows store prices without a placeholder pass
+  LaunchedEffect(Unit) { BadgeStore.load() }
+
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),

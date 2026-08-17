@@ -30,13 +30,6 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var priceAmount: String {
-        switch self {
-        case .supporter: "$7"
-        case .legend: "$70"
-        }
-    }
-
     var tagline: LocalizedStringKey {
         switch self {
         case .supporter: "Optional profile badge\nand 2GB files"
@@ -54,6 +47,7 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
 
 struct BadgesYourLevelView: View {
     @EnvironmentObject var theme: AppTheme
+    @ObservedObject private var store = BadgeStore.shared
     @State private var selectedLevel: BadgeLevel = .supporter
     @State private var continueActive = false
     @State private var howItWorksActive = false
@@ -78,10 +72,13 @@ struct BadgesYourLevelView: View {
 
                     Spacer(minLength: 20)
 
+                    // fixedSize + maxHeight on the cards so both match the taller one when a
+                    // store price wraps in one of them
                     HStack(alignment: .top, spacing: 12) {
                         levelCard(.supporter)
                         levelCard(.legend)
                     }
+                    .fixedSize(horizontal: false, vertical: true)
 
                     Spacer(minLength: 20)
 
@@ -101,6 +98,7 @@ struct BadgesYourLevelView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+        .task { await store.load() }
     }
 
     private func levelCard(_ level: BadgeLevel) -> some View {
@@ -120,11 +118,13 @@ struct BadgesYourLevelView: View {
                 Text(level.filesDescription)
                     .font(.subheadline)
                     .foregroundColor(theme.colors.secondary)
-                Text("\(level.priceAmount)/month")
+                BadgePeriod.monthly.priceText(store.price(level, .monthly))
                     .font(.body)
                     .padding(.bottom, 20)
             }
-            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
