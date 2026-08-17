@@ -8,6 +8,7 @@ import SectionTextFooter
 import SectionView
 import SectionViewSelectableCards
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -158,6 +159,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         }, close)
       }
     },
+    cardScreen = true,
   ) {
     AdvancedNetworkSettingsLayout(
       currentRemoteHost = currentRemoteHost,
@@ -234,13 +236,13 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
+      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation)) {
         SessionModePicker(sessionMode, showModal, updateSessionMode)
       }
       SectionDividerSpaced()
-      SectionView(stringResource(MR.strings.network_smp_web_port_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.network_smp_web_port_section_title)) {
         ExposedDropDownSettingRow(
           stringResource(MR.strings.network_smp_web_port_toggle),
           SMPWebPortServers.entries.map { it to stringResource(it.text) },
@@ -251,9 +253,9 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         if (smpWebPortServers.value == SMPWebPortServers.Preset) stringResource(MR.strings.network_smp_web_port_preset_footer)
         else String.format(stringResource(MR.strings.network_smp_web_port_footer), if (smpWebPortServers.value == SMPWebPortServers.All) "443" else "5223")
       )
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {
+      SectionView(stringResource(MR.strings.network_option_tcp_connection)) {
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeoutInteractive,
@@ -330,7 +332,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
       }
     }
 
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
 
     SectionView {
       SectionItemView(reset, disabled = resetDisabled) {

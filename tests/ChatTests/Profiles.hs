@@ -26,9 +26,9 @@ import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (currentChatVersion)
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..), currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -38,7 +38,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util (encodeJSON)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
@@ -46,7 +46,11 @@ chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
+    it "profile description round-trips and shows in contact info" testProfileDescriptionShown
+    it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
+    it "reject profile image that is too large" testSetProfileImageTooLarge
+    it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
     it "present supporter badge to contacts" testUserBadgeBroadcast
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
@@ -57,6 +61,7 @@ chatProfileTests = do
     it "supporter badge sent to contact connecting via address" testUserBadgeContactAddress
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
@@ -65,12 +70,9 @@ chatProfileTests = do
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
-    -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
     it "auto-reply message" testAutoReplyMessage
-    it "auto-reply message in incognito" testAutoReplyMessageInIncognito
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
-      -- TODO [short links] test business auto-reply with current version, with connecting client not preparing contact
       it "update profiles with business address" testBusinessUpdateProfiles
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
@@ -82,7 +84,6 @@ chatProfileTests = do
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
-    it "accept contact request incognito" testAcceptContactRequestIncognito
     it "set connection incognito" testSetConnectionIncognito
     it "reset connection incognito" testResetConnectionIncognito
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
@@ -123,8 +124,12 @@ chatProfileTests = do
     it "should connect via one-time invitation" testShortLinkInvitation
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
+    it "should share contact address via chat" testShareAddressViaChat
     it "should join group" testShortLinkJoinGroup
   describe "short links with attached data" shortLinkTests
+  describe "client services" $ do
+    it "should create user as a service, disable and re-enable" testClientService
+    it "should create user without a service, enable and disable" testSwitchClientService
 
 shortLinkTests :: SpecWith TestParams
 shortLinkTests = do
@@ -199,6 +204,69 @@ testUpdateProfile =
             bob <## "contact cate changed to cat (Cate)"
             bob <## "use @cat <message> to send messages"
         ]
+
+-- Profile.description survives the connect-time round-trip and is shown in the contact /i view.
+testProfileDescriptionShown :: HasCallStack => TestParams -> IO ()
+testProfileDescriptionShown =
+  testChat2 aliceProfile bobWithDescr $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/i @bob"
+      alice <## "contact ID: 2"
+      alice <## "description:"
+      alice <## "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"
+      alice <##. "receiving messages via"
+      alice <##. "sending messages via"
+      alice <## "you've shared main profile with this contact"
+      alice <## "connection not verified, use /code command to see security code"
+      alice <## "quantum resistant end-to-end encryption"
+      alice <##. "peer chat protocol version range"
+  where
+    bobWithDescr = bobProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
+
+-- for a member without a direct contact, the description is redacted per the group's link/name policy
+testMemberDescriptionRedacted :: HasCallStack => TestParams -> IO ()
+testMemberDescriptionRedacted =
+  testChat3 aliceProfile bobProfile cathWithDescr $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      -- prohibit direct messages (and thus simplex links) before members join
+      alice ##> "/set direct #team off"
+      alice <## "updated group preferences:"
+      alice <## "Direct messages: off"
+      addMember "team" alice bob GRAdmin
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      -- cath joins and is introduced to bob with a redacted profile (link stripped)
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      -- bob has no direct contact to cath, so his stored member profile has the link stripped
+      bob ##> "/i #team cath"
+      bob <## "group ID: 1"
+      bob <##. "member ID:"
+      bob <## "description:"
+      bob <## "check  out"
+      bob <##. "receiving messages via"
+      bob <##. "sending messages via"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <##. "peer chat protocol version range"
+  where
+    cathWithDescr = cathProfile {description = Just "check [this link](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) out"}
 
 -- the test issuer key under index 1 in the test config
 testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
@@ -424,6 +492,52 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
+testSetProfileImageTooLarge :: HasCallStack => TestParams -> IO ()
+testSetProfileImageTooLarge =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      -- image within the size limit is accepted
+      alice ##> "/set profile image data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
+      alice <## "profile image updated"
+      -- image over the size limit is rejected;
+      -- the long command wraps in the virtual terminal, so drain echo lines until the error
+      alice `send` ("/set profile image data:image/png;base64," <> replicate 12500 'A')
+      let errPrefix = "bad chat command: Profile image is too large"
+          expectError = do
+            l <- getTermLine alice
+            unless (take (length errPrefix) l == errPrefix) expectError
+      expectError
+      (bob </)
+
+testSetProfileImageFromFile :: HasCallStack => TestParams -> IO ()
+testSetProfileImageFromFile ps = testChat aliceProfile test ps
+  where
+    tmp = tmpPath ps
+    pngPath = tmp <> "/avatar.png"
+    gifPath = tmp <> "/avatar.gif"
+    missingPath = tmp <> "/missing.png"
+    emptyPath = tmp <> "/empty.png"
+    test alice = do
+      B.writeFile pngPath "fake png bytes" -- content is not validated, only the extension
+      -- set profile image from a .png file
+      alice ##> ("/set profile image file " <> pngPath)
+      alice <## "profile image updated"
+      alice ##> "/show profile image"
+      alice <## "Profile image:"
+      alice <##. "data:image/png;base64,"
+      -- unsupported extension is rejected
+      B.writeFile gifPath "GIF89a"
+      alice ##> ("/set profile image file " <> gifPath)
+      alice <##. "bad chat command: unsupported image extension"
+      -- missing file is rejected
+      alice ##> ("/set profile image file " <> missingPath)
+      alice <##. "bad chat command: image file not found"
+      -- empty file is rejected
+      B.writeFile emptyPath ""
+      alice ##> ("/set profile image file " <> emptyPath)
+      alice <##. "bad chat command: image file is empty"
+
 testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =
   testChat3 aliceProfile' bobProfile' cathProfile' $
@@ -498,7 +612,7 @@ testMultiWordProfileNames =
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
     cathProfile' = baseProfile {displayName = "Cath Johnson"}
-    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing}
+    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
 
 testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =
@@ -529,6 +643,32 @@ testUserContactLink =
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
+
+testCreateAddressOnServer :: HasCallStack => TestParams -> IO ()
+testCreateAddressOnServer ps = testChat aliceProfile test ps
+  where
+    tmp = tmpPath ps
+    -- second SMP server, distinct from alice's configured server (localhost:7001)
+    altServer = "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"
+    altServerCfg =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    test alice = do
+      withSmpServer' altServerCfg $ do
+        -- without a server the address is created on the configured server (7001)
+        alice ##> "/_address 1"
+        (_, defaultLink) <- getContactLinks alice True
+        defaultLink `shouldContain` "localhost%3A7001" -- server is URL-encoded in the link
+        alice ##> "/_delete_address 1"
+        alice <## "Your chat address is deleted - accepted contacts will remain connected."
+        alice <## "To create a new chat address use /ad"
+        -- with a server the address is pinned to the requested server (7003)
+        alice ##> ("/_address 1 " <> altServer)
+        (_, pinnedLink) <- getContactLinks alice True
+        pinnedLink `shouldContain` "localhost%3A7003"
+      alice <## "disconnected 1 connections on server localhost"
 
 testRetryConnectingViaContactLink :: HasCallStack => TestParams -> IO ()
 testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
@@ -971,10 +1111,10 @@ testContactLinkDeletedConnectedContactWorks = testChat2 aliceProfile bobProfile 
     bob @@@ [("@alice", "hey")]
 
 testAutoReplyMessage :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessage = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
+testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
-    cLink <- getContactLinkNoShortLink alice True
+    cLink <- getContactLink alice True
     alice ##> "/auto_accept on incognito=off text hello!"
     alice <## "auto_accept on"
     alice <## "auto reply:"
@@ -990,31 +1130,6 @@ testAutoReplyMessage = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile 
           bob <# "alice> hello!"
           bob <## "alice (Alice): contact is connected",
         alice <## "bob (Bob): contact is connected"
-      ]
-
-testAutoReplyMessageInIncognito :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessageInIncognito = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
-  \alice bob -> do
-    alice ##> "/ad"
-    cLink <- getContactLinkNoShortLink alice True
-    alice ##> "/auto_accept on incognito=on text hello!"
-    alice <## "auto_accept on, incognito"
-    alice <## "auto reply:"
-    alice <## "hello!"
-
-    bob ##> ("/c " <> cLink)
-    bob <## "connection request sent!"
-    alice <## "bob (Bob): accepting contact request..."
-    alice <## "bob (Bob): you can send messages to contact"
-    alice <# "i @bob hello!"
-    aliceIncognito <- getTermLine alice
-    concurrentlyN_
-      [ do
-          bob <# (aliceIncognito <> "> hello!")
-          bob <## (aliceIncognito <> ": contact is connected"),
-        do
-          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice <## "use /i bob to print out this incognito profile again"
       ]
 
 testBusinessAddress :: HasCallStack => TestParams -> IO ()
@@ -1072,10 +1187,10 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
-testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile aliceProfile bobProfile cathProfile $
+testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
   \biz alice bob cath -> do
     biz ##> "/ad"
-    cLink <- getContactLinkNoShortLink biz True
+    cLink <- getContactLink biz True
     biz ##> "/auto_accept on business text Welcome"
     biz <## "auto_accept on, business"
     biz <## "auto reply:"
@@ -1105,7 +1220,7 @@ testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile al
     biz ##> "/mr alisa alisa_1 admin"
     biz <## "#alisa: you changed the role of alisa_1 to admin"
     alice <## "#biz: biz_1 changed your role from member to admin"
-    connectUsersNoShortLink alice bob
+    connectUsers alice bob
     alice ##> "/a #biz bob"
     alice <## "invitation to join the group #biz sent to bob"
     bob <## "#biz (Biz Inc): alisa invites you to join the group as member"
@@ -1136,7 +1251,7 @@ testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile al
     alice <# "#biz robert> hi there"
     biz <# "#alisa robert> hi there"
     -- add business team member
-    connectUsersNoShortLink biz cath
+    connectUsers biz cath
     biz ##> "/a #alisa cath"
     biz <## "invitation to join the group #alisa sent to cath"
     cath <## "#alisa: biz invites you to join the group as member"
@@ -1624,54 +1739,6 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
-
-testAcceptContactRequestIncognito :: HasCallStack => TestParams -> IO ()
-testAcceptContactRequestIncognito = testChatCfg3 testCfgNoShortLinks aliceProfile bobProfile cathProfile $
-  \alice bob cath -> do
-    alice ##> "/ad"
-    cLink <- getContactLinkNoShortLink alice True
-    -- GUI /_accept api
-    bob ##> ("/c " <> cLink)
-    alice <#? bob
-    alice ##> "/_accept incognito=on 1"
-    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-    aliceIncognitoBob <- getTermLine alice
-    concurrentlyN_
-      [ bob <## (aliceIncognitoBob <> ": contact is connected"),
-        do
-          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognitoBob)
-          alice <## "use /i bob to print out this incognito profile again"
-      ]
-    -- conversation is incognito
-    alice ?#> "@bob my profile is totally inconspicuous"
-    bob <# (aliceIncognitoBob <> "> my profile is totally inconspicuous")
-    bob #> ("@" <> aliceIncognitoBob <> " I know!")
-    alice ?<# "bob> I know!"
-    -- list contacts
-    alice ##> "/contacts"
-    alice <## "i bob (Bob)"
-    alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognitoBob]
-    -- delete contact, incognito profile is deleted
-    alice ##> "/d bob"
-    alice <## "bob: contact is deleted"
-    bob <## (aliceIncognitoBob <> " deleted contact with you")
-    alice ##> "/contacts"
-    (alice </)
-    alice `hasContactProfiles` ["alice"]
-    -- terminal /accept api
-    cath ##> ("/c " <> cLink)
-    alice <#? cath
-    alice ##> "/accept incognito cath"
-    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
-    aliceIncognitoCath <- getTermLine alice
-    concurrentlyN_
-      [ cath <## (aliceIncognitoCath <> ": contact is connected"),
-        do
-          alice <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> aliceIncognitoCath)
-          alice <## "use /i cath to print out this incognito profile again"
-      ]
-    alice `hasContactProfiles` ["alice", "cath", T.pack aliceIncognitoCath]
-    cath `hasContactProfiles` ["cath", T.pack aliceIncognitoCath]
 
 testSetConnectionIncognito :: HasCallStack => TestParams -> IO ()
 testSetConnectionIncognito = testChat2 aliceProfile bobProfile $
@@ -3035,6 +3102,38 @@ testPlanShortLinkInvitation =
 slSimplexScheme :: String -> String
 slSimplexScheme sl = T.unpack $ T.replace "https://localhost/" "simplex:/" (T.pack sl) <> "?h=localhost"
 
+testShareAddressViaChat :: HasCallStack => TestParams -> IO ()
+testShareAddressViaChat =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    alice ##> "/ad"
+    _ <- getContactLinks alice True
+    connectUsers alice bob
+    connectUsers bob cath
+    -- alice shares her signed address card to bob
+    alice ##> "/share address @bob"
+    alice <# "@bob contact address of @alice (signed):"
+    _ <- getTermLine alice -- link
+    _ <- getTermLine alice -- owner signature (testView)
+    bob <# "alice> contact address of @alice (signed):"
+    bLink <- getTermLine bob
+    bSig <- getTermLine bob
+    -- bob verifies alice's owner signature
+    bob ##> ("/_connect plan 1 " <> bLink <> " sig=" <> bSig)
+    bob <## "contact address: ok to connect"
+    bob <## "owner signature: verified"
+    _ <- getTermLine bob -- link data
+    -- bob replays alice's signed card to cath: the binding was alice->bob, so cath strips the signature
+    let sig = maybe (error "bad sig") id (decodeJSON (T.pack bSig) :: Maybe LinkOwnerSig)
+        cLink = either error id $ strDecode (B.pack bLink)
+        mc = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") False) (Just sig)
+        cm = "{\"msgContent\":" <> T.unpack (encodeJSON mc) <> "}"
+    bob ##> ("/_send @3 json [" <> cm <> "]")
+    bob <# "@cath contact address of @alice (signed):"
+    _ <- getTermLine bob -- link
+    _ <- getTermLine bob -- owner signature (bob's sent view)
+    cath <# "bob> contact address of @alice:"
+    void $ getTermLine cath -- link (signature stripped)
+
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
@@ -3835,14 +3934,14 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "alice: contact is prepared"
 
-      -- 2 ids are for "user contacts", 2 ids are for second user contact cards, so alice is id 5
-      bob ##> "/_set contact user @5 2"
+      -- 2 ids are for "user contacts", 1 id is for second user contact card, so alice is id 4
+      bob ##> "/_set contact user @4 2"
       bob <## "contact alice changed from user bob to user robert"
 
       bob ##> "/user robert"
       showActiveUser bob "robert"
 
-      bob ##> "/_connect contact @5 text hello"
+      bob ##> "/_connect contact @4 text hello"
       bob
         <### [ "alice: connection started",
                WithTime "@alice hello"
@@ -3856,8 +3955,8 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
 
       alice @@@ [("@robert", "hey")]
       alice `hasContactProfiles` ["alice", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
-      bob `hasContactProfiles` ["robert", "alice", "Ask SimpleX Team", "SimpleX Status"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@Ask SimpleX Team", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "Ask SimpleX Team"]
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
       bob @@@ []
@@ -3885,16 +3984,16 @@ testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProf
       bob <## "alice: contact is prepared"
 
       -- 2 ids are for "user contacts"
-      -- 2 ids are for second user contact cards
+      -- 1 id is for second user contact card
       -- 1 for second user's alice
-      -- so this alice is id 6
-      bob ##> "/_set contact user @6 2"
+      -- so this alice is id 5
+      bob ##> "/_set contact user @5 2"
       bob <## "contact alice changed from user bob to user robert, new local name: alice_1"
 
       bob ##> "/user robert"
       showActiveUser bob "robert"
 
-      bob ##> "/_connect contact @6 text hello"
+      bob ##> "/_connect contact @5 text hello"
       bob
         <### [ "alice_1: connection started",
                WithTime "@alice_1 hello"
@@ -3913,8 +4012,8 @@ testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProf
 
       alice @@@ [("@robert", "hey"), ("@robert_1", "hey")]
       alice `hasContactProfiles` ["alice", "robert", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@alice_1", "hey"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
-      bob `hasContactProfiles` ["robert", "alice", "alice", "Ask SimpleX Team", "SimpleX Status"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@alice_1", "hey"), ("@Ask SimpleX Team", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "alice", "Ask SimpleX Team"]
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
       bob @@@ []
@@ -4007,8 +4106,8 @@ testShortLinkChangePreparedGroupUser = testChat3 aliceProfile bobProfile cathPro
 
       alice @@@ [("#team", "3"), ("@cath","sent invitation to join group team as admin")]
       alice `hasContactProfiles` ["alice", "cath", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("#team", "3"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
-      bob `hasContactProfiles` ["robert", "alice", "cath", "Ask SimpleX Team", "SimpleX Status"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("#team", "3"), ("@Ask SimpleX Team", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "cath", "Ask SimpleX Team"]
       cath @@@ [("#team", "3"), ("@alice","received invitation to join group team as admin")]
       cath `hasContactProfiles` ["cath", "alice", "robert"]
       bob ##> "/user bob"
@@ -4121,7 +4220,7 @@ testShortLinkChangePreparedGroupUserDuplicate = testChat3 aliceProfile bobProfil
 
       alice @@@ [("#team", "7"), ("@cath","sent invitation to join group team as admin")]
       alice `hasContactProfiles` ["alice", "cath", "robert", "robert"]
-      bob `hasContactProfiles` ["robert", "robert", "robert", "alice", "alice", "cath", "cath", "Ask SimpleX Team", "SimpleX Status"]
+      bob `hasContactProfiles` ["robert", "robert", "robert", "alice", "alice", "cath", "cath", "Ask SimpleX Team"]
       cath @@@ [("#team", "7"), ("@alice","received invitation to join group team as admin")]
       cath `hasContactProfiles` ["cath", "alice", "robert", "robert"]
       bob ##> "/user bob"
@@ -4362,3 +4461,83 @@ testShortLinkGroupChangeProfileReceived = testChat3 aliceProfile bobProfile cath
       [alice, cath] *<# "#club bob> 2"
       cath #> "#club 3"
       [alice, bob] *<# "#club cath> 3"
+
+testClientService :: HasCallStack => TestParams -> IO ()
+testClientService ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      -- create user as service
+      withNewTestChat_ ps "service" True serviceProfile $ \service -> do
+        connectUsers alice service
+        alice <##> service
+        service ##> "/set client service 1:service_user off"
+        service <## "error: chat not stopped"
+        service ##> "/users"
+        service <## "service_user (Service user) (active, service)"
+      -- connect as service
+      withTestChat ps "service" $ \service -> do
+        subscribeClientService service 1
+        alice <##> service
+      setClientService ps "off"
+      -- connect without service
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 1 connections on server localhost"
+        alice <##> service
+        connectUsers bob service
+        bob <##> service
+      setClientService ps "on"
+      -- connect as service, queue associated
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 2 connections on server localhost"
+        alice <##> service
+        bob <##> service
+      -- connect as service
+      withTestChat ps "service" $ \service -> do
+        subscribeClientService service 2
+        alice <##> service
+        bob <##> service
+
+testSwitchClientService :: HasCallStack => TestParams -> IO ()
+testSwitchClientService ps =
+  withNewTestChat ps "user" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      -- create user without service
+      withNewTestChat_ ps "service" False serviceProfile $ \service -> do
+        connectUsers alice service
+        alice <##> service
+      -- connect without service
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 1 connections on server localhost"
+        alice <##> service
+      setClientService ps "on"
+      -- connect as service, queue associated
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 1 connections on server localhost"
+        alice <##> service
+        connectUsers bob service
+        bob <##> service
+      -- connect as service
+      withTestChat ps "service" $ \service -> do
+        subscribeClientService service 2
+        alice <##> service
+        bob <##> service
+      -- connect without service
+      setClientService ps "off"
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 2 connections on server localhost"
+        alice <##> service
+        bob <##> service
+
+setClientService :: TestParams -> String -> IO ()
+setClientService ps onOff =
+  withTestChatCfgOpts ps testCfg testOpts {coreOptions = testCoreOpts {maintenance = True}} "service" $ \service -> do
+    service ##> ("/set client service 1:service_user " <> onOff)
+    service <## "ok"
+    
+subscribeClientService :: TestCC -> Int -> IO ()
+subscribeClientService service n =
+  service
+    <###
+      [ ConsoleString $ "subscribed service (" <> show n <> " connections) on server localhost: ok",
+        "received messages from service on server localhost"
+      ]

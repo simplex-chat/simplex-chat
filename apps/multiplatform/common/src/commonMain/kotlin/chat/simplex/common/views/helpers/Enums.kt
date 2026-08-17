@@ -16,6 +16,7 @@ sealed class SharedContent {
   data class File(val text: String, val uri: URI): SharedContent()
   data class Forward(val chatItems: List<ChatItem>, val fromChatInfo: ChatInfo): SharedContent()
   data class ChatLink(val groupInfo: GroupInfo): SharedContent()
+  object MyAddress: SharedContent()
 }
 
 enum class AnimatedViewState {

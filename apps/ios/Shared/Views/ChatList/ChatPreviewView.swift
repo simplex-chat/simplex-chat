@@ -438,7 +438,7 @@ struct ChatPreviewView: View {
             }
         case .file:
             smallContentPreviewFile(size: dynamicMediaSize) {
-                CIFileView(file: ci.file, edited: ci.meta.itemEdited, senderProfile: ciSenderProfile(ci, chat.chatInfo), smallViewSize: dynamicMediaSize)
+                CIFileView(chat: chat, file: ci.file, meta: ci.meta, senderProfile: ciSenderProfile(ci, chat.chatInfo), smallViewSize: dynamicMediaSize)
             }
         case let .chat(_, chatLink, ownerSig):
             smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {

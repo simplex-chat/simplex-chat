@@ -7,9 +7,11 @@ import SectionItemView
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -86,7 +88,7 @@ fun YourServersViewLayout(
   Column {
     if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
       val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
-      SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
+      SectionView(generalGetString(MR.strings.chat_relays)) {
         userServers.value[operatorIndex].chatRelays.forEachIndexed { i, relay ->
           if (relay.deleted) return@forEachIndexed
           ChatRelayViewLink(relay, duplicateRelayAddresses) {
@@ -99,7 +101,7 @@ fun YourServersViewLayout(
 
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
       SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
+      SectionView(generalGetString(MR.strings.message_servers)) {
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -133,7 +135,7 @@ fun YourServersViewLayout(
 
     if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
       SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.media_and_file_servers).uppercase()) {
+      SectionView(generalGetString(MR.strings.media_and_file_servers)) {
         userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -170,7 +172,7 @@ fun YourServersViewLayout(
       userServers.value[operatorIndex].xftpServers.any { !it.deleted } ||
       userServers.value[operatorIndex].chatRelays.any { !it.deleted }
       ) {
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced()
     }
 
     SectionView {
@@ -183,19 +185,17 @@ fun YourServersViewLayout(
         iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
-    val serversErr = globalServersError(serverErrors.value)
-    if (serversErr != null) {
+    globalServersErrors(serverErrors.value).forEach { err ->
       SectionCustomFooter {
-        ServersErrorFooter(serversErr)
+        ServersErrorFooter(err)
       }
     }
-    val serversWarn = globalServersWarning(serverWarnings.value)
-    if (serversWarn != null) {
+    globalServersWarnings(serverWarnings.value).forEach { warn ->
       SectionCustomFooter {
-        ServersWarningFooter(serversWarn)
+        ServersWarningFooter(warn)
       }
     }
-    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+    SectionDividerSpaced()
 
     SectionView {
       TestServersButton(

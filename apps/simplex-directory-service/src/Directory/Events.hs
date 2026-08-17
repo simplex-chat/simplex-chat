@@ -27,7 +27,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -38,6 +38,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink, MsgContent (..))
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences (GroupFeature)
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..))
 import Simplex.Messaging.Encoding.String
@@ -52,6 +53,7 @@ data DirectoryEvent
   | DEGroupLinkCheck GroupInfo
   | DEPendingMember GroupInfo GroupMember
   | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
+  | DEGroupItemProhibited GroupInfo GroupMember ChatItemId GroupFeature -- a member posted content prohibited by the group's settings
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
   | DEServiceRoleChanged GroupInfo GroupMemberRole
   | DEContactRemovedFromGroup ContactId GroupInfo
@@ -84,8 +86,10 @@ crDirectoryEvent_ = \case
   CEvtJoinedGroupMember {groupInfo, member = m}
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
-  CEvtNewChatItems {chatItems = AChatItem _ _ (GroupChat g _scopeInfo) ci : _} -> case ci of
+  CEvtNewChatItems {chatItems = AChatItem _ _ (GroupChat g scopeInfo) ci : _} -> case ci of
     ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m (chatItemId' ci) t
+    -- only moderate prohibited content in the main group, not in member-support/onboarding scope
+    ChatItem {chatDir = CIGroupRcv m, content = CIRcvGroupFeatureRejected gf} | isNothing scopeInfo -> Just $ DEGroupItemProhibited g m (chatItemId' ci) gf
     _ -> Nothing
   CEvtMemberRole {groupInfo, member, toRole}
     | groupMemberId' member == groupMemberId' (membership groupInfo) -> Just $ DEServiceRoleChanged groupInfo toRole

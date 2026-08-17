@@ -84,10 +84,8 @@ extension ChatAPIResult {
 
 // Spec: spec/api.md#decodeAPIResult
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
-//    print("decodeAPIResult \(String(describing: R.self))")
     do {
-//        return try withStackSizeLimit { try jsonDecoder.decode(APIResult<R>.self, from: d) }
-        return try jsonDecoder.decode(APIResult<R>.self, from: d)
+        return try withLargeStack { try jsonDecoder.decode(APIResult<R>.self, from: d) }
     } catch {}
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
         if let (_, jErr) = getOWSF(j, "error") {
@@ -106,31 +104,50 @@ public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
 // Default stack size for the main thread is 1mb, for secondary threads - 512 kb.
 // This function can be used to test what size is used (or to increase available stack size).
 // Stack size must be a multiple of system page size (16kb).
-//private let stackSizeLimit: Int = 256 * 1024
-//
-//private func withStackSizeLimit<T>(_ f: @escaping () throws -> T) throws -> T {
-//    let semaphore = DispatchSemaphore(value: 0)
-//    var result: Result<T, Error>?
-//    let thread = Thread {
-//        do {
-//            result = .success(try f())
-//        } catch {
-//            result = .failure(error)
-//        }
-//        semaphore.signal()
-//    }
-//
-//    thread.stackSize = stackSizeLimit
-//    thread.qualityOfService = Thread.current.qualityOfService
-//    thread.start()
-//
-//    semaphore.wait()
-//
-//    switch result! {
-//    case let .success(r): return r
-//    case let .failure(e): throw e
-//    }
-//}
+private let stackSizeLimit: Int = 16 * 1024 * 1024
+
+private final class LargeStackRunner: NSObject {
+    static let shared = LargeStackRunner()
+
+    private let serialize = NSLock()              // serialize submitters
+    private let jobReady = DispatchSemaphore(value: 0)
+    private let jobDone = DispatchSemaphore(value: 0)
+    private var job: (() -> Void)?
+    private var thread: Thread? = nil
+
+    private override init() {
+        super.init()
+        let t = Thread(target: self, selector: #selector(loop), object: nil)
+        t.stackSize = stackSizeLimit
+        t.name = "chat.simplex.decoding"
+        t.qualityOfService = .default
+        t.start()
+        thread = t
+    }
+
+    @objc private func loop() {
+        while true {
+            jobReady.wait()
+            job?()
+            jobDone.signal()
+        }
+    }
+
+    func run<T>(_ f: @escaping () throws -> T) throws -> T {
+        serialize.lock()
+        defer { serialize.unlock() }
+        var result: Result<T, Error>!
+        job = { result = Result(catching: f) }
+        jobReady.signal()
+        jobDone.wait()
+        job = nil
+        return try result.get()
+    }
+}
+
+func withLargeStack<T>(_ work: @escaping () throws -> T) throws -> T {
+    try LargeStackRunner.shared.run(work)
+}
 
 public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [ChatData])? {
     if let jApiChats = jResp["apiChats"] as? NSDictionary,
@@ -166,6 +183,10 @@ public struct CreatedConnLink: Decodable, Hashable {
 
     public func simplexChatUri(short: Bool = true) -> String {
         short ? (connShortLink ?? simplexChatLink(connFullLink)) : simplexChatLink(connFullLink)
+    }
+
+    public var cmdString: String {
+        connFullLink + (connShortLink.map { " \($0)"} ?? "")
     }
 }
 
@@ -741,6 +762,8 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatNotStopped
     case chatStoreChanged
     case invalidConnReq
+    case simplexDomainNotReady(simplexDomain: SimplexDomain, simplexDomainError: SimplexDomainError)
+    case notResolvedLocally
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited
@@ -896,6 +919,13 @@ public enum AgentErrorType: Decodable, Hashable {
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
+    case NO_NAME_SERVERS
+}
+
+public enum NameErrorType: Decodable, Hashable {
+    case NO_RESOLVER
+    case NOT_FOUND
+    case RESOLVER(resolverErr: String)
 }
 
 public enum CommandErrorType: Decodable, Hashable {
@@ -937,6 +967,7 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case LARGE_MSG
     case EXPIRED
     case INTERNAL
+    case NAME(nameErr: NameErrorType)
 }
 
 public enum ProxyError: Decodable, Hashable {

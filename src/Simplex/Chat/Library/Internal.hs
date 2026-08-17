@@ -53,13 +53,14 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), BadgePresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages, encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchElements, batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -80,6 +81,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
+import qualified Simplex.Messaging.Crypto.Lazy as LC
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent
@@ -90,7 +92,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..))
-import Simplex.Messaging.Compression (compressionLevel)
+import Simplex.Messaging.Compression (compressionLevel, limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -341,7 +343,7 @@ prohibitedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -
 prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
   | not supportAllowed = Just GFSupport
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
-  | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
+  | isNothing scopeInfo && not (isVoice mc) && (isJust file_ || isMedia mc) && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
   | otherwise = Nothing
@@ -394,6 +396,12 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
   let fileSource = Just $ CryptoFile filePath cfArgs
       ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
   pure (fInv, ciFile, ft)
+
+cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
+cryptoFileDigest (CryptoFile filePath cfArgs) = do
+  fsPath <- lift $ toFSFilePath filePath
+  r <- liftIO $ runExceptT $ CF.readFile (CryptoFile fsPath cfArgs)
+  either (throwChatError . CEInternalError . show) (pure . FD.FileDigest . LC.sha512Hash) r
 
 xftpSndFileRedirect :: User -> FileTransferId -> ValidFileDescription 'FRecipient -> CM FileTransferMeta
 xftpSndFileRedirect user ftId vfd = do
@@ -516,22 +524,20 @@ updateACIGroupInfo gInfo' = \case
     AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
   aci -> aci
 
-deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
-deleteGroupMemberCIs user gInfo member byGroupMember msgDir = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs
+deleteGroupMemberCIs :: User -> GroupInfo -> GroupMember -> CM ()
+deleteGroupMemberCIs user gInfo member = do
+  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member
   deleteCIFiles user filesInfo
 
-deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ()
-deleteGroupMembersCIs user gInfo members byGroupMember = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> deleteGroupMemberCIs_ db user gInfo m byGroupMember SMDRcv deletedTs
+deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> CM ()
+deleteGroupMembersCIs user gInfo members = do
+  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ deleteGroupMemberCIs_ db user gInfo
   deleteCIFiles user filesInfo
 
-deleteGroupMemberCIs_ :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO [CIFileInfo]
-deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs = do
+deleteGroupMemberCIs_ :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO [CIFileInfo]
+deleteGroupMemberCIs_ db user gInfo member = do
   fs <- getGroupMemberFileInfo db user gInfo member
-  updateMemberCIsModerated db user gInfo member byGroupMember msgDir deletedTs
+  deleteMemberCIs db user gInfo member
   pure fs
 
 deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse
@@ -702,7 +708,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         ci <- xftpAcceptRcvFT db cxt user fileId filePath userApproved
         rfd <- getRcvFileDescrByRcvFileId db fileId
         pure (ci, rfd)
-      receiveViaCompleteFD user fileId rfd userApproved cryptoArgs
+      receiveViaCompleteFD user fileId rfd fileSize userApproved cryptoArgs
       pure ci
     (Nothing, Just _fileConnReq) -> throwChatError $ CEException "accepting file via a separate connection is deprecated"
     -- group & direct file protocol
@@ -744,14 +750,21 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
              )
 
-receiveViaCompleteFD :: User -> FileTransferId -> RcvFileDescr -> Bool -> Maybe CryptoFileArgs -> CM ()
-receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} userApprovedRelays cfArgs =
+receiveViaCompleteFD :: User -> FileTransferId -> RcvFileDescr -> Integer -> Bool -> Maybe CryptoFileArgs -> CM ()
+receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} expectedFileSize userApprovedRelays cfArgs =
   when fileDescrComplete $ do
     rd <- parseFileDescription fileDescrText
+    let FD.ValidFileDescription FD.FileDescription {size = FD.FileSize encSize, redirect} = rd
+        redirectSize = maybe 0 (\FD.RedirectFileInfo {size = FD.FileSize s} -> toInteger s) redirect
+        -- for a redirect, encSize is the description blob and redirectSize the final file; take the larger
+        rcvSize = max (toInteger encSize) redirectSize
+        -- 10 MB margin: encryption and chunk-size rounding make the transfer larger than the advertised size
+        maxRcvSize = min expectedFileSize (toInteger FD.maxFileSizeHard) + toInteger (FD.mb 10 :: Int64)
+    when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
       then receive' rd True
       else do
-        let srvs = fileServers rd
+        let srvs = fileDescrServers rd
         unknownSrvs <- getUnknownSrvs srvs
         let approved = null unknownSrvs
         ifM
@@ -764,9 +777,6 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approved
       startReceivingFile user fileId
       withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
-    fileServers :: ValidFileDescription 'FRecipient -> [XFTPServer]
-    fileServers (FD.ValidFileDescription FD.FileDescription {chunks}) =
-      S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
       knownSrvs <- L.map protoServer' <$> getKnownAgentServers SPXFTP user
@@ -909,8 +919,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  -- TODO [certs rcv]
-  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
+  (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
 acceptContactRequestAsync
@@ -923,17 +932,19 @@ acceptContactRequestAsync
     profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
     cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId cReqPQSup
     currentTs <- liftIO getCurrentTime
-    withStore $ \db -> do
+    ct' <- withStore $ \db -> do
       forM_ xContactId $ \xcId -> liftIO $ setContactAcceptedXContactId db ct xcId
       Connection {connId} <- liftIO $ createAcceptedContactConn db user (Just uclId) contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
       liftIO $ setCommandConnId db user cmdId connId
       getContact db cxt user contactId
+    agentAcceptContactAsync cmdId acId True cReqInvId (XInfo profileToSend) cReqPQSup chatV subMode
+    pure ct'
 
-acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> Maybe GroupMember -> CM GroupMember
 acceptGroupJoinRequestAsync
-  user
+  user@User {userId}
   uclId
   gInfo@GroupInfo {groupProfile, membership, businessChat}
   cReqInvId
@@ -945,12 +956,22 @@ acceptGroupJoinRequestAsync
   gAccepted
   gLinkMemRole
   incognitoProfile
-  memberKey_ = do
+  memberKey_
+  existingMem_ = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
+    -- a roster-established privileged member attaches a connection to its existing record (keeping
+    -- owner-authoritative role + key); everyone else is created fresh with the group-link role
     cxt <- chatStoreCxt
-    (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
+    (groupMemberId, memberId) <- case existingMem_ of
+      Just m -> do
+        -- refresh the hash placeholder name from the authenticated join profile; role + key stay roster-authoritative
+        withStore $ \db -> do
+          liftIO $ updateGroupMemberStatus db userId m initialStatus
+          void $ updateMemberProfile db cxt user m cReqProfile
+        pure (groupMemberId' m, memberId' m)
+      Nothing -> withStore $ \db ->
+        createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
     let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -967,10 +988,12 @@ acceptGroupJoinRequestAsync
               }
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
+    m <- withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db cxt user groupMemberId
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    pure m
 
 acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupRejectionReason -> CM GroupMember
 acceptGroupJoinSendRejectAsync
@@ -997,10 +1020,12 @@ acceptGroupJoinSendRejectAsync
               }
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user False cReqInvId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+    (cmdId, acId) <- prepareAgentAccept user False cReqInvId PQSupportOff
+    m <- withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db cxt user groupMemberId
+    agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff chatV subMode
+    pure m
 
 acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
@@ -1024,15 +1049,16 @@ acceptBusinessJoinRequestAsync
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
                 -- but it will be different when inviting somebody else.
-                business = Just $ BusinessChatInfo {chatType = BCBusiness, businessId = userMemberId, customerId = memberId},
+                business = Just $ BusinessChatInfo {chatType = BCBusiness, businessId = userMemberId, customerId = memberId, businessDomain = Nothing},
                 groupSize = Just 1
               }
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
     withStore' $ \db -> do
       forM_ xContactId $ \xcId -> setBusinessChatAcceptedXContactId db gInfo xcId
-      createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+      createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
     let cd = CDGroupSnd gInfo Nothing
     -- TODO [short links] move to profileContactRequest?
     createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
@@ -1049,17 +1075,20 @@ acceptRelayJoinRequestAsync
   cReqInvId
   cReqChatVRange
   relayLink = do
-    -- TODO [channel web] derive RelayCapabilities from relay config (RelayWebOptions)
-    let msg = XGrpRelayAcpt relayLink defaultRelayCapabilities
+    ChatConfig {webPreviewConfig} <- asks config
+    let webDomain_ = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
+        msg = XGrpRelayAcpt relayLink RelayCapabilities {webDomain = webDomain_}
     subMode <- chatReadVar subscriptionMode
     cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+    (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
+    r <- withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
       gInfo' <- liftIO $ updateRelayOwnStatusFromTo db gInfo RSInvited RSAccepted
       ownerMember' <- getGroupMemberById db cxt user groupMemberId
       pure (gInfo', ownerMember')
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    pure r
 
 rejectRelayInvitationAsync
   :: User
@@ -1079,13 +1108,14 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv invId reqChatVRange init
   subMode <- chatReadVar subscriptionMode
   chatVR <- chatVersionRange
   let chatV = chatVR `peerConnChatVersion` reqChatVRange
-  connIds <- agentAcceptContactAsync user False invId msg subMode PQSupportOff chatV
+  (cmdId, acId) <- prepareAgentAccept user False invId PQSupportOff
   withStore' $ \db ->
-    createJoiningMemberConnection db user uclId connIds chatV reqChatVRange groupMemberId subMode
+    createJoiningMemberConnection db user uclId (cmdId, acId) chatV reqChatVRange groupMemberId subMode
+  agentAcceptContactAsync cmdId acId False invId msg PQSupportOff chatV subMode
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
-businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
-  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+businessGroupProfile Profile {displayName, fullName, shortDescr, description, image} groupPreferences =
+  GroupProfile {displayName, fullName, description, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
 
 introduceToModerators :: StoreCxt -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToModerators cxt user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
@@ -1164,26 +1194,61 @@ memberIntroEvt gInfo reMember =
       mRestrictions = memberRestrictions reMember
    in XGrpMemIntro mInfo mRestrictions
 
+-- Forward the saved owner-signed roster verbatim (reusing its signed shared_msg_id), then the
+-- blob chunks, so the recipient verifies the owner signature.
+serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
+serveRoster user gInfo member =
+  when (member `supportsVersion` groupRosterVersion) $ do
+    cxt <- chatStoreCxt
+    withStore' (\db -> getStoredGroupRoster db gInfo) >>= \case
+      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_, storedVer_) ->
+        case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
+          Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
+          Right chatMsg@ChatMessage {msgId} ->
+            withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
+              Right owner -> do
+                let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
+                sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
+                forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
+                  sendInlineBlobChunks user gInfo [member] sid blob
+                -- record the blob's own stored version as served, not roster_version (the gate): a delta can
+                -- advance the gate past the stored blob on a failed blob send, and recording the gate would
+                -- over-claim what this member was actually served, suppressing legitimate catch-up
+                forM_ storedVer_ $ \v -> withStore' $ \db -> setMemberRosterServedVersion db member v
+              Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
+      Nothing -> pure ()
+
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: StoreCxt -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn} = do
-  modMs <- withStore' $ \db -> getGroupModerators db cxt user gInfo
+introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
+  (owners, adminsMods) <- withStore' $ \db ->
+    (,) <$> getGroupOwners db cxt user gInfo <*> getGroupAdminsMods db cxt user gInfo
+  let modMs = owners <> adminsMods
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
-  let introEvts = map (memberIntroEvt gInfo) modMs
-  forM_ (L.nonEmpty introEvts) $ \introEvts' ->
-    sendGroupMemberMessages user gInfo conn introEvts'
+  withStore' $ \db ->
+    setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
+  -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
+  sendIntros owners
+  serveRoster user gInfo subscriber
+  sendIntros adminsMods
+  withStore' $ \db ->
+    setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
+  where
+    sendIntros ms = forM_ (L.nonEmpty $ map (memberIntroEvt gInfo) ms) $ \evts ->
+      sendGroupMemberMessages user gInfo conn evts
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
-userProfileInGroup user = userProfileInGroup' user . groupUserAllowSimplexLinks
+userProfileInGroup user g = userProfileInGroup' user (Just g)
 {-# INLINE userProfileInGroup #-}
 
-userProfileInGroup' :: User -> Bool -> Maybe Profile -> Profile
-userProfileInGroup' User {profile = p} allowSimplexLinks incognitoProfile =
+-- Nothing group ⇒ no redaction (e.g. joining via a link with no group profile yet).
+userProfileInGroup' :: User -> Maybe GroupInfo -> Maybe Profile -> Profile
+userProfileInGroup' User {profile = p} mg incognitoProfile =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-   in redactedMemberProfile allowSimplexLinks p'
+   in maybe p' (\g -> redactedMemberProfile g (membership g) p') mg
 
 memberInfo :: GroupInfo -> GroupMember -> MemberInfo
 memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn} =
@@ -1191,40 +1256,92 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
+      profile = redactedMemberProfile g m $ fromLocalProfile memberProfile,
       memberKey = MemberKey <$> memberPubKey
     }
-  where
-    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
 
-redactedMemberProfile :: Bool -> Profile -> Profile
-redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType, badge} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType, badge}
+redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
+redactedMemberProfile g m Profile {displayName, fullName, shortDescr, description, image, contactLink = lnk, peerType, badge, contactDomain} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink True =<< shortDescr, description = removeSimplexLink False =<< description, image, contactLink, preferences = Nothing, peerType, badge, contactDomain = redactedDomain}
   where
-    removeSimplexLink s
+    contactLink = if allowSimplexLinks then lnk else Nothing
+    redactedDomain = if allowDirect then (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain else Nothing
+    allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
+    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
+    removeSimplexLink dropOnLink s
       | allowSimplexLinks = Just s
-      | hasObfuscatedSimplexLink s = Nothing
-      | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
+      | otherwise = case parseMaybeMarkdownList s of
+          Nothing -> dropObfuscated
+          Just fts
+            | not (any ftIsSimplexLink fts) -> dropObfuscated
+            | dropOnLink || T.null (T.strip kept) || hasObfuscatedSimplexLink kept -> Nothing
+            | otherwise -> Just kept
+            where
+              kept = T.concat $ map (\(FormattedText _ t) -> t) $ filter (not . ftIsSimplexLink) fts
+      where
+        dropObfuscated = if hasObfuscatedSimplexLink s then Nothing else Just s
+
+-- Roles carried by the roster; owners are on the link, not the roster.
+isRosterRole :: GroupMemberRole -> Bool
+isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
+
+isPrivilegedRole :: GroupMemberRole -> Bool
+isPrivilegedRole r = r >= GRMember
+
+-- Minimum role allowed to change a member's role from `from` to `to` (moderators only up to member; relay checked separately).
+roleRequiredToChange :: GroupMemberRole -> GroupMemberRole -> GroupMemberRole
+roleRequiredToChange from to
+  | from <= GRMember && to <= GRMember = GRModerator
+  | otherwise = maximum ([GRAdmin, from, to] :: [GroupMemberRole])
+
+-- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
+-- Runs on the parsed roster blob.
+validateGroupRoster :: [RosterMember] -> [RosterMember]
+validateGroupRoster entries =
+  dedup S.empty $ filter (\RosterMember {role} -> isRosterRole role) entries
+  where
+    dedup _ [] = []
+    dedup seen (rm@RosterMember {memberId} : rms)
+      | memberId `S.member` seen = dedup seen rms
+      | otherwise = rm : dedup (S.insert memberId seen) rms
+
+-- Privileged members without a known key are skipped (recipients can't verify them).
+buildGroupRoster :: [GroupMember] -> [RosterMember]
+buildGroupRoster mods = take maxGroupRosterSize $ mapMaybe rosterMember mods
+  where
+    rosterMember GroupMember {memberId, memberPubKey, memberRole}
+      | isRosterRole memberRole = (\k -> RosterMember {memberId, key = MemberKey k, role = memberRole, privileges = 0}) <$> memberPubKey
+      | otherwise = Nothing
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
 sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just conn} =
   when (m `supportsVersion` batchSendVersion) $ do
     (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
-    (errs', events) <- partitionEithers <$> mapM (tryAllErrors . itemForwardEvents) items
+    (errs', fwdMsgsByItem) <- partitionEithers <$> mapM (tryAllErrors . itemForwardMsgs) items
     let errors = map ChatErrorStore errs <> errs'
     unless (null errors) $ toView $ CEvtChatErrors errors
-    let events' = concat events
-    events_ <- case descrEvent_ of
-      Just descr -> mkEvents <$> withStore' (\db -> getMemberJoinRequest db user gInfo m)
-        where
-          mkEvents = \case
-            Just (_, Just _welcomeMsgId) -> events'
-            _ -> events' <> [descr]
-      Nothing -> pure events'
-    forM_ (L.nonEmpty events_) $ \events'' ->
-      sendGroupMemberMessages user gInfo conn events''
+    -- signed items keep the author's original bytes/signature, unsigned are re-encoded; the welcome message
+    -- (regular groups only; never channels) is an authored element -- all batch together in order.
+    let fwdEls = map (uncurry encodeFwdElement) (concat fwdMsgsByItem)
+    welcomeEl <- welcomeElement
+    let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
+    when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
+    forM_ batches $ \body ->
+      void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
   where
+    welcomeElement :: CM (Maybe ByteString)
+    welcomeElement = case descrEvent_ of
+      Just descr ->
+        withStore' (\db -> getMemberJoinRequest db user gInfo m) >>= \case
+          Just (_, Just _welcomeMsgId) -> pure Nothing
+          _ -> do
+            vr <- chatVersionRange
+            sharedMsgId <- SharedMsgId <$> drgRandomBytes 24
+            case encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = descr} of
+              ECMEncoded body -> pure $ Just (encodeBatchElement Nothing body)
+              ECMLarge -> Nothing <$ toView (CEvtChatErrors [ChatError $ CEInternalError "sendHistory: welcome message too large"])
+      Nothing -> pure Nothing
     descrEvent_ :: Maybe (ChatMsgEvent 'Json)
     descrEvent_
       -- in channels sendHistory runs on the relay, which cannot author XMsgNew (GRRelay < GRObserver);
@@ -1234,19 +1351,26 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
           fmap (\descr -> XMsgNew $ mcSimple (MCText descr)) description
       | otherwise = Nothing
-    itemForwardEvents :: CChatItem 'CTGroup -> CM [ChatMsgEvent 'Json]
-    itemForwardEvents cci = case cci of
+    itemForwardMsgs :: (CChatItem 'CTGroup, (Maybe SignedMsg, Maybe GroupMemberId)) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+    itemForwardMsgs (cci, (signedMsg_, signedByGMId_)) = case cci of
       (CChatItem SMDRcv ci@ChatItem {content = CIRcvMsgContent mc, file})
-        | not (maybe False blockedByAdmin sender_) -> do
+        | not (maybe False blockedByAdmin (chatItemRcvFromMember ci)) -> do
             fInvDescr_ <- join <$> forM file getRcvFileInvDescr
-            processContentItem sender_ ci mc fInvDescr_
+            -- channel items carry no from-member; a signed one falls back to the stored author (verified attribution)
+            member_ <- maybe (resolveAuthor signedByGMId_) (pure . Just) (chatItemRcvFromMember ci)
+            processContentItem member_ ci mc fInvDescr_
         | otherwise -> pure []
-        where sender_ = chatItemRcvFromMember ci
-      (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
+      (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file, meta = CIMeta {showGroupAsSender}}) -> do
         fInvDescr_ <- join <$> forM file getSndFileInvDescr
-        processContentItem (Just membership) ci mc fInvDescr_
+        let member_ = if showGroupAsSender && isNothing signedMsg_ then Nothing else Just membership
+        processContentItem member_ ci mc fInvDescr_
       _ -> pure []
       where
+        resolveAuthor :: Maybe GroupMemberId -> CM (Maybe GroupMember)
+        resolveAuthor Nothing = pure Nothing
+        resolveAuthor (Just gmId) = do
+          cxt <- chatStoreCxt
+          eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupMemberById db cxt user gmId)
         getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText))
         getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
           expired <- fileExpired
@@ -1277,33 +1401,39 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   fInv = xftpFileInvitation fileName fileSize fInvDescr
                in Just (fInv, fileDescrText)
           | otherwise = Nothing
-        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [ChatMsgEvent 'Json]
-        processContentItem sender_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
+        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+        processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
-              let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
+              let CIMeta {itemTs, itemSharedMsgId, itemTimed, showGroupAsSender} = meta
                   quotedItemId_ = quoteItemId =<< quotedItem
                   fInv_ = fst <$> fInvDescr_
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
-                  asGroup = isNothing sender_
-              -- TODO [knocking] send history to other scopes too?
-              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing asGroup mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
-              -- for channel messages default chat version range to membership range
-              let senderVRange = maybe (memberChatVRange' membership) memberChatVRange' sender_
-                  xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
+                  -- for channel messages default chat version range to membership range
+                  senderVRange = maybe (memberChatVRange' membership) memberChatVRange' member_
+                  -- member_ is Nothing only for as-group unsigned items -> FwdChannel; otherwise attribute to the member
+                  -- (the author for signed as-group items), so the recipient can reconstruct the binding and verify
+                  fwdSender = maybe FwdChannel (\am -> FwdMember (memberId' am) (memberShortenedName am)) member_
+                  fwd = GrpMsgForward {fwdSender, fwdBrokerTs = itemTs}
+              -- signed items forward the author's original bytes so the signature stays valid; unsigned re-encode current content
+              contentVM <- case signedMsg_ of
+                Just sm@SignedMsg {signedBody}
+                  | Right chatMsg <- (J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json)) ->
+                      pure $ VMSigned MSSVerified sm chatMsg
+                _ -> do
+                  -- TODO [knocking] send history to other scopes too?
+                  (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing showGroupAsSender mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
+                  pure $ VMUnsigned ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
               fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
                 (Just fileDescrText, Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize fileDescrText
                   pure . L.toList $ L.map (XMsgFileDescr msgId) parts
                 _ -> pure []
-              let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
-                  fwdSender = maybe FwdChannel (\s -> FwdMember (memberId' s) (memberShortenedName s)) sender_
-                  fwd = GrpMsgForward {fwdSender, fwdBrokerTs = itemTs}
-                  msgForwardEvents = map (XGrpMsgForward fwd) (xMsgNewChatMsg : fileDescrChatMsgs)
-              pure msgForwardEvents
+              let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
+              pure $ map ((,) fwd) (contentVM : fileDescrVMs)
 
 memberShortenedName :: GroupMember -> ContactName
 memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
@@ -1332,7 +1462,7 @@ setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM G
 setGroupLinkData nm user gInfo gLink = do
   cxt <- chatStoreCxt
   (conn, groupRelays) <- withFastStore $ \db ->
-    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
+    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
       linkType = if useRelays' gInfo then CCTChannel else CCTGroup
   sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
@@ -1342,7 +1472,7 @@ setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
 setGroupLinkDataAsync user gInfo gLink = do
   cxt <- chatStoreCxt
   (conn, groupRelays) <- withStore $ \db ->
-    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
+    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
@@ -1368,11 +1498,15 @@ updatePublicGroupData user gInfo
         pure (gInfo', gLink)
       setGroupLinkDataAsync user gInfo' gLink
       pure gInfo'
+  | useRelays' gInfo && isRelay (membership gInfo) = do
+      cxt <- chatStoreCxt
+      withStore $ \db -> updatePublicMemberCount db cxt user gInfo
   | otherwise = pure gInfo
 
-updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> CM (GroupInfo, Bool)
-updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData}
-  | profileChanged || countChanged = do
+-- must not resolve names here: a background link-data refresh would leak channel membership to the resolver
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> CM (GroupInfo, Bool)
+updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
+  | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
       withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
@@ -1380,13 +1514,30 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        pure (g', profileChanged)
+        g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True else pure g'
+        pure (g'', profileChanged)
   | otherwise = pure (gInfo, False)
   where
     profileChanged = p /= groupProfile
     countChanged = case publicGroupData of
       Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
       _ -> False
+    groupClaim GroupProfile {publicGroup} = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+    newClaim = groupClaim groupProfile
+    verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
+
+updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
+updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
+  | profileChanged || verifyChanged = do
+      cxt <- chatStoreCxt
+      withFastStore $ \db -> do
+        ct' <- updateContactProfile db cxt user ct linkProfile
+        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
+  | otherwise = pure ct
+  where
+    profileChanged = fromLocalProfile profile /= linkProfile
+    claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
+    verifyChanged = contactDomainVerified /= Just True || claimChanged
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
@@ -1438,10 +1589,9 @@ encodeShortLinkData d =
 decodeLinkUserData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
 decodeLinkUserData cData
   | B.null s = pure Nothing
-  | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
-      Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
-      Z1.Skip -> pure Nothing
-      Z1.Decompress s' -> decode s'
+  | B.head s == 'X' = case limitDecompress' maxDecompressedMsgLength $ B.drop 1 s of
+      Left e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
+      Right s' -> decode s'
   | otherwise = decode s
   where
     decode s' = case J.eitherDecodeStrict s' of
@@ -1592,6 +1742,30 @@ parseFileDescription :: FilePartyI p => Text -> CM (ValidFileDescription p)
 parseFileDescription =
   liftEither . first (ChatError . CEInvalidFileDescription) . (strDecode . encodeUtf8)
 
+-- | Unique XFTP servers hosting the file's chunks, parsed from a stored file description.
+fileDescrServers :: ValidFileDescription p -> [XFTPServer]
+fileDescrServers (FD.ValidFileDescription FD.FileDescription {chunks}) =
+  S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
+
+-- | XFTP servers the file's data chunks were uploaded to (sender's servers for sent items,
+-- the same servers via the recipient description for received items).
+-- Returns [] for non-XFTP/inline files or when no description is available; never fails the caller.
+getChatItemFileServers :: User -> SMsgDirection d -> ChatItem c d -> CM [XFTPServer]
+getChatItemFileServers user dir ci = case ci of
+  ChatItem {file = Just CIFile {fileId, fileProtocol = FPXFTP}} ->
+    itemFileServers fileId `catchAllErrors` \_ -> pure []
+  _ -> pure []
+  where
+    itemFileServers fileId = case dir of
+      SMDSnd -> do
+        sfd_ <- withStore' $ \db -> getSndFTPrivateSndDescr db user fileId
+        case sfd_ of
+          Just sfdText -> fileDescrServers <$> (parseFileDescription sfdText :: CM (ValidFileDescription 'FSender))
+          Nothing -> pure []
+      SMDRcv -> do
+        RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
+
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()
 sendDirectFileInline user ct ft sharedMsgId = do
   msgDeliveryId <- sendFileInline_ ft sharedMsgId $ sendDirectContactMessage user ct
@@ -1617,13 +1791,16 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
     chSize = fromIntegral chunkSize
 
 parseChatMessage :: Connection -> ByteString -> CM (ChatMessage 'Json)
-parseChatMessage conn s = do
+parseChatMessage conn s = snd <$> parseChatMessage' conn s
+{-# INLINE parseChatMessage #-}
+
+parseChatMessage' :: Connection -> ByteString -> CM (Maybe SignedMsg, ChatMessage 'Json)
+parseChatMessage' conn s =
   case parseChatMessages s of
-    [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ _ m)) -> checkEncoding m) =<< msg
+    [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ sm m)) -> (sm,) <$> checkEncoding m) =<< msg
     _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
-{-# INLINE parseChatMessage #-}
 
 getChatScopeInfo :: StoreCxt -> User -> GroupChatScope -> CM GroupChatScopeInfo
 getChatScopeInfo cxt user = \case
@@ -1820,6 +1997,51 @@ closeFileHandle fileId files = do
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
+-- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
+cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
+cleanupGroupRosterFile User {userId} GroupInfo {groupId} = do
+  infos <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
+  forM_ infos $ \(fileId, filePath_) -> do
+    lift $ closeFileHandle fileId rcvFiles
+    forM_ filePath_ removeFsFile
+  withStore' $ \db -> do
+    deleteGroupRosterFile db userId groupId
+    deleteGroupRosterTransfers db groupId
+
+-- Supersede/cancel one source relay's in-flight roster transfer: remove its on-disk file + cached
+-- handle first (the cascade only does rows), then the files + transfer rows.
+cleanupRosterTransfer :: GroupInfo -> GroupMemberId -> CM ()
+cleanupRosterTransfer gInfo fromMemberId =
+  withStore' (\db -> getRosterTransferId db gInfo fromMemberId) >>= mapM_ cleanupRosterTransferById
+
+cleanupRosterTransferById :: Int64 -> CM ()
+cleanupRosterTransferById transferId = do
+  file_ <- withStore' $ \db -> getRosterTransferFile db transferId
+  forM_ file_ $ \(fileId, filePath_) -> do
+    lift $ closeFileHandle fileId rcvFiles
+    forM_ filePath_ removeFsFile
+  withStore' $ \db -> do
+    deleteRosterTransferFile db transferId
+    deleteRosterTransfer db transferId
+
+-- MUST evict the cached AppendMode handle before deleting chunks, else re-driven bytes append
+-- after the stale prefix and corrupt the blob.
+resetRosterPartialChunks :: RcvFileTransfer -> CM ()
+resetRosterPartialChunks ft@RcvFileTransfer {fileId, fileStatus} = do
+  lift $ closeFileHandle fileId rcvFiles
+  forM_ (rcvFilePath fileStatus) removeFsFile
+  withStore' $ \db -> deleteRcvFileChunks db ft
+  where
+    rcvFilePath = \case
+      RFSAccepted p -> Just p
+      RFSConnected p -> Just p
+      _ -> Nothing
+
+removeFsFile :: FilePath -> CM ()
+removeFsFile fp = do
+  p <- lift $ toFSFilePath fp
+  removeFile p `catchAllErrors` \_ -> pure ()
+
 deleteMembersConnections :: User -> [GroupMember] -> CM ()
 deleteMembersConnections user members = deleteMembersConnections' user members False
 
@@ -1850,7 +2072,22 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
     else
       checkGroupMemberHasItems db user m' >>= \case
         Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-        Nothing -> deleteGroupMember db user m'
+        Nothing
+          | useRelays' gInfo -> updateGroupMemberRemovedAt db user m'
+          | otherwise -> deleteGroupMember db user m'
+  pure gInfo'
+
+-- Unlike deleteOrUpdateMemberRecord, skips checkGroupMemberHasItems.
+fullyDeleteMemberRecord :: User -> GroupInfo -> GroupMember -> CM GroupInfo
+fullyDeleteMemberRecord user gInfo m =
+  withStore' $ \db -> fullyDeleteMemberRecordIO db user gInfo m
+
+fullyDeleteMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
+fullyDeleteMemberRecordIO db user gInfo m = do
+  (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
+  if useRelays' gInfo && not (isRelay m')
+    then updateGroupMemberRemovedAt db user m'
+    else deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo
@@ -1913,6 +2150,7 @@ presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p =
           Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
 
+
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
 -- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)
 linkDataBadge :: ContactShortLinkData -> CM ContactShortLinkData
@@ -1973,16 +2211,19 @@ createSndMessages idsEvents = do
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
-groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {publicGroupId, memberPrivKey}} evt
-  | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
+groupMsgSigning :: Bool -> GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
+groupMsgSigning sign gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {publicGroupId, memberPrivKey}} evt
+  | useRelays' gInfo && shouldSign =
       Just $ MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
-groupMsgSigning _ _ = Nothing
+  where
+    tag = toCMEventTag evt
+    shouldSign = requiresSignature tag || (sign && signableContent tag)
+groupMsgSigning _ _ _ = Nothing
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
+  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning False gInfo evt, evt)) events
       mode = if useRelays' gInfo then BMBinary else BMJson
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -2037,6 +2278,26 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
       _ -> pure connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
+-- conn-info wrapped as a signed element, so the receiver can verify the signature over the body
+encodeSignedConnInfo :: MsgEncodingI e => MsgSigning -> ChatMsgEvent e -> CM ByteString
+encodeSignedConnInfo signing chatMsgEvent = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded body -> pure $ encodeBatchElement (Just $ signChatMsgBody signing body) body
+    ECMLarge -> throwChatError $ CEException "large signed info"
+
+-- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
+-- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
+encodeXMemberConnInfo :: GroupInfo -> MemberId -> Profile -> CM ByteString
+encodeXMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} relayMemberId profileToSend =
+  case groupKeys of
+    Just GroupKeys {publicGroupId, memberPrivKey} ->
+      let xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey) (Just relayMemberId)
+          signing = MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
+       in encodeSignedConnInfo signing xMemberEvt
+    Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
+
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
@@ -2085,7 +2346,7 @@ deliverMessagesB msgReqs = do
       Left _ce -> (prev, Left (AP.INTERNAL "ChatError, skip")) -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
-    prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae (AgentConnId "") Nothing
+    prepareBatch _ (Left ae) = Left $ chatErrorAgent ae
     createDelivery :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO (Either ChatError ([Int64], PQEncryption))
     createDelivery db ((Connection {connId}, _, (_, msgIds)), (agentMsgId, pqEnc')) = do
       Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds
@@ -2098,24 +2359,111 @@ deliverMessagesB msgReqs = do
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
-sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
-sendGroupMessage user gInfo gcScope members chatMsgEvent = do
-  sendGroupMessages user gInfo gcScope False members (chatMsgEvent :| []) >>= \case
+sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> [GroupMember] -> Bool -> ChatMsgEvent e -> CM SndMessage
+sendGroupMessage user gInfo gcScope members sign chatMsgEvent = do
+  sendGroupMessages user gInfo gcScope False members sign (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage: expected 1 message"
 
 sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
 sendGroupMessage' user gInfo members chatMsgEvent =
-  sendGroupMessages_ user gInfo members (chatMsgEvent :| []) >>= \case
+  sendGroupMessages_ user gInfo members False (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages user gInfo scope asGroup members events = do
+-- The roster change being broadcast, projected onto the current roster members in broadcastRoster. This lets the
+-- roster blob be built (and sent) before the change is applied to the owner's own member records, so the owner
+-- never demotes/removes a member locally before the change has been propagated to relays.
+data RosterDelta
+  = RDRoleChanged GroupMemberRole [GroupMember] -- these members now hold this role
+  | RDRemoved [GroupMember] -- these members are removed from the group
+
+applyRosterDelta :: RosterDelta -> [GroupMember] -> [GroupMember]
+applyRosterDelta delta current = case delta of
+  RDRoleChanged role changed -> map (\m -> (m :: GroupMember) {memberRole = role}) changed <> without changed
+  RDRemoved removed -> without removed
+  where
+    without ms = let ids = S.fromList (map groupMemberId' ms) in filter ((`S.notMember` ids) . groupMemberId') current
+
+-- TODO [relays] improvement: publish roster_version in link data so the owner can recover the latest version
+-- TODO   after restoring from a stale backup (relays accept only strictly-greater versions)
+-- Reserve and persist the next roster version (committed before the events that carry it, so a recipient never
+-- advances past a version the owner hasn't recorded), then broadcast the matching blob with the change projected
+-- onto the served roster (so it excludes demoted/removed members). Returns the reserved version for the delta
+-- that follows. The blob send is best-effort - a failed send heals on the next change or on resume.
+broadcastRoster :: User -> GroupInfo -> RosterDelta -> CM VersionRoster
+broadcastRoster user gInfo delta = do
+  let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
+  withStore' $ \db -> setGroupRosterVersion db gInfo rosterVer
+  sendRosterBlob rosterVer `catchAllErrors` eToView
+  pure rosterVer
+  where
+    sendRosterBlob rosterVer = do
+      cxt <- chatStoreCxt
+      (relays, rosterMems) <- withStore' $ \db ->
+        (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
+      forM_ (L.nonEmpty relays) $ \relays' ->
+        sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster $ applyRosterDelta delta rosterMems)
+
+-- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
+sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
+sendGroupRosterToRelay user gInfo relayMember =
+  forM_ (rosterVersion gInfo) $ \rosterVer -> do
+    cxt <- chatStoreCxt
+    rosterMems <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
+    sendRoster user gInfo [relayMember] rosterVer (buildGroupRoster rosterMems)
+
+-- Row-less send (no files/snd_files rows, so no send-side cleanup); redelivery is the agent's.
+sendRoster :: User -> GroupInfo -> [GroupMember] -> VersionRoster -> [RosterMember] -> CM ()
+sendRoster user gInfo members rosterVer roster = do
+  let blob = encodeRosterBlob roster
+      fileInv = InlineFileInvitation {fileSize = fromIntegral (B.length blob), fileDigest = FD.FileDigest $ LC.sha512Hash $ LB.fromStrict blob}
+  SndMessage {sharedMsgId} <- sendGroupMessage' user gInfo members (XGrpRoster GroupRoster {version = rosterVer, fileInv})
+  sendInlineBlobChunks user gInfo members sharedMsgId blob
+
+-- Send a binary blob as BFileChunks under a shared_msg_id to the given members (chunked by fileChunkSize).
+sendInlineBlobChunks :: User -> GroupInfo -> [GroupMember] -> SharedMsgId -> ByteString -> CM ()
+sendInlineBlobChunks user gInfo members sharedMsgId blob = do
+  chSize <- fromIntegral <$> asks (fileChunkSize . config)
+  go chSize 1 blob
+  where
+    go chSize chunkNo bytes = do
+      let (chunk, rest) = B.splitAt chSize bytes
+      void $ sendGroupMessage' user gInfo members (BFileChunk sharedMsgId (FileChunk chunkNo chunk))
+      unless (B.null rest) $ go chSize (chunkNo + 1) rest
+
+-- Relay advertises its current web preview capability to channel owners.
+-- Idempotent: sends only when the configured web domain differs from what was last sent, and only to
+-- owners whose recorded chat version supports relayWebCapVersion (older apps can't parse XGrpRelayCap).
+sendRelayCapIfNeeded :: User -> GroupInfo -> CM ()
+sendRelayCapIfNeeded user gInfo = do
+  ChatConfig {webPreviewConfig} <- asks config
+  let currentWebDomain = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
+  sentWebDomain <- withStore' (`getRelaySentWebDomain` gInfo)
+  when (currentWebDomain /= sentWebDomain) $ do
+    cxt <- chatStoreCxt
+    owners <- withStore' $ \db -> getGroupOwners db cxt user gInfo
+    let capableOwners = filter (\m -> memberCurrent m && m `supportsVersion` relayWebCapVersion) owners
+    unless (null capableOwners) $ do
+      void $ sendGroupMessage' user gInfo capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
+      withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
+
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupMessages user gInfo scope asGroup members sign events = do
+  sendGroupProfileUpdate user gInfo scope asGroup members
+  sendGroupMessages_ user gInfo members sign events
+
+-- per-item signer variant of sendGroupMessages (used for per-item delete signing); preserves the profile-update prelude
+sendGroupSignedMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupSignedMessages user gInfo scope asGroup members signedEvents = do
+  sendGroupProfileUpdate user gInfo scope asGroup members
+  sendGroupSignedMessages_ gInfo members signedEvents
+
+sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
+sendGroupProfileUpdate user gInfo scope asGroup members =
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchAllErrors` eToView
-  sendGroupMessages_ user gInfo members events
   where
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
@@ -2130,9 +2478,8 @@ sendGroupMessages user gInfo scope asGroup members events = do
             _ -> False
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-          allowSimplexLinks = groupUserAllowSimplexLinks gInfo
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
-      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
+      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
@@ -2143,9 +2490,12 @@ data GroupSndResult = GroupSndResult
     forwarded :: [GroupMember]
   }
 
-sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
-  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
+sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupMessages_ _user gInfo recipientMembers sign events =
+  sendGroupSignedMessages_ gInfo recipientMembers $ L.map (\evt -> (groupMsgSigning sign gInfo evt, evt)) events
+
+sendGroupSignedMessages_ :: MsgEncodingI e => GroupInfo -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents = do
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
@@ -2166,6 +2516,8 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
       pending = zipWith3 (\mId pReq r -> (mId, fmap snd pReq, r)) pendingMemIds pendingReqs stored
   pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded})
   where
+    events = L.map snd signedEvents
+    idsEvts = L.map (\(signing, evt) -> (GroupId groupId, signing, evt)) signedEvents
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
       let (adminMs, otherMs) = partition isAdmin ms
@@ -2330,10 +2682,14 @@ saveDirectRcvMSG conn@Connection {connId} agentMsgMeta chatMsg@ChatMessage {chat
   msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
   pure (conn', msg)
 
-saveGroupRcvMsg :: MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> VerifiedMsg e -> CM (GroupMember, Connection, RcvMessage)
+saveGroupRcvMsg :: forall e. MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> VerifiedMsg e -> CM (GroupMember, Connection, RcvMessage)
 saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta verifiedMsg = do
   let ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = verifiedChatMsg verifiedMsg
-  (am'@GroupMember {memberId = amMemId, groupMemberId = amGroupMemId}, conn') <- updateMemberChatVRange authorMember conn chatVRange
+  -- binary messages (file chunks) carry only the initial-version sentinel, not the sender's range;
+  -- applying it would downgrade the member's negotiated version and suppress version-gated delivery
+  (am'@GroupMember {memberId = amMemId, groupMemberId = amGroupMemId}, conn') <- case encoding @e of
+    SBinary -> pure (authorMember, conn)
+    SJson -> updateMemberChatVRange authorMember conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       brokerTs = metaBrokerTs agentMsgMeta
       newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg, brokerTs}
@@ -2416,7 +2772,7 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
       let hasLink_ = ciContentHasLink content (snd itemTexts)
       ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing (MSSVerified <$ signedMsg_) createdAt
+      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
       Right <$> case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
@@ -2447,7 +2803,7 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
         hasLink_ = ciContentHasLink content ft_
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention hasLink_ brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-    let ci = mkChatItem_ cd showAsGroup ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention hasLink_ brokerTs forwardedByMember msgSigned createdAt
+    let ci = mkChatItem_ cd showAsGroup ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention hasLink_ brokerTs forwardedByMember (toMsgVerified (signMessagesRequired cd) msgSigned) createdAt
     ci' <- case toChatInfo cd of
       GroupChat g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
@@ -2455,7 +2811,11 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
   where
     groupMentions db g membership = do
       mentions' <- getRcvCIMentions db user g ft_ mentions
-      let userReply = case cmToQuotedMsg chatMsgEvent of
+      -- messages of blocked members are hidden, they should not mention user
+      let senderBlocked = case cd of
+            CDGroupRcv _g _scope m -> memberBlocked m
+            _ -> False
+          userReply = not senderBlocked && case cmToQuotedMsg chatMsgEvent of
             Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
             _ -> False
           userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
@@ -2471,16 +2831,16 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
       _ -> Nothing
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
-mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
-mkChatItem cd showGroupAsSender ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
+mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgVerified -> UTCTime -> ChatItem c d
+mkChatItem cd showGroupAsSender ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember msgVerified currentTs =
   let ts@(_, ft_) = ciContentTexts content
       hasLink_ = ciContentHasLink content ft_
-   in mkChatItem_ cd showGroupAsSender ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember Nothing currentTs
+   in mkChatItem_ cd showGroupAsSender ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgVerified currentTs
 
-mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgSigStatus -> UTCTime -> ChatItem c d
-mkChatItem_ cd showGroupAsSender ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgSigned currentTs =
+mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgVerified -> UTCTime -> ChatItem c d
+mkChatItem_ cd showGroupAsSender ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgVerified currentTs =
   let itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, formattedText, quotedItem, reactions = [], file}
 
 ciContentHasLink :: CIContent d -> Maybe MarkdownList -> Bool
@@ -2493,17 +2853,23 @@ msgContentHasLink mc ft_ = case msgContentTag mc of
   MCLink_ -> True
   _ -> maybe False hasLinks ft_
 
-createAgentConnectionAsync :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> CM (CommandId, ConnId)
-createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
+prepareAgentCreation :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> CM (CommandId, ConnId)
+prepareAgentCreation user cmdFunction enableNtfs cMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
-  connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode IKPQOff subMode
+  connId <- withAgent $ \a -> prepareConnectionToCreate a (aUserId user) enableNtfs cMode PQSupportOff
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM (CommandId, ConnId)
-joinAgentConnectionAsync user conn_ enableNtfs cReqUri cInfo subMode = do
+prepareAgentJoin :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> CM (CommandId, ConnId)
+prepareAgentJoin user conn_ enableNtfs cReqUri = do
   cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) enableNtfs cReqUri cInfo PQSupportOff subMode
+  connId <- case conn_ of
+    Just conn -> pure $ aConnId conn
+    Nothing -> withAgent $ \a -> prepareConnectionToJoin a (aUserId user) enableNtfs cReqUri PQSupportOff
   pure (cmdId, connId)
+
+joinAgentConnectionAsync :: ConnectionModeI c => CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
+joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
+  withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
 allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersion} confId msg = do
@@ -2512,12 +2878,16 @@ allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersi
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-agentAcceptContactAsync :: MsgEncodingI e => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> PQSupport -> VersionChat -> CM (CommandId, ConnId)
-agentAcceptContactAsync user enableNtfs invId msg subMode pqSup chatV = do
+prepareAgentAccept :: User -> Bool -> InvitationId -> PQSupport -> CM (CommandId, ConnId)
+prepareAgentAccept user enableNtfs invId pqSup = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  dm <- encodeConnInfoPQ pqSup chatV msg
-  connId <- withAgent $ \a -> acceptContactAsync a (aUserId user) (aCorrId cmdId) enableNtfs invId dm pqSup subMode
+  connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) enableNtfs invId pqSup
   pure (cmdId, connId)
+
+agentAcceptContactAsync :: MsgEncodingI e => CommandId -> ConnId -> Bool -> InvitationId -> ChatMsgEvent e -> PQSupport -> VersionChat -> SubscriptionMode -> CM ()
+agentAcceptContactAsync cmdId connId enableNtfs invId msg pqSup chatV subMode = do
+  dm <- encodeConnInfoPQ pqSup chatV msg
+  withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) connId enableNtfs invId dm pqSup subMode
 
 deleteAgentConnectionAsync :: ConnId -> CM ()
 deleteAgentConnectionAsync acId = deleteAgentConnectionAsync' acId False
@@ -2637,7 +3007,7 @@ createFeatureEnabledItems_ :: User -> Contact -> CM [AChatItem]
 createFeatureEnabledItems_ user ct@Contact {mergedPreferences} =
   forM allChatFeatures $ \(ACF f) -> do
     let state = featureState $ getContactUserPreference f mergedPreferences
-    createChatItem user (CDDirectRcv ct) False (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing Nothing
+    createChatItem user (CDDirectRcv ct) False (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing Nothing Nothing
 
 createFeatureItems ::
   MsgDirectionI d =>
@@ -2667,15 +3037,15 @@ createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
   unless (null errs) $ toView' $ CEvtChatErrors errs
   toView' $ CEvtNewChatItems user acis
   where
-    contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)])
+    contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)])
     contactChangedFeatures (Contact {mergedPreferences = cups}, ct'@Contact {mergedPreferences = cups'}) = do
       let contents = mapMaybe (\(ACF f) -> featureCIContent_ f) allChatFeatures
       (chatDir ct', False, contents)
       where
-        featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d, Maybe SharedMsgId)
+        featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)
         featureCIContent_ f
-          | state /= state' = Just (fContent ciFeature state', Nothing)
-          | prefState /= prefState' = Just (fContent ciOffer prefState', Nothing)
+          | state /= state' = Just (fContent ciFeature state', Nothing, Nothing)
+          | prefState /= prefState' = Just (fContent ciOffer prefState', Nothing, Nothing)
           | otherwise = Nothing
           where
             fContent :: FeatureContent a d -> (a, Maybe Int) -> CIContent d
@@ -2688,9 +3058,12 @@ createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
             cup = getContactUserPreference f cups
             cup' = getContactUserPreference f cups'
 
+groupFeatures :: GroupInfo -> [AGroupFeature]
+groupFeatures g = if useRelays' g then channelGroupFeatures else regularGroupFeatures
+
 createGroupFeatureChangedItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> GroupInfo -> CM ()
-createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
-  forM_ allGroupFeatures $ \(AGF f) -> do
+createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} g'@GroupInfo {fullGroupPreferences = gps'} =
+  forM_ (groupFeatures g') $ \(AGF f) -> do
     let state = groupFeatureState $ getGroupPreference f gps
         pref' = getGroupPreference f gps'
         state'@(_, param', role') = groupFeatureState pref'
@@ -2704,20 +3077,20 @@ createGroupFeatureItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -
 createGroupFeatureItems user cd ciContent g = createGroupFeatureItems_ user cd False ciContent g >>= toView . CEvtNewChatItems user
 
 createGroupFeatureItems_ :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> ShowGroupAsSender -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM [AChatItem]
-createGroupFeatureItems_ user cd showGroupAsSender ciContent GroupInfo {fullGroupPreferences} =
-  forM allGroupFeatures $ \(AGF f) -> do
+createGroupFeatureItems_ user cd showGroupAsSender ciContent g@GroupInfo {fullGroupPreferences} =
+  forM (groupFeatures g) $ \(AGF f) -> do
     let p = getGroupPreference f fullGroupPreferences
         (_, param, role) = groupFeatureState p
-    createChatItem user cd showGroupAsSender (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing Nothing
+    createChatItem user cd showGroupAsSender (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing Nothing Nothing
 
 createInternalChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM ()
 createInternalChatItem user cd content itemTs_ = do
-  ci <- createChatItem user cd False content Nothing itemTs_
+  ci <- createChatItem user cd False content Nothing Nothing itemTs_
   toView $ CEvtNewChatItems user [ci]
 
-createChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Maybe UTCTime -> CM AChatItem
-createChatItem user cd showGroupAsSender content sharedMsgId itemTs_ =
-  lift (createChatItems user itemTs_ [(cd, showGroupAsSender, [(content, sharedMsgId)])]) >>= \case
+createChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Maybe MsgSigStatus -> Maybe UTCTime -> CM AChatItem
+createChatItem user cd showGroupAsSender content sharedMsgId msgSigned itemTs_ =
+  lift (createChatItems user itemTs_ [(cd, showGroupAsSender, [(content, sharedMsgId, msgSigned)])]) >>= \case
     [Right ci] -> pure ci
     [Left e] -> throwError e
     rs -> throwChatError $ CEInternalError $ "createInternalChatItem: expected 1 result, got " <> show (length rs)
@@ -2729,7 +3102,7 @@ createChatItems ::
   (ChatTypeI c, MsgDirectionI d) =>
   User ->
   Maybe UTCTime ->
-  [(ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)])] ->
+  [(ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)])] ->
   CM' [Either ChatError AChatItem]
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
@@ -2738,24 +3111,25 @@ createChatItems user itemTs_ dirsCIContents = do
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
   where
-    updateChat :: DB.Connection -> StoreCxt -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)]) -> IO ()
+    updateChat :: DB.Connection -> StoreCxt -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> IO ()
     updateChat db cxt createdAt (cd, _, contents)
-      | any (ciRequiresAttention . fst) contents || contactChatDeleted cd = void $ updateChatTsStats db cxt user cd createdAt memberChatStats
+      | any (\(content, _, _) -> ciRequiresAttention content) contents || contactChatDeleted cd = void $ updateChatTsStats db cxt user cd createdAt memberChatStats
       | otherwise = pure ()
       where
         memberChatStats :: Maybe (Int, MemberAttention, Int)
         memberChatStats = case cd of
           CDGroupRcv _g (Just scope) m -> do
-            let unread = length $ filter (ciRequiresAttention . fst) contents
+            let unread = length $ filter (\(content, _, _) -> ciRequiresAttention content) contents
              in Just (unread, memberAttentionChange unread itemTs_ (Just m) scope, 0)
           _ -> Nothing
-    createACIs :: DB.Connection -> UTCTime -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)]) -> [IO AChatItem]
+    createACIs :: DB.Connection -> UTCTime -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> [IO AChatItem]
     createACIs db itemTs createdAt (cd, showGroupAsSender, contents) = map createACI contents
       where
-        createACI (content, sharedMsgId) = do
+        createACI (content, sharedMsgId, msgSigned) = do
           let hasLink_ = ciContentHasLink content Nothing
-          ciId <- createNewChatItemNoMsg db user cd showGroupAsSender content sharedMsgId hasLink_ itemTs createdAt
-          let ci = mkChatItem cd showGroupAsSender ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
+              msgVerified = toMsgVerified False msgSigned
+          ciId <- createNewChatItemNoMsg db user cd showGroupAsSender content sharedMsgId hasLink_ msgVerified itemTs createdAt
+          let ci = mkChatItem cd showGroupAsSender ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing msgVerified createdAt
           pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 -- rcvMem_ Nothing means message from channel - treated same as message from moderator,
@@ -2788,7 +3162,7 @@ createLocalChatItems user cd itemsData createdAt = do
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList)) -> IO (ChatItem 'CTLocal 'MDSnd)
     createItem db (content, ciFile, itemForwarded, ts@(_, ft_)) = do
       let hasLink_ = ciContentHasLink content ft_
-      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing createdAt
+      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing Nothing Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
       pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing createdAt
 
@@ -2864,24 +3238,13 @@ simplexTeamContactProfile =
     { displayName = "Ask SimpleX Team",
       fullName = "",
       shortDescr = Just "Send questions about SimpleX Chat app and your suggestions",
+      description = Nothing,
       image = Just simplexChatImage,
       contactLink = Just $ CLFull adminContactReq,
       peerType = Nothing,
       preferences = Nothing,
-      badge = Nothing
-    }
-
-simplexStatusContactProfile :: Profile
-simplexStatusContactProfile =
-  Profile
-    { displayName = "SimpleX Status",
-      fullName = "",
-      shortDescr = Just "Automatic server status and app release updates",
-      image = Just (ImageData "data:image/jpg;base64,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"),
-      contactLink = Just (either error CLFull $ strDecode "simplex:/contact/#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FShQuD-rPokbDvkyotKx5NwM8P3oUXHxA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA6fSx1k9zrOmF0BJpCaTarZvnZpMTAVQhd3RkDQ35KT0%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"),
-      peerType = Just CPTBot,
-      preferences = Nothing,
-      badge = Nothing
+      badge = Nothing,
+      contactDomain = Nothing
     }
 
 timeItToView :: String -> CM' a -> CM' a

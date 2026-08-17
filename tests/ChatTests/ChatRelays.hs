@@ -1,5 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests.ChatRelays where
 
@@ -18,9 +20,14 @@ import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Chat.Controller (CorsOrigin (..))
+import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), extractOrigin, removeStaleFiles, writeCorsConfig)
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (decodeJSON)
+import qualified Data.Set as S
+import System.Directory (createDirectoryIfMissing, doesFileExist, listDirectory)
+import System.FilePath (takeExtension, (</>))
 import Test.Hspec hiding (it)
 
 chatRelayTests :: SpecWith TestParams
@@ -31,6 +38,19 @@ chatRelayTests = do
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
     it "test chat relay" testChatRelayTest
     it "relay profile updated in address" testRelayProfileUpdateInAddress
+  describe "relay capabilities" $ do
+    it "relay sends webDomain in capabilities" testRelayWebCapabilities
+  describe "web preview" $ do
+    it "render messages and members" testWebPreviewRender
+    it "incremental render adds new messages" testWebPreviewIncremental
+    it "edited and deleted messages" testWebPreviewEditedDeleted
+    it "reactions in rendered messages" testWebPreviewReactions
+    it "non-public group produces no file" testWebPreviewNonPublic
+    it "multiple channels produce multiple files" testWebPreviewMultipleChannels
+    it "channel deletion removes preview file" testWebPreviewChannelDeleted
+    it "removeStaleFiles preserves non-base64url files" testWebPreviewStaleCleanup
+    it "generate CORS config" testWebPreviewCors
+    it "extractOrigin strips path from URL" testExtractOrigin
   describe "share channel card" $ do
     it "share channel card in direct chat" testShareChannelDirect
     it "share channel card in group" testShareChannelGroup
@@ -361,6 +381,238 @@ testShareChannelChannel ps =
 
 getTermLine2 :: TestCC -> IO (String, String)
 getTermLine2 c = (,) <$> getTermLine c <*> getTermLine c
+
+testRelayWebCapabilities :: HasCallStack => TestParams -> IO ()
+testRelayWebCapabilities ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps (relayWebTestOpts "relay.example.com" (tmpPath ps </> "web_cap") Nothing) "bob" bobProfile $ \relay -> do
+      rName <- userName relay
+      relay ##> "/ad"
+      (relaySLink, _cLink) <- getContactLinks relay True
+      alice ##> ("/relays name=" <> rName <> " " <> relaySLink)
+      alice <## "ok"
+      alice ##> "/public group relays=1 #news"
+      alice <## "group #news is created"
+      alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+      concurrentlyN_
+        [ do
+            alice <## "#news: group link relays updated, current relays:"
+            alice <### [EndsWith ": active, web: relay.example.com"]
+            alice <## "group link:"
+            _ <- getTermLine alice
+            pure (),
+          relay <## "#news: you joined the group as relay"
+        ]
+
+-- Helper: set up relay with web config + channel
+withWebChannel :: TestParams -> String -> (TestCC -> TestCC -> FilePath -> IO ()) -> IO ()
+withWebChannel ps gName test = do
+  let webDir = tmpPath ps </> "web_" <> gName
+      corsFile = tmpPath ps </> "cors_" <> gName <> ".conf"
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps (relayWebTestOpts "relay.example.com" webDir (Just corsFile)) "bob" bobProfile $ \relay -> do
+      _ <- setupRelay alice relay
+      createChannelWithRelayWeb gName alice relay
+      test alice relay webDir
+
+createChannelWithRelayWeb :: HasCallStack => String -> TestCC -> TestCC -> IO ()
+createChannelWithRelayWeb gName owner relay = do
+  owner ##> ("/public group relays=1 #" <> gName)
+  owner <## ("group #" <> gName <> " is created")
+  owner <## "wait for selected relay(s) to join, then you can invite members via group link"
+  concurrentlyN_
+    [ do
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
+        owner <### [EndsWith ": active, web: relay.example.com"]
+        owner <## "group link:"
+        _ <- getTermLine owner
+        pure (),
+      relay <## ("#" <> gName <> ": you joined the group as relay")
+    ]
+
+-- Poll for a JSON preview file written by the worker that satisfies predicate, with timeout
+waitPreviewWith :: HasCallStack => FilePath -> (WebChannelPreview -> Bool) -> IO WebChannelPreview
+waitPreviewWith webDir check = go 50
+  where
+    go :: Int -> IO WebChannelPreview
+    go 0 = error "waitPreview: timed out waiting for matching JSON file"
+    go n = do
+      files <- filter (\f -> takeExtension f == ".json") <$> listDirectory webDir
+      case files of
+        [f] -> do
+          jsonBytes <- LB.readFile (webDir </> f)
+          case J.eitherDecode jsonBytes of
+            Right p | check p -> pure p
+            _ -> threadDelay 100000 >> go (n - 1)
+        _ -> threadDelay 100000 >> go (n - 1)
+
+waitPreview :: HasCallStack => FilePath -> IO WebChannelPreview
+waitPreview webDir = waitPreviewWith webDir (const True)
+
+testWebPreviewRender :: HasCallStack => TestParams -> IO ()
+testWebPreviewRender ps =
+  withWebChannel ps "news" $ \alice relay webDir -> do
+    alice #> "#news hello from the channel"
+    relay <# "#news> hello from the channel"
+    alice #> "#news second message"
+    relay <# "#news> second message"
+    wPreview <- waitPreviewWith webDir (\p -> length (messages p) >= 2)
+    let GroupProfile {displayName = chName} = channel wPreview
+    chName `shouldBe` "news"
+    length (messages wPreview) `shouldBe` 2
+    content (messages wPreview !! 0) `shouldBe` MCText "hello from the channel"
+    content (messages wPreview !! 1) `shouldBe` MCText "second message"
+    length (members wPreview) `shouldSatisfy` (>= 1)
+    all (\m -> ts m > read "2020-01-01 00:00:00 UTC") (messages wPreview) `shouldBe` True
+    jsonFiles <- filter (\f -> takeExtension f == ".json") <$> listDirectory webDir
+    length jsonFiles `shouldBe` 1
+
+testWebPreviewIncremental :: HasCallStack => TestParams -> IO ()
+testWebPreviewIncremental ps =
+  withWebChannel ps "inc" $ \alice relay webDir -> do
+    alice #> "#inc first"
+    relay <# "#inc> first"
+    p1 <- waitPreviewWith webDir (\p -> length (messages p) >= 1)
+    length (messages p1) `shouldBe` 1
+    content (messages p1 !! 0) `shouldBe` MCText "first"
+    alice #> "#inc second"
+    relay <# "#inc> second"
+    alice #> "#inc third"
+    relay <# "#inc> third"
+    p2 <- waitPreviewWith webDir (\p -> length (messages p) >= 3)
+    length (messages p2) `shouldBe` 3
+    content (messages p2 !! 0) `shouldBe` MCText "first"
+    content (messages p2 !! 1) `shouldBe` MCText "second"
+    content (messages p2 !! 2) `shouldBe` MCText "third"
+
+testWebPreviewEditedDeleted :: HasCallStack => TestParams -> IO ()
+testWebPreviewEditedDeleted ps =
+  withWebChannel ps "ed" $ \alice relay webDir -> do
+    alice #> "#ed msg one"
+    relay <# "#ed> msg one"
+    alice #> "#ed msg two"
+    relay <# "#ed> msg two"
+    msgId2 <- lastItemId alice
+    alice #> "#ed msg three"
+    relay <# "#ed> msg three"
+    msgId3 <- lastItemId alice
+    alice ##> ("/_update item #1 " <> msgId2 <> " text msg two edited")
+    alice <# "#ed [edited] msg two edited"
+    relay <# "#ed> [edited] msg two edited"
+    alice #$> ("/_delete item #1 " <> msgId3 <> " broadcast", id, "message marked deleted")
+    relay <# "#ed> [marked deleted] msg three"
+    p <- waitPreviewWith webDir (\p -> length (messages p) == 2 && any edited (messages p))
+    length (messages p) `shouldBe` 2
+    content (messages p !! 0) `shouldBe` MCText "msg one"
+    content (messages p !! 1) `shouldBe` MCText "msg two edited"
+    edited (messages p !! 0) `shouldBe` False
+    edited (messages p !! 1) `shouldBe` True
+
+testWebPreviewReactions :: HasCallStack => TestParams -> IO ()
+testWebPreviewReactions ps =
+  withWebChannel ps "react" $ \alice relay webDir -> do
+    alice #> "#react hello"
+    relay <# "#react> hello"
+    alice ##> "+1 #react hello"
+    alice <## "added 👍"
+    relay <# "#react alice> > hello"
+    relay <## "    + 👍"
+    p <- waitPreviewWith webDir (\p -> not (null (messages p)) && not (null (reactions (head (messages p)))))
+    length (messages p) `shouldBe` 1
+    length (reactions (messages p !! 0)) `shouldSatisfy` (>= 1)
+
+testWebPreviewNonPublic :: HasCallStack => TestParams -> IO ()
+testWebPreviewNonPublic ps = do
+  let webDir = tmpPath ps </> "web_nonpub"
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps (relayWebTestOpts "relay.example.com" webDir Nothing) "bob" bobProfile $ \relay -> do
+      _ <- setupRelay alice relay
+      alice ##> "/g private"
+      alice <## "group #private is created"
+      alice <## "to add members use /a private <name> or /create link #private"
+      alice #> "#private hello"
+      threadDelay 2000000
+      files <- filter (\f -> takeExtension f == ".json") <$> listDirectory webDir
+      length files `shouldBe` 0
+
+testWebPreviewMultipleChannels :: HasCallStack => TestParams -> IO ()
+testWebPreviewMultipleChannels ps = do
+  let webDir = tmpPath ps </> "web_multi"
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps (relayWebTestOpts "relay.example.com" webDir Nothing) "bob" bobProfile $ \relay -> do
+      _ <- setupRelay alice relay
+      createChannelWithRelayWeb "ch1" alice relay
+      createChannelWithRelayWeb "ch2" alice relay
+      alice #> "#ch1 msg in ch1"
+      relay <# "#ch1> msg in ch1"
+      alice #> "#ch2 msg in ch2"
+      relay <# "#ch2> msg in ch2"
+      threadDelay 2000000
+      files <- filter (\f -> takeExtension f == ".json") <$> listDirectory webDir
+      length files `shouldBe` 2
+
+testWebPreviewChannelDeleted :: HasCallStack => TestParams -> IO ()
+testWebPreviewChannelDeleted ps =
+  withWebChannel ps "del" $ \alice relay webDir -> do
+    alice #> "#del hello"
+    relay <# "#del> hello"
+    _ <- waitPreviewWith webDir (\p -> not (null (messages p)))
+    jsonFiles <- filter (\f -> takeExtension f == ".json") <$> listDirectory webDir
+    length jsonFiles `shouldBe` 1
+    let previewFile = webDir </> head jsonFiles
+    alice ##> "/d #del"
+    alice <## "#del: you deleted the group (signed)"
+    relay <## "#del: alice deleted the group (signed)"
+    relay <## "use /d #del to delete the local copy of the group"
+    waitFileDeleted previewFile 50
+
+testWebPreviewStaleCleanup :: HasCallStack => TestParams -> IO ()
+testWebPreviewStaleCleanup ps = do
+  let webDir = tmpPath ps </> "web_stale_unit"
+      activeFile = "abc123.json"
+      staleFile = "AAAA_stale.json"
+      safeFile = "my.config.json"
+  createDirectoryIfMissing True webDir
+  writeFile (webDir </> activeFile) "{}"
+  writeFile (webDir </> staleFile) "{}"
+  writeFile (webDir </> safeFile) "{}"
+  removeStaleFiles webDir (S.singleton activeFile)
+  doesFileExist (webDir </> staleFile) `shouldReturn` False
+  doesFileExist (webDir </> safeFile) `shouldReturn` True
+  doesFileExist (webDir </> activeFile) `shouldReturn` True
+
+waitFileDeleted :: HasCallStack => FilePath -> Int -> IO ()
+waitFileDeleted _ 0 = error "waitFileDeleted: timed out"
+waitFileDeleted path n =
+  doesFileExist path >>= \case
+    False -> pure ()
+    True -> threadDelay 100000 >> waitFileDeleted path (n - 1)
+
+testWebPreviewCors :: HasCallStack => TestParams -> IO ()
+testWebPreviewCors ps = do
+  let corsFile = tmpPath ps </> "simplex-cors.conf"
+      entries =
+        [ ("abc123.json", CorsAny),
+          ("def456.json", CorsOrigins ["https://owner-site.com"]),
+          ("ghi789.json", CorsOrigins [])
+        ]
+  writeCorsConfig entries corsFile
+  corsContent <- readFile corsFile
+  corsContent `shouldContain` "/channel/abc123.json \"*\""
+  corsContent `shouldContain` "/channel/def456.json \"https://owner-site.com\""
+  corsContent `shouldContain` "# ghi789.json (no origin configured)"
+  corsContent `shouldContain` "Access-Control-Allow-Origin"
+  corsContent `shouldContain` "Access-Control-Allow-Methods"
+
+testExtractOrigin :: HasCallStack => TestParams -> IO ()
+testExtractOrigin _ps = do
+  extractOrigin "https://owner.example.com/channel.html" `shouldBe` Just "https://owner.example.com"
+  extractOrigin "https://owner.example.com/path/to/page?q=1#frag" `shouldBe` Just "https://owner.example.com"
+  extractOrigin "https://owner.example.com:8443/page" `shouldBe` Just "https://owner.example.com:8443"
+  extractOrigin "https://owner.example.com" `shouldBe` Just "https://owner.example.com"
+  extractOrigin "http://localhost:3000/preview" `shouldBe` Just "http://localhost:3000"
+  extractOrigin "ftp://example.com/file" `shouldBe` Nothing
+  extractOrigin "not-a-url" `shouldBe` Nothing
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()

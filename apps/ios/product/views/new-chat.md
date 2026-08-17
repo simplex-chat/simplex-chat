@@ -81,7 +81,7 @@ Accessed via `NewChatMenuButton` dropdown:
 
 ## Create Channel (`AddChannelView`)
 
-Accessed via `NewChatMenuButton` dropdown: "Create channel (BETA)" with antenna icon (`antenna.radiowaves.left.and.right.circle.fill`).
+Accessed via `NewChatMenuButton` dropdown: "Create public channel" with antenna icon (`antenna.radiowaves.left.and.right.circle.fill`).
 
 ### Three-Step Channel Creation Wizard
 

@@ -39,10 +39,14 @@ data DirectoryOpts = DirectoryOpts
     directoryLog :: Maybe FilePath,
     migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
+    clientService :: Bool,
     runCLI :: Bool,
     searchResults :: Int,
     webFolder :: Maybe FilePath,
     linkCheckInterval :: Int,
+    prohibitedToObserver :: Bool,
+    alwaysCaptcha :: Bool,
+    knocking :: Bool,
     testing :: Bool
   }
 
@@ -151,6 +155,11 @@ directoryOpts appDir defaultDbName = do
           <> help "The display name of the directory service bot, without *'s and spaces (SimpleX Directory)"
           <> value "SimpleX Directory"
       )
+  clientService <-
+    switch
+      ( long "client-service"
+          <> help "Use client service certificate"
+      )
   runCLI <-
     switch
       ( long "run-cli"
@@ -171,6 +180,21 @@ directoryOpts appDir defaultDbName = do
           <> help "Interval in seconds to check public group link data (default: 1800)"
           <> value 1800
       )
+  prohibitedToObserver <-
+    switch
+      ( long "prohibited-to-observer"
+          <> help "Set a member to observer (and delete the message) when they post content prohibited by the group's settings"
+      )
+  alwaysCaptcha <-
+    switch
+      ( long "always-captcha"
+          <> help "Require a captcha from joining members in all groups, regardless of per-group filter settings"
+      )
+  knocking <-
+    switch
+      ( long "knocking"
+          <> help "Require admin review (knocking) before joining members are admitted in all groups, regardless of group preference"
+      )
   pure
     DirectoryOpts
       { coreOptions,
@@ -188,10 +212,14 @@ directoryOpts appDir defaultDbName = do
         directoryLog,
         migrateDirectoryLog,
         serviceName = T.pack serviceName,
+        clientService,
         runCLI,
         searchResults = 10,
         webFolder,
         linkCheckInterval,
+        prohibitedToObserver,
+        alwaysCaptcha,
+        knocking,
         testing = False
       }
 
@@ -207,7 +235,7 @@ getDirectoryOpts appDir defaultDbName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: DirectoryOpts -> ChatOpts
-mkChatOpts DirectoryOpts {coreOptions, serviceName} =
+mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
   ChatOpts
     { coreOptions,
       chatCmd = "",
@@ -221,7 +249,9 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False}
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False, clientService},
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }
 
 parseMigrateLog :: ReadM MigrateLog

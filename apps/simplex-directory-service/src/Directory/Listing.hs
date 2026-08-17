@@ -70,6 +70,7 @@ $(JQ.deriveJSON defaultJSON ''PublicLink)
 data DirectoryEntry = DirectoryEntry
   { entryType :: DirectoryEntryType,
     displayName :: Text,
+    simplexName :: Maybe Text,
     groupLink :: PublicLink,
     shortDescr :: Maybe MarkdownList,
     welcomeMessage :: Maybe MarkdownList,
@@ -97,7 +98,7 @@ recentRoundedTime roundTo now t
        in Just $ systemToUTCTime $ MkSystemTime secs 0
 
 groupDirectoryEntry :: UTCTime -> GroupInfo -> Maybe GroupLink -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
+groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission, publicGroup} = groupProfile
       gt = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
       entryType = DETGroup gt memberAdmission groupSummary
@@ -112,6 +113,7 @@ groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary
               DirectoryEntry
                 { entryType,
                   displayName,
+                  simplexName = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g,
                   groupLink,
                   shortDescr = toFormattedText <$> shortDescr,
                   welcomeMessage = toFormattedText <$> description',

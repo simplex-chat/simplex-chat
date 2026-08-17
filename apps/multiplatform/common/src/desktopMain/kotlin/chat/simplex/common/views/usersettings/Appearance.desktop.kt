@@ -1,10 +1,11 @@
 package chat.simplex.common.views.usersettings
 
+import CARD_PADDING
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionSpacer
 import SectionTextFooter
 import SectionView
+import itemHPadding
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +24,7 @@ import chat.simplex.common.model.CloseBehavior
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.trayIsAvailable
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
@@ -82,10 +83,10 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     FontScaleSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     DensityScaleSection()
 
     SectionBottomSpacer()
@@ -110,8 +111,8 @@ private fun MinimizeToTraySection() {
 @Composable
 fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
-  SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+  SectionView(stringResource(MR.strings.appearance_zoom), contentPadding = PaddingValues(horizontal = CARD_PADDING)) {
+    Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
       Box(Modifier.size(50.dp)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
         .clip(RoundedCornerShape(percent = 22))

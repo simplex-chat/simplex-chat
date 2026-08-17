@@ -22,13 +22,13 @@ where
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), WebPreviewConfig (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
@@ -50,7 +50,9 @@ data ChatOpts = ChatOpts
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     markRead :: Bool,
-    createBot :: Maybe CreateBotOpts
+    createBot :: Maybe CreateBotOpts,
+    userDisplayName :: Maybe Text,
+    userImageFile :: Maybe FilePath
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -66,6 +68,9 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
+    webPreviewConfig :: Maybe WebPreviewConfig,
+    chatRelayServer :: Maybe SMPServerWithAuth,
+    headless :: Bool,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -74,7 +79,8 @@ data CoreChatOpts = CoreChatOpts
 
 data CreateBotOpts = CreateBotOpts
   { botDisplayName :: Text,
-    allowFiles :: Bool
+    allowFiles :: Bool,
+    clientService :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -239,6 +245,59 @@ coreChatOptsP appDir defaultDbName = do
       ( long "relay"
           <> help "Run as a chat relay client"
       )
+  webPreviewConfig <- do
+    webDomain_ <-
+      optional $
+        strOption
+          ( long "relay-web-domain"
+              <> metavar "DOMAIN"
+              <> help "Domain for channel web previews (relay only)"
+          )
+    webJsonDir_ <-
+      optional $
+        strOption
+          ( long "relay-web-dir"
+              <> metavar "DIR"
+              <> help "Directory for channel web preview JSON files (relay only)"
+          )
+    webCorsFile <-
+      optional $
+        strOption
+          ( long "relay-web-cors-file"
+              <> metavar "FILE"
+              <> help "Path to generated Caddy CORS config file (relay only)"
+          )
+    webUpdateInterval <-
+      option auto
+        ( long "relay-web-interval"
+            <> metavar "SECONDS"
+            <> help "Interval between web preview regeneration in seconds (relay only)"
+            <> value 300
+        )
+    webPreviewItemCount <-
+      option auto
+        ( long "relay-web-item-count"
+            <> metavar "COUNT"
+            <> help "Number of recent messages in channel web preview (relay only)"
+            <> value 50
+        )
+    pure $ case (webDomain_, webJsonDir_) of
+      (Just webDomain, Just webJsonDir) -> Just WebPreviewConfig {webDomain, webJsonDir, webCorsFile, webUpdateInterval, webPreviewItemCount}
+      (Nothing, Nothing) -> Nothing
+      _ -> errorWithoutStackTrace "--relay-web-domain and --relay-web-dir must both be provided"
+  chatRelayServer <-
+    optional $
+      option
+        strParse
+        ( long "relay-address-server"
+            <> metavar "SERVER"
+            <> help "SMP server to use for chat relay address link (requires --relay)"
+        )
+  headless <-
+    switch
+      ( long "headless"
+          <> help "Run chat relay without interactive prompts, e.g. as a service (requires --relay; on first run also --user-display-name to create the profile)"
+      )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -282,6 +341,13 @@ coreChatOptsP appDir defaultDbName = do
         tbqSize,
         deviceName,
         chatRelay,
+        webPreviewConfig,
+        chatRelayServer = case chatRelayServer of
+          Just _ | not chatRelay -> errorWithoutStackTrace "--relay-address-server option requires --relay option"
+          _ -> chatRelayServer,
+        headless = case headless of
+          True | not chatRelay -> errorWithoutStackTrace "--headless option requires --relay option"
+          _ -> headless,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,
@@ -390,6 +456,25 @@ chatOptsP appDir defaultDbName = do
       ( long "create-bot-allow-files"
           <> help "Flag for created bot to allow files (only allowed together with --create-bot option)"
       )
+  createBotClientService <-
+    switch
+      ( long "create-bot-client-service"
+          <> help "Flag for created bot to use client service certificate"
+      )
+  userDisplayName <-
+    optional $
+      strOption
+        ( long "user-display-name"
+            <> metavar "NAME"
+            <> help "Use existing active user with this display name, or create one on the first start (incompatible with --create-bot-display-name)"
+        )
+  userImageFile <-
+    optional $
+      strOption
+        ( long "user-image-file"
+            <> metavar "FILE"
+            <> help "Set user profile image from .png/.jpg/.jpeg file when the profile is created (requires --user-display-name); ignored if the user already exists (use \"/set profile image file <path>\" to change it)"
+        )
   pure
     ChatOpts
       { coreOptions,
@@ -405,10 +490,17 @@ chatOptsP appDir defaultDbName = do
         muteNotifications,
         markRead,
         createBot = case createBotDisplayName of
-          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles}
+          Just botDisplayName
+            | isJust userDisplayName -> error "--user-display-name and --create-bot-display-name are mutually exclusive"
+            | otherwise -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles, clientService = createBotClientService}
           Nothing
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
-            | otherwise -> Nothing
+            | createBotClientService -> error "--create-bot-client-service option requires --create-bot-name option"
+            | otherwise -> Nothing,
+        userDisplayName,
+        userImageFile = case userImageFile of
+          Just _ | isNothing userDisplayName -> error "--user-image-file option requires --user-display-name option"
+          _ -> userImageFile
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]

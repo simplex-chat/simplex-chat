@@ -147,7 +147,7 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 |-------|-------|----------|
 | `ChatError.invalidConnReq` | Malformed or expired link | Alert: "Invalid connection link" |
 | `ChatError.unsupportedConnReq` | Link requires newer app version | Alert: "Unsupported connection link" |
-| `ChatError.errorAgent(.SMP(_, .AUTH))` | Link already used or deleted | Alert: "Connection error (AUTH)" |
+| `ChatError.errorAgent(.SMP(_, .AUTH))` | Link already used or deleted | Alert: "Connection link removed" |
 | `ChatError.errorAgent(.SMP(_, .BLOCKED(info)))` | Server operator blocked connection | Alert: "Connection blocked" with reason |
 | `ChatError.errorAgent(.SMP(_, .QUOTA))` | Too many undelivered messages | Alert: "Undelivered messages" |
 | `ChatError.errorAgent(.INTERNAL("SEUniqueID"))` | Duplicate connection attempt | Alert: "Already connected?" |

@@ -139,7 +139,7 @@
     <string name="rcv_conn_event_switch_queue_phase_completed">เปลี่ยนที่อยู่สําหรับคุณแล้ว</string>
     <string name="invite_prohibited">ไม่สามารถเชิญผู้ติดต่อได้!</string>
     <string name="change_role">เปลี่ยนบทบาท</string>
-    <string name="change_member_role_question">เปลี่ยนบทบาทกลุ่ม\?</string>
+    <string name="change_member_role_question">เปลี่ยนบทบาทกลุ่ม?</string>
     <string name="icon_descr_cancel_live_message">ยกเลิกข้อความสด</string>
     <string name="feature_cancelled_item">ยกเลิกเรียบร้อยแล้ว %s</string>
     <string name="alert_title_cant_invite_contacts">ไม่สามารถเชิญผู้ติดต่อได้!</string>
@@ -172,7 +172,7 @@
     <string name="display_name_connection_established">สร้างการเชื่อมต่อแล้ว</string>
     <string name="connection_local_display_name">การเชื่อมต่อ %1$d</string>
     <string name="contact_already_exists">ผู้ติดต่อรายนี้มีอยู่แล้ว</string>
-    <string name="connection_error_auth">การเชื่อมต่อผิดพลาด (AUTH)</string>
+    <string name="connection_error_auth">การเชื่อมต่อผิดพลาด</string>
     <string name="smp_server_test_compare_file">เปรียบเทียบไฟล์</string>
     <string name="smp_server_test_connect">เชื่อมต่อ</string>
     <string name="smp_server_test_create_file">สร้างไฟล์</string>
@@ -996,7 +996,7 @@
     <string name="alert_title_skipped_messages">ข้อความที่ข้ามไป</string>
     <string name="submit_passcode">ส่ง</string>
     <string name="la_mode_system">ระบบ</string>
-    <string name="settings_section_title_support">สนับสนุน SIMPLEX แชท</string>
+    <string name="settings_section_title_support">สนับสนุน SimpleX Chat</string>
     <string name="settings_section_title_socks">พร็อกซี SOCKS</string>
     <string name="stop_chat_confirmation">หยุด</string>
     <string name="stop_chat_question">หยุดแชท\?</string>
@@ -1058,8 +1058,7 @@
     <string name="simplex_link_connection">ผ่าน %1$s</string>
     <string name="failed_to_create_user_duplicate_desc">คุณมีโปรไฟล์แชทที่ใช้ชื่อแสดงเดียวกันอยู่แล้ว กรุณาเลือกชื่ออื่น</string>
     <string name="you_are_already_connected_to_vName_via_this_link">คุณเชื่อมต่อกับ %1$s แล้ว</string>
-    <string name="connection_error_auth_desc">เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน
-\nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร</string>
+    <string name="connection_error_auth_desc">เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน \nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร</string>
     <string name="smp_server_test_upload_file">อัปโหลดไฟล์</string>
     <string name="enter_passphrase_notification_desc">หากต้องการรับการแจ้งเตือน โปรดป้อนรหัสผ่านของฐานข้อมูล</string>
     <string name="simplex_service_notification_title">บริการ  SimpleX Chat </string>

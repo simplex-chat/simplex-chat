@@ -535,8 +535,7 @@ struct ConnectDesktopView: View {
     }
 
     private func errorAlert(_ error: Error) {
-        let a = getErrorAlert(error, "Error")
-        alert = .error(title: a.title, error: a.message)
+        showErrorAlert(error, NSLocalizedString("Error", comment: ""))
     }
 }
 

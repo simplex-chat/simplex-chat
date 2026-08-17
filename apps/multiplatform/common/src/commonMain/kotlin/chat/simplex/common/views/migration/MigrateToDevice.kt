@@ -2,6 +2,7 @@ package chat.simplex.common.views.migration
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionDividerSpaced
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import chat.simplex.common.model.*
@@ -148,6 +150,7 @@ fun ModalData.MigrateToDeviceView(close: () -> Unit) {
         close()
       }
     },
+    cardScreen = true,
   ) {
     MigrateToDeviceLayout(
       migrationState = migrationState,
@@ -201,7 +204,7 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
     val progressIndicator = remember { mutableStateOf(false) }
     Column {
       if (appPlatform.isAndroid) {
-        SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
+        SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ')) {
           QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
             checkUserLink(text)
           }
@@ -209,12 +212,12 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
         SectionSpacer()
       }
 
-      SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
+      SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link)) {
         PasteLinkView()
       }
       SectionSpacer()
 
-      SectionView(stringResource(MR.strings.chat_archive).uppercase()) {
+      SectionView(stringResource(MR.strings.chat_archive)) {
         ArchiveImportView(progressIndicator, close)
       }
     }
@@ -280,7 +283,7 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
     mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = linkNetworkProxy?.toProxyString() ?: legacyLinkSocksProxy, sessionMode = sessionMode.value))
   }
 
-  SectionView(stringResource(MR.strings.migrate_to_device_confirm_network_settings).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_to_device_confirm_network_settings)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_check),
       text = stringResource(MR.strings.migrate_to_device_apply_onion),
@@ -305,7 +308,7 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
   val networkProxyPref = SharedPreference(get = { networkProxy.value }, set = {
     networkProxy.value = it
   })
-  SectionView(stringResource(MR.strings.network_settings_title).uppercase()) {
+  SectionView(stringResource(MR.strings.network_settings_title)) {
     OnionRelatedLayout(
       appPreferences.developerTools.get(),
       networkUseSocksProxy,
@@ -325,7 +328,7 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
 @Composable
 private fun MutableState<MigrationToState?>.DatabaseInitView(link: String, tempDatabaseFile: File, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_database_init).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_database_init)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -345,7 +348,7 @@ private fun MutableState<MigrationToState?>.LinkDownloadingView(
   networkProxy: NetworkProxy?
 ) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_downloading_details).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_downloading_details)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -356,7 +359,7 @@ private fun MutableState<MigrationToState?>.LinkDownloadingView(
 @Composable
 private fun DownloadProgressView(downloadedBytes: Long, totalBytes: Long) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_downloading_archive).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_to_device_downloading_archive)) {
       val ratio = downloadedBytes.toFloat() / max(totalBytes, 1)
       LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migrate_to_device_bytes_downloaded).format(formatBytes(downloadedBytes)))
     }
@@ -365,7 +368,7 @@ private fun DownloadProgressView(downloadedBytes: Long, totalBytes: Long) {
 
 @Composable
 private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, chatReceiver: MigrationToChatReceiver?, archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
-  SectionView(stringResource(MR.strings.migrate_to_device_download_failed).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_to_device_download_failed)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
       text = stringResource(MR.strings.migrate_to_device_repeat_download),
@@ -386,7 +389,7 @@ private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, cha
 @Composable
 private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_importing_archive).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_importing_archive)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -396,7 +399,7 @@ private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: Strin
 
 @Composable
 private fun MutableState<MigrationToState?>.ArchiveImportFailedView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
-  SectionView(stringResource(MR.strings.migrate_to_device_import_failed).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_to_device_import_failed)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
       text = stringResource(MR.strings.migrate_to_device_repeat_import),
@@ -417,7 +420,7 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
 
   Box {
     val view = LocalMultiplatformView()
-    SectionView(stringResource(MR.strings.migrate_to_device_enter_passphrase).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_to_device_enter_passphrase)) {
       SavePassphraseSetting(
         useKeychain.value,
         false,
@@ -489,7 +492,7 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
     }
     else -> Tuple4(generalGetString(MR.strings.error), null, generalGetString(MR.strings.unknown_error), null)
   }
-  SectionView(header.uppercase()) {
+  SectionView(header) {
     if (button != null && confirmation != null) {
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_download),
@@ -500,14 +503,14 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
         }
       ) {}
     }
-    SectionTextFooter(footer)
   }
+  SectionTextFooter(footer)
 }
 
 @Composable
 private fun MigrationView(passphrase: String, confirmation: MigrationConfirmation, useKeychain: Boolean, netCfg: NetCfg, networkProxy: NetworkProxy?, close: () -> Unit) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_migrating).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_migrating)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {

@@ -202,5 +202,7 @@
     "docs-dropdown-11": "常見問題",
     "docs-dropdown-12": "安全性",
     "docs-dropdown-7": "翻譯SimpleX",
-    "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat 和F-Droid.org 儲存庫使用不同的金鑰為安裝包簽名。若要切換，請<a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>匯出聊天資料庫</a>並重新安裝應用程式。"
+    "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat 和F-Droid.org 儲存庫使用不同的金鑰為安裝包簽名。若要切換，請<a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>匯出聊天資料庫</a>並重新安裝應用程式。",
+    "directory": "目錄",
+    "file-retry": "重試"
 }

@@ -3,8 +3,8 @@ package chat.simplex.common.views.helpers
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.MaterialTheme.colors
@@ -108,18 +108,22 @@ fun ModalData.UserWallpaperEditor(
       )
     }
 
-    WallpaperPresetSelector(
-      selectedWallpaper = wallpaperType,
-      baseTheme = currentTheme.base,
-      currentColors = { type ->
-        // If applying for :
-        // - all themes: no overrides needed
-        // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
-        val perUserOverride = if (wallpaperType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
-        ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.get())
-      },
-      onChooseType = onChooseType
-    )
+    SectionView {
+      WallpaperPresetSelector(
+        selectedWallpaper = wallpaperType,
+        baseTheme = currentTheme.base,
+        currentColors = { type ->
+          // If applying for :
+          // - all themes: no overrides needed
+          // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
+          val perUserOverride = if (wallpaperType.sameType(type)) chatModel.currentUser.value?.uiThemes else null
+          ThemeManager.currentColors(type, null, perUserOverride, appPrefs.themeOverrides.get())
+        },
+        onChooseType = onChooseType
+      )
+    }
+
+    SectionDividerSpaced()
 
     WallpaperSetupView(
       themeModeOverride.value.type,
@@ -133,29 +137,30 @@ fun ModalData.UserWallpaperEditor(
       onTypeChange = onTypeChange,
     )
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    if (!globalThemeUsed.value) {
-      ResetToGlobalThemeButton(true) {
-        themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
-        globalThemeUsed.value = true
-        withBGApi { save(applyToMode.value, null) }
-      }
-    }
-
-    SetDefaultThemeButton {
-      globalThemeUsed.value = false
-      val lightBase = DefaultTheme.LIGHT
-      val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
-      val mode = themeModeOverride.value.mode
-      withBGApi {
-        // Saving for both modes in one place by changing mode once per save
-        if (applyToMode.value == null) {
-          val oppositeMode = if (mode == DefaultThemeMode.LIGHT) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
-          save(oppositeMode, ThemeModeOverride.withFilledAppDefaults(oppositeMode, if (oppositeMode == DefaultThemeMode.LIGHT) lightBase else darkBase))
+    SectionView {
+      if (!globalThemeUsed.value) {
+        ResetToGlobalThemeButton(true) {
+          themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+          globalThemeUsed.value = true
+          withBGApi { save(applyToMode.value, null) }
         }
-        themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
-        save(themeModeOverride.value.mode, themeModeOverride.value)
+      }
+      SetDefaultThemeButton {
+        globalThemeUsed.value = false
+        val lightBase = DefaultTheme.LIGHT
+        val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
+        val mode = themeModeOverride.value.mode
+        withBGApi {
+          // Saving for both modes in one place by changing mode once per save
+          if (applyToMode.value == null) {
+            val oppositeMode = if (mode == DefaultThemeMode.LIGHT) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
+            save(oppositeMode, ThemeModeOverride.withFilledAppDefaults(oppositeMode, if (oppositeMode == DefaultThemeMode.LIGHT) lightBase else darkBase))
+          }
+          themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
+          save(themeModeOverride.value.mode, themeModeOverride.value)
+        }
       }
     }
 
@@ -174,38 +179,40 @@ fun ModalData.UserWallpaperEditor(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (showMore) {
-      val values by remember { mutableStateOf(
-        listOf(
-          null to generalGetString(MR.strings.chat_theme_apply_to_all_modes),
-          DefaultThemeMode.LIGHT to generalGetString(MR.strings.chat_theme_apply_to_light_mode),
-          DefaultThemeMode.DARK to generalGetString(MR.strings.chat_theme_apply_to_dark_mode),
+      SectionView {
+        val values by remember { mutableStateOf(
+          listOf(
+            null to generalGetString(MR.strings.chat_theme_apply_to_all_modes),
+            DefaultThemeMode.LIGHT to generalGetString(MR.strings.chat_theme_apply_to_light_mode),
+            DefaultThemeMode.DARK to generalGetString(MR.strings.chat_theme_apply_to_dark_mode),
+          )
         )
-      )
-      }
-      ExposedDropDownSettingRow(
-        generalGetString(MR.strings.chat_theme_apply_to_mode),
-        values,
-        applyToMode,
-        icon = null,
-        enabled = remember { mutableStateOf(true) },
-        onSelected = {
-          applyToMode.value = it
-          if (it != null && it != CurrentColors.value.base.mode) {
-            val lightBase = DefaultTheme.LIGHT
-            val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
-            ThemeManager.applyTheme(if (it == DefaultThemeMode.LIGHT) lightBase.themeName else darkBase.themeName)
-          }
         }
-      )
+        ExposedDropDownSettingRow(
+          generalGetString(MR.strings.chat_theme_apply_to_mode),
+          values,
+          applyToMode,
+          icon = null,
+          enabled = remember { mutableStateOf(true) },
+          onSelected = {
+            applyToMode.value = it
+            if (it != null && it != CurrentColors.value.base.mode) {
+              val lightBase = DefaultTheme.LIGHT
+              val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
+              ThemeManager.applyTheme(if (it == DefaultThemeMode.LIGHT) lightBase.themeName else darkBase.themeName)
+            }
+          }
+        )
+      }
 
       SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
 
       ImportExportThemeSection(null, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
@@ -214,7 +221,9 @@ fun ModalData.UserWallpaperEditor(
         }
       }
     } else {
-      AdvancedSettingsButton { showMore = true }
+      SectionView {
+        AdvancedSettingsButton { showMore = true }
+      }
     }
 
     SectionBottomSpacer()
@@ -329,32 +338,36 @@ fun ModalData.ChatWallpaperEditor(
       ThemeManager.currentColors(type, if (type?.sameType(themeModeOverride.value.type) == true) themeModeOverride.value else null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     }
 
-    WallpaperPresetSelector(
-      selectedWallpaper = currentTheme.wallpaper.type,
-      activeBackgroundColor = currentTheme.wallpaper.background,
-      activeTintColor = currentTheme.wallpaper.tint,
-      baseTheme = CurrentColors.collectAsState().value.base,
-      currentColors = { type -> currentColors(type) },
-      onChooseType = { type ->
-        when {
-          type is WallpaperType.Image && chatModel.remoteHostId() != null -> { /* do nothing */ }
-          type is WallpaperType.Image && ((themeModeOverride.value.type is WallpaperType.Image && !globalThemeUsed.value) || currentColors(type).wallpaper.type.image == null) -> {
-            withLongRunningApi { importWallpaperLauncher.launch("image/*") }
-          }
-          type is WallpaperType.Image -> {
-            if (!onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)) {
+    SectionView {
+      WallpaperPresetSelector(
+        selectedWallpaper = currentTheme.wallpaper.type,
+        activeBackgroundColor = currentTheme.wallpaper.background,
+        activeTintColor = currentTheme.wallpaper.tint,
+        baseTheme = CurrentColors.collectAsState().value.base,
+        currentColors = { type -> currentColors(type) },
+        onChooseType = { type ->
+          when {
+            type is WallpaperType.Image && chatModel.remoteHostId() != null -> { /* do nothing */ }
+            type is WallpaperType.Image && ((themeModeOverride.value.type is WallpaperType.Image && !globalThemeUsed.value) || currentColors(type).wallpaper.type.image == null) -> {
               withLongRunningApi { importWallpaperLauncher.launch("image/*") }
             }
+            type is WallpaperType.Image -> {
+              if (!onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)) {
+                withLongRunningApi { importWallpaperLauncher.launch("image/*") }
+              }
+            }
+            globalThemeUsed.value || themeModeOverride.value.type != type -> {
+              onTypeCopyFromSameTheme(type)
+            }
+            else -> {
+              onTypeChange(type)
+            }
           }
-          globalThemeUsed.value || themeModeOverride.value.type != type -> {
-            onTypeCopyFromSameTheme(type)
-          }
-          else -> {
-            onTypeChange(type)
-          }
-        }
-      },
-    )
+        },
+      )
+    }
+
+    SectionDividerSpaced()
 
     WallpaperSetupView(
       themeModeOverride.value.type,
@@ -368,29 +381,30 @@ fun ModalData.ChatWallpaperEditor(
       onTypeChange = onTypeChange,
     )
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    if (!globalThemeUsed.value) {
-      ResetToGlobalThemeButton(remember { chatModel.currentUser }.value?.uiThemes?.preferredMode(isInDarkTheme()) == null) {
-        themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
-        globalThemeUsed.value = true
-        withBGApi { save(applyToMode.value, null) }
-      }
-    }
-
-    SetDefaultThemeButton {
-      globalThemeUsed.value = false
-      val lightBase = DefaultTheme.LIGHT
-      val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
-      val mode = themeModeOverride.value.mode
-      withBGApi {
-        // Saving for both modes in one place by changing mode once per save
-        if (applyToMode.value == null) {
-          val oppositeMode = if (mode == DefaultThemeMode.LIGHT) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
-          save(oppositeMode, ThemeModeOverride.withFilledAppDefaults(oppositeMode, if (oppositeMode == DefaultThemeMode.LIGHT) lightBase else darkBase))
+    SectionView {
+      if (!globalThemeUsed.value) {
+        ResetToGlobalThemeButton(remember { chatModel.currentUser }.value?.uiThemes?.preferredMode(isInDarkTheme()) == null) {
+          themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+          globalThemeUsed.value = true
+          withBGApi { save(applyToMode.value, null) }
         }
-        themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
-        save(themeModeOverride.value.mode, themeModeOverride.value)
+      }
+      SetDefaultThemeButton {
+        globalThemeUsed.value = false
+        val lightBase = DefaultTheme.LIGHT
+        val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
+        val mode = themeModeOverride.value.mode
+        withBGApi {
+          // Saving for both modes in one place by changing mode once per save
+          if (applyToMode.value == null) {
+            val oppositeMode = if (mode == DefaultThemeMode.LIGHT) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
+            save(oppositeMode, ThemeModeOverride.withFilledAppDefaults(oppositeMode, if (oppositeMode == DefaultThemeMode.LIGHT) lightBase else darkBase))
+          }
+          themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
+          save(themeModeOverride.value.mode, themeModeOverride.value)
+        }
       }
     }
 
@@ -409,38 +423,40 @@ fun ModalData.ChatWallpaperEditor(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (showMore) {
-      val values by remember { mutableStateOf(
-        listOf(
-          null to generalGetString(MR.strings.chat_theme_apply_to_all_modes),
-          DefaultThemeMode.LIGHT to generalGetString(MR.strings.chat_theme_apply_to_light_mode),
-          DefaultThemeMode.DARK to generalGetString(MR.strings.chat_theme_apply_to_dark_mode),
+      SectionView {
+        val values by remember { mutableStateOf(
+          listOf(
+            null to generalGetString(MR.strings.chat_theme_apply_to_all_modes),
+            DefaultThemeMode.LIGHT to generalGetString(MR.strings.chat_theme_apply_to_light_mode),
+            DefaultThemeMode.DARK to generalGetString(MR.strings.chat_theme_apply_to_dark_mode),
+          )
         )
-      )
-      }
-      ExposedDropDownSettingRow(
-        generalGetString(MR.strings.chat_theme_apply_to_mode),
-        values,
-        applyToMode,
-        icon = null,
-        enabled = remember { mutableStateOf(true) },
-        onSelected = {
-          applyToMode.value = it
-          if (it != null && it != CurrentColors.value.base.mode) {
-            val lightBase = DefaultTheme.LIGHT
-            val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
-            ThemeManager.applyTheme(if (it == DefaultThemeMode.LIGHT) lightBase.themeName else darkBase.themeName)
-          }
         }
-      )
+        ExposedDropDownSettingRow(
+          generalGetString(MR.strings.chat_theme_apply_to_mode),
+          values,
+          applyToMode,
+          icon = null,
+          enabled = remember { mutableStateOf(true) },
+          onSelected = {
+            applyToMode.value = it
+            if (it != null && it != CurrentColors.value.base.mode) {
+              val lightBase = DefaultTheme.LIGHT
+              val darkBase = if (CurrentColors.value.base != DefaultTheme.LIGHT) CurrentColors.value.base else if (appPrefs.systemDarkTheme.get() == DefaultTheme.DARK.themeName) DefaultTheme.DARK else if (appPrefs.systemDarkTheme.get() == DefaultTheme.BLACK.themeName) DefaultTheme.BLACK else DefaultTheme.SIMPLEX
+              ThemeManager.applyTheme(if (it == DefaultThemeMode.LIGHT) lightBase.themeName else darkBase.themeName)
+            }
+          }
+        )
+      }
 
       SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
       ImportExportThemeSection(themeModeOverride.value, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
           themeModeOverride.value = it
@@ -448,7 +464,9 @@ fun ModalData.ChatWallpaperEditor(
         }
       }
     } else {
-      AdvancedSettingsButton { showMore = true }
+      SectionView {
+        AdvancedSettingsButton { showMore = true }
+      }
     }
 
     SectionBottomSpacer()

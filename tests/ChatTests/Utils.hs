@@ -24,6 +24,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), mkStoreCxt)
+import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -84,8 +85,11 @@ businessProfile = mkProfile "biz" "Biz Inc" Nothing
 chatRelayProfile :: Profile
 chatRelayProfile = mkProfile "relay" "Relay" Nothing
 
+serviceProfile :: Profile
+serviceProfile = mkProfile "service_user" "Service user" Nothing
+
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
-mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing}
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, description = Nothing, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
 
 it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
@@ -120,7 +124,7 @@ skip = before_ . pendingWith
 versionTestMatrix2 :: (HasCallStack => Bool -> Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
   it "current" $ testChat2 aliceProfile bobProfile (runTest True True)
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False True)
+  it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest False True)
   it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
   it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
   it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False False)
@@ -130,7 +134,7 @@ versionTestMatrix2 runTest = do
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
   it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
-  it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
+  it "prev" $ runTestCfg3 testCfgVPrev testCfgVPrev testCfgVPrev runTest
   it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
   it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
   it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
@@ -238,7 +242,9 @@ genProfileImg = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
+    -- raw bytes that base64-encode to fit maxProfileImageSize when prefixed with "data:image/png;base64,"
+    lrgLen = (maxProfileImageSize - imagePrefixLen) * 3 `div` 4 - 1
+    imagePrefixLen = 22
 
 -- PQ combinators /
 
@@ -309,17 +315,17 @@ groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNo
 
 groupFeatures_ :: Int -> Bool -> [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures_ dir isChannel =
-  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
-    ((dir, "Direct messages: on"), Nothing, Nothing),
-    ((dir, "Full deletion: off"), Nothing, Nothing),
-    ((dir, "Message reactions: on"), Nothing, Nothing),
-    ((dir, "Voice messages: on"), Nothing, Nothing),
-    ((dir, "Files and media: on"), Nothing, Nothing),
-    ((dir, "SimpleX links: on"), Nothing, Nothing),
-    ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing),
-    ((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)
-  ]
+  [((dir, "Disappearing messages: off"), Nothing, Nothing)]
+    <> [((dir, "Direct messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Full deletion: off"), Nothing, Nothing)]
+    <> [((dir, "Message reactions: on"), Nothing, Nothing)]
+    <> [((dir, "Voice messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Files and media: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "SimpleX links: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Member reports: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Recent history: on"), Nothing, Nothing)]
+    <> [((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)]
+    <> [((dir, "Sign messages: off"), Nothing, Nothing) | isChannel]
 
 businessGroupFeatures :: [(Int, String)]
 businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0

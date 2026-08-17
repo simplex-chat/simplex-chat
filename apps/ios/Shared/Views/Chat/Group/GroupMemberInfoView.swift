@@ -126,27 +126,24 @@ struct GroupMemberInfoView: View {
                         && member.memberRole != .relay
                         && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
                             || member.supportChat != nil)
+                    let canVerifyCode = connectionCode != nil && member.memberRole != .relay
+                    let canSyncConn = connectionStats?.ratchetSyncAllowed ?? false
 
-                    if member.memberActive {
+                    if (member.memberActive || (groupInfo.useRelays && member.memberCurrent))
+                        && (showMemberSupportChat || canVerifyCode || canSyncConn) {
                         Section {
                             if showMemberSupportChat {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
-                            if let code = connectionCode,
-                               !(groupInfo.useRelays && member.memberRole == .relay) {
+                            if canVerifyCode, let code = connectionCode {
                                 verifyCodeButton(code)
                             }
-                            if let connStats = connectionStats,
-                               connStats.ratchetSyncAllowed {
+                            if canSyncConn {
                                 synchronizeConnectionButton()
                             }
                             // } else if developerTools {
                             //     synchronizeConnectionButtonForce()
                             // }
-                        }
-                    } else if groupInfo.useRelays && member.memberCurrent && showMemberSupportChat {
-                        Section {
-                            MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                         }
                     }
 
@@ -178,15 +175,15 @@ struct GroupMemberInfoView: View {
                         let label: LocalizedStringKey = groupInfo.useRelays ? "Channel" : groupInfo.businessChat == nil ? "Group" : "Chat"
                         infoRow(label, groupInfo.displayName)
 
-                        if !groupInfo.useRelays, let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
                                 ForEach(roles) { role in
-                                    Text(role.text)
+                                    Text(role.text(isChannel: groupInfo.isChannel))
                                 }
                             }
                             .frame(height: 36)
                         } else {
-                            infoRow("Role", member.memberRole.text)
+                            infoRow("Role", member.memberRole.text(isChannel: groupInfo.isChannel))
                         }
                         if let link = member.relayLink {
                             infoRow("Relay link", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(link)))
@@ -278,8 +275,9 @@ struct GroupMemberInfoView: View {
                                             }
                                         } catch let e {
                                             logger.error("apiContactQueueInfo error: \(responseError(e))")
-                                            let a = getErrorAlert(e, "Error")
-                                            await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                                            await MainActor.run {
+                                                showErrorAlert(e, NSLocalizedString("Error", comment: ""))
+                                            }
                                         }
                                     }
                                 }
@@ -299,7 +297,8 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
+                    let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
                         connectionStats = stats
@@ -473,10 +472,9 @@ struct GroupMemberInfoView: View {
                         }
                     } catch let error {
                         logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error creating member contact")
                         await MainActor.run {
                             progressIndicator = false
-                            alert = .error(title: a.title, error: a.message)
+                            showErrorAlert(error, NSLocalizedString("Error creating member contact", comment: ""))
                         }
                     }
                 }
@@ -585,12 +583,17 @@ struct GroupMemberInfoView: View {
                         let (verified, existingCode) = r
                         let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
-                        member.activeConn?.connectionCode = connCode
+                        if groupInfo.useRelays {
+                            member.memberVerifiedCode = connCode
+                        } else {
+                            member.activeConn?.connectionCode = connCode
+                        }
                         _ = chatModel.upsertGroupMember(groupInfo, member)
                         return r
                     }
                     return nil
-                }
+                },
+                verificationText: groupInfo.useRelays ? "To verify keys with this subscriber, compare (or scan) the code on your devices." : nil
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")
@@ -633,8 +636,7 @@ struct GroupMemberInfoView: View {
                         blockForAllButton(mem)
                     }
                 }
-                // TODO [relays] re-enable when relay management ships
-                if canRemove && mem.memberRole != .relay {
+                if canRemove {
                     if mem.memberStatus != .memRemoved && (mem.memberStatus != .memLeft || mem.memberRole == .relay) {
                         removeMemberButton(mem)
                     } else if mem.memberRole != .relay {
@@ -728,15 +730,17 @@ struct GroupMemberInfoView: View {
 
     private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
         Alert(
-            title: Text("Change member role?"),
+            title: Text("Change role?"),
             message: (
                 mem.memberCurrent
                 ? (
-                    groupInfo.businessChat == nil
-                    ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.")
-                    : Text("Member role will be changed to \"\(newRole.text)\". All chat members will be notified.")
+                    groupInfo.isChannel
+                    ? Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All subscribers will be notified.")
+                    : groupInfo.businessChat == nil
+                    ? Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All group members will be notified.")
+                    : Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All chat members will be notified.")
                 )
-                : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation.")
+                : Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". The member will receive a new invitation.")
             ),
             primaryButton: .default(Text("Change")) {
                 Task {
@@ -751,8 +755,9 @@ struct GroupMemberInfoView: View {
                     } catch let error {
                         newRole = mem.memberRole
                         logger.error("apiMembersRole error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error changing role")
-                        alert = .error(title: a.title, error: a.message)
+                        await MainActor.run {
+                            showErrorAlert(error, NSLocalizedString("Error changing role", comment: ""))
+                        }
                     }
                 }
             },
@@ -773,9 +778,8 @@ struct GroupMemberInfoView: View {
                 }
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error changing address")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error changing address", comment: ""))
                 }
             }
         }
@@ -791,9 +795,8 @@ struct GroupMemberInfoView: View {
                 }
             } catch let error {
                 logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error aborting address change")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error aborting address change", comment: ""))
                 }
             }
         }
@@ -810,9 +813,8 @@ struct GroupMemberInfoView: View {
                 }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }

@@ -135,7 +135,7 @@ fun ChatView(
       val draft = chatModel.draft.value
       val sharedContent = chatModel.sharedContent.value
       mutableStateOf(
-        if (chatModel.draftChatId.value == staleChatId.value && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == staleChatId.value)) {
+        if (chatModel.draftChatId.value == draftChatId(staleChatId.value, chatsCtx.groupScopeInfo?.toChatScope()) && draft != null && (sharedContent !is SharedContent.Forward || sharedContent.fromChatInfo.id == staleChatId.value)) {
           draft
         } else {
           ComposeState(useLinkPreviews = useLinkPreviews)
@@ -181,19 +181,23 @@ fun ChatView(
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
             selectionManager?.clearSelection()
-            val cInfo = activeChat.value?.chatInfo
+            // The outer chat/chatInfo/chatRh are captured once by LaunchedEffect(Unit) and go stale on desktop, where
+            // ChatView is reused across chat switches; read the opened chat fresh to avoid regressing the previous one.
+            val openedChat = chatModel.getChat(chatId)
+            val cInfo = openedChat?.chatInfo
+            val openedChatRh = openedChat?.remoteHostId
             if (chatsCtx.secondaryContextFilter == null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group || cInfo is ChatInfo.Local)) {
-              updateAvailableContent(chatRh, activeChat, availableContent)
+              updateAvailableContent(openedChatRh, activeChat, availableContent)
             }
-            if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
+            if (cInfo is ChatInfo.Direct && cInfo.contact.activeConn != null) {
               withBGApi {
-                val r = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
+                val r = chatModel.controller.apiContactInfo(openedChatRh, cInfo.apiId)
                 if (r != null) {
                   val contactStats = r.first
                   if (contactStats != null)
                     withContext(Dispatchers.Main) {
-                      chatModel.chatsContext.updateContactConnectionStats(chatRh, chat.chatInfo.contact, contactStats)
-                      chatModel.chatAgentConnId.value = chat.chatInfo.contact.activeConn.agentConnId
+                      chatModel.chatsContext.updateContactConnectionStats(openedChatRh, cInfo.contact, contactStats)
+                      chatModel.chatAgentConnId.value = cInfo.contact.activeConn.agentConnId
                       chatModel.chatSubStatus.value = contactStats.subStatus
                     }
                 }
@@ -206,17 +210,17 @@ fun ChatView(
             }
             if (cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays) {
               withBGApi {
-                setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
+                setGroupMembers(openedChatRh, cInfo.groupInfo, chatModel)
                 if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
-                  val relays = chatModel.controller.apiGetGroupRelays(cInfo.groupInfo.groupId)
+                  val relays = chatModel.controller.apiGetGroupRelays(openedChatRh, cInfo.groupInfo.groupId)
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
                 } else if (cInfo.groupInfo.membership.memberCurrent) {
-                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
+                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(openedChatRh, cInfo.groupInfo.groupId)
                   if (gInfo != null) {
                     withContext(Dispatchers.Main) {
-                      chatModel.chatsContext.updateGroup(chatRh, gInfo)
+                      chatModel.chatsContext.updateGroup(openedChatRh, gInfo)
                     }
                   }
                 }
@@ -407,7 +411,7 @@ fun ChatView(
                 val selectedItems: MutableState<Set<Long>?> = mutableStateOf(null)
                 ModalManager.end.showCustomModal { close ->
                   val appBar = remember { mutableStateOf(null as @Composable (BoxScope.() -> Unit)?) }
-                  ModalView(close, appBar = appBar.value) {
+                  ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
                       var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
@@ -510,7 +514,7 @@ fun ChatView(
                 if (chatsCtx.secondaryContextFilter == null) {
                   ModalManager.end.closeModals()
                 }
-                ModalManager.end.showModalCloseable(true) { close ->
+                ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
                     GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
                   }
@@ -802,7 +806,7 @@ fun ChatView(
       }
       is ChatInfo.ContactConnection -> {
         val close = { chatModel.chatId.value = null }
-          ModalView(close, showClose = appPlatform.isAndroid, content = {
+          ModalView(close, showClose = appPlatform.isAndroid, cardScreen = true, content = {
             ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, false, close)
           })
           LaunchedEffect(chatInfo.id) {
@@ -1547,6 +1551,11 @@ fun subscriberCountStr(count: Long): String =
   if (count == 1L) String.format(generalGetString(MR.strings.channel_subscriber_count_singular), count)
   else String.format(generalGetString(MR.strings.channel_subscriber_count_plural), count)
 
+fun ownersContributorsCountStr(count: Int, withContributors: Boolean): String =
+  if (withContributors) String.format(generalGetString(MR.strings.channel_owners_contributors_count), count)
+  else if (count == 1) String.format(generalGetString(MR.strings.channel_owner_count_singular), count)
+  else String.format(generalGetString(MR.strings.channel_owner_count_plural), count)
+
 @Composable
 fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
@@ -1904,10 +1913,13 @@ fun BoxScope.ChatItemsList(
     reveal: (Boolean) -> Unit
   ) {
     val itemScope = rememberCoroutineScope()
+    val viewConfiguration = LocalViewConfiguration.current
     CompositionLocalProvider(
       // Makes horizontal and vertical scrolling to coexist nicely.
-      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
-      LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+      // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view.
+      // remember: pointerInput handlers observe ViewConfiguration and reset on any change, so a new
+      // instance per recomposition kills in-flight presses/hover whenever a message is inserted
+      LocalViewConfiguration provides remember(viewConfiguration) { viewConfiguration.bigTouchSlop() }
     ) {
       val provider = {
         providerForGallery(reversedChatItems.value.asReversed(), cItem.id) { indexInReversed ->
@@ -1955,7 +1967,7 @@ fun BoxScope.ChatItemsList(
           }
           false
         }
-        val swipeableModifier = if (appPlatform.isDesktop || !chatInfo.sendMsgEnabled) Modifier else SwipeToDismissModifier(
+        val swipeableModifier = if (appPlatform.isDesktop || !chatInfo.sendMsgEnabled || cItem.meta.itemDeleted != null) Modifier else SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
@@ -2000,7 +2012,7 @@ fun BoxScope.ChatItemsList(
                 Column(
                   Modifier
                     .padding(top = 8.dp)
-                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
                   verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -2035,7 +2047,7 @@ fun BoxScope.ChatItemsList(
                         val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
 
                         Text(
-                          member.memberRole.text,
+                          member.memberRole.text(isChannel = chatInfo.isChannel),
                           Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                           fontSize = 13.5.sp,
                           fontWeight = FontWeight.Medium,
@@ -2079,7 +2091,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -2092,7 +2104,7 @@ fun BoxScope.ChatItemsList(
                 Column(
                   Modifier
                     .padding(top = 8.dp)
-                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
                   verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -2162,7 +2174,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -2323,19 +2335,17 @@ fun BoxScope.ChatItemsList(
           )
         }
 
-        val descr = chatInfo.shortDescr?.trim()
-        if (descr != null && descr != "") {
-          MarkdownText(
-            descr,
-            parseToMarkdown(descr),
-            toggleSecrets = true,
-            style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
-            maxLines = 4,
-            overflow = TextOverflow.Ellipsis,
-            uriHandler = LocalUriHandler.current,
-            modifier = Modifier.padding(top = DEFAULT_PADDING_HALF),
-            linkMode = linkMode
-          )
+        ProfileDescriptionText(
+          shortDescr = chatInfo.shortDescr,
+          description = chatInfo.profileDescription,
+          style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
+          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+        )
+
+        when (chatInfo) {
+          is ChatInfo.Direct -> ContactSimplexNameView(chatInfo.contact, verifiable = false)
+          is ChatInfo.Group -> GroupSimplexNameView(chatInfo.groupInfo, verifiable = false)
+          else -> {}
         }
 
         val contextStr = chatContext()
@@ -3206,7 +3216,7 @@ fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close:
   withBGApi {
     setGroupMembers(rhId, groupInfo, chatModel)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) { close ->
+    ModalManager.end.showModalCloseable(showClose = true) { close ->
       AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
     }
   }
@@ -3217,7 +3227,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
   withBGApi {
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) {
+    ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) {
       GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo)
     }
   }

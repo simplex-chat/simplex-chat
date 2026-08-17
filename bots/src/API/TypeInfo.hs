@@ -170,6 +170,7 @@ toTypeInfo tr =
       "DBEntityId'" -> ST TInt64 []
       "Integer" -> ST TInt64 []
       "Version" -> ST TInt []
+      "VersionRoster" -> ST TInt64 []
       "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
@@ -193,6 +194,7 @@ toTypeInfo tr =
     primitiveToLower st@(ST t ps) = let t' = fstToLower t in if t' `elem` primitiveTypes then ST t' ps else st
     stringTypes =
       [ "AConnectionLink",
+        "AConnectTarget",
         "AProtocolType",
         "AgentConnId",
         "AgentInvId",
@@ -214,11 +216,13 @@ toTypeInfo tr =
         "Text",
         "MREmojiChar",
         "PrivateKey",
+        "ProofPresHeader",
         "PublicKey",
         "ProtocolServer",
         "SbKey",
         "SharedMsgId",
         "Signature",
+        "StrJSON",
         "TransportHost",
         "UIColor",
         "UserPwd",
@@ -236,7 +240,8 @@ toTypeInfo tr =
       [ "FullDeleteGroupPreference",
         "ReactionsGroupPreference",
         "ReportsGroupPreference",
-        "HistoryGroupPreference"
+        "HistoryGroupPreference",
+        "SignMessagesGroupPreference"
       ]
     roleGroupPrefTypes =
       [ "DirectMessagesGroupPreference",

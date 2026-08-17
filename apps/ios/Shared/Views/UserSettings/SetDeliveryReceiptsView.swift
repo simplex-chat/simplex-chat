@@ -69,7 +69,7 @@ struct SetDeliveryReceiptsView: View {
                 Button {
                     AlertManager.shared.showAlert(Alert(
                         title: Text("Delivery receipts are disabled!"),
-                        message: Text("You can enable them later via app Privacy & Security settings."),
+                        message: Text("You can enable them later via app Your privacy settings."),
                         primaryButton: .default(Text("Don't show again")) {
                             m.setDeliveryReceipts = false
                             privacyDeliveryReceiptsSet.set(true)

@@ -180,11 +180,9 @@ struct YourNetworkView: View {
                             m.notificationMode = notificationMode
                         }
                     } catch let error {
-                        let a = getErrorAlert(error, "Error enabling notifications")
-                        AlertManager.shared.showAlertMsg(
-                            title: a.title,
-                            message: a.message
-                        )
+                        await MainActor.run {
+                            showErrorAlert(error, NSLocalizedString("Error enabling notifications", comment: ""))
+                        }
                     }
                 }
             }

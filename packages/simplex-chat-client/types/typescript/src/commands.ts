@@ -89,6 +89,7 @@ export interface APISendMessages {
   sendRef: T.ChatRef
   liveMessage: boolean
   ttl?: number // int
+  signMessages: boolean
   composedMessages: T.ComposedMessage[] // non-empty
 }
 
@@ -96,7 +97,7 @@ export namespace APISendMessages {
   export type Response = CR.NewChatItems | CR.ChatCmdError
 
   export function cmdString(self: APISendMessages): string {
-    return '/_send ' + T.ChatRef.cmdString(self.sendRef) + (self.liveMessage ? ' live=on' : '') + (self.ttl ? ' ttl=' + self.ttl : '') + ' json ' + JSON.stringify(self.composedMessages)
+    return '/_send ' + T.ChatRef.cmdString(self.sendRef) + (self.liveMessage ? ' live=on' : '') + (self.ttl ? ' ttl=' + self.ttl : '') + (self.signMessages ? ' sign=on' : '') + ' json ' + JSON.stringify(self.composedMessages)
   }
 }
 
@@ -495,12 +496,12 @@ export namespace APIAddContact {
   }
 }
 
-// Determine SimpleX link type and if the bot is already connected via this link.
+// Determine SimpleX link type and if the bot is already connected via this link or name.
 // Network usage: interactive.
 export interface APIConnectPlan {
   userId: number // int64
-  connectionLink?: string
-  resolveKnown: boolean
+  connectTarget?: string
+  resolveMode: T.PlanResolveMode
   linkOwnerSig?: T.LinkOwnerSig
 }
 
@@ -508,7 +509,7 @@ export namespace APIConnectPlan {
   export type Response = CR.ConnectionPlan | CR.ChatCmdError
 
   export function cmdString(self: APIConnectPlan): string {
-    return '/_connect plan ' + self.userId + ' ' + self.connectionLink
+    return '/_connect plan ' + self.userId + ' ' + self.connectTarget
   }
 }
 
@@ -528,18 +529,18 @@ export namespace APIConnect {
   }
 }
 
-// Connect via SimpleX link as string in the active user profile.
+// Connect via SimpleX link or name as string in the active user profile.
 // Network usage: interactive.
 export interface Connect {
   incognito: boolean
-  connLink_?: string
+  connTarget_?: string
 }
 
 export namespace Connect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: Connect): string {
-    return '/connect' + (self.connLink_ ? ' ' + self.connLink_ : '')
+    return '/connect' + (self.connTarget_ ? ' ' + self.connTarget_ : '')
   }
 }
 

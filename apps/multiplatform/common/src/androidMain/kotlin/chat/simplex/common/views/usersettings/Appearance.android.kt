@@ -2,7 +2,6 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionSpacer
 import SectionView
 import android.app.Activity
 import android.content.ComponentName
@@ -126,9 +125,9 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+    SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -152,7 +151,7 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     FontScaleSection()
 
     SectionBottomSpacer()

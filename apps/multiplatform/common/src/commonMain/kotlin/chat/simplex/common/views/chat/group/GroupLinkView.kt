@@ -1,7 +1,9 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
+import SectionView
 import SectionViewWithButton
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -215,7 +217,10 @@ fun GroupLinkLayout(
         }
       } else {
         if (!isChannel) {
-          RoleSelectionRow(groupInfo, groupLinkMemberRole)
+          SectionView {
+            RoleSelectionRow(groupInfo, groupLinkMemberRole)
+          }
+          SectionDividerSpaced()
         }
         var initialLaunch by remember { mutableStateOf(true) }
         LaunchedEffect(groupLinkMemberRole.value) {
@@ -225,69 +230,70 @@ fun GroupLinkLayout(
           initialLaunch = false
         }
         val showShortLink = remember { mutableStateOf(true) }
-        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
         SectionViewWithButton(
           titleButton =
             if (!isChannel && groupLink.connLinkContact.connShortLink != null) {
               { ToggleShortLinkButton(showShortLink) }
             } else null) {
-          SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
-        }
-        if (!isChannel && groupLink.shouldBeUpgraded) {
+          Box(Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
+            SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
+          }
+          if (!isChannel && groupLink.shouldBeUpgraded) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_add),
+              stringResource(MR.strings.upgrade_group_link),
+              click = { showAddShortLinkAlert(null) },
+              iconColor = MaterialTheme.colors.primary,
+              textColor = MaterialTheme.colors.primary,
+            )
+          }
+          val clipboard = LocalClipboardManager.current
           SettingsActionItem(
-            painterResource(MR.images.ic_add),
-            stringResource(MR.strings.upgrade_group_link),
-            click = { showAddShortLinkAlert(null) },
-            iconColor = MaterialTheme.colors.primary,
-            textColor = MaterialTheme.colors.primary,
-          )
-        }
-        val clipboard = LocalClipboardManager.current
-        SettingsActionItem(
-          painterResource(MR.images.ic_share),
-          stringResource(MR.strings.share_link),
-          click = {
-            if (!isChannel && groupLink.shouldBeUpgraded) {
-              showAddShortLinkAlert {
+            painterResource(MR.images.ic_share),
+            stringResource(MR.strings.share_link),
+            click = {
+              if (!isChannel && groupLink.shouldBeUpgraded) {
+                showAddShortLinkAlert {
+                  clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
+                }
+              } else {
                 clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
               }
-            } else {
-              clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
-            }
-          },
-          iconColor = MaterialTheme.colors.primary,
-          textColor = MaterialTheme.colors.primary,
-        )
-        if (shareGroupInfo != null && isChannel) {
-          SettingsActionItem(
-            painterResource(MR.images.ic_forward),
-            stringResource(MR.strings.share_via_chat),
-            click = {
-              chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
-              chatModel.chatId.value = null
-              ModalManager.closeAllModalsEverywhere()
             },
             iconColor = MaterialTheme.colors.primary,
             textColor = MaterialTheme.colors.primary,
           )
-        }
-        if (!creatingGroup && !isChannel) {
-          SettingsActionItem(
-            painterResource(MR.images.ic_delete),
-            stringResource(MR.strings.delete_link),
-            click = deleteLink,
-            iconColor = Color.Red,
-            textColor = Color.Red,
-          )
-        }
-        if (creatingGroup && close != null) {
-          SettingsActionItem(
-            painterResource(MR.images.ic_check),
-            stringResource(MR.strings.continue_to_next_step),
-            click = close,
-            iconColor = MaterialTheme.colors.primary,
-            textColor = MaterialTheme.colors.primary,
-          )
+          if (shareGroupInfo != null && isChannel) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_forward),
+              stringResource(MR.strings.share_via_chat),
+              click = {
+                chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
+                chatModel.chatId.value = null
+                ModalManager.closeAllModalsEverywhere()
+              },
+              iconColor = MaterialTheme.colors.primary,
+              textColor = MaterialTheme.colors.primary,
+            )
+          }
+          if (!creatingGroup && !isChannel) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_delete),
+              stringResource(MR.strings.delete_link),
+              click = deleteLink,
+              iconColor = Color.Red,
+              textColor = Color.Red,
+            )
+          }
+          if (creatingGroup && close != null) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_check),
+              stringResource(MR.strings.continue_to_next_step),
+              click = close,
+              iconColor = MaterialTheme.colors.primary,
+              textColor = MaterialTheme.colors.primary,
+            )
+          }
         }
       }
     }
@@ -302,7 +308,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = listOf(GroupMemberRole.Member, GroupMemberRole.Observer).map { it to it.text }
+    val values = listOf(GroupMemberRole.Member, GroupMemberRole.Observer).map { it to it.text(isChannel = groupInfo.isChannel) }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.initial_member_role),
       values,

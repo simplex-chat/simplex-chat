@@ -75,7 +75,7 @@ class ShareModel: ObservableObject {
 
     func setup(context: NSExtensionContext) {
         if appLocalAuthEnabledGroupDefault.get() && !allowShareExtensionGroupDefault.get() {
-            errorAlert = ErrorAlert(title: "App is locked!", message: "You can allow sharing in Privacy & Security / SimpleX Lock settings.")
+            errorAlert = ErrorAlert(title: "App is locked!", message: "You can allow sharing in Your privacy / SimpleX Lock settings.")
             return
         }
         if let item = context.inputItems.first as? NSExtensionItem,

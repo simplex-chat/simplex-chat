@@ -8,6 +8,7 @@ import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
+import ChatTests.Names (chatNamesTests)
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
@@ -71,6 +72,10 @@ main = do
       describe "Message batching" batchingTests
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
+#if !defined(dbPostgres)
+      around (tmpTestBracket chatQueryStats agentQueryStats) $ describe "names tests" chatNamesTests
+      around (tmpTestBracket chatQueryStats agentQueryStats) $ xdescribe'' "SimpleX Directory names" directoryNameTests
+#endif
 #if defined(dbPostgres)
       createdDropDb . around testBracket
 #else
@@ -96,6 +101,8 @@ main = do
 #else
     testBracket chatQueryStats agentQueryStats test =
       withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
+    tmpTestBracket chatQueryStats agentQueryStats test =
+      tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
 #endif
     tmpBracket test = do
       t <- getSystemTime

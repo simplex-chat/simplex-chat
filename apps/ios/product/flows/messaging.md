@@ -147,7 +147,7 @@ Complete message lifecycle in SimpleX Chat iOS: composing, sending, receiving, e
 
 | Error | Cause | Handling |
 |-------|-------|----------|
-| `ChatError.errorAgent(.SMP(_, .AUTH))` | Recipient queue issue | Show "Connection error (AUTH)" alert |
+| `ChatError.errorAgent(.SMP(_, .AUTH))` | Recipient queue issue | Show "Connection link removed" alert |
 | `ChatError.errorAgent(.BROKER(_, .TIMEOUT))` | Server timeout | Retryable: show retry dialog via `chatApiSendCmdWithRetry` |
 | `ChatError.errorAgent(.BROKER(_, .NETWORK))` | Network failure | Retryable: show retry dialog |
 | Send message error | Core processing failure | `sendMessageErrorAlert` shown to user |

@@ -124,7 +124,7 @@
     <string name="report_reason_other">En annen grunn</string>
     <string name="answer_call">Svar anrop</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Hvem som helst kan være vert for servere.</string>
-    <string name="settings_section_title_app">APP</string>
+    <string name="settings_section_title_app">App</string>
     <string name="onboarding_notifications_mode_service_desc_short">Appen kjører alltid i bakgrunnen</string>
     <string name="app_version_code">App build: %s</string>
     <string name="notifications_mode_off_desc">Appen kan bare motta varsler når den er åpen, ingen bakgrunnstjeneste vil bli startet.</string>

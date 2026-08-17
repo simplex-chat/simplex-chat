@@ -9,6 +9,7 @@ import SectionTextFooter
 import SectionView
 import SectionViewSelectable
 import TextIconSpaced
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
@@ -84,7 +85,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       onClose(close = { ModalManager.start.closeModals() })
     }
   }
-  ModalView(close = { onClose(closeNetworkAndServers) }) {
+  ModalView(close = { onClose(closeNetworkAndServers) }, cardScreen = true) {
     NetworkAndServersLayout(
       currentRemoteHost = currentRemoteHost,
       networkUseSocksProxy = networkUseSocksProxy,
@@ -210,7 +211,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     // TODO: Review this and socks.
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(generalGetString(MR.strings.network_preset_servers_title).uppercase()) {
+      SectionView(generalGetString(MR.strings.network_preset_servers_title)) {
         userServers.value.forEachIndexed { index, srv ->
           srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, serverWarnings, currentRemoteHost?.remoteHostId) }
         }
@@ -262,36 +263,37 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
         SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) } })
         SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
-        if (networkUseSocksProxy.value) {
-          SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
-          SectionDividerSpaced(maxTopPadding = true)
-        } else {
-          SectionDividerSpaced(maxBottomPadding = false)
-        }
       }
     }
-    val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
-
-    SectionItemView(
-      { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
-      disabled = saveDisabled,
-    ) {
-      Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+    if (currentRemoteHost == null && networkUseSocksProxy.value) {
+      SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
     }
-    val serversErr = globalServersError(serverErrors.value)
-    if (serversErr != null) {
-      SectionCustomFooter {
-        ServersErrorFooter(serversErr)
+
+    SectionDividerSpaced()
+    SectionView {
+      val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
+      SectionItemView(
+        { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
+        disabled = saveDisabled,
+      ) {
+        Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+      }
+    }
+    val serversErrs = globalServersErrors(serverErrors.value)
+    if (serversErrs.isNotEmpty()) {
+      serversErrs.forEach { err ->
+        SectionCustomFooter {
+          ServersErrorFooter(err)
+        }
       }
     } else if (serverErrors.value.isNotEmpty()) {
       SectionCustomFooter {
         ServersErrorFooter(generalGetString(MR.strings.errors_in_servers_configuration))
       }
     }
-    val serversWarn = globalServersWarning(serverWarnings.value)
-    if (serversWarn != null) {
+    globalServersWarnings(serverWarnings.value).forEach { warn ->
       SectionCustomFooter {
-        ServersWarningFooter(serversWarn)
+        ServersWarningFooter(warn)
       }
     }
 
@@ -303,7 +305,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
 
     if (appPlatform.isAndroid) {
       SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.settings_section_title_network_connection).uppercase()) {
+      SectionView(generalGetString(MR.strings.settings_section_title_network_connection)) {
         val info = remember { chatModel.networkInfo }.value
         SettingsActionItemWithContent(icon = null, info.networkType.text) {
           Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
@@ -466,10 +468,11 @@ fun SocksProxySettings(
         )
       }
     },
+    cardScreen = true,
   ) {
     ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
-      SectionView(stringResource(MR.strings.network_socks_proxy).uppercase()) {
+      SectionView(stringResource(MR.strings.network_socks_proxy)) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           DefaultConfigurableTextField(
             hostUnsaved,
@@ -492,12 +495,12 @@ fun SocksProxySettings(
         UseOnionHosts(onionHosts, rememberUpdatedState(networkUseSocksProxy && proxyAuthRandomUnsaved.value)) {
           onionHosts.value = it
         }
-        SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
       }
+      SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
 
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.network_proxy_auth).uppercase()) {
+      SectionView(stringResource(MR.strings.network_proxy_auth)) {
         PreferenceToggle(
           stringResource(MR.strings.network_proxy_random_credentials),
           checked = proxyAuthRandomUnsaved.value,
@@ -523,10 +526,10 @@ fun SocksProxySettings(
             )
           }
         }
-        SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
       }
+      SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
 
-      SectionDividerSpaced(maxBottomPadding = false, maxTopPadding = true)
+      SectionDividerSpaced()
 
       SectionView {
         SectionItemView({
@@ -952,23 +955,11 @@ fun serversCanBeSaved(
   return userServers != currUserServers && serverErrors.isEmpty()
 }
 
-fun globalServersError(serverErrors: List<UserServersError>): String? {
-  for (err in serverErrors) {
-    if (err.globalError != null) {
-      return err.globalError
-    }
-  }
-  return null
-}
+fun globalServersErrors(serverErrors: List<UserServersError>): List<String> =
+  serverErrors.mapNotNull { it.globalError }
 
-fun globalServersWarning(serverWarnings: List<UserServersWarning>): String? {
-  for (warn in serverWarnings) {
-    if (warn.globalWarning != null) {
-      return warn.globalWarning
-    }
-  }
-  return null
-}
+fun globalServersWarnings(serverWarnings: List<UserServersWarning>): List<String> =
+  serverWarnings.mapNotNull { it.globalWarning }
 
 fun globalSMPServersError(serverErrors: List<UserServersError>): String? {
   for (err in serverErrors) {

@@ -122,6 +122,7 @@ chatDirectTests = do
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "delete user with chat tags" testDeleteUserChatTags
+    it "rejects raw chat TTL updates for another user's chat" testRejectCrossUserChatTTL
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
@@ -1209,20 +1210,20 @@ testOperators =
       alice <##. "Current conditions: 2."
       alice ##> "/_operators"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: required"
       alice <##. "The new conditions will be accepted for SimpleX Chat Ltd, InFlux Technologies Limited at "
       -- set conditions notified
       alice ##> "/_conditions_notified 2"
       alice <## "ok"
       alice ##> "/_operators"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: required"
       alice ##> "/_conditions"
       alice <##. "Current conditions: 2 (notified)."
       -- accept conditions
       alice ##> "/_accept_conditions 2 1,2"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
-      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: accepted ("
       -- update operators
       alice ##> "/operators 2:on:smp=proxy:xftp=off"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
@@ -1554,11 +1555,12 @@ testConnSyncExtraAgentUsers ps = do
         DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
 
     withTestChat ps "alice" $ \alice -> do
-      alice <## "connections difference summary:"
-      alice <## "number of extra users in agent: 1"
-      alice <## "removed extra users in agent"
-
-      alice <## "subscribed 1 connections on server localhost"
+      alice <###
+        [ "connections difference summary:",
+          "number of extra users in agent: 1",
+          "removed extra users in agent",
+          "subscribed 1 connections on server localhost"
+        ]
 
       threadDelay 100000
       agentUserCount <- withCCAgentTransaction alice $ \db ->
@@ -1918,14 +1920,14 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Audio/video calls: enabled"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Audio/video calls: enabled"), ("@Ask SimpleX Team", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@Ask SimpleX Team", ""), ("*", "")])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -1956,7 +1958,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@Ask SimpleX Team", ""), ("*", "")])
       alice <##> cath
 
       -- first user doesn't have cath as contact
@@ -2096,6 +2098,25 @@ testDeleteUserChatTags =
       alice ##> "/users"
       alice <## "alisa (active)"
 
+testRejectCrossUserChatTTL :: HasCallStack => TestParams -> IO ()
+testRejectCrossUserChatTTL =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice #$> ("/_ttl 1 @2 2", id, "ok")
+      alice #$> ("/ttl @bob", id, "old messages are set to be deleted after: 2 second(s)")
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      alice ##> "/_ttl 2 @2 9"
+      alice <##. "chat db error:"
+
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/ttl @bob", id, "old messages are set to be deleted after: 2 second(s)")
+
 testUsersDifferentCIExpirationTTL :: HasCallStack => TestParams -> IO ()
 testUsersDifferentCIExpirationTTL ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -2150,7 +2171,7 @@ testUsersDifferentCIExpirationTTL ps = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 3000000
 
@@ -2163,11 +2184,11 @@ testUsersDifferentCIExpirationTTL ps = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 2100000
 
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2233,7 +2254,7 @@ testUsersRestartCIExpiration ps = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 3000000
 
@@ -2246,11 +2267,11 @@ testUsersRestartCIExpiration ps = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 4000000
 
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2292,7 +2313,7 @@ testEnableCIExpirationOnlyForOneUser ps = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 2000000
 
@@ -2304,14 +2325,14 @@ testEnableCIExpirationOnlyForOneUser ps = do
       -- messages are not deleted for second user
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <## "subscribed 1 connections on server localhost"
       alice <## "subscribed 1 connections on server localhost"
 
       -- messages are not deleted for second user after restart
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       alice #> "@bob alisa 5"
       bob <# "alisa> alisa 5"
@@ -2321,7 +2342,7 @@ testEnableCIExpirationOnlyForOneUser ps = do
       threadDelay 2000000
 
       -- new messages are not deleted for second user
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2355,12 +2376,12 @@ testDisableCIExpirationOnlyForOneUser ps = do
       bob #> "@alisa alisa 2"
       alice <# "bob> alisa 2"
 
-      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 2000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <## "subscribed 1 connections on server localhost"
@@ -2374,12 +2395,12 @@ testDisableCIExpirationOnlyForOneUser ps = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2500000
+      threadDelay 3000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2394,7 +2415,7 @@ testUsersTimedMessages ps' = do
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       connectUsers alice bob
-      configureTimedMessages alice bob "6" "3"
+      configureTimedMessages alice bob "5" "3"
 
       -- first user messages
       alice ##> "/user alice"
@@ -2423,7 +2444,7 @@ testUsersTimedMessages ps' = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -2436,7 +2457,7 @@ testUsersTimedMessages ps' = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -2445,7 +2466,7 @@ testUsersTimedMessages ps' = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
 
       -- first user messages
       alice ##> "/user alice"
@@ -2475,7 +2496,7 @@ testUsersTimedMessages ps' = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       -- messages are deleted after restart
       threadDelay 1000000
@@ -2489,7 +2510,7 @@ testUsersTimedMessages ps' = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 1000000
 
@@ -2498,7 +2519,7 @@ testUsersTimedMessages ps' = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
   where
     ps = ps' {printOutput = True} :: TestParams
     configureTimedMessages :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()

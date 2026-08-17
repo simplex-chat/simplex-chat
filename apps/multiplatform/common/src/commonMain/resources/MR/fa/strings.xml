@@ -141,8 +141,7 @@
     <string name="smp_server_test_delete_queue">حذف صف</string>
     <string name="smp_server_test_create_file">ایجاد فایل</string>
     <string name="error_smp_test_server_auth">سرور برای ایجاد صف‌ها نیاز به مجوز دارد، گذرواژه را بررسی کنید.</string>
-    <string name="connection_error_auth_desc">مگر اینکه مخاطبتان اتصال را حذف کرده یا این لینک قبلا استفاده شده باشد، ممکن است این یک اشکال باشد - لطفا آن را گزارش دهید.
-\nبرای متصل شدن، لطفا از مخاطبتان بخواهید لینک اتصال دیگری ایجاد کند و بررسی کنید که اتصال شبکه باثباتی دارید.</string>
+    <string name="connection_error_auth_desc">مگر اینکه مخاطبتان اتصال را حذف کرده یا این لینک قبلا استفاده شده باشد، ممکن است این یک اشکال باشد - لطفا آن را گزارش دهید. \nبرای متصل شدن، لطفا از مخاطبتان بخواهید لینک اتصال دیگری ایجاد کند و بررسی کنید که اتصال شبکه باثباتی دارید.</string>
     <string name="possible_slow_function_title">عملکرد کند</string>
     <string name="possible_slow_function_desc">اجرای این عملکرد زمان زیادی می‌گیرد: %1$d ثانیه: %2$s</string>
     <string name="icon_descr_instant_notifications">اعلان‌های آنی</string>
@@ -781,7 +780,7 @@
     <string name="la_mode_off">خاموش</string>
     <string name="receipts_groups_override_enabled">ارسال رسید برای %d گروه فعال است</string>
     <string name="receipts_groups_override_disabled">ارسال رسید برای %d گروه غیرفعال است</string>
-    <string name="settings_section_title_support">حمایت از SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">حمایت از SimpleX Chat</string>
     <string name="settings_section_title_socks">پروکسی SOCKS</string>
     <string name="settings_section_title_use_from_desktop">استفاده از کامپیوتر</string>
     <string name="new_database_archive">آرشیو پایگاه داده جدید</string>

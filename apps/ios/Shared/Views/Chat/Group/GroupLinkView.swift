@@ -84,7 +84,7 @@ struct GroupLinkView: View {
                     if !isChannel {
                         Picker("Initial role", selection: $groupLinkMemberRole) {
                             ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
-                                Text(role.text)
+                                Text(role.text(isChannel: isChannel))
                             }
                         }
                         .frame(height: 36)
@@ -155,8 +155,9 @@ struct GroupLinkView: View {
                     do {
                         groupLink = try await apiGroupLinkMemberRole(groupId, memberRole: groupLinkMemberRole)
                     } catch let error {
-                        let a = getErrorAlert(error, "Error updating group link")
-                        alert = .error(title: a.title, error: a.message)
+                        await MainActor.run {
+                            showErrorAlert(error, NSLocalizedString("Error updating group link", comment: ""))
+                        }
                     }
                 }
             }
@@ -188,8 +189,7 @@ struct GroupLinkView: View {
                 logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
                 await MainActor.run {
                     creatingLink = false
-                    let a = getErrorAlert(error, "Error creating group link")
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error creating group link", comment: ""))
                 }
             }
         }
@@ -230,8 +230,7 @@ struct GroupLinkView: View {
                 logger.error("apiAddGroupShortLink: \(responseError(error))")
                 await MainActor.run {
                     creatingLink = false
-                    let a = getErrorAlert(error, "Error adding short link")
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error adding short link", comment: ""))
                 }
             }
         }

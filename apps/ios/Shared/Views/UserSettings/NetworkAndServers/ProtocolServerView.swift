@@ -81,6 +81,9 @@ struct ProtocolServerView: View {
                         .textSelection(.enabled)
                 }
                 useServerSection(true)
+                if let inherited = serverRolesInherited {
+                    serverRolesSection(inherited: inherited)
+                }
             }
         }
     }
@@ -110,6 +113,9 @@ struct ProtocolServerView: View {
                     }
                 }
                 useServerSection(valid)
+                if let inherited = serverRolesInherited {
+                    serverRolesSection(inherited: inherited)
+                }
                 if valid {
                     Section(header: Text("Add to another device").foregroundColor(theme.colors.secondary)) {
                         MutableQRCode(uri: $serverToEdit.server, small: true)
@@ -118,6 +124,33 @@ struct ProtocolServerView: View {
                 }
             }
         }
+    }
+
+    // inherited SMP roles for the per-server roles section, nil when the section should not be shown
+    private var serverRolesInherited: ServerRoles? {
+        guard let (serverProtocol, serverOperator) = serverProtocolAndOperator(serverToEdit, userServers),
+              serverProtocol == .smp && serverToEdit.enabled, !serverToEdit.preset || serverToEdit.roles != ServerRolesOverride()
+        else { return nil }
+        return serverOperator?.smpRoles ?? ServerRoles.noOperatorDefault
+    }
+
+    private func serverRolesSection(inherited: ServerRoles) -> some View {
+        Section {
+            rolePicker("To receive", $serverToEdit.roles.storage, defaultOn: inherited.storage)
+            rolePicker("For private routing", $serverToEdit.roles.proxy, defaultOn: inherited.proxy)
+            rolePicker("To resolve names", $serverToEdit.roles.names, defaultOn: inherited.names)
+        } header: {
+            Text("Use for messages").foregroundColor(theme.colors.secondary)
+        }
+    }
+
+    private func rolePicker(_ title: LocalizedStringKey, _ selection: Binding<Bool?>, defaultOn: Bool) -> some View {
+        Picker(title, selection: selection) {
+            Text(String.localizedStringWithFormat(NSLocalizedString("default (%@)", comment: "pref value"), NSLocalizedString(defaultOn ? "yes" : "no", comment: "pref value"))).tag(Bool?.none)
+            Text("yes").tag(Bool?.some(true))
+            Text("no").tag(Bool?.some(false))
+        }
+        .frame(height: 36)
     }
 
     private func useServerSection(_ valid: Bool) -> some View {

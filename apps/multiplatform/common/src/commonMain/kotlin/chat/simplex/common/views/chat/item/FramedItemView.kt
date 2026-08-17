@@ -201,7 +201,7 @@ fun FramedItemView(
 
   @Composable
   fun ciFileView(ci: ChatItem, text: String) {
-    CIFileView(ci.file, ci.meta.itemEdited, showMenu, false, ciSenderProfile(ci, chatInfo), receiveFile)
+    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, ciSenderProfile(ci, chatInfo), receiveFile)
     if (text != "" || ci.meta.isLive) {
       CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
     }
@@ -306,7 +306,11 @@ fun FramedItemView(
                 horizontalAlignment = Alignment.CenterHorizontally
               ) {
                 EmojiText(ci.content.text)
-                Text("")
+                Text(
+                  reserveSpaceForMeta(ci.meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
+                  color = Color.Transparent,
+                  style = MaterialTheme.typography.body1
+                )
               }
             }
           } else {

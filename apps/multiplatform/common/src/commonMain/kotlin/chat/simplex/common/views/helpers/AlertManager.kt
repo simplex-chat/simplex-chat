@@ -78,6 +78,8 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     belowTextContent: @Composable (() -> Unit) = {},
+    // When false, [text] is rendered as literal text — use for user-controlled content.
+    parseHtml: Boolean = true,
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
@@ -85,8 +87,14 @@ class AlertManager {
         onDismissRequest = { onDismissRequest?.invoke(); if (dismissible) hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice, extraPadding = true, textAlign = textAlign, belowTextContent = belowTextContent) {
-            buttons()
+          if (parseHtml) {
+            AlertContent(text, hostDevice, extraPadding = true, textAlign = textAlign, belowTextContent = belowTextContent) {
+              buttons()
+            }
+          } else {
+            AlertContent(text?.let { AnnotatedString(it) }, hostDevice, extraPadding = true) {
+              buttons()
+            }
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -125,13 +133,15 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false,
     hostDevice: Pair<Long?, String>? = null,
+    // When false, [text] is rendered as literal text — use for user-controlled content.
+    parseHtml: Boolean = true,
   ) {
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice, true) {
+          val buttonRow: @Composable () -> Unit = {
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
               horizontalArrangement = Arrangement.SpaceBetween
@@ -151,6 +161,11 @@ class AlertManager {
                 hideAlert()
               }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
             }
+          }
+          if (parseHtml) {
+            AlertContent(text, hostDevice, true, content = buttonRow)
+          } else {
+            AlertContent(text?.let { AnnotatedString(it) }, hostDevice, true, content = buttonRow)
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -276,10 +291,13 @@ class AlertManager {
     profileFullName: String,
     profileImage: @Composable () -> Unit,
     profileBadge: LocalBadge? = null,
+    nameCaption: String? = null,
     subtitle: String? = null,
     information: String? = null,
     confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm: (() -> Unit)? = null,
+    connectOtherButton: String? = null,
+    onConnectOther: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
     onDismiss: (() -> Unit)? = null,
   ) {
@@ -322,6 +340,17 @@ class AlertManager {
                   modifier = Modifier.fillMaxWidth()
                 )
 
+                if (nameCaption != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    nameCaption,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.secondary,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
                 if (profileFullName.isNotEmpty() && profileFullName != profileName) {
                   Spacer(Modifier.height(DEFAULT_PADDING_HALF))
                   Text(
@@ -371,6 +400,14 @@ class AlertManager {
                     hideAlert()
                   }, Modifier.focusRequester(focusRequester)) {
                     Text(confirmText)
+                  }
+                }
+                if (connectOtherButton != null && onConnectOther != null) {
+                  TextButton(onClick = {
+                    onConnectOther.invoke()
+                    hideAlert()
+                  }) {
+                    Text(connectOtherButton)
                   }
                 }
                 TextButton(onClick = {

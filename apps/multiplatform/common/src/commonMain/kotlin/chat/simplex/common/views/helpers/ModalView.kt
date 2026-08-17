@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import LocalCardScreen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.StatusBarBackground
 import chat.simplex.common.views.onboarding.OnboardingStage
@@ -27,6 +28,7 @@ fun ModalView(
   showAppBar: Boolean = true,
   enableClose: Boolean = true,
   background: Color = Color.Unspecified,
+  cardScreen: Boolean = false,
   modifier: Modifier = Modifier,
   showSearch: Boolean = false,
   searchAlwaysVisible: Boolean = false,
@@ -40,7 +42,9 @@ fun ModalView(
   }
   val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
-    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
+    val bgOverride = if (cardScreen) canvasColorForCurrentTheme() else if (background != Color.Unspecified) background else null
+    CompositionLocalProvider(LocalCardScreen provides cardScreen) {
+    Box(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer, overrideColor = bgOverride)) {
       Box(modifier = modifier) {
         content()
       }
@@ -65,6 +69,7 @@ fun ModalView(
           }
         }
       }
+    }
     }
   }
 }
@@ -111,15 +116,15 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal(id = id, forceAnimated = forceAnimated) { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
+      ModalView(close, showClose = showClose, cardScreen = cardScreen, endButtons = endButtons, content = { content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, cardScreen: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     showCustomModal(id = id) { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content(close) })
+      ModalView(close, showClose = showClose, cardScreen = cardScreen, endButtons = endButtons, content = { content(close) })
     }
   }
 

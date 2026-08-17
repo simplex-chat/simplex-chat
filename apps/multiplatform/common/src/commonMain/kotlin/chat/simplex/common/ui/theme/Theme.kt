@@ -568,7 +568,7 @@ data class ThemeModeOverride (
         background = if (colors.background?.colorFromReadableHex() != c.background) colors.background else null,
         surface = if (colors.surface?.colorFromReadableHex() != c.surface) colors.surface else null,
         title = if (colors.title?.colorFromReadableHex() != ac.title) colors.title else null,
-        primaryVariant2 = if (colors.primaryVariant2?.colorFromReadableHex() != ac.primaryVariant2) colors.primary else null,
+        primaryVariant2 = if (colors.primaryVariant2?.colorFromReadableHex() != ac.primaryVariant2) colors.primaryVariant2 else null,
         sentMessage = if (colors.sentMessage?.colorFromReadableHex() != ac.sentMessage) colors.sentMessage else null,
         sentQuote = if (colors.sentQuote?.colorFromReadableHex() != ac.sentQuote) colors.sentQuote else null,
         receivedMessage = if (colors.receivedMessage?.colorFromReadableHex() != ac.receivedMessage) colors.receivedMessage else null,
@@ -596,10 +596,38 @@ data class ThemeModeOverride (
   }
 }
 
-fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?/*, shape: Shape = RectangleShape*/): Modifier {
+// Canvas color for settings/info screens (drawn behind cards by themedBackground)
+// and for the 2dp item divider inside section cards (matches canvas so dividers
+// read as gaps showing the screen behind).
+// LIGHT: formula derives off-white from palette bg + onBackground — lifts white
+// cards above. DARK/BLACK: palette bg (cards already raised via founder's
+// formula in Section.kt). SIMPLEX: gradient bottom stop (darker), since the
+// canvas itself is a gradient drawn by themedBackgroundBrush.
+fun canvasColorForCurrentTheme(): Color {
+  val theme = CurrentColors.value
+  val c = theme.colors
+  return when (theme.base) {
+    DefaultTheme.LIGHT -> c.background.mixWith(c.onBackground, 0.94f)
+    DefaultTheme.SIMPLEX -> c.background.darker(0.4f)
+    else -> c.background
+  }
+}
+
+// Card background color for SectionView. LIGHT: pure white (raised above the
+// off-white canvas). DARK/BLACK/SIMPLEX: founder's mixWith formula (lifts cards
+// above palette bg using onBackground tint).
+fun sectionCardColor(): Color {
+  val theme = CurrentColors.value
+  return if (theme.base == DefaultTheme.LIGHT) Color.White
+  else theme.colors.background.mixWith(theme.colors.onBackground, 0.95f)
+}
+
+fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?, overrideColor: Color? = null): Modifier {
   return drawBehind {
     copyBackgroundToAppBar(bgLayerSize, bgLayer) {
-      if (baseTheme == DefaultTheme.SIMPLEX) {
+      if (overrideColor != null) {
+        drawRect(overrideColor)
+      } else if (baseTheme == DefaultTheme.SIMPLEX) {
         drawRect(brush = themedBackgroundBrush())
       } else {
         drawRect(CurrentColors.value.colors.background)

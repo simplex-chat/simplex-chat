@@ -79,13 +79,13 @@ fun MemberSupportChatAppBar(
         withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, scopeMember_.groupMemberId)
           val stats = r?.second
-          val code = if (scopeMember_.memberActive) {
+          val code = if ((scopeMember_.memberActive || (groupInfo.useRelays && scopeMember_.memberCurrent)) && scopeMember_.memberRole != GroupMemberRole.Relay) {
             val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, scopeMember_.groupMemberId)
             memCode?.second
           } else {
             null
           }
-          ModalManager.end.showModalCloseable(true) { closeCurrent ->
+          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(scopeMember_.groupMemberId) } }.value?.let { mem ->
               GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = true, close = closeCurrent) {
                 closeCurrent()

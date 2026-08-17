@@ -150,7 +150,7 @@ private fun ModalData.MemberSupportViewLayout(
         ) {
           Box(contentAlignment = Alignment.CenterStart) {
             DropDownMenuForSupportChat(chat.remoteHostId, member, groupInfo, showMenu)
-            SupportChatRow(member)
+            SupportChatRow(member, isChannel = groupInfo.isChannel)
           }
         }
       }
@@ -163,7 +163,7 @@ private fun ModalData.MemberSupportViewLayout(
 }
 
 @Composable
-fun SupportChatRow(member: GroupMember) {
+fun SupportChatRow(member: GroupMember, isChannel: Boolean) {
   fun memberStatus(): String {
     return if (member.activeConn?.connStatus is ConnStatus.Failed) {
       generalGetString(MR.strings.member_info_member_failed)
@@ -174,7 +174,7 @@ fun SupportChatRow(member: GroupMember) {
     } else if (member.memberPending) {
       member.memberStatus.text
     } else {
-      member.memberRole.text
+      member.memberRole.text(isChannel = isChannel)
     }
   }
 

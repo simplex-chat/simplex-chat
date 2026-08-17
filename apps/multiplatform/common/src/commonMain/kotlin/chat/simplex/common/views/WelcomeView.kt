@@ -370,7 +370,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDesc
   withBGApi {
     val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
-      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image)
+      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
     ) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
@@ -392,6 +392,8 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
       null, Profile(displayName.trim(), "", null, null)
     ) ?: return@withBGApi
     chatModel.localUserCreated.value = true
+    // new users don't need the local file encryption indicator (all files are encrypted); existing users keep it on
+    chatModel.controller.appPrefs.privacyShowEncryption.set(false)
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     // No users or no visible users
     if (chatModel.users.none { u -> !u.user.hidden }) {

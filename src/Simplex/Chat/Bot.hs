@@ -86,14 +86,14 @@ sendComposedMessages cc sendRef = sendComposedMessages_ cc sendRef . L.map (Noth
 sendComposedMessages_ :: ChatController -> SendRef -> NonEmpty (Maybe ChatItemId, MsgContent) -> IO ()
 sendComposedMessages_ cc sendRef qmcs = do
   let cms = L.map (\(qiId, mc) -> ComposedMessage {fileSource = Nothing, quotedItemId = qiId, msgContent = mc, mentions = M.empty}) qmcs
-  sendChatCmd cc (APISendMessages sendRef False Nothing cms) >>= \case
+  sendChatCmd cc (APISendMessages sendRef False Nothing False cms) >>= \case
     Right (CRNewChatItems {}) -> printLog cc CLLInfo $ "sent " <> show (length cms) <> " messages to " <> show sendRef
     r -> putStrLn $ "unexpected send message response: " <> show r
 
 sendComposedMessageFile :: ChatController -> SendRef -> Maybe ChatItemId -> MsgContent -> CryptoFile -> IO ()
 sendComposedMessageFile cc sendRef qiId mc file = do
   let cm = ComposedMessage {fileSource = Just file, quotedItemId = qiId, msgContent = mc, mentions = M.empty}
-  sendChatCmd cc (APISendMessages sendRef False Nothing (cm :| [])) >>= \case
+  sendChatCmd cc (APISendMessages sendRef False Nothing False (cm :| [])) >>= \case
     Right (CRNewChatItems {}) -> printLog cc CLLInfo $ "sent file message to " <> show sendRef
     r -> putStrLn $ "unexpected send message response: " <> show r
 
