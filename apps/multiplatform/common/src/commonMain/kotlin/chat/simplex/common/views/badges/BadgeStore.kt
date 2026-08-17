@@ -25,19 +25,9 @@ fun badgeStoreProductId(level: BadgeLevel, period: BadgePeriod): BadgeStoreProdu
   }
 }
 
-enum class BadgeProductType { OneTime, Subscription }
-
-val BadgePeriod.productType: BadgeProductType
-  get() = when (this) {
-    BadgePeriod.OneMonth -> BadgeProductType.OneTime
-    BadgePeriod.Monthly, BadgePeriod.Annual -> BadgeProductType.Subscription
-  }
-
-fun badgeStoreProductIds(type: BadgeProductType): List<BadgeStoreProductId> = BadgeLevel.entries.flatMap { level ->
-  BadgePeriod.entries.filter { it.productType == type }.map { badgeStoreProductId(level, it) }
+val badgeStoreProductIds: List<BadgeStoreProductId> = BadgeLevel.entries.flatMap { level ->
+  BadgePeriod.entries.map { badgeStoreProductId(level, it) }
 }
-
-val badgeStoreProductIds: List<BadgeStoreProductId> = BadgeProductType.entries.flatMap { badgeStoreProductIds(it) }
 
 // TODO [badges] replaced by APIGetBadgeInvoice, which creates the invoice row and returns its id.
 // Sent to Play as obfuscatedAccountId and echoed back on the purchase, which is how the service
@@ -140,8 +130,8 @@ object BadgeStore {
       // TODO [badges] desktop and the foss build will price from the badge service catalog and pay
       // via Stripe/crypto instead of a store; only the google build reaches the platform store
       val loaded = if (useBadgeTestProducts) testBadgeProducts else platform.androidLoadBadgeProducts(
-        oneTimeIds = badgeStoreProductIds(BadgeProductType.OneTime),
-        subscriptionIds = badgeStoreProductIds(BadgeProductType.Subscription)
+        oneTimeIds = badgeStoreProductIds.filter { it.basePlanId == null },
+        subscriptionIds = badgeStoreProductIds.filter { it.basePlanId != null }
       )
       val byId = loaded.associateBy { it.id }
       val missing = badgeStoreProductIds.filter { !byId.containsKey(it) }
