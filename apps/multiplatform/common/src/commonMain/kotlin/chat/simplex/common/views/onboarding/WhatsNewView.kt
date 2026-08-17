@@ -996,7 +996,7 @@ fun crowdfundingAvailable(): Boolean {
 @Composable
 private fun InvestInSimpleXChatView(modalManager: ModalManager) {
   if (!crowdfundingAvailable()) return
-  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(close) } }
+  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(fromSettings = false, close = close) } }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
       generalGetString(MR.strings.v7_0_invest),
@@ -1023,7 +1023,7 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
     )
     if (BuildConfigCommon.SIMPLEX_ASSETS) {
       Image(
-        painterResource(MR.images.crowdfunding_00),
+        painterResource(MR.images.crowdfunding_1),
         contentDescription = null,
         contentScale = ContentScale.FillWidth,
         modifier = Modifier
@@ -1052,83 +1052,76 @@ private class CrowdfundingSlide(
 // not localized: the page is only shown to US investors, and the text duplicates the images
 private val getStakeSlides: List<CrowdfundingSlide> = listOf(
   CrowdfundingSlide(
-    MR.images.crowdfunding_00,
+    MR.images.crowdfunding_1,
     "The first and the only messaging network without any user IDs",
     null,
-    "SimpleX users have been more than doubling every year – and you can now acquire a stake in the company that builds it."
+    "By investing, you can benefit from the company growth, and help us build the future of private and secure communications."
   ),
   CrowdfundingSlide(
-    MR.images.crowdfunding_04,
+    MR.images.crowdfunding_2,
     "480,000+ users joined on their own",
     null,
-    "All these users found SimpleX Chat without any paid marketing – and donated over \$650,000, paying for something they could use for free."
+    "SimpleX users have been more than doubling every year without any paid marketing, and donated over \$650,000."
   ),
   CrowdfundingSlide(
-    MR.images.crowdfunding_05,
-    "SimpleX is a network, not an app",
-    "Users, creators, businesses, developers and operators all arrived organically – the cold start solved.",
-    "Each group of users makes the network more valuable to the rest, driving organic growth."
-  ),
-  CrowdfundingSlide(
-    MR.images.crowdfunding_06,
+    MR.images.crowdfunding_3,
     "Developers already bet on SimpleX success",
     "Independent developers created moderation and AI bots, Telegram bridges, and a public server registry.",
-    "Some projects describe themselves as SimpleX-first, running all communications of their applications over SimpleX Network."
+    "Every service developers build on SimpleX Network may increase its value, and bring new users to SimpleX Chat."
   ),
   CrowdfundingSlide(
-    MR.images.crowdfunding_07,
-    "Why SimpleX can't be copied",
-    "Only SimpleX combines scalable delivery, ownership that can't be revoked, and participants that can't be identified.",
-    "Other networks rely on user IDs to deliver messages, and large platforms monetize them. Removing IDs would require rebuilding."
-  ),
-  CrowdfundingSlide(
-    MR.images.crowdfunding_10,
-    "An open network others can build on",
-    "The SimpleX Network Consortium agreement ensures that no single company controls the network, while protecting SimpleX Chat business.",
-    "The protocol is licensed to the foundation permanently – the network remains available regardless of who owns the company."
-  ),
-  CrowdfundingSlide(
-    MR.images.crowdfunding_11,
-    "We are building a network that people own",
-    "We invite you to invest and become part of it.",
+    MR.images.crowdfunding_4,
+    "Revenue plan: free for users, channels & businesses pay",
+    "SimpleX Chat plans to earn from the infrastructure and services that creators, businesses and large communities need as they grow.",
     "Read about how we plan to make SimpleX Chat and network profitable, and about all the investment terms on Wefunder."
   ),
 )
 
 @Composable
-fun GetStakeView(close: () -> Unit) {
+fun GetStakeView(fromSettings: Boolean, close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
+
+  @Composable
+  fun slideImage(slide: CrowdfundingSlide) {
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(slide.image),
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).fullScreenOnClick(slide.image)
+      )
+    } else {
+      Text(slide.heading, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Medium)
+      if (slide.info != null) {
+        Text(slide.info, Modifier.padding(top = 4.dp), lineHeight = 24.sp)
+      }
+    }
+  }
+
   ColumnWithScrollBar(Modifier.pinchZoom().padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle("Get a stake in\nSimpleX Chat", withPadding = false)
+    // What's new already shows the image of the first slide, above the link that opens this page
+    if (fromSettings) {
+      slideImage(getStakeSlides[0])
+    }
     Text(
       buildAnnotatedString {
-        append("By investing, you can benefit from the company growth, and help us build the future of private and secure communications.")
+        append(getStakeSlides[0].text)
         // only the link is clickable, the rest of the paragraph is not
-        withLink(LinkAnnotation.Url(WEFUNDER_URL) { uriHandler.openExternalLink(WEFUNDER_URL) }) {
+        withLink(LinkAnnotation.Url(WEFUNDER_URL) { uriHandler.openUriCatching(WEFUNDER_URL) }) {
           withStyle(SpanStyle(color = MaterialTheme.colors.primary, fontWeight = FontWeight.Bold)) {
             append(" Learn more and invest on Wefunder.")
           }
         }
       },
+      Modifier.padding(top = if (fromSettings) 8.dp else 0.dp),
       lineHeight = 24.sp
     )
 
-    getStakeSlides.forEach { slide ->
+    getStakeSlides.drop(1).forEach { slide ->
       Column(Modifier.padding(top = DEFAULT_PADDING * 1.5f)) {
-        if (BuildConfigCommon.SIMPLEX_ASSETS) {
-          Image(
-            painterResource(slide.image),
-            contentDescription = null,
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).fullScreenOnClick(slide.image)
-          )
-        } else {
-          Text(slide.heading, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Medium)
-          if (slide.info != null) {
-            Text(slide.info, Modifier.padding(top = 4.dp), lineHeight = 24.sp)
-          }
-        }
+        slideImage(slide)
         Text(slide.text, Modifier.padding(top = 8.dp), lineHeight = 24.sp)
       }
     }
@@ -1141,7 +1134,7 @@ fun GetStakeView(close: () -> Unit) {
         if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.widthIn(min = 300.dp),
         labelId = MR.strings.v7_0_invest_learn_more,
         onboarding = null,
-        onclick = { uriHandler.openExternalLink(WEFUNDER_URL) }
+        onclick = { uriHandler.openUriCatching(WEFUNDER_URL) }
       )
       if (!chatModel.desktopNoUserNoRemote) {
         TextButtonBelowOnboardingButton(
