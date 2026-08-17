@@ -57,11 +57,18 @@ suspend fun loadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptio
       queryBadgeProducts(client, subscriptionIds, BillingClient.ProductType.SUBS)
   val detailsByProductId = details.associateBy { it.productId }
   val ids = oneTimeIds + subscriptionIds
-  val offers = ids.mapNotNull { id -> detailsByProductId[id.productId]?.badgeOffer(id) }
+  val offers = ids.mapNotNull { id ->
+    val productDetails = detailsByProductId[id.productId]
+    if (productDetails == null) {
+      Log.w(TAG, "loadBadgeProducts: Play returned no product ${id.productId}")
+      null
+    } else {
+      productDetails.badgeOffer(id)
+    }
+  }
   if (offers.size < ids.size) {
-    // Play drops ids it cannot resolve without saying why, so the package it was asked for and the
-    // store country are logged with them - a debug build's applicationIdSuffix is a common cause
-    Log.w(TAG, "loadBadgeProducts: Play returned ${offers.size} of ${ids.size} - package ${androidAppContext.packageName}, country ${androidPlayStoreCountry.value ?: "none"}")
+    // a debug build's applicationIdSuffix is a common cause of Play not knowing the package
+    Log.w(TAG, "loadBadgeProducts: ${offers.size} of ${ids.size} resolved - package ${androidAppContext.packageName}, country ${androidPlayStoreCountry.value ?: "none"}")
   }
   badgeOffers = offers.associateBy { it.id }
   return offers.map { it.product }
@@ -147,10 +154,11 @@ private suspend fun connectedBadgeBillingClient(): BillingClient {
 }
 
 private suspend fun queryBadgeProducts(client: BillingClient, ids: List<BadgeStoreProductId>, productType: String): List<ProductDetails> {
+  // durations of one subscription share a product id, so the same product is queried once
+  val requested = ids.map { it.productId }.distinct()
   val params = QueryProductDetailsParams.newBuilder()
     .setProductList(
-      // durations of one subscription share a product id, so the same product is queried once
-      ids.map { it.productId }.distinct().map {
+      requested.map {
         QueryProductDetailsParams.Product.newBuilder().setProductId(it).setProductType(productType).build()
       }
     )
@@ -160,7 +168,7 @@ private suspend fun queryBadgeProducts(client: BillingClient, ids: List<BadgeSto
     if (result.responseCode == BillingClient.BillingResponseCode.OK) {
       queried.complete(productDetailsResult.productDetailsList)
     } else {
-      Log.w(TAG, "queryBadgeProducts: $productType query failed ${result.responseCode} ${result.debugMessage}")
+      Log.w(TAG, "queryBadgeProducts: $productType requested $requested, failed ${result.responseCode} ${result.debugMessage}")
       queried.complete(emptyList())
     }
   }
@@ -169,14 +177,26 @@ private suspend fun queryBadgeProducts(client: BillingClient, ids: List<BadgeSto
 
 private fun ProductDetails.badgeOffer(id: BadgeStoreProductId): BadgeOffer? {
   if (id.basePlanId == null) {
-    val purchase = oneTimePurchaseOfferDetails ?: return null
+    val purchase = oneTimePurchaseOfferDetails
+    if (purchase == null) {
+      Log.w(TAG, "badgeOffer: ${id.productId} has no one-time purchase price, type is $productType")
+      return null
+    }
     val product = BadgeProduct(id, purchase.formattedPrice, purchase.priceAmountMicros, purchase.priceCurrencyCode)
     return BadgeOffer(id, product, this, offerToken = null)
   }
-  val offer = subscriptionOfferDetails?.firstOrNull { it.basePlanId == id.basePlanId } ?: return null
+  val offer = subscriptionOfferDetails?.firstOrNull { it.basePlanId == id.basePlanId }
+  if (offer == null) {
+    Log.w(TAG, "badgeOffer: ${id.productId} has no base plan ${id.basePlanId}, Play has ${subscriptionOfferDetails?.map { it.basePlanId }}")
+    return null
+  }
   val phase = offer.pricingPhases.pricingPhaseList.firstOrNull {
     it.recurrenceMode == ProductDetails.RecurrenceMode.INFINITE_RECURRING
-  } ?: return null
+  }
+  if (phase == null) {
+    Log.w(TAG, "badgeOffer: ${id.productId} base plan ${id.basePlanId} has no recurring price")
+    return null
+  }
   val product = BadgeProduct(id, phase.formattedPrice, phase.priceAmountMicros, phase.priceCurrencyCode)
   return BadgeOffer(id, product, this, offer.offerToken)
 }
