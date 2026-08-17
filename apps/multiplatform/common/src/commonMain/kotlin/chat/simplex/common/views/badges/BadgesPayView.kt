@@ -146,7 +146,7 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
       .background(cardBackground, shape)
       .border(2.dp, borderColor, shape)
       .clickable { onSelect(period) }
-      .padding(vertical = 30.dp, horizontal = 12.dp),
+      .padding(vertical = 20.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
