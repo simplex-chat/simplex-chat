@@ -993,7 +993,7 @@ private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMb
 private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
 
 // the width of the page images shipped with the desktop app, so that they are never upscaled
-private val CROWDFUNDING_PAGE_IMAGE_WIDTH = 900.dp
+private val CROWDFUNDING_PAGE_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
 
 // the corner radius the images are designed with, and the same radius as a share of their design width
 private val CROWDFUNDING_IMAGE_CORNER_RADIUS = 12.dp
