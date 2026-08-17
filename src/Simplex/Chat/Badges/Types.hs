@@ -8,14 +8,12 @@ module Simplex.Chat.Badges.Types
     BadgePlan (..),
     BadgeItemStatus (..),
     OfferDiscount (..),
-    BadgePaymentStatus (..),
     BadgePurchaseStatus (..),
     LedgerEntryType (..),
     LedgerCreditType (..),
     LedgerDebitType (..),
     BadgeAlertKind (..),
     BadgePurchase (..),
-    BadgePayment (..),
     BadgeLedgerEntry (..),
     BadgeCharge (..),
     BadgeIssuance (..),
@@ -30,7 +28,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
-import Simplex.Chat.PaymentService.Types (InvoiceId, PaymentProvider)
+import Simplex.Chat.PaymentService.Types (InvoiceId, StoredPayment)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import qualified Simplex.Messaging.Crypto as C
 
@@ -54,10 +52,6 @@ data BadgeItemStatus = BISActive | BISDeprecated | BISDisabled -- disabled is no
 data OfferDiscount
   = ODFreeMonths {freeMonths :: Word8}
   | ODDiscount {discount :: Word8} -- percent
-  deriving (Eq, Show)
-
--- unconfirmed draft
-data BadgePaymentStatus = BPSNew | BPSInvoiced | BPSPending | BPSSettled | BPSFailed | BPSExpired
   deriving (Eq, Show)
 
 -- unconfirmed draft
@@ -111,36 +105,6 @@ data BadgePurchase = BadgePurchase
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
-
--- to review
-data BadgePayment = BadgePayment
-  { paymentId :: Int64,
-    userId :: UserId,
-    purchaseKey :: C.PublicKeyEd25519,
-    badgeType :: BadgeType,
-    priceId :: Maybe BadgePriceId,
-    offerId :: Maybe BadgeOfferId,
-    invoiceUuid :: Maybe InvoiceId,
-    months :: Maybe Int,
-    amount :: Maybe Int64,
-    currency :: Maybe Text,
-    provider :: PaymentProvider,
-    providerRef :: Maybe Text,
-    invoiceUrl :: Maybe Text,
-    invoiceAddress :: Maybe Text,
-    invoiceCryptoAmount :: Maybe Text,
-    invoiceExpiresAt :: Maybe UTCTime,
-    evidence :: Maybe ByteString,
-    receiptCode :: Maybe Text,
-    status :: BadgePaymentStatus,
-    exception :: Maybe Text,
-    renewsAt :: Maybe UTCTime,
-    graceUntil :: Maybe UTCTime,
-    cancelled :: Bool,
-    createdAt :: UTCTime,
-    updatedAt :: UTCTime
-  }
-  deriving (Show)
 
 -- confirmed
 data BadgeLedgerEntry = BadgeLedgerEntry
@@ -197,7 +161,7 @@ data BadgeAlert = BadgeAlert
 data UserBadgeState = UserBadgeState
   { badges :: [BadgePurchase],
     shownBadgeId :: Maybe Int64,
-    payments :: [BadgePayment],
+    payments :: [StoredPayment],
     monthsLeft :: Int,
     paidThrough :: Maybe UTCTime,
     renewsAt :: Maybe UTCTime,
