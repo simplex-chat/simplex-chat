@@ -43,12 +43,12 @@ fun loadPlayStoreCountry() {
 @Volatile private var badgeProductDetails: Map<String, ProductDetails> = emptyMap()
 @Volatile private var badgePurchase: CompletableDeferred<BadgePurchaseOutcome>? = null
 
-suspend fun loadBadgeProducts(productIds: List<String>): List<BadgeProduct> {
+suspend fun loadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> {
   val client = connectedBadgeBillingClient()
-  // every id is queried as both types - Play returns only the ones that match, so the product type
-  // does not have to be inferred from the id
-  val details = queryBadgeProducts(client, productIds, BillingClient.ProductType.INAPP) +
-      queryBadgeProducts(client, productIds, BillingClient.ProductType.SUBS)
+  // two queries because Play rejects a product list mixing INAPP and SUBS
+  val details = queryBadgeProducts(client, oneTimeIds, BillingClient.ProductType.INAPP) +
+      queryBadgeProducts(client, subscriptionIds, BillingClient.ProductType.SUBS)
+  val productIds = oneTimeIds + subscriptionIds
   if (details.size < productIds.size) {
     // Play drops ids it cannot resolve without saying why, so the package it was asked for and the
     // store country are logged with them - a debug build's applicationIdSuffix is a common cause

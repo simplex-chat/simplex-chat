@@ -345,7 +345,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidLoadPlayStoreCountry() = loadPlayStoreCountry()
 
-      override suspend fun androidLoadBadgeProducts(productIds: List<String>): List<BadgeProduct> = loadBadgeProducts(productIds)
+      override suspend fun androidLoadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> = loadBadgeProducts(oneTimeIds, subscriptionIds)
 
       override suspend fun androidPurchaseBadge(productId: String, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(productId, invoiceId)
 

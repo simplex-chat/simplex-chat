@@ -8,8 +8,9 @@ import chat.simplex.common.views.badges.BadgeStoreError
 fun loadPlayStoreCountry() {}
 
 // No store in this flavor: no product is offered, so the purchase screen shows nothing to buy
+// TODO [badges] this build pays via Stripe/crypto - the badge service catalog replaces these
 @Suppress("UNUSED_PARAMETER")
-suspend fun loadBadgeProducts(productIds: List<String>): List<BadgeProduct> = emptyList()
+suspend fun loadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> = emptyList()
 
 @Suppress("UNUSED_PARAMETER")
 suspend fun purchaseBadge(productId: String, invoiceId: String): BadgePurchaseOutcome =

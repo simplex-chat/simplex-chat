@@ -176,6 +176,8 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
 private fun savingsPercent(level: BadgeLevel, period: BadgePeriod): Int? =
   if (period == BadgePeriod.Annual) BadgeStore.annualSavings(level) else null
 
+// TODO [badges] on desktop and the foss build there is no store, so every price is Unavailable and
+// this button stays disabled - it will offer Stripe/crypto payment instead
 @Composable
 private fun PayButton(level: BadgeLevel, selectedPeriod: BadgePeriod, purchasing: MutableState<Boolean>, clipboard: ClipboardManager) {
   val price = BadgeStore.price(level, selectedPeriod)
