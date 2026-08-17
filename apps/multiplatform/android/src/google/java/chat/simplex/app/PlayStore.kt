@@ -45,7 +45,6 @@ fun loadPlayStoreCountry() {
 
 suspend fun loadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> {
   val client = connectedBadgeBillingClient()
-  // two queries because Play rejects a product list mixing INAPP and SUBS
   val details = queryBadgeProducts(client, oneTimeIds, BillingClient.ProductType.INAPP) +
       queryBadgeProducts(client, subscriptionIds, BillingClient.ProductType.SUBS)
   val productIds = oneTimeIds + subscriptionIds
