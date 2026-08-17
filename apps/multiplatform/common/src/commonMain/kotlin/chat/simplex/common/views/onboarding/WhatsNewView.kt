@@ -12,7 +12,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -34,7 +40,10 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.BuildConfigCommon
@@ -983,6 +992,34 @@ private const val CROWDFUNDING_CONTACT_URI = "simplex:/a#JxGcOA1_QhlmVFzYYabloMb
 // the center modal takes the remaining width of the window, so the image is limited to its design width
 private val MAX_CROWDFUNDING_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
 
+// the width of the page images shipped with the desktop app, so that they are never upscaled
+private val CROWDFUNDING_PAGE_IMAGE_WIDTH = DEFAULT_MIN_CENTER_MODAL_WIDTH
+
+// the corner radius the images are designed with, and the same radius as a share of their design width
+private val CROWDFUNDING_IMAGE_CORNER_RADIUS = 12.dp
+private const val CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO = 0.03f
+
+private class CrowdfundingLayout(
+  val maxImageWidth: Dp,
+  val imageShape: Shape,
+  // the modal manager that shows the page in the center of the window, or null when nothing does
+  private val centerOfWindow: ModalManager?
+) {
+  fun inCenterOfWindow(modalManager: ModalManager) = modalManager === centerOfWindow
+}
+
+// the images are designed for the width of a phone screen, which Android always gives them. On desktop
+// they are limited to their own width, and their radius is scaled with them, as they are still shown
+// wider than designed: a fixed radius would not only look almost square, but would also leave the corners
+// baked into the jpegs visible - they have black behind them, as jpegs have no transparency
+private val crowdfundingLayout = if (appPlatform.isDesktop)
+  CrowdfundingLayout(CROWDFUNDING_PAGE_IMAGE_WIDTH, object : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+      Outline.Rounded(RoundRect(size.toRect(), CornerRadius(size.width * CROWDFUNDING_IMAGE_CORNER_RADIUS_RATIO)))
+  }, ModalManager.center)
+else
+  CrowdfundingLayout(Dp.Unspecified, RoundedCornerShape(CROWDFUNDING_IMAGE_CORNER_RADIUS), null)
+
 // Google Play policy restricts promoting investments, so Play builds only show it in the US
 @Composable
 fun crowdfundingAvailable(): Boolean {
@@ -996,7 +1033,7 @@ fun crowdfundingAvailable(): Boolean {
 @Composable
 private fun InvestInSimpleXChatView(modalManager: ModalManager) {
   if (!crowdfundingAvailable()) return
-  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(fromSettings = false, close = close) } }
+  val showGetStake = { modalManager.showModalCloseable(cardScreen = true) { close -> GetStakeView(fromSettings = false, inCenterOfWindow = crowdfundingLayout.inCenterOfWindow(modalManager), close = close) } }
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Text(
       generalGetString(MR.strings.v7_0_invest),
@@ -1030,7 +1067,7 @@ private fun InvestInSimpleXChatView(modalManager: ModalManager) {
           .padding(top = 8.dp)
           .widthIn(max = MAX_CROWDFUNDING_IMAGE_WIDTH)
           .fillMaxWidth()
-          .clip(RoundedCornerShape(12.dp))
+          .clip(crowdfundingLayout.imageShape)
           .pointerHoverIcon(PointerIcon.Hand)
           .clickable(
             interactionSource = remember { MutableInteractionSource() },
@@ -1078,7 +1115,7 @@ private val getStakeSlides: List<CrowdfundingSlide> = listOf(
 )
 
 @Composable
-fun GetStakeView(fromSettings: Boolean, close: () -> Unit) {
+fun GetStakeView(fromSettings: Boolean, inCenterOfWindow: Boolean = false, close: () -> Unit) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
 
@@ -1089,7 +1126,11 @@ fun GetStakeView(fromSettings: Boolean, close: () -> Unit) {
         painterResource(slide.image),
         contentDescription = null,
         contentScale = ContentScale.FillWidth,
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).fullScreenOnClick(slide.image)
+        modifier = Modifier
+          .widthIn(max = crowdfundingLayout.maxImageWidth)
+          .fillMaxWidth()
+          .clip(crowdfundingLayout.imageShape)
+          .fullScreenOnClick(slide.image)
       )
     } else {
       Text(slide.heading, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Medium)
@@ -1100,7 +1141,9 @@ fun GetStakeView(fromSettings: Boolean, close: () -> Unit) {
   }
 
   ColumnWithScrollBar(Modifier.pinchZoom().padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle("Get a stake in\nSimpleX Chat", withPadding = false)
+    // in the center of the window the page is wide enough for the title to fit on one line
+    val title = "Get a stake in\nSimpleX Chat"
+    AppBarTitle(if (inCenterOfWindow) title.replace("\n", " ") else title, withPadding = false)
     // What's new already shows the image of the first slide, above the link that opens this page
     if (fromSettings) {
       slideImage(getStakeSlides[0])
