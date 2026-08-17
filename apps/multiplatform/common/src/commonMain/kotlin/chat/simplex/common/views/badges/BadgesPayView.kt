@@ -100,7 +100,7 @@ fun BadgesPayView(level: BadgeLevel) {
       modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
     )
 
-    Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
+    Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
     // IntrinsicSize.Max + fillMaxHeight on children so all three cards match the tallest one -
     // only Annual carries a savings line, and prices wrap at large fonts.
@@ -113,7 +113,7 @@ fun BadgesPayView(level: BadgeLevel) {
       PeriodCard(level, BadgePeriod.Annual, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
     }
 
-    Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
+    Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
     // Replicates TextButtonBelowOnboardingButton spacing (7.5dp outer + 5dp inner) without a
     // TextButton so the footer has no hover/click affordance.

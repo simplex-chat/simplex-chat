@@ -150,7 +150,7 @@ struct BadgesPayView: View {
                 }
             }
             .multilineTextAlignment(.center)
-            .padding(.vertical, 30)
+            .padding(.vertical, 25)
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(uiColor: .secondarySystemGroupedBackground))
