@@ -79,7 +79,7 @@ The protocol entry (`StatementEntry`, §4): `entryId`, `changeMonths`, `balanceM
 
 ## 3. Client types
 
-Domain types — `src/Simplex/Chat/Badges/Store.hs`. Records:
+Domain types — `src/Simplex/Chat/Badges/Types.hs`. Records:
 
 - `BadgePurchase`
 - `BadgePayment`

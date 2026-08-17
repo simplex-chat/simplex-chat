@@ -10,15 +10,8 @@ module Simplex.Chat.Badges.Service
     BadgeServiceVersion,
     VersionBadgeService,
     pattern VersionBadgeService,
-    ServicePaymentMethod (..),
-    CardProvider (..),
-    CryptoCurrency (..),
-    CurrencyAmount (..),
-    ServicePayment (..),
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
-    ServiceInvoice (..),
-    ServicePaymentDestination (..),
     BadgeServiceErrorCode (..),
     BadgeCatalog (..),
     BadgePrice (..),
@@ -38,7 +31,8 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8, Word16, Word32)
 import Simplex.Chat.Badges
-import Simplex.Chat.Badges.Store
+import Simplex.Chat.Badges.Types
+import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version (VersionScope)
@@ -84,29 +78,6 @@ data BadgeServiceCommand
       }
   | BSCPauseBadge
 
-data ServicePaymentMethod
-  = SPMCard {provider :: CardProvider}
-  | SPMCrypto {currency :: CryptoCurrency}
-  deriving (Eq, Show)
-
-data CardProvider = CPStripe
-  deriving (Eq, Show)
-
-data CryptoCurrency = CCBtc | CCXmr
-  deriving (Eq, Show)
-
--- USD etc. are in minor units, following Stripe etc. convention
-newtype CurrencyAmount = CurrencyAmount Word32
-  deriving (Eq, Show)
-
-data ServicePayment
-  = SPApple {jws :: Text}
-  | SPGoogle {token :: Text}
-  | SPInvoice {invoiceId :: InvoiceId}
-  | SPCode {code :: Text}
-  | SPReceipt {receipt :: Text} -- transfer of unissued months
-  deriving (Show)
-
 data BadgeUpgrade = BadgeUpgrade
   { fromPurchaseKey :: C.PublicKeyEd25519,
     receipt :: Text,
@@ -134,30 +105,6 @@ data BadgeServiceResponse
         message :: Maybe Text,
         retryAfter :: Maybe Word32
       }
-
-data ServiceInvoice = ServiceInvoice
-  { invoiceId :: InvoiceId,
-    price :: CurrencyAmount,
-    discount :: Maybe CurrencyAmount, -- discount amount from the price
-    credit :: Maybe CurrencyAmount, -- credit for upgrade
-    amount :: CurrencyAmount, -- price - discount - credit
-    currency :: Text,
-    expiresAt :: UTCTime,
-    paymentTo :: ServicePaymentDestination
-  }
-  deriving (Show)
-
-data ServicePaymentDestination
-  = SPDCard
-      { provider :: CardProvider,
-        url :: Text
-      }
-  | SPDCrypto
-      { currency :: CryptoCurrency,
-        address :: Text,
-        cryptoAmount :: Text
-      }
-  deriving (Show)
 
 data BadgeCatalog = BadgeCatalog
   { prices :: [BadgePrice],
