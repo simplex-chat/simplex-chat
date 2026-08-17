@@ -2,14 +2,12 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Simplex.Chat.Badges.Store
+module Simplex.Chat.Badges.Types
   ( BadgePriceId (..),
     BadgeOfferId (..),
-    InvoiceId (..),
     BadgePlan (..),
     BadgeItemStatus (..),
     OfferDiscount (..),
-    BadgeProvider (..),
     BadgePaymentStatus (..),
     BadgePurchaseStatus (..),
     LedgerEntryType (..),
@@ -32,6 +30,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId, PaymentProvider)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import qualified Simplex.Messaging.Crypto as C
 
@@ -41,10 +40,6 @@ newtype BadgePriceId = BadgePriceId Text
 
 -- confirmed
 newtype BadgeOfferId = BadgeOfferId Text
-  deriving newtype (Eq, Show)
-
--- to review
-newtype InvoiceId = InvoiceId Text
   deriving newtype (Eq, Show)
 
 -- unconfirmed draft
@@ -59,10 +54,6 @@ data BadgeItemStatus = BISActive | BISDeprecated | BISDisabled -- disabled is no
 data OfferDiscount
   = ODFreeMonths {freeMonths :: Word8}
   | ODDiscount {discount :: Word8} -- percent
-  deriving (Eq, Show)
-
--- unconfirmed draft
-data BadgeProvider = BPRApple | BPRGoogle | BPRStripe | BPRBtc | BPRXmr | BPRCode
   deriving (Eq, Show)
 
 -- unconfirmed draft
@@ -133,7 +124,7 @@ data BadgePayment = BadgePayment
     months :: Maybe Int,
     amount :: Maybe Int64,
     currency :: Maybe Text,
-    provider :: BadgeProvider,
+    provider :: PaymentProvider,
     providerRef :: Maybe Text,
     invoiceUrl :: Maybe Text,
     invoiceAddress :: Maybe Text,

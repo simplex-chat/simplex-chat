@@ -67,6 +67,29 @@
         }
       }
     },
+    "invoice": {
+      "properties": {
+        "invoiceId": {"type": "string"},
+        "price": {"ref": "currencyAmount"},
+        "amount": {
+          "ref": "currencyAmount",
+          "metadata": {"comment": "price - discount - credit"}
+        },
+        "currency": {"type": "string"},
+        "expiresAt": {"type": "timestamp"},
+        "paymentTo": {"ref": "paymentTo"}
+      },
+      "optionalProperties": {
+        "discount": {
+          "ref": "currencyAmount",
+          "metadata": {"comment": "discount amount from the price"}
+        },
+        "credit": {
+          "ref": "currencyAmount",
+          "metadata": {"comment": "credit for upgrade"}
+        }
+      }
+    },
     "payment": {
       "discriminator": "type",
       "mapping": {
@@ -81,6 +104,14 @@
         },
         "code": {
           "properties": {"code": {"type": "string"}}
+        },
+        "receipt": {
+          "properties": {
+            "receipt": {
+              "type": "string",
+              "metadata": {"comment": "transfer of unissued months"}
+            }
+          }
         }
       }
     },
@@ -297,12 +328,6 @@
         },
         "pauseBadge": {
           "optionalProperties": {}
-        },
-        "transferBadge": {
-          "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
-            "receipt": {"type": "string"}
-          }
         }
       }
     },
@@ -322,27 +347,9 @@
         },
         "badgeInvoice": {
           "properties": {
-            "invoiceId": {"type": "string"},
+            "invoice": {"ref": "invoice"},
             "badgeType": {"type": "string"},
-            "months": {"type": "uint8"},
-            "price": {"ref": "currencyAmount"},
-            "amount": {
-              "ref": "currencyAmount",
-              "metadata": {"comment": "price - discount - credit"}
-            },
-            "currency": {"type": "string"},
-            "expiresAt": {"type": "timestamp"},
-            "paymentTo": {"ref": "paymentTo"}
-          },
-          "optionalProperties": {
-            "discount": {
-              "ref": "currencyAmount",
-              "metadata": {"comment": "discount amount from monthly price"}
-            },
-            "credit": {
-              "ref": "currencyAmount",
-              "metadata": {"comment": "credit for upgrade"}
-            }
+            "months": {"type": "uint8"}
           }
         },
         "badgeCredential": {

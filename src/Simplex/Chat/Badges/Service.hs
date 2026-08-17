@@ -10,14 +10,8 @@ module Simplex.Chat.Badges.Service
     BadgeServiceVersion,
     VersionBadgeService,
     pattern VersionBadgeService,
-    ServicePaymentMethod (..),
-    CardProvider (..),
-    CryptoCurrency (..),
-    CurrencyAmount (..),
-    ServicePayment (..),
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
-    ServicePaymentDestination (..),
     BadgeServiceErrorCode (..),
     BadgeCatalog (..),
     BadgePrice (..),
@@ -37,7 +31,8 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8, Word16, Word32)
 import Simplex.Chat.Badges
-import Simplex.Chat.Badges.Store
+import Simplex.Chat.Badges.Types
+import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version (VersionScope)
@@ -82,32 +77,6 @@ data BadgeServiceCommand
         balance :: BadgeBalance
       }
   | BSCPauseBadge
-  | BSCTransferBadge
-      { badgeRequest :: BadgeRequest,
-        receipt :: Text
-      }
-
-data ServicePaymentMethod
-  = SPMCard {provider :: CardProvider}
-  | SPMCrypto {currency :: CryptoCurrency}
-  deriving (Eq, Show)
-
-data CardProvider = CPStripe
-  deriving (Eq, Show)
-
-data CryptoCurrency = CCBtc | CCXmr
-  deriving (Eq, Show)
-
--- USD etc. are in minor units, following Stripe etc. convention
-newtype CurrencyAmount = CurrencyAmount Word32
-  deriving (Eq, Show)
-
-data ServicePayment
-  = SPApple {jws :: Text}
-  | SPGoogle {token :: Text}
-  | SPInvoice {invoiceId :: InvoiceId}
-  | SPCode {code :: Text}
-  deriving (Show)
 
 data BadgeUpgrade = BadgeUpgrade
   { fromPurchaseKey :: C.PublicKeyEd25519,
@@ -122,16 +91,9 @@ data BadgeServiceResponse
         badgeStatement :: Maybe BadgeStatement -- for signed getBadgeCatalog
       }
   | BSPBadgeInvoice
-      { invoiceId :: InvoiceId,
+      { invoice :: ServiceInvoice,
         badgeType :: BadgeType,
-        months :: Word8,
-        price :: CurrencyAmount,
-        discount :: Maybe CurrencyAmount, -- discount amount from monthly price
-        credit :: Maybe CurrencyAmount, -- credit for upgrade
-        amount :: CurrencyAmount,
-        currency :: Text,
-        expiresAt :: UTCTime,
-        paymentTo :: ServicePaymentDestination
+        months :: Word8
       }
   | BSPBadgeCredential
       { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause
@@ -143,18 +105,6 @@ data BadgeServiceResponse
         message :: Maybe Text,
         retryAfter :: Maybe Word32
       }
-
-data ServicePaymentDestination
-  = SPDCard
-      { provider :: CardProvider,
-        url :: Text
-      }
-  | SPDCrypto
-      { currency :: CryptoCurrency,
-        address :: Text,
-        cryptoAmount :: Text
-      }
-  deriving (Show)
 
 data BadgeCatalog = BadgeCatalog
   { prices :: [BadgePrice],

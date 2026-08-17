@@ -3,7 +3,7 @@
 **Date:** 2026-07-31
 **Product plan:** `plans/2026-07-30-supporter-badges-v3-ux.md` (referenced below as UX §n)
 **Transport:** service RPC (`plans/2026-07-22-service-rpc-chat.md`, implemented, branch `rpc`)
-**Scope:** MVP launch set (UX §7): commands `getBadgeCatalog | getBadgeInvoice | purchaseBadge | issueBadge` implemented; `upgradeBadgeSubscription | pauseBadge | transferBadge` are defined in the protocol, post-MVP; no `use_from`, `paused_at`.
+**Scope:** MVP launch set (UX §7): commands `getBadgeCatalog | getBadgeInvoice | purchaseBadge | issueBadge` implemented; `upgradeBadgeSubscription | pauseBadge` and the `receipt` payment are defined in the protocol, post-MVP; no `use_from`, `paused_at`.
 
 ## 1. Client schema
 
@@ -79,7 +79,7 @@ The protocol entry (`StatementEntry`, §4): `entryId`, `changeMonths`, `balanceM
 
 ## 3. Client types
 
-Domain types — `src/Simplex/Chat/Badges/Store.hs`. Records:
+Domain types — `src/Simplex/Chat/Badges/Types.hs`. Records:
 
 - `BadgePurchase`
 - `BadgePayment`
@@ -126,6 +126,7 @@ Protocol types — `src/Simplex/Chat/Badges/Service.hs`, one constructor/field p
 - `BadgeServiceRequest`
 - `BadgeServiceCommand`
 - `ServicePaymentMethod`
+- `ServiceInvoice`
 - `CardProvider`
 - `CryptoCurrency`
 - `CurrencyAmount`
@@ -159,12 +160,11 @@ A request is an envelope: `version`; `purchaseKey`? (optional for `getBadgeCatal
 | request `type` | request fields (beyond `purchaseKey`, `version`) | response `type` | response fields |
 |---|---|---|---|
 | `getBadgeCatalog` (signature optional) | — | `badgeCatalog` | `catalog`<br>`badgeStatement`? (for signed requests) |
-| `getBadgeInvoice` | `priceId`<br>`offerId`? (absent for 1 month at the badge price)<br>`badgeInfo {badgeType, badgeExpiry?, badgeExtra}`<br>`paymentVia` — `card`: `provider`; `crypto`: `currency`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeInvoice` | `invoiceId`<br>`badgeType`<br>`months`<br>`price`<br>`discount`?<br>`credit`?<br>`amount` (= price − discount − credit)<br>`currency`<br>`expiresAt`<br>`paymentTo` — `card`: `provider`, `url`; `crypto`: `currency`, `address`, `cryptoAmount` |
-| `purchaseBadge` | `badgeRequest` — `masterKey`, `badgeInfo`<br>`payment` — `apple`: `jws`; `google`: `token`; `invoice`: `invoiceId`; `code`: `code`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeCredential` | `credential`<br>`receipt`? (not provided for lifetime badges)<br>`statement` |
+| `getBadgeInvoice` | `priceId`<br>`offerId`? (absent for 1 month at the badge price)<br>`badgeInfo {badgeType, badgeExpiry?, badgeExtra}`<br>`paymentVia` — `card`: `provider`; `crypto`: `currency`<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeInvoice` | `invoice` — `invoiceId`, `price`, `discount`?, `credit`?, `amount` (= price − discount − credit), `currency`, `expiresAt`, `paymentTo` — `card`: `provider`, `url`; `crypto`: `currency`, `address`, `cryptoAmount`<br>`badgeType`<br>`months` |
+| `purchaseBadge` | `badgeRequest` — `masterKey`, `badgeInfo`<br>`payment` — `apple`: `jws`; `google`: `token`; `invoice`: `invoiceId`; `code`: `code`; `receipt`: `receipt` (transfer, post-MVP)<br>`upgrade`? — `fromPurchaseKey`, `receipt`, `receiptSignature`, `balance` | `badgeCredential` | `credential`<br>`receipt`? (not provided for lifetime badges)<br>`statement` |
 | `upgradeBadgeSubscription` | `badgeRequest`<br>`payment` — `apple`: `jws`; `google`: `token`<br>`balance` | `badgeCredential` | `credential`?<br>`statement` |
 | `issueBadge` | `badgeRequest`<br>`balance` | `badgeCredential` | `credential`? (absent when the balance is exhausted)<br>`statement` |
 | `pauseBadge` (post-MVP) | — | `badgeCredential` | `credential`?<br>`statement` |
-| `transferBadge` (post-MVP) | `badgeRequest`<br>`receipt` | `badgeCredential` | `credential`<br>`receipt`?<br>`statement` |
 | any, on failure | — | `error` | `code` (incl. `payment_pending`, `code_invalid` / `code_used` / `code_expired`)<br>`message`?<br>`retryAfter`? |
 
 `statement` — record: `entries` — ledger entries; `previousEntryId`? — matches the client's asserted entryId, absent for the full ledger.
@@ -219,7 +219,7 @@ Purchase is two commands because the store purchase runs in the app between them
 - `APIGetBadgeInvoice` starts every purchase: core loads or creates the live purchase row for the badge type's slot (per-user lock + `idx_badge_purchases_live`) — a `failed` row of the same slot is reused — creates the payment row, and points the badge row's `payment_id` at it (UX §3: the current payment). For `card` and `crypto` core sends `getBadgeInvoice` with the pinned `priceId` and the `offerId` of the chosen duration, and responds with the invoice — the Stripe link or the crypto screen data (UX 2.1). For `apple` and `google` core writes the rows, generates the invoice id itself, and sends nothing, since prices come from the store and SKUs from app config (§4); the app states the store because core is the same on both platforms. The invoice fields are stored on the payment row (§1), so pending-payment screens re-render after a restart; after invoice expiry a new `APIGetBadgeInvoice` creates a new invoice and payment row (UX 2.1).
 - The app passes the invoice id to the store as the account token — Apple `Product.PurchaseOption.appAccountToken` (a UUID, echoed in the signed transaction), Google `BillingFlowParams.setObfuscatedAccountId` — so the store transaction states which payment it settles, and the service reads it from the verified store payload at `purchaseBadge`.
 - `APIPurchaseBadge` completes a store purchase — the only payment whose result is delivered to the app: the store hands the app the evidence, and only that evidence ties the store transaction to the purchase, because the store flow knows neither purchase keys nor the service. Core records it on the payment row; the worker sends `purchaseBadge` — the service verifies, records the credit, and issues in one round trip (§6). Card and crypto payments need no completion command and carry no evidence: the service records their settlement from the provider webhook (UX §7 notifications); the worker's next `issueBadge` returns the credential, or `payment_pending` until the webhook arrives (§4).
-- `APIPurchaseBadge` with a `code` sends the same `purchaseBadge` under the user lock, and differs only in the order of the writes: keys are generated first, and the badge and payment rows (`provider = code`, `price_id` and `offer_id` NULL) are written on success in one transaction, directly `issued`, because the badge type — and with it the slot — is stated in the response (UX 2.8). A live row of the granted slot is superseded (at most two badges per profile, UX 2.7); its unconsumed months stay on its purchase — purchases are unlinkable, so the service cannot move them; recovery per UX §3 (`transferBadge`, post-MVP). On a timeout the error is surfaced to the user; a code consumed by a lost response is restored by support (codes tooling, delivery 7).
+- `APIPurchaseBadge` with a `code` sends the same `purchaseBadge` under the user lock, and differs only in the order of the writes: keys are generated first, and the badge and payment rows (`provider = code`, `price_id` and `offer_id` NULL) are written on success in one transaction, directly `issued`, because the badge type — and with it the slot — is stated in the response (UX 2.8). A live row of the granted slot is superseded (at most two badges per profile, UX 2.7); its unconsumed months stay on its purchase — purchases are unlinkable, so the service cannot move them; recovery per UX §3 (the `receipt` payment, post-MVP). On a timeout the error is surfaced to the user; a code consumed by a lost response is restored by support (codes tooling, delivery 7).
 - `APIGetBadgeState` loads the badge state into the app model at start (and on profile switch); events only update the model afterward, so without the initial read it would hold nothing at first render — the 2.2 banner is rendered from it. It reads stored state and sends nothing itself. The same call re-reads state when a badge screen is opened or regains focus, and signals the worker (§6); reconciliation results follow as `CEvtBadgeChanged`. Screen re-focus covers the returns that fire no core trigger: the store cancellation sheet close — UX §7 "the engine sends `status` on return"; the in-app sheet fires no foreground trigger — and return to a pending-payment screen after payment (UX 2.1), which on desktop produces no foreground event either.
 
 `ChatResponse`:
@@ -392,7 +392,7 @@ Each UX plan point and its implementation home:
 | §3 catalog rules | `badge_prices` / `badge_offers`; reconciliation (delivery 4) |
 | §3 payments, charges | §1; the statement's payments and charges (§4) |
 | §3 ledger, issuances | replicas (§1); the `balance` assertion and the `opening` restatement (§4); service transitions (delivery 7); tests (delivery 8) |
-| §3 recovery | `payments.receipt_code`; signed `getBadgeCatalog` after restore (worker); capped store re-bind at `purchaseBadge` (delivery 7); `transferBadge` post-MVP |
+| §3 recovery | `payments.receipt_code`; signed `getBadgeCatalog` after restore (worker); capped store re-bind at `purchaseBadge` (delivery 7); the `receipt` payment post-MVP |
 | §4 wire protocol | `Badges/Service.hs`; `docs/protocol` |
 | §5 providers | delivery 7; the §5 command bullets |
 | §6 decisions 11–14 | 11 — `renews_at` / `cancelled` / charges kept; 12 — catalog seed (delivery 2); 13 — `sundayAfter`; 14 — `paidThrough` in `UserBadgeState` |
