@@ -13,7 +13,7 @@ struct BuyNameView: View {
     @State private var pointAtMe = true
 
     private var myLink: String? {
-        ChatModel.shared.userAddress?.connLinkContact.simplexChatUri
+        ChatModel.shared.userAddress?.connLinkContact.simplexChatUri()
     }
     private var validLabel: Bool {
         let l = label.trimmingCharacters(in: .whitespaces).lowercased()
@@ -22,7 +22,7 @@ struct BuyNameView: View {
 
     var body: some View {
         List {
-            Section("Choose a name") {
+            Section {
                 HStack {
                     TextField("yourname", text: $label)
                         .autocorrectionDisabled()
@@ -30,12 +30,16 @@ struct BuyNameView: View {
                     Text(".simplex").foregroundColor(.secondary)
                     statusIcon
                 }
+            } header: {
+                Text("Choose a name")
             } footer: { statusFooter }
 
-            Section("How long") {
+            Section {
                 Stepper(value: $years, in: 1...10) {
                     Text(years == 1 ? "1 year" : "\(years) years")
                 }
+            } header: {
+                Text("How long")
             } footer: {
                 Text("You pay once for the whole period. Nothing renews automatically, and the app will not remind you — note the end date.")
             }
@@ -108,7 +112,7 @@ struct BuyNameView: View {
         Task {
             buying = true
             defer { buying = false }
-            let key = "buy:\(ChatModel.shared.remoteHostId ?? -1):\(l):\(years)"
+            let key = "buy:\(l):\(years)"
             guard let token = NamePayment.purchaseFor(key, years: years) else { return }
             let link = pointAtMe ? myLink : nil
             if let fqdn = await apiNameBuy(l, years: years, payment: token, link: link) {

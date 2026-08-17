@@ -23,9 +23,11 @@ struct NameRecoveryKeyView: View {
                     Button { revealed = true } label: { Label("Show recovery key", systemImage: "eye").foregroundColor(.accentColor) }
                 } footer: { Text("Make sure no one can see your screen.") }
             } else {
-                Section("Your recovery key") {
+                Section {
                     Text(phrase!).font(.body.monospaced()).fontWeight(.medium)
                     Button("Copy") { UIPasteboard.general.string = phrase }.foregroundColor(.accentColor)
+                } header: {
+                    Text("Your recovery key")
                 } footer: {
                     Text("Write these words down and keep them somewhere safe and offline. Anyone who takes a photo of this screen can take your names.")
                 }

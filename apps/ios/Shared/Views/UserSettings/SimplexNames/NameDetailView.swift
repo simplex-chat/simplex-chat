@@ -8,7 +8,7 @@ struct NameDetailView: View {
     @State private var loadFailed = false
     @State private var busy = false
 
-    private var myLink: String? { ChatModel.shared.userAddress?.connLinkContact.simplexChatUri }
+    private var myLink: String? { ChatModel.shared.userAddress?.connLinkContact.simplexChatUri() }
 
     var body: some View {
         List {
@@ -27,9 +27,11 @@ struct NameDetailView: View {
                         Text("This name points at this profile.").foregroundColor(.green)
                     }
                 }
-                Section("How long you have it") {
+                Section {
                     HStack { Text("Expires"); Spacer(); Text(expiryText(expires)).foregroundColor(expiryColor(expires)) }
                     HStack { Text("Changes left"); Spacer(); Text("\(credits)").foregroundColor(.secondary) }
+                } header: {
+                    Text("How long you have it")
                 } footer: {
                     Text("Pointing this name somewhere new uses one change. Extending the name adds 10 more.\nNothing renews automatically. After it expires, anyone can take the name.")
                 }
@@ -70,7 +72,7 @@ struct NameDetailView: View {
                     UIAlertAction(title: NSLocalizedString("Extend this name", comment: ""), style: .default) { _ in
                         Task {
                             busy = true; defer { busy = false }
-                            let key = "renew:\(ChatModel.shared.remoteHostId ?? -1):\(fqdn)"
+                            let key = "renew:\(fqdn)"
                             guard let token = NamePayment.purchaseFor(key, years: 1) else { return }
                             if let r = await apiNameRenew(fqdn, years: 1, payment: token) {
                                 NamePayment.spent(key); await reload()
@@ -82,6 +84,47 @@ struct NameDetailView: View {
                         }
                     }, cancelAlertAction
                   ]})
+    }
+
+    // The app sends no expiry notifications, so the only reminder that will
+    // actually reach the user is one in their own calendar. Sharing an .ics
+    // needs no calendar access: the user's calendar app asks before adding it,
+    // as the prefilled intent does on Android. The alarm is a week early -
+    // extending needs a purchase, so the day itself is too late to act.
+    private func addExpiryReminder(_ e: Int) {
+        let day = DateFormatter()
+        day.dateFormat = "yyyyMMdd"
+        day.timeZone = TimeZone(secondsFromGMT: 0)
+        let stamp = DateFormatter()
+        stamp.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
+        stamp.timeZone = TimeZone(secondsFromGMT: 0)
+        let expires = Date(timeIntervalSince1970: TimeInterval(e))
+        let ics = """
+        BEGIN:VCALENDAR
+        VERSION:2.0
+        PRODID:-//SimpleX Chat//names//EN
+        BEGIN:VEVENT
+        UID:name-\(fqdn)-\(e)@simplex.chat
+        DTSTAMP:\(stamp.string(from: Date()))
+        DTSTART;VALUE=DATE:\(day.string(from: expires))
+        DTEND;VALUE=DATE:\(day.string(from: expires.addingTimeInterval(86400)))
+        SUMMARY:\(String.localizedStringWithFormat(NSLocalizedString("SimpleX name %@ expires", comment: "calendar reminder"), fqdn))
+        DESCRIPTION:\(NSLocalizedString("Extend it in SimpleX to keep it. You have 90 days after it expires; after that anyone can take it.", comment: "calendar reminder"))
+        BEGIN:VALARM
+        TRIGGER:-P7D
+        ACTION:DISPLAY
+        DESCRIPTION:\(String.localizedStringWithFormat(NSLocalizedString("SimpleX name %@ expires", comment: "calendar reminder"), fqdn))
+        END:VALARM
+        END:VEVENT
+        END:VCALENDAR
+        """
+        let url = getTempFilesDirectory().appendingPathComponent("\(fqdn).ics")
+        do {
+            try ics.write(to: url, atomically: true, encoding: .utf8)
+            showShareSheet(items: [url])
+        } catch {
+            showAlert(NSLocalizedString("No calendar app to add a reminder to.", comment: "alert"))
+        }
     }
 
     private func expiryDays(_ e: Int) -> Int { Int(floor(Double(Int64(e) - Int64(Date().timeIntervalSince1970)) / 86400)) }

@@ -97,6 +97,15 @@
 		5CB634AD29E46CF70066AD6B /* LocalAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB634AC29E46CF70066AD6B /* LocalAuthView.swift */; };
 		5CB634AF29E4BB7D0066AD6B /* SetAppPasscodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB634AE29E4BB7D0066AD6B /* SetAppPasscodeView.swift */; };
 		5CB634B129E5EFEA0066AD6B /* PasscodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB634B029E5EFEA0066AD6B /* PasscodeView.swift */; };
+		64F1A0000000000000000102 /* SimplexNamesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A0000000000000000101 /* SimplexNamesView.swift */; };
+		64F1A0000000000000000104 /* BuyNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A0000000000000000103 /* BuyNameView.swift */; };
+		64F1A0000000000000000106 /* NameDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A0000000000000000105 /* NameDetailView.swift */; };
+		64F1A0000000000000000108 /* GiveNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A0000000000000000107 /* GiveNameView.swift */; };
+		64F1A000000000000000010A /* IncomingNamesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A0000000000000000109 /* IncomingNamesView.swift */; };
+		64F1A000000000000000010C /* NameRecoveryKeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A000000000000000010B /* NameRecoveryKeyView.swift */; };
+		64F1A000000000000000010E /* ImportRecoveryKeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A000000000000000010D /* ImportRecoveryKeyView.swift */; };
+		64F1A0000000000000000110 /* WalletSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A000000000000000010F /* WalletSetupView.swift */; };
+		64F1A0000000000000000112 /* NamePayment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1A0000000000000000111 /* NamePayment.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
 		5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */; };
@@ -183,8 +192,8 @@
 		64C3B0212A0D359700E19930 /* CustomTimePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C3B0202A0D359700E19930 /* CustomTimePicker.swift */; };
 		64C8299D2D54AEEE006B9E89 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C829982D54AEED006B9E89 /* libgmp.a */; };
 		64C8299E2D54AEEE006B9E89 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C829992D54AEEE006B9E89 /* libffi.a */; };
-		64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo-ghc9.6.3.a */; };
-		64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo.a */; };
+		64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace-ghc9.6.3.a */; };
+		64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace.a */; };
 		64C829A12D54AEEE006B9E89 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299C2D54AEEE006B9E89 /* libgmpxx.a */; };
 		64D0C2C029F9688300B38D5F /* UserAddressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2BF29F9688300B38D5F /* UserAddressView.swift */; };
 		64D0C2C229FA57AB00B38D5F /* UserAddressLearnMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */; };
@@ -472,6 +481,15 @@
 		5CB634AC29E46CF70066AD6B /* LocalAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAuthView.swift; sourceTree = "<group>"; };
 		5CB634AE29E4BB7D0066AD6B /* SetAppPasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetAppPasscodeView.swift; sourceTree = "<group>"; };
 		5CB634B029E5EFEA0066AD6B /* PasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeView.swift; sourceTree = "<group>"; };
+		64F1A0000000000000000101 /* SimplexNamesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplexNamesView.swift; sourceTree = "<group>"; };
+		64F1A0000000000000000103 /* BuyNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyNameView.swift; sourceTree = "<group>"; };
+		64F1A0000000000000000105 /* NameDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameDetailView.swift; sourceTree = "<group>"; };
+		64F1A0000000000000000107 /* GiveNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiveNameView.swift; sourceTree = "<group>"; };
+		64F1A0000000000000000109 /* IncomingNamesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomingNamesView.swift; sourceTree = "<group>"; };
+		64F1A000000000000000010B /* NameRecoveryKeyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameRecoveryKeyView.swift; sourceTree = "<group>"; };
+		64F1A000000000000000010D /* ImportRecoveryKeyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportRecoveryKeyView.swift; sourceTree = "<group>"; };
+		64F1A000000000000000010F /* WalletSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletSetupView.swift; sourceTree = "<group>"; };
+		64F1A0000000000000000111 /* NamePayment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NamePayment.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; wrapsLines = 0; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListNavLink.swift; sourceTree = "<group>"; };
@@ -563,8 +581,8 @@
 		64C3B0202A0D359700E19930 /* CustomTimePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTimePicker.swift; sourceTree = "<group>"; };
 		64C829982D54AEED006B9E89 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		64C829992D54AEEE006B9E89 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo-ghc9.6.3.a"; sourceTree = "<group>"; };
-		64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo.a"; sourceTree = "<group>"; };
+		64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.0-inplace-ghc9.6.3.a"; sourceTree = "<group>"; };
+		64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.0-inplace.a"; sourceTree = "<group>"; };
 		64C8299C2D54AEEE006B9E89 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		64D0C2BF29F9688300B38D5F /* UserAddressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressView.swift; sourceTree = "<group>"; };
 		64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressLearnMore.swift; sourceTree = "<group>"; };
@@ -735,8 +753,8 @@
 				64C8299D2D54AEEE006B9E89 /* libgmp.a in Frameworks */,
 				64C8299E2D54AEEE006B9E89 /* libffi.a in Frameworks */,
 				64C829A12D54AEEE006B9E89 /* libgmpxx.a in Frameworks */,
-				64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo-ghc9.6.3.a in Frameworks */,
-				64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo.a in Frameworks */,
+				64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace-ghc9.6.3.a in Frameworks */,
+				64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace.a in Frameworks */,
 				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -822,8 +840,8 @@
 				64C829992D54AEEE006B9E89 /* libffi.a */,
 				64C829982D54AEED006B9E89 /* libgmp.a */,
 				64C8299C2D54AEEE006B9E89 /* libgmpxx.a */,
-				64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo-ghc9.6.3.a */,
-				64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.0.0.11-SNj2VtVeH9ARktfFtATBo.a */,
+				64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace-ghc9.6.3.a */,
+				64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.0-inplace.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -1000,6 +1018,7 @@
 		5CB924DF27A8678B00ACCCDD /* UserSettings */ = {
 			isa = PBXGroup;
 			children = (
+				64F1A0000000000000000113 /* SimplexNames */,
 				643B3B4C2CCFD34B0083A2CF /* NetworkAndServers */,
 				5CB924D627A8563F00ACCCDD /* SettingsView.swift */,
 				5CB346E62868D76D001FD2EF /* NotificationsView.swift */,
@@ -1145,6 +1164,22 @@
 				5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */,
 			);
 			path = Database;
+			sourceTree = "<group>";
+		};
+		64F1A0000000000000000113 /* SimplexNames */ = {
+			isa = PBXGroup;
+			children = (
+				64F1A0000000000000000101 /* SimplexNamesView.swift */,
+				64F1A0000000000000000103 /* BuyNameView.swift */,
+				64F1A0000000000000000105 /* NameDetailView.swift */,
+				64F1A0000000000000000107 /* GiveNameView.swift */,
+				64F1A0000000000000000109 /* IncomingNamesView.swift */,
+				64F1A000000000000000010B /* NameRecoveryKeyView.swift */,
+				64F1A000000000000000010D /* ImportRecoveryKeyView.swift */,
+				64F1A000000000000000010F /* WalletSetupView.swift */,
+				64F1A0000000000000000111 /* NamePayment.swift */,
+			);
+			path = SimplexNames;
 			sourceTree = "<group>";
 		};
 		643B3B4C2CCFD34B0083A2CF /* NetworkAndServers */ = {
@@ -1516,6 +1551,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				64F1A0000000000000000102 /* SimplexNamesView.swift in Sources */,
+				64F1A0000000000000000104 /* BuyNameView.swift in Sources */,
+				64F1A0000000000000000106 /* NameDetailView.swift in Sources */,
+				64F1A0000000000000000108 /* GiveNameView.swift in Sources */,
+				64F1A000000000000000010A /* IncomingNamesView.swift in Sources */,
+				64F1A000000000000000010C /* NameRecoveryKeyView.swift in Sources */,
+				64F1A000000000000000010E /* ImportRecoveryKeyView.swift in Sources */,
+				64F1A0000000000000000110 /* WalletSetupView.swift in Sources */,
+				64F1A0000000000000000112 /* NamePayment.swift in Sources */,
 				64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */,
 				8CC317442D4FEB9B00292A20 /* EndlessScrollView.swift in Sources */,
 				640417CE2B29B8C200CCB412 /* NewChatView.swift in Sources */,

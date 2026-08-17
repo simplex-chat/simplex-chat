@@ -1198,6 +1198,21 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
         case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
         case let .appSettings(appSettings): return String(describing: appSettings)
+        case let .nameStatus(u, nameHasWallet, nameKeySaved, nameAnySeed): return withUser(u, "nameHasWallet: \(nameHasWallet)\nnameKeySaved: \(nameKeySaved)\nnameAnySeed: \(nameAnySeed)")
+        case let .nameAddress(u, nameAddress, nameAccount, nameMetaAddress): return withUser(u, "nameAddress: \(nameAddress)\nnameAccount: \(nameAccount)\nnameMetaAddress: \(nameMetaAddress)")
+        case let .namesOwned(u, ownedNames): return withUser(u, String(describing: ownedNames))
+        case let .nameQuoted(u, nameLabel, nameAvailable, namePriceCents): return withUser(u, "nameLabel: \(nameLabel)\nnameAvailable: \(nameAvailable)\nnamePriceCents: \(namePriceCents)")
+        case let .nameRegistered(u, nameFqdn, nameTxHash): return withUser(u, "nameFqdn: \(nameFqdn)\nnameTxHash: \(nameTxHash)")
+        case let .nameInfo(u, nameFqdn, nameOwner, nameContact, nameChannel, nameExpires, nameEditCredits): return withUser(u, "nameFqdn: \(nameFqdn)\nnameOwner: \(nameOwner)\nnameContact: \(nameContact)\nnameChannel: \(nameChannel)\nnameExpires: \(nameExpires)\nnameEditCredits: \(nameEditCredits)")
+        case let .nameIntentRelayed(u, nameAction, nameFqdn, nameTxHash): return withUser(u, "nameAction: \(nameAction)\nnameFqdn: \(nameFqdn)\nnameTxHash: \(nameTxHash)")
+        case let .nameGifted(u, nameFqdn, nameTxHash, nameEphemeralPubKey): return withUser(u, "nameFqdn: \(nameFqdn)\nnameTxHash: \(nameTxHash)\nnameEphemeralPubKey: \(nameEphemeralPubKey)")
+        case let .nameRenewed(u, nameFqdn, nameExpires, nameReRegistered): return withUser(u, "nameFqdn: \(nameFqdn)\nnameExpires: \(nameExpires)\nnameReRegistered: \(nameReRegistered)")
+        case let .namesIncoming(u, incomingNames): return withUser(u, String(describing: incomingNames))
+        case let .nameAccepted(u, nameOneTimeAddr, acceptedNames): return withUser(u, "nameOneTimeAddr: \(nameOneTimeAddr)\nacceptedNames: \(acceptedNames)")
+        case let .nameDeclined(u, nameOneTimeAddr): return withUser(u, "nameOneTimeAddr: \(nameOneTimeAddr)")
+        case let .nameKeyExported(u, nameOneTimeAddr, nameOneTimeKey): return withUser(u, "nameOneTimeAddr: \(nameOneTimeAddr)\nnameOneTimeKey: \(nameOneTimeKey)")
+        case let .nameRescanned(u, rescanFound): return withUser(u, "rescanFound: \(rescanFound)")
+        case let .nameRecoveryKey(u, _, recoveryKeySaved): return withUser(u, "recoveryPhrase: ***\nrecoveryKeySaved: \(recoveryKeySaved)")
         }
     }
 }

@@ -13,7 +13,7 @@ struct SimplexNamesView: View {
 
     var body: some View {
         List {
-            Section(NSLocalizedString("Your names", comment: "section")) {
+            Section {
                 if loadFailed {
                     Text("Could not load your names. Check your connection and reopen this screen.")
                         .foregroundColor(.orange)
@@ -37,6 +37,8 @@ struct SimplexNamesView: View {
                         }
                     }
                 }
+            } header: {
+                Text(NSLocalizedString("Your names", comment: "section"))
             } footer: {
                 Text("A SimpleX name lets people find you without sharing a link. If you save your recovery key, you can point the name at a new profile after losing this device.")
             }

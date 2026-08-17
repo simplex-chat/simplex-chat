@@ -2660,7 +2660,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
                 // A name arriving is the one incoming event with no other
                 // signal, so the settings badge is bumped on arrival.
-                if case .sndReceived = cItem.meta.itemStatus {} else if case .rcvNew = cItem.meta.itemStatus, case .assetTransfer = cItem.content.msgContent {
+                if !cItem.chatDir.sent, case .assetTransfer = cItem.content.msgContent {
                     m.namesWaiting += 1
                 }
                 if !active(user) && cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {

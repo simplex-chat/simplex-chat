@@ -17,9 +17,16 @@ struct ImportRecoveryKeyView: View {
             if hasWallet == true {
                 Section { Text("This profile already has a recovery key, so you cannot import a different one here. To use another key, set up a new profile and import it there.").foregroundColor(.secondary) }
             } else {
-                Section("Recovery key") {
-                    TextField("your recovery words, separated by spaces", text: $phrase, axis: .vertical)
-                        .disabled(working)
+                Section {
+                    if #available(iOS 16.0, *) {
+                        TextField("your recovery words, separated by spaces", text: $phrase, axis: .vertical)
+                            .disabled(working)
+                    } else {
+                        TextField("your recovery words, separated by spaces", text: $phrase)
+                            .disabled(working)
+                    }
+                } header: {
+                    Text("Recovery key")
                 } footer: {
                     if phrase.isEmpty { Text("Enter the words in the order they were shown to you.") }
                     else if words.count == 1 { Text("1 word entered — a recovery key has 12, 15, 18, 21 or 24.").foregroundColor(looksComplete ? .secondary : .orange) }

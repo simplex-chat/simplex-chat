@@ -16,14 +16,16 @@ struct GiveNameView: View {
 
     var body: some View {
         List {
-            Section("Give to") {
+            Section {
                 if canReceive.isEmpty {
                     Text("None of your contacts can receive a name yet.").foregroundColor(.secondary)
                 } else {
                     ForEach(canReceive) { ct in
-                        Button(ct.profile.profileViewName) { confirm(ct) }
+                        Button(ct.chatViewName) { confirm(ct) }
                     }
                 }
+            } header: {
+                Text("Give to")
             } footer: {
                 if cannotReceive == 1 { Text("One of your contacts cannot receive names yet — they need a newer app version, or to turn receiving on.") }
                 else if cannotReceive > 0 { Text(String.localizedStringWithFormat(NSLocalizedString("%d of your contacts cannot receive names yet — they need a newer app version, or to turn receiving on.", comment: ""), cannotReceive)) }
@@ -35,14 +37,14 @@ struct GiveNameView: View {
 
     private func confirm(_ ct: Contact) {
         showAlert(NSLocalizedString("Give the name away?", comment: "alert"),
-                  message: String.localizedStringWithFormat(NSLocalizedString("%1$@ will belong to %2$@. Only they will be able to change or move it after this.", comment: "alert"), fqdn, ct.profile.profileViewName),
+                  message: String.localizedStringWithFormat(NSLocalizedString("%1$@ will belong to %2$@. Only they will be able to change or move it after this.", comment: "alert"), fqdn, ct.chatViewName),
                   actions: {[
                     UIAlertAction(title: NSLocalizedString("Give it away", comment: ""), style: .destructive) { _ in
                         Task {
                             if await apiNameGift(label, recipient: "@\(ct.localDisplayName)") {
                                 if let u = try? await apiGetActiveUser() { await MainActor.run { ChatModel.shared.updateUser(u) } }
                                 await MainActor.run {
-                                    showAlert(NSLocalizedString("Name given away", comment: "alert"), message: String.localizedStringWithFormat(NSLocalizedString("%1$@ now belongs to %2$@. It appears under names given to them.", comment: "alert"), fqdn, ct.profile.profileViewName))
+                                    showAlert(NSLocalizedString("Name given away", comment: "alert"), message: String.localizedStringWithFormat(NSLocalizedString("%1$@ now belongs to %2$@. It appears under names given to them.", comment: "alert"), fqdn, ct.chatViewName))
                                     dismiss()
                                 }
                             }

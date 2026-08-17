@@ -2200,7 +2200,7 @@ public enum GroupChatScopeInfo: Decodable, Hashable {
 
 public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var contactId: Int64
-    var localDisplayName: ContactName
+    public var localDisplayName: ContactName
     public var profile: LocalProfile
     public var activeConn: Connection?
     public var viaGroup: Int64?

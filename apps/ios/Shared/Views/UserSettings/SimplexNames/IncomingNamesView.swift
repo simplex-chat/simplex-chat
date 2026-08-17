@@ -24,7 +24,7 @@ struct IncomingNamesView: View {
                     Text("Your profile already carries everything your contacts need to send you a name — there is nothing to set up. Anything sent to you appears here, and nothing is added to your profile until you accept it.")
                 }
             } else {
-                Section("Waiting for your decision") {
+                Section {
                     ForEach(incoming, id: \.inAddress) { item in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(item.inNames.joined(separator: ", ")).fontWeight(.medium)
@@ -34,6 +34,8 @@ struct IncomingNamesView: View {
                             }
                         }
                     }
+                } header: {
+                    Text("Waiting for your decision")
                 } footer: {
                     Text("Accepting adds the name to your names. Declining removes it from this list and tells no one.")
                 }
