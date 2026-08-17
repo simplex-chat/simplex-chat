@@ -41,6 +41,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -912,6 +913,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -1000,6 +1002,16 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ToggleChatListCard()
       }
     }
+    if (!supporterBannerShown.value && chatModel.chats.value.size > 3) {
+      item {
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            onTap = { ModalManager.start.showModal { BadgesSupportSimplexView() } },
+            onDismiss = { appPrefs.supporterBannerShown.set(true) }
+          )
+        }
+      }
+    }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
@@ -1025,13 +1037,15 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   } else {
     NavigationBarBackground(oneHandUI.value, true)
   }
-  if (!oneHandUICardShown.value) {
-    LaunchedEffect(chats.size) {
-      if (chats.size >= 3) {
-        appPrefs.oneHandUICardShown.set(true)
-      }
-    }
-  }
+  // TEMP-DISABLED-FOR-BADGES-QA: auto-hide of ToggleChatListCard at 3+ chats blocks visual QA of
+  // the SupportSimpleXBanner alongside it. Restore before merging.
+  // if (!oneHandUICardShown.value) {
+  //   LaunchedEffect(chats.size) {
+  //     if (chats.size >= 3) {
+  //       appPrefs.oneHandUICardShown.set(true)
+  //     }
+  //   }
+  // }
 
   LaunchedEffect(activeFilter.value) {
     searchText.value = TextFieldValue("")
