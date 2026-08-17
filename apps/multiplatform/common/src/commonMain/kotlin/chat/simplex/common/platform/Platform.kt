@@ -12,6 +12,7 @@ import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.badges.BadgeProduct
 import chat.simplex.common.views.badges.BadgePurchaseOutcome
 import chat.simplex.common.views.badges.BadgeStoreError
+import chat.simplex.common.views.badges.BadgeStoreProductId
 import kotlinx.coroutines.Job
 import java.io.Closeable
 
@@ -37,8 +38,8 @@ interface PlatformInterface {
   // Play Billing, only implemented in the google flavor
   // TODO [badges] desktop and foss pay via Stripe/crypto - these defaults leave them without any
   // product until that path is implemented
-  suspend fun androidLoadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> = emptyList()
-  suspend fun androidPurchaseBadge(productId: String, invoiceId: String): BadgePurchaseOutcome = throw BadgeStoreError.StoreUnavailable
+  suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> = emptyList()
+  suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = throw BadgeStoreError.StoreUnavailable
   val androidApiLevel: Int? get() = null
   // The build distributed via Google Play, which has to follow its policies
   val androidIsPlayStoreBuild: Boolean get() = false

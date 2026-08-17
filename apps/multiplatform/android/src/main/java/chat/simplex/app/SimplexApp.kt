@@ -28,6 +28,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgeProduct
 import chat.simplex.common.views.badges.BadgePurchaseOutcome
+import chat.simplex.common.views.badges.BadgeStoreProductId
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
@@ -345,9 +346,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidLoadPlayStoreCountry() = loadPlayStoreCountry()
 
-      override suspend fun androidLoadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> = loadBadgeProducts(oneTimeIds, subscriptionIds)
+      override suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> = loadBadgeProducts(oneTimeIds, subscriptionIds)
 
-      override suspend fun androidPurchaseBadge(productId: String, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(productId, invoiceId)
+      override suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(id, invoiceId)
 
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable

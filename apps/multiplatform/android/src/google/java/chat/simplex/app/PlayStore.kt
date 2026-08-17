@@ -40,30 +40,40 @@ fun loadPlayStoreCountry() {
 // purchase is launched, and the purchase result arrives on its listener rather than as a return value.
 // volatile: the listener is called on the main thread, the purchase runs on a background dispatcher
 @Volatile private var badgeBillingClient: BillingClient? = null
-@Volatile private var badgeProductDetails: Map<String, ProductDetails> = emptyMap()
+@Volatile private var badgeOffers: Map<BadgeStoreProductId, BadgeOffer> = emptyMap()
 @Volatile private var badgePurchase: CompletableDeferred<BadgePurchaseOutcome>? = null
 
-suspend fun loadBadgeProducts(oneTimeIds: List<String>, subscriptionIds: List<String>): List<BadgeProduct> {
+// offerToken is null for one-time products, which have no base plan to choose
+private class BadgeOffer(
+  val id: BadgeStoreProductId,
+  val product: BadgeProduct,
+  val details: ProductDetails,
+  val offerToken: String?
+)
+
+suspend fun loadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> {
   val client = connectedBadgeBillingClient()
   val details = queryBadgeProducts(client, oneTimeIds, BillingClient.ProductType.INAPP) +
       queryBadgeProducts(client, subscriptionIds, BillingClient.ProductType.SUBS)
-  val productIds = oneTimeIds + subscriptionIds
-  if (details.size < productIds.size) {
+  val detailsByProductId = details.associateBy { it.productId }
+  val ids = oneTimeIds + subscriptionIds
+  val offers = ids.mapNotNull { id -> detailsByProductId[id.productId]?.badgeOffer(id) }
+  if (offers.size < ids.size) {
     // Play drops ids it cannot resolve without saying why, so the package it was asked for and the
     // store country are logged with them - a debug build's applicationIdSuffix is a common cause
-    Log.w(TAG, "loadBadgeProducts: Play returned ${details.size} of ${productIds.size} - package ${androidAppContext.packageName}, country ${androidPlayStoreCountry.value ?: "none"}")
+    Log.w(TAG, "loadBadgeProducts: Play returned ${offers.size} of ${ids.size} - package ${androidAppContext.packageName}, country ${androidPlayStoreCountry.value ?: "none"}")
   }
-  badgeProductDetails = details.associateBy { it.productId }
-  return details.mapNotNull { it.badgeProduct() }
+  badgeOffers = offers.associateBy { it.id }
+  return offers.map { it.product }
 }
 
-suspend fun purchaseBadge(productId: String, invoiceId: String): BadgePurchaseOutcome {
+suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome {
   val activity = mainActivity.get() ?: throw BadgeStoreError.StoreUnavailable
   val client = connectedBadgeBillingClient()
-  val details = badgeProductDetails[productId] ?: throw BadgeStoreError.ProductUnavailable(productId)
+  val offer = badgeOffers[id] ?: throw BadgeStoreError.ProductUnavailable(id.productId)
+  val details = offer.details
   val productParams = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(details)
-  // subscriptions must state which base plan is bought, one-time products must not
-  details.subscriptionOfferDetails?.firstOrNull()?.let { productParams.setOfferToken(it.offerToken) }
+  offer.offerToken?.let { productParams.setOfferToken(it) }
   val params = BillingFlowParams.newBuilder()
     .setProductDetailsParamsList(listOf(productParams.build()))
     .setObfuscatedAccountId(invoiceId)
@@ -136,10 +146,11 @@ private suspend fun connectedBadgeBillingClient(): BillingClient {
   return client
 }
 
-private suspend fun queryBadgeProducts(client: BillingClient, productIds: List<String>, productType: String): List<ProductDetails> {
+private suspend fun queryBadgeProducts(client: BillingClient, ids: List<BadgeStoreProductId>, productType: String): List<ProductDetails> {
   val params = QueryProductDetailsParams.newBuilder()
     .setProductList(
-      productIds.map {
+      // durations of one subscription share a product id, so the same product is queried once
+      ids.map { it.productId }.distinct().map {
         QueryProductDetailsParams.Product.newBuilder().setProductId(it).setProductType(productType).build()
       }
     )
@@ -156,13 +167,18 @@ private suspend fun queryBadgeProducts(client: BillingClient, productIds: List<S
   return queried.await()
 }
 
-private fun ProductDetails.badgeProduct(): BadgeProduct? {
-  oneTimePurchaseOfferDetails?.let {
-    return BadgeProduct(productId, it.formattedPrice, it.priceAmountMicros, it.priceCurrencyCode)
+private fun ProductDetails.badgeOffer(id: BadgeStoreProductId): BadgeOffer? {
+  if (id.basePlanId == null) {
+    val purchase = oneTimePurchaseOfferDetails ?: return null
+    val product = BadgeProduct(id, purchase.formattedPrice, purchase.priceAmountMicros, purchase.priceCurrencyCode)
+    return BadgeOffer(id, product, this, offerToken = null)
   }
-  // the last pricing phase is the recurring base price, earlier phases are trials and intro offers
-  val phase = subscriptionOfferDetails?.firstOrNull()?.pricingPhases?.pricingPhaseList?.lastOrNull() ?: return null
-  return BadgeProduct(productId, phase.formattedPrice, phase.priceAmountMicros, phase.priceCurrencyCode)
+  val offer = subscriptionOfferDetails?.firstOrNull { it.basePlanId == id.basePlanId } ?: return null
+  val phase = offer.pricingPhases.pricingPhaseList.firstOrNull {
+    it.recurrenceMode == ProductDetails.RecurrenceMode.INFINITE_RECURRING
+  } ?: return null
+  val product = BadgeProduct(id, phase.formattedPrice, phase.priceAmountMicros, phase.priceCurrencyCode)
+  return BadgeOffer(id, product, this, offer.offerToken)
 }
 
 // nothing is delivered in this build, so the purchase is finished right away; once the service issues
