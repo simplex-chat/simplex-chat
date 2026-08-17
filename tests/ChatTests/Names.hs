@@ -28,6 +28,10 @@ chatNamesTests = do
   it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
   it "gift a name to a contact by name, using their published meta-address" testGiftByContactName
   it "gift to a raw address is found by scanning, with no message" testGiftByMetaAddress
+  it "accept a gifted name, and it appears in your names" testAcceptGiftedName
+  it "decline a gifted name, and it is gone" testDeclineGiftedName
+  it "import a recovery key on a fresh profile and find the bought name" testImportRecoveryKeyFindsNames
+  it "buying a name already taken fails cleanly" testBuyTakenNameFails
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
@@ -373,3 +377,105 @@ testGiftByMetaAddress ps = withSmpServerAndNames $ \_reg ->
       bob <##. "  scanchat.simplex at 0x"
       bob <## ""
       bob <## "accepting links this profile to the name on chain; declining leaves no trace"
+
+-- | Accepting through the client: bob is gifted a name, accepts it, and it then
+-- shows up under his own names. The gift e2e tests stop at discovery; this
+-- covers the other half.
+testAcceptGiftedName :: HasCallStack => TestParams -> IO ()
+testAcceptGiftedName ps = withSmpServerAndNames $ \_reg ->
+  testChat2 aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      bob ##> "/names address"
+      bob <##. "name address"
+      bob <##. "meta-address ("
+      connectUsers alice bob
+      alice ##> "/names buy acceptme"
+      alice <## "registered acceptme.simplex"
+      alice <##. "tx "
+      alice ##> "/names gift acceptme @bob"
+      alice <## "gift acceptme.simplex done"
+      alice <##. "tx "
+      bob <# "alice> You were given the SimpleX name acceptme.simplex"
+      bob ##> "/names incoming"
+      bob <## "names sent to you, not yet accepted:"
+      addrLine <- getTermLine bob
+      bob <## ""
+      bob <## "accepting links this profile to the name on chain; declining leaves no trace"
+      let addr = reverse . takeWhile (/= ' ') . reverse $ addrLine
+      bob ##> ("/names accept " <> addr)
+      bob <##. "accepted acceptme.simplex at 0x"
+      -- now it is one of bob's names
+      bob ##> "/names list"
+      bob <## "your names:"
+      bob <##. "  acceptme.simplex (expires "
+
+-- | Declining through the client: the name leaves the incoming list and never
+-- becomes one of bob's names. Declining writes nothing on chain.
+testDeclineGiftedName :: HasCallStack => TestParams -> IO ()
+testDeclineGiftedName ps = withSmpServerAndNames $ \_reg ->
+  testChat2 aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      bob ##> "/names address"
+      bob <##. "name address"
+      bob <##. "meta-address ("
+      connectUsers alice bob
+      alice ##> "/names buy declineme"
+      alice <## "registered declineme.simplex"
+      alice <##. "tx "
+      alice ##> "/names gift declineme @bob"
+      alice <## "gift declineme.simplex done"
+      alice <##. "tx "
+      bob <# "alice> You were given the SimpleX name declineme.simplex"
+      bob ##> "/names incoming"
+      bob <## "names sent to you, not yet accepted:"
+      addrLine <- getTermLine bob
+      bob <## ""
+      bob <## "accepting links this profile to the name on chain; declining leaves no trace"
+      let addr = reverse . takeWhile (/= ' ') . reverse $ addrLine
+      bob ##> ("/names decline " <> addr)
+      bob <##. "declined the name at 0x"
+      bob ##> "/names incoming"
+      bob <## "no names have been sent to you"
+      bob ##> "/names list"
+      bob <## "you own no names"
+
+-- | The survives-a-dead-device property, through the client: a fresh profile
+-- imports the recovery key of a profile that bought a name, and finds the name
+-- - buying nothing, asking no one.
+testImportRecoveryKeyFindsNames :: HasCallStack => TestParams -> IO ()
+testImportRecoveryKeyFindsNames ps = withSmpServerAndNames $ \_reg ->
+  testChat2 aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      alice ##> "/names buy keepsake"
+      alice <## "registered keepsake.simplex"
+      alice <##. "tx "
+      alice ##> "/names key"
+      alice <## "name recovery key:"
+      alice <## ""
+      phrase <- getTermLine alice
+      alice <## ""
+      alice <## "write this down and keep it offline - it is the only way to recover your names"
+      alice <## "then run /names key saved"
+      -- bob is a fresh profile; importing alice's key makes him alice on a new
+      -- device, so her bought name is now his to find.
+      bob ##> ("/names key import " <> phrase)
+      bob <## "wallet ready, recovery key NOT saved"
+      bob ##> "/names list"
+      bob <## "your names:"
+      bob <##. "  keepsake.simplex (expires "
+
+-- | Buying a name someone already holds must fail cleanly rather than charge
+-- and silently do nothing - the race a name loses between quote and buy.
+testBuyTakenNameFails :: HasCallStack => TestParams -> IO ()
+testBuyTakenNameFails ps = withSmpServerAndNames $ \_reg ->
+  testChat2 aliceProfile bobProfile test ps
+  where
+    test alice _bob = do
+      alice ##> "/names buy takentwice"
+      alice <## "registered takentwice.simplex"
+      alice <##. "tx "
+      alice ##> "/names buy takentwice"
+      alice <## "bad chat command: that name is already taken"
