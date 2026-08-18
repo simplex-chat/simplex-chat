@@ -195,7 +195,7 @@
     <string name="bad_desktop_address">Nesprávna adresa počítača</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Najlepšie pre batériu</b>. Budete dostávať notifikácie len keď bude aplikácia bežať (ŽIADNA služba na pozadí).]]></string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Vytvoriť skupinu</b>: vytvoriť novú skupinu.]]></string>
-    <string name="onboarding_be_free">Buďte slobodný\nvo Vašej sieti</string>
+    <string name="onboarding_be_free">Buďte slobodný\nvo vašej sieti</string>
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="v6_1_better_calls">Lepšie volanie</string>
     <string name="v5_4_better_groups">Lepšie skupiny</string>
@@ -680,7 +680,7 @@
     <string name="migrate_to_device_enter_passphrase">Zadajte prístupovú frázu</string>
     <string name="enter_passphrase">Zadajte prístupovú frázu…</string>
     <string name="error_reading_passphrase">Chyba čítania prístupovej frázy k databáze</string>
-    <string name="migrate_from_device_error_verifying_passphrase">Chyba overenia prístupovej fráze:</string>
+    <string name="migrate_from_device_error_verifying_passphrase">Chyba overenia prístupovej frázy:</string>
     <string name="new_passphrase">Nová prístupová fráza…</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Prístupová fráza v Keystore sa nedá prečítať, prosím, zadajte ju ručne. Toto sa môže stať po aktualizácii systému nekompatibilnou s aplikáciou. Ak to tak nie je, kontaktuje prosím vývojárov.</string>
     <string name="restore_passphrase_can_not_be_read_desc">Prístupová fráza v Keystore sa nedá prečítať. Toto sa môže stať po aktualizácii systému nekompatibilnou s aplikáciou. Ak to nie je váš prípad, kontaktuje prosím vývojárov.</string>
@@ -698,8 +698,8 @@
     <string name="save_passphrase_in_settings">Uložiť prístupovú frázu v nastaveniach</string>
     <string name="set_database_passphrase">Nastaviť prístupovú frázu k databázi</string>
     <string name="set_passphrase">Nastaviť prístupovú frázu</string>
-    <string name="setup_database_passphrase">Nastavenie prístupovej fráze k databáze</string>
-    <string name="database_backup_can_be_restored">Pokus o zmenu prístupovej fráze k databáze nebol dokončený.</string>
+    <string name="setup_database_passphrase">Nastavenie prístupovej frázy k databáze</string>
+    <string name="database_backup_can_be_restored">Pokus o zmenu prístupovej frázy k databáze nebol dokončený.</string>
     <string name="settings_is_storing_in_clear_text">Prístupová fráza je uložená v nastaveniach ako nešifrovaný text.</string>
     <string name="passphrase_will_be_saved_in_settings">Prístupová fráza bude uložená v nastaveniach ako nešifrovaný text potom ako ju zmeníte alebo reštartujete aplikáciu.</string>
     <string name="enter_passphrase_notification_desc">Ak chcete dostávať notifikácie, prosím, zadajte prístupovú frázu k databázi.</string>
