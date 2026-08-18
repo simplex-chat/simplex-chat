@@ -324,7 +324,7 @@ data ChatController = ChatController
     contactMergeEnabled :: TVar Bool
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase | HSNames
   deriving (Show)
 
 data ChatCommand

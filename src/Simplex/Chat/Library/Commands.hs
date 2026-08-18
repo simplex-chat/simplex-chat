@@ -5700,6 +5700,7 @@ chatCommandP =
       ("/help remote" <|> "/hr") $> ChatHelp HSRemote,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
+      ("/help names" <|> "/help name" <|> "/hn") $> ChatHelp HSNames,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
