@@ -172,6 +172,7 @@ data ChatConfig = ChatConfig
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
+    updateGroupLinksFromApp :: Bool,
     chatHooks :: ChatHooks
   }
 
