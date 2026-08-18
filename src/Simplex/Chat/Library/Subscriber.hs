@@ -2620,11 +2620,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             let GroupMember {groupMemberId, memberId = membershipMemId} = membership
                 -- hostContact is only reported for group links, where the client replaces
                 -- the transient host connection view with the group and removes its chat
-                joinGroupAsync hostContact_ = do
+                joinGroupAsync hostContact_ sameLink = do
                   subMode <- chatReadVar subscriptionMode
                   dm <- encodeConnInfo $ XGrpAcpt membershipMemId
                   connIds@(cmdId, acId) <- prepareAgentJoin user Nothing True connRequest
                   withStore' $ \db -> do
+                    when sameLink $ setViaGroupLinkUri db groupId connId
                     createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
                     updateGroupMemberStatusById db userId hostId GSMemAccepted
                     updateGroupMemberStatus db userId membership GSMemAccepted
@@ -2636,13 +2637,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
                   toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
             if
-              | sameGroupLinkId groupLinkId groupLinkId' -> do
-                  withStore' $ \db -> setViaGroupLinkUri db groupId connId
-                  joinGroupAsync (Just ct)
+              | sameGroupLinkId groupLinkId groupLinkId' ->
+                  joinGroupAsync (Just ct) True
               | isTrue (autoAcceptGroupInvitations user) ->
                   -- a resent invitation returns the existing group, so only join while still invited
                   when (memberStatus membership == GSMemInvited) $ do
-                    joinGroupAsync Nothing
+                    joinGroupAsync Nothing False
                     createInvitationItem CIGISAccepted
               | otherwise -> do
                   createInvitationItem CIGISPending
