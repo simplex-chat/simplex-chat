@@ -11,10 +11,11 @@
 -- per request. The envelope and both command\/response sums are @type@-tagged
 -- JSON objects, the same shape the badge service decodes.
 --
--- Registration is commit-then-reveal (see the MVP plan): 'NRCommit' publishes
--- only @H(name, owner, secret, ttl)@ so the service cannot tell which name it
--- is; 'NRReveal' submits the plaintext once the aged commitment already binds
--- the name to /this/ owner address, so the service cannot front-run it.
+-- Registration is commit-then-reveal (see
+-- @docs\/rfcs\/2026-08-18-in-app-name-purchase-mvp.md@): 'NRCommit' publishes only
+-- @H(name, owner, secret, ttl)@ so the service cannot tell which name it is;
+-- 'NRReveal' submits the plaintext once the aged commitment already binds the
+-- name to /this/ owner address, so the service cannot front-run it.
 module Simplex.Chat.Names.Protocol
   ( NamesVersion,
     currentNamesVersion,

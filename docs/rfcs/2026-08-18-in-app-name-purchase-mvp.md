@@ -1,6 +1,9 @@
-# SimpleX names MVP — register a name from the CLI
+# In-app name purchase MVP — register a name from the CLI
 
-The smallest PR that registers a name for an SMP address or channel from the TUI.
+SimpleX names already ship: the app resolves `@name.testing` and claims a name on
+a profile. What does *not* exist in the app is acquiring one — registration today
+means a wallet, ETH and a browser. This is the smallest PR that moves the purchase
+into the app, registering a name for an SMP address or channel from the TUI.
 It **targets the badges branch** and extends the existing badge service
 with registrar commands plus an in-memory chain mock — no new bot, no new
 transport. The wallet is real but read-only: generate a seed, derive the owner
