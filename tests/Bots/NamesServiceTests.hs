@@ -80,11 +80,11 @@ testNamesRegister ps =
     -- the owner is the same within a session, so this is the duplicate a user hits.
     client ##> ("/name register " <> bsLink <> " alice.simplex simplex:/contact#/first")
     commitPhases client
-    client <## "bad chat command: name registration failed: name_taken"
+    client <## "name registration failed: name_taken"
     -- and the same name pointed at a different link is equally rejected
     client ##> ("/name register " <> bsLink <> " alice.simplex simplex:/contact#/second")
     commitPhases client
-    client <## "bad chat command: name registration failed: name_taken"
+    client <## "name registration failed: name_taken"
   where
     commitPhases client = do
       client <## "name alice.simplex: committing"

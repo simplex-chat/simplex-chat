@@ -1479,7 +1479,7 @@ processChatCommand cxt nm = \case
     progress NRPhaseCommitting Nothing
     sendNames (NRCommit commitment) >>= \case
       NRPCommitted {} -> pure ()
-      NRPError {nrCode, nrMessage} -> throwCmdError $ nameRegError nrCode nrMessage
+      NRPError {nrCode, nrMessage} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage
       _ -> throwCmdError "unexpected commit response"
     progress NRPhaseCommitted (Just commitWaitMs)
     liftIO $ threadDelay $ fromIntegral commitWaitMs * 1000
@@ -1487,7 +1487,7 @@ processChatCommand cxt nm = \case
     (expiry', txHash') <-
       sendNames (NRReveal nm' owner secret ttl sLink) >>= \case
         NRPRegistered {nrExpiry, nrTxHash} -> pure (nrExpiry, nrTxHash)
-        NRPError {nrCode, nrMessage} -> throwCmdError $ nameRegError nrCode nrMessage
+        NRPError {nrCode, nrMessage} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage
         _ -> throwCmdError "unexpected reveal response"
     progress NRPhaseRegistered Nothing
     pure $ CRNameRegistered user nm' (tshow owner) expiry' txHash'
@@ -1499,8 +1499,6 @@ processChatCommand cxt nm = \case
         (seed, AccountRef {arIndex}) <-
           withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
         either (throwCmdError . ("wallet: " <>)) (pure . accountAddress) $ deriveAccount seed arIndex
-      nameRegError code message =
-        "name registration failed: " <> T.unpack (textEncode code) <> maybe "" ((": " <>) . T.unpack) message
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)

@@ -1471,6 +1471,9 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
+  -- | the names service refused the registration; @nameRegCode@ is the protocol
+  -- error code as sent on the wire, e.g. @name_taken@
+  | CENameRegistrationFailed {nameRegCode :: Text, nameRegMessage :: Maybe Text}
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
