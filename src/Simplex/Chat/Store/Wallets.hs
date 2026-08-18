@@ -8,10 +8,11 @@
 -- The schema holds several seeds and binds each chat profile to one of them
 -- plus its own account index. Only the single-seed case is reachable from the
 -- UI: 'getOrCreateAccountRef' reuses the database's first seed and allocates the
--- next free account index. It is the only export, because it is all that name
--- registration needs; the helpers below stay internal until they have a caller.
+-- next free account index, while 'boundAccount' only reads. Those two are the
+-- exports; the helpers below stay internal until they have a caller.
 module Simplex.Chat.Store.Wallets
   ( getOrCreateAccountRef,
+    boundAccount,
   )
 where
 
@@ -66,6 +67,15 @@ bindAccount db User {userId} AccountRef {arSeedId = SeedId sId, arIndex} =
     db
     "UPDATE users SET wallet_seed_id = ?, wallet_account_index = ? WHERE user_id = ?"
     (sId, fromIntegral arIndex :: Int64, userId)
+
+-- | The seed and account this profile is bound to, or Nothing if it has never
+-- used the wallet. Creates nothing: callers that need a wallet ask the user
+-- first, so a profile is never given keys as a side effect of reading.
+boundAccount :: DB.Connection -> User -> IO (Maybe (WalletSeed, AccountRef))
+boundAccount db user =
+  getAccountRef db user >>= \case
+    Nothing -> pure Nothing
+    Just r -> fmap (\s -> (s, r)) <$> getWalletSeed db (arSeedId r)
 
 -- | Bind this profile to a seed, creating one from @mkSeed@ if the database has
 -- none yet, and allocating the next free account index.

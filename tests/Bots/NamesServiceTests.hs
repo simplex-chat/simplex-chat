@@ -22,6 +22,8 @@ import qualified Test.Hspec as Hspec
 namesServiceTests :: SpecWith TestParams
 namesServiceTests = do
   it "registers a name via commit/reveal and rejects a taken name" testNamesRegister
+  it "rejects a reveal with no matching commitment" testRevealWithoutCommit
+  it "shows the owner address without creating one" testNameAddress
   it "derives the same owner address after restart" testSeedPersists
 
 -- | Pins the wire format. The end-to-end test cannot catch a key renamed on
@@ -91,6 +93,35 @@ testNamesRegister ps =
       client <## "name alice.simplex: committed. waiting 1s before revealing"
       client <## "name alice.simplex: revealing"
 
+-- | @\/name address@ reports the owner address but never creates a seed: asking
+-- which address you have must not be what gives you one. Only registering does.
+testNameAddress :: HasCallStack => TestParams -> IO ()
+testNameAddress ps =
+  withBadgeService ps $ \client bsLink -> do
+    -- asked repeatedly before any registration: still no address, none created
+    client ##> "/name address"
+    client <## "no name address yet - it is created when you register a name"
+    client ##> "/name address"
+    client <## "no name address yet - it is created when you register a name"
+    client ##> ("/name register " <> bsLink <> " carol.simplex simplex:/contact#/x")
+    owner <- ownerOf client "carol.simplex"
+    -- now it exists, and reports the address the name was registered to
+    client ##> "/name address"
+    client <## ("name address: " <> owner)
+
+-- | The front-running defence: a reveal only registers a name if that exact
+-- commitment was published first. Sent as a raw service request, because the
+-- core always commits before revealing and so cannot produce this on its own.
+testRevealWithoutCommit :: HasCallStack => TestParams -> IO ()
+testRevealWithoutCommit ps =
+  withBadgeService ps $ \client bsLink -> do
+    let reveal =
+          "{\"version\":1,\"request\":{\"type\":\"reveal\",\"name\":\"eve.simplex\""
+            <> ",\"owner\":\"0x520110c7b1ce17f8c0a2778b41ab2f23d10b70b0\",\"secret\":\"0x73\""
+            <> ",\"ttl\":3600,\"simplex_link\":\"simplex:/contact#/x\"}}"
+    client ##> ("/_service_request 1 " <> bsLink <> " " <> reveal)
+    client <## "service response: {\"code\":\"bad_request\",\"message\":\"no matching commitment\",\"type\":\"error\"}"
+
 -- | The seed is persisted, so a name registered in one session is still owned by
 -- an address the next session can derive. Without this the key is unrecoverable
 -- after restart and the name is orphaned.
@@ -114,18 +145,19 @@ testSeedPersists ps = do
       client ##> ("/name register " <> bsLink <> " second.simplex simplex:/contact#/y")
       ownerOf client "second.simplex"
     owner2 `shouldBe` owner1
-  where
-    -- Reads past startup and progress lines to the registration result, and
-    -- keeps reading until the final progress event has arrived too — it races
-    -- with the command response and would otherwise be left unconsumed.
-    ownerOf client nm = go (40 :: Int) Nothing False
-      where
-        pfx = "name registered: " <> nm <> " -> "
-        lastEvt = "name " <> nm <> ": registered"
-        go _ (Just a) True = pure a
-        go 0 _ _ = error $ "no registration line for " <> nm
-        go n addr seen = do
-          l <- getTermLine client
-          let addr' = if pfx `isPrefixOf` l then Just (takeWhile (/= ' ') $ drop (length pfx) l) else addr
-          go (n - 1) addr' (seen || l == lastEvt)
 
+-- | Reads past startup and progress lines to the registration result, returning
+-- the owner address. Keeps reading until the final progress event has arrived
+-- too — it races with the command response and would otherwise be left
+-- unconsumed, failing the next assertion or the session close.
+ownerOf :: HasCallStack => TestCC -> String -> IO String
+ownerOf client nm = go (40 :: Int) Nothing False
+  where
+    pfx = "name registered: " <> nm <> " -> "
+    lastEvt = "name " <> nm <> ": registered"
+    go _ (Just a) True = pure a
+    go 0 _ _ = error $ "no registration line for " <> nm
+    go n addr seen = do
+      l <- getTermLine client
+      let addr' = if pfx `isPrefixOf` l then Just (takeWhile (/= ' ') $ drop (length pfx) l) else addr
+      go (n - 1) addr' (seen || l == lastEvt)

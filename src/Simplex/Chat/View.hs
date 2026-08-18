@@ -190,6 +190,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
+  CRNameAddress u addr_ ->
+    ttyUser u [maybe "no name address yet - it is created when you register a name" (plain . ("name address: " <>)) addr_]
   CRNameRegistered u nm owner expiry txHash ->
     ttyUser u [plain $ "name registered: " <> nm <> " -> " <> owner <> " (expires " <> tshow expiry <> ", tx " <> safeDecodeUtf8 (strEncode txHash) <> ")"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView

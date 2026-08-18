@@ -226,6 +226,7 @@ namesHelpInfo =
     [ green "SimpleX name commands:",
       indent <> highlight "/name register <service> <name> <simplex_link>",
       indent <> indent <> " - register a name for your address or channel",
+      indent <> highlight "/name address" <> " - show the address that owns the names you register",
       "",
       green "Arguments:",
       indent <> highlight "<service>     " <> " - address of the names service to register with",

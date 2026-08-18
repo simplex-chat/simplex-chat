@@ -415,6 +415,7 @@ data ChatCommand
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APINameRegister {sendTarget :: ConnectTarget 'CMContact, regName :: Text, registerLink :: Text}
+  | APINameAddress
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -842,6 +843,7 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRNameRegistered {user :: User, regName :: Text, regOwner :: Text, regExpiry :: UTCTime, regTxHash :: TxHash}
+  | CRNameAddress {user :: User, nameAddress :: Maybe Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}

@@ -393,6 +393,7 @@ undocumentedCommands =
     "APIHideUser",
     "APIImportArchive",
     "APIMuteUser",
+    "APINameAddress",
     "APINameRegister",
     "APIPlanForwardChatItems",
     "APIPrepareContact",

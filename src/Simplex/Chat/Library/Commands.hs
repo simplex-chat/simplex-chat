@@ -60,7 +60,7 @@ import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Names.Protocol
-import Simplex.Chat.Store.Wallets (getOrCreateAccountRef)
+import Simplex.Chat.Store.Wallets (boundAccount, getOrCreateAccountRef)
 import Simplex.Chat.Wallet (AccountRef (..), accountAddress, deriveAccount, newSeed)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1499,6 +1499,13 @@ processChatCommand cxt nm = \case
         (seed, AccountRef {arIndex}) <-
           withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
         either (throwCmdError . ("wallet: " <>)) (pure . accountAddress) $ deriveAccount seed arIndex
+  APINameAddress -> withUser $ \user -> do
+    -- Read-only: never creates a seed. A key appears when you register a name,
+    -- not when you ask which address you have.
+    acc_ <- withFastStore' $ \db -> boundAccount db user
+    addr <- forM acc_ $ \(seed, AccountRef {arIndex}) ->
+      either (throwCmdError . ("wallet: " <>)) (pure . tshow . accountAddress) $ deriveAccount seed arIndex
+    pure $ CRNameAddress user addr
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
@@ -5579,6 +5586,7 @@ chatCommandP =
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/name register " *> (APINameRegister <$> strP <* A.space <*> displayNameP <* A.space <*> textP),
+      "/name address" $> APINameAddress,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
