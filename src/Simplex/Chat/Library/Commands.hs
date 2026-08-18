@@ -1697,8 +1697,7 @@ processChatCommand cxt nm = \case
           Just RelayAddressLinkData {relayProfile} -> do
             let failWithProfile step e =
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
-            -- only the compatibility of the URI matters here; the result was discarded
-            lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
+            lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
               Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
               Just _ -> do
                 let chatV = initialChatVersion
@@ -3767,7 +3766,7 @@ processChatCommand cxt nm = \case
     connectViaInvitation user@User {userId} incognito (CCLink cReq@(CRInvitationUri crData e2e) sLnk_) contactId_ =
       withInvitationLock "connect" (strEncode cReq) $ do
         subMode <- chatReadVar subscriptionMode
-        lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
+        lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
           Nothing -> throwChatError CEInvalidConnReq
           -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
           Just _ -> do
@@ -3937,7 +3936,7 @@ processChatCommand cxt nm = \case
       -- Case 2 (address does not support PQ) is unreachable now that the agent floor
       -- is 6 and the e2e range is 3..3: every peer we accept supports PQ, so only the
       -- compatibility of the URI is still worth asking about.
-      lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
+      lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
         Just _ -> do
           let chatV = initialChatVersion
@@ -4267,7 +4266,7 @@ processChatCommand cxt nm = \case
         addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
         addRelay relay@UserChatRelay {address} = fmap (relay,) . tryAllErrors $ do
           (_, _, cReq) <- getShortLinkConnReq nm user address
-          lift (withAgent' $ \a -> connRequestAgentVersion a cReq) >>= \case
+          lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
             Just _ -> do
               let chatV = initialChatVersion
