@@ -97,16 +97,23 @@ relays-only list (ComposeView.kt:693) — and `membersLoaded` is deliberately le
 `MemberSupportView.kt:45`, `addGroupMembers` (ChatView.kt:3217), and
 `GroupMentions.kt:116` which checks the flag.
 
-Two behaviours change:
+One behaviour changes:
 
-- **Relay removal warning.** `activeRelays.size <= 1`
-  (GroupMemberInfoView.kt:250, GroupChatInfoView.kt:277) is computed from the
-  model. A partial list is a subset, so the count can only be lower, and the
-  warning can only fire when it should not — under-warning is impossible. It
-  affects the confirmation text only, not the removal itself, and applies only to
-  relay channels, which load all members on chat open (ChatView.kt:213).
 - **Mention picker.** Until `@` triggers the load, the picker briefly lists the
   members opened so far instead of nothing. Self-correcting.
+
+The relay removal warning is *not* affected. `activeRelays.size <= 1`
+(GroupMemberInfoView.kt:250, GroupChatInfoView.kt:277) is computed from the
+model, so it is already conservative while the member list is loading — with an
+empty list the count is 0 and the warning fires. A partial list is a subset, so
+the count can only move towards the correct value, and the opposite error is
+impossible: a subset with two active relays implies the group has at least two.
+It is also not reachable from the modified path — messages delivered through
+relays have no item member (`CDChannelRcv`, Subscriber.hs:2161, `chatItemMember`
+returns Nothing, Messages.hs:375) and their avatar opens chat info
+(ChatView.kt:2150), not member info. A relay's profile is opened from the
+channel members and relays screens, which load all members themselves
+(GroupChatInfoView.kt:117, ChannelRelaysView.kt:38).
 
 The bulk refresh of all members that happened as a side effect of every tap is
 gone; each screen refreshes its own data on open.
