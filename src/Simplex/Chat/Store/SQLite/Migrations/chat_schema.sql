@@ -53,7 +53,10 @@ CREATE TABLE users(
   active_order INTEGER NOT NULL DEFAULT 0,
   auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
-  client_service INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  client_service INTEGER NOT NULL DEFAULT 0,
+  wallet_seed_id INTEGER REFERENCES wallet_seeds ON DELETE RESTRICT,
+  wallet_account_index INTEGER,
+  wallet_scanned_to TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -845,6 +848,29 @@ CREATE TABLE rcv_roster_transfers(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 ) STRICT;
+CREATE TABLE wallet_seeds(
+  wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  seed BLOB NOT NULL, -- BIP-39 entropy, 16-32 bytes
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  backed_up INTEGER NOT NULL DEFAULT 0, -- user acknowledged saving the recovery key
+  -- High-water mark for account allocation. Deliberately not derived from
+  -- MAX(users.wallet_account_index): after recovery from the phrase alone that
+  -- table is empty while accounts 0..N already hold names on chain, so a new
+  -- profile would silently reuse a recovered account's keys and meta-address.
+-- The recovery probe raises this before any profile is created.
+  next_account_index INTEGER NOT NULL DEFAULT 0
+) STRICT;
+CREATE TABLE wallet_one_time_addresses(
+  wallet_one_time_address_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  chain TEXT NOT NULL, -- 'eth' today; 'btc',
+  'xmr' later
+  address BLOB NOT NULL,
+  ephemeral_pub_key BLOB NOT NULL, -- compressed secp256k1 point, 33 bytes
+  discovered_at TEXT NOT NULL DEFAULT(datetime('now')),
+  accepted_at TEXT, -- NULL = received but not accepted
+  UNIQUE(user_id, chain, address)
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1378,6 +1404,11 @@ CREATE INDEX idx_files_group_id_shared_msg_id ON files(
 CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
 CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
+);
+CREATE INDEX idx_users_wallet_seed_id ON users(wallet_seed_id);
+CREATE INDEX idx_wallet_one_time_addresses_user ON wallet_one_time_addresses(
+  user_id,
+  chain
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

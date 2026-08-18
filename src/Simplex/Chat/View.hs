@@ -53,6 +53,7 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AddressSettings (..), AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
+import Simplex.Chat.Names.Protocol (NameRegPhase (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -188,6 +189,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
+  CRNameRegistered u nm owner expiry txHash ->
+    ttyUser u [plain $ "name registered: " <> nm <> " -> " <> owner <> " (expires " <> tshow expiry <> ", tx " <> safeDecodeUtf8 (strEncode txHash) <> ")"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -474,6 +477,14 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
         <> maybe [] (\k -> [plain $ "signed by " <> safeDecodeUtf8 (strEncode k)]) sigKey_
         <> ["request: " <> viewJSON req]
   CEvtServiceReplySent (AgentConnId cId) -> [plain $ "service reply sent, connection id: " <> safeDecodeUtf8 (strEncode cId)]
+  CEvtNameRegistrationProgress u nm regPhase waitMs ->
+    ttyUser u [plain $ "name " <> nm <> ": " <> phaseText]
+    where
+      phaseText = case regPhase of
+        NRPhaseCommitting -> "committing"
+        NRPhaseCommitted -> "committed" <> maybe "" (\ms -> ". waiting " <> tshow (ms `div` 1000) <> "s before revealing") waitMs
+        NRPhaseRevealing -> "revealing"
+        NRPhaseRegistered -> "registered"
   CEvtContactRequestRejected u Contact {localDisplayName = c} _reason -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
