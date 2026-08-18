@@ -3780,10 +3780,7 @@ processChatCommand cxt nm = \case
                     joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile)
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
-              -- connRequestPQSupport used to weaken the requested PQSupportOn to what
-              -- the negotiated agent and e2e versions could carry, and bound the result
-              -- here. Both floors are now above the thresholds it checked (agent 6 >
-              -- pqdr 5, e2e 3..3 = pqRatchet 3), so it can only return what was asked.
+              -- all supported versions support PQ encryption
               pqSup' = PQSupportOn
               joinNewConn chatV = do
                 -- [incognito] generate profile to send
@@ -3931,11 +3928,6 @@ processChatCommand cxt nm = \case
           _ -> pure ()
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
-      -- 0) toggle disabled - PQSupportOff
-      -- 1) toggle enabled - PQSupportOn, enable support with compression
-      -- Case 2 (address does not support PQ) is unreachable now that the agent floor
-      -- is 6 and the e2e range is 3..3: every peer we accept supports PQ, so only the
-      -- compatibility of the URI is still worth asking about.
       lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
         Just _ -> do
