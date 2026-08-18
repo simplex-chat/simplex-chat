@@ -1,5 +1,19 @@
 # Release History
 
+## Unreleased
+
+SimpleX names MVP (in development, CLI only):
+- Register a name for a contact address or channel from the terminal with
+  `/name register <service> <name> <simplex_link>`, via commit/reveal against the
+  badge service so the registrar cannot front-run the name.
+- The badge service gains the names commands and an in-memory chain mock; there
+  is no deployed contract and no payment.
+- Wallet: a BIP-39 seed is created on first registration and persisted, with one
+  BIP-44 account per chat profile, so a registered name stays owned by an address
+  the client can still derive after restart. No signing, so edits, transfers and
+  renewal are not possible yet.
+- Design: docs/rfcs/2026-08-18-simplex-names-mvp.md
+
 ## v6.5
 
 30 April, 2026

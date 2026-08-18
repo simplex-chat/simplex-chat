@@ -53,13 +53,12 @@ type AccountIndex = Word32
 -- 'Show' is redacting: this is the root secret behind every name it owns.
 data WalletSeed = WalletSeed
   { wsId :: SeedId,
-    wsEntropy :: ByteString,
-    wsBackedUp :: Bool
+    wsEntropy :: ByteString
   }
   deriving (Eq)
 
 instance Show WalletSeed where
-  show s = "WalletSeed " <> show (wsId s) <> " <redacted, backedUp=" <> show (wsBackedUp s) <> ">"
+  show s = "WalletSeed " <> show (wsId s) <> " <redacted>"
 
 -- | What a chat profile stores: which seed, and which account index within it.
 data AccountRef = AccountRef

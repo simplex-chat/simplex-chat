@@ -8,15 +8,10 @@
 -- The schema holds several seeds and binds each chat profile to one of them
 -- plus its own account index. Only the single-seed case is reachable from the
 -- UI: 'getOrCreateAccountRef' reuses the database's first seed and allocates the
--- next free account index.
+-- next free account index. It is the only export, because it is all that name
+-- registration needs; the helpers below stay internal until they have a caller.
 module Simplex.Chat.Store.Wallets
-  ( getWalletSeeds,
-    getWalletSeed,
-    createWalletSeed,
-    getAccountRef,
-    bindAccount,
-    getOrCreateAccountRef,
-    getNextAccountIndex,
+  ( getOrCreateAccountRef,
   )
 where
 
@@ -35,18 +30,18 @@ import Database.PostgreSQL.Simple (Only (..))
 import Database.SQLite.Simple (Only (..))
 #endif
 
-toSeed :: (Int64, ByteString, Bool) -> WalletSeed
-toSeed (sId, seed, backedUp) = WalletSeed {wsId = SeedId sId, wsEntropy = seed, wsBackedUp = backedUp}
+toSeed :: (Int64, ByteString) -> WalletSeed
+toSeed (sId, seed) = WalletSeed {wsId = SeedId sId, wsEntropy = seed}
 
 getWalletSeeds :: DB.Connection -> IO [WalletSeed]
 getWalletSeeds db =
   map toSeed
-    <$> DB.query_ db "SELECT wallet_seed_id, seed, backed_up FROM wallet_seeds ORDER BY wallet_seed_id"
+    <$> DB.query_ db "SELECT wallet_seed_id, seed FROM wallet_seeds ORDER BY wallet_seed_id"
 
 getWalletSeed :: DB.Connection -> SeedId -> IO (Maybe WalletSeed)
 getWalletSeed db (SeedId sId) =
   maybeFirstRow toSeed $
-    DB.query db "SELECT wallet_seed_id, seed, backed_up FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
+    DB.query db "SELECT wallet_seed_id, seed FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
 
 -- | Insert a seed. Callers generate the entropy; this module never does, so the
 -- DRG stays with the agent.
@@ -54,7 +49,7 @@ createWalletSeed :: DB.Connection -> ByteString -> IO WalletSeed
 createWalletSeed db seed = do
   DB.execute db "INSERT INTO wallet_seeds (seed) VALUES (?)" (Only seed)
   sId <- insertedRowId db
-  pure WalletSeed {wsId = SeedId sId, wsEntropy = seed, wsBackedUp = False}
+  pure WalletSeed {wsId = SeedId sId, wsEntropy = seed}
 
 getAccountRef :: DB.Connection -> User -> IO (Maybe AccountRef)
 getAccountRef db User {userId} = do
