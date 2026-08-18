@@ -153,6 +153,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
           Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
           Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
+          Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -323,6 +324,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
           Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
           Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
+          Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

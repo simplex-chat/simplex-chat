@@ -1475,7 +1475,7 @@
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet kivonata különbözik.</string>
-    <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
+    <string name="these_settings_are_for_your_current_profile">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információkat a <font color="#0088ff">GitHub-tárolónkban</font> talál.]]></string>
     <string name="error_showing_content">Hiba történt a tartalom megjelenítésekor</string>

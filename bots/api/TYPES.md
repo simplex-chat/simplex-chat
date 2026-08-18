@@ -4367,6 +4367,7 @@ Handshake:
 - sendRcptsContacts: bool
 - sendRcptsSmallGroups: bool
 - autoAcceptMemberContacts: bool
+- autoAcceptGroupInvitations: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - userChatRelay: bool
 - clientService: bool

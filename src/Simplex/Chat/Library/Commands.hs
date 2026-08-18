@@ -506,6 +506,12 @@ processChatCommand cxt nm = \case
     withFastStore' $ \db -> updateUserAutoAcceptMemberContacts db user' onOff
     ok user
   SetUserAutoAcceptMemberContacts onOff -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserAutoAcceptMemberContacts userId onOff
+  APISetUserAutoAcceptGroupInvitations userId' onOff -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withFastStore' $ \db -> updateUserAutoAcceptGroupInvitations db user' onOff
+    ok user
+  SetUserAutoAcceptGroupInvitations onOff -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserAutoAcceptGroupInvitations userId onOff
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -5433,6 +5439,8 @@ chatCommandP =
       "/set receipts groups " *> (SetUserGroupReceipts <$> receiptSettings),
       "/_set accept member contacts " *> (APISetUserAutoAcceptMemberContacts <$> A.decimal <* A.space <*> onOffP),
       "/set accept member contacts " *> (SetUserAutoAcceptMemberContacts <$> onOffP),
+      "/_set accept group invitations " *> (APISetUserAutoAcceptGroupInvitations <$> A.decimal <* A.space <*> onOffP),
+      "/set accept group invitations " *> (SetUserAutoAcceptGroupInvitations <$> onOffP),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),

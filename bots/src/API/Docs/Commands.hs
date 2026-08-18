@@ -154,7 +154,8 @@ chatCommandsDocsData =
         ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode"),
         ("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
         ("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
-        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "onOff")
+        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "onOff"),
+        ("APISetUserAutoAcceptGroupInvitations", [], "Set auto-accept group invitations.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept group invitations " <> Param "userId" <> " " <> OnOff "onOff")
         -- ("APIChatItemsRead", [], "Mark items as read.", ["CRItemsReadForChat"], [], Nothing, ""),
         -- ("APIChatRead", [], "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", [], "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),
@@ -297,6 +298,7 @@ cliCommands =
     "SetUserFeature",
     "SetUserGroupReceipts",
     "SetUserAutoAcceptMemberContacts",
+    "SetUserAutoAcceptGroupInvitations",
     "SetUserTimedMessages",
     "ShareMyAddress",
     "SharePublicGroup",
