@@ -12,7 +12,7 @@ import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, when, void)
 import qualified Data.Aeson as J
 import qualified Data.Text as T
 import Directory.Captcha
@@ -52,6 +52,7 @@ directoryServiceTests = do
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
     it "should NOT de-list if another member leaves the group" testNotDelistedMemberLeaves
     it "should NOT de-list if another member is removed from the group" testNotDelistedMemberRemoved
+    it "should NOT de-list if the owner rejoins via the group link and leaves the second membership" testNotDelistedOwnerRejoinsViaLink
     it "should de-list if service is removed from the group" testDelistedServiceRemoved
     it "should de-list if group is deleted" testDelistedGroupDeleted
     it "should de-list/re-list when service/owner roles change" testDelistedRoleChanges
@@ -696,6 +697,56 @@ testNotDelistedMemberRemoved ps =
         cath `connectVia` dsLink
         cath #> "@'SimpleX Directory_1' privacy"
         groupFoundN_ "_1" Nothing 2 cath "privacy"
+
+-- Reproduces the de-listing bug where a non-owner member associated with the
+-- registration owner's contact (via the probe-and-merge mechanism) de-lists the
+-- group when it leaves. The owner joins the directory-managed link a second time
+-- (a single client owning both connection ends completes the merge with no
+-- modified client), then leaves that second membership while remaining the owner.
+testNotDelistedOwnerRejoinsViaLink :: HasCallStack => TestParams -> IO ()
+testNotDelistedOwnerRejoinsViaLink ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      submitGroup bob "privacy" "Privacy"
+      groupAccepted bob "privacy" 1
+      welcomeWithLink <- completeRegistration superUser bob "privacy" "Privacy" 1
+      let groupLink = dropStrPrefix "Link to join the group privacy: " welcomeWithLink
+      -- turn off the captcha filter so the owner's re-join is not screened
+      bob #> "@'SimpleX Directory' /filter 1 off"
+      bob <# "'SimpleX Directory'> > /filter 1 off"
+      bob <## "      Spam filter settings for group privacy set to:"
+      bob <## "- reject long/inappropriate names: disabled"
+      bob <## "- pass captcha to join: disabled"
+      bob <## ""
+      bob <## "/'filter 1 name' - enable name filter"
+      bob <## "/'filter 1 captcha' - enable captcha challenge"
+      bob <## "/'filter 1 name captcha' - enable both"
+      -- the registration owner connects to the directory-managed link again,
+      -- creating a second membership that the probe-and-merge mechanism
+      -- associates with the owner's own contact on the directory service
+      bob ##> ("/c " <> groupLink)
+      bob <## "connection request sent!"
+      bob <## "#privacy_1: joining the group..."
+      bob <## "#privacy_1: you joined the group"
+      bob
+        <### [ "#privacy: 'SimpleX Directory' added bob_1 (Bob) to the group (connecting...)",
+               "contact and member are merged: 'SimpleX Directory', #privacy_1 'SimpleX Directory_1'",
+               "use @'SimpleX Directory' <message> to send messages",
+               "#privacy_1: member bob_2 (Bob) is connected",
+               "#privacy: new member bob_1 is connected"
+             ]
+      -- allow the directory service to complete the contact/member merge that
+      -- associates the second membership (bob_1) with bob's contact
+      threadDelay 3000000
+      -- owner leaves the second membership, which is not the owner member
+      bob ##> "/l privacy_1"
+      bob <## "#privacy_1: you left the group"
+      bob <## "use /d #privacy_1 to delete the group"
+      bob <## "#privacy: bob_1 left the group"
+      -- the group must remain listed: the leaving member is not the owner member
+      (superUser </)
+      groupFound bob "privacy"
 
 testDelistedServiceRemoved :: HasCallStack => TestParams -> IO ()
 testDelistedServiceRemoved ps =

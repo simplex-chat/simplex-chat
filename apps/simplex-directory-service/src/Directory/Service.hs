@@ -323,10 +323,10 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     DEPendingMember g m -> dePendingMember g m
     DEPendingMemberMsg g m ciId t -> dePendingMemberMsg g m ciId t
     DEGroupItemProhibited g m ciId gf -> when prohibitedToObserver $ deGroupItemProhibited g m ciId gf
-    DEContactRoleChanged g ctId role -> deContactRoleChanged g ctId role
+    DEContactRoleChanged g ctId gmId role -> deContactRoleChanged g ctId gmId role
     DEServiceRoleChanged g role -> deServiceRoleChanged g role
-    DEContactRemovedFromGroup ctId g -> deContactRemovedFromGroup ctId g
-    DEContactLeftGroup ctId g -> deContactLeftGroup ctId g
+    DEContactRemovedFromGroup ctId gmId g -> deContactRemovedFromGroup ctId gmId g
+    DEContactLeftGroup ctId gmId g -> deContactLeftGroup ctId gmId g
     DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
     DEGroupDeleted g -> deGroupDeleted g
     DEChatLinkReceived {contact = ct, chatLink, ownerSig} -> deChatLinkReceived ct chatLink ownerSig
@@ -350,6 +350,15 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     notifyAdminUsers s = withAdminUsers $ \contactId -> sendMessage' cc contactId s
     notifyOwner = sendMessage' cc . dbContactId
     ctId `isOwner` GroupReg {dbContactId} = ctId == dbContactId
+    -- Whether the leaving/removed/role-changed member is the registration owner.
+    -- Comparing by member id (not contact id) is required because a non-owner
+    -- member can be associated with the owner's contact by the probe-and-merge
+    -- mechanism, which would otherwise make its departure de-list the group.
+    -- Registrations recorded before owner_member_id existed keep the contact-id
+    -- comparison.
+    isOwnerMember :: GroupReg -> GroupMemberId -> ContactId -> Bool
+    isOwnerMember GroupReg {dbContactId, dbOwnerMemberId} gmId ctId =
+      ctId == dbContactId && maybe True (gmId ==) dbOwnerMemberId
     withGroupReg :: GroupInfo -> Text -> (GroupReg -> IO ()) -> IO ()
     withGroupReg GroupInfo {groupId, localDisplayName} err action =
       getGroupReg cc groupId >>= \case
@@ -806,13 +815,13 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               sendToApprove g' gr (n + 1)
             _ -> pure ()
 
-    deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
-    deContactRoleChanged g@GroupInfo {groupId, membership = GroupMember {memberRole = serviceRole}} ctId contactRole = do
+    deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberId -> GroupMemberRole -> IO ()
+    deContactRoleChanged g@GroupInfo {groupId, membership = GroupMember {memberRole = serviceRole}} ctId gmId contactRole = do
       logInfo $ "contact ID " <> tshow ctId <> " role changed in group " <> viewGroupName g <> " to " <> tshow contactRole
       withGroupReg g "contact role changed" $ \gr@GroupReg {groupRegStatus} -> do
         let userGroupRef = userGroupReference gr g
             uCtRole = "Your role in the group " <> userGroupRef <> " is changed to " <> ctRole
-        when (ctId `isOwner` gr) $
+        when (isOwnerMember gr gmId ctId) $
           case groupRegStatus of
             GRSSuspendedBadRoles | rStatus == GRSOk ->
               setGroupStatus notifyAdminUsers env cc groupId GRSActive $ \gr' -> do
@@ -861,23 +870,23 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           getOwnerGroupMember groupId gr
             >>= mapM_ (\cm@GroupMember {memberRole} -> when (memberRole == GROwner && memberActive cm) action)
 
-    deContactRemovedFromGroup :: ContactId -> GroupInfo -> IO ()
-    deContactRemovedFromGroup ctId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
+    deContactRemovedFromGroup :: ContactId -> GroupMemberId -> GroupInfo -> IO ()
+    deContactRemovedFromGroup ctId gmId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
       let gt = maybe "group" groupTypeStr' pg_
       logInfo $ "contact ID " <> tshow ctId <> " removed from group " <> viewGroupName g
       withGroupReg g "contact removed" $ \gr ->
-        when (ctId `isOwner` gr) $
+        when (isOwnerMember gr gmId ctId) $
           setGroupStatus notifyAdminUsers env cc groupId GRSRemoved $ \gr' -> do
             notifyOwner gr' $ "You are removed from the " <> gt <> " " <> userGroupReference gr' g <> ".\n\nThe " <> gt <> " is no longer listed in the directory."
             notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " owner is removed)."
             when (isJust pg_) $ leavePublicGroup g
 
-    deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
-    deContactLeftGroup ctId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
+    deContactLeftGroup :: ContactId -> GroupMemberId -> GroupInfo -> IO ()
+    deContactLeftGroup ctId gmId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
       let gt = maybe "group" groupTypeStr' pg_
       logInfo $ "contact ID " <> tshow ctId <> " left group " <> viewGroupName g
       withGroupReg g "contact left" $ \gr ->
-        when (ctId `isOwner` gr) $
+        when (isOwnerMember gr gmId ctId) $
           setGroupStatus notifyAdminUsers env cc groupId GRSRemoved $ \gr' -> do
             notifyOwner gr' $ "You left the " <> gt <> " " <> userGroupReference gr' g <> ".\n\nThe " <> gt <> " is no longer listed in the directory."
             notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " owner left)."
