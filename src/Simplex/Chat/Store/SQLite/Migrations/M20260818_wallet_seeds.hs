@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20260806_wallet_seeds where
+module Simplex.Chat.Store.SQLite.Migrations.M20260818_wallet_seeds where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
@@ -10,8 +10,8 @@ import Database.SQLite.Simple.QQ (sql)
 -- The schema allows several seeds, with each chat profile bound to exactly one
 -- of them plus its own BIP-44 account index. Only the single-seed case is
 -- reachable today.
-m20260806_wallet_seeds :: Query
-m20260806_wallet_seeds =
+m20260818_wallet_seeds :: Query
+m20260818_wallet_seeds =
   [sql|
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,8 +30,8 @@ ALTER TABLE users ADD COLUMN wallet_account_index INTEGER;
 CREATE INDEX idx_users_wallet_seed_id ON users(wallet_seed_id);
 |]
 
-down_m20260806_wallet_seeds :: Query
-down_m20260806_wallet_seeds =
+down_m20260818_wallet_seeds :: Query
+down_m20260818_wallet_seeds =
   [sql|
 DROP INDEX idx_users_wallet_seed_id;
 
