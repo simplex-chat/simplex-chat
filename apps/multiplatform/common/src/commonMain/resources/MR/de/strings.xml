@@ -1364,7 +1364,7 @@
     <string name="v5_2_favourites_filter_descr">Nach ungelesenen und favorisierten Chats filtern.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.</string>
     <string name="receipts_contacts_override_disabled">Das Senden von Bestätigungen an %d Kontakte ist deaktiviert</string>
-    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Chat-Profil</string>
+    <string name="these_settings_are_for_your_current_profile">Diese Einstellungen gelten für Ihr aktuelles Chat-Profil</string>
     <string name="receipts_section_description_1">Sie können in den Kontakt- und Gruppeneinstellungen überschrieben werden.</string>
     <string name="receipts_section_contacts">Kontakte</string>
     <string name="receipts_contacts_title_disable">Bestätigungen deaktivieren\?</string>

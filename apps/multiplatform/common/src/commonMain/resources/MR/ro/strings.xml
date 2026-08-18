@@ -1999,7 +1999,7 @@
     <string name="call_desktop_permission_denied_title">Pentru a efectua apeluri, permiteți utilizarea microfonului. Încheiați apelul și încercați să sunați din nou.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Când sunt activați mai mulți operatori, niciunul dintre ei nu are metadate pentru a afla cine comunică cu cine.</string>
     <string name="icon_descr_video_on">Video pornit</string>
-    <string name="receipts_section_description">Aceste setări sunt pentru profilul tău actual</string>
+    <string name="these_settings_are_for_your_current_profile">Aceste setări sunt pentru profilul tău actual</string>
     <string name="privacy_chat_list_open_links_yes">Da</string>
     <string name="settings_message_shape_tail">Coada</string>
     <string name="settings_section_title_use_from_desktop">Utilizare de pe desktop</string>

@@ -1106,7 +1106,7 @@
     <string name="tap_to_activate_profile">انقر لتنشيط ملف التعريف.</string>
     <string name="v4_5_transport_isolation">عزل النقل</string>
     <string name="this_string_is_not_a_connection_link">هذه السلسلة ليست رابط اتصال!</string>
-    <string name="receipts_section_description">هذه الإعدادات لملف تعريفك الحالي</string>
+    <string name="these_settings_are_for_your_current_profile">هذه الإعدادات لملف تعريفك الحالي</string>
     <string name="receipts_section_description_1">يمكن تجاوزها في إعدادات الاتصال والمجموعة.</string>
     <string name="network_option_tcp_connection_timeout">انتهت مهلة اتصال TCP</string>
     <string name="v4_5_private_filenames_descr">لحماية المنطقة الزمنية، تستخدم ملفات الصور / الصوت التوقيت العالمي المنسق (UTC).</string>

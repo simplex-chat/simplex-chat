@@ -1278,7 +1278,7 @@
     <string name="fix_connection_not_supported_by_group_member">グループメンバーによる修正はサポートされていません</string>
     <string name="receipts_section_contacts">連絡先</string>
     <string name="receipts_section_description_1">これらは連絡先とグループの設定が優先されます。</string>
-    <string name="receipts_section_description">これらの設定は現在のプロファイル用です</string>
+    <string name="these_settings_are_for_your_current_profile">これらの設定は現在のプロファイル用です</string>
     <string name="receipts_contacts_title_enable">配信通知を有効？</string>
     <string name="sender_at_ts">%s : %s</string>
     <string name="fix_connection">接続を修正</string>

@@ -756,7 +756,7 @@
     <string name="self_destruct_new_display_name">نام نمایشی جدید:</string>
     <string name="if_you_enter_self_destruct_code">اگر کد عبور خودتخریبی خود را زمان باز کردن برنامه وارد کنید:</string>
     <string name="all_app_data_will_be_cleared">تمام اطلاعات برنامه حذف می‌شود.</string>
-    <string name="receipts_section_description">این تنظیمات برای پروفایل فعلی شما هستند</string>
+    <string name="these_settings_are_for_your_current_profile">این تنظیمات برای پروفایل فعلی شما هستند</string>
     <string name="receipts_contacts_override_enabled">ارسال رسید برای %d مخاطب فعال است</string>
     <string name="receipts_contacts_disable_for_all">غیرفعال برای همه</string>
     <string name="receipts_groups_enable_for_all">فعال برای همه گروه‌ها</string>

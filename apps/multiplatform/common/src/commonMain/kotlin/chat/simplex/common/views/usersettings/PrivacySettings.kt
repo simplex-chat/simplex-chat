@@ -366,7 +366,7 @@ private fun AutoAcceptSection(
   SectionTextFooter(
     remember(currentUser.displayName) {
       buildAnnotatedString {
-        append(generalGetString(MR.strings.receipts_section_description) + " ")
+        append(generalGetString(MR.strings.these_settings_are_for_your_current_profile) + " ")
         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
           append(currentUser.displayName)
         }
@@ -403,7 +403,7 @@ private fun DeliveryReceiptsSection(
   SectionTextFooter(
     remember(currentUser.displayName) {
       buildAnnotatedString {
-        append(generalGetString(MR.strings.receipts_section_description) + " ")
+        append(generalGetString(MR.strings.these_settings_are_for_your_current_profile) + " ")
         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
           append(currentUser.displayName)
         }

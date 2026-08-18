@@ -1558,7 +1558,7 @@
   <string name="if_you_enter_passcode_data_removed">If you enter this passcode when opening the app, all app data will be irreversibly removed!</string>
   <string name="set_passcode">Set passcode</string>
   <string name="this_setting_is_for_your_current_profile">This setting is for your current profile</string>
-  <string name="receipts_section_description">These settings are for your current profile</string>
+  <string name="these_settings_are_for_your_current_profile">These settings are for your current profile</string>
   <string name="receipts_section_description_1">They can be overridden in contact and group settings.</string>
   <string name="receipts_section_contacts">Contacts</string>
   <string name="receipts_contacts_title_enable">Enable receipts?</string>

@@ -1520,7 +1520,7 @@
     <string name="member_info_member_blocked">bloqueado</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">O código que você escaneou não é um QR code SimpleX.</string>
     <string name="unable_to_open_browser_desc">O navegador padrão é necessário para chamadas. Configure o navegador padrão no sistema e compartilhe mais informações com os desenvolvedores.</string>
-    <string name="receipts_section_description">Essas configurações são para o seu perfil atual</string>
+    <string name="these_settings_are_for_your_current_profile">Essas configurações são para o seu perfil atual</string>
     <string name="video_decoding_exception_desc">O vídeo não pode ser decodificado. Por favor, tente com um vídeo diferente ou contate os desenvolvedores.</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Este é o seu próprio link de uso único!</string>
     <string name="remote_ctrl_error_timeout">Tempo limite atingido durante a conexão com o desktop</string>

@@ -1283,7 +1283,7 @@
     <string name="receipts_contacts_override_disabled">El envío de confirmaciones está desactivado para %d contactos</string>
     <string name="receipts_contacts_override_enabled">El envío de confirmaciones está activado para %d contactos</string>
     <string name="send_receipts">Enviar confirmaciones</string>
-    <string name="receipts_section_description">Esta configuración afecta a tu perfil actual</string>
+    <string name="these_settings_are_for_your_current_profile">Esta configuración afecta a tu perfil actual</string>
     <string name="enable_receipts_all">Activar</string>
     <string name="receipts_contacts_title_disable">¿Desactivar confirmaciones\?</string>
     <string name="receipts_contacts_title_enable">¿Activar confirmaciones\?</string>
