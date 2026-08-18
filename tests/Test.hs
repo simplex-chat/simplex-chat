@@ -5,6 +5,7 @@
 
 import Bots.BadgeServiceTests
 import Bots.BroadcastTests
+import Bots.NamesServiceTests (namesProtocolTests, namesServiceTests)
 import Bots.DirectoryTests
 import ChatClient
 import ChatTests
@@ -66,6 +67,7 @@ main = do
       describe "Supporter badges" badgeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
+      describe "SimpleX names protocol" namesProtocolTests
       describe "Member relations" memberRelationsTests
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests
@@ -90,6 +92,7 @@ main = do
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
           xdescribe'' "SimpleX Badge service bot" badgeServiceTests
+          xdescribe'' "SimpleX Names service" namesServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans

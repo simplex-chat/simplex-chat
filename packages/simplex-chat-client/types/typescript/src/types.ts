@@ -1080,6 +1080,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
   | ChatErrorType.SimplexDomainNotReady
+  | ChatErrorType.NameRegistrationFailed
   | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
@@ -1159,6 +1160,7 @@ export namespace ChatErrorType {
     | "chatStoreChanged"
     | "invalidConnReq"
     | "simplexDomainNotReady"
+    | "nameRegistrationFailed"
     | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
@@ -1318,6 +1320,12 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
+  }
+
+  export interface NameRegistrationFailed extends Interface {
+    type: "nameRegistrationFailed"
+    nameRegCode: string
+    nameRegMessage?: string
   }
 
   export interface NotResolvedLocally extends Interface {
