@@ -69,7 +69,7 @@
     <string name="error_deleting_pending_contact_connection">Erreur lors de la suppression de la connexion en attente</string>
     <string name="error_changing_address">Erreur de changement d\'adresse</string>
     <string name="error_smp_test_failed_at_step">Échec du test à l\'étape %s.</string>
-    <string name="error_smp_test_certificate">L\'empreinte de l\'adresse du serveur ne correspond pas au certificat.</string>
+    <string name="error_smp_test_certificate">L\'empreinte numérique de l\'adresse du serveur ne correspond pas au certificat.</string>
     <string name="smp_server_test_connect">Se connecter</string>
     <string name="smp_server_test_create_queue">Créer une file d\'attente</string>
     <string name="smp_server_test_secure_queue">File d\'attente sécurisée</string>
@@ -196,7 +196,7 @@
     <string name="share_one_time_link">Créer un lien d\'invitation unique</string>
     <string name="add_contact_or_create_group">Commencer une nouvelle conversation</string>
     <string name="connect_via_link_or_qr">Se connecter via un lien / code QR</string>
-    <string name="scan_QR_code">Scanner un code QR</string>
+    <string name="scan_QR_code">Scanner un QR code</string>
     <string name="to_share_with_your_contact">(à partager avec votre contact)</string>
     <string name="create_group">Créer un groupe secret</string>
     <string name="from_gallery_button">Depuis la Phototèque</string>
@@ -207,7 +207,7 @@
     <string name="chat_help_tap_button">Appuyez sur le bouton</string>
     <string name="to_connect_via_link_title">Pour se connecter via un lien</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si vous avez reçu un lien d\'invitation SimpleX Chat, vous pouvez l\'ouvrir dans votre navigateur :</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 bureau : scanner le code QR affiché depuis l\'app, via <b>Scanner le code QR</b>.]]></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 ordinateur : scannez le QR code affiché depuis l’application, via <b>Scanner le QR code</b>.]]></string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobile : appuyez sur <b>Ouvrir dans l\'application</b>, puis appuyez sur <b>se connecter</b> dans l\'app.]]></string>
     <string name="accept_contact_incognito_button">Accepter en incognito</string>
     <string name="reject_contact_button">Rejeter</string>
@@ -268,7 +268,7 @@
 \nVous pouvez annuler la connexion et supprimer le contact (et réessayer plus tard avec un autre lien).</string>
     <string name="contact_wants_to_connect_with_you">veut établir une connexion !</string>
     <string name="icon_descr_profile_image_placeholder">image de profil (placeholder)</string>
-    <string name="image_descr_qr_code">Code QR</string>
+    <string name="image_descr_qr_code">QR Code</string>
     <string name="image_descr_simplex_logo">Logo SimpleX</string>
     <string name="icon_descr_email">E-mail</string>
     <string name="connect_button">Se connecter</string>
@@ -310,7 +310,7 @@
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, <b>montrez le code QR lors d\'un appel vidéo</b>, ou partagez le lien.]]></string>
     <string name="scan_code_from_contacts_app">Scannez le code de sécurité depuis l\'application de votre contact.</string>
     <string name="to_verify_compare">Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, vous pouvez <b>scanner un code QR lors d\'un appel vidéo</b>, ou votre contact peut partager un lien d\'invitation.]]></string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, vous pouvez <b>scanner un QR code lors d\'un appel vidéo</b>, ou votre contact peut partager un lien d\'invitation.]]></string>
     <string name="smp_servers_add">Ajouter un serveur</string>
     <string name="markdown_in_messages">Markdown dans les messages</string>
     <string name="smp_servers_preset_add">Ajouter des serveurs prédéfinis</string>
@@ -325,7 +325,7 @@
     <string name="smp_servers">Serveurs SMP</string>
     <string name="smp_servers_test_servers">Tester les serveurs</string>
     <string name="smp_servers_save">Enregistrer les serveurs</string>
-    <string name="smp_servers_scan_qr">Scanner un code QR de serveur</string>
+    <string name="smp_servers_scan_qr">Scanner un QR code de serveur</string>
     <string name="smp_servers_use_server">Utiliser ce serveur</string>
     <string name="smp_servers_use_server_for_new_conn">Utiliser pour les nouvelles connexions</string>
     <string name="smp_servers_add_to_another_device">Ajouter à un autre appareil</string>
@@ -932,7 +932,7 @@
     <string name="error_updating_link_for_group">Erreur lors de la mise à jour du lien de groupe</string>
     <string name="initial_member_role">Rôle initial</string>
     <string name="observer_cant_send_message_desc">Veuillez contacter l\'administrateur du groupe.</string>
-    <string name="observer_cant_send_message_title">Vous ne pouvez pas envoyer de messages !</string>
+    <string name="observer_cant_send_message_title">vous êtes observateur</string>
     <string name="group_member_role_observer">observateur</string>
     <string name="language_system">Système</string>
     <string name="smp_save_servers_question">Enregistrer les serveurs ?</string>
@@ -1142,7 +1142,7 @@
     <string name="profile_update_will_be_sent_to_contacts">La mise à jour du profil sera envoyée à vos contacts.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Pour en savoir plus, consultez le <font color="#0088ff">Guide de l\'utilisateur</font>.]]></string>
     <string name="save_auto_accept_settings">Enregistrer les paramètres de l\'adresse SimpleX</string>
-    <string name="scan_qr_to_connect_to_contact">Pour se connecter, votre contact peut scanner un code QR ou utiliser un lien dans l\'app.</string>
+    <string name="scan_qr_to_connect_to_contact">Pour se connecter, votre contact peut scanner un QR code ou utiliser un lien dans l\'app.</string>
     <string name="app_passcode_replaced_with_self_destruct">Le code d\'accès de l\'application est remplacé par un code d\'autodestruction.</string>
     <string name="enable_self_destruct">Activer l\'autodestruction</string>
     <string name="empty_chat_profile_is_created">Un profil de messagerie vierge portant le nom fourni est créé et l\'application s\'ouvre normalement.</string>
@@ -1435,7 +1435,7 @@
     <string name="only_one_device_can_work_at_the_same_time">Un seul appareil peut fonctionner en même temps</string>
     <string name="v5_4_link_mobile_desktop">Liez vos applications mobiles et de bureau ! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Via un protocole sécurisé de cryptographie post-quantique.</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Ouvrez <i>Utiliser depuis le bureau</i> dans l\'application mobile et scannez le code QR.]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Ouvrez <i>Utiliser depuis l’ordinateur</i> dans l’application mobile et scannez le QR code.]]></string>
     <string name="v5_4_block_group_members_descr">Pour cacher les messages indésirables.</string>
     <string name="desktop_incompatible_version">Version incompatible</string>
     <string name="new_desktop"><![CDATA[<i>(nouveau)</i>]]></string>
@@ -1457,7 +1457,7 @@
     <string name="connecting_to_desktop">Connexion au PC</string>
     <string name="desktop_devices">Ordinateurs</string>
     <string name="link_a_mobile">Lier un portable</string>
-    <string name="settings_section_title_use_from_desktop">Accès au bureau</string>
+    <string name="settings_section_title_use_from_desktop">Utiliser depuis l’ordinateur</string>
     <string name="connected_mobile">Mobile connecté</string>
     <string name="session_code">Code de session</string>
     <string name="desktop_connection_terminated">Connexion terminée</string>
@@ -1474,7 +1474,7 @@
     <string name="bad_desktop_address">Adresse du PC non valide</string>
     <string name="paste_desktop_address">Coller l\'adresse du PC</string>
     <string name="verify_code_with_desktop">Vérifier le code avec le PC</string>
-    <string name="scan_qr_code_from_desktop">Scannez le code QR du bureau</string>
+    <string name="scan_qr_code_from_desktop">Scannez le QR code de l\'ordinateur</string>
     <string name="devices">Appareils</string>
     <string name="v5_4_more_things_descr">- option pour notifier les contacts supprimés.
 \n- noms de profil avec espaces.
@@ -1509,7 +1509,7 @@
     <string name="disable_sending_recent_history">Ne pas envoyer d\'historique aux nouveaux membres.</string>
     <string name="or_show_this_qr_code">Ou montrez ce code</string>
     <string name="recent_history_is_sent_to_new_members">Les 100 derniers messages sont envoyés aux nouveaux membres.</string>
-    <string name="code_you_scanned_is_not_simplex_link_qr_code">Le code scanné n\'est pas un code QR de lien SimpleX.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">Le code scanné n\'est pas un QR code de lien SimpleX.</string>
     <string name="the_text_you_pasted_is_not_a_link">Le texte collé n\'est pas un lien SimpleX.</string>
     <string name="enable_camera_access">Autoriser l\'accès à la caméra</string>
     <string name="you_can_view_invitation_link_again">Vous pouvez à nouveau consulter le lien d\'invitation dans les détails de la connexion.</string>
@@ -1521,7 +1521,7 @@
     <string name="new_chat">Nouvelle conversation</string>
     <string name="loading_chats">Chargement des conversations…</string>
     <string name="creating_link">Création d\'un lien…</string>
-    <string name="or_scan_qr_code">Ou scanner le code QR</string>
+    <string name="or_scan_qr_code">Ou scannez le QR code</string>
     <string name="invalid_qr_code">Code QR invalide</string>
     <string name="add_contact_tab">Ajouter un contact</string>
     <string name="tap_to_scan">Appuyez pour scanner</string>
@@ -1628,7 +1628,7 @@
     <string name="migrate_to_device_chat_migrated">Messagerie transférée !</string>
     <string name="migrate_from_device_check_connection_and_try_again">Vérifiez votre connexion internet et réessayez</string>
     <string name="migrate_to_device_download_failed">Échec du téléchargement</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Sélectionnez <i>Transférer depuis un autre appareil</i> sur le nouvel appareil et scanner le code QR.]]></string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Sélectionnez <i>Transférer depuis un autre appareil</i> sur le nouvel appareil et scanner le QR code.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Confirmer les paramètres réseau</string>
     <string name="migrate_from_device_confirm_upload">Confirmer la transmission</string>
     <string name="migrate_from_device_creating_archive_link">Création d\'un lien d\'archive</string>
@@ -1862,7 +1862,7 @@
     <string name="app_check_for_updates_button_download">Téléchargement %s (%s)</string>
     <string name="servers_info_reconnect_server_error">Erreur de reconnexion au serveur</string>
     <string name="member_info_member_inactive">inactif</string>
-    <string name="scan_paste_link">Scanner / Coller un lien</string>
+    <string name="scan_paste_link">Coller le lien / Scanner</string>
     <string name="member_inactive_desc">Le message peut être transmis plus tard si le membre devient actif.</string>
     <string name="servers_info_reconnect_servers_message">Reconnecter tous les serveurs connectés pour forcer la livraison des messages. Cette méthode utilise du trafic supplémentaire.</string>
     <string name="servers_info_transport_sessions_section_header">Sessions de transport</string>
@@ -2057,7 +2057,7 @@
     <string name="switching_profile_error_title">Erreur lors du changement de profil</string>
     <string name="select_chat_profile">Sélectionner un profil de messagerie</string>
     <string name="new_chat_share_profile">Partager le profil</string>
-    <string name="switching_profile_error_message">Votre connexion a été déplacée vers %s mais une erreur inattendue s\'est produite lors de la redirection vers le profil.</string>
+    <string name="switching_profile_error_message">Votre connexion a été transférée vers %s, mais une erreur s\'est produite lors du changement de profil.</string>
     <string name="network_proxy_auth_mode_no_auth">Ne pas utiliser d\'identifiants avec le proxy.</string>
     <string name="network_proxy_incorrect_config_title">Erreur lors de l\'enregistrement du proxy</string>
     <string name="network_proxy_password">Mot de passe</string>
@@ -2553,4 +2553,66 @@
     <string name="button_channel_relays">Relais de messagerie</string>
     <string name="button_support_chat_member">Discuter avec un membre</string>
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Les membres seront retirés de la conversation ; cette action est irréversible !</string>
+    <string name="network_error_unknown_ca">L\'empreinte numérique dans l\'adresse du serveur ne correspond pas au certificat : %1$s.</string>
+    <string name="private_routing_timeout">Délai d\'attente dépassé pour le routage privé</string>
+    <string name="smp_proxy_error_unknown_ca">L’empreinte de l’adresse du serveur de transfert ne correspond pas au certificat : %1$s.</string>
+    <string name="proxy_destination_error_unknown_ca">L’empreinte de l’adresse du serveur de destination ne correspond pas au certificat : %1$s.</string>
+    <string name="unsupported_channel_name">Nom de canal non pris en charge</string>
+    <string name="unsupported_contact_name">Nom de contact non pris en charge</string>
+    <string name="channel_name_requires_newer_app_version">La connexion via un nom de canal nécessite une version plus récente de l\'application.</string>
+    <string name="contact_name_requires_newer_app_version">La connexion via un nom de contact nécessite une version plus récente de l\'application.</string>
+    <string name="please_upgrade_the_app">Veuillez mettre à jour l\'application.</string>
+    <string name="simplex_name_error">Erreur de nom SimpleX</string>
+    <string name="simplex_name_no_servers_desc">Aucun de vos serveurs n\'est configuré pour résoudre les noms SimpleX. Configurez des serveurs ou utilisez un lien de connexion.</string>
+    <string name="simplex_name_server_no_resolver_desc">Le serveur %1$s ne prend pas en charge la résolution de nom. Configurez les serveurs ou utilisez un lien de connexion.</string>
+    <string name="simplex_name_not_found">Nom introuvable</string>
+    <string name="simplex_name_not_found_desc">Ce nom SimpleX n\'est pas enregistré. Veuillez vérifier le nom.</string>
+    <string name="tap_to_open">Appuyez pour ouvrir</string>
+    <string name="error_sharing_channel">Erreur lors du partage du canal</string>
+    <string name="error_sharing_address">Erreur lors du partage de l\'adresse</string>
+    <string name="owner_verification_passed">Signature du lien vérifiée.</string>
+    <string name="owner_verification_failed">⚠️ Échec de la vérification de la signature : %s.</string>
+    <string name="compose_view_join_group">Rejoindre le groupe</string>
+    <string name="compose_view_join_channel">Rejoindre le canal</string>
+    <string name="compose_view_broadcast">Diffusion</string>
+    <string name="compose_view_add_message">Ajouter un message</string>
+    <string name="cant_send_message_alert_title">Vous ne pouvez pas envoyer de messages !</string>
+    <string name="cant_send_message_contact_not_ready">contact non prêt</string>
+    <string name="disable_sending_member_reports">Interdire le signalement de messages aux modérateurs.</string>
+    <string name="group_members_can_send_reports_channel">Les abonnés peuvent signaler des messages aux modérateurs.</string>
+    <string name="you_are_subscriber">vous êtes abonné</string>
+    <string name="cant_send_message_rejected">demande d’adhésion refusée</string>
+    <string name="cant_send_message_group_deleted">le groupe est supprimé.</string>
+    <string name="cant_send_message_you_left">vous êtes parti</string>
+    <string name="cant_send_message_generic">impossible d\'envoyer des messages</string>
+    <string name="cant_broadcast_message">impossible de diffuser</string>
+    <string name="cant_send_message_member_has_old_version">le membre utilise une ancienne version</string>
+    <string name="cant_send_commands_alert_text">Vous devez être connecté pour envoyer des commandes.</string>
+    <string name="sign_message">Signer le message</string>
+    <string name="sign_message_desc">La signature prouve que vous êtes l\'auteur de ce message et ne peut être déniée ultérieurement.</string>
+    <string name="sign_messages">Signer les messages</string>
+    <string name="require_message_signatures">Exiger la signature des messages.</string>
+    <string name="do_not_require_message_signatures">Ne pas exiger la signature des messages.</string>
+    <string name="message_signatures_are_required">La signature des messages est requise.</string>
+    <string name="message_signatures_are_not_required">La signature des messages n\'est pas requise.</string>
+    <string name="show_signature">Afficher la signature</string>
+    <string name="show_encryption">Afficher le chiffrement</string>
+    <string name="signature_missing_alert_title">Signature manquante</string>
+    <string name="signature_missing_alert_desc">Le canal exigeait que ce message soit signé, mais la signature est manquante.</string>
+    <string name="accept_contact_request">Accepter la demande de contact</string>
+    <string name="member_is_deleted_cant_accept_request">Le membre a été supprimé : impossible d\'accepter la demande.</string>
+    <string name="unread_mentions">Mentions non lues</string>
+    <string name="verify_simplex_name_action">Vérifier le nom</string>
+    <string name="verify_simplex_names">Vérifier les noms SimpleX</string>
+    <string name="simplex_name_not_verified">Nom SimpleX non vérifié</string>
+    <string name="simplex_name">Nom SimpleX</string>
+    <string name="your_simplex_name">Votre nom SimpleX</string>
+    <string name="set_simplex_name">Définir un nom SimpleX</string>
+    <string name="error_saving_simplex_name">Erreur lors de l\'enregistrement du nom</string>
+    <string name="simplex_name_owner_no_channel_link">Le nom SimpleX %1$s est enregistré sans lien de canal. Ajoutez un lien de canal au nom via la page d\'enregistrement.</string>
+    <string name="simplex_name_owner_no_address">Le nom SimpleX %1$s est enregistré sans adresse SimpleX. Ajoutez votre adresse SimpleX au nom via la page d\'enregistrement.</string>
+    <string name="set_user_simplex_name_footer">Permettez aux personnes de se connecter à vous via un nom enregistré avec votre adresse SimpleX.</string>
+    <string name="set_channel_simplex_name_footer">Permettez aux personnes de rejoindre via un nom enregistré avec ce lien de canal.</string>
+    <string name="full_link_button_text">Lien complet</string>
+    <string name="loading_profile">Chargement du profil…</string>
 </resources>
