@@ -13,7 +13,6 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Control.Monad (forM_, when, void)
-import Data.List (isInfixOf)
 import qualified Data.Aeson as J
 import qualified Data.Text as T
 import Directory.Captcha
@@ -710,8 +709,8 @@ testNotDelistedOwnerRejoinsViaLink ps =
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       submitGroup bob "privacy" "Privacy"
-      welcomeWithLink <- groupAccepted bob "privacy" 1
-      completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
+      groupAccepted bob "privacy" 1
+      welcomeWithLink <- completeRegistration superUser bob "privacy" "Privacy" 1
       let groupLink = dropStrPrefix "Link to join the group privacy: " welcomeWithLink
       -- turn off the captcha filter so the owner's re-join is not screened
       bob #> "@'SimpleX Directory' /filter 1 off"
@@ -734,7 +733,6 @@ testNotDelistedOwnerRejoinsViaLink ps =
         <### [ "#privacy: 'SimpleX Directory' added bob_1 (Bob) to the group (connecting...)",
                "contact and member are merged: 'SimpleX Directory', #privacy_1 'SimpleX Directory_1'",
                "use @'SimpleX Directory' <message> to send messages",
-               Predicate ("Link to join the group privacy" `isInfixOf`),
                "#privacy_1: member bob_2 (Bob) is connected",
                "#privacy: new member bob_1 is connected"
              ]

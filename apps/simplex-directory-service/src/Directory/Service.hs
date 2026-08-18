@@ -357,8 +357,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     -- Registrations recorded before owner_member_id existed keep the contact-id
     -- comparison.
     isOwnerMember :: GroupReg -> GroupMemberId -> ContactId -> Bool
-    isOwnerMember GroupReg {dbOwnerMemberId, dbContactId} gmId ctId =
-      maybe (ctId == dbContactId) (== gmId) dbOwnerMemberId
+    isOwnerMember GroupReg {dbContactId, dbOwnerMemberId} gmId ctId =
+      ctId == dbContactId && maybe True (gmId ==) dbOwnerMemberId
     withGroupReg :: GroupInfo -> Text -> (GroupReg -> IO ()) -> IO ()
     withGroupReg GroupInfo {groupId, localDisplayName} err action =
       getGroupReg cc groupId >>= \case
