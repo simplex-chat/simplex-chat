@@ -1034,8 +1034,6 @@ fun crowdfundingAvailable(): Boolean {
 
 fun isInUs(): Boolean =
   androidPlayStoreCountry.value == "US"
-      || androidPlayStoreCountry.value == "GB"
-      || androidPlayStoreCountry.value == "UK"
       || androidPlayStoreCountry.value == ""
       || androidPlayStoreCountry.value == null
 

@@ -44,7 +44,7 @@ private struct FeatureView {
 
 let isInUS = {
     let code = SKStorefront().countryCode
-    return code == "USA" || code == "GBR" || code == ""
+    return code == "USA" || code == ""
 }()
 
 private let versionDescriptions: [VersionDescription] = [
