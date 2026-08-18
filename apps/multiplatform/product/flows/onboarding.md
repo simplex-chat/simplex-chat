@@ -114,9 +114,9 @@ enum class OnboardingStage {
 2. User enters a display name (validated via `chatValidName` JNI) and optional full name.
 3. On submit, `ChatController.apiCreateActiveUser(rh, profile)` is called:
    ```kotlin
-   suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User?
+   suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, keepActiveUser: Boolean = false, ctrl: ChatCtrl? = null): User?
    ```
-4. The core command `CC.CreateActiveUser(p, pastTimestamp)` creates the user in the database.
+4. The core command `CC.CreateActiveUser(p, pastTimestamp, keepActiveUser)` creates the user in the database (onboarding always passes `keepActiveUser = false`, so the new profile becomes active).
 5. On success, `CR.ActiveUser` returns the new `User` object.
 6. `ChatModel.currentUser` is set.
 7. If the chat is not yet running, `startChat(user)` is called:

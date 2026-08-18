@@ -14,7 +14,7 @@ import SwiftUI
 // Spec: spec/api.md#ChatCommand
 enum ChatCommand: ChatCmdProtocol {
     case showActiveUser
-    case createActiveUser(profile: Profile?, pastTimestamp: Bool)
+    case createActiveUser(profile: Profile?, pastTimestamp: Bool, keepActiveUser: Bool)
     case listUsers
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
     case setAllContactReceipts(enable: Bool)
@@ -201,8 +201,8 @@ enum ChatCommand: ChatCmdProtocol {
         get {
             switch self {
             case .showActiveUser: return "/u"
-            case let .createActiveUser(profile, pastTimestamp):
-                let user = NewUser(profile: profile, pastTimestamp: pastTimestamp)
+            case let .createActiveUser(profile, pastTimestamp, keepActiveUser):
+                let user = NewUser(profile: profile, pastTimestamp: pastTimestamp, keepActiveUser: keepActiveUser)
                 return "/_create user \(encodeJSON(user))"
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
@@ -1363,6 +1363,7 @@ struct NewUser: Encodable {
     var profile: Profile?
     var pastTimestamp: Bool
     var userChatRelay: Bool = false
+    var keepActiveUser: Bool = false
 }
 
 enum ChatPagination {

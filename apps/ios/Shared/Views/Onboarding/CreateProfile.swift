@@ -29,6 +29,12 @@ enum UserProfileAlert: Identifiable {
 let MAX_BIO_LENGTH_BYTES = 160
 
 struct CreateProfile: View {
+    // When set, replaces the default create-and-activate action, so the same form can be
+    // used to create a profile for an invitation (which must not switch the active user
+    // until the prepared chat has been reassigned). Errors are still shown by this view.
+    var onSubmit: ((_ displayName: String, _ shortDescr: String?, _ image: String?) async throws -> Void)? = nil
+    /// Set while onSubmit is in flight, so the button does not stay live with nothing happening.
+    var submitting: Bool = false
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
@@ -104,7 +110,7 @@ struct CreateProfile: View {
                 Button(action: createProfile) {
                     settingsRow("checkmark", color: theme.colors.primary) { Text("Create profile") }
                 }
-                .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
+                .disabled(submitting || !canCreateProfile(displayName) || !bioFitsLimit())
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Your profile is stored on your device and only shared with your contacts.")
@@ -162,6 +168,20 @@ struct CreateProfile: View {
     private func createProfile() {
         hideKeyboard()
         let shortDescr: String? = if profileBio.isEmpty { nil } else { profileBio }
+        if let onSubmit = onSubmit {
+            let name = displayName.trimmingCharacters(in: .whitespaces)
+            let image = profileImage
+            Task {
+                do {
+                    try await onSubmit(name, shortDescr, image)
+                } catch let error {
+                    await MainActor.run {
+                        showCreateProfileAlert(showAlert: { alert = $0 }, error)
+                    }
+                }
+            }
+            return
+        }
         let profile = Profile(
             displayName: displayName.trimmingCharacters(in: .whitespaces),
             fullName: "",

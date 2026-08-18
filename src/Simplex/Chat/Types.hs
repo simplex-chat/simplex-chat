@@ -154,7 +154,11 @@ data NewUser = NewUser
   { profile :: Maybe Profile,
     pastTimestamp :: Bool,
     userChatRelay :: BoolDef,
-    clientService :: BoolDef
+    clientService :: BoolDef,
+    -- when set, the user is created without becoming active, preserving the current
+    -- one; absent/False activates it as before. The response is CRActiveUser either
+    -- way - it carries the created user, which is then not the active one.
+    keepActiveUser :: BoolDef
   }
   deriving (Show)
 

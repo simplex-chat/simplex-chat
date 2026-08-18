@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.createProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.IncognitoOptionImage
 import chat.simplex.common.views.usersettings.IncognitoView
@@ -40,6 +41,10 @@ fun ComposeContextProfilePickerView(
   val incognitoDefault = chatModel.controller.appPrefs.incognito.get()
   val users = chatModel.users.map { it.user }.filter { u -> u.activeUser || !u.hidden }
   val listExpanded = remember { mutableStateOf(false) }
+  val changingProfile = remember { mutableStateOf(false) }
+  // Creating stays set until the invitation has moved, which is after the form has closed
+  // and this picker is interactive again
+  val busy = changingProfile.value || chatModel.creatingProfileForInvitation.value
 
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val isVisible = remember { mutableStateOf(false) }
@@ -77,25 +82,30 @@ fun ComposeContextProfilePickerView(
     }
   }
 
-  fun changeProfile(newUser: User) {
-    withApi {
-      if (chat.chatInfo is ChatInfo.Direct) {
-        val updatedContact = chatModel.controller.apiChangePreparedContactUser(rhId, chat.chatInfo.contact.contactId, newUser.userId)
-        if (updatedContact != null) {
-          selectedUser.value = newUser
-          chatModel.controller.appPrefs.incognito.set(false)
-          listExpanded.value = false
-          chatModel.chatsContext.updateContact(rhId, updatedContact)
-        }
-      } else if (chat.chatInfo is ChatInfo.Group) {
-        val updatedGroup = chatModel.controller.apiChangePreparedGroupUser(rhId, chat.chatInfo.groupInfo.groupId, newUser.userId)
-        if (updatedGroup != null) {
-          selectedUser.value = newUser
-          chatModel.controller.appPrefs.incognito.set(false)
-          listExpanded.value = false
-          chatModel.chatsContext.updateGroup(rhId, updatedGroup)
-        }
+  suspend fun changeProfileTo(newUser: User) {
+    var chatMoved = false
+    if (chat.chatInfo is ChatInfo.Direct) {
+      val updatedContact = chatModel.controller.apiChangePreparedContactUser(rhId, chat.chatInfo.contact.contactId, newUser.userId)
+      if (updatedContact != null) {
+        selectedUser.value = newUser
+        chatModel.controller.appPrefs.incognito.set(false)
+        listExpanded.value = false
+        chatModel.chatsContext.updateContact(rhId, updatedContact)
+        chatMoved = true
       }
+    } else if (chat.chatInfo is ChatInfo.Group) {
+      val updatedGroup = chatModel.controller.apiChangePreparedGroupUser(rhId, chat.chatInfo.groupInfo.groupId, newUser.userId)
+      if (updatedGroup != null) {
+        selectedUser.value = newUser
+        chatModel.controller.appPrefs.incognito.set(false)
+        listExpanded.value = false
+        chatModel.chatsContext.updateGroup(rhId, updatedGroup)
+        chatMoved = true
+      }
+    }
+    // Only switch if the chat moved, or the user ends up in another profile with the
+    // invitation left behind. apiChangePrepared*User reports the failure itself.
+    if (chatMoved) {
       chatModel.controller.changeActiveUser_(
         rhId = newUser.remoteHostId,
         toUserId = newUser.userId,
@@ -108,6 +118,15 @@ fun ComposeContextProfilePickerView(
           String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
         )
       }
+    }
+  }
+
+  fun changeProfile(newUser: User) {
+    // Set before withApi, which dispatches - the rows would be live until it runs.
+    // The create path is covered by creatingProfileForInvitation instead.
+    changingProfile.value = true
+    withApi {
+      try { changeProfileTo(newUser) } finally { changingProfile.value = false }
     }
   }
 
@@ -124,16 +143,19 @@ fun ComposeContextProfilePickerView(
       Modifier
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
+        // busy gates the branches that change something, not the row: this picker has no
+        // spinner or dimming, so gating the row left it inert with no feedback and not even
+        // collapsible during a slow change. Expanding and collapsing is local. As on iOS.
         .clickable(onClick = {
           if (!chat.chatInfo.profileChangeProhibited) {
             if (selectedUser.value.userId == user.userId) {
               if (!incognitoDefault) {
                 listExpanded.value = !listExpanded.value
-              } else {
+              } else if (!busy) {
                 chatModel.controller.appPrefs.incognito.set(false)
                 listExpanded.value = false
               }
-            } else {
+            } else if (!busy) {
               changeProfile(user)
             }
           } else {
@@ -171,7 +193,7 @@ fun ComposeContextProfilePickerView(
           if (!chat.chatInfo.profileChangeProhibited) {
             if (incognitoDefault) {
               listExpanded.value = !listExpanded.value
-            } else {
+            } else if (!busy) {
               chatModel.controller.appPrefs.incognito.set(true)
               listExpanded.value = false
             }
@@ -222,6 +244,43 @@ fun ComposeContextProfilePickerView(
   }
 
   @Composable
+  fun NewProfileOption() {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
+        .clickable(enabled = !busy, onClick = {
+          // Live state the receiver loop flips, so it can turn true after the row was laid out
+          if (!chat.chatInfo.profileChangeProhibited) {
+            createProfileForInvitation(rhId) { changeProfileTo(it) }
+          } else {
+            showCantChangeProfileAlert()
+          }
+        })
+        .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(Modifier.size(USER_ROW_AVATAR_SIZE), contentAlignment = Alignment.Center) {
+        Icon(
+          painterResource(MR.images.ic_manage_accounts),
+          contentDescription = null,
+          Modifier.size(24.dp),
+          tint = MaterialTheme.colors.primary,
+        )
+      }
+      TextIconSpaced(false)
+      Text(
+        stringResource(MR.strings.users_add),
+        modifier = Modifier.align(Alignment.CenterVertically),
+        color = MaterialTheme.colors.primary,
+      )
+
+      Spacer(Modifier.weight(1f))
+    }
+  }
+
+  @Composable
   fun ProfilePicker() {
     LazyColumnWithScrollBarNoAppBar(
       Modifier
@@ -265,6 +324,15 @@ fun ComposeContextProfilePickerView(
           )
         )
         ProfilePickerUserOption(user)
+      }
+
+      // Emitted last, so with reverseLayout it renders at the top of the expanded
+      // list - furthest from the compose box, with the current selection nearest.
+      // The divider goes under the row, not over it: reverseLayout flips the items, not the
+      // content of one, so emitting it first would draw a line along the list's top edge.
+      item {
+        NewProfileOption()
+        Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
       }
     }
   }

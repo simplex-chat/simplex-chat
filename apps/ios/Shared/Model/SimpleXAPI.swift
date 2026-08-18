@@ -253,8 +253,12 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    let r: ChatResponse0 = try chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl: ctrl)
+/// keepActiveUser creates the profile *without* activating it, for the invitation
+/// pickers: the reassignment APIs resolve the prepared chat or connection under the active
+/// user, so the profile that owns it has to stay active until it has moved. The response
+/// is the created user either way, which is then not the active one.
+func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, keepActiveUser: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r: ChatResponse0 = try chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp, keepActiveUser: keepActiveUser), ctrl: ctrl)
     if case let .activeUser(user) = r { return user }
     throw r.unexpected
 }

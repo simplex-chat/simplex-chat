@@ -880,8 +880,12 @@ object ChatController {
     return null
   }
 
-  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User? {
-    val r = sendCmd(rh, CC.CreateActiveUser(p, pastTimestamp = pastTimestamp), ctrl)
+  /** [keepActiveUser] creates the profile *without* activating it, for the invitation
+   * pickers: the reassignment APIs resolve the prepared chat or connection under the
+   * active user, so the profile that owns it has to stay active until it has moved. The
+   * response is the created user either way, which is then not the active one. */
+  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, keepActiveUser: Boolean = false, ctrl: ChatCtrl? = null): User? {
+    val r = sendCmd(rh, CC.CreateActiveUser(p, pastTimestamp = pastTimestamp, keepActiveUser = keepActiveUser), ctrl)
     if (r is API.Result && r.res is CR.ActiveUser) return r.res.user.updateRemoteHostId(rh)
     val e = (r as? API.Error)?.err
     if (
@@ -896,7 +900,7 @@ object ChatController {
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_title), r.details)
     }
-    Log.d(TAG, "apiCreateActiveUser: ${r.responseType} ${r.details}")
+    Log.d(TAG, "apiCreateActiveUser (keepActiveUser=$keepActiveUser): ${r.responseType} ${r.details}")
     return null
   }
 
@@ -3768,7 +3772,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
-  class CreateActiveUser(val profile: Profile?, val pastTimestamp: Boolean): CC()
+  class CreateActiveUser(val profile: Profile?, val pastTimestamp: Boolean, val keepActiveUser: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class SetAllContactReceipts(val enable: Boolean): CC()
@@ -3950,7 +3954,7 @@ sealed class CC {
     is Console -> cmd
     is ShowActiveUser -> "/u"
     is CreateActiveUser -> {
-      val user = NewUser(profile, pastTimestamp = pastTimestamp)
+      val user = NewUser(profile, pastTimestamp = pastTimestamp, keepActiveUser = keepActiveUser)
       "/_create user ${json.encodeToString(user)}"
     }
     is ListUsers -> "/users"
@@ -4399,7 +4403,8 @@ fun onOff(b: Boolean): String = if (b) "on" else "off"
 data class NewUser(
   val profile: Profile?,
   val pastTimestamp: Boolean,
-  val userChatRelay: Boolean = false
+  val userChatRelay: Boolean = false,
+  val keepActiveUser: Boolean = false
 )
 
 sealed class ChatPagination {
