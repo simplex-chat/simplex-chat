@@ -2940,8 +2940,7 @@ connRequestPQEncryption = \case
   CRContactUri _ rks -> pqEnc . snd <$> rks
   CRInvitationUri _ e2e -> Just $ pqEnc e2e
   where
-    pqEnc (CR.E2ERatchetParamsUri vr' _ _ pq) =
-      PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
+    pqEnc (CR.E2ERatchetParamsUri _ _ _ pq) = PQEncryption $ isJust pq
 
 createRcvFeatureItems :: User -> Contact -> Contact -> CM' ()
 createRcvFeatureItems user ct ct' =

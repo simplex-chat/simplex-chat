@@ -3589,6 +3589,7 @@ ParseError:
 
 A_MESSAGE:
 - type: "A_MESSAGE"
+- messageErr: string
 
 A_PROHIBITED:
 - type: "A_PROHIBITED"

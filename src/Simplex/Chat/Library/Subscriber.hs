@@ -1201,7 +1201,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               case cReq of
                 CRContactUri crData@ConnReqUriData {crClientData} e2e -> do
                   let pqSup = PQSupportOff
-                  lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+                  lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
                     Nothing -> throwChatError CEInvalidConnReq
                     Just _ -> do
                       let chatV = initialChatVersion
