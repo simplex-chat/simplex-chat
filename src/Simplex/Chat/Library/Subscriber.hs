@@ -2639,7 +2639,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               | sameGroupLinkId groupLinkId groupLinkId' -> do
                   withStore' $ \db -> setViaGroupLinkUri db groupId connId
                   joinGroupAsync (Just ct)
-              | autoAcceptGroupInvitations user ->
+              | isTrue (autoAcceptGroupInvitations user) ->
                   -- a resent invitation returns the existing group, so only join while still invited
                   when (memberStatus membership == GSMemInvited) $ do
                     joinGroupAsync Nothing
