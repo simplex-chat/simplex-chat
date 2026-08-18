@@ -168,8 +168,8 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260714_member_security_code
 import Simplex.Chat.Store.SQLite.Migrations.M20260715_profile_description
 import Simplex.Chat.Store.SQLite.Migrations.M20260716_signed_history
 import Simplex.Chat.Store.SQLite.Migrations.M20260720_server_roles
-import Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
 import Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
+import Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
