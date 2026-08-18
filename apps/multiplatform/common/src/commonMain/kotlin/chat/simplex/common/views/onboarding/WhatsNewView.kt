@@ -943,7 +943,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     // the trailing space differs from the previously released "v7.0", so that What's new is shown again
-    version = if (isInUs()) "v7.0 " else "v7.0",
+    version = if (isInUs()) "v7.0.1" else "v7.0",
     post = null,
     features = listOf(
       VersionFeature.FeatureView(
