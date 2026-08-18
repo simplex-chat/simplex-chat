@@ -4489,9 +4489,9 @@ server test error</note>
         <target state="translated">Trouvez vos conversations plus rapidement</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in destination server address does not match certificate: %@.</source>
-        <target>L'empreinte dans l'adresse du serveur de destination ne correspond pas au certificat : %@.</target>
+        <target state="translated">L'empreinte numérique dans l'adresse du serveur de destination ne correspond pas au certificat : %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve" approved="no">
@@ -4499,15 +4499,15 @@ server test error</note>
         <target state="translated">L'empreinte numérique dans l'adresse du serveur de transfert ne correspond pas au certificat : %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte</target>
+        <target state="translated">L’empreinte numérique de l’adresse du serveur ne correspond pas au certificat.</target>
         <note>relay test error
 server test error</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate: %@.</source>
-        <target state="translated">L'empreinte dans l'adresse du serveur ne correspond pas au certificat : %@.</target>
+        <target state="translated">L'empreinte numérique dans l'adresse du serveur ne correspond pas au certificat : %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -5717,9 +5717,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés. (24 heures)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
+      <trans-unit id="Members can report messsages to moderators." xml:space="preserve" approved="no">
         <source>Members can report messsages to moderators.</source>
-        <target>Les membres peuvent signaler les messages aux modérateur·ices.</target>
+        <target state="translated">Les membres peuvent signaler les messages aux modérateurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can send SimpleX links." xml:space="preserve">
@@ -6975,11 +6975,11 @@ alert button</note>
         <target>Veuillez demander à votre contact de permettre l'envoi de messages vocaux.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.&#10;Please share any other issues with the developers." xml:space="preserve">
+      <trans-unit id="Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.&#10;Please share any other issues with the developers." xml:space="preserve" approved="no">
         <source>Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.
 Please share any other issues with the developers.</source>
-        <target>Veuillez vérifier que le téléphone portable et l'ordinateur de bureau sont connectés au même réseau local et que le pare-feu de l'ordinateur de bureau autorise la connexion.
-Veuillez faire part de tout autre problème aux développeurs.</target>
+        <target state="translated">Vérifiez que le mobile et l’ordinateur sont connectés au même réseau local et que le pare-feu de l’ordinateur autorise la connexion.
+Veuillez signaler tout autre problème aux développeurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
@@ -7054,9 +7054,9 @@ Erreur : %@</target>
         <target>Veuillez essayer de désactiver et réactiver les notifications.</target>
         <note>token info</note>
       </trans-unit>
-      <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve">
+      <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve" approved="no">
         <source>Please wait for group moderators to review your request to join the group.</source>
-        <target>Veuillez attendre que les modérateur·ices de groupe examinent votre demande pour rejoindre le groupe.</target>
+        <target state="translated">Veuillez attendre que les modérateurs de groupe examinent votre demande pour rejoindre le groupe.</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="Please wait for token activation to complete." xml:space="preserve">
@@ -7230,9 +7230,9 @@ alert title</note>
         <target>Interdire les réactions aux messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit reporting messages to moderators." xml:space="preserve">
+      <trans-unit id="Prohibit reporting messages to moderators." xml:space="preserve" approved="no">
         <source>Prohibit reporting messages to moderators.</source>
-        <target>Interdire de signaler des messages aux modérateur·ices.</target>
+        <target state="translated">Interdire de signaler des messages aux modérateurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
@@ -7729,9 +7729,9 @@ swipe action</note>
         <target>Signalement : %@</target>
         <note>report in notification</note>
       </trans-unit>
-      <trans-unit id="Reporting messages to moderators is prohibited." xml:space="preserve">
+      <trans-unit id="Reporting messages to moderators is prohibited." xml:space="preserve" approved="no">
         <source>Reporting messages to moderators is prohibited.</source>
-        <target>Signaler des messages aux modérateur·ices est interdit.</target>
+        <target state="translated">Signaler des messages aux modérateurs est interdit.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reports" xml:space="preserve">
@@ -11236,8 +11236,9 @@ Les relais peuvent accéder aux messages du canal.</target>
         <target>vous a accepté·e</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="acknowledged roster" xml:space="preserve">
+      <trans-unit id="acknowledged roster" xml:space="preserve" approved="no">
         <source>acknowledged roster</source>
+        <target state="translated">liste reconnue</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="active" xml:space="preserve">
@@ -11506,8 +11507,9 @@ marked deleted chat item preview text</note>
         <target state="translated">Le contact devrait accepter…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contributor" xml:space="preserve">
+      <trans-unit id="contributor" xml:space="preserve" approved="no">
         <source>contributor</source>
+        <target state="translated">contributeur</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
@@ -11556,8 +11558,9 @@ pref value</note>
         <target>supprimé</target>
         <note>deleted chat item</note>
       </trans-unit>
-      <trans-unit id="deleted channel" xml:space="preserve">
+      <trans-unit id="deleted channel" xml:space="preserve" approved="no">
         <source>deleted channel</source>
+        <target state="translated">canal supprimé</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="deleted contact" xml:space="preserve">
@@ -11670,8 +11673,9 @@ pref value</note>
         <target>erreur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="error: %@" xml:space="preserve">
+      <trans-unit id="error: %@" xml:space="preserve" approved="no">
         <source>error: %@</source>
+        <target state="translated">erreur : %@</target>
         <note>receive error chat item</note>
       </trans-unit>
       <trans-unit id="expired" xml:space="preserve">
@@ -11679,8 +11683,9 @@ pref value</note>
         <target>expiré</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="failed" xml:space="preserve">
+      <trans-unit id="failed" xml:space="preserve" approved="no">
         <source>failed</source>
+        <target state="translated">échec</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -11868,9 +11873,9 @@ pref value</note>
         <target>modéré par %@</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
-      <trans-unit id="moderator" xml:space="preserve">
+      <trans-unit id="moderator" xml:space="preserve" approved="no">
         <source>moderator</source>
-        <target>modérateur·ice</target>
+        <target state="translated">modérateur·trice</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="months" xml:space="preserve">
