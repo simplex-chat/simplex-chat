@@ -174,6 +174,7 @@ data ChatConfig = ChatConfig
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
+    updateGroupLinksFromApp :: Bool,
     chatHooks :: ChatHooks
   }
 
@@ -694,6 +695,11 @@ planResolveModeP =
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
     _ -> fail "bad PlanResolveMode"
+
+data CommandSource
+  = CSLocal -- entered on this device
+  | CSRemoteHost RemoteHostId -- forwarded to a paired remote host
+  | CSRemoteCtrl -- received from a paired remote controller
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
 allowRemoteCommand = \case

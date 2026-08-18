@@ -8,7 +8,7 @@
 
 <img src="images/github-banner.jpg" alt="SimpleX logo" width="100%">
 
-Invest in SimpleX Chat. [Learn more on Wefunder](https://wefunder.com/simplexchat).
+Invest in SimpleX Chat. [Learn more on Wefunder](https://wefunder.com/simplex.chat?utm_source=github).
 
 # SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
 
