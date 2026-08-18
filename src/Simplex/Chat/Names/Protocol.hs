@@ -33,10 +33,9 @@ module Simplex.Chat.Names.Protocol
 where
 
 import Control.Applicative (optional)
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Aeson.Types as JT
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteArray.Encoding as BAE
@@ -44,16 +43,14 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Char (isHexDigit)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word16, Word32)
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Eth.Address (Address, checksumAddress, parseAddress, unAddress)
+import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.Keccak (keccak256)
-import Simplex.Messaging.Parsers (enumJSON)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
 
 -- | Protocol version, negotiated the way the badge service version is.
 type NamesVersion = Word16
@@ -172,66 +169,13 @@ instance ToJSON NamesErrorCode where
 instance FromJSON NamesErrorCode where
   parseJSON = textParseJSON "NamesErrorCode"
 
-instance ToJSON NamesRequest where
-  toJSON NamesRequest {nrVersion, nrRequest} = J.object ["version" .= nrVersion, "request" .= nrRequest]
+-- @nrLink@ is the one field whose wire name is not just the prefix dropped.
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "NR") {J.fieldLabelModifier = \case "nrLink" -> "simplex_link"; f -> dropPrefix "nr" f} ''NamesCommand)
 
-instance FromJSON NamesRequest where
-  parseJSON = J.withObject "NamesRequest" $ \o ->
-    NamesRequest <$> o .: "version" <*> o .: "request"
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "NRP") {J.fieldLabelModifier = dropPrefix "nr"} ''NamesResponse)
 
-instance ToJSON NamesCommand where
-  toJSON = \case
-    NRCommit {nrCommitment} ->
-      J.object ["type" .= ("commit" :: Text), "commitment" .= nrCommitment]
-    NRReveal {nrName, nrOwner, nrSecret, nrTtl, nrLink} ->
-      J.object
-        [ "type" .= ("reveal" :: Text),
-          "name" .= nrName,
-          "owner" .= addressJSON nrOwner,
-          "secret" .= nrSecret,
-          "ttl" .= nrTtl,
-          "simplex_link" .= nrLink
-        ]
-
-instance FromJSON NamesCommand where
-  parseJSON = J.withObject "NamesCommand" $ \o ->
-    (o .: "type") >>= \case
-      "commit" -> NRCommit <$> o .: "commitment"
-      "reveal" ->
-        NRReveal
-          <$> o .: "name"
-          <*> (o .: "owner" >>= parseAddressJSON)
-          <*> o .: "secret"
-          <*> o .: "ttl"
-          <*> o .: "simplex_link"
-      t -> fail $ "unknown names command: " <> T.unpack (t :: Text)
-
-instance ToJSON NamesResponse where
-  toJSON = \case
-    NRPCommitted {nrTxHash} ->
-      J.object ["type" .= ("committed" :: Text), "txHash" .= nrTxHash]
-    NRPRegistered {nrName, nrExpiry, nrTxHash} ->
-      J.object ["type" .= ("registered" :: Text), "name" .= nrName, "expiry" .= nrExpiry, "txHash" .= nrTxHash]
-    NRPError {nrCode, nrMessage, nrRetryAfter} ->
-      J.object $
-        ["type" .= ("error" :: Text), "code" .= nrCode]
-          <> ["message" .= m | Just m <- [nrMessage]]
-          <> ["retryAfter" .= r | Just r <- [nrRetryAfter]]
-
-instance FromJSON NamesResponse where
-  parseJSON = J.withObject "NamesResponse" $ \o ->
-    (o .: "type") >>= \case
-      "committed" -> NRPCommitted <$> o .: "txHash"
-      "registered" -> NRPRegistered <$> o .: "name" <*> o .: "expiry" <*> o .: "txHash"
-      "error" -> NRPError <$> o .: "code" <*> o .:? "message" <*> o .:? "retryAfter"
-      t -> fail $ "unknown names response: " <> T.unpack (t :: Text)
-
--- | EIP-55 checksummed hex, the form a user pastes into a block explorer.
-addressJSON :: Address -> J.Value
-addressJSON = J.String . safeDecodeUtf8 . checksumAddress
-
-parseAddressJSON :: J.Value -> JT.Parser Address
-parseAddressJSON = J.withText "Address" $ either fail pure . parseAddress . encodeUtf8
+-- spliced last: its instance uses the NamesCommand instances above
+$(JQ.deriveJSON defaultJSON {J.fieldLabelModifier = dropPrefix "nr"} ''NamesRequest)
 
 -- | Progress phases streamed from core to the UI as registration advances.
 -- Not part of the wire protocol — carried in @CEvtNameRegistrationProgress@.
