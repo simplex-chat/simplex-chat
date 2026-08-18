@@ -22,7 +22,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -30,8 +29,10 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
+import chat.simplex.common.views.onboarding.GetStakeView
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
+import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
 import chat.simplex.res.MR
 
@@ -111,6 +112,17 @@ fun SettingsLayout(
       AppShutdownItem()
       AppVersionItem(showVersion)
     }
+
+    if (crowdfundingAvailable()) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.v7_0_invest)) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_redeem),
+          stringResource(MR.strings.v7_0_crowdfunding),
+          { ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(fromSettings = true, close = close) } }
+        )
+      }
+    }
     SectionBottomSpacer()
   }
 }
@@ -143,7 +155,7 @@ fun HelpAndSupportView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_support_project)) {
-      if (!BuildConfigCommon.ANDROID_BUNDLE) {
+      if (!platform.androidIsPlayStoreBuild) {
         ContributeItem(uriHandler)
       }
       if (appPlatform.isAndroid) {

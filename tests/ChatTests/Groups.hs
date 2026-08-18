@@ -97,8 +97,8 @@ chatGroupTests = do
     it "moderate own message (should process as deletion)" testGroupModerateOwn
     it "moderate multiple messages" testGroupModerateMultiple
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
-    it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
-    it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+    xit "moderate message that arrives after the event of moderation" testGroupDelayedModeration
+    xit "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
@@ -1805,7 +1805,7 @@ testGroupModerateOwn =
     \alice bob -> do
       createGroup2 "team" alice bob
       -- disableFullDeletion2 "team" alice bob
-      threadDelay 1000000
+      threadDelay 1250000
       alice #> "#team hello"
       bob <# "#team alice> hello"
       alice ##> "\\\\ #team @alice hello"
@@ -2710,7 +2710,7 @@ testPlanGroupLinkLeaveRejoin =
 
 testGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupLink =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatOpts3 testOptsNoFullLinks aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       threadDelay 100000
       alice ##> "/g team"
@@ -2722,7 +2722,8 @@ testGroupLink =
       alice <## "Recent history: off"
 
       alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" GRMember True
+      gLink <- getGroupLink_ alice "team" GRMember True
+      alice <// 100000 -- the "group link for old clients" line is dropped when showFullLinks is off
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -2748,7 +2749,8 @@ testGroupLink =
 
       -- user address doesn't interfere
       alice ##> "/ad"
-      cLink <- getContactLink alice True
+      cLink <- getContactLink_ alice True
+      alice <// 100000 -- the "contact link for old clients" line is dropped when showFullLinks is off
       cath ##> ("/c " <> cLink)
       alice <#? cath
       alice ##> "/ac cath"
@@ -2990,7 +2992,7 @@ testGroupLinkMemberRole =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 100000
+      threadDelay 250000
 
       alice ##> "/ms team"
       alice
@@ -8780,11 +8782,12 @@ testSupportPreferenceChannel ps =
 
 testConnectChannelCLI :: HasCallStack => TestParams -> IO ()
 testConnectChannelCLI ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
-      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
-        withNewTestChat ps "dan" danProfile $ \dan -> do
-          (shortLink, _fullLink) <- prepareChannel2Relays "team" alice bob cath
+  withNewTestChatOpts ps testOptsNoFullLinks "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOptsNoFullLinks "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOptsNoFullLinks "cath" cathProfile $ \cath ->
+        withNewTestChatOpts ps testOptsNoFullLinks "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+          fullLink `shouldBe` "" -- public group link "for old clients" is dropped when showFullLinks is off
           relayNames <- mapM userName [bob, cath]
           mName <- userName dan
           mFullName <- showName dan

@@ -37,7 +37,6 @@ import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
@@ -51,7 +50,7 @@ import Simplex.FileTransfer.Server.Store
 import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
+import Simplex.Messaging.Agent.Protocol (duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.Entity (SDBStored (..))
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
@@ -122,6 +121,7 @@ testOpts =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = True,
+      showFullLinks = True,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
@@ -173,6 +173,12 @@ testCoreOpts =
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
 
+testOptsNoFullLinks :: ChatOpts
+testOptsNoFullLinks = testOpts {showFullLinks = False}
+
+relayTestOptsNoFullLinks :: ChatOpts
+relayTestOptsNoFullLinks = relayTestOpts {showFullLinks = False}
+
 relayWebTestOpts :: Text -> FilePath -> Maybe FilePath -> ChatOpts
 relayWebTestOpts webDomain webDir webCorsFile = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {webDomain, webJsonDir = webDir, webCorsFile, webUpdateInterval = 300, webPreviewItemCount = 50}}}
 
@@ -185,7 +191,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 6000},
+      virtualWindowSize = pure C.Size {height = 24, width = 7500},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
@@ -232,21 +238,12 @@ testAgentCfgVPrev =
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
-testAgentCfgVNext :: AgentConfig
-testAgentCfgVNext =
-  testAgentCfg
-    { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
-      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion $ max pqdrSMPAgentVersion currentSMPAgentVersion,
-      e2eEncryptVRange = mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
-    }
-
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = versionToRange duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = versionToRange CR.kdfX3DHE2EEncryptVersion,
+      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion,
+      e2eEncryptVRange = mkVersionRange CR.kdfX3DHE2EEncryptVersion CR.pqRatchetE2EEncryptVersion,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange minClientSMPRelayVersion}
     }
 
@@ -257,17 +254,10 @@ testCfgVPrev =
       agentConfig = testAgentCfgVPrev
     }
 
-testCfgVNext :: ChatConfig
-testCfgVNext =
-  testCfg
-    { chatVRange = mkVersionRange initialChatVersion $ max pqEncryptionCompressionVersion currentChatVersion,
-      agentConfig = testAgentCfgVNext
-    }
-
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
-    { chatVRange = v1Range,
+    { chatVRange = chatInitialVRange,
       agentConfig = testAgentCfgV1
     }
 

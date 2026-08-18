@@ -372,7 +372,7 @@
     "file-proto-h-4": "Independent data routers",
     "file-proto-p-4": "When file is split to fragments, it is sent via network routers operated by independent parties. No operator can see the actual file size or name. Even if a router is compromised, it can only see encrypted fragments of fixed size. File fragments are cached by network routers for approximately 48 hours.",
     "file-proto-spec": "Read the XFTP protocol specification →",
-    "links": "Links",
+    "links": "Community",
     "links-title": "Community Links",
     "links-all-languages": "All languages"
 }

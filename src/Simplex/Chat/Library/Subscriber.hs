@@ -48,7 +48,7 @@ import Data.Word (Word32)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
-import Simplex.Chat.Files (getChatTempDirectory)
+import Simplex.Chat.Files (getChatTempDirectory, safeFileNameStr)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
@@ -101,12 +101,12 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
-import qualified System.FilePath as FP
 import System.Mem.Weak (Weak)
 import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.STM
+import qualified Data.Aeson as J
 
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
@@ -127,6 +127,8 @@ processAgentMessage _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
   eToView $ chatErrorAgent e
+processAgentMessage _ connId (SSENT _ _) =
+  toView $ CEvtServiceReplySent (AgentConnId connId)
 processAgentMessage corrId connId msg = do
   lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
@@ -439,7 +441,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       when (pq /= pq') $ messageWarning "processINFOpqSupport: unexpected pqSupport change"
 
     processDirectMessage :: AEvent e -> ConnectionEntity -> Connection -> Maybe Contact -> CM ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, connChatVersion, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId pqSupport _ connInfo -> do
           chatRelayTests_ <- asks chatRelayTests
@@ -515,7 +517,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           withCompletedCommand conn agentMsg $ \_ ->
             case cReq of
               CRInvitationUri _ _ -> withStore' $ \db -> setConnConnReqInv db user connId cReq
-              CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
+              CRContactUri _ _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
+        RJCT reason -> do
+          ct' <- withStore' $ \db -> updateContactStatus db user ct CSRejected
+          toView $ CEvtContactRequestRejected user ct' (either (const Nothing) Just $ strDecode reason)
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
@@ -642,19 +647,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           when (contactConnInitiated conn') $ do
             probeMatchingMembers ct' (contactConnIncognito ct')
             withStore' $ \db -> resetContactConnInitiated db user conn'
-          forM_ viaUserContactLink $ \userContactLinkId -> do
-            (ucl, gli_) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-            -- let UserContactLink {addressSettings = AddressSettings {autoReply}} = ucl
-            when (connChatVersion < batchSend2Version) $ forM_ (autoReply $ addressSettings ucl) $ \mc -> sendAutoReply ct' mc Nothing -- old versions only
-            -- TODO REMOVE LEGACY vvv
-            forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
-              groupInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
-              subMode <- chatReadVar subscriptionMode
-              groupConnIds@(cmdId, grpConnId) <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
-              gVar <- asks random
-              withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
-              withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) grpConnId True SCMInvitation CR.IKPQOff subMode
-        -- TODO REMOVE LEGACY ^^^
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
@@ -705,7 +697,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
             when (directOrUsed ct && sqSecured) $ do
               toView $ CEvtContactSndReady user ct
-              when (connChatVersion >= batchSend2Version) $ forM_ viaUserContactLink $ \userContactLinkId -> do
+              forM_ viaUserContactLink $ \userContactLinkId -> do
                 (ucl, _) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 forM_ (autoReply $ addressSettings ucl) $ \mc -> do
                   connReq_ <- pure (contactRequestId' ct) $>>= \connReqId -> withStore' (\db -> getContactRequest' db user connReqId)
@@ -740,55 +732,20 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
-              CFCreateConnGrpMemInv
-                | maxVersion (peerChatVRange conn) >= groupDirectInvVersion -> sendWithoutDirectCReq
-                | otherwise -> messageError "processGroupMessage INV: member chat version range incompatible"
-                where
-                  sendWithoutDirectCReq = do
-                    let GroupMember {groupMemberId, memberId} = m
-                    hostConnId <- withStore $ \db -> do
-                      liftIO $ setConnConnReqInv db user connId cReq
-                      getHostConnId db user groupId
-                    sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
-              -- TODO REMOVE LEGACY vvv
-              -- [async agent commands] group link auto-accept continuation on receiving INV
-              CFCreateConnGrpInv -> do
-                (ct, groupLinkId) <- withStore $ \db -> do
-                  ct <- getContactViaMember db cxt user m
-                  liftIO $ setNewContactMemberConnRequest db user m cReq
-                  liftIO $ (ct,) <$> getGroupLinkId db user gInfo
-                if memberRole' membership >= GRAdmin
-                  then do
-                    sendGrpInvitation ct m groupLinkId
-                    toView $ CEvtSentGroupInvitation user gInfo ct m
-                  else messageError "processGroupMessage: group link host no longer has admin role"
-                where
-                  sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> CM ()
-                  sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
-                    let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
-                        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-                        groupInv =
-                          GroupInvitation
-                            { fromMember = MemberIdRole userMemberId userRole,
-                              invitedMember = MemberIdRole memberId memRole,
-                              connRequest = cReq,
-                              groupProfile,
-                              business = Nothing,
-                              groupLinkId = groupLinkId,
-                              groupSize = Just currentMemCount
-                            }
-                    (_msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
-                    -- we could link chat item with sent group invitation message (_msg)
-                    createInternalChatItem user (CDGroupRcv gInfo Nothing m) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-              -- TODO REMOVE LEGACY ^^^
+              CFCreateConnGrpMemInv -> do
+                let GroupMember {groupMemberId, memberId} = m
+                hostConnId <- withStore $ \db -> do
+                  liftIO $ setConnConnReqInv db user connId cReq
+                  getHostConnId db user groupId
+                sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
-            CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
+            CRContactUri _ _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         conn' <- updatePeerChatVRange conn chatVRange
@@ -955,11 +912,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 toView $ CEvtJoinedGroupMember user gInfo'' m' {memberStatus = mStatus}
                 let Connection {viaUserContactLink} = conn
                 when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
-                when (connChatVersion < batchSend2Version) $ getAutoReplyMsg >>= mapM_ (\mc -> sendGroupAutoReply mc Nothing)
                 if useRelays' gInfo''
                   then do
                     introduceInChannel cxt user gInfo'' m'
-                    when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
+                    case mStatus of
+                      GSMemPendingApproval -> pure ()
+                      GSMemPendingReview -> pure ()
+                      _ -> when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
                   else case mStatus of
                     GSMemPendingApproval -> pure ()
                     GSMemPendingReview -> introduceToModerators cxt user gInfo'' m'
@@ -1223,12 +1182,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       JOINED sqSecured ->
         -- [async agent commands] continuation on receiving JOINED
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
-          when (sqSecured && connChatVersion >= batchSend2Version) $ do
+          when (sqSecured) $ do
             mc_ <- getAutoReplyMsg
             forM_ mc_ $ \mc -> do
               connReq_ <- withStore' $ \db -> getBusinessContactRequest db user groupId
               sendGroupAutoReply mc connReq_
-      LDATA FixedLinkData {linkConnReq = cReq, rootKey = relayKey, linkEntityId} cData ->
+      LDATA FixedLinkData {rootKey = relayKey, linkEntityId} cData cReq ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
             CFGetRelayDataJoin -> do
@@ -1240,14 +1199,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   pure $ MemberId entityId
                 _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
               case cReq of
-                CRContactUri crData@ConnReqUriData {crClientData} -> do
+                CRContactUri crData@ConnReqUriData {crClientData} e2e -> do
                   let pqSup = PQSupportOff
                   lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
                     Nothing -> throwChatError CEInvalidConnReq
-                    Just (agentV, _) -> do
-                      let chatV = agentToChatVersion agentV
+                    Just _ -> do
+                      let chatV = initialChatVersion
                           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-                          cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
+                          cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
                       -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
@@ -1395,16 +1354,24 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
-      REQ invId pqSupport _ connInfo -> do
+      REQ invId pqSupport _ connInfo rejectionSupported -> do
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
+          XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport rejectionSupported
           XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
-          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
+          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport rejectionSupported
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
           XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
           -- TODO show/log error, other events in contact request
           _ -> pure ()
+      SREQ invId sigKey_ payload ->
+        chatReadVar processServiceRequests >>= \case
+          True -> case J.eitherDecodeStrict' payload of
+            Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
+            Left _ -> dropSReq
+          False -> dropSReq
+        where
+          dropSReq = withAgent $ \a -> rejectServiceRequest a NRMBackground (aUserId user) invId Nothing
       LINK _link auData ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
@@ -1466,8 +1433,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ welcomeMsgId_ requestMsg_ reqPQSup = do
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> Bool -> CM ()
+        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported = do
           (ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           let v = maxVersion chatVRange
           case gLinkInfo_ of
@@ -1477,7 +1444,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   AddressSettings {autoAccept} = addressSettings
                   isSimplexTeam = sameConnReqContact connReq adminContactReq
               gVar <- asks random
-              withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup) >>= \case
+              withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported) >>= \case
                 RSAcceptedRequest _ucr re -> case re of
                   REContact ct ->
                     -- TODO [short links] update request msg
@@ -1618,15 +1585,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 | otherwise -> do
                   acceptMember_ <- asks $ acceptMember . chatHooks . config
                   maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
-                    Right (acceptance, useRole)
-                      | v < groupFastLinkJoinVersion ->
-                          messageError "processContactConnMessage: chat version range incompatible for accepting group join request"
-                      | otherwise -> do
-                          let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                          mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ Nothing welcomeMsgId_ acceptance useRole profileMode Nothing Nothing
-                          (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
-                          createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                          toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
+                    Right (acceptance, useRole) -> do
+                      let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                      mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ Nothing welcomeMsgId_ acceptance useRole profileMode Nothing Nothing
+                      (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
+                      createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                      toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
                     Left rjctReason
                       | v < groupJoinRejectVersion ->
                           messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
@@ -1657,7 +1621,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   withStore $ \db -> do
                     Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
                     liftIO $ setCommandConnId db user cmdId testCId
-                  agentAcceptContactAsync cmdId acId True invId msg PQSupportOff chatV subMode
+                  agentAcceptContactAsync cmdId acId True invId msg PQSupportOff subMode
           | otherwise = messageError "relay test sent to non-relay link"
             where
               User {userChatRelay} = user
@@ -2001,7 +1965,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       pure (ft', CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
 
     mkValidFileInvitation :: FileInvitation -> FileInvitation
-    mkValidFileInvitation fInv@FileInvitation {fileName} = fInv {fileName = FP.makeValid $ FP.takeFileName fileName}
+    mkValidFileInvitation fInv@FileInvitation {fileName} = fInv {fileName = safeFileNameStr fileName}
 
     validateFileInvitation :: FileInvitation -> CM FileInvitation
     validateFileInvitation fInv@FileInvitation {fileName, fileSize}
@@ -2822,10 +2786,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     maybeCreateGroupDescrLocal :: GroupInfo -> GroupMember -> CM ()
     maybeCreateGroupDescrLocal gInfo@GroupInfo {groupProfile = GroupProfile {description}} m =
-      unless expectHistory $ forM_ description $ \descr ->
+      unless (groupFeatureAllowed SGFHistory gInfo) $ forM_ description $ \descr ->
         createInternalChatItem user (CDGroupRcv gInfo Nothing m) (CIRcvMsgContent $ MCText descr) Nothing
-      where
-        expectHistory = groupFeatureAllowed SGFHistory gInfo && m `supportsVersion` groupHistoryIncludeWelcomeVersion
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Maybe (RcvMessage, UTCTime) -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' msgTs_
@@ -3223,16 +3185,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
                     Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
-                    Just (ChatVersionRange mcvr)
-                      | maxVersion mcvr >= groupDirectInvVersion -> do
-                          subMode <- chatReadVar subscriptionMode
-                          groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
-                          let chatV = maybe (minVersion (vr cxt)) (\peerVR -> vr cxt `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
-                          void $ withStore $ \db -> do
-                            reMember <- createIntroReMember db cxt user gInfo memInfo memRestrictions
-                            createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
-                          withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff subMode
-                      | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
+                    Just _ -> do
+                      subMode <- chatReadVar subscriptionMode
+                      groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
+                      let chatV = maybe (minVersion (vr cxt)) (\peerVR -> vr cxt `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
+                      void $ withStore $ \db -> do
+                        reMember <- createIntroReMember db cxt user gInfo memInfo memRestrictions
+                        createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
+                      withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> CM ()
@@ -3747,7 +3707,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
               -- in channels, link data is updated by the owner making the change in runUpdateGroupProfile;
               -- other owners receiving the update do not refresh the same link
-              unless (useRelays' g'') $
+              ChatConfig {updateGroupLinksFromApp} <- asks config
+              unless (useRelays' g'' || updateGroupLinksFromApp) $
                 void $ forkIO $ void $ setGroupLinkData' NRMBackground user g''
             Just _ -> updateGroupPrefs_ msgSigned g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           -- relay advertises its web capability now that the owner's version is known (bumped by saveGroupRcvMsg)
@@ -3927,7 +3888,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
-    withVerifiedMsg :: MsgEncodingI e => GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
+    withVerifiedMsg :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
     withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
       case verified of
         Just verifiedMsg -> Just <$> action verifiedMsg
@@ -4448,7 +4409,7 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
-              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink
+              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners}), _) <- getShortLinkConnReq' NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
@@ -4478,15 +4439,15 @@ runRelayRequestWorker a Worker {doWork} = do
                   sigKeys <- liftIO $ atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
-                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData) Nothing
+                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData) CR.IKPQOff False Nothing
                   ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
                   sLnk <- case connShortLink' ccLink' of
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
                   let userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile p}
-                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
                   -- create connection with prepared link (single network call)
-                  connId <- withAgent $ \a' -> createConnectionForLink a' NRMBackground (aUserId user) True ccLink preparedParams userLinkData CR.IKPQOff subMode
+                  connId <- withAgent $ \a' -> createConnectionForLink a' NRMBackground (aUserId user) True ccLink preparedParams userLinkData subMode
                   -- TODO [relays] starting role should be communicated in protocol from owner to relays
                   subRole <- asks $ channelSubscriberRole . config
                   void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId subRole subMode

@@ -10,6 +10,7 @@ export type ChatResponse =
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
   | CR.ChatItemsDeleted
+  | CR.ChatMsgContent
   | CR.ChatRunning
   | CR.ChatStarted
   | CR.ChatStopped
@@ -36,6 +37,7 @@ export type ChatResponse =
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
+  | CR.GroupDomainVerified
   | CR.Invitation
   | CR.LeftMemberUser
   | CR.MemberAccepted
@@ -48,6 +50,7 @@ export type ChatResponse =
   | CR.SentConfirmation
   | CR.SentGroupInvitation
   | CR.SentInvitation
+  | CR.ServiceReplyAccepted
   | CR.SndFileCancelled
   | CR.UserAcceptedGroupSent
   | CR.UserContactLink
@@ -68,6 +71,7 @@ export namespace CR {
     | "chatItemReaction"
     | "chatItemUpdated"
     | "chatItemsDeleted"
+    | "chatMsgContent"
     | "chatRunning"
     | "chatStarted"
     | "chatStopped"
@@ -94,6 +98,7 @@ export namespace CR {
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
+    | "groupDomainVerified"
     | "invitation"
     | "leftMemberUser"
     | "memberAccepted"
@@ -106,6 +111,7 @@ export namespace CR {
     | "sentConfirmation"
     | "sentGroupInvitation"
     | "sentInvitation"
+    | "serviceReplyAccepted"
     | "sndFileCancelled"
     | "userAcceptedGroupSent"
     | "userContactLink"
@@ -158,6 +164,12 @@ export namespace CR {
     chatItemDeletions: T.ChatItemDeletion[]
     byUser: boolean
     timed: boolean
+  }
+
+  export interface ChatMsgContent extends Interface {
+    type: "chatMsgContent"
+    user: T.User
+    msgContent: T.MsgContent
   }
 
   export interface ChatRunning extends Interface {
@@ -324,6 +336,13 @@ export namespace CR {
     groups: T.GroupInfo[]
   }
 
+  export interface GroupDomainVerified extends Interface {
+    type: "groupDomainVerified"
+    user: T.User
+    groupInfo: T.GroupInfo
+    verificationFailure?: string
+  }
+
   export interface Invitation extends Interface {
     type: "invitation"
     user: T.User
@@ -407,6 +426,12 @@ export namespace CR {
     user: T.User
     connection: T.PendingContactConnection
     customUserProfile?: T.Profile
+  }
+
+  export interface ServiceReplyAccepted extends Interface {
+    type: "serviceReplyAccepted"
+    user: T.User
+    connectionId: string
   }
 
   export interface SndFileCancelled extends Interface {

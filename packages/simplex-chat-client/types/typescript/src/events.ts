@@ -46,11 +46,12 @@ export type ChatEvent =
   | CEvt.ContactConnecting
   | CEvt.BusinessLinkConnecting
   | CEvt.JoinedGroupMemberConnecting
-  | CEvt.SentGroupInvitation
   | CEvt.GroupLinkConnecting
   | CEvt.HostConnected
   | CEvt.HostDisconnected
   | CEvt.SubscriptionStatus
+  | CEvt.ServiceRequest
+  | CEvt.ServiceReplySent
   | CEvt.MessageError
   | CEvt.ChatError
   | CEvt.ChatErrors
@@ -99,11 +100,12 @@ export namespace CEvt {
     | "contactConnecting"
     | "businessLinkConnecting"
     | "joinedGroupMemberConnecting"
-    | "sentGroupInvitation"
     | "groupLinkConnecting"
     | "hostConnected"
     | "hostDisconnected"
     | "subscriptionStatus"
+    | "serviceRequest"
+    | "serviceReplySent"
     | "messageError"
     | "chatError"
     | "chatErrors"
@@ -430,14 +432,6 @@ export namespace CEvt {
     member: T.GroupMember
   }
 
-  export interface SentGroupInvitation extends Interface {
-    type: "sentGroupInvitation"
-    user: T.User
-    groupInfo: T.GroupInfo
-    contact: T.Contact
-    member: T.GroupMember
-  }
-
   export interface GroupLinkConnecting extends Interface {
     type: "groupLinkConnecting"
     user: T.User
@@ -462,6 +456,19 @@ export namespace CEvt {
     server: string
     subscriptionStatus: T.SubscriptionStatus
     connections: string[]
+  }
+
+  export interface ServiceRequest extends Interface {
+    type: "serviceRequest"
+    user: T.User
+    requestId: string
+    signerKey?: string
+    requestData: object
+  }
+
+  export interface ServiceReplySent extends Interface {
+    type: "serviceReplySent"
+    connectionId: string
   }
 
   export interface MessageError extends Interface {

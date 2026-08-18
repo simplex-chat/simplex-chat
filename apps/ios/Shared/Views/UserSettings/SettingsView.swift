@@ -380,6 +380,17 @@ struct SettingsView: View {
                     Text(verbatim: "v\(appVersion ?? "?")")
                 }
             }
+
+            if isInUS {
+                Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
+                    NavigationLink {
+                        GetStakeView(fromSettings: true)
+                            .navigationBarTitle("", displayMode: .inline)
+                    } label: {
+                        settingsRow("dollarsign.circle", color: theme.colors.secondary) { Text("Crowdfunding on Wefunder") }
+                    }
+                }
+            }
         }
         .navigationTitle("Your settings")
         .modifier(ThemedBackground(grouped: true))
