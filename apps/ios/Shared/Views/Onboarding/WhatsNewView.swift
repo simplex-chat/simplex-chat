@@ -42,7 +42,10 @@ private struct FeatureView {
     let view: () -> any View
 }
 
-let isInUS = SKStorefront().countryCode == "USA"
+let isInUS = {
+    let code = SKStorefront().countryCode
+    return code == "USA" || code == "GBR" || code == ""
+}()
 
 private let versionDescriptions: [VersionDescription] = [
     VersionDescription(
@@ -668,7 +671,7 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "v7.0 ",
+        version: isInUS ? "v7.0 " : "v7.0",
         post: nil,
         features: (isInUS ? [
             .view(FeatureView(

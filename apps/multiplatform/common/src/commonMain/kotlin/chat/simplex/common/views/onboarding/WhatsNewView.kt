@@ -943,7 +943,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     // the trailing space differs from the previously released "v7.0", so that What's new is shown again
-    version = "v7.0 ",
+    version = if (isInUs()) "v7.0 " else "v7.0",
     post = null,
     features = listOf(
       VersionFeature.FeatureView(
@@ -1024,11 +1024,20 @@ else
 @Composable
 fun crowdfundingAvailable(): Boolean {
   if (!platform.androidIsPlayStoreBuild) return true
-  LaunchedEffect(Unit) {
-    if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry()
+  if (androidPlayStoreCountry.value == null) {
+    LaunchedEffect(Unit) {
+      if (androidPlayStoreCountry.value == null) platform.androidLoadPlayStoreCountry()
+    }
   }
-  return androidPlayStoreCountry.value == "US"
+  return isInUs()
 }
+
+fun isInUs(): Boolean =
+  androidPlayStoreCountry.value == "US"
+      || androidPlayStoreCountry.value == "GB"
+      || androidPlayStoreCountry.value == "UK"
+      || androidPlayStoreCountry.value == ""
+      || androidPlayStoreCountry.value == null
 
 @Composable
 private fun InvestInSimpleXChatView(modalManager: ModalManager) {
