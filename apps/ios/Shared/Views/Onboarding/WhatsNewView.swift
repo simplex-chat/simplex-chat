@@ -671,7 +671,7 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: isInUS ? "v7.0 " : "v7.0",
+        version: isInUS ? "v7.0.1" : "v7.0",
         post: nil,
         features: (isInUS ? [
             .view(FeatureView(
