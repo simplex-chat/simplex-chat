@@ -235,7 +235,7 @@ parseAddressJSON = J.withText "Address" $ either fail pure . parseAddress . enco
 
 -- | Progress phases streamed from core to the UI as registration advances.
 -- Not part of the wire protocol — carried in @CEvtNameRegistrationProgress@.
--- | 'NRPhaseCommitted' carries @waitMs@: the commit→reveal wait starts as soon
+-- 'NRPhaseCommitted' carries @waitMs@: the commit→reveal wait starts as soon
 -- as it is emitted, so it needs no phase of its own.
 data NameRegPhase
   = NRPhaseCommitting
