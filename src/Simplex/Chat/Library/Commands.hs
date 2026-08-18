@@ -1471,15 +1471,18 @@ processChatCommand cxt nm = \case
     secret <- NameSecret <$> atomically (C.randomBytes 32 g)
     let ttl = defaultNameTtl
         commitment = mkCommitment nm' owner secret ttl
+        -- a service error ends the registration, so it is raised here rather
+        -- than repeated at each step
         sendNames c = do
           let req = NamesRequest currentNamesVersion c
           respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq Nothing Nothing (LB.toStrict $ J.encode req)
-          either (const $ throwCmdError "invalid names response") pure $ J.eitherDecodeStrict' respData
+          either (const $ throwCmdError "invalid names response") pure (J.eitherDecodeStrict' respData) >>= \case
+            NRPError {nrCode, nrMessage} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage
+            r -> pure r
         progress phase waitMs = toView $ CEvtNameRegistrationProgress user nm' phase waitMs
     progress NRPhaseCommitting Nothing
     sendNames (NRCommit commitment) >>= \case
       NRPCommitted {} -> pure ()
-      NRPError {nrCode, nrMessage} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage
       _ -> throwCmdError "unexpected commit response"
     progress NRPhaseCommitted (Just commitWaitMs)
     liftIO $ threadDelay $ fromIntegral commitWaitMs * 1000
@@ -1487,7 +1490,6 @@ processChatCommand cxt nm = \case
     (expiry', txHash') <-
       sendNames (NRReveal nm' owner secret ttl sLink) >>= \case
         NRPRegistered {nrExpiry, nrTxHash} -> pure (nrExpiry, nrTxHash)
-        NRPError {nrCode, nrMessage} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage
         _ -> throwCmdError "unexpected reveal response"
     progress NRPhaseRegistered Nothing
     pure $ CRNameRegistered user nm' (tshow owner) expiry' txHash'

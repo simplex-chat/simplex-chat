@@ -32,10 +32,11 @@ module Simplex.Chat.Names.Protocol
   )
 where
 
+import Control.Applicative (optional)
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
-import Control.Applicative (optional)
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteArray.Encoding as BAE
@@ -47,12 +48,11 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word16, Word32)
-import qualified Data.Aeson.TH as JQ
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (enumJSON)
 import Simplex.Messaging.Eth.Address (Address, checksumAddress, parseAddress, unAddress)
 import Simplex.Messaging.Eth.Keccak (keccak256)
+import Simplex.Messaging.Parsers (enumJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
 -- | Protocol version, negotiated the way the badge service version is.

@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PostfixOperators #-}
 
 module Bots.NamesServiceTests where
 
@@ -7,11 +6,11 @@ import Bots.BadgeServiceTests (badgeProfile, mkBadgeServiceOpts, runBadgeService
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Data.List (isPrefixOf)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isHexDigit)
+import Data.List (isPrefixOf)
 import Simplex.Chat.Names.Protocol
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (parseAddress)
