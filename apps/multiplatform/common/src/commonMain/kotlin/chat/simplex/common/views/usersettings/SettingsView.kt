@@ -29,8 +29,10 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
+import chat.simplex.common.views.onboarding.GetStakeView
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
+import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
 import chat.simplex.res.MR
 
@@ -109,6 +111,17 @@ fun SettingsLayout(
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
       AppShutdownItem()
       AppVersionItem(showVersion)
+    }
+
+    if (crowdfundingAvailable()) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.v7_0_invest)) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_redeem),
+          stringResource(MR.strings.v7_0_crowdfunding),
+          { ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(fromSettings = true, close = close) } }
+        )
+      }
     }
     SectionBottomSpacer()
   }

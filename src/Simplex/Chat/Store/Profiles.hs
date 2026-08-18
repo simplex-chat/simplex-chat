@@ -136,7 +136,6 @@ import Database.SQLite.Simple.QQ (sql)
 createUserRecordAt :: DB.Connection -> AgentUserId -> Bool -> Bool -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
 createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {displayName, fullName, shortDescr, description, image, peerType, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
-    when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
         sendRcptsContacts = True
         sendRcptsSmallGroups = True
@@ -150,6 +149,9 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
           :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, BI clientService, currentTs, currentTs)
       )
     userId <- insertedRowId db
+    -- After the insert: the name is unique in users, so a duplicate fails
+    -- above, and deactivating first would commit a database with no active user.
+    when activeUser $ DB.execute db "UPDATE users SET active_user = 0 WHERE user_id != ?" (Only userId)
     DB.execute
       db
       "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
@@ -344,12 +346,14 @@ updateUserProfile db user p'
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
-        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-        userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
+        -- Insert first: checkConstraint returns the violation as a value, so the
+        -- transaction commits, keeping whatever ran before the failing insert.
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
+        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         updateUserProfileFields_' db userId profileId p' currentTs
         updateContactLDN_ db user userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile = (toLocalProfile profileId p' localAlias currentTs (Just False) Nothing) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
