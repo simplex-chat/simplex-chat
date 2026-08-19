@@ -69,6 +69,17 @@ version = extra["android.version_name"] as String
 
 allprojects {
     repositories {
+        // JitPack stopped serving com.github.NanoHttpd.nanohttpd:*:efb2ebf (404 on both the pom
+        // and the jar), which breaks the desktop build. The only versions it still serves for that
+        // commit are `master-SNAPSHOT` and its git-describe alias, and both of them declare
+        // `master-SNAPSHOT` in the pom, so Gradle rejects them with "inconsistent module metadata".
+        // The jars below are the ones shipped in the 7.0.1 release, taken from
+        // simplex-desktop-ubuntu-24_04-aarch64.deb:
+        //   nanohttpd-efb2ebf.jar           sha256 e063590fb4f8223be5f02ff09aadf4cd40da47ac9cbe0272e6137387be2f9b9a
+        //   nanohttpd-websocket-efb2ebf.jar sha256 8938650ab58c6c1adf6119c3d4691d15de9305637bdce5471fdb51d83724ffe8
+        maven(rootProject.layout.projectDirectory.dir("local-maven")) {
+            content { includeGroup("com.github.NanoHttpd.nanohttpd") }
+        }
         google()
         mavenCentral()
         maven("https://oss.sonatype.org/content/repositories/snapshots")
