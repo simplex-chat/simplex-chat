@@ -1510,7 +1510,8 @@ CREATE TABLE test_chat_schema.users (
     active_order bigint DEFAULT 0 NOT NULL,
     auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
     is_user_chat_relay smallint DEFAULT 0 NOT NULL,
-    client_service smallint DEFAULT 0 NOT NULL
+    client_service smallint DEFAULT 0 NOT NULL,
+    auto_accept_group_invitations smallint DEFAULT 0 NOT NULL
 );
 
 

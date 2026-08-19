@@ -1287,7 +1287,7 @@
     <string name="sync_connection_force_question">Renegocjować szyfrowanie\?</string>
     <string name="receipts_contacts_override_enabled">Wysyłanie potwierdzeń jest włączone dla %d kontaktów</string>
     <string name="sync_connection_force_desc">Szyfrowanie działa, a nowe uzgodnienie szyfrowania nie jest wymagane. Może to spowodować błędy w połączeniu!</string>
-    <string name="receipts_section_description">Te ustawienia dotyczą Twojego bieżącego profilu</string>
+    <string name="these_settings_are_for_your_current_profile">Te ustawienia dotyczą Twojego bieżącego profilu</string>
     <string name="receipts_section_description_1">Można je nadpisać w ustawieniach kontaktu i grupy.</string>
     <string name="conn_event_ratchet_sync_ok">szyfrowanie ok</string>
     <string name="conn_event_ratchet_sync_allowed">renegocjacja szyfrowania dozwolona</string>

@@ -1280,7 +1280,7 @@
     <string name="rcv_conn_event_verification_code_reset">code de sécurité modifié</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">L\'envoi d\'accusés de réception sera activé pour tous les contacts dans tous les profils de chat visibles.</string>
     <string name="receipts_section_description_1">Ils peuvent être modifiés dans les paramètres des contacts et des groupes.</string>
-    <string name="receipts_section_description">Ces paramètres s\'appliquent à votre profil actuel</string>
+    <string name="these_settings_are_for_your_current_profile">Ces paramètres s\'appliquent à votre profil actuel</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Vous pouvez les activer ultérieurement via les paramètres de Confidentialité et Sécurité de l\'application.</string>
     <string name="receipts_contacts_title_enable">Activer les accusés de réception \?</string>
     <string name="receipts_contacts_title_disable">Désactiver les accusés de réception \?</string>

@@ -118,7 +118,7 @@ check_apk() {
 verify_apk() {
   apk_name="$1"
 
-  # Release APKs are packaged by AGP (gradle :android:assembleRelease; AGP version is
+  # Release APKs are packaged by AGP (gradle :android:assembleFossRelease; AGP version is
   # gradle.plugin.version in apps/multiplatform/gradle.properties), which zero-pads ZIP
   # alignment. Do NOT add --pad-like-apksigner (standalone apksigner >= 35.0.0-rc1 uses
   # the 0xd935 extra-field padding) unless AGP is bumped to a packager that uses it —

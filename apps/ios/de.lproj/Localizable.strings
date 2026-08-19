@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Kontakt-Präferenzen";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "KONTAKTANFRAGEN VON GRUPPEN";
+"Contact requests in groups" = "KONTAKTANFRAGEN VON GRUPPEN";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "Kontakt sollte annehmen…";

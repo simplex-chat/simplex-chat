@@ -52,6 +52,9 @@ chatProfileTests = do
     it "reject profile image that is too large" testSetProfileImageTooLarge
     it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
+    it "auto-accept group invitations" testAutoAcceptGroupInvitations
+    it "auto-accept group invitations on a second profile" testAutoAcceptGroupInvitationsSecondProfile
+    it "auto-accept group invitations on an inactive profile" testAutoAcceptGroupInvitationsInactiveProfile
     it "present supporter badge to contacts" testUserBadgeBroadcast
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
     it "supporter badge sent to member joining via group link" testUserBadgeGroupLink
@@ -538,6 +541,61 @@ testSetProfileImageFromFile ps = testChat aliceProfile test ps
       B.writeFile emptyPath ""
       alice ##> ("/set profile image file " <> emptyPath)
       alice <##. "bad chat command: image file is empty"
+
+testAutoAcceptGroupInvitations :: HasCallStack => TestParams -> IO ()
+testAutoAcceptGroupInvitations =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      bob ##> "/set accept group invitations on"
+      bob <## "ok"
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/a team bob admin"
+      alice <## "invitation to join the group #team sent to bob"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+
+testAutoAcceptGroupInvitationsSecondProfile :: HasCallStack => TestParams -> IO ()
+testAutoAcceptGroupInvitationsSecondProfile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      bob ##> "/create user bob2"
+      showActiveUser bob "bob2"
+      bob ##> "/set accept group invitations on"
+      bob <## "ok"
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/a team bob2 admin"
+      alice <## "invitation to join the group #team sent to bob2"
+      concurrently_
+        (alice <## "#team: bob2 joined the group")
+        (bob <## "#team: you joined the group")
+
+testAutoAcceptGroupInvitationsInactiveProfile :: HasCallStack => TestParams -> IO ()
+testAutoAcceptGroupInvitationsInactiveProfile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      bob ##> "/create user bob2"
+      showActiveUser bob "bob2"
+      bob ##> "/set accept group invitations on"
+      bob <## "ok"
+      connectUsers alice bob
+      -- switch away: bob2 now has auto-accept on but is NOT the active profile
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/a team bob2 admin"
+      alice <## "invitation to join the group #team sent to bob2"
+      concurrently_
+        (alice <## "#team: bob2 joined the group")
+        (bob <## "[user: bob2] #team: you joined the group")
 
 testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =

@@ -63,7 +63,7 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
     addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
     addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
     addToBatch (Right msg@SndMessage {msgBody, signedMsg_}) acc@(batches, bodies, msgs, len, n)
-      | batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
+      | n' <= maxBatchElementCount && batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
       | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
       | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
@@ -90,7 +90,7 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       | msgLen + 4 > maxLen = (msgBodies, accepted, task : large, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, task : accepted, large, len', n + 1)
+      | n + 1 <= maxBatchElementCount && len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, task : accepted, large, len', n + 1)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, accepted, large, len, n)
       where
@@ -112,7 +112,7 @@ batchElements maxLen = finish . foldl' addToBatch ([], [], 0, 0, 0)
   where
     addToBatch (batches, elems, len, n, dropped) el
       | elLen + 4 > maxLen = (batches, elems, len, n, dropped + 1)
-      | len + elLen + (n + 1) * 2 + 2 <= maxLen = (batches, el : elems, len + elLen, n + 1, dropped)
+      | n + 1 <= maxBatchElementCount && len + elLen + (n + 1) * 2 + 2 <= maxLen = (batches, el : elems, len + elLen, n + 1, dropped)
       | otherwise = (closeBatch elems : batches, [el], elLen, 1, dropped)
       where
         elLen = B.length el
@@ -182,7 +182,7 @@ batchProfilesWithBody maxLen body labeled =
     initState = (initLen, initCount, [], [], [])
     step (totalLen, count, acceptedPairs, overflow, large) (s, e)
       | B.length e + 4 > maxLen = (totalLen, count, acceptedPairs, overflow, s : large)
-      | count >= 255 = full
+      | count >= maxBatchElementCount = full
       | candidateLen <= maxLen = (candidateLen, count + 1, (s, e) : acceptedPairs, overflow, large)
       | otherwise = full
       where
@@ -215,7 +215,7 @@ batchProfiles maxLen =
     addToBatch (s, e) acc@(batches, elems, members, len, n, large)
       | B.length e + 4 > maxLen = (batches, elems, members, len, n, s : large)
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      | n + 1 <= 255 && len + B.length e + (n + 1) * 2 + 2 <= maxLen =
+      | n + 1 <= maxBatchElementCount && len + B.length e + (n + 1) * 2 + 2 <= maxLen =
           (batches, e : elems, s : members, len + B.length e, n + 1, large)
       -- doesn't fit current — flush and start new with this element alone
       | otherwise =

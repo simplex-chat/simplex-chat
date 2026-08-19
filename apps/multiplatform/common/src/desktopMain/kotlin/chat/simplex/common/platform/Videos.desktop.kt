@@ -9,5 +9,6 @@ fun isVideo(uri: URI): Boolean {
       path.endsWith(".mp4") ||
       path.endsWith(".mpg") ||
       path.endsWith(".mpeg") ||
-      path.endsWith(".mkv")
+      path.endsWith(".mkv") ||
+      path.endsWith(".webm")
 }

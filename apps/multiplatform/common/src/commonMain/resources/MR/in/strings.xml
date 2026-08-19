@@ -1206,7 +1206,7 @@
     <string name="receipts_groups_title_enable">Aktifkan tanda terima untuk grup?</string>
     <string name="empty_chat_profile_is_created">Profil obrolan kosong dengan nama yang disediakan dibuat, dan aplikasi terbuka seperti biasa.</string>
     <string name="if_you_enter_passcode_data_removed">Jika Anda memasukkan kode sandi saat membuka aplikasi, semua data aplikasi akan dihapus secara permanen!</string>
-    <string name="receipts_section_description">Pengaturan ini untuk profil Anda saat ini</string>
+    <string name="these_settings_are_for_your_current_profile">Pengaturan ini untuk profil Anda saat ini</string>
     <string name="receipts_contacts_override_enabled">Kirim tanda terima diaktifkan untuk %d kontak</string>
     <string name="receipts_contacts_override_disabled">Kirim tanda terima dimatikan untuk %d kontak</string>
     <string name="error_loading_xftp_servers">Gagal memuat server XFTP</string>

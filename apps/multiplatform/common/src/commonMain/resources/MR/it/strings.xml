@@ -1290,7 +1290,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">L\'invio delle ricevute di consegna sarà attivo per tutti i contatti in tutti i profili di chat visibili.</string>
     <string name="receipts_contacts_override_disabled">L\'invio di ricevute è disattivato per %d contatti</string>
     <string name="sync_connection_force_desc">La crittografia funziona e il nuovo accordo sulla crittografia non è richiesto. Potrebbero verificarsi errori di connessione!</string>
-    <string name="receipts_section_description">Queste impostazioni sono per il tuo profilo attuale</string>
+    <string name="these_settings_are_for_your_current_profile">Queste impostazioni sono per il tuo profilo attuale</string>
     <string name="receipts_section_description_1">Possono essere sovrascritte nelle impostazioni dei contatti e dei gruppi.</string>
     <string name="receipts_contacts_enable_for_all">Attiva per tutti</string>
     <string name="receipts_contacts_enable_keep_overrides">Attiva (mantieni sostituzioni)</string>

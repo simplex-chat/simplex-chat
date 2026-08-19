@@ -1350,7 +1350,7 @@
     <string name="the_sender_will_not_be_notified">Ο αποστολέας ΔΕΝ θα ειδοποιηθεί.</string>
     <string name="smp_servers_per_user">Οι διακομιστές για τις νέες συνδέσεις του τρέχοντος προφίλ συνομιλίας σου</string>
     <string name="xftp_servers_per_user">Οι διακομιστές για τα νέα αρχεία του τρέχοντος προφίλ συνομιλίας σου</string>
-    <string name="receipts_section_description">Αυτές οι ρυθμίσεις ισχύουν για το τρέχον προφίλ σου</string>
+    <string name="these_settings_are_for_your_current_profile">Αυτές οι ρυθμίσεις ισχύουν για το τρέχον προφίλ σου</string>
     <string name="the_text_you_pasted_is_not_a_link">Το κείμενο που επικόλλησες δεν είναι σύνδεσμος SimpleX.</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Το αρχείο της βάσης δεδομένων που μεταφορτώθηκε, θα διαγραφεί οριστικά από τους διακομιστές.</string>
     <string name="video_decoding_exception_desc">Το βίντεο δεν μπορεί να αποκωδικοποιηθεί. Δοκίμασε ένα άλλο βίντεο ή επικοινώνησε με τους προγραμματιστές.</string>

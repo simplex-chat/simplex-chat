@@ -1329,7 +1329,7 @@
     <string name="receipts_contacts_override_enabled">Отправка отчётов о доставке включена для %d контактов</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Отправка отчётов о доставке будет включена для всех контактов во всех видимых профилях чата.</string>
     <string name="this_setting_is_for_your_current_profile">Установка для Вашего активного профиля</string>
-    <string name="receipts_section_description">Установки для Вашего активного профиля</string>
+    <string name="these_settings_are_for_your_current_profile">Установки для Вашего активного профиля</string>
     <string name="receipts_contacts_override_disabled">Отправка отчётов о доставке выключена для %d контактов</string>
     <string name="sync_connection_force_desc">Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!</string>
     <string name="v5_2_message_delivery_receipts_descr">Вторая галочка - знать, что доставлено! ✅</string>

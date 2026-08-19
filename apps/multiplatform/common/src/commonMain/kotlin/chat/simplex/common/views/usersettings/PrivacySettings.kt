@@ -87,12 +87,18 @@ fun PrivacySettingsView(
     val currentUser = chatModel.currentUser.value
     if (currentUser != null && !chatModel.desktopNoUserNoRemote) {
       SectionDividerSpaced()
-      ContacRequestsFromGroupsSection(
+      AutoAcceptSection(
         currentUser = currentUser,
-        setAutoAcceptGrpDirectInvs = { enable ->
+        setAutoAcceptMemberContacts = { enable ->
           withApi {
             chatModel.controller.apiSetUserAutoAcceptMemberContacts(currentUser, enable)
             chatModel.currentUser.value = currentUser.copy(autoAcceptMemberContacts = enable)
+          }
+        },
+        setAutoAcceptGroupInvitations = { enable ->
+          withApi {
+            chatModel.controller.apiSetUserAutoAcceptGroupInvitations(currentUser, enable)
+            chatModel.currentUser.value = currentUser.copy(autoAcceptGroupInvitations = enable)
           }
         }
       )
@@ -333,16 +339,26 @@ expect fun PrivacyDeviceSection(
 )
 
 @Composable
-private fun ContacRequestsFromGroupsSection(
+private fun AutoAcceptSection(
   currentUser: User,
-  setAutoAcceptGrpDirectInvs: (Boolean) -> Unit
+  setAutoAcceptMemberContacts: (Boolean) -> Unit,
+  setAutoAcceptGroupInvitations: (Boolean) -> Unit
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
-    SettingsActionItemWithContent(painterResource(MR.images.ic_check), stringResource(MR.strings.auto_accept_contact)) {
+  // legacy string key names, reused for their values so this section stays translated
+  SectionView(stringResource(MR.strings.auto_accept_contact)) {
+    SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
       DefaultSwitch(
         checked = currentUser.autoAcceptMemberContacts,
         onCheckedChange = { enable ->
-          setAutoAcceptGrpDirectInvs(enable)
+          setAutoAcceptMemberContacts(enable)
+        }
+      )
+    }
+    SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.group_invitations)) {
+      DefaultSwitch(
+        checked = currentUser.autoAcceptGroupInvitations,
+        onCheckedChange = { enable ->
+          setAutoAcceptGroupInvitations(enable)
         }
       )
     }
@@ -350,7 +366,7 @@ private fun ContacRequestsFromGroupsSection(
   SectionTextFooter(
     remember(currentUser.displayName) {
       buildAnnotatedString {
-        append(generalGetString(MR.strings.this_setting_is_for_your_current_profile) + " ")
+        append(generalGetString(MR.strings.these_settings_are_for_your_current_profile) + " ")
         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
           append(currentUser.displayName)
         }
@@ -387,7 +403,7 @@ private fun DeliveryReceiptsSection(
   SectionTextFooter(
     remember(currentUser.displayName) {
       buildAnnotatedString {
-        append(generalGetString(MR.strings.receipts_section_description) + " ")
+        append(generalGetString(MR.strings.these_settings_are_for_your_current_profile) + " ")
         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
           append(currentUser.displayName)
         }

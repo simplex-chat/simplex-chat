@@ -495,6 +495,9 @@ fun ciSenderProfile(ci: ChatItem, chatInfo: ChatInfo): LocalProfile? = when (val
 
 expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration
 
+// Whether the file really contains a video track. Reads container metadata only, without decoding a frame.
+expect suspend fun hasVideoTrack(uri: URI): Boolean
+
 fun showWrongUriAlert() {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(MR.strings.non_content_uri_alert_title),

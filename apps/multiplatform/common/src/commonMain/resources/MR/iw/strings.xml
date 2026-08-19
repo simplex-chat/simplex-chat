@@ -1291,7 +1291,7 @@
 \n- קבוצות קצת יותר טובות.
 \n- ועוד!</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר בכל פרופילי הצ\'אט הגלויים.</string>
-    <string name="receipts_section_description">הגדרות אלו מיועדות לפרופיל הנוכחי שלך</string>
+    <string name="these_settings_are_for_your_current_profile">הגדרות אלו מיועדות לפרופיל הנוכחי שלך</string>
     <string name="receipts_section_description_1">ניתן לעקוף אותם בהגדרות אנשי קשר וקבוצות.</string>
     <string name="receipts_contacts_override_disabled">שליחת קבלות מושבתת עבור %d אנשי קשר</string>
     <string name="receipts_contacts_override_enabled">שליחת קבלות מאופשרת עבור %d אנשי קשר</string>

@@ -62,7 +62,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       cmd = parseChatCommand bs
       rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
-  r <- execChatCommand rh' bs 0 `runReaderT` cc
+  r <- execChatCommand (maybe CSLocal CSRemoteHost rh') bs 0 `runReaderT` cc
   case r of
     Right r' -> processResp cmd rh r'
     Left _ -> when (isMessage cmd) $ echo s

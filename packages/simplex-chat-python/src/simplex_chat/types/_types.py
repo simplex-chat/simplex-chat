@@ -2767,6 +2767,7 @@ class RoleGroupPreference(TypedDict):
 
 class SMPAgentError_A_MESSAGE(TypedDict):
     type: Literal["A_MESSAGE"]
+    messageErr: str
 
 class SMPAgentError_A_PROHIBITED(TypedDict):
     type: Literal["A_PROHIBITED"]
@@ -3529,6 +3530,7 @@ class User(TypedDict):
     sendRcptsContacts: bool
     sendRcptsSmallGroups: bool
     autoAcceptMemberContacts: bool
+    autoAcceptGroupInvitations: bool
     userMemberProfileUpdatedAt: NotRequired[str]  # ISO-8601 timestamp
     userChatRelay: bool
     clientService: bool
