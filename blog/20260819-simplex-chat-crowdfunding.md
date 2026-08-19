@@ -3,43 +3,67 @@ layout: layouts/article.html
 title: "Equity Crowdfunding Launched &mdash; You Can Get a Stake in SimpleX Chat"
 date: 2026-08-19
 preview: ""
-image: images/20260722-register-name.png
+image: images/20260819-growth-chart.png
 imageWide: true
-permalink: "/blog/20260722-simplex-public-names.html"
+permalink: "/blog/20260819-simplex-chat-crowdfunding.html"
 ---
 
 # Equity Crowdfunding Launched &mdash; You Can Get a Stake in SimpleX Chat
 
 **Published:** Aug 19, 2026
 
-SimpleX is the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now fully launched on Wefunder, so the people who use it can get a stake in the company that builds it.
+SimpleX is the first and the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now launched on Wefunder, so network users, and anybody else, can get a stake in SimpleX Chat &mdash; the company that builds it.
 
-## A network that doesn't know who you are, or who you talk to
+## A network that cannot know who you are, or who you talk to
 
-SimpleX network has no phone numbers, usernames, or accounts, and it gives users no identifiers of any kind &mdash; not even a random number. Every conversation has its own address on the network, and there is no permanent address for a user: no record to look up or to leak.
+<img src="./images/20260819-growth-chart.png" width="40%" class="float-to-right">
 
-All other messengers, even the most private, may hide your name but still tag you with something &mdash; at least some number or key. Two of your contacts can work out they are talking to the same person. On SimpleX they cannot. This quality cannot be added to a network that already identifies users. It has to be built in from the start, and that is how SimpleX Network was built.
+People found SimpleX without any paid marketing &mdash; the community spread it via hundreds of posts, videos, podcasts and talks.[^links] The app was downloaded more than 3 million times. ~480,000 people use it every month. Users, including Vitalik Buterin, donated $650,000. There are more than 1,000 community-run servers on the network. Trail of Bits audited it in 2022, 2024, and 2026 (to be published).
 
-People found SimpleX without any marketing. 480,000 use it every month, up about 70% in six months, and the app was downloaded 3 million times since it launched. There are more than 1,000 community-run servers on the network. More than $650,000 has been donated, inlcuding the donation from Vitalik Buterin. Trail of Bits audited it in 2022 and 2024, with a third completed this year &mdash; it will be published soon.
+SimpleX Network assigns no identifiers to users &mdash; no phone numbers, usernames, or even random numbers. Instead, random identifiers are assigned to conversations, and only users know who they talk to. This cannot be added to a network that already has identifiers; it has to be built this way from the start, as SimpleX Network was.
+
+All other messengers, even private ones, may hide your name but still tag you with some number or key. That identifier links your conversations together, and the pattern of who you talk to can reveal who you are, even without names, as a 2009 study showed.[^deanon]
 
 ## Why it matters now
 
-For thirty years online you knew who you were talking to by the number, voice, or face. AI now copies all three for a few dollars. Last year a finance worker at Arup in Hong Kong paid out about $25 million after a video call in which every colleague was a deepfake. The same call — from your family member, friend, or boss — will cost few dollars to make, and anyone can be the target.
+There are three trends that increase the demand for identity-free messaging that no other existing network can provide.
 
-On SimpleX Network you would still know who you are talking to, because the only key to your connection is held by you and the person you met. A clone cannot spoof a number or seize an account, because SimpleX has neither.
+**Surveillance of private life**. Big centralized platforms are increasingly scanning private messages to train AI models. More people would move to use private messaging that can't know who they talk to.
 
-The rest of the internet is moving the other way. Creators lose audiences they built over years when one policy changes. Governments push to put an ID on everyone and to scan every message in centralized services &mdash; more records, in more places, waiting until the next data leak happens. People are already leaving, and SimpleX Network is where they can go: nothing to scan, and no one to lock out.
+**Accelerating deplatforming**. Creators are removed from centralized platforms without due process, and an audience built over years can disappear with one policy change. Telegram alone blocked 44 million groups and channels in 2025.
 
-## SimpleX is not just a messenger &mdash; it's the network and the next thing to build on
+**AI agents**. Agents are beginning to act for people, handling logins and money. Whoever controls an agent's identity can shut it down, or turn it against the person it works for. The same AI can fake a real person too.[^arup]
 
-People never chose a messenger for how it connects. They chose it for what they could do inside it. That is why messengers never merged into one: you cannot fold a rich app down to plain text. The web settled the same problem once, by becoming the place where anything could be built. Communication has not had that yet.
+On SimpleX Network the users, not the network, control their identities, and it solves all three problems &mdash; users cannot be surveilled or deplatformed by the network, or attacked by somebody who they have no connection with.[^address] The only keys to user connections are held by the users themselves.
 
-SimpleX Network is built as a platform to build on, not an app. Messaging is only the first thing on it. Channels, businesses, and bots come next, and people are already building &mdash; users started 7,000 channels in the three months since channels shipped, and developers have given it 19,000 GitHub stars and over 1,000 forks, with some projects running entirely on SimpleX. On the same network: private messages, public channels, businesses, and the AI agents that will soon act for people &mdash; with no one in the middle.
+## SimpleX is not just a messenger &mdash; it's a network to build on
+
+<img src="./images/20260819-developers.png" width="40%" class="float-to-right">
+
+SimpleX is used for private messaging, but it also brings together communities, creators, businesses and server operators. Each group makes the network more valuable to the others.
+
+Most people want more from a messenger than to connect and send texts &mdash; they want to share experiences, and every messenger builds its own. That user experience is what prevents messaging apps from converging to one protocol, the way other networks did.[^network]
+
+The web solved this by letting anyone build any experience on one open platform. SimpleX Network is evolving into that kind of platform, and developers already build on it: moderation and AI bots, bridges, and more, with over 19,000 stars on GitHub. Soon it will be possible to build custom interfaces inside a chat. Every service and feature users add &mdash; with AI anybody can do it &mdash; makes the network more useful and brings new people in, without locking them into a single provider.
 
 ## Now you can get a stake
 
-SimpleX Chat is the company that builds SimpleX Network, and you can own a piece. If you invest $500 or more, you receive a public SimpleX name on SimpleX Network:
+SimpleX Chat is the company that builds SimpleX Network, and now you can invest as little as $100 and get a stake in the company.
+
+If you invest $500 or more, you receive a public SimpleX name on SimpleX Network:
 - for 5 years for other early bird investors,
 - for 3 years after that.
 
-By investing, you can benefit from the company growth, and help us build the future of private and secure communications. 
+You may benefit from the company's growth, and you would help build a network that people own &mdash; where the communities and audiences you build stay yours, and no company can take them away. That is what we set out to build. Now you can build it with us.
+
+[Invest on Wefunder](https://wefunder.com/simplex.chat)
+
+[^links]: https://simplex.chat/links/
+
+[^deanon]: Narayanan & Shmatikov, *De-anonymizing Social Networks* (2009): a third of the users with accounts on both Twitter and Flickr were re-identified in the anonymised Twitter graph, from its structure alone, at a 12% error rate. Sources: [arXiv 0903.3276](https://arxiv.org/pdf/0903.3276), [Narayanan, 33 Bits of Entropy](https://33bits.wordpress.com/2009/03/19/de-anonymizing-social-networks/), [Princeton listing](https://collaborate.princeton.edu/en/publications/de-anonymizing-social-networks/).
+
+[^arup]: In 2024, a video call of deepfakes cost Arup $25 million. User-controlled IDs are a basic security for the agentic Internet.
+
+[^address]: SimpleX Network supports public addresses, for users who want to accept connections from anybody, e.g. for a business, but these addresses are opt-in. When users use only one-time connection links, nobody can connect to them.
+
+[^network]: All networks converged to a single protocol, starting from railroads, and ending to a World Wide Web. A single unified network can create more value that several disconnected networks.
