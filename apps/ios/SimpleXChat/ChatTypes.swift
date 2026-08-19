@@ -1886,6 +1886,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         groupInfo?.useRelays == true
     }
 
+    public var inMainChatList: Bool {
+        groupChatScope() == nil || groupInfo?.membership.memberPending ?? false
+    }
+
     // this works for features that are common for contacts and groups
     public func featureEnabled(_ feature: ChatFeature) -> Bool {
         switch self {

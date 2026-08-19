@@ -658,21 +658,8 @@ final class ChatModel: ObservableObject {
         // update chat list
         if let i = getChatIndex(cInfo.id) {
             // update preview
-            if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
-                chats[i].chatItems = switch cInfo {
-                case .group:
-                    if let currentPreviewItem = chats[i].chatItems.first {
-                        if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
-                            [cItem]
-                        } else {
-                            [currentPreviewItem]
-                        }
-                    } else {
-                        [cItem]
-                    }
-                default:
-                    [cItem]
-                }
+            if cInfo.inMainChatList {
+                chats[i].chatItems = [previewItem(cInfo, chats[i].chatItems.first, cItem)]
                 if case .rcvNew = cItem.meta.itemStatus {
                     unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
                 }
@@ -690,6 +677,17 @@ final class ChatModel: ObservableObject {
         if let ciIM = getCIItemsModel(cInfo, cItem) {
             _ = _upsertChatItem(ciIM, cInfo, cItem)
         }
+    }
+
+    private func previewItem(_ cInfo: ChatInfo, _ currentItem: ChatItem?, _ newItem: ChatItem) -> ChatItem {
+        guard case let .group(groupInfo, _) = cInfo, let currentItem else { return newItem }
+        if groupInfo.membership.memberPending {
+            let currentIsMessage = currentItem.content.msgContent != nil
+            if currentIsMessage != (newItem.content.msgContent != nil) {
+                return currentIsMessage ? currentItem : newItem
+            }
+        }
+        return newItem.meta.itemTs < currentItem.meta.itemTs ? currentItem : newItem
     }
 
     func getCIItemsModel(_ cInfo: ChatInfo, _ ci: ChatItem) -> ItemsModel? {
@@ -718,16 +716,16 @@ final class ChatModel: ObservableObject {
     func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         // update chat list
         var itemAdded: Bool = false
-        if cInfo.groupChatScope() == nil {
+        if cInfo.inMainChatList {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    if pItem.id == cItem.id || (cInfo.groupChatScope() == nil && chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
                         chat.chatItems = [cItem]
                     }
                 } else {
                     chat.chatItems = [cItem]
                 }
-            } else {
+            } else if cInfo.groupChatScope() == nil {
                 addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
                 itemAdded = true
             }
@@ -789,7 +787,7 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update chat list
-        if cInfo.groupChatScope() == nil {
+        if cInfo.inMainChatList {
             if cItem.isRcvNew {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
             }
