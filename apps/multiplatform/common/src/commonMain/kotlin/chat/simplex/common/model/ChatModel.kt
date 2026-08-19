@@ -363,6 +363,20 @@ object ChatModel {
     }
   }
 
+  suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    activeCtx.addChatItem(rhId, cInfo, cItem)
+    if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
+      chatsContext.addChatItem(rhId, cInfo, cItem)
+    }
+  }
+
+  suspend fun upsertSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    activeCtx.upsertChatItem(rhId, cInfo, cItem)
+    if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
+      chatsContext.upsertChatItem(rhId, cInfo, cItem)
+    }
+  }
+
   // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
@@ -520,75 +534,69 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
-      // updates membersRequireAttention
       val cInfo = if (chatInfo is ChatInfo.Direct && chatInfo.chatDeleted) {
         // mark chat non deleted
-        val updatedContact = chatInfo.contact.copy(chatDeleted = false)
-        ChatInfo.Direct(updatedContact)
+        ChatInfo.Direct(chatInfo.contact.copy(chatDeleted = false))
       } else {
         chatInfo
       }
+      // updates membersRequireAttention
       updateChatInfo(rhId, cInfo)
-      // update chat list
-      val i = getChatIndex(rhId, cInfo.id)
-      val chat: Chat
-      if (i >= 0) {
-        chat = chats[i]
-        // update preview (for chat from main scope to show new items for invitee in pending status)
-        if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
-          val newPreviewItem = when (cInfo) {
-            is ChatInfo.Group -> {
-              val currentPreviewItem = chat.chatItems.firstOrNull()
-              if (currentPreviewItem != null) {
-                if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
-                  cItem
-                } else {
-                  currentPreviewItem
-                }
-              } else {
-                cItem
-              }
-            }
+      addItemToChatList(rhId, cInfo, cItem)
+      withContext(Dispatchers.Main) {
+        addItemToScope(cInfo, cItem)
+      }
+    }
 
-            else -> cItem
-          }
-          val wasUnread = chat.unreadTag
-          chats[i] = chat.copy(
-            chatItems = arrayListOf(newPreviewItem),
-            chatStats =
-            if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-              increaseUnreadCounter(rhId, currentUser.value!!)
-              chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
-            } else
-              chat.chatStats
-          )
-          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
-        }
-        // pop chat
-        if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          reorderChat(chats[i], 0)
-        } else {
-          popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
-        }
+    private suspend fun addItemToChatList(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      val i = getChatIndex(rhId, cInfo.id)
+      if (i < 0) {
+        val items: List<ChatItem> = if (cInfo.groupChatScope() == null) arrayListOf(cItem) else emptyList()
+        addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = items))
+        return
+      }
+      val chat = chats[i]
+      if (cInfo.inMainChatList) {
+        val wasUnread = chat.unreadTag
+        val stats = chat.chatStats
+        chats[i] = chat.copy(
+          chatItems = arrayListOf(previewItem(cInfo, chat.chatItems.firstOrNull(), cItem)),
+          chatStats = if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+            increaseUnreadCounter(rhId, currentUser.value!!)
+            stats.copy(
+              unreadCount = stats.unreadCount + 1,
+              unreadMentions = if (cItem.meta.userMention) stats.unreadMentions + 1 else stats.unreadMentions
+            )
+          } else stats
+        )
+        updateChatTagReadInPrimaryContext(chats[i], wasUnread)
+      }
+      if (appPlatform.isDesktop && cItem.chatDir.sent) {
+        reorderChat(chats[i], 0)
       } else {
-        if (cInfo.groupChatScope() == null) {
-          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
-        } else {
-          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = emptyList()))
+        popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
+      }
+    }
+
+    private fun previewItem(cInfo: ChatInfo, currentItem: ChatItem?, newItem: ChatItem): ChatItem {
+      if (cInfo !is ChatInfo.Group || currentItem == null) return newItem
+      if (cInfo.groupInfo.membership.memberPending) {
+        val currentIsMessage = currentItem.content.msgContent != null
+        if (currentIsMessage != (newItem.content.msgContent != null)) {
+          return if (currentIsMessage) currentItem else newItem
         }
       }
-      // add to current scope
-      withContext(Dispatchers.Main) {
-        if (chatItemBelongsToScope(cInfo, cItem)) {
-          // Prevent situation when chat item already in the list received from backend
-          if (chatItems.value.none { it.id == cItem.id }) {
-            if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
-            } else {
-              addToChatItems(cItem)
-            }
-          }
-        }
+      return if (newItem.meta.itemTs < currentItem.meta.itemTs) currentItem else newItem
+    }
+
+    private fun addItemToScope(cInfo: ChatInfo, cItem: ChatItem) {
+      if (!chatItemBelongsToScope(cInfo, cItem)) return
+      // Prevent situation when chat item already in the list received from backend
+      if (chatItems.value.any { it.id == cItem.id }) return
+      if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+        addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+      } else {
+        addToChatItems(cItem)
       }
     }
 
@@ -611,11 +619,10 @@ object ChatModel {
     suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
       var itemAdded = false
       // update chat list
-      if (cInfo.groupChatScope() == null) {
-        val i = getChatIndex(rhId, cInfo.id)
-        val chat: Chat
-        if (i >= 0) {
-          chat = chats[i]
+      val i = getChatIndex(rhId, cInfo.id)
+      if (i >= 0) {
+        if (cInfo.inMainChatList) {
+          val chat = chats[i]
           val pItem = chat.chatItems.lastOrNull()
           if (pItem?.id == cItem.id) {
             chats[i] = chat.copy(chatItems = arrayListOf(cItem))
@@ -624,10 +631,10 @@ object ChatModel {
               decreaseCounterInPrimaryContext(rhId, cInfo.id)
             }
           }
-        } else {
-          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
-          itemAdded = true
         }
+      } else if (cInfo.groupChatScope() == null) {
+        addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+        itemAdded = true
       }
       // update current scope
       withContext(Dispatchers.Main) {
@@ -669,7 +676,7 @@ object ChatModel {
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       // update chat list
-      if (cInfo.groupChatScope() == null) {
+      if (cInfo.inMainChatList) {
         if (cItem.isRcvNew) {
           decreaseCounterInPrimaryContext(rhId, cInfo.id)
         }
@@ -1821,6 +1828,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val isChannel: Boolean
     get() = groupInfo_?.useRelays == true
+
+  val inMainChatList: Boolean
+    get() = groupChatScope() == null || groupInfo_?.membership?.memberPending == true
 }
 
 @Serializable

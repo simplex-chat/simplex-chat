@@ -349,10 +349,13 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatMessagePreview(_ cItem: ChatItem?, _ hasFilePreview: Bool = false) -> some View {
+        let memberPending = chat.chatInfo.groupInfo?.membership.memberPending ?? false
+        let itemHasText = cItem?.content.hasMsgContent == true
+        let itemContentShown = showChatPreviews && memberPending && cItem?.content.msgContent != nil
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
             let (t, hasSecrets) = messageDraft(draft)
             chatPreviewLayout(t, draft: true, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
-        } else if cItem?.content.hasMsgContent != true, let previewText = chatPreviewInfoText() {
+        } else if !itemHasText, !itemContentShown, let previewText = chatPreviewInfoText() {
             chatPreviewInfoTextLayout(previewText)
         } else if let cItem = cItem {
             let (t, hasSecrets) = chatItemPreview(cItem)

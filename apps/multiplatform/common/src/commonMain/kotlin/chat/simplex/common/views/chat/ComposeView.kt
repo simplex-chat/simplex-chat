@@ -583,7 +583,7 @@ fun ComposeView(
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
-          chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
+          chatModel.addSentChatItem(chatsCtx, chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
         }
       }
       return chatItems.first().chatItem
@@ -725,7 +725,7 @@ fun ComposeView(
 
       withContext(Dispatchers.Main) {
         chatItems?.forEach { chatItem ->
-          chatsCtx.addChatItem(rhId, chat.chatInfo, chatItem)
+          chatModel.addSentChatItem(chatsCtx, rhId, chat.chatInfo, chatItem)
         }
       }
 
@@ -803,7 +803,7 @@ fun ComposeView(
         )
         if (updatedItem != null) {
           withContext(Dispatchers.Main) {
-            chatsCtx.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            chatModel.upsertSentChatItem(chatsCtx, chat.remoteHostId, cInfo, updatedItem.chatItem)
           }
         }
         return updatedItem?.chatItem
