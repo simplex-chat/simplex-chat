@@ -686,7 +686,7 @@
 \n- desativar membros (cargo de "observador")</string>
     <string name="v4_6_group_moderation">Moderação do grupo</string>
     <string name="v4_6_group_welcome_message">Mensagem de boas-vindas do grupo</string>
-    <string name="database_downgrade">Reverter banco de dados</string>
+    <string name="database_downgrade">Desatualizar banco de dados</string>
     <string name="mtr_error_different">divergência no aplicativo/banco de dados: %s / %s</string>
     <string name="invite_to_group_button">Convidar para o grupo</string>
     <string name="no_contacts_to_add">Sem contatos para adicionar</string>
