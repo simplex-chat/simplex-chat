@@ -2812,7 +2812,7 @@
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>
     <string name="your_public_address">Ihre öffentliche Adresse</string>
     <string name="why_built_heading">Sie wurden ohne ein Benutzerkonto geboren.</string>
-    <string name="why_built_p1">Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.</string>
+    <string name="why_built_p1">Niemand verfolgte Ihre Gespräche. Niemand hat eine Karte erstellt, wo Sie überall waren. Privatsphäre war nie ein Feature – sie war eine Selbstverständlichkeit.</string>
     <string name="why_built_p2">Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.</string>
     <string name="why_built_p3">Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzerkonten, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.</string>
     <string name="why_built_p4">Nicht ein besseres Schloss an der Tür eines Anderen. Kein freundlicher Vermieter, der Ihre Privatsphäre respektiert, aber dennoch jeden Besucher registriert. Sie sind kein Gast. Sie sind zu Hause. Kein Vermieter, kein Fremder kann es betreten - Sie sind souverän.</string>
@@ -2959,7 +2959,7 @@
     <string name="simplex_name_error">Fehler beim SimpleX-Namen</string>
     <string name="simplex_name_not_verified">SimpleX-Name ist nicht verifiziert</string>
     <string name="simplex_name_no_valid_link_desc">Der SimpleX-Name %1$s wurde registriert, aber er hat keinen gültigen Link.</string>
-    <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.</string>
+    <string name="simplex_name_unconfirmed_desc">Der SimpleX‑Name %1$s wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte fügen Sie ihn zu Ihrer Adresse oder zum Kanalprofil hinzu, sofern Sie der Besitzer sind.</string>
     <string name="simplex_name_owner_no_channel_link">Der SimpleX‑Name %1$s wurde ohne Kanal‑Link registriert. Fügen Sie den Kanal‑Link über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_owner_no_address">Der SimpleX‑Name %1$s wurde ohne SimpleX-Adresse registriert. Fügen Sie die SimpleX-Adresse über die Registrierungsseite hinzu.</string>
     <string name="simplex_name_not_found_desc">Dieser SimpleX-Name wurde nicht registriert. Bitte überprüfen Sie den Namen.</string>
@@ -2984,7 +2984,7 @@
     <string name="sign_messages">Nachrichten signieren</string>
     <string name="signature_missing_alert_desc">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</string>
     <string name="channel_simplex_name">Im Kanal genutzter SimpleX-Name</string>
-    <string name="get_simplex_name_beta">SimpleX-Name erhalten (BETA)</string>
+    <string name="get_simplex_name_beta">Einen SimpleX-Namen erhalten (BETA)</string>
     <string name="register_test_name">Wie man einen Test-Namen registriert</string>
     <string name="remove_name">Name entfernen</string>
     <string name="save_simplex_name_question">SimpleX-Name speichern?</string>

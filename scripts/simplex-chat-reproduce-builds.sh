@@ -36,7 +36,8 @@ mkdir -p "${init_dir}/${TAG}-${repo_name}/from-source" "${init_dir}/${TAG}-${rep
 
 git -C "${tempdir}" clone "${repo}.git" &&\
     cd "${tempdir}/${repo_name}" &&\
-    git checkout "${TAG}"
+    git checkout "${TAG}" &&\
+    git submodule update --init --recursive
 
 oses="22.04@sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5 24.04@sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237"
 

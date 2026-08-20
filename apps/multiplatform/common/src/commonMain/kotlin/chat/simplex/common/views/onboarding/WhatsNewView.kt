@@ -944,7 +944,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   VersionDescription(
     // the trailing space differs from the previously released "v7.0", so that What's new is shown again
     version = if (isInUs()) "v7.0.1" else "v7.0",
-    post = null,
+    post = "https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html",
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
