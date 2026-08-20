@@ -32,27 +32,34 @@ let a sender disrupt the app.
 | file size checked before the bytes are copied natively | Skia copies the encoded bytes and scans them to count frames |
 | magic-byte prefilter (`GIF8`, `RIFF....WEBP`) | photos are most of what a chat holds and none are animations; they never reach a second decoder |
 | `allocPixels` result honoured | it reports failure by returning false, and reading into an unallocated bitmap throws |
-| frame duration floor, and 100ms substituted for "no delay" | a 4.6MB GIF can hold 200 000 zero-delay frames |
+| frame count bound | counting the frames also builds a table of them, which a file of minimal frames can make several times its own size |
+| destination allocated with a premultiplied alpha type | the codec reports the alpha type of the first frame, and a frame that has alpha cannot be read into an opaque bitmap |
+| frame duration floor, and 100ms substituted for delays of 10ms and less | a 4.6MB GIF can hold 200 000 zero-delay frames, and Skia reports the usual "as fast as possible" delay of one centisecond as 10ms |
 | single exception boundary around every native call | the frame count and repeat count are read from the file too |
 
 Long frame delays are honoured rather than clamped — they are the author's, and they cost nothing.
 
 ## Cost, and the optimisations that were rejected
 
-Measured on a 1244x554 GIF and its WebP equivalent:
+A frame continues the one before it, and the codec has to be told that the bitmap already holds it. Without
+that it decodes the whole chain back to the last independent frame, so a frame costs as much as its index and
+a loop costs the square of the frame count. Measured over one loop of the GIFs in `images/`, decode only:
 
-| | work/frame | CPU while playing |
-| --- | --- | --- |
-| typical GIF | 2.80 ms | 1.7% of one core |
-| animated WebP | 4.19 ms | 2.5% of one core |
-| 2000x891 GIF | 180.6 ms | 100% of one core |
+| | frames | chain re-decoded | prior frame reused |
+| --- | --- | --- | --- |
+| files.gif | 196 | 5.93 ms/frame | 0.06 ms |
+| connection.gif | 240 | 9.22 ms/frame | 0.09 ms |
+| groups.gif | 309 | 9.10 ms/frame | 0.05 ms |
+| user-addresses.gif | 1041 | 25.92 ms/frame, worst 77 ms | 0.04 ms |
 
-Typical animations are close to free; the whole cost problem is the pathological tail. So an animation whose
-frames take more than 100ms to decode, twice in a row, stops on the frame it reached. Two in a row because
-this is wall time: a single frame can overrun by being descheduled, and a busy machine should not turn a
-cheap animation into a still.
+Pixels are identical either way. The cost of a frame is then its own, and an animation whose frames take more
+than 100ms to decode, twice in a row, stops on the frame it reached. Two in a row because this is wall time:
+a single frame can overrun by being descheduled, and a busy machine should not turn a cheap animation into a
+still.
 
-Two optimisations were measured and **rejected**:
+Two optimisations were measured and **rejected**. Both were measured before the prior frame was reused, so
+their per-frame figures are against a decode that was two orders of magnitude more expensive; the conclusions
+are kept because they are about ratios, but the numbers are worth taking again:
 
 - **Decoding at display size.** Scaled decode is supported at arbitrary sizes, but it costs CPU rather than
   saving it: 2000x891 goes from 177.8ms to 300.3ms per frame (+68%) to save 59% of the raster — and it only
@@ -74,7 +81,11 @@ would hold a raster and spend a frame of work per listed chat, without pause.
 - Frames advance, per-frame delays are read correctly, and the loop wraps back to frame 0 after a full cycle
   with byte-identical pixels.
 - An oversized animation is refused by the bounds and still renders through the existing still-image path.
-- Unit tests cover the bounds as arithmetic; skiko's native library is not on the test runtime classpath.
+- Every frame of the GIFs in `images/` decodes with the prior frame reused, with pixels identical to decoding
+  the chain, and a GIF whose first frame is opaque and disposed to the background decodes past its first frame
+  only into a premultiplied destination.
+- Unit tests cover the bounds and the frame durations as arithmetic; skiko's native library is not on the test
+  runtime classpath, so decoding is measured with the library added to a standalone classpath.
 
 ## Deliberately not in this change
 
