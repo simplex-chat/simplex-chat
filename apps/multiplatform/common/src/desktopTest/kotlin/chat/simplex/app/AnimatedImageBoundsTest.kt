@@ -5,6 +5,7 @@ import chat.simplex.common.platform.looksAnimatable
 import chat.simplex.common.platform.priorFrame
 import chat.simplex.common.platform.rasterWithinBounds
 import chat.simplex.common.platform.rebuiltFramesWithinBounds
+import chat.simplex.common.platform.slowFrameDebt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -146,6 +147,45 @@ class AnimatedImageBoundsTest {
     assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it }))
     assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it + 1 }))
     assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { 9999 }))
+  }
+
+  @Test
+  fun testTwoExpensiveFramesInARowStopTheAnimation() {
+    var debt = slowFrameDebt(0, tooSlow = true)
+    assertTrue(debt < 4)
+    debt = slowFrameDebt(debt, tooSlow = true)
+    assertTrue(debt >= 4)
+  }
+
+  @Test
+  fun testAFrameThatOnlyOverranIsPaidOff() {
+    // One expensive frame among cheap ones is a busy machine, not an expensive animation
+    var debt = slowFrameDebt(0, tooSlow = true)
+    repeat(4) { debt = slowFrameDebt(debt, tooSlow = false) }
+    assertEquals(0, debt)
+  }
+
+  @Test
+  fun testAlternatingExpensiveFramesStillStopTheAnimation() {
+    // Frames that alternate are never expensive twice in a row, which is what a count that resets would miss
+    var debt = 0
+    var frames = 0
+    while (debt < 4 && frames < 100) {
+      debt = slowFrameDebt(debt, tooSlow = frames % 2 == 0)
+      frames++
+    }
+    assertEquals(5, frames)
+  }
+
+  @Test
+  fun testCheapFramesEarnNoCreditAgainstLaterExpensiveOnes() {
+    var debt = 0
+    repeat(1000) { debt = slowFrameDebt(debt, tooSlow = false) }
+    assertEquals(0, debt)
+    // A long cheap animation is no closer to stopping, and no further from it either
+    debt = slowFrameDebt(debt, tooSlow = true)
+    debt = slowFrameDebt(debt, tooSlow = true)
+    assertTrue(debt >= 4)
   }
 
   @Test

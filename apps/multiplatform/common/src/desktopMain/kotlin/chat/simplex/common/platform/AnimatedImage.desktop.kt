@@ -76,6 +76,7 @@ private val animationDecoder = Dispatchers.Default.limitedParallelism(2)
 private fun animatableCodec(data: ByteArray): Animation? {
   if (!looksAnimatable(data) || data.size > MAX_ANIMATED_FILE_SIZE) return null
   var codec: Codec? = null
+  var animation: Animation? = null
   try {
     // Skia retains the encoded bytes, so this native buffer is freed as soon as the codec has taken it
     val encoded = Data.makeFromBytes(data)
@@ -84,29 +85,32 @@ private fun animatableCodec(data: ByteArray): Animation? {
     } finally {
       encoded.close()
     }
-    val info = codec.imageInfo
-    // Counting frames scans the file, while dimensions are only read from the header. Fewer than two frames
-    // must not reach playFrames, whose loop only suspends inside the range and would spin uncancellably.
-    if (!rasterWithinBounds(info.width, info.height, info.bytesPerPixel)) return null
-    val frameCount = codec.frameCount
-    if (frameCount in 2..MAX_ANIMATED_FRAMES) {
-      val requiredFrames = IntArray(frameCount)
-      val frameDelays = LongArray(frameCount)
-      for (i in 0 until frameCount) {
-        val info = codec.getFrameInfo(i)
-        requiredFrames[i] = info.requiredFrame
-        frameDelays[i] = frameDuration(info.duration)
-      }
-      // The frames that are played are the frames that were bounded, rather than read again and hoped alike
-      if (rebuiltFramesWithinBounds(requiredFrames)) {
-        return Animation(codec, IntArray(frameCount) { priorFrame(it, requiredFrames[it]) }, frameDelays)
-      }
-    }
+    animation = animationWithinBounds(codec)
   } catch (e: Throwable) {
     Log.e(TAG, "Unable to read animated image: $e")
   }
-  codec?.close()
-  return null
+  // The codec is only left open for an animation that took it, so no bound can return past closing it
+  if (animation == null) codec?.close()
+  return animation
+}
+
+private fun animationWithinBounds(codec: Codec): Animation? {
+  val info = codec.imageInfo
+  if (!rasterWithinBounds(info.width, info.height, info.bytesPerPixel)) return null
+  // Counting frames scans the file, while dimensions are only read from the header. Fewer than two frames
+  // must not reach playFrames, whose loop only suspends inside the range and would spin uncancellably.
+  val frameCount = codec.frameCount
+  if (frameCount !in 2..MAX_ANIMATED_FRAMES) return null
+  val requiredFrames = IntArray(frameCount)
+  val frameDelays = LongArray(frameCount)
+  for (i in 0 until frameCount) {
+    val frameInfo = codec.getFrameInfo(i)
+    requiredFrames[i] = frameInfo.requiredFrame
+    frameDelays[i] = frameDuration(frameInfo.duration)
+  }
+  if (!rebuiltFramesWithinBounds(requiredFrames)) return null
+  // The frames that are played are the frames that were bounded, rather than read again and hoped alike
+  return Animation(codec, IntArray(frameCount) { priorFrame(it, requiredFrames[it]) }, frameDelays)
 }
 
 internal fun looksAnimatable(data: ByteArray): Boolean =
@@ -134,19 +138,18 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
     // animating on the second one. allocPixels returns false rather than throwing.
     if (!bitmap.allocPixels(codec.imageInfo.withColorAlphaType(ColorAlphaType.PREMUL))) return
     var loopsLeft = codec.repetitionCount // negative repeats forever
-    var slowFrameDebt = 0
+    var debt = 0
     while (true) {
       for (i in animation.priorFrames.indices) {
         awaitFramesAreSeen(hidden)
         val startedDecoding = System.nanoTime()
         codec.readPixels(bitmap, i, animation.priorFrames[i])
         // Wall time, so a frame can overrun by being descheduled rather than by being expensive
-        val tooSlow = System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000
-        slowFrameDebt = (slowFrameDebt + if (tooSlow) SLOW_FRAME_COST else -1).coerceAtLeast(0)
+        debt = slowFrameDebt(debt, System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000)
         // A new wrapper each frame, as its identity is what says the drawn image changed. The bitmap itself
         // is never closed, since the wrapper points at its pixels and a frame may still be drawn.
         showFrame(bitmap.asComposeImageBitmap())
-        if (slowFrameDebt >= MAX_SLOW_FRAME_DEBT) {
+        if (debt >= MAX_SLOW_FRAME_DEBT) {
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
@@ -195,6 +198,14 @@ internal fun rebuiltFramesWithinBounds(requiredFrames: IntArray): Boolean {
   }
   return true
 }
+
+/**
+ * What an animation owes after a frame that [tooSlow] says cost too much, or one that did not. Two expensive
+ * frames in a row reach [MAX_SLOW_FRAME_DEBT], one that only overran by being descheduled is paid off, and
+ * frames that alternate expensive with cheap - which are never two in a row - still reach it.
+ */
+internal fun slowFrameDebt(debt: Int, tooSlow: Boolean): Int =
+  (debt + if (tooSlow) SLOW_FRAME_COST else -1).coerceAtLeast(0)
 
 internal fun frameDuration(declaredMs: Int): Long =
   if (declaredMs <= MAX_UNSPECIFIED_FRAME_DURATION_MS) DEFAULT_FRAME_DURATION_MS
