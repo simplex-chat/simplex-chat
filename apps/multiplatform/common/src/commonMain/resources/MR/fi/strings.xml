@@ -1272,7 +1272,7 @@
     <string name="sync_connection_force_confirm">Uudelleenneuvottele</string>
     <string name="sync_connection_force_question">Uudelleenneuvottele salaus\?</string>
     <string name="sync_connection_force_desc">Salaus toimii ja uutta salaussopimusta ei tarvita. Tämä voi johtaa yhteysvirheisiin!</string>
-    <string name="receipts_section_description">Nämä asetukset koskevat nykyistä profiiliasi</string>
+    <string name="these_settings_are_for_your_current_profile">Nämä asetukset koskevat nykyistä profiiliasi</string>
     <string name="receipts_section_description_1">Ne voidaan ohittaa kontakti- ja ryhmäasetuksissa.</string>
     <string name="conn_event_ratchet_sync_ok">salaus ok</string>
     <string name="conn_event_ratchet_sync_allowed">salauksen uudelleenneuvottelu sallittu</string>

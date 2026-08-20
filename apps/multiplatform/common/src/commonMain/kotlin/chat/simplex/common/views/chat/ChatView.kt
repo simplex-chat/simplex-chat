@@ -502,14 +502,17 @@ fun ChatView(
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
                 val stats = r?.second
-                val (_, code) = if (member.memberActive) {
+                val (updatedMember, code) = if (member.memberActive) {
                   val memCode = chatModel.controller.apiGetGroupMemberCode(chatRh, groupInfo.apiId, member.groupMemberId)
-                  member to memCode?.second
+                  (memCode?.first ?: r?.first ?: member) to memCode?.second
                 } else {
-                  member to null
+                  (r?.first ?: member) to null
                 }
-                setGroupMembers(chatRh, groupInfo, chatModel)
-                if (!isActive) return@launch
+                if (!isActive || chatModel.chatId.value != groupInfo.id) return@launch
+                // members are not loaded in large groups, so only the opened member is added to the model
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.upsertGroupMember(chatRh, groupInfo, updatedMember)
+                }
 
                 if (chatsCtx.secondaryContextFilter == null) {
                   ModalManager.end.closeModals()

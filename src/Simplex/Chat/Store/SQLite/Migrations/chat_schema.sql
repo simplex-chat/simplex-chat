@@ -53,7 +53,8 @@ CREATE TABLE users(
   active_order INTEGER NOT NULL DEFAULT 0,
   auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
-  client_service INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  client_service INTEGER NOT NULL DEFAULT 0,
+  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT

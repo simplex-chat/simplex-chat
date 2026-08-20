@@ -3984,6 +3984,7 @@ export namespace SMPAgentError {
 
   export interface A_MESSAGE extends Interface {
     type: "A_MESSAGE"
+    messageErr: string
   }
 
   export interface A_PROHIBITED extends Interface {
@@ -5042,6 +5043,7 @@ export interface User {
   sendRcptsContacts: boolean
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
+  autoAcceptGroupInvitations: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
   userChatRelay: boolean
   clientService: boolean

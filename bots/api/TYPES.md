@@ -3589,6 +3589,7 @@ ParseError:
 
 A_MESSAGE:
 - type: "A_MESSAGE"
+- messageErr: string
 
 A_PROHIBITED:
 - type: "A_PROHIBITED"
@@ -4366,6 +4367,7 @@ Handshake:
 - sendRcptsContacts: bool
 - sendRcptsSmallGroups: bool
 - autoAcceptMemberContacts: bool
+- autoAcceptGroupInvitations: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - userChatRelay: bool
 - clientService: bool

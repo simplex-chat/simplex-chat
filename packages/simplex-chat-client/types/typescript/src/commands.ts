@@ -728,6 +728,21 @@ export namespace APISetUserAutoAcceptMemberContacts {
   }
 }
 
+// Set auto-accept group invitations.
+// Network usage: no.
+export interface APISetUserAutoAcceptGroupInvitations {
+  userId: number // int64
+  onOff: boolean
+}
+
+export namespace APISetUserAutoAcceptGroupInvitations {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetUserAutoAcceptGroupInvitations): string {
+    return '/_set accept group invitations ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
+  }
+}
+
 // User profile commands
 // Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).
 

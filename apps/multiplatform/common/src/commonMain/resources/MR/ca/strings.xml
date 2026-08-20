@@ -1946,7 +1946,7 @@
     <string name="if_you_enter_passcode_data_removed">Si introduïu aquesta contrasenya en obrir l\'aplicació, totes les dades de l\'aplicació s\'eliminaran de manera irreversible.</string>
     <string name="if_you_enter_self_destruct_code">Si introduïu el vostre codi d\'autodestrucció mentre obriu l\'aplicació:</string>
     <string name="set_passcode">Estableix codi</string>
-    <string name="receipts_section_description">Aquesta configuració és per al vostre perfil actual</string>
+    <string name="these_settings_are_for_your_current_profile">Aquesta configuració és per al vostre perfil actual</string>
     <string name="receipts_section_description_1">Es pot canviar a la configuració de contacte i grup.</string>
     <string name="privacy_media_blur_radius_off">No</string>
     <string name="settings_section_title_settings">Configuració</string>

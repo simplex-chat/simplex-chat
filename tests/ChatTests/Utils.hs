@@ -124,9 +124,9 @@ skip = before_ . pendingWith
 versionTestMatrix2 :: (HasCallStack => Bool -> Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
   it "current" $ testChat2 aliceProfile bobProfile (runTest True True)
-  it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest False True)
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
+  it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest True True)
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest True True)
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest True True)
   it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True False)
   it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest True True)
   it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True False)

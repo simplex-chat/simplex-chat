@@ -1454,7 +1454,7 @@ server test step */
 "Contact preferences" = "Kişi tercihleri";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Gruplardan gelen iletişim talepleri";
+"Contact requests in groups" = "Gruplardan gelen iletişim talepleri";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "kişi kabul etmeli…";

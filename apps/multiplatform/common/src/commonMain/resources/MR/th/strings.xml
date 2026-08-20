@@ -1280,7 +1280,7 @@
     <string name="in_developing_title">เร็วๆ นี้!</string>
     <string name="snd_conn_event_ratchet_sync_allowed">อนุญาตให้มีการเจรจา encryption อีกครั้งสําหรับ %s</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
-    <string name="receipts_section_description">การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ</string>
+    <string name="these_settings_are_for_your_current_profile">การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ</string>
     <string name="receipts_section_description_1">สามารถลบล้างได้ในการตั้งค่าผู้ติดต่อและกลุ่ม</string>
     <string name="receipts_contacts_disable_keep_overrides">ปิดใช้งาน (เก็บการแทนที่)</string>
     <string name="receipts_contacts_enable_keep_overrides">เปิดใช้งาน (เก็บการแทนที่)</string>

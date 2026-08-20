@@ -753,6 +753,11 @@ private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
     if (inputStream != null && archiveName != null) {
       val archivePath = "$databaseExportDir${File.separator}$archiveName"
       val destFile = File(archivePath)
+      // resolves symlinks, so it also catches a final component linking outside the folder
+      if (destFile.canonicalFile.parentFile != databaseExportDir.canonicalFile) {
+        Log.e(TAG, "saveArchiveFromURI path outside of export folder")
+        return null
+      }
       Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
       archivePath
     } else {
