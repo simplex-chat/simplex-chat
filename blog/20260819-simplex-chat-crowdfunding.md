@@ -12,7 +12,7 @@ permalink: "/blog/20260819-simplex-chat-crowdfunding.html"
 
 **Published:** Aug 20, 2026
 
-SimpleX is the first and the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now launched on Wefunder, so network users, and anybody else, can get a stake in SimpleX Chat &mdash; the company that builds it.
+SimpleX is the first and the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now launched on Wefunder, so network users, and anybody else, can get a stake in SimpleX Chat.
 
 ## A network that cannot know who you are, or who you talk to
 
