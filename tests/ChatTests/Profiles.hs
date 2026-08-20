@@ -146,6 +146,7 @@ shortLinkTests = do
   it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
   it "connect to business address with request message" testBusinessAddressRequestMessage
   it "prepare group using group short link data and connect" testShortLinkPrepareGroup
+  it "prepare group and connect twice" testShortLinkPrepareGroupConnectTwice
   it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
   it "connect to group with welcome message via short link" testGroupShortLinkWelcome
   it "retry connecting to group via short link" testShortLinkGroupRetry
@@ -3756,6 +3757,37 @@ testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect directly"
       void $ getTermLine bob
+
+testShortLinkPrepareGroupConnectTwice :: HasCallStack => TestParams -> IO ()
+testShortLinkPrepareGroupConnectTwice = testChat3 aliceProfile bobProfile cathProfile test
+  where
+    test alice bob cath = do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect directly"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## "#team: alice added bob (Bob) to the group (connecting...)"
+            cath <## "#team: new member bob is connected"
+        ]
+      -- connecting again is rejected before it can create a second connection to the host member
+      bob ##> "/_connect group #1"
+      bob <## "bad chat command: group is already being joined"
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
 
 testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroupReject = testChatCfg3 cfg aliceProfile bobProfile cathProfile test

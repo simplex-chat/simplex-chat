@@ -294,6 +294,7 @@ chatGroupTests = do
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
       it "should deliver support scope messages via relay" testChannelSupportScope
+      it "connecting to channel twice fails" testChannelConnectTwice
       it "should add relay to existing channel" testChannelAddRelay
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
@@ -8899,6 +8900,21 @@ setupRelay owner relay = do
   owner ##> ("/relays name=" <> rName <> " " <> relaySLink)
   owner <## "ok"
   pure relaySLink
+
+testChannelConnectTwice :: HasCallStack => TestParams -> IO ()
+testChannelConnectTwice ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        -- connecting again reuses the owner members the first connection created,
+        -- and is rejected before it can create a second connection to the relay
+        cath ##> "/_connect group #1"
+        cath <## "bad chat command: group is already being joined"
+        alice #> "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
 
 testChannelMemberSecurityCode :: HasCallStack => TestParams -> IO ()
 testChannelMemberSecurityCode ps =
