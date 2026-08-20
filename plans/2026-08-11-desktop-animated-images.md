@@ -11,7 +11,7 @@ the first frame and stopped. `ImageFullScreenView` carried a matching marker ove
 **Skia's `Codec`, which skiko already puts on the desktop classpath.** No new dependency. It decodes both GIF
 and animated WebP, reports per-frame durations and repeat counts, and supports random access into frames.
 
-**Not `components-animatedimage`** (already a declared dependency, unused). Its `animate()`
+**Not `components-animatedimage`** (declared and unused until this change removed it). Its `animate()`
 ignores the result of `allocPixels` and decodes inside composition. A 35-byte GIF declaring 65535x65535 asks
 for a 17GB raster; `allocPixels` returns false, and the following `readPixels` throws
 `IllegalArgumentException` from inside the composition — a remote crash from anyone who can send a file. It
@@ -38,10 +38,10 @@ let a sender disrupt the app.
 | frame duration floor, and 100ms substituted for delays of 10ms and less | a 4.6MB GIF can hold 200 000 zero-delay frames, and Skia reports the usual "as fast as possible" delay of one centisecond as 10ms |
 | a frame is waited out for what it cost as well as what it asks for | a file whose frames each cost just under the stopping threshold owes nothing and would otherwise decode as fast as it can forever; waiting out the cost leaves any animation at most half a decoder thread |
 | an animation that owes too much for its frames stops on the one it reached | frames that alternate expensive with cheap are never slow twice in a row, so a count that resets never stops them |
-| single exception boundary around every native call that reads the file | the frame count and repeat count are read from it too |
+| every native call that reads the file is inside an exception boundary | the frame count, the frame table and the repeat count are read from it too |
 
-Long frame delays are honoured rather than clamped - they are the author's, and they cost only the codec and
-the raster staying alive while nothing decodes.
+Long frame delays are honoured rather than clamped - they are the author's, and they cost only the codec, the
+raster and the frame table staying alive while nothing decodes.
 
 ## Cost, and the optimisations that were rejected
 

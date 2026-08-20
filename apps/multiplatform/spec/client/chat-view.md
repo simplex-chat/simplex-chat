@@ -209,7 +209,8 @@ itself. Desktop decodes frames with Skia's `Codec` in `platform/AnimatedImage.de
 `rememberAnimatedImage(data, still, hidden)` returns the frame to draw and falls back to the still image when
 the data is not an animation, exceeds the decode bounds, or fails to decode. Decoding runs off the UI thread
 on two threads of the shared pool, and pauses while the window is hidden, while the image is behind the
-privacy blur, and while a full screen modal covers the chat. The chat list preview (`smallView`) stays a
+privacy blur, and while a full screen modal covers the chat. An animation whose frames cost too much to
+decode stops on the frame it reached rather than falling back to the still. The chat list preview (`smallView`) stays a
 still image. Only GIF reaches this path: desktop decodes stills with ImageIO, which has no WebP reader, so a
 received `.webp` renders only as the sender's preview and never opens full screen.
 
