@@ -1,5 +1,6 @@
 package chat.simplex.app
 
+import chat.simplex.common.platform.MAX_SLOW_FRAME_DEBT
 import chat.simplex.common.platform.frameCountWithinBounds
 import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
@@ -166,9 +167,9 @@ class AnimatedImageBoundsTest {
   @Test
   fun testTwoExpensiveFramesInARowStopTheAnimation() {
     var debt = slowFrameDebt(0, tooSlow = true)
-    assertTrue(debt < 4)
+    assertTrue(debt < MAX_SLOW_FRAME_DEBT)
     debt = slowFrameDebt(debt, tooSlow = true)
-    assertTrue(debt >= 4)
+    assertTrue(debt >= MAX_SLOW_FRAME_DEBT)
   }
 
   @Test
@@ -184,7 +185,7 @@ class AnimatedImageBoundsTest {
     // Frames that alternate are never expensive twice in a row, which is what a count that resets would miss
     var debt = 0
     var frames = 0
-    while (debt < 4 && frames < 100) {
+    while (debt < MAX_SLOW_FRAME_DEBT && frames < 100) {
       debt = slowFrameDebt(debt, tooSlow = frames % 2 == 0)
       frames++
     }
@@ -199,7 +200,7 @@ class AnimatedImageBoundsTest {
     // A long cheap animation is no closer to stopping, and no further from it either
     debt = slowFrameDebt(debt, tooSlow = true)
     debt = slowFrameDebt(debt, tooSlow = true)
-    assertTrue(debt >= 4)
+    assertTrue(debt >= MAX_SLOW_FRAME_DEBT)
   }
 
   @Test

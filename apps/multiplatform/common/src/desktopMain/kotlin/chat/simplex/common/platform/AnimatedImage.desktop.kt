@@ -30,11 +30,10 @@ private const val DEFAULT_FRAME_DURATION_MS = 100L
 private const val MIN_FRAME_DURATION_MS = 20L
 // A frame costing more than this holds most of a core to show under 10 frames a second
 private const val MAX_FRAME_DECODE_MS = 100L
-// An expensive frame owes this, a cheap one pays back one, and the animation stops once it owes too much.
-// Two expensive frames in a row stop it, one that only overran by being descheduled is forgiven, and frames
-// that alternate expensive with cheap - which are never two in a row - still add up.
+// Far above what a frame within the bounds above can cost, so only a stall reaches it
+private const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
 private const val SLOW_FRAME_COST = 2
-private const val MAX_SLOW_FRAME_DEBT = 4
+internal const val MAX_SLOW_FRAME_DEBT = 4
 // What Skia calls a frame that is decoded without one
 private const val NO_PRIOR_FRAME = -1
 // A frame given no prior frame is rebuilt by decoding its chain back to the last independent frame, which
@@ -94,6 +93,7 @@ private fun openAnimation(data: ByteArray): Animation? {
   return animation
 }
 
+/** The animation [codec] holds if every bound admits it. The caller keeps the codec on every other path. */
 private fun animationWithinBounds(codec: Codec): Animation? {
   val info = codec.imageInfo
   if (!rasterWithinBounds(info.width, info.height, info.bytesPerPixel)) return null
@@ -144,8 +144,8 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
         val startedDecoding = System.nanoTime()
         codec.readPixels(bitmap, i, animation.priorFrames[i])
         // Wall time, so a frame can overrun by being descheduled rather than by being expensive
-        val decodedInMs = (System.nanoTime() - startedDecoding) / 1_000_000
-        debt = slowFrameDebt(debt, decodedInMs > MAX_FRAME_DECODE_MS)
+        val decodedIn = System.nanoTime() - startedDecoding
+        debt = slowFrameDebt(debt, decodedIn > MAX_FRAME_DECODE_MS * 1_000_000)
         // A new wrapper each frame, as its identity is what says the drawn image changed. The bitmap itself
         // is never closed, since the wrapper points at its pixels and a frame may still be drawn.
         showFrame(bitmap.asComposeImageBitmap())
@@ -153,10 +153,12 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
-        // Waiting out what the frame cost as well as what it asks for leaves the animation at most half of
-        // a decoder thread, however expensive its frames are. Frames cheaper than their delay, which is all
-        // of a real animation's, wait exactly as long as they always did.
-        delay(maxOf(animation.frameDelays[i], decodedInMs))
+        // Waiting out what the frame cost as well as what it asks for leaves the animation about half of a
+        // decoder thread, however expensive its frames are. Frames cheaper than their delay, which is all of
+        // a real animation's, wait exactly as long as they always did. The cost is wall time, so it is only
+        // waited out as far as a frame can really take: a machine that stalls mid-decode, or suspends while
+        // this thread is inside it, should not leave an animation waiting for as long as it was away.
+        delay(maxOf(animation.frameDelays[i], (decodedIn / 1_000_000).coerceAtMost(MAX_WAITED_FRAME_COST_MS)))
       }
       if (loopsLeft == 0) return
       if (loopsLeft > 0) loopsLeft--
