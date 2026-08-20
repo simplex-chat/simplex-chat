@@ -143,6 +143,7 @@ data User = User
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
     autoAcceptMemberContacts :: Bool,
+    autoAcceptGroupInvitations :: BoolDef,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
     userChatRelay :: BoolDef,
     clientService :: BoolDef,

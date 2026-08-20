@@ -1612,7 +1612,7 @@ server test step */
 "Contact preferences" = "Préférences de contact";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Demandes de contact des groupes";
+"Contact requests in groups" = "Demandes de contact des groupes";
 
 /* No comment provided by engineer. */
 "Contact will be deleted - this cannot be undone!" = "Le contact sera supprimé - il n'est pas possible de revenir en arrière !";

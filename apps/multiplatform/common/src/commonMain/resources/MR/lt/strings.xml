@@ -1198,7 +1198,7 @@
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Tai yra jūsų nuoroda grupei <b>%1$s</b>!]]></string>
     <string name="to_connect_via_link_title">Kad prisijungti su nuoroda</string>
     <string name="this_link_is_not_a_valid_connection_link">Ši nuoroda nėra tinkama prisijungimo nuoroda!</string>
-    <string name="receipts_section_description">Šie nustatymai yra jūsų dabartiniam profiliui</string>
+    <string name="these_settings_are_for_your_current_profile">Šie nustatymai yra jūsų dabartiniam profiliui</string>
     <string name="settings_is_storing_in_clear_text">Slaptafrazė saugoma nustatymuose kaip paprastas tekstas.</string>
     <string name="group_invitation_tap_to_join_incognito">Bakstelėkite, kad prisijungti kaip inkognito</string>
     <string name="send_receipts_disabled_alert_msg">Ši grupė turi daugiau nei %1$d narių, pristatymo kvitai nėra siunčiami.</string>

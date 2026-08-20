@@ -42,6 +42,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
     public var autoAcceptMemberContacts: Bool
+    public var autoAcceptGroupInvitations: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
     public var userChatRelay: Bool
@@ -71,6 +72,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false,
         autoAcceptMemberContacts: false,
+        autoAcceptGroupInvitations: false,
         userChatRelay: false
     )
 }

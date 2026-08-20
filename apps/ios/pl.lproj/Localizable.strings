@@ -1416,7 +1416,7 @@ server test step */
 "Contact preferences" = "Preferencje kontaktu";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Prośby o kontakt od grup";
+"Contact requests in groups" = "Prośby o kontakt od grup";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "kontakt powinien zaakceptować…";
