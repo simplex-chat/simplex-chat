@@ -1,6 +1,8 @@
 package chat.simplex.app
 
 import chat.simplex.common.platform.MAX_SLOW_FRAME_DEBT
+import chat.simplex.common.platform.MAX_WAITED_FRAME_COST_MS
+import chat.simplex.common.platform.frameWait
 import chat.simplex.common.platform.frameCountWithinBounds
 import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
@@ -162,6 +164,30 @@ class AnimatedImageBoundsTest {
     assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it }))
     assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it + 1 }))
     assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { 9999 }))
+  }
+
+  @Test
+  fun testAFrameCheaperThanItsDelayWaitsAsItAlwaysDid() {
+    // Every frame of a real animation, by three orders of magnitude
+    assertEquals(70, frameWait(70, 0))
+    assertEquals(70, frameWait(70, 2))
+    assertEquals(70, frameWait(70, 70))
+  }
+
+  @Test
+  fun testAFrameDearerThanItsDelayIsWaitedOut() {
+    // Half a decoder thread at most, however expensive the frame
+    assertEquals(85, frameWait(20, 85))
+    assertEquals(1000, frameWait(20, 1000))
+  }
+
+  @Test
+  fun testAStallIsNotWaitedOut() {
+    // Wall time counts a machine that suspended mid-decode, which the frame never spent
+    assertEquals(MAX_WAITED_FRAME_COST_MS, frameWait(20, 30_000))
+    assertEquals(MAX_WAITED_FRAME_COST_MS, frameWait(20, 8L * 60 * 60 * 1000))
+    // A frame that asks for longer than the clamp still gets what it asks for
+    assertEquals(5000, frameWait(5000, 30_000))
   }
 
   @Test

@@ -31,7 +31,7 @@ private const val MIN_FRAME_DURATION_MS = 20L
 // A frame costing more than this holds most of a core to show under 10 frames a second
 private const val MAX_FRAME_DECODE_MS = 100L
 // Far above what a frame within the bounds above can cost, so only a stall reaches it
-private const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
+internal const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
 // What a frame that decodes too slowly owes, and what an animation may owe before it stops
 private const val SLOW_FRAME_COST = 2
 internal const val MAX_SLOW_FRAME_DEBT = 4
@@ -154,12 +154,7 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
-        // Waiting out what the frame cost as well as what it asks for leaves the animation about half of a
-        // decoder thread, however expensive its frames are. Frames cheaper than their delay, which is all of
-        // a real animation's, wait exactly as long as they always did. The cost is wall time, so it is only
-        // waited out as far as a frame can really take: a machine that stalls mid-decode, or suspends while
-        // this thread is inside it, should not leave an animation waiting for as long as it was away.
-        delay(maxOf(animation.frameDelays[i], (decodedIn / 1_000_000).coerceAtMost(MAX_WAITED_FRAME_COST_MS)))
+        delay(frameWait(animation.frameDelays[i], decodedIn / 1_000_000))
       }
       if (loopsLeft == 0) return
       if (loopsLeft > 0) loopsLeft--
@@ -180,6 +175,17 @@ private suspend fun awaitFramesAreSeen(hidden: () -> Boolean) {
 
 private fun framesAreSeen(hidden: () -> Boolean): Boolean =
   simplexWindowState.windowVisible.value && !simplexWindowState.windowState.isMinimized && !hidden()
+
+/**
+ * How long to wait before the frame after one that asked for [delayMs] and cost [costMs] to decode. Waiting
+ * out the cost as well as the delay leaves an animation about half of a decoder thread, however expensive its
+ * frames are, and a frame cheaper than its delay - which is all of a real animation's - waits as it always
+ * did. The cost is wall time, so it is only waited out as far as a frame can really take: a machine that
+ * stalls mid-decode, or suspends while this thread is inside it, should not leave an animation waiting for as
+ * long as it was away.
+ */
+internal fun frameWait(delayMs: Long, costMs: Long): Long =
+  maxOf(delayMs, costMs.coerceAtMost(MAX_WAITED_FRAME_COST_MS))
 
 /**
  * Whether this is an animation of a length worth holding frames for. A file of no frames would spin the
