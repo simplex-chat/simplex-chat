@@ -32,6 +32,7 @@ private const val MIN_FRAME_DURATION_MS = 20L
 private const val MAX_FRAME_DECODE_MS = 100L
 // Far above what a frame within the bounds above can cost, so only a stall reaches it
 private const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
+// What a frame that decodes too slowly owes, and what an animation may owe before it stops
 private const val SLOW_FRAME_COST = 2
 internal const val MAX_SLOW_FRAME_DEBT = 4
 // What Skia calls a frame that is decoded without one
