@@ -171,15 +171,15 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
   }
 }
 
-// Composition survives the window being hidden in the tray, and the caller knows when its own image cannot
-// be seen where it is
+// Composition survives the window being minimised or hidden in the tray, and the caller knows when its own
+// image cannot be seen where it is
 private suspend fun awaitFramesAreSeen(hidden: () -> Boolean) {
   if (framesAreSeen(hidden)) return
   snapshotFlow { framesAreSeen(hidden) }.first { it }
 }
 
 private fun framesAreSeen(hidden: () -> Boolean): Boolean =
-  simplexWindowState.windowVisible.value && !hidden()
+  simplexWindowState.windowVisible.value && !simplexWindowState.windowState.isMinimized && !hidden()
 
 /**
  * Whether this is an animation of a length worth holding frames for. A file of no frames would spin the
