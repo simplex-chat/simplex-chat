@@ -53,10 +53,13 @@ a loop costs the square of the frame count. Measured over one loop of the GIFs i
 | groups.gif | 309 | 9.10 ms/frame | 0.05 ms |
 | user-addresses.gif | 1041 | 25.92 ms/frame, worst 77 ms | 0.04 ms |
 
-Pixels are identical either way. The cost of a frame is then its own, and an animation whose frames take more
-than 100ms to decode, twice in a row, stops on the frame it reached. Two in a row because this is wall time:
-a single frame can overrun by being descheduled, and a busy machine should not turn a cheap animation into a
-still.
+Pixels are identical either way. The cost of a frame is then its own, and an animation stops on the frame it
+reached once it owes too much: a frame over 100ms counts double what a frame under it forgives. This is wall
+time, so a single frame can overrun by being descheduled, and a busy machine should not turn a cheap
+animation into a still - but a file whose frames alternate expensive and cheap is never slow twice in a row,
+and a run of them is what a count that resets would miss. Measured on a 1920x1920 GIF of 400 such frames,
+which holds 67% of a core indefinitely against a count that resets, and stops after 78 frames with one that
+decays.
 
 Two optimisations were measured and **rejected**. Both were measured before the prior frame was reused, so
 their per-frame figures are against a decode that was two orders of magnitude more expensive; the conclusions

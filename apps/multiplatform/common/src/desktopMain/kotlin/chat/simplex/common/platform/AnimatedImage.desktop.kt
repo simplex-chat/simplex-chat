@@ -30,6 +30,10 @@ private const val DEFAULT_FRAME_DURATION_MS = 100L
 private const val MIN_FRAME_DURATION_MS = 20L
 // A frame costing more than this holds most of a core to show under 10 frames a second
 private const val MAX_FRAME_DECODE_MS = 100L
+// What an animation may owe before it stops. An expensive frame counts double what a cheap one forgives, so
+// two in a row still stops it, a frame that only overran by being descheduled is forgiven, and frames that
+// alternate expensive with cheap - which are never two in a row - still add up.
+private const val MAX_SLOW_FRAMES = 4
 // What Skia calls a frame that is decoded without one
 private const val NO_PRIOR_FRAME = -1
 // A frame given no prior frame is rebuilt by decoding its chain back to the last independent frame, which
@@ -124,12 +128,13 @@ private suspend fun playFrames(codec: Codec, hidden: () -> Boolean, showFrame: (
         val info = codec.getFrameInfo(i)
         val startedDecoding = System.nanoTime()
         codec.readPixels(bitmap, i, priorFrame(i, info.requiredFrame))
-        // Two in a row as this is wall time, one frame can overrun by being descheduled
-        if (System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000) slowFrames++ else slowFrames = 0
+        // Wall time, so a frame can overrun by being descheduled rather than by being expensive
+        if (System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000) slowFrames += 2
+        else if (slowFrames > 0) slowFrames--
         // A new wrapper around the same raster, so the state changes. The bitmap is never closed, as the
         // wrapper points at its pixels and a frame may still be drawn
         showFrame(bitmap.asComposeImageBitmap())
-        if (slowFrames >= 2) {
+        if (slowFrames >= MAX_SLOW_FRAMES) {
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
