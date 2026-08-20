@@ -771,12 +771,12 @@ swipe action</note>
         <target>Añade la dirección a tu perfil para que tus contactos SimpleX puedan compartirla con otros. La actualización del perfil se enviará a tus contactos SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add contributors." xml:space="preserve">
+      <trans-unit id="Add contributors." xml:space="preserve" approved="no">
         <source>Add contributors.</source>
         <target>Añade colaboradores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add description" xml:space="preserve">
+      <trans-unit id="Add description" xml:space="preserve" approved="no">
         <source>Add description</source>
         <target>Añadir descripción</target>
         <note>No comment provided by engineer.</note>
@@ -1453,7 +1453,7 @@ en tu red</target>
         <target>Llamadas mejoradas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better channels 📢" xml:space="preserve">
+      <trans-unit id="Better channels 📢" xml:space="preserve" approved="no">
         <source>Better channels 📢</source>
         <target>Canales mejorados 📢</target>
         <note>No comment provided by engineer.</note>
@@ -1801,7 +1801,7 @@ set passcode view</note>
         <target>Canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Channel SimpleX name" xml:space="preserve">
+      <trans-unit id="Channel SimpleX name" xml:space="preserve" approved="no">
         <source>Channel SimpleX name</source>
         <target>Nombre SimpleX del canal</target>
         <note>No comment provided by engineer.</note>
@@ -2660,7 +2660,7 @@ This is your own one-time link!</source>
         <target>Crear cola</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create web preview." xml:space="preserve">
+      <trans-unit id="Create web preview." xml:space="preserve" approved="no">
         <source>Create web preview.</source>
         <target>Crea previsualizaciones web.</target>
         <note>No comment provided by engineer.</note>
@@ -3388,7 +3388,7 @@ alert button</note>
         <target>Hacer más tarde</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not require signing messages." xml:space="preserve">
+      <trans-unit id="Do not require signing messages." xml:space="preserve" approved="no">
         <source>Do not require signing messages.</source>
         <target>No requerir la firma de mensajes.</target>
         <note>No comment provided by engineer.</note>
@@ -3428,7 +3428,7 @@ alert button</note>
         <target>No pierdas los mensajes importantes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't save" xml:space="preserve">
+      <trans-unit id="Don't save" xml:space="preserve" approved="no">
         <source>Don't save</source>
         <target>No guardar</target>
         <note>alert action</note>
@@ -3514,7 +3514,7 @@ chat item action</note>
         <target>Invitar a tus amigos es más fácil 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Easier to read." xml:space="preserve">
+      <trans-unit id="Easier to read." xml:space="preserve" approved="no">
         <source>Easier to read.</source>
         <target>Fácil de leer.</target>
         <note>No comment provided by engineer.</note>
@@ -3529,7 +3529,7 @@ chat item action</note>
         <target>Editar perfil del canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Edit description" xml:space="preserve">
+      <trans-unit id="Edit description" xml:space="preserve" approved="no">
         <source>Edit description</source>
         <target>Editar descripción</target>
         <note>No comment provided by engineer.</note>
@@ -3734,7 +3734,7 @@ chat item action</note>
         <target>Introduce la contraseña correcta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter description (optional)" xml:space="preserve">
+      <trans-unit id="Enter description (optional)" xml:space="preserve" approved="no">
         <source>Enter description (optional)</source>
         <target>Introduce descripción (opcional)</target>
         <note>placeholder</note>
@@ -4164,7 +4164,7 @@ chat item action</note>
         <target>¡Error al configurar confirmaciones de entrega!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sharing address" xml:space="preserve">
+      <trans-unit id="Error sharing address" xml:space="preserve" approved="no">
         <source>Error sharing address</source>
         <target>Error compartiendo dirección</target>
         <note>alert title</note>
@@ -4392,12 +4392,12 @@ server test error</note>
         <target>Error del servidor de archivos: %@</target>
         <note>file error text</note>
       </trans-unit>
-      <trans-unit id="File servers" xml:space="preserve">
+      <trans-unit id="File servers" xml:space="preserve" approved="no">
         <source>File servers</source>
         <target>Servidores de archivos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File servers: %@" xml:space="preserve">
+      <trans-unit id="File servers: %@" xml:space="preserve" approved="no">
         <source>File servers: %@</source>
         <target>Servidores de archivos: %@</target>
         <note>copied message info</note>
@@ -4703,7 +4703,7 @@ Error: %2$@</target>
         <target>GIFs y stickers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve">
+      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve" approved="no">
         <source>Get SimpleX name (BETA)</source>
         <target>Obtener nombre SimpleX (BETA)</target>
         <note>No comment provided by engineer.</note>
@@ -4937,7 +4937,7 @@ Error: %2$@</target>
         <target>Cómo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to register a test name" xml:space="preserve">
+      <trans-unit id="How to register a test name" xml:space="preserve" approved="no">
         <source>How to register a test name</source>
         <target>Cómo registrar un nombre de prueba</target>
         <note>No comment provided by engineer.</note>
@@ -5624,7 +5624,7 @@ This is your link for group %@!</source>
         <target>Asegúrate de que las direcciones del servidor WebRTC ICE tienen el formato correcto, están separadas por líneas y no duplicadas.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Manage your relays." xml:space="preserve">
+      <trans-unit id="Manage your relays." xml:space="preserve" approved="no">
         <source>Manage your relays.</source>
         <target>Gestiona tus servidores.</target>
         <note>No comment provided by engineer.</note>
@@ -5844,12 +5844,12 @@ This is your link for group %@!</source>
         <target>Forma del mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message signing is not required." xml:space="preserve">
+      <trans-unit id="Message signing is not required." xml:space="preserve" approved="no">
         <source>Message signing is not required.</source>
         <target>Los mensajes firmados no son obligatorios.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message signing is required." xml:space="preserve">
+      <trans-unit id="Message signing is required." xml:space="preserve" approved="no">
         <source>Message signing is required.</source>
         <target>Los mensajes firmados son obligatorios.</target>
         <note>No comment provided by engineer.</note>
@@ -7631,7 +7631,7 @@ swipe action</note>
         <target>¿Expulsar miembro?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Remove name" xml:space="preserve">
+      <trans-unit id="Remove name" xml:space="preserve" approved="no">
         <source>Remove name</source>
         <target>Eliminar nombre</target>
         <note>No comment provided by engineer.</note>
@@ -7751,7 +7751,7 @@ swipe action</note>
         <target>Informes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Require signing messages." xml:space="preserve">
+      <trans-unit id="Require signing messages." xml:space="preserve" approved="no">
         <source>Require signing messages.</source>
         <target>Requerir la firma de mensajes.</target>
         <note>No comment provided by engineer.</note>
@@ -7958,7 +7958,7 @@ chat item action</note>
         <target>Guardar (y notificar suscriptores)</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Save SimpleX name?" xml:space="preserve">
+      <trans-unit id="Save SimpleX name?" xml:space="preserve" approved="no">
         <source>Save SimpleX name?</source>
         <target>¿Guardar el nombre SimpleX?</target>
         <note>alert title</note>
@@ -8769,7 +8769,7 @@ chat item action</note>
         <target>Mostrar opciones de desarrollador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show encryption" xml:space="preserve">
+      <trans-unit id="Show encryption" xml:space="preserve" approved="no">
         <source>Show encryption</source>
         <target>Mostrar cifrado</target>
         <note>No comment provided by engineer.</note>
@@ -8804,33 +8804,33 @@ chat item action</note>
         <target>Muestra:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sign message" xml:space="preserve">
+      <trans-unit id="Sign message" xml:space="preserve" approved="no">
         <source>Sign message</source>
         <target>Firmar mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sign messages" xml:space="preserve">
+      <trans-unit id="Sign messages" xml:space="preserve" approved="no">
         <source>Sign messages</source>
         <target>Firmar mensajes</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Signature missing" xml:space="preserve">
+      <trans-unit id="Signature missing" xml:space="preserve" approved="no">
         <source>Signature missing</source>
         <target>Falta la firma</target>
         <note>alert title
 copied message info</note>
       </trans-unit>
-      <trans-unit id="Signed" xml:space="preserve">
+      <trans-unit id="Signed" xml:space="preserve" approved="no">
         <source>Signed</source>
         <target>Firmado</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Signed &amp; verified" xml:space="preserve">
+      <trans-unit id="Signed &amp; verified" xml:space="preserve" approved="no">
         <source>Signed &amp; verified</source>
         <target>Firmado y verificado</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Signing proves you authored this message and can't be denied later." xml:space="preserve">
+      <trans-unit id="Signing proves you authored this message and can't be denied later." xml:space="preserve" approved="no">
         <source>Signing proves you authored this message and can't be denied later.</source>
         <target>La firma prueba que eres el autor del mensaje sin posibilidad de repudio.</target>
         <note>No comment provided by engineer.</note>
@@ -9483,7 +9483,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>La insignia está firmada con una clave que esta versión de la app no reconoce. Actualiza la app para verificar la insignia.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve">
+      <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve" approved="no">
         <source>The channel required this message to be signed, but the signature is missing.</source>
         <target>El canal requiere que el mensaje esté firmado, pero falta la firma.</target>
         <note>alert message</note>
@@ -9868,7 +9868,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify keys with this subscriber, compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify keys with this subscriber, compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify keys with this subscriber, compare (or scan) the code on your devices.</source>
         <target>Para verificar las claves con este suscriptor, compara (o escanea) el código en ambos dispositivos.</target>
         <note>No comment provided by engineer.</note>

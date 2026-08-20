@@ -2881,7 +2881,7 @@
     <string name="signature_missing_alert_desc">A csatorna megköveteli az üzenet aláírását, de az hiányzik.</string>
     <string name="channel_simplex_name">Csatorna SimpleX-neve</string>
     <string name="get_simplex_name_beta">SimpleX-név beszerzése (béta)</string>
-    <string name="register_test_name">Egy név regisztrálása tesztelési céllal</string>
+    <string name="register_test_name">Útmutató egy név regisztrálásához tesztelési céllal</string>
     <string name="remove_name">Név eltávolítása</string>
     <string name="save_simplex_name_question">Menti a SimpleX-nevet?</string>
     <string name="to_verify_channel_member_key">A kulcsok ellenőrzéséhez ezzel a feliratkozóval hasonlítsa össze (vagy olvassa be) az eszközökön található kódot.</string>
