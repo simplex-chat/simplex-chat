@@ -692,6 +692,15 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO snd_message_deliveries (conn_id, snd_queue_id, internal_id)
+      SELECT conn_id, ?, internal_id
+      FROM snd_message_deliveries
+      WHERE conn_id = ? AND snd_queue_id = ? AND failed = 0
+    
+Plan:
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=? AND snd_queue_id=? AND failed=?)
+
+Query: 
       INSERT INTO snd_messages
         ( conn_id, internal_snd_id, internal_id, internal_hash, previous_msg_hash, msg_encrypt_key, padded_msg_len, snd_message_body_id)
       VALUES
@@ -1220,6 +1229,10 @@ SCAN connections USING COVERING INDEX idx_connections_deleted
 Query: SELECT count(1) FROM snd_message_bodies
 Plan:
 SCAN snd_message_bodies
+
+Query: SELECT count(1) FROM snd_message_deliveries WHERE conn_id = ? AND snd_queue_id = ? AND failed = 0
+Plan:
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=? AND snd_queue_id=? AND failed=?)
 
 Query: SELECT count(1) FROM users
 Plan:
