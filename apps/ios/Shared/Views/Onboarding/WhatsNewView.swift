@@ -672,7 +672,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: isInUS ? "v7.0.1" : "v7.0",
-        post: nil,
+        post: URL(string: "https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html"),
         features: (isInUS ? [
             .view(FeatureView(
                 icon: nil,
