@@ -19,8 +19,9 @@ private const val MAX_ANIMATED_RASTER_BYTES: Long = 1920L * 1920 * 4
 private const val MAX_ANIMATED_SIDE = 4096
 // Skia copies the encoded bytes into native memory and scans them to count frames
 private const val MAX_ANIMATED_FILE_SIZE = 32 * 1024 * 1024
-// Counting the frames also builds a table of them, which a file of minimal frames can make several times its
-// own size. The longest animation in this repository has 1041 frames.
+// Counting the frames builds a table of them that a file of minimal frames makes several times its own size,
+// which is paid to read the count and released by closing the codec rather than held while the image is on
+// screen. The longest animation in this repository has 1041 frames.
 private const val MAX_ANIMATED_FRAMES = 10_000
 // A frame may declare no delay, and 10ms or less is how "as fast as possible" is written. Browsers substitute
 // 100ms for both.
@@ -30,6 +31,8 @@ private const val DEFAULT_FRAME_DURATION_MS = 100L
 private const val MIN_FRAME_DURATION_MS = 20L
 // A frame costing more than this holds most of a core to show under 10 frames a second
 private const val MAX_FRAME_DECODE_MS = 100L
+// What Skia calls a frame that is decoded without one
+private const val NO_PRIOR_FRAME = -1
 
 /**
  * The current frame of [data], or [still] when [data] is not an animation, falls outside the bounds above, or
@@ -53,7 +56,7 @@ fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, blurred: State<Bo
   return frame
 }
 
-// Decoding several large animations must not starve the coroutines delivering messages
+// Decoding several large animations must not starve the long running calls that share this pool
 @OptIn(ExperimentalCoroutinesApi::class)
 private val animationDecoder = Dispatchers.Default.limitedParallelism(2)
 
@@ -114,9 +117,7 @@ private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame
         // One frame at a time, reading the whole array costs an object per frame
         val info = codec.getFrameInfo(i)
         val startedDecoding = System.nanoTime()
-        // The bitmap still holds the previous frame, and without saying so the codec decodes the whole chain
-        // from the last independent frame: 9.10ms a frame against 0.07ms for images/groups.gif
-        if (i > 0 && info.requiredFrame == i - 1) codec.readPixels(bitmap, i, i - 1) else codec.readPixels(bitmap, i)
+        codec.readPixels(bitmap, i, priorFrame(i, info.requiredFrame))
         // Two in a row as this is wall time, one frame can overrun by being descheduled
         if (System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000) slowFrames++ else slowFrames = 0
         // A new wrapper around the same raster, so the state changes. The bitmap is never closed, as the
@@ -146,6 +147,15 @@ private suspend fun awaitFramesAreSeen(blurred: State<Boolean>?) {
 
 private fun framesAreSeen(blurred: State<Boolean>?): Boolean =
   simplexWindowState.windowVisible.value && blurred?.value != true
+
+/**
+ * The frame the codec may decode [index] from, which is the previous one when the bitmap still holds what
+ * [index] continues. Decoding the whole chain from the last independent frame instead costs 9.10ms a frame
+ * against 0.07ms for images/groups.gif. Skia refuses a frame it did not ask for, so anything else is
+ * [NO_PRIOR_FRAME] - including a predecessor disposed to what came before it, which it never asks for.
+ */
+internal fun priorFrame(index: Int, requiredFrame: Int): Int =
+  if (requiredFrame == index - 1) index - 1 else NO_PRIOR_FRAME
 
 internal fun frameDuration(declaredMs: Int): Long =
   if (declaredMs <= UNSPECIFIED_FRAME_DURATION_MS) DEFAULT_FRAME_DURATION_MS

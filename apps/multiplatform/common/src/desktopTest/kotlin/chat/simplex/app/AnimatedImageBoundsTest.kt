@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
+import chat.simplex.common.platform.priorFrame
 import chat.simplex.common.platform.rasterWithinBounds
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -91,6 +92,18 @@ class AnimatedImageBoundsTest {
     // Long enough for the RIFF tag, too short for the format that follows it
     assertFalse(looksAnimatable("RIFF".toByteArray()))
     assertFalse(looksAnimatable("RIFF1234WEB".toByteArray()))
+  }
+
+  @Test
+  fun testPriorFrameIsReusedOnlyWhenTheBitmapHoldsIt() {
+    // The bitmap holds frame 4, which is what frame 5 continues
+    assertEquals(4, priorFrame(5, 4))
+    // An older required frame is no longer in the bitmap, and Skia refuses a frame it did not ask for. This
+    // is also how a predecessor disposed to what came before it is skipped, as Skia never requires one.
+    assertEquals(-1, priorFrame(5, 2))
+    assertEquals(-1, priorFrame(5, -1))
+    // The first frame of a loop is decoded whole, and asks for nothing
+    assertEquals(-1, priorFrame(0, -1))
   }
 
   @Test
