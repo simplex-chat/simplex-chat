@@ -3771,9 +3771,6 @@ processChatCommand cxt nm = \case
           Nothing -> connect' groupLinkId Nothing (Just $ Just gInfo)
           Just conn@Connection {connStatus, xContactId} -> case connStatus of
             ConnPrepared -> joinPreparedConn' xContactId conn (Just $ Just gInfo)
-            -- the connection is only advanced past ConnPrepared once the join succeeded (see joinContact),
-            -- so retrying a join that failed reuses it above, and reaching here means it already joined -
-            -- connecting again would create a second connection for the same member.
             _ -> throwCmdError "group is already being joined"
         Nothing ->
           withFastStore' (\db -> getConnReqContactXContactId db cxt user cReqHash1 cReqHash2) >>= \case

@@ -3783,7 +3783,6 @@ testShortLinkPrepareGroupConnectTwice = testChat3 aliceProfile bobProfile cathPr
             cath <## "#team: alice added bob (Bob) to the group (connecting...)"
             cath <## "#team: new member bob is connected"
         ]
-      -- connecting again is rejected before it can create a second connection to the host member
       bob ##> "/_connect group #1"
       bob <## "bad chat command: group is already being joined"
       alice #> "#team 1"

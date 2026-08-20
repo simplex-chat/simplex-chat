@@ -8908,8 +8908,6 @@ testChannelConnectTwice ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
-        -- connecting again reuses the owner members the first connection created,
-        -- and is rejected before it can create a second connection to the relay
         cath ##> "/_connect group #1"
         cath <## "bad chat command: group is already being joined"
         alice #> "#team hi"

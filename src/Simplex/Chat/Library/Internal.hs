@@ -921,8 +921,6 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   sqSecured <-
     withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
-      -- the agent marks the invitation accepted only once joining succeeded (see acceptContact'),
-      -- so not finding it is what tells an accepted request from an accept that failed and can be retried
       `catchAllErrors` \case
         ChatErrorAgent {agentError = CMD PROHIBITED _} -> throwCmdError "contact request already accepted"
         e -> throwError e
