@@ -7,6 +7,60 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>Equity Crowdfunding Launched &amp;mdash; You Can Get a Stake in SimpleX Chat</title>
+                <link>https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html</link>
+                <description>&lt;h1 id=&quot;equity-crowdfunding-launched-you-can-get-a-stake-in-simplex-chat&quot; tabindex=&quot;-1&quot;&gt;Equity Crowdfunding Launched — You Can Get a Stake in SimpleX Chat&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Aug 20, 2026&lt;/p&gt;
+&lt;p&gt;SimpleX is the first and the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now launched on Wefunder, so network users, and anybody else, can get a stake in SimpleX Chat — the company that builds it.&lt;/p&gt;
+&lt;h2 id=&quot;a-network-that-cannot-know-who-you-are-or-who-you-talk-to&quot; tabindex=&quot;-1&quot;&gt;A network that cannot know who you are, or who you talk to&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260819-growth-chart.png&quot; width=&quot;40%&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;People found SimpleX without any paid marketing — the community spread it via hundreds of posts, videos, podcasts and talks.&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#note-links&quot; id=&quot;ref-links&quot;&gt;1&lt;/a&gt;&lt;/sup&gt; The app was downloaded more than 3 million times. About 480,000 people use it every month. Users, including Vitalik Buterin, donated $650,000. There are more than 1,000 community-run servers on the network. Trail of Bits audited it in 2022, 2024, and 2026 (to be published).&lt;/p&gt;
+&lt;p&gt;SimpleX Network assigns no identifiers to users — no phone numbers, usernames, or even random numbers. Instead, random identifiers are assigned to conversations, and only users know who they talk to. This cannot be added to a network that already has identifiers; it has to be built this way from the start, as SimpleX Network was.&lt;/p&gt;
+&lt;p&gt;All other messengers, even private ones, may hide your name but still tag you with some number or key. That identifier links your conversations together, and the pattern of who you talk to can reveal who you are, even without names, as a 2009 study showed.&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#note-deanon&quot; id=&quot;ref-deanon&quot;&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;h2 id=&quot;why-it-matters-now&quot; tabindex=&quot;-1&quot;&gt;Why it matters now&lt;/h2&gt;
+&lt;p&gt;There are three trends that increase the demand for identity-free messaging that no other existing network can provide.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Surveillance of private life&lt;/strong&gt;. Big centralized platforms are increasingly scanning private messages to train AI models. More people would move to use private messaging that can&#39;t know who they talk to.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Accelerating deplatforming&lt;/strong&gt;. Creators are removed from centralized platforms without due process, and an audience built over years can disappear with one policy change. Telegram alone blocked 44 million groups and channels in 2025.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;AI agents&lt;/strong&gt;. Agents are beginning to act for people, handling logins and money. Whoever controls an agent&#39;s identity can shut it down, or turn it against the person it works for. The same AI can fake a real person too.&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#note-arup&quot; id=&quot;ref-arup&quot;&gt;3&lt;/a&gt;&lt;/sup&gt; User-controlled IDs are a basic security for the agentic Internet.&lt;/p&gt;
+&lt;p&gt;On SimpleX Network the users, not the network, control their identities, and it solves all three problems — users cannot be surveilled or deplatformed by the network, or attacked by somebody who they have no connection with.&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#note-address&quot; id=&quot;ref-address&quot;&gt;4&lt;/a&gt;&lt;/sup&gt; The only keys to user connections are held by the users themselves.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-is-not-just-a-messenger-its-a-network-to-build-on&quot; tabindex=&quot;-1&quot;&gt;SimpleX is not just a messenger — it&#39;s a network to build on&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260819-developers.png&quot; width=&quot;40%&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;SimpleX is used for private messaging, but it also brings together communities, creators, businesses, developers and server operators. Each group makes the network more valuable to the others.&lt;/p&gt;
+&lt;p&gt;Most people want more from a messenger than to connect and send texts — they want to share experiences, and every messenger builds its own. That user experience is what prevents messaging apps from converging to one protocol, the way other networks did.&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#note-network&quot; id=&quot;ref-network&quot;&gt;5&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;p&gt;The web solved this by letting anyone build any experience on one open platform. SimpleX Network is evolving into that kind of platform, and developers already build on it: moderation and AI bots, bridges, and more, with over 19,000 stars on GitHub. Soon it will be possible to build custom interfaces inside a chat. Every service developers build on SimpleX makes the network more useful and brings new people in, without locking them into a single provider.&lt;/p&gt;
+&lt;h2 id=&quot;now-you-can-get-a-stake&quot; tabindex=&quot;-1&quot;&gt;Now you can get a stake&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://wefunder.com/simplex.chat?utm_source=blog&quot;&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20260819-wefunder.jpg&quot; width=&quot;40%&quot; class=&quot;float-to-right&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;SimpleX Chat is the company that builds SimpleX Network, and now you can invest from $100 and get a stake in the company.&lt;/p&gt;
+&lt;p&gt;If you invest $500 or more, you receive &lt;a href=&quot;https://simplex.chat/blog/20260722-simplex-public-names.html&quot;&gt;a public SimpleX name&lt;/a&gt; on SimpleX Network:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;for 5 years for early bird investors,&lt;/li&gt;
+&lt;li&gt;for 3 years after that.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You may benefit from the company&#39;s growth, and you would help build a network that people own — where the communities and audiences you build stay yours, and no company can take them away.&lt;/p&gt;
+&lt;p&gt;Read about how we plan to make SimpleX Chat and the network profitable, and about all the investment terms, on Wefunder: &lt;a href=&quot;https://wefunder.com/simplex.chat?utm_source=blog&quot;&gt;https://wefunder.com/simplex.chat&lt;/a&gt;&lt;/p&gt;
+&lt;hr class=&quot;footnotes-sep&quot; /&gt;
+&lt;section class=&quot;footnotes&quot;&gt;
+&lt;ol class=&quot;footnotes-list&quot;&gt;
+&lt;li id=&quot;note-links&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;&lt;a href=&quot;https://simplex.chat/links/&quot;&gt;https://simplex.chat/links/&lt;/a&gt; &lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#ref-links&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id=&quot;note-deanon&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;Narayanan &amp;amp; Shmatikov, &lt;em&gt;De-anonymizing Social Networks&lt;/em&gt; (2009): a third of the users with accounts on both Twitter and Flickr were re-identified in the anonymised Twitter graph, from its structure alone, at a 12% error rate. Sources: &lt;a href=&quot;https://arxiv.org/pdf/0903.3276&quot;&gt;arXiv 0903.3276&lt;/a&gt;, &lt;a href=&quot;https://33bits.wordpress.com/2009/03/19/de-anonymizing-social-networks/&quot;&gt;Narayanan, 33 Bits of Entropy&lt;/a&gt;, &lt;a href=&quot;https://collaborate.princeton.edu/en/publications/de-anonymizing-social-networks/&quot;&gt;Princeton listing&lt;/a&gt;. &lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#ref-deanon&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id=&quot;note-arup&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;In 2024, a video call of deepfakes cost Arup $25 million. &lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#ref-arup&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id=&quot;note-address&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;SimpleX Network supports public addresses, for users who want to accept connections from anybody, e.g. for a business, but these addresses are opt-in. When users use only one-time connection links, nobody can connect to them. &lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#ref-address&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id=&quot;note-network&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;All networks converged to a single protocol, starting from railroads, and ending to a World Wide Web. A single unified network can create more value that several disconnected networks. &lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html#ref-network&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/section&gt;
+</description>
+                
+                <pubDate>Thu, 20 Aug 2026 00:00:00 +0000</pubDate>
+                
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html</guid>
+            </item>
+            <item>
                 <title>SimpleX Public Names &amp;mdash; a Name Nobody Can Take From You</title>
                 <link>https://simplex.chat/blog/20260722-simplex-public-names.html</link>
                 <description>&lt;h1 id=&quot;simplex-public-names-a-name-nobody-can-take-from-you&quot; tabindex=&quot;-1&quot;&gt;SimpleX Public Names — a Name Nobody Can Take From You&lt;/h1&gt;
@@ -34,8 +88,8 @@
 &lt;h2 id=&quot;community-crowdfunding&quot; tabindex=&quot;-1&quot;&gt;Community Crowdfunding&lt;/h2&gt;
 &lt;p&gt;To ensure the long term success of SimpleX Network we established &lt;a href=&quot;https://simplexnetwork.org/consortium.html&quot;&gt;SimpleX Network Consortium&lt;/a&gt; — an agreement between a non-profit foundation created for protocol licensing and governance and SimpleX Chat, Inc.&lt;/p&gt;
 &lt;p&gt;The commercial model for the network that we are building aims to make both our and other businesses on the network profitable. We recently &lt;a href=&quot;https://www.youtube.com/watch?v=UhW8AuoRgxg&quot;&gt;presented the technology design&lt;/a&gt; for this commercial model at Web3 Summit.&lt;/p&gt;
-&lt;p&gt;The planned crowdfunding will fund this development. You can &lt;a href=&quot;https://simplexchat.typeform.com/crowdfunding&quot;&gt;register your interest&lt;/a&gt;, and join the &lt;a href=&quot;https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg&quot;&gt;SimpleX Crowdfunding News channel&lt;/a&gt; for updates.&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Disclaimer: SimpleX Chat, Inc. is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Aug 20, 2026: We now launched &lt;a href=&quot;https://wefunder.com/simplex.chat?utm_source=blog&quot;&gt;equity crowdfunding on Wefunder&lt;/a&gt;. Please read &lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html&quot;&gt;the next blog post&lt;/a&gt; about it.&lt;/p&gt;
+&lt;p&gt;Join the channel for updates &lt;a href=&quot;https://simplex.chat/crowdfunding-news/&quot;&gt;simplex.chat/crowdfunding-news&lt;/a&gt;.&lt;/p&gt;
 &lt;hr class=&quot;footnotes-sep&quot; /&gt;
 &lt;section class=&quot;footnotes&quot;&gt;
 &lt;ol class=&quot;footnotes-list&quot;&gt;
@@ -81,10 +135,9 @@
 &lt;h2 id=&quot;community-crowdfunding&quot; tabindex=&quot;-1&quot;&gt;Community Crowdfunding&lt;/h2&gt;
 &lt;p&gt;We&#39;ve seen open-source privacy-focussed projects die without funding, or worse — being captured by their sponsors. We&#39;ve seen &amp;quot;don&#39;t be evil&amp;quot; companies get lured off course by growth and board pressure. Neither pure ideology nor pure commerce survives the long run alone.&lt;/p&gt;
 &lt;p&gt;So we&#39;re building both: a governance structure and a real business. The governance protects the network neutrality. The commercial model funds the network and makes our and other businesses on the network profitable, ensuring their independence. Neither works without the other.&lt;/p&gt;
-&lt;p&gt;We recently published &lt;a href=&quot;https://simplex.chat/credits/&quot;&gt;a preliminary design of commercial model&lt;/a&gt; — private Community Credits that fund servers, development, and governance without surveillance or speculation. The full investment case will be published when crowdfunding launches.&lt;/p&gt;
-&lt;p&gt;You can &lt;em&gt;register your interest&lt;/em&gt; to participate in crowdfunding here: &lt;a href=&quot;https://simplexchat.typeform.com/crowdfunding&quot;&gt;https://simplexchat.typeform.com/crowdfunding&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;Join the channel for updates &lt;a href=&quot;https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg&quot;&gt;here&lt;/a&gt; — you must install v6.5 to join it — or you can join a &lt;a href=&quot;https://smp12.simplex.im/g#gJzy7ETpuvltqARIB73TQUpJ11Lz4Xpl9xeH9qNoGCg&quot;&gt;read-only group&lt;/a&gt; from the previous app versions.&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;Disclaimer: SimpleX Chat, Inc. is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;We recently published &lt;a href=&quot;https://simplex.chat/credits/&quot;&gt;a preliminary design of commercial model&lt;/a&gt; — private Community Credits that fund servers, development, and governance without surveillance or speculation.&lt;/p&gt;
+&lt;p&gt;Aug 20, 2026: We now launched &lt;a href=&quot;https://wefunder.com/simplex.chat?utm_source=blog&quot;&gt;equity crowdfunding on Wefunder&lt;/a&gt;. Please read &lt;a href=&quot;https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html&quot;&gt;the next blog post&lt;/a&gt; about it.&lt;/p&gt;
+&lt;p&gt;Join the channel for updates &lt;a href=&quot;https://simplex.chat/crowdfunding-news/&quot;&gt;simplex.chat/crowdfunding-news&lt;/a&gt;.&lt;/p&gt;
 &lt;hr class=&quot;footnotes-sep&quot; /&gt;
 &lt;section class=&quot;footnotes&quot;&gt;
 &lt;ol class=&quot;footnotes-list&quot;&gt;
