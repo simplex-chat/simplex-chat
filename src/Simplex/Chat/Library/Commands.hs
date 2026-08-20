@@ -2272,7 +2272,7 @@ processChatCommand cxt nm = \case
                   Just GroupOwnerContact {contactId, memberId}
                     | memberId == MemberId ownerId -> Just contactId
                   _ -> Nothing
-            void $ createLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
+            void $ getCreateLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure gInfo'
         rs <- withGroupLock "connectPreparedGroup" groupId $
           mapConcurrently (connectToRelay user gInfo') relays

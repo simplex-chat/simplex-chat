@@ -193,7 +193,7 @@ module Simplex.Chat.Store.Groups
     getXGrpLinkMemReceived,
     setXGrpLinkMemReceived,
     createNewUnknownGroupMember,
-    createLinkOwnerMember,
+    getCreateLinkOwnerMember,
     updatePreparedChannelMember,
     updateUnknownMemberAnnounced,
     updateRosterMemberAnnounced,
@@ -3504,6 +3504,15 @@ createNewUnknownGroupMember db cxt user@User {userId, userContactId} GroupInfo {
   getGroupMemberById db cxt user groupMemberId
   where
     VersionRange minV maxV = vr cxt
+
+-- Re-use owner member record on retry: owners are created before the relay loop,
+-- which is what fails when the network does (see getCreateRelayForMember)
+getCreateLinkOwnerMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe ContactId -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
+getCreateLinkOwnerMember db cxt user gInfo contactId_ memberId ownerKey =
+  liftIO (runExceptT $ getGroupMemberByMemberId db cxt user gInfo memberId) >>= \case
+    Right m -> pure m
+    Left (SEGroupMemberNotFoundByMemberId _) -> createLinkOwnerMember db cxt user gInfo contactId_ memberId ownerKey
+    Left e -> throwError e
 
 createLinkOwnerMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe ContactId -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
 createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupId} contactId_ memberId ownerKey = do
