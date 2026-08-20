@@ -2425,9 +2425,9 @@ Das ist Ihr eigener Einmal-Link!</target>
 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection link removed" xml:space="preserve" approved="no">
+      <trans-unit id="Connection link removed" xml:space="preserve">
         <source>Connection link removed</source>
-        <target state="translated">Verbindungslink entfernt</target>
+        <target>Verbindungslink entfernt</target>
         <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
@@ -4703,9 +4703,9 @@ Fehler: %2$@</target>
         <target>GIFs und Sticker</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve" approved="no">
+      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve">
         <source>Get SimpleX name (BETA)</source>
-        <target state="translated">Einen SimpleX-Namen erhalten (BETA)</target>
+        <target>Einen SimpleX-Namen erhalten (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get link" xml:space="preserve">
@@ -4937,7 +4937,7 @@ Fehler: %2$@</target>
         <target>Anleitung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to register a test name" xml:space="preserve" approved="no">
+      <trans-unit id="How to register a test name" xml:space="preserve">
         <source>How to register a test name</source>
         <target>Wie man einen Test-Namen registriert</target>
         <note>No comment provided by engineer.</note>
@@ -6433,9 +6433,9 @@ Die sicherste Verschlüsselung.</target>
         <target>Kein gültiger Link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve" approved="no">
+      <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
         <source>Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.</source>
-        <target state="translated">Niemand verfolgte Ihre Gespräche. Niemand hat eine Karte erstellt, wo Sie überall waren. Privatsphäre war nie nur ein Feature – sie war eine Selbstverständlichkeit.</target>
+        <target>Niemand verfolgte Ihre Gespräche. Niemand hat eine Karte erstellt, wo Sie überall waren. Privatsphäre war nie nur ein Feature – sie war eine Selbstverständlichkeit.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Non-profit governance" xml:space="preserve">
@@ -7886,14 +7886,14 @@ swipe action</note>
         <target>Rolle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve" approved="no">
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All chat members will be notified.</source>
-        <target state="translated">Die Rolle wird auf "%@" geändert. Alle Chat-Mitglieder werden darüber informiert.</target>
+        <target>Die Rolle wird auf "%@" geändert. Alle Chat-Mitglieder werden darüber informiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Role will be changed to "%@". All group members will be notified.</source>
-        <target state="translated">Die Rolle wird auf "%@" geändert. Alle Gruppenmitglieder werden benachrichtigt.</target>
+        <target>Die Rolle wird auf "%@" geändert. Alle Gruppenmitglieder werden benachrichtigt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
@@ -7901,9 +7901,9 @@ swipe action</note>
         <target>Die Rolle wird auf "%@" geändert. Alle Abonnenten werden benachrichtigt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
+      <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
         <source>Role will be changed to "%@". The member will receive a new invitation.</source>
-        <target state="translated">Die Rolle wird auf "%@" geändert. Das Mitglied wird eine neue Einladung erhalten.</target>
+        <target>Die Rolle wird auf "%@" geändert. Das Mitglied wird eine neue Einladung erhalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -9438,9 +9438,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Der SimpleX-Name %@ wurde registriert, hat aber keinen gültigen Link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve" approved="no">
+      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve">
         <source>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</source>
-        <target state="translated">Der SimpleX‑Name %@ wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte fügen Sie ihn zu Ihrer Adresse oder zum Kanalprofil hinzu, sofern Sie der Besitzer sind.</target>
+        <target>Der SimpleX‑Name %@ wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte fügen Sie ihn zu Ihrer Adresse oder zum Kanalprofil hinzu, sofern Sie der Besitzer sind.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve">
@@ -9585,9 +9585,9 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target>Wir haben das zweite Häkchen vermisst! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The sender deleted the connection request." xml:space="preserve" approved="no">
+      <trans-unit id="The sender deleted the connection request." xml:space="preserve">
         <source>The sender deleted the connection request.</source>
-        <target state="translated">Der Absender hat die Verbindungsanfrage gelöscht.</target>
+        <target>Der Absender hat die Verbindungsanfrage gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -11070,10 +11070,10 @@ Verbindungsanfrage wiederholen?</target>
         <target>Ihr Kontakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve" approved="no">
+      <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve">
         <source>Your contact removed this link, or it was a one-time link that was already used.
 To connect, ask your contact to create a new link.</source>
-        <target state="translated">Ihr Kontakt hat diesen Link entfernt oder es war ein Einmal‑Link, welcher bereits verwendet wurde.
+        <target>Ihr Kontakt hat diesen Link entfernt oder es war ein Einmal‑Link, welcher bereits verwendet wurde.
 Um sich zu verbinden, bitten Sie Ihren Kontakt, einen neuen Link zu erstellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
