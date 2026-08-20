@@ -424,7 +424,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `platform/Videos.desktop.kt` | PC10 | Low | Desktop video utilities |
 | `platform/Notifications.desktop.kt` | PC18 | Low | Desktop notification setup |
 | `platform/Images.desktop.kt` | PC10 | Low | Desktop image processing |
-| `platform/AnimatedImage.desktop.kt` | PC10 | Medium | Desktop animated image frame decoding (bounded GIF/WebP) |
+| `platform/AnimatedImage.desktop.kt` | PC10 | Low | Desktop animated image frame decoding (bounded) |
 | `platform/PlatformTextField.desktop.kt` | PC4 | Low | Desktop text field actual implementation |
 | `platform/Share.desktop.kt` | PC10 | Low | Desktop clipboard/share |
 | `platform/Back.desktop.kt` | PC1 | Low | Desktop back navigation |

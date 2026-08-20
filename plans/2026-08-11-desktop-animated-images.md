@@ -32,7 +32,7 @@ let a sender disrupt the app.
 | file size checked before the bytes are copied natively | Skia copies the encoded bytes and scans them to count frames |
 | magic-byte prefilter (`GIF8`, `RIFF....WEBP`) | photos are most of what a chat holds and none are animations; they never reach a second decoder |
 | `allocPixels` result honoured | it reports failure by returning false, and reading into an unallocated bitmap throws |
-| frame count bound | counting the frames builds a table of them that 28MB of minimal frames makes 79MB, which closing the codec releases instead of holding it while the image is on screen |
+| frame count bound | counting the frames also builds a table of them, which a file of minimal frames makes several times its own size, and the codec holds it for as long as the animation plays |
 | destination allocated with a premultiplied alpha type | the codec reports the alpha type of the first frame, and a frame that has alpha cannot be read into an opaque bitmap |
 | frame duration floor, and 100ms substituted for delays of 10ms and less | a 4.6MB GIF can hold 200 000 zero-delay frames, and Skia reports the usual "as fast as possible" delay of one centisecond as 10ms |
 | single exception boundary around every native call | the frame count and repeat count are read from the file too |
@@ -68,7 +68,7 @@ are kept because they are about ratios, but the numbers are worth taking again:
   WebP, at +11% decode for -50% raster, which does not justify a format-specific path.
 
 What was kept: decoding is confined to two threads of the shared pool, so untrusted decode work cannot starve
-the coroutines that deliver messages; and frames are only decoded while they can be seen — not while the app
+the long running calls that share it; and frames are only decoded while they can be seen — not while the app
 sits in the tray, and not while the image is behind the privacy blur, where each frame would otherwise be
 decoded, uploaded and then blurred away again for nobody. The chat list preview stays a still image for
 the same reason: it is a 36sp box that the desktop layout keeps on screen the whole time, so animating it

@@ -202,6 +202,16 @@ Long-press or right-click opens a dropdown menu with context-sensitive actions (
 | `InvalidJSON` | -- | `CIInvalidJSONView` | `CIInvalidJSONView.kt` |
 | `CIMemberCreatedContact` | -- | `CIMemberCreatedContactView` | `CIMemberCreatedContactView.kt` |
 
+### Animated Images
+
+`SimpleAndAnimatedImageView` is `expect`/`actual`. Android delegates to coil, which drives the animation
+itself. Desktop decodes frames with Skia's `Codec` in `platform/AnimatedImage.desktop.kt`, where
+`rememberAnimatedImage(data, still, blurred)` returns the frame to draw and falls back to the still image when
+the data is not an animation, exceeds the decode bounds, or fails to decode. Decoding runs off the UI thread
+on two threads of the shared pool, and pauses while the window is hidden or the image is behind the privacy
+blur. The chat list preview (`smallView`) stays a still image. Only GIF reaches this path: desktop decodes
+stills with ImageIO, which has no WebP reader, so a received `.webp` never renders at all.
+
 ---
 
 ## 6. Context Menu Actions
@@ -290,7 +300,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `CIFeaturePreferenceView.kt` | Feature preference change event |
 | `CIFileView.kt` | File message (download/upload progress) |
 | `CIGroupInvitationView.kt` | Group invitation card |
-| `CIImageView.kt` | Image message (thumbnail + fullscreen); desktop animates GIF/WebP via `rememberAnimatedImage` |
+| `CIImageView.kt` | Image message (thumbnail + fullscreen) |
 | `CIInvalidJSONView.kt` | Invalid JSON fallback display |
 | `CIMemberCreatedContactView.kt` | Member-created contact event |
 | `CIMetaView.kt` | Message metadata (time, status indicators) |
@@ -300,7 +310,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `DeletedItemView.kt` | Deleted message placeholder |
 | `EmojiItemView.kt` | Large emoji-only message |
 | `FramedItemView.kt` | Message bubble frame (quoted item, text, media) |
-| `ImageFullScreenView.kt` | Fullscreen image gallery; desktop animates GIF/WebP |
+| `ImageFullScreenView.kt` | Fullscreen image gallery |
 | `IntegrityErrorItemView.kt` | Message integrity error |
 | `MarkedDeletedItemView.kt` | Marked-as-deleted / moderated message |
 | `TextItemView.kt` | Plain text message with markdown |
