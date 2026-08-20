@@ -3,7 +3,7 @@ package chat.simplex.common.views.helpers
 import androidx.compose.runtime.*
 import kotlinx.coroutines.delay
 
-private const val PROGRESS_TIMEOUT_MS = 1000L
+private const val PROGRESS_TIMEOUT_MS = 500L
 
 @Composable
 fun ProgressByTimeoutEffect(inProgress: Boolean, setProgressByTimeout: (Boolean) -> Unit) {

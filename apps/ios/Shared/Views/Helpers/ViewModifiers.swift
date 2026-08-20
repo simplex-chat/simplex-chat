@@ -41,7 +41,7 @@ extension View {
     }
 }
 
-private let progressTimeout: UInt64 = 1_000_000000
+private let progressTimeout: UInt64 = 500_000000
 
 extension Notification.Name {
     static let chatViewWillBeginScrolling = Notification.Name("chatWillBeginScrolling")
