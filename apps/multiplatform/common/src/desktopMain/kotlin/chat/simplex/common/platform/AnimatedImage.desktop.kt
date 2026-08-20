@@ -38,15 +38,15 @@ private const val NO_PRIOR_FRAME = -1
  * fails to decode. Decoding runs off the UI thread and stops when the caller leaves the composition.
  */
 @Composable
-fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, blurred: State<Boolean>? = null): ImageBitmap {
+fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: State<Boolean>? = null): ImageBitmap {
   // The state is keyed as the decoding is, so frames are not written into a replaced state.
-  // blurred is not a key, it pauses the animation instead of restarting it
+  // hidden is not a key, it pauses the animation instead of restarting it
   val frame = remember(data, still) { mutableStateOf(still) }
   LaunchedEffect(data, still) {
     withContext(animationDecoder) {
       val codec = animatableCodec(data) ?: return@withContext
       try {
-        playFrames(codec, blurred) { frame.value = it }
+        playFrames(codec, hidden) { frame.value = it }
       } finally {
         codec.close()
       }
@@ -97,7 +97,7 @@ internal fun rasterWithinBounds(width: Int, height: Int, bytesPerPixel: Int): Bo
   return width.toLong() * height * bytesPerPixel <= MAX_ANIMATED_RASTER_BYTES
 }
 
-private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame: (ImageBitmap) -> Unit) {
+private suspend fun playFrames(codec: Codec, hidden: State<Boolean>?, showFrame: (ImageBitmap) -> Unit) {
   val bitmap = Bitmap()
   try {
     // A frame that has alpha cannot be read into an opaque bitmap, and the codec reports the alpha type of
@@ -111,7 +111,7 @@ private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame
     var slowFrames = 0
     while (true) {
       for (i in 0 until frameCount) {
-        awaitFramesAreSeen(blurred)
+        awaitFramesAreSeen(hidden)
         // One frame at a time, reading the whole array costs an object per frame
         val info = codec.getFrameInfo(i)
         val startedDecoding = System.nanoTime()
@@ -137,14 +137,15 @@ private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame
   }
 }
 
-// Composition survives the window being hidden in the tray, and a blurred image is only revealed on hover
-private suspend fun awaitFramesAreSeen(blurred: State<Boolean>?) {
-  if (framesAreSeen(blurred)) return
-  snapshotFlow { framesAreSeen(blurred) }.first { it }
+// Composition survives the window being hidden in the tray, and the caller knows when its own image cannot
+// be seen where it is
+private suspend fun awaitFramesAreSeen(hidden: State<Boolean>?) {
+  if (framesAreSeen(hidden)) return
+  snapshotFlow { framesAreSeen(hidden) }.first { it }
 }
 
-private fun framesAreSeen(blurred: State<Boolean>?): Boolean =
-  simplexWindowState.windowVisible.value && blurred?.value != true
+private fun framesAreSeen(hidden: State<Boolean>?): Boolean =
+  simplexWindowState.windowVisible.value && hidden?.value != true
 
 /**
  * The frame the codec may decode [index] from, which is the previous one when the bitmap still holds what
