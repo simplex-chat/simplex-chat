@@ -122,8 +122,10 @@ object ChatModel {
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   // map of connections network statuses, key is agent connection id
   val switchingUsersAndHosts = mutableStateOf(false)
-  // ids of contact requests being accepted, to not offer accepting the same request from another view
+  // ids of contact requests being accepted and of groups being joined,
+  // to not offer accepting the same invitation from another view
   val acceptingContactRequests = mutableStateListOf<Long>()
+  val joiningGroups = mutableStateListOf<Long>()
 
   // current chat
   val chatId = mutableStateOf<String?>(null)

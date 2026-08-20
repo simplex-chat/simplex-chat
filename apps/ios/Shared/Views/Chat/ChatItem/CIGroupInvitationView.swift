@@ -21,8 +21,9 @@ struct CIGroupInvitationView: View {
     var memberRole: GroupMemberRole
     var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
-    @State private var inProgress = false
     @State private var progressByTimeout = false
+
+    private var inProgress: Bool { chatModel.joiningGroups.contains(groupInvitation.groupId) }
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
@@ -78,12 +79,7 @@ struct CIGroupInvitationView: View {
         .progressByTimeout(inProgress, $progressByTimeout)
 
         if action {
-            v.simultaneousGesture(TapGesture().onEnded {
-                inProgress = true
-                joinGroup(groupInvitation.groupId) {
-                    await MainActor.run { inProgress = false }
-                }
-            })
+            v.simultaneousGesture(TapGesture().onEnded { joinGroup(groupInvitation.groupId) })
             .disabled(inProgress)
         } else {
             v

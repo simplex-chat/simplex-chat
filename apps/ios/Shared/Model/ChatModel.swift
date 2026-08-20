@@ -383,6 +383,10 @@ final class ChatModel: ObservableObject {
     // list of chat "previews"
     @Published private(set) var chats: [Chat] = []
     @Published var deletedChats: Set<String> = []
+    // ids of contact requests being accepted and of groups being joined,
+    // to not offer accepting the same invitation from another view
+    @Published var acceptingContactRequests: Set<Int64> = []
+    @Published var joiningGroups: Set<Int64> = []
     // current chat
     @Published var chatId: String?
     @Published var chatAgentConnId: String?

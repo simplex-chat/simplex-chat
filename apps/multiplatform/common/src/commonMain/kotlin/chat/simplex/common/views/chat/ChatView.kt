@@ -586,12 +586,7 @@ fun ChatView(
             cancelFile = { fileId ->
               withBGApi { chatModel.controller.cancelFile(chatRh, user, fileId) }
             },
-            joinGroup = { groupId, onComplete ->
-              withBGApi {
-                chatModel.controller.apiJoinGroup(chatRh, groupId)
-                onComplete.invoke()
-              }
-            },
+            joinGroup = { groupId -> joinGroup(chatRh, groupId) },
             startCall = out@{ media -> startChatCall(chatRh, chatInfo, media) },
             endCall = {
               val call = chatModel.activeCall.value
@@ -923,7 +918,7 @@ fun ChatLayout(
   archiveReports: (List<Long>, Boolean) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
-  joinGroup: (Long, () -> Unit) -> Unit,
+  joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   endCall: () -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -1750,7 +1745,7 @@ fun BoxScope.ChatItemsList(
   archiveReports: (List<Long>, Boolean) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
-  joinGroup: (Long, () -> Unit) -> Unit,
+  joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -3835,7 +3830,7 @@ fun PreviewChatLayout() {
       archiveReports = { _, _ -> },
       receiveFile = { _ -> },
       cancelFile = {},
-      joinGroup = { _, _ -> },
+      joinGroup = {},
       startCall = {},
       endCall = {},
       acceptCall = { _ -> },
@@ -3918,7 +3913,7 @@ fun PreviewGroupChatLayout() {
       archiveReports = { _, _ -> },
       receiveFile = { _ -> },
       cancelFile = {},
-      joinGroup = { _, _ -> },
+      joinGroup = {},
       startCall = {},
       endCall = {},
       acceptCall = { _ -> },

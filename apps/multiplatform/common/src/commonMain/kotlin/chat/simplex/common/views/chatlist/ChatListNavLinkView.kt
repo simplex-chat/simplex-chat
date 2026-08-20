@@ -47,8 +47,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   }
   val selectedChat = remember(chat.id) { derivedStateOf { chat.id == chatModel.chatId.value } }
   val showChatPreviews = chatModel.showChatPreviews.value
-  val inProgress = remember { mutableStateOf(false) }
-  val progressByTimeout by rememberProgressByTimeout(inProgress)
 
   val scope = rememberCoroutineScope()
 
@@ -74,7 +72,9 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       )
     }
     is ChatInfo.Group -> {
-      val defaultClickAction = { if (!inProgress.value && chatModel.chatId.value != chat.id) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } }
+      val inProgress = rememberJoiningGroup(chat.chatInfo.groupInfo.groupId)
+      val progressByTimeout by rememberProgressByTimeout(inProgress)
+      val defaultClickAction = { if (!inProgress.value && chatModel.chatId.value != chat.id) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) } }
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
@@ -84,7 +84,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         click = defaultClickAction,
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
-            GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, inProgress, showMarkRead)
+            GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead)
           }
         },
         showMenu,
@@ -113,14 +113,15 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         nextChatSelected,
       )
     }
-    is ChatInfo.ContactRequest ->
+    is ChatInfo.ContactRequest -> {
+      val inProgress = rememberAcceptingContactRequest(chat.chatInfo.apiId)
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
             ContactRequestView(chat.chatInfo)
           }
         },
-        click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) { onRequestAccepted(it) } },
+        click = { if (!inProgress.value) contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) { onRequestAccepted(it) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactRequestMenuItems(chat.remoteHostId, contactRequestId = chat.chatInfo.apiId, chatModel, showMenu)
@@ -131,6 +132,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         selectedChat,
         nextChatSelected,
       )
+    }
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
         chatLinkPreview = {
@@ -184,9 +186,9 @@ suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel
   }
 }
 
-suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
+suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   when (groupInfo.membership.memberStatus) {
-    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
+    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
     else -> openGroupChat(rhId, groupInfo.groupId)
   }
@@ -294,13 +296,12 @@ fun GroupMenuItems(
   groupInfo: GroupInfo,
   chatModel: ChatModel,
   showMenu: MutableState<Boolean>,
-  inProgress: MutableState<Boolean>,
   showMarkRead: Boolean
 ) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> {
-      if (!inProgress.value) {
-        JoinGroupAction(chat, groupInfo, chatModel, showMenu, inProgress)
+      if (groupInfo.groupId !in chatModel.joiningGroups) {
+        JoinGroupAction(chat, groupInfo, showMenu)
       }
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
@@ -476,23 +477,14 @@ fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, sh
 fun JoinGroupAction(
   chat: Chat,
   groupInfo: GroupInfo,
-  chatModel: ChatModel,
-  showMenu: MutableState<Boolean>,
-  inProgress: MutableState<Boolean>
+  showMenu: MutableState<Boolean>
 ) {
-  val joinGroup: () -> Unit = {
-    withBGApi {
-      inProgress.value = true
-      chatModel.controller.apiJoinGroup(chat.remoteHostId, groupInfo.groupId)
-      inProgress.value = false
-    }
-  }
   ItemAction(
     if (chat.chatInfo.incognito) stringResource(MR.strings.join_group_incognito_button) else stringResource(MR.strings.join_group_button),
     if (chat.chatInfo.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_login),
     color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
-      joinGroup()
+      joinGroup(chat.remoteHostId, groupInfo.groupId)
       showMenu.value = false
     }
   )
@@ -513,25 +505,27 @@ fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, sh
 
 @Composable
 fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
-  ItemAction(
-    stringResource(MR.strings.accept_contact_button),
-    painterResource(MR.images.ic_check),
-    color = MaterialTheme.colors.onBackground,
-    onClick = {
-      acceptContactRequest(rhId, incognito = false, contactRequestId, true, chatModel, onSuccess)
-      showMenu.value = false
-    }
-  )
-  if (!chatModel.addressShortLinkDataSet()) {
+  if (contactRequestId !in chatModel.acceptingContactRequests) {
     ItemAction(
-      stringResource(MR.strings.accept_contact_incognito_button),
-      painterResource(MR.images.ic_theater_comedy),
+      stringResource(MR.strings.accept_contact_button),
+      painterResource(MR.images.ic_check),
       color = MaterialTheme.colors.onBackground,
       onClick = {
-        acceptContactRequest(rhId, incognito = true, contactRequestId, true, chatModel, onSuccess)
+        acceptContactRequest(rhId, incognito = false, contactRequestId, true, chatModel, onSuccess)
         showMenu.value = false
       }
     )
+    if (!chatModel.addressShortLinkDataSet()) {
+      ItemAction(
+        stringResource(MR.strings.accept_contact_incognito_button),
+        painterResource(MR.images.ic_theater_comedy),
+        color = MaterialTheme.colors.onBackground,
+        onClick = {
+          acceptContactRequest(rhId, incognito = true, contactRequestId, true, chatModel, onSuccess)
+          showMenu.value = false
+        }
+      )
+    }
   }
   ItemAction(
     stringResource(MR.strings.reject_contact_button),
@@ -721,12 +715,10 @@ fun acceptContactRequest(
   contactRequestId: Long,
   isCurrentUser: Boolean,
   chatModel: ChatModel,
-  close: ((chat: Chat) -> Unit)? = null,
-  inProgress: MutableState<Boolean>? = null
+  close: ((chat: Chat) -> Unit)? = null
 ) {
+  chatModel.acceptingContactRequests.add(contactRequestId)
   withBGApi {
-    inProgress?.value = true
-    chatModel.acceptingContactRequests.add(contactRequestId)
     try {
       val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, contactRequestId)
       if (contact != null && isCurrentUser) {
@@ -737,17 +729,33 @@ fun acceptContactRequest(
           } else {
             chatModel.chatsContext.replaceChat(rhId, contactRequestChatId(contactRequestId), chat)
           }
-          inProgress?.value = false
         }
         close?.invoke(chat)
-      } else {
-        inProgress?.value = false
       }
     } finally {
       chatModel.acceptingContactRequests.remove(contactRequestId)
     }
   }
 }
+
+fun joinGroup(rhId: Long?, groupId: Long) {
+  chatModel.joiningGroups.add(groupId)
+  withBGApi {
+    try {
+      chatModel.controller.apiJoinGroup(rhId, groupId)
+    } finally {
+      chatModel.joiningGroups.remove(groupId)
+    }
+  }
+}
+
+@Composable
+fun rememberAcceptingContactRequest(contactRequestId: Long): State<Boolean> =
+  remember(contactRequestId) { derivedStateOf { contactRequestId in chatModel.acceptingContactRequests } }
+
+@Composable
+fun rememberJoiningGroup(groupId: Long): State<Boolean> =
+  remember(groupId) { derivedStateOf { groupId in chatModel.joiningGroups } }
 
 fun rejectContactRequest(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, dismissToChatList: Boolean = false) {
   withBGApi {
@@ -892,18 +900,12 @@ suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactI
   return false
 }
 
-fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
+fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.join_group_question),
     text = generalGetString(MR.strings.you_are_invited_to_group_join_to_connect_with_group_members),
     confirmText = if (groupInfo.membership.memberIncognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
-    onConfirm = {
-      withBGApi {
-        inProgress?.value = true
-        chatModel.controller.apiJoinGroup(rhId, groupInfo.groupId)
-        inProgress?.value = false
-      }
-    },
+    onConfirm = { joinGroup(rhId, groupInfo.groupId) },
     dismissText = generalGetString(MR.strings.delete_verb),
     onDismiss = { deleteGroup(rhId, groupInfo, chatModel) },
     hostDevice = hostDevice(rhId),

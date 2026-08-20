@@ -57,10 +57,25 @@ struct ChatListNavLink: View {
     @State private var actionSheet: SomeActionSheet? = nil
     @State private var sheet: SomeSheet<AnyView>? = nil
     @State private var showConnectContactViaAddressDialog = false
-    @State private var inProgress = false
     @State private var progressByTimeout = false
 
     var dynamicRowHeight: CGFloat { dynamicSize(userFont).rowHeight }
+
+    private var inProgress: Bool {
+        switch chat.chatInfo {
+        case let .group(groupInfo, _):
+            return chatModel.joiningGroups.contains(groupInfo.groupId)
+        case let .direct(contact):
+            if let contactRequestId = contact.contactRequestId {
+                return chatModel.acceptingContactRequests.contains(contactRequestId)
+            }
+            return false
+        case let .contactRequest(contactRequest):
+            return chatModel.acceptingContactRequests.contains(contactRequest.apiId)
+        default:
+            return false
+        }
+    }
 
     var body: some View {
         Group {
@@ -126,17 +141,19 @@ struct ChatListNavLink: View {
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     if contact.nextAcceptContactRequest {
                         if let contactRequestId = contact.contactRequestId {
-                            Button {
-                                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
-                            } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
-                                .tint(theme.colors.primary)
-                            if !ChatModel.shared.addressShortLinkDataSet {
+                            if !inProgress {
                                 Button {
-                                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
-                                } label: {
-                                    SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+                                } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
+                                    .tint(theme.colors.primary)
+                                if !ChatModel.shared.addressShortLinkDataSet {
+                                    Button {
+                                        Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+                                    } label: {
+                                        SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                                    }
+                                    .tint(.indigo)
                                 }
-                                .tint(.indigo)
                             }
                             Button {
                                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequestId))
@@ -212,7 +229,9 @@ struct ChatListNavLink: View {
             ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
                 .frameCompat(height: dynamicRowHeight)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    joinGroupButton()
+                    if !inProgress {
+                        joinGroupButton()
+                    }
                     if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
@@ -220,10 +239,7 @@ struct ChatListNavLink: View {
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
                     Button(chat.chatInfo.incognito ? "Join incognito" : "Join group") {
-                        inProgress = true
-                        joinGroup(groupInfo.groupId) {
-                            await MainActor.run { inProgress = false }
-                        }
+                        joinGroup(groupInfo.groupId)
                     }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
@@ -311,10 +327,7 @@ struct ChatListNavLink: View {
 
     private func joinGroupButton() -> some View {
         Button {
-            inProgress = true
-            joinGroup(chat.chatInfo.apiId) {
-                await MainActor.run { inProgress = false }
-            }
+            joinGroup(chat.chatInfo.apiId)
         } label: {
             SwipeLabel(NSLocalizedString("Join", comment: "swipe action"), systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward", inverted: oneHandUI)
         }
@@ -488,17 +501,19 @@ struct ChatListNavLink: View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
         .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button {
-                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
-            } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
-                .tint(theme.colors.primary)
-            if !ChatModel.shared.addressShortLinkDataSet {
+            if !inProgress {
                 Button {
-                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
-                } label: {
-                    SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
+                } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
+                    .tint(theme.colors.primary)
+                if !ChatModel.shared.addressShortLinkDataSet {
+                    Button {
+                        Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
+                    } label: {
+                        SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                    }
+                    .tint(.indigo)
                 }
-                .tint(.indigo)
             }
             Button {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest.apiId))
@@ -509,6 +524,7 @@ struct ChatListNavLink: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { showContactRequestDialog = true }
+        .disabled(inProgress)
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
             if !ChatModel.shared.addressShortLinkDataSet {
@@ -724,7 +740,8 @@ func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool, showAlert: 
     return false
 }
 
-func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
+func joinGroup(_ groupId: Int64) {
+    ChatModel.shared.joiningGroups.insert(groupId)
     Task {
         logger.debug("joinGroup")
         do {
@@ -740,13 +757,12 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
                     await deleteGroup()
                 }
             }
-            await onComplete()
         } catch let error {
-            await onComplete()
             await MainActor.run {
                 showErrorAlert(error, NSLocalizedString("Error joining group", comment: ""))
             }
         }
+        await MainActor.run { _ = ChatModel.shared.joiningGroups.remove(groupId) }
 
         func deleteGroup() async {
             do {

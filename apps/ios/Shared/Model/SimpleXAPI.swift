@@ -1770,8 +1770,8 @@ func networkErrorAlert<R>(_ res: APIResult<R>) -> (title: String, message: Strin
     }
 }
 
-func acceptContactRequest(incognito: Bool, contactRequestId: Int64, inProgress: Binding<Bool>? = nil) async {
-    await MainActor.run { inProgress?.wrappedValue = true }
+func acceptContactRequest(incognito: Bool, contactRequestId: Int64) async {
+    await MainActor.run { _ = ChatModel.shared.acceptingContactRequests.insert(contactRequestId) }
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequestId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         await MainActor.run {
@@ -1780,7 +1780,7 @@ func acceptContactRequest(incognito: Bool, contactRequestId: Int64, inProgress: 
             } else {
                 ChatModel.shared.replaceChat(contactRequestChatId(contactRequestId), chat)
             }
-            inProgress?.wrappedValue = false
+            ChatModel.shared.acceptingContactRequests.remove(contactRequestId)
         }
         if contact.sndReady {
             let chatId = chat.id
@@ -1791,7 +1791,7 @@ func acceptContactRequest(incognito: Bool, contactRequestId: Int64, inProgress: 
             }
         }
     } else {
-        await MainActor.run { inProgress?.wrappedValue = false }
+        await MainActor.run { _ = ChatModel.shared.acceptingContactRequests.remove(contactRequestId) }
     }
 }
 

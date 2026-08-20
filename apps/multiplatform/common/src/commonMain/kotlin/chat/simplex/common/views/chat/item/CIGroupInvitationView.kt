@@ -16,6 +16,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.rememberJoiningGroup
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
@@ -27,12 +28,12 @@ fun CIGroupInvitationView(
   memberRole: GroupMemberRole,
   showTimestamp: Boolean,
   chatIncognito: Boolean = false,
-  joinGroup: (Long, () -> Unit) -> Unit,
+  joinGroup: (Long) -> Unit,
   timedMessagesTTL: Int?
 ) {
   val sent = ci.chatDir.sent
   val action = !sent && groupInvitation.status == CIGroupInvitationStatus.Pending
-  val inProgress = remember { mutableStateOf(false) }
+  val inProgress = rememberJoiningGroup(groupInvitation.groupId)
   val progressByTimeout by rememberProgressByTimeout(inProgress)
 
   @Composable
@@ -75,10 +76,7 @@ fun CIGroupInvitationView(
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
-    modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
-      inProgress.value = true
-      joinGroup(groupInvitation.groupId) { inProgress.value = false }
-    }) else Modifier,
+    modifier = if (action && !inProgress.value) Modifier.clickable(onClick = { joinGroup(groupInvitation.groupId) }) else Modifier,
     shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current
@@ -151,7 +149,7 @@ fun PendingCIGroupInvitationViewPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = { _, _ -> },
+      joinGroup = {},
       timedMessagesTTL = null,
       showTimestamp = true,
     )
@@ -169,7 +167,7 @@ fun CIGroupInvitationViewAcceptedPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = { _, _ -> },
+      joinGroup = {},
       timedMessagesTTL = null,
       showTimestamp = true,
       )
@@ -187,7 +185,7 @@ fun CIGroupInvitationViewLongNamePreview() {
         status = CIGroupInvitationStatus.Accepted
       ),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = { _, _ -> },
+      joinGroup = {},
       timedMessagesTTL = null,
       showTimestamp = true,
       )

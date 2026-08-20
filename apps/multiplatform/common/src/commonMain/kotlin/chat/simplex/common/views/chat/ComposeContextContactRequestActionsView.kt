@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -16,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.chatlist.acceptContactRequest
+import chat.simplex.common.views.chatlist.rememberAcceptingContactRequest
 import chat.simplex.common.views.chatlist.rejectContactRequest
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -27,16 +27,8 @@ fun ComposeContextContactRequestActionsView(
   rhId: Long?,
   contactRequestId: Long
 ) {
-  val inProgressLocal = rememberSaveable { mutableStateOf(false) }
-  // the request can also be accepted from another view, e.g. via notification
-  val inProgress = remember(contactRequestId) { derivedStateOf { inProgressLocal.value || contactRequestId in chatModel.acceptingContactRequests } }
+  val inProgress = rememberAcceptingContactRequest(contactRequestId)
   val progressByTimeout by rememberProgressByTimeout(inProgress)
-
-  KeyChangeEffect(chatModel.chatId.value) {
-    if (inProgressLocal.value) {
-      inProgressLocal.value = false
-    }
-  }
 
   Box(
     Modifier.height(60.dp),
@@ -80,9 +72,9 @@ fun ComposeContextContactRequestActionsView(
           else
             acceptButtonModifier.clickable {
               if (chatModel.addressShortLinkDataSet()) {
-                acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgressLocal)
+                acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null)
               } else {
-                showAcceptRequestAlert(rhId, contactRequestId, inProgress = inProgressLocal)
+                showAcceptRequestAlert(rhId, contactRequestId)
               }
             }
         Row(
@@ -124,7 +116,7 @@ fun showRejectRequestAlert(rhId: Long?, contactRequestId: Long) {
   )
 }
 
-fun showAcceptRequestAlert(rhId: Long?, contactRequestId: Long, inProgress: MutableState<Boolean>) {
+fun showAcceptRequestAlert(rhId: Long?, contactRequestId: Long) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_contact_request),
     buttons = {
@@ -132,14 +124,14 @@ fun showAcceptRequestAlert(rhId: Long?, contactRequestId: Long, inProgress: Muta
         // Accept
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgress)
+          acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null)
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         // Accept incognito
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = true, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgress)
+          acceptContactRequest(rhId, incognito = true, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null)
         }) {
           Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
