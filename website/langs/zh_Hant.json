@@ -21,6 +21,7 @@
     "chat-protocol": "聊天協定",
     "copyright-label": "© 2020-2025 SimpleX Chat |開源專案",
     "donate": "捐助",
+    "invest": "投資",
     "simplex-explained-tab-1-p-1": "你可以建立聯絡人和群組，並進行雙向對話，就像在任何其他即時通訊軟件中一樣。",
     "simplex-explained-tab-1-p-2": "它如何在沒有使用者個人檔案識別符的情況下使用單向佇列？",
     "simplex-explained-tab-3-p-1": "伺服器對每個佇列都有單獨的匿名憑證，並且不知道它們屬於哪些使用者。",

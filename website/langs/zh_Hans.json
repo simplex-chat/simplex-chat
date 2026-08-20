@@ -53,6 +53,7 @@
     "simplex-explained-tab-2-p-2": "服务器只单向传输消息，无法掌握用户的对话或连接的全貌。",
     "simplex-explained-tab-3-p-1": "服务器对每个队列都有单独的匿名凭证，并且不知道这些凭证属于哪些用户。",
     "donate": "捐赠",
+    "invest": "投资",
     "simplex-explained-tab-2-p-1": "对于每个连接，您都会使用两个单独的消息队列，通过不同的服务器发送和接收消息。",
     "simplex-chat-protocol": "SimpleX 聊天协议",
     "smp-protocol": "SMP协议",
