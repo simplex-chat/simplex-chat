@@ -1,7 +1,6 @@
 package chat.simplex.app
 
 import chat.simplex.common.platform.MAX_SLOW_FRAME_DEBT
-import chat.simplex.common.platform.MAX_WAITED_FRAME_COST_MS
 import chat.simplex.common.platform.frameWait
 import chat.simplex.common.platform.fileSizeWithinBounds
 import chat.simplex.common.platform.frameCountWithinBounds
@@ -68,17 +67,17 @@ class AnimatedImageBoundsTest {
   }
 
   @Test
-  fun testWiderColourTypesCountAgainstTheSameBudget() {
-    // The file chooses its colour type, so the bound counts bytes rather than assuming four per pixel: the
+  fun testWiderColorTypesCountAgainstTheSameBudget() {
+    // The file chooses its color type, so the bound counts bytes rather than assuming four per pixel: the
     // 1920x1920 that fits at four bytes is twice the raster at eight
     assertFalse(rasterWithinBounds(1920, 1920, 8))
     assertTrue(rasterWithinBounds(1357, 1357, 8))
-    // A colour type claiming no bytes per pixel would otherwise make any raster look free
+    // A color type claiming no bytes per pixel would otherwise make any raster look free
     assertFalse(rasterWithinBounds(4096, 4096, 0))
   }
 
   @Test
-  fun testAnimatableContainersAreRecognised() {
+  fun testAnimatableContainersAreRecognized() {
     assertTrue(looksAnimatable("GIF89a...".toByteArray()))
     assertTrue(looksAnimatable("GIF87a...".toByteArray()))
     assertTrue(looksAnimatable("RIFF????WEBPVP8X".toByteArray()))
@@ -196,8 +195,8 @@ class AnimatedImageBoundsTest {
   @Test
   fun testAStallIsNotWaitedOut() {
     // Wall time counts a machine that suspended mid-decode, which the frame never spent
-    assertEquals(MAX_WAITED_FRAME_COST_MS, frameWait(20, 30_000))
-    assertEquals(MAX_WAITED_FRAME_COST_MS, frameWait(20, 8L * 60 * 60 * 1000))
+    assertEquals(1000, frameWait(20, 30_000))
+    assertEquals(1000, frameWait(20, 8L * 60 * 60 * 1000))
     // A frame that asks for longer than the clamp still gets what it asks for
     assertEquals(5000, frameWait(5000, 30_000))
   }

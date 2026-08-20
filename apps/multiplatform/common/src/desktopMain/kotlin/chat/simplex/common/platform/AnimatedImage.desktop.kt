@@ -47,8 +47,9 @@ private const val MAX_REBUILT_FRAMES = 64
 private class Animation(val codec: Codec, val priorFrames: IntArray, val frameDelays: LongArray)
 
 /**
- * The current frame of [data], or [still] when [data] is not an animation, falls outside the bounds above, or
- * fails to decode. Decoding runs off the UI thread and stops when the caller leaves the composition.
+ * The current frame of [data], or [still] when [data] is not an animation, falls outside the bounds above,
+ * or fails before it has shown a frame - after that it stops on the frame it reached. Decoding runs off the
+ * UI thread and stops when the caller leaves the composition.
  */
 @Composable
 fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: () -> Boolean = { false }): ImageBitmap {
@@ -85,7 +86,7 @@ private fun openAnimation(data: ByteArray): Animation? {
     } finally {
       encoded.close()
     }
-    animation = animationWithinBounds(codec)
+    animation = boundedAnimation(codec)
   } catch (e: Throwable) {
     Log.e(TAG, "Unable to read animated image: $e")
   }
@@ -95,7 +96,7 @@ private fun openAnimation(data: ByteArray): Animation? {
 }
 
 /** The animation [codec] holds if every bound admits it. The caller keeps the codec on every other path. */
-private fun animationWithinBounds(codec: Codec): Animation? {
+private fun boundedAnimation(codec: Codec): Animation? {
   val info = codec.imageInfo
   if (!rasterWithinBounds(info.width, info.height, info.bytesPerPixel)) return null
   // Counting frames scans the file, while dimensions are only read from the header
@@ -187,7 +188,6 @@ private fun framesAreSeen(hidden: () -> Boolean): Boolean =
 internal fun frameWait(delayMs: Long, costMs: Long): Long =
   maxOf(delayMs, costMs.coerceAtMost(MAX_WAITED_FRAME_COST_MS))
 
-/** Whether a file is small enough to copy into native memory and scan for its frames. */
 internal fun fileSizeWithinBounds(size: Int): Boolean = size <= MAX_ANIMATED_FILE_SIZE
 
 /**

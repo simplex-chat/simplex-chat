@@ -28,7 +28,7 @@ let a sender disrupt the app.
 | --- | --- |
 | raster measured in bytes, sides multiplied as `Long` | `65535 * 65535` overflows `Int` to a negative number and would pass a naive budget check |
 | per-side cap, independent of the raster bound | 65535x32 is only 2.1MP and would otherwise animate with a 65535-pixel scanline |
-| bytes per pixel read from the codec | the file chooses its colour type; the budget must not assume four bytes |
+| bytes per pixel read from the codec | the file chooses its color type; the budget must not assume four bytes |
 | file size checked before the bytes are copied natively | Skia copies the encoded bytes and scans them to count frames |
 | magic-byte prefilter (`GIF8`, `RIFF....WEBP`) | photos are most of what a chat holds and none are animations; they never reach a second decoder |
 | `allocPixels` result honoured | it reports failure by returning false, and reading into an unallocated bitmap throws |
