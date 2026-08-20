@@ -848,7 +848,7 @@ swipe action */
 "Archived contacts" = "Contacts archivés";
 
 /* No comment provided by engineer. */
-"archived report" = "rapport archivé";
+"archived report" = "signalement archivé";
 
 /* No comment provided by engineer. */
 "Archiving database" = "Archivage de la base de données";
@@ -932,7 +932,7 @@ swipe action */
 "Be free in your network." = "Soyez libre dans votre réseau.";
 
 /* No comment provided by engineer. */
-"Because we destroyed the power to know who you are. So that your power can never be taken." = "Parce que nous avons détruit le pouvoir de vous identifier. Pour que ce pouvoir ne vous soit jamais ôté.";
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Parce que nous avons détruit le pouvoir de vous identifier. Pour que votre pouvoir ne puisse jamais vous être enlevé.";
 
 /* No comment provided by engineer. */
 "Better calls" = "Appels améliorés";
@@ -1294,7 +1294,7 @@ alert subtitle */
 "Chat list" = "Liste de conversation";
 
 /* No comment provided by engineer. */
-"Chat migrated!" = "Conversation transférée !";
+"Chat migrated!" = "Messagerie transférée !";
 
 /* No comment provided by engineer. */
 "Chat preferences" = "Préférences de conversation";
@@ -1343,7 +1343,7 @@ chat toolbar */
 "Chats with admins are prohibited." = "Les conversations avec les admins sont interdites.";
 
 /* alert message */
-"Chats with admins in public channels have no E2E encryption - use only with trusted chat relays." = "Les conversations avec les admins dans les canaux publics n'ont pas de chiffrement pair-à-pair ; à utiliser uniquement avec des relais de messagerie fiables.";
+"Chats with admins in public channels have no E2E encryption - use only with trusted chat relays." = "Les conversations avec les admins dans les canaux publics n'ont pas de chiffrement de bout en bout ; à utiliser uniquement avec des relais de messagerie fiables.";
 
 /* No comment provided by engineer. */
 "Chats with members" = "Conversations avec les membres";
@@ -1746,7 +1746,7 @@ server test step */
 "Create a group using a random profile." = "Création de groupes via un profil aléatoire.";
 
 /* No comment provided by engineer. */
-"Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." = "Créez une page d’aperçu de votre chaîne pour les visiteurs avant qu'ils ne s'abonnent. Hébergez-la vous-même ou via un service statique.";
+"Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." = "Créez une page d’aperçu de votre canal pour les visiteurs avant qu'ils ne s'abonnent. Hébergez-la vous-même ou via un service statique.";
 
 /* server test step */
 "Create file" = "Créer un fichier";
@@ -3106,7 +3106,7 @@ servers warning */
 "Get notified when mentioned." = "Soyez averti·e quand vous êtes mentionné·e.";
 
 /* No comment provided by engineer. */
-"Get SimpleX name (BETA)" = "Obtenir un nom SimpleX (BÊTA)";
+"Get SimpleX name (BETA)" = "Obtenir un nom SimpleX (BETA)";
 
 /* No comment provided by engineer. */
 "Get started" = "Commençons";
@@ -3988,7 +3988,7 @@ servers warning */
 "moderated by %@" = "modéré par %@";
 
 /* member role */
-"moderator" = "modérateur·trice";
+"moderator" = "modérateur";
 
 /* time unit */
 "months" = "mois";
@@ -4156,7 +4156,7 @@ servers warning */
 "No chat relays" = "Aucun relais de messagerie";
 
 /* servers warning */
-"No chat relays enabled." = "Aucun relais de messagerie disponible.";
+"No chat relays enabled." = "Aucun relais de messagerie n'est activé.";
 
 /* No comment provided by engineer. */
 "No chats" = "Aucune conversation";
@@ -4243,7 +4243,7 @@ servers warning */
 "No servers to receive messages." = "Pas de serveurs pour recevoir des messages.";
 
 /* servers warning */
-"No servers to resolve names." = "Échec de la résolution de noms.";
+"No servers to resolve names." = "Aucun serveur pour résoudre les noms.";
 
 /* servers error */
 "No servers to send files." = "Pas de serveurs pour envoyer des fichiers.";
@@ -4835,7 +4835,7 @@ alert title */
 "Public channels - speak freely 🚀" = "Les canaux publics – parlez librement 🚀";
 
 /* No comment provided by engineer. */
-"Public names for your channel or business." = "Noms publics pour votre chaîne ou votre entreprise.";
+"Public names for your channel or business." = "Noms publics pour votre canal ou votre entreprise.";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Notifications push";
@@ -5044,7 +5044,7 @@ swipe action */
 "Remove relay" = "Retirer le relais";
 
 /* alert title */
-"Remove relay?" = "Retirer le relai ?";
+"Remove relay?" = "Retirer le relais ?";
 
 /* alert title */
 "Remove subscriber?" = "Supprimer l'abonné ?";
@@ -5900,7 +5900,7 @@ copied message info */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocoles SimpleX audité par Trail of Bits.";
 
 /* No comment provided by engineer. */
-"SimpleX public names (BETA)" = "Noms publics SimpleX (BÊTA)";
+"SimpleX public names (BETA)" = "Noms publics SimpleX (BETA)";
 
 /* simplex link type */
 "SimpleX relay address" = "Adresse relais SimpleX";
@@ -5961,10 +5961,10 @@ report reason */
 "Star on GitHub" = "Donnez une étoile sur GitHub";
 
 /* No comment provided by engineer. */
-"Start chat" = "Démarrer la conversation";
+"Start chat" = "Démarrer la messagerie";
 
 /* No comment provided by engineer. */
-"Start chat?" = "Démarrer la conversation ?";
+"Start chat?" = "Démarrer la messagerie ?";
 
 /* No comment provided by engineer. */
 "Start migration" = "Démarrer la migration";
@@ -5985,13 +5985,13 @@ report reason */
 "Stop" = "Arrêter";
 
 /* No comment provided by engineer. */
-"Stop chat" = "Arrêter la conversation";
+"Stop chat" = "Arrêter la messagerie";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Arrêtez la conversation pour exporter, importer ou supprimer la base de données des conversations. Vous ne pourrez pas recevoir ni envoyer de messages tant que la conversation est arrêtée.";
 
 /* No comment provided by engineer. */
-"Stop chat?" = "Arrêter la conversation ?";
+"Stop chat?" = "Arrêter la messagerie ?";
 
 /* cancel file action */
 "Stop file" = "Arrêter le fichier";
@@ -6012,7 +6012,7 @@ report reason */
 "Stop SimpleX" = "Arrêter SimpleX";
 
 /* No comment provided by engineer. */
-"Stopping chat" = "Arrêt de la conversation";
+"Stopping chat" = "Arrêt de la messagerie";
 
 /* No comment provided by engineer. */
 "Storage" = "Stockage";
@@ -6036,7 +6036,7 @@ report reason */
 "Subscriber" = "Abonné·e";
 
 /* chat feature */
-"Subscriber reports" = "Rapports d'abonnés";
+"Subscriber reports" = "Signalements d'abonnés";
 
 /* alert message */
 "Subscriber will be removed from channel - this cannot be undone!" = "L'abonné sera supprimé du canal ; cette action est irréversible !";
@@ -6175,7 +6175,7 @@ server test failure */
 "Test notifications" = "Notifications de test";
 
 /* No comment provided by engineer. */
-"Test relay" = "Relais de test";
+"Test relay" = "Tester le relais";
 
 /* No comment provided by engineer. */
 "Test server" = "Tester le serveur";
@@ -6642,7 +6642,7 @@ alert title */
 "Upgrade address?" = "Mettre à jour l'adresse ?";
 
 /* No comment provided by engineer. */
-"Upgrade and open chat" = "Mettre à jour et ouvrir la conversation";
+"Upgrade and open chat" = "Mettre à jour et ouvrir la messagerie";
 
 /* alert message */
 "Upgrade group link?" = "Mettre à jour le lien du groupe ?";
@@ -6900,7 +6900,7 @@ alert title */
 "wants to connect to you!" = "veut établir une connexion !";
 
 /* No comment provided by engineer. */
-"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Avertissement : démarrer une conversation sur plusieurs appareils n’est pas pris en charge et entraînera des échecs de distribution des messages";
+"Warning: starting chat on multiple devices is not supported and will cause message delivery failures" = "Avertissement : démarrer la messagerie sur plusieurs appareils n’est pas pris en charge et entraînera des échecs de distribution des messages";
 
 /* No comment provided by engineer. */
 "Warning: you may lose some data!" = "Attention : vous risquez de perdre des données !";
@@ -7110,7 +7110,7 @@ alert title */
 "You can start chat via app Settings / Database or by restarting the app" = "Vous pouvez lancer la messagerie via Paramètres / Base de données ou en redémarrant l'app";
 
 /* No comment provided by engineer. */
-"You can still view conversation with %@ in the list of chats." = "Vous pouvez toujours voir la discussion avec %@ dans la liste des conversations.";
+"You can still view conversation with %@ in the list of chats." = "Vous pouvez toujours voir la conversation avec %@ dans la liste des conversations.";
 
 /* badge alert */
 "You can support SimpleX starting from v7 of the app." = "Vous pouvez soutenir SimpleX à partir de la version 7 de l'application.";

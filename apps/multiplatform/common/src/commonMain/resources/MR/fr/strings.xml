@@ -238,7 +238,7 @@
     <string name="this_QR_code_is_not_a_link">Ce code QR n\'est pas un lien !</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Vous serez connecté·e lorsque votre demande de connexion sera acceptée, veuillez attendre ou vérifier plus tard !</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Vous serez connecté·e lorsque l\'appareil de votre contact sera en ligne, veuillez attendre ou vérifier plus tard !</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Votre profil de messagerie sera envoyé \nà votre contact</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Votre profil de messagerie sera envoyé\nà votre contact</string>
     <string name="share_invitation_link">Partager un lien unique</string>
     <string name="paste_button">Coller</string>
     <string name="this_string_is_not_a_connection_link">Cette chaîne n\'est pas un lien de connexion !</string>
@@ -348,7 +348,7 @@
     <string name="network_use_onion_hosts_prefer_desc">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="appearance_settings">Apparence</string>
     <string name="create_address">Créer une adresse</string>
-    <string name="your_current_profile">Votre profil de conversation</string>
+    <string name="your_current_profile">Votre profil actuel</string>
     <string name="edit_image">Modifier l\'image</string>
     <string name="save_and_notify_contacts">Enregistrer et en informer les contacts</string>
     <string name="save_and_notify_group_members">Enregistrer et en informer les membres du groupe</string>
@@ -486,7 +486,7 @@
     <string name="settings_section_title_chats">Conversations</string>
     <string name="settings_developer_tools">Outils du développeur</string>
     <string name="settings_section_title_icon">Icone de l\'app</string>
-    <string name="your_chat_database">Votre base de données de la messagerie</string>
+    <string name="your_chat_database">Votre base de données de messagerie</string>
     <string name="run_chat_section">Lancer la messagerie</string>
     <string name="stop_chat_question">Arrêter la messagerie ?</string>
     <string name="restart_the_app_to_use_imported_chat_database">Redémarrez l\'application pour utiliser la base de données importée.</string>
@@ -1235,7 +1235,7 @@
     <string name="only_owners_can_enable_files_and_media">Seuls les propriétaires du groupe peuvent activer les fichiers et les médias.</string>
     <string name="favorite_chat">Ajouter aux favoris</string>
     <string name="prohibit_sending_files">Interdire l\'envoi de fichiers et de médias.</string>
-    <string name="no_filtered_chats">Aucunes conversations filtrées</string>
+    <string name="no_filtered_chats">Aucune conversation filtrée</string>
     <string name="files_and_media">Fichiers et médias</string>
     <string name="unfavorite_chat">Retirer des favoris</string>
     <string name="network_option_protocol_timeout_per_kb">Délai d\'attente du protocole par KB</string>
@@ -1441,7 +1441,7 @@
     <string name="new_desktop"><![CDATA[<i>(nouveau)</i>]]></string>
     <string name="unlink_desktop_question">Dissocier le PC ?</string>
     <string name="v5_4_better_groups">Des groupes plus performants</string>
-    <string name="linked_desktop_options">Options de bureau liés</string>
+    <string name="linked_desktop_options">Options de l\'ordinateur lié</string>
     <string name="linked_desktops">Ordinateurs liés</string>
     <string name="discover_on_network">Rechercher sur le réseau</string>
     <string name="v5_4_incognito_groups">Groupes incognito</string>
@@ -1528,11 +1528,11 @@
     <string name="keep_invitation_link">Conserver</string>
     <string name="tap_to_paste_link">Appuyez pour coller le lien</string>
     <string name="search_or_paste_simplex_link">Rechercher ou coller un lien SimpleX</string>
-    <string name="chat_is_stopped_you_should_transfer_database">La messagerie est arrêté. Si vous avez déjà utilisé cette base de données sur un autre appareil, vous devez la transférer à nouveau avant de démarrer le chat.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">La messagerie est arrêtée. Si vous avez déjà utilisé cette base de données sur un autre appareil, vous devez la transférer à nouveau avant de démarrer la messagerie.</string>
     <string name="start_chat_question">Lancer la messagerie ?</string>
     <string name="remote_host_error_bad_state"><![CDATA[État médiocre de la connexion au mobile <b>%s</b>.]]></string>
     <string name="remote_ctrl_was_disconnected_title">Connexion interrompue</string>
-    <string name="remote_ctrl_error_bad_state">La connexion au PC est instable</string>
+    <string name="remote_ctrl_error_bad_state">La connexion au PC est dans un état incorrect</string>
     <string name="remote_ctrl_error_bad_version">La version de l\'ordinateur n\'est pas prise en charge. Veillez à utiliser la même version sur les deux appareils.</string>
     <string name="remote_ctrl_error_disconnected">Le PC a été déconnecté</string>
     <string name="developer_options_section">Options pour les développeurs</string>
@@ -1850,7 +1850,7 @@
     <string name="cannot_share_message_alert_text">Les paramètres de conversation sélectionnés ne permettent pas l\'envoi de ce message.</string>
     <string name="servers_info_subscriptions_connections_subscribed">Connections actives</string>
     <string name="all_users">Tous les profiles</string>
-    <string name="acknowledged">Reçu</string>
+    <string name="acknowledged">Accusés de réception</string>
     <string name="app_check_for_updates_download_completed_title">La mise à jour de l\'app est téléchargée</string>
     <string name="completed">Complétées</string>
     <string name="current_user">Profil actuel</string>
@@ -1996,7 +1996,7 @@
     <string name="calls_prohibited_alert_title">Les appels ne sont pas autorisés !</string>
     <string name="you_need_to_allow_calls">Vous devez autoriser votre contact à appeler pour pouvoir l\'appeler.</string>
     <string name="cant_send_message_to_member_alert_title">Impossible d\'envoyer un message à ce membre du groupe</string>
-    <string name="you_can_still_view_conversation_with_contact">Vous pouvez toujours voir la discussion avec %1$s dans la liste des conversations.</string>
+    <string name="you_can_still_view_conversation_with_contact">Vous pouvez toujours voir la conversation avec %1$s dans la liste des conversations.</string>
     <string name="allow_calls_question">Autoriser les appels ?</string>
     <string name="info_view_call_button">appeler</string>
     <string name="cant_call_contact_alert_title">Impossible d\'appeler le contact</string>
@@ -2116,7 +2116,7 @@
     <string name="archive_report">Archiver le signalement</string>
     <string name="privacy_chat_list_open_links_ask">Demander</string>
     <string name="add_to_list">Ajouter à la liste</string>
-    <string name="delete_chat_list_warning">Toutes les conversations seront supprimées de %s, et cette liste sera supprimée</string>
+    <string name="delete_chat_list_warning">Toutes les conversations seront retirées de la liste %s, et la liste sera supprimée</string>
     <string name="button_add_team_members">Ajouter des membres à l\'équipe</string>
     <string name="operator_conditions_accepted">Conditions acceptées</string>
     <string name="button_add_friends">Ajouter des amis</string>
@@ -2199,7 +2199,7 @@
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Les adresses SimpleX et les liens à usage unique peuvent être partagés en toute sécurité via n\'importe quelle messagerie.</string>
     <string name="blocking_reason_spam">Spam</string>
     <string name="report_verb">Signaler</string>
-    <string name="no_unread_chats">Aucunes conversations non lues</string>
+    <string name="no_unread_chats">Aucune conversation non lue</string>
     <string name="chat_list_groups">Groupes</string>
     <string name="chat_list_group_reports">Signalements</string>
     <string name="report_compose_reason_header_profile">Signaler le profil d\'un membre : seuls les modérateurs du groupe le verront.</string>
@@ -2220,7 +2220,7 @@
     <string name="error_creating_chat_tags">Erreur lors de la création d\'une liste de conversations</string>
     <string name="error_loading_chat_tags">Erreur de chargement des listes de conversations</string>
     <string name="error_updating_chat_tags">Erreur de mise à jour de la liste des conversations</string>
-    <string name="no_chats">Aucunes conversations</string>
+    <string name="no_chats">Aucune conversation</string>
     <string name="no_chats_found">Pas de conversations trouvées</string>
     <string name="open_with_app">Ouvrir avec %s</string>
     <string name="save_list">Sauvegarder la liste</string>
@@ -2455,14 +2455,14 @@
     <string name="button_channel_members">Membres du canal</string>
     <string name="channel_display_name_field">Nom du canal</string>
     <string name="channel_preferences">Préférences du canal</string>
-    <string name="snd_channel_event_channel_profile_updated">Profil du canal mis à jour</string>
+    <string name="snd_channel_event_channel_profile_updated">profil du canal mis à jour</string>
     <string name="chat_list_channels">Canaux</string>
     <string name="channel_simplex_name">Nom du canal SimpleX</string>
     <string name="channel_temporarily_unavailable">Canal temporairement indisponible</string>
     <string name="channel_webpage">Page web du canal</string>
     <string name="delete_channel_for_all_subscribers_cannot_undo_warning">Le canal sera supprimé pour tous les abonnés ; cette action est irréversible !</string>
     <string name="action_button_channel_link">Lien</string>
-    <string name="why_built_p7">Parce que nous avons détruit le pouvoir de vous identifier. Pour que ce pouvoir ne vous soit jamais ôté.</string>
+    <string name="why_built_p7">Parce que nous avons détruit le pouvoir de vous identifier. Pour que votre pouvoir ne puisse jamais vous être enlevé.</string>
     <string name="chat_banner_bot">Bot</string>
     <string name="info_row_signed">Signé</string>
     <string name="info_row_signed_verified">Signé et vérifié</string>
@@ -2513,7 +2513,7 @@
     <string name="for_anyone_to_reach_you">Pour que n\'importe qui puisse vous joindre</string>
     <string name="open_to_use_bot">Ouvrir pour utiliser le bot</string>
     <string name="open_to_accept">Ouvrir pour accepter</string>
-    <string name="notification_group_report">Signaler : %s</string>
+    <string name="notification_group_report">Signalement : %s</string>
     <string name="group_new_support_chats">%d conversations avec des membres</string>
     <string name="group_new_support_chats_short">%d conversation(s)</string>
     <string name="chat_banner_connect_to_chat">Appuyez sur Se connecter à la conversation</string>
@@ -2537,7 +2537,7 @@
     <string name="chat_link_contact_address">Adresse de contact</string>
     <string name="chat_link_one_time">Lien à usage unique</string>
     <string name="chat_link_from_owner">(de la part du propriétaire)</string>
-    <string name="report_sent_alert_msg_view_in_support_chat">Vous pouvez consulter vos rapports dans la section Discuter avec les admins.</string>
+    <string name="report_sent_alert_msg_view_in_support_chat">Vous pouvez consulter vos signalements dans la section Discuter avec les admins.</string>
     <string name="disable_automatic_deletion_message">Les messages de cette conversation ne seront jamais supprimés.</string>
     <string name="change_automatic_chat_deletion_message">Cette action est irréversible : les messages envoyés et reçus dans cette conversation avant la date sélectionnée seront supprimés.</string>
     <string name="text_field_set_chat_placeholder">Définir le nom de la conversation…</string>
@@ -2582,7 +2582,7 @@
     <string name="group_members_can_send_reports_channel">Les abonnés peuvent signaler des messages aux modérateurs.</string>
     <string name="you_are_subscriber">vous êtes abonné</string>
     <string name="cant_send_message_rejected">demande d’adhésion refusée</string>
-    <string name="cant_send_message_group_deleted">le groupe est supprimé.</string>
+    <string name="cant_send_message_group_deleted">le groupe est supprimé</string>
     <string name="cant_send_message_you_left">vous êtes parti</string>
     <string name="cant_send_message_generic">impossible d\'envoyer des messages</string>
     <string name="cant_broadcast_message">impossible de diffuser</string>
@@ -2624,7 +2624,7 @@
     <string name="deprecated_options_section">Options obsolètes</string>
     <string name="address_welcome_message">Message de bienvenue</string>
     <string name="new_1_time_link">Nouveau lien à usage unique</string>
-    <string name="onboarding_send_1_time_link">Envoyez le lien via n\'importe quel messagerie : c\'est sécurisé. Demandez de le coller dans SimpleX.</string>
+    <string name="onboarding_send_1_time_link">Envoyez le lien via n\'importe quelle messagerie : c\'est sécurisé. Demandez de le coller dans SimpleX.</string>
     <string name="onboarding_or_show_qr_code">Ou présentez le QR code en personne ou par appel vidéo.</string>
     <string name="onboarding_post_address">Utilisez cette adresse dans votre profil de réseau social, sur votre site web ou dans votre signature électronique.</string>
     <string name="onboarding_or_use_qr_code">Ou utilisez ce QR code : imprimez-le ou affichez-le en ligne.</string>
@@ -2650,8 +2650,8 @@
     <string name="onboarding_no_account">Pas de compte. Pas de numéro de téléphone. Pas d\'email. Pas d\'identité.\nLe chiffrement le plus sécurisé.</string>
     <string name="enter_profile_name">Saisissez le nom du profil…</string>
     <string name="migrate">Migrer</string>
-    <string name="why_built_heading">Vous êtes né sans compte.</string>
-    <string name="why_built_p1">Personne n\'a tracé vos conversations. Personne n\'a dressé la carte de vos déplacements. La confidentialité n\'a jamais été une option : c\'était un mode de vie.</string>
+    <string name="why_built_heading">Vous êtes né·e sans compte.</string>
+    <string name="why_built_p1">Personne n\'a tracé vos conversations. Personne n\'a dressé la carte de vos déplacements. La confidentialité n\'a jamais été une fonctionnalité : c\'était un mode de vie.</string>
     <string name="why_built_p2">Puis nous sommes passés en ligne, et chaque plateforme a réclamé une partie de vous : votre nom, votre numéro, vos amis. Nous avons accepté que le prix à payer pour parler aux autres soit de permettre à quelqu\'un de savoir avec qui nous parlons. Chaque génération, humaine et technologique, a fonctionné ainsi : téléphone, email, messageries, réseaux sociaux. Il semblait que ce fût la seule voie possible.</string>
     <string name="why_built_p3">Il existe une autre voie. Un réseau sans numéros de téléphone. Sans noms d\'utilisateur. Sans comptes. Sans aucune identité utilisateur. Un réseau qui connecte les personnes et achemine des messages chiffrés sans savoir qui est connecté.</string>
     <string name="why_built_p4">Pas une meilleure serrure sur la porte de quelqu\'un d\'autre. Ni un propriétaire plus sympa qui respecte votre vie privée, mais conserve tout de même la trace de tous les visiteurs. Vous n\'êtes pas un invité. Vous êtes chez vous. Aucun roi ne peut y entrer : vous êtes souverain.</string>
