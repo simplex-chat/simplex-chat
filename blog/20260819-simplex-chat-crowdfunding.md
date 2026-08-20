@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "Equity Crowdfunding Launched &mdash; You Can Get a Stake in SimpleX Chat"
 date: 2026-08-19
-preview: ""
+preview: "SimpleX is the first and the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now launched on Wefunder, so network users, and anybody else, can get a stake in SimpleX Chat &mdash; the company that builds it."
 image: images/20260819-growth-chart.png
 imageWide: true
 permalink: "/blog/20260819-simplex-chat-crowdfunding.html"
@@ -18,7 +18,7 @@ SimpleX is the first and the only messaging network without user identifiers of 
 
 <img src="./images/20260819-growth-chart.png" width="40%" class="float-to-right">
 
-People found SimpleX without any paid marketing &mdash; the community spread it via hundreds of posts, videos, podcasts and talks.[^links] The app was downloaded more than 3 million times. ~480,000 people use it every month. Users, including Vitalik Buterin, donated $650,000. There are more than 1,000 community-run servers on the network. Trail of Bits audited it in 2022, 2024, and 2026 (to be published).
+People found SimpleX without any paid marketing &mdash; the community spread it via hundreds of posts, videos, podcasts and talks.[^links] The app was downloaded more than 3 million times. About 480,000 people use it every month. Users, including Vitalik Buterin, donated $650,000. There are more than 1,000 community-run servers on the network. Trail of Bits audited it in 2022, 2024, and 2026 (to be published).
 
 SimpleX Network assigns no identifiers to users &mdash; no phone numbers, usernames, or even random numbers. Instead, random identifiers are assigned to conversations, and only users know who they talk to. This cannot be added to a network that already has identifiers; it has to be built this way from the start, as SimpleX Network was.
 
@@ -48,15 +48,15 @@ The web solved this by letting anyone build any experience on one open platform.
 
 ## Now you can get a stake
 
-SimpleX Chat is the company that builds SimpleX Network, and now you can invest as little as $100 and get a stake in the company.
+SimpleX Chat is the company that builds SimpleX Network, and now you can invest from $100 and get a stake in the company.
 
 If you invest $500 or more, you receive a public SimpleX name on SimpleX Network:
-- for 5 years for other early bird investors,
+- for 5 years for early bird investors,
 - for 3 years after that.
 
 You may benefit from the company's growth, and you would help build a network that people own &mdash; where the communities and audiences you build stay yours, and no company can take them away. That is what we set out to build. Now you can build it with us.
 
-[Invest on Wefunder](https://wefunder.com/simplex.chat)
+Read about how we plan to make SimpleX Chat and the network profitable, and about all the investment terms, on Wefunder: https://wefunder.com/simplex.chat
 
 [^links]: https://simplex.chat/links/
 
