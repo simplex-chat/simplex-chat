@@ -55,7 +55,7 @@ Each type has a dedicated composable in `views/chat/item/`:
 | Type | Composable | Description |
 |---|---|---|
 | Text | `FramedItemView` | Rendered with markdown (bold, italic, code, links, `@mentions`) via `CIMarkdownText` |
-| Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `ImageFullScreenView` |
+| Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `ImageFullScreenView`; GIFs animate in chat and full screen on desktop |
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback via `VideoPlayerHolder` |
 | Voice | `CIVoiceView` | Waveform visualization with playback controls and duration |
 | File | `CIFileView` | File icon, name, size; download/open actions with progress indicator |

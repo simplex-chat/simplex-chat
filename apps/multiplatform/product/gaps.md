@@ -222,8 +222,8 @@ Desktop users cannot send voice messages. The record button either does nothing 
 
 Several other Desktop features are also marked with `LALAL` placeholders:
 - **QR Code Scanner** (`QRCodeScanner.desktop.kt:12`) -- scanning QR codes is not implemented on Desktop
-- **Animated Drawables** (`Utils.desktop.kt:179`) -- animated image support (e.g., GIF in-line rendering) is not implemented
-- **Animated Chat Images** (`CIImageView.desktop.kt:19`) -- animated image rendering in chat items
+- **Animated Drawables** (`Utils.desktop.kt:237`) -- `getDrawableFromUri` returns null, so the compose path cannot inspect a picked animation and `isAnimImage` falls back to the file extension. Received animations do render: GIF and animated WebP play in chat items and full screen, while the chat list preview stays a still image by design
+- **WebP still images** (`Images.desktop.kt:190`) -- desktop decodes with ImageIO, which has no WebP reader, so a received `.webp` never renders and a picked one is dropped when sending. The animation decoder handles WebP but is never reached for it
 - **isImage detection** (`Images.desktop.kt:168`) -- image type detection (implemented but marked as incomplete)
 
 ---

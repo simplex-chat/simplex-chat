@@ -290,7 +290,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `CIFeaturePreferenceView.kt` | Feature preference change event |
 | `CIFileView.kt` | File message (download/upload progress) |
 | `CIGroupInvitationView.kt` | Group invitation card |
-| `CIImageView.kt` | Image message (thumbnail + fullscreen) |
+| `CIImageView.kt` | Image message (thumbnail + fullscreen); desktop animates GIF/WebP via `rememberAnimatedImage` |
 | `CIInvalidJSONView.kt` | Invalid JSON fallback display |
 | `CIMemberCreatedContactView.kt` | Member-created contact event |
 | `CIMetaView.kt` | Message metadata (time, status indicators) |
@@ -300,7 +300,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `DeletedItemView.kt` | Deleted message placeholder |
 | `EmojiItemView.kt` | Large emoji-only message |
 | `FramedItemView.kt` | Message bubble frame (quoted item, text, media) |
-| `ImageFullScreenView.kt` | Fullscreen image gallery |
+| `ImageFullScreenView.kt` | Fullscreen image gallery; desktop animates GIF/WebP |
 | `IntegrityErrorItemView.kt` | Message integrity error |
 | `MarkedDeletedItemView.kt` | Marked-as-deleted / moderated message |
 | `TextItemView.kt` | Plain text message with markdown |

@@ -32,7 +32,7 @@ let a sender disrupt the app.
 | file size checked before the bytes are copied natively | Skia copies the encoded bytes and scans them to count frames |
 | magic-byte prefilter (`GIF8`, `RIFF....WEBP`) | photos are most of what a chat holds and none are animations; they never reach a second decoder |
 | `allocPixels` result honoured | it reports failure by returning false, and reading into an unallocated bitmap throws |
-| frame count bound | counting the frames also builds a table of them, which a file of minimal frames can make several times its own size |
+| frame count bound | counting the frames builds a table of them that 28MB of minimal frames makes 79MB, which closing the codec releases instead of holding it while the image is on screen |
 | destination allocated with a premultiplied alpha type | the codec reports the alpha type of the first frame, and a frame that has alpha cannot be read into an opaque bitmap |
 | frame duration floor, and 100ms substituted for delays of 10ms and less | a 4.6MB GIF can hold 200 000 zero-delay frames, and Skia reports the usual "as fast as possible" delay of one centisecond as 10ms |
 | single exception boundary around every native call | the frame count and repeat count are read from the file too |
