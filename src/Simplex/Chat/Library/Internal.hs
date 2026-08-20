@@ -914,16 +914,19 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
             forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
             createAcceptedContactConn db user userContactLinkId_ contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
           pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile)
-        -- contact connection in any status other than prepared is created when the request is accepted
-        -- (see createAcceptedContactConn), so the request was already accepted -
-        -- accepting it again would fail in the agent, as the invitation is already used.
-        Just Connection {connStatus} | connStatus /= ConnPrepared -> throwCmdError "contact request already accepted"
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
+  sqSecured <-
+    withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
+      -- the agent marks the invitation accepted only once joining succeeded (see acceptContact'),
+      -- so not finding it is what tells an accepted request from an accept that failed and can be retried
+      `catchAllErrors` \case
+        ChatErrorAgent {agentError = CMD PROHIBITED _} -> throwCmdError "contact request already accepted"
+        e -> throwError e
+  pure (ct, conn, sqSecured)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
 acceptContactRequestAsync
