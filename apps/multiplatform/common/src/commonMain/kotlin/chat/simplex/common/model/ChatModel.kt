@@ -202,6 +202,7 @@ object ChatModel {
   val migrationState: MutableState<MigrationToState?> by lazy { mutableStateOf(MigrationToDeviceState.makeMigrationState()) }
 
   var draft = mutableStateOf(null as ComposeState?)
+  // chat id with chat scope, see draftChatId() - group chat and its support chats have the same chat id
   var draftChatId = mutableStateOf(null as String?)
 
   // working with external intents or internal forwarding of chat items
@@ -1259,6 +1260,12 @@ fun sameChatScope(scope1: GroupChatScope, scope2: GroupChatScope) =
       && scope2 is GroupChatScope.MemberSupport
       && scope1.groupMemberId_ == scope2.groupMemberId_
 
+fun draftChatId(chatId: String?, scope: GroupChatScope?): String? =
+  if (chatId == null || scope == null) chatId
+  else when (scope) {
+    is GroupChatScope.MemberSupport -> "$chatId support:${scope.groupMemberId_ ?: ""}"
+  }
+
 @Serializable
 sealed class GroupChatScopeInfo {
   @Serializable @SerialName("memberSupport") data class MemberSupport(val groupMember_: GroupMember?) : GroupChatScopeInfo()
@@ -2100,10 +2107,32 @@ data class LocalProfile(
   }
 }
 
-@Serializable
-enum class ChatPeerType {
-  @SerialName("human") Human,
-  @SerialName("bot") Bot
+@Serializable(with = ChatPeerTypeSerializer::class)
+sealed class ChatPeerType {
+  @Serializable @SerialName("human") object Human: ChatPeerType()
+  @Serializable @SerialName("bot") object Bot: ChatPeerType()
+  @Serializable @SerialName("business") object Business: ChatPeerType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatPeerType()
+
+  val text: String
+    get() = when (this) {
+      is Human -> "human"
+      is Bot -> "bot"
+      is Business -> "business"
+      is Unknown -> type
+    }
+}
+
+object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatPeerType", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatPeerType =
+    when (val v = decoder.decodeString()) {
+      "human" -> ChatPeerType.Human
+      "bot" -> ChatPeerType.Bot
+      "business" -> ChatPeerType.Business
+      else -> ChatPeerType.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.

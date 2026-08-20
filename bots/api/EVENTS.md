@@ -61,13 +61,16 @@ This file is generated automatically.
 - [ContactConnecting](#contactconnecting)
 - [BusinessLinkConnecting](#businesslinkconnecting)
 - [JoinedGroupMemberConnecting](#joinedgroupmemberconnecting)
-- [SentGroupInvitation](#sentgroupinvitation)
 - [GroupLinkConnecting](#grouplinkconnecting)
 
 [Network connection events](#network-connection-events)
 - [HostConnected](#hostconnected)
 - [HostDisconnected](#hostdisconnected)
 - [SubscriptionStatus](#subscriptionstatus)
+
+[Service events](#service-events)
+- [ServiceRequest](#servicerequest)
+- [ServiceReplySent](#servicereplysent)
 
 [Error events](#error-events)
 - [MessageError](#messageerror)
@@ -701,20 +704,6 @@ Group member is announced to the group and will be connecting to bot.
 ---
 
 
-### SentGroupInvitation
-
-Sent when another user joins group via bot's link.
-
-**Record type**:
-- type: "sentGroupInvitation"
-- user: [User](./TYPES.md#user)
-- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-- contact: [Contact](./TYPES.md#contact)
-- member: [GroupMember](./TYPES.md#groupmember)
-
----
-
-
 ### GroupLinkConnecting
 
 Sent when bot joins group via another user link.
@@ -766,6 +755,40 @@ Messaging subscription status changed
 - server: string
 - subscriptionStatus: [SubscriptionStatus](./TYPES.md#subscriptionstatus)
 - connections: [string]
+
+---
+
+
+## Service events
+
+Bots with a double ratchet address, started with service request processing enabled, can answer service requests - a single request with a single response (RPC).
+
+
+### ServiceRequest
+
+Service request received.
+
+The request needs to be answered using [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) command.
+
+**Record type**:
+- type: "serviceRequest"
+- user: [User](./TYPES.md#user)
+- requestId: string
+- signerKey: string?
+- requestData: JSONObject
+
+---
+
+
+### ServiceReplySent
+
+Service reply was sent (delivered to the server).
+
+Correlate `connectionId` with the connection ID from the response to [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) to learn when the reply is delivered.
+
+**Record type**:
+- type: "serviceReplySent"
+- connectionId: string
 
 ---
 

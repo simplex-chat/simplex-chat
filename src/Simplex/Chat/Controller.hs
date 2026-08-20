@@ -70,6 +70,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
+import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
@@ -90,7 +91,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SMPServerWithAuth, SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -152,6 +153,7 @@ data ChatConfig = ChatConfig
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
     showReactions :: Bool,
+    showFullLinks :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
@@ -288,6 +290,7 @@ data ChatController = ChatController
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe RemoteHostId, Either ChatError ChatEvent),
     subscriptionMode :: TVar SubscriptionMode,
+    processServiceRequests :: TVar Bool,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
     sndFiles :: TVar (Map Int64 Handle),
@@ -347,7 +350,7 @@ data ChatCommand
   | SetClientService UserId ContactName Bool
   | APIDeleteUser {userId :: UserId, delSMPQueues :: Bool, viewPwd :: Maybe UserPwd}
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
+  | StartChat {mainApp :: Bool, enableSndFiles :: Bool, serviceRequests :: Bool} -- enableSndFiles has no effect when mainApp is True
   | CheckChatRunning
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
@@ -407,7 +410,9 @@ data ChatCommand
   | APIDeleteChat {chatRef :: ChatRef, chatDeleteMode :: ChatDeleteMode} -- currently delete mode settings are only applied to direct chats
   | APIClearChat {chatRef :: ChatRef}
   | APIAcceptContact {incognito :: IncognitoEnabled, contactReqId :: Int64}
-  | APIRejectContact {contactReqId :: Int64}
+  | APIRejectContact {contactReqId :: Int64, notify :: Bool}
+  | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
+  | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -547,19 +552,20 @@ data ChatCommand
   | ClearContact ContactName
   | APIListContacts {userId :: UserId}
   | ListContacts
-  | APICreateMyAddress {userId :: UserId, server_ :: Maybe SMPServerWithAuth}
-  | CreateMyAddress
+  | APICreateMyAddress {userId :: UserId, server_ :: Maybe SMPServerWithAuth, pqRatchet :: Maybe Bool}
+  | CreateMyAddress {pqRatchet :: Maybe Bool}
   | APIDeleteMyAddress {userId :: UserId}
   | DeleteMyAddress
   | APIShowMyAddress {userId :: UserId}
   | ShowMyAddress
-  | APIAddMyAddressShortLink UserId
+  | APIAddMyAddressShortLink {userId :: UserId, pqRatchet :: Maybe Bool}
+  | APIRotateAddressRatchetKeys UserId
   | APISetProfileAddress {userId :: UserId, enable :: Bool}
   | SetProfileAddress Bool
-  | APISetAddressSettings {userId :: UserId, settings :: AddressSettings}
-  | SetAddressSettings AddressSettings
+  | APISetAddressSettings {userId :: UserId, pqRatchet :: Maybe Bool, settings :: AddressSettings}
+  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings}
   | AcceptContact IncognitoEnabled ContactName
-  | RejectContact ContactName
+  | RejectContact ContactName Bool
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
   | ForwardGroupMessage {toChatName :: ChatName, fromGroupName :: GroupName, fromMemberName_ :: Maybe ContactName, forwardedMsg :: Text}
   | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
@@ -776,7 +782,7 @@ data ChatResponse
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
-  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
+  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure, serverInfo :: Maybe (Either String ServerPublicInfo)}
   | CRChatRelayTestResult {user :: User, relayProfile :: Maybe RelayProfile, relayTestFailure :: Maybe RelayTestFailure}
   | CRServerOperatorConditions {conditions :: ServerOperatorConditions}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
@@ -826,6 +832,8 @@ data ChatResponse
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
+  | CRServiceResponse {user :: User, responseData :: J.Object}
+  | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
@@ -937,11 +945,13 @@ data ChatEvent
   | CEvtUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact} -- there is the same command response
   | CEvtGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
-  | CEvtSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember} -- there is the same command response
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
+  | CEvtServiceRequest {user :: User, requestId :: AgentInvId, signerKey :: Maybe C.PublicKeyEd25519, requestData :: J.Object}
+  | CEvtServiceReplySent {connectionId :: AgentConnId}
+  | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CEvtContactRequestAlreadyAccepted {user :: User, contact :: Contact}

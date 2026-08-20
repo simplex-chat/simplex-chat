@@ -1039,8 +1039,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
 // Default top-level part used to complete a bare name typed in the search field (search field only;
 // the message parser and the wire format are unchanged).
 private const val DEFAULT_NAME_TLD = "testing"
-// Shortest name that offers the button, so it is discoverable but does not flash on a single letter.
-private const val MIN_NAME_LENGTH = 2
+// Shortest name that offers the button, so it is discoverable but does not flash on short prefixes.
+private const val MIN_NAME_LENGTH = 5
 // Wait this long after the last keystroke before the local name search runs.
 internal const val NAME_SEARCH_DEBOUNCE_MS = 300L
 

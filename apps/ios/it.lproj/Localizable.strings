@@ -4030,9 +4030,6 @@ servers warning */
 "Name not found" = "Nome non trovato";
 
 /* No comment provided by engineer. */
-"Names for your channel or business." = "Nomi per il tuo canale o per il lavoro.";
-
-/* No comment provided by engineer. */
 "Network & servers" = "Rete e server";
 
 /* No comment provided by engineer. */
@@ -4836,6 +4833,9 @@ alert title */
 
 /* No comment provided by engineer. */
 "Public channels - speak freely 🚀" = "Canali pubblici - parla liberamente 🚀";
+
+/* No comment provided by engineer. */
+"Public names for your channel or business." = "Nomi pubblici per il tuo canale o per il lavoro.";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Notifiche push";
@@ -5893,14 +5893,14 @@ copied message info */
 /* alert title */
 "SimpleX name not verified" = "Nome SimpleX non verificato";
 
-/* No comment provided by engineer. */
-"SimpleX names (BETA)" = "Nomi SimpleX (BETA)";
-
 /* simplex link type */
 "SimpleX one-time invitation" = "Invito SimpleX una tantum";
 
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocolli di SimpleX esaminati da Trail of Bits.";
+
+/* No comment provided by engineer. */
+"SimpleX public names (BETA)" = "Nomi pubblici SimpleX (BETA)";
 
 /* simplex link type */
 "SimpleX relay address" = "Indirizzo del relay SimpleX";

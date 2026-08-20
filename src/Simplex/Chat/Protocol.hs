@@ -56,7 +56,6 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import qualified Simplex.FileTransfer.Description as FD
-import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
 import qualified Simplex.Messaging.Crypto as C
@@ -98,38 +97,6 @@ supportedChatVRange :: VersionRangeChat
 supportedChatVRange = mkVersionRange initialChatVersion currentChatVersion
 {-# INLINE supportedChatVRange #-}
 
--- version range that supports skipping establishing direct connections in a group and establishing direct connection via x.grp.direct.inv
-groupDirectInvVersion :: VersionChat
-groupDirectInvVersion = VersionChat 2
-
--- version range that supports joining group via group link without creating direct contact
-groupFastLinkJoinVersion :: VersionChat
-groupFastLinkJoinVersion = VersionChat 3
-
--- version range that supports group forwarding
-groupForwardVersion :: VersionChat
-groupForwardVersion = VersionChat 4
-
--- version range that supports batch sending in groups
-batchSendVersion :: VersionChat
-batchSendVersion = VersionChat 5
-
--- version range that supports sending group welcome message in group history
-groupHistoryIncludeWelcomeVersion :: VersionChat
-groupHistoryIncludeWelcomeVersion = VersionChat 6
-
--- version range that supports sending member profile updates to groups
-memberProfileUpdateVersion :: VersionChat
-memberProfileUpdateVersion = VersionChat 7
-
--- version range that supports compressing messages and PQ e2e encryption
-pqEncryptionCompressionVersion :: VersionChat
-pqEncryptionCompressionVersion = VersionChat 8
-
--- version range that supports batch sending in direct connections, and forwarding batched messages in groups
-batchSend2Version :: VersionChat
-batchSend2Version = VersionChat 9
-
 -- supports differentiating business chats when joining contact addresses
 businessChatsVersion :: VersionChat
 businessChatsVersion = VersionChat 10
@@ -166,11 +133,6 @@ relayWebCapVersion = VersionChat 18
 -- a relay below this version is published without the handshake (it can't ack a roster)
 groupRosterVersion :: VersionChat
 groupRosterVersion = VersionChat 19
-
-agentToChatVersion :: VersionSMPA -> VersionChat
-agentToChatVersion v
-  | v < pqdrSMPAgentVersion = initialChatVersion
-  | otherwise = pqEncryptionCompressionVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

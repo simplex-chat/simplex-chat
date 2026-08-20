@@ -65,21 +65,21 @@ import Simplex.Messaging.Util
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..), RCVerifiedInvitation (..), verifySignedInvitation)
 import Simplex.RemoteControl.Types
-import System.FilePath (takeFileName, (</>))
+import System.FilePath (takeDirectory, takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Concurrent (forkIO)
-import UnliftIO.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, renameFile)
+import UnliftIO.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, renameFile)
 
 remoteFilesFolder :: String
 remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 5, 0, 12]
+minRemoteCtrlVersion = AppVersion [7, 0, 0, 11]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 5, 0, 12]
+minRemoteHostVersion = AppVersion [7, 0, 0, 11]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -574,9 +574,18 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
       Nothing -> storeFileTo =<< getDefaultFilesFolder
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFileTo dir = liftIO . tryAllErrors' $ do
+      unless (validRemoteFileName fileName) $ throwError $ RPEInvalidBody "invalid file name"
       filePath <- liftIO $ dir `uniqueCombine` fileName
+      -- resolves symlinks, so it also catches a final component linking outside the folder
+      canonPath <- liftIO $ canonicalizePath filePath
+      inDir <- liftIO $ (takeDirectory canonPath ==) <$> canonicalizePath dir
+      unless inDir $ throwError $ RPEInvalidBody "file path outside of files folder"
       receiveEncryptedFile rfKN getChunk fileSize fileDigest filePath
       pure filePath
+
+-- The controller only ever sends a bare file name (see storeRemoteFile), so a path is a protocol violation.
+validRemoteFileName :: FilePath -> Bool
+validRemoteFileName fName = fName == takeFileName fName && fName `notElem` (["", ".", ".."] :: [FilePath])
 
 handleGetFile :: User -> RemoteFile -> Respond -> CM ()
 handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do

@@ -429,6 +429,7 @@ final class ChatModel: ObservableObject {
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
+    // chat id with chat scope, see draftChatId() - group chat and its support chats have the same chat id
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // usage conditions
