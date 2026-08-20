@@ -32,16 +32,23 @@ private const val MIN_FRAME_DURATION_MS = 20L
 private const val MAX_FRAME_DECODE_MS = 100L
 // What Skia calls a frame that is decoded without one
 private const val NO_PRIOR_FRAME = -1
+// A frame given no prior frame is rebuilt by decoding its chain back to the last independent frame, which
+// Skia does by recursing, so a long enough chain overflows the native stack and no catch can stop it. Every
+// animation in this repository rebuilds nothing, and a GIF disposing to what came before it rebuilds two.
+private const val MAX_REBUILT_FRAMES = 64
+// For a caller that is always seen where it is, like the full screen viewer
+private val alwaysVisible: State<Boolean> = mutableStateOf(false)
 
 /**
  * The current frame of [data], or [still] when [data] is not an animation, falls outside the bounds above, or
  * fails to decode. Decoding runs off the UI thread and stops when the caller leaves the composition.
  */
 @Composable
-fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: State<Boolean>? = null): ImageBitmap {
+fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: State<Boolean> = alwaysVisible): ImageBitmap {
   // The state is keyed as the decoding is, so frames are not written into a replaced state.
   // hidden is not a key, it pauses the animation instead of restarting it
-  val frame = remember(data, still) { mutableStateOf(still) }
+  // Every frame is a new wrapper around one raster, and only the wrapper's identity says it changed
+  val frame = remember(data, still) { mutableStateOf(still, neverEqualPolicy()) }
   LaunchedEffect(data, still) {
     withContext(animationDecoder) {
       val codec = animatableCodec(data) ?: return@withContext
@@ -73,7 +80,10 @@ private fun animatableCodec(data: ByteArray): Codec? {
     val info = codec.imageInfo
     // Counting frames scans the file, while dimensions are only read from the header. Fewer than two frames
     // must not reach playFrames, whose loop only suspends inside the range and would spin uncancellably.
-    if (rasterWithinBounds(info.width, info.height, info.bytesPerPixel) && codec.frameCount in 2..MAX_ANIMATED_FRAMES) return codec
+    if (!rasterWithinBounds(info.width, info.height, info.bytesPerPixel)) return null
+    val frameCount = codec.frameCount
+    if (frameCount in 2..MAX_ANIMATED_FRAMES &&
+      rebuiltFramesWithinBounds(IntArray(frameCount) { codec.getFrameInfo(it).requiredFrame })) return codec
   } catch (e: Throwable) {
     Log.e(TAG, "Unable to read animated image: $e")
   }
@@ -97,7 +107,7 @@ internal fun rasterWithinBounds(width: Int, height: Int, bytesPerPixel: Int): Bo
   return width.toLong() * height * bytesPerPixel <= MAX_ANIMATED_RASTER_BYTES
 }
 
-private suspend fun playFrames(codec: Codec, hidden: State<Boolean>?, showFrame: (ImageBitmap) -> Unit) {
+private suspend fun playFrames(codec: Codec, hidden: State<Boolean>, showFrame: (ImageBitmap) -> Unit) {
   val bitmap = Bitmap()
   try {
     // A frame that has alpha cannot be read into an opaque bitmap, and the codec reports the alpha type of
@@ -139,22 +149,37 @@ private suspend fun playFrames(codec: Codec, hidden: State<Boolean>?, showFrame:
 
 // Composition survives the window being hidden in the tray, and the caller knows when its own image cannot
 // be seen where it is
-private suspend fun awaitFramesAreSeen(hidden: State<Boolean>?) {
+private suspend fun awaitFramesAreSeen(hidden: State<Boolean>) {
   if (framesAreSeen(hidden)) return
   snapshotFlow { framesAreSeen(hidden) }.first { it }
 }
 
-private fun framesAreSeen(hidden: State<Boolean>?): Boolean =
-  simplexWindowState.windowVisible.value && hidden?.value != true
+private fun framesAreSeen(hidden: State<Boolean>): Boolean =
+  simplexWindowState.windowVisible.value && !hidden.value
 
 /**
  * The frame the codec may decode [index] from, which is the previous one when the bitmap still holds what
  * [index] continues. Decoding the whole chain from the last independent frame instead costs 9.10ms a frame
- * against 0.07ms for images/groups.gif. Skia refuses a frame it did not ask for, so anything else is
+ * against 0.05ms for images/groups.gif. Skia refuses a frame it did not ask for, so anything else is
  * [NO_PRIOR_FRAME] - including a predecessor disposed to what came before it, which it never asks for.
  */
 internal fun priorFrame(index: Int, requiredFrame: Int): Int =
   if (requiredFrame == index - 1) index - 1 else NO_PRIOR_FRAME
+
+/**
+ * Whether every frame this codec cannot be given a prior frame for is rebuilt from a short enough chain.
+ * [requiredFrames] is what each frame continues, as Skia reports it, and a frame that continues nothing or
+ * something it cannot have starts a chain of its own.
+ */
+internal fun rebuiltFramesWithinBounds(requiredFrames: IntArray): Boolean {
+  val chain = IntArray(requiredFrames.size)
+  requiredFrames.forEachIndexed { index, required ->
+    val continues = required in 0 until index
+    chain[index] = if (continues) chain[required] + 1 else 1
+    if (continues && priorFrame(index, required) == NO_PRIOR_FRAME && chain[required] > MAX_REBUILT_FRAMES) return false
+  }
+  return true
+}
 
 internal fun frameDuration(declaredMs: Int): Long =
   if (declaredMs <= MAX_UNSPECIFIED_FRAME_DURATION_MS) DEFAULT_FRAME_DURATION_MS

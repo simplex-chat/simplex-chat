@@ -4,6 +4,7 @@ import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
 import chat.simplex.common.platform.priorFrame
 import chat.simplex.common.platform.rasterWithinBounds
+import chat.simplex.common.platform.rebuiltFramesWithinBounds
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -25,8 +26,8 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testHugeDeclaredDimensionsAreRejected() {
-    // 65535x65535 is a 17GB raster, and a GIF declaring it fits in 35 bytes. Rejected by the side bound
-    // before anything is multiplied; the wrapping products are covered separately below.
+    // 65535x65535 is a 17GB raster, and a GIF declaring it fits in 35 bytes. The side bound rejects it
+    // before anything is multiplied, which is also what keeps the product from wrapping.
     assertFalse(rasterWithinBounds(65535, 65535, BYTES_PER_PIXEL))
   }
 
@@ -102,8 +103,49 @@ class AnimatedImageBoundsTest {
     // is also how a predecessor disposed to what came before it is skipped, as Skia never requires one.
     assertEquals(-1, priorFrame(5, 2))
     assertEquals(-1, priorFrame(5, -1))
-    // The first frame of a loop is decoded whole, and asks for nothing
+    // The first frame of a loop continues nothing, and -1 is both its required frame and no prior frame
     assertEquals(-1, priorFrame(0, -1))
+  }
+
+  @Test
+  fun testAnimationsThatRebuildNothingAreWithinBounds() {
+    // What every animation in this repository looks like: each frame continues the one before it, so the
+    // bitmap always holds what the codec asks for and nothing is ever rebuilt
+    assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it - 1 }))
+    // A frame that continues nothing starts a chain of its own
+    assertTrue(rebuiltFramesWithinBounds(intArrayOf(-1, -1, -1)))
+  }
+
+  @Test
+  fun testShortRebuiltChainsAreWithinBounds() {
+    // A GIF disposing to what came before it: frame 2 continues frame 0, rebuilding two frames
+    assertTrue(rebuiltFramesWithinBounds(intArrayOf(-1, 0, 0, 2, 2, 4)))
+  }
+
+  @Test
+  fun testLongRebuiltChainsAreRejected() {
+    // Frames alternating their disposal make every other frame rebuild the whole chain before it, which Skia
+    // recurses through natively: 8000 frames of it overflows the stack and kills the app
+    val alternating = IntArray(8000) { if (it % 2 == 0) it - 2 else it - 1 }
+    assertFalse(rebuiltFramesWithinBounds(alternating))
+    // The bound is on what a rebuild costs, not on how long the animation is
+    assertTrue(rebuiltFramesWithinBounds(IntArray(8000) { it - 1 }))
+  }
+
+  @Test
+  fun testRebuiltChainBoundIsExact() {
+    // A chain of exactly 64 rebuilt frames is allowed, 65 is not
+    fun chainOf(length: Int) = IntArray(length + 2) { if (it == length + 1) it - 2 else it - 1 }
+    assertTrue(rebuiltFramesWithinBounds(chainOf(64)))
+    assertFalse(rebuiltFramesWithinBounds(chainOf(65)))
+  }
+
+  @Test
+  fun testFramesContinuingSomethingImpossibleStartTheirOwnChain() {
+    // A file is not trusted to say a frame continues itself, a later frame, or one that is not there
+    assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it }))
+    assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it + 1 }))
+    assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { 9999 }))
   }
 
   @Test

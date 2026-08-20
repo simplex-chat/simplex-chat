@@ -33,6 +33,7 @@ let a sender disrupt the app.
 | magic-byte prefilter (`GIF8`, `RIFF....WEBP`) | photos are most of what a chat holds and none are animations; they never reach a second decoder |
 | `allocPixels` result honoured | it reports failure by returning false, and reading into an unallocated bitmap throws |
 | frame count bound | counting the frames also builds a table of them, which a file of minimal frames makes several times its own size, and the codec holds it for as long as the animation plays |
+| rebuilt frame chain bound | a frame the codec is given no prior frame for is rebuilt from its whole chain, and Skia recurses to do it: frames alternating their disposal make that chain as long as the file likes, and 8000 frames of it overflows the native stack and kills the app, which no catch can prevent. Real animations rebuild nothing at all |
 | destination allocated with a premultiplied alpha type | the codec reports the alpha type of the first frame, and a frame that has alpha cannot be read into an opaque bitmap |
 | frame duration floor, and 100ms substituted for delays of 10ms and less | a 4.6MB GIF can hold 200 000 zero-delay frames, and Skia reports the usual "as fast as possible" delay of one centisecond as 10ms |
 | single exception boundary around every native call | the frame count and repeat count are read from the file too |
@@ -83,6 +84,9 @@ would hold a raster and spend a frame of work per listed chat, without pause.
 - Frames advance, per-frame delays are read correctly, and the loop wraps back to frame 0 after a full cycle
   with byte-identical pixels.
 - An oversized animation is refused by the bounds and still renders through the existing still-image path.
+- A GIF of 8000 frames alternating their disposal, which passes every other bound at an 8x8 raster, crashed
+  the process with SIGSEGV before the chain bound and is refused by it now, while the GIFs in `images/`, a
+  1920x1920 animation and a GIF disposing to what came before it all still play.
 - Every frame of the GIFs in `images/` decodes with the prior frame reused, with pixels identical to decoding
   the chain, and a GIF whose first frame is opaque and disposed to the background decodes past its first frame
   only into a premultiplied destination.
