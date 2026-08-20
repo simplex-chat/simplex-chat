@@ -36,9 +36,11 @@ let a sender disrupt the app.
 | rebuilt frame chain bound | a frame the codec is given no prior frame for is rebuilt from its whole chain, and Skia recurses to do it: frames alternating their disposal make that chain as long as the file likes, and 8000 frames of it overflows the native stack and kills the app, which no catch can prevent. Real animations rebuild nothing at all |
 | destination allocated with a premultiplied alpha type | the codec reports the alpha type of the first frame, and a frame that has alpha cannot be read into an opaque bitmap |
 | frame duration floor, and 100ms substituted for delays of 10ms and less | a 4.6MB GIF can hold 200 000 zero-delay frames, and Skia reports the usual "as fast as possible" delay of one centisecond as 10ms |
-| single exception boundary around every native call | the frame count and repeat count are read from the file too |
+| an animation that owes too much for its frames stops on the one it reached | frames that alternate expensive with cheap are never slow twice in a row, so a count that resets never stops them |
+| single exception boundary around every native call that reads the file | the frame count and repeat count are read from it too |
 
-Long frame delays are honoured rather than clamped — they are the author's, and they cost nothing.
+Long frame delays are honoured rather than clamped - they are the author's, and they cost only the codec and
+the raster staying alive while nothing decodes.
 
 ## Cost, and the optimisations that were rejected
 

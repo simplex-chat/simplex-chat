@@ -26,7 +26,7 @@ actual fun SimpleAndAnimatedImageView(
   // under one: the viewer would otherwise decode the same animation a second time, and every other animation
   // in the chat would keep decoding where nobody can see it
   val frame = if (smallView) imageBitmap
-  else rememberAnimatedImage(data, imageBitmap) { blurred.value || ModalManager.fullscreen.modalCount.value > 0 }
+  else rememberAnimatedImage(data, imageBitmap) { blurred.value || ModalManager.fullscreen.hasModalsOpen() }
   ImageView(BitmapPainter(frame)) {
     if (getLoadedFilePath(file) != null) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
