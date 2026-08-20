@@ -71,9 +71,9 @@ are kept because they are about ratios, but the numbers are worth taking again:
 What was kept: decoding is confined to two threads of the shared pool, so untrusted decode work cannot starve
 the long running calls that share it; and frames are only decoded while they can be seen — not while the app
 sits in the tray, not while the image is behind the privacy blur, where each frame would otherwise be
-decoded, uploaded and then blurred away again for nobody, and not while the full screen viewer covers the
-chat, which is shown beside it rather than in place of it and would otherwise leave the same animation
-decoding twice. The chat list preview stays a still image for
+decoded, uploaded and then blurred away again for nobody, and not while a full screen modal covers the
+chat, which is shown beside it rather than in place of it: the viewer would otherwise leave the same
+animation decoding twice, and the rest of the chat decoding where nobody can see it. The chat list preview stays a still image for
 the same reason: it is a 36sp box that the desktop layout keeps on screen the whole time, so animating it
 would hold a raster and spend a frame of work per listed chat, without pause.
 

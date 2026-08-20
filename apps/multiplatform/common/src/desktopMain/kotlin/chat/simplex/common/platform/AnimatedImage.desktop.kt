@@ -36,15 +36,13 @@ private const val NO_PRIOR_FRAME = -1
 // Skia does by recursing, so a long enough chain overflows the native stack and no catch can stop it. Every
 // animation in this repository rebuilds nothing, and a GIF disposing to what came before it rebuilds two.
 private const val MAX_REBUILT_FRAMES = 64
-// For a caller that is always seen where it is, like the full screen viewer
-private val alwaysVisible: State<Boolean> = mutableStateOf(false)
 
 /**
  * The current frame of [data], or [still] when [data] is not an animation, falls outside the bounds above, or
  * fails to decode. Decoding runs off the UI thread and stops when the caller leaves the composition.
  */
 @Composable
-fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: State<Boolean> = alwaysVisible): ImageBitmap {
+fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: () -> Boolean = { false }): ImageBitmap {
   // The state is keyed as the decoding is, so frames are not written into a replaced state.
   // hidden is not a key, it pauses the animation instead of restarting it
   // Every frame is a new wrapper around one raster, and only the wrapper's identity says it changed
@@ -107,7 +105,7 @@ internal fun rasterWithinBounds(width: Int, height: Int, bytesPerPixel: Int): Bo
   return width.toLong() * height * bytesPerPixel <= MAX_ANIMATED_RASTER_BYTES
 }
 
-private suspend fun playFrames(codec: Codec, hidden: State<Boolean>, showFrame: (ImageBitmap) -> Unit) {
+private suspend fun playFrames(codec: Codec, hidden: () -> Boolean, showFrame: (ImageBitmap) -> Unit) {
   val bitmap = Bitmap()
   try {
     // A frame that has alpha cannot be read into an opaque bitmap, and the codec reports the alpha type of
@@ -149,13 +147,13 @@ private suspend fun playFrames(codec: Codec, hidden: State<Boolean>, showFrame: 
 
 // Composition survives the window being hidden in the tray, and the caller knows when its own image cannot
 // be seen where it is
-private suspend fun awaitFramesAreSeen(hidden: State<Boolean>) {
+private suspend fun awaitFramesAreSeen(hidden: () -> Boolean) {
   if (framesAreSeen(hidden)) return
   snapshotFlow { framesAreSeen(hidden) }.first { it }
 }
 
-private fun framesAreSeen(hidden: State<Boolean>): Boolean =
-  simplexWindowState.windowVisible.value && !hidden.value
+private fun framesAreSeen(hidden: () -> Boolean): Boolean =
+  simplexWindowState.windowVisible.value && !hidden()
 
 /**
  * The frame the codec may decode [index] from, which is the previous one when the bitmap still holds what

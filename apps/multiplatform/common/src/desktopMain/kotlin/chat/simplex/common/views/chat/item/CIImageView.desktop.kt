@@ -1,11 +1,11 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import chat.simplex.common.model.CIFile
-import chat.simplex.common.model.ChatController.chatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.ModalManager
 
@@ -22,12 +22,11 @@ actual fun SimpleAndAnimatedImageView(
   // The small view is the chat list preview: a 36sp box that the desktop layout keeps on screen the whole
   // time. Decoding an animation at its own resolution to fill it would hold a raster and spend a frame of
   // work per listed chat, without pause, so it keeps the still image as it did before.
-  val frame = if (smallView) imageBitmap else {
-    // The full screen viewer is shown beside the chat rather than in place of it, so this item keeps
-    // composing behind it and would otherwise decode the same animation a second time, unseen
-    val hidden = remember(blurred) { derivedStateOf { blurred.value || chatModel.fullscreenGalleryVisible.value } }
-    rememberAnimatedImage(data, imageBitmap, hidden)
-  }
+  // A full screen modal is shown beside the chat rather than in place of it, so this item keeps composing
+  // under one: the viewer would otherwise decode the same animation a second time, and every other animation
+  // in the chat would keep decoding where nobody can see it
+  val frame = if (smallView) imageBitmap
+  else rememberAnimatedImage(data, imageBitmap) { blurred.value || ModalManager.fullscreen.modalCount.value > 0 }
   ImageView(BitmapPainter(frame)) {
     if (getLoadedFilePath(file) != null) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
