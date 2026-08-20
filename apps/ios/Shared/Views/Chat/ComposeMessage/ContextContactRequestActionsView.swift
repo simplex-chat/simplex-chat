@@ -44,15 +44,7 @@ struct ContextContactRequestActionsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .onChange(of: inProgress) { inPrgrs in
-            if inPrgrs {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    progressByTimeout = inProgress
-                }
-            } else {
-                progressByTimeout = false
-            }
-        }
+        .progressByTimeout(inProgress, $progressByTimeout)
     }
 
     private func showRejectRequestAlert() {

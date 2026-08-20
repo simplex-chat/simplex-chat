@@ -79,15 +79,7 @@ struct ChatListNavLink: View {
                 invalidJSONPreview(json)
             }
         }
-        .onChange(of: inProgress) { inProgress in
-            if inProgress {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    progressByTimeout = inProgress
-                }
-            } else {
-                progressByTimeout = false
-            }
-        }
+        .progressByTimeout(inProgress, $progressByTimeout)
         .actionSheet(item: $actionSheet) { $0.actionSheet }
     }
     

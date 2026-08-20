@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
@@ -20,7 +19,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
 
 @Composable
 fun CIGroupInvitationView(
@@ -35,15 +33,7 @@ fun CIGroupInvitationView(
   val sent = ci.chatDir.sent
   val action = !sent && groupInvitation.status == CIGroupInvitationStatus.Pending
   val inProgress = remember { mutableStateOf(false) }
-  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
-  LaunchedEffect(inProgress.value) {
-    progressByTimeout = if (inProgress.value) {
-      delay(1000)
-      inProgress.value
-    } else {
-      false
-    }
-  }
+  val progressByTimeout by rememberProgressByTimeout(inProgress)
 
   @Composable
   fun groupInfoView() {

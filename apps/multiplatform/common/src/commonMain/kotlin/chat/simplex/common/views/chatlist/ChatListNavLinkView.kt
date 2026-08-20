@@ -48,16 +48,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val selectedChat = remember(chat.id) { derivedStateOf { chat.id == chatModel.chatId.value } }
   val showChatPreviews = chatModel.showChatPreviews.value
   val inProgress = remember { mutableStateOf(false) }
-  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
-
-  LaunchedEffect(inProgress.value) {
-    progressByTimeout = if (inProgress.value) {
-      delay(1000)
-      inProgress.value
-    } else {
-      false
-    }
-  }
+  val progressByTimeout by rememberProgressByTimeout(inProgress)
 
   val scope = rememberCoroutineScope()
 

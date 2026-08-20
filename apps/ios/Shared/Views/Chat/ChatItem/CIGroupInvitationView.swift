@@ -75,15 +75,7 @@ struct CIGroupInvitationView: View {
         .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
-        .onChange(of: inProgress) { inProgress in
-            if inProgress {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    progressByTimeout = inProgress
-                }
-            } else {
-                progressByTimeout = false
-            }
-        }
+        .progressByTimeout(inProgress, $progressByTimeout)
 
         if action {
             v.simultaneousGesture(TapGesture().onEnded {

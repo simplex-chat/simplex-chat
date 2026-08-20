@@ -21,7 +21,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.delay
 
 @Composable
 fun ComposeContextContactRequestActionsView(
@@ -31,21 +30,11 @@ fun ComposeContextContactRequestActionsView(
   val inProgressLocal = rememberSaveable { mutableStateOf(false) }
   // the request can also be accepted from another view, e.g. via notification
   val inProgress = remember(contactRequestId) { derivedStateOf { inProgressLocal.value || contactRequestId in chatModel.acceptingContactRequests } }
-  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+  val progressByTimeout by rememberProgressByTimeout(inProgress)
 
   KeyChangeEffect(chatModel.chatId.value) {
     if (inProgressLocal.value) {
       inProgressLocal.value = false
-      progressByTimeout = false
-    }
-  }
-
-  LaunchedEffect(inProgress.value) {
-    progressByTimeout = if (inProgress.value) {
-      delay(1000)
-      inProgress.value
-    } else {
-      false
     }
   }
 
