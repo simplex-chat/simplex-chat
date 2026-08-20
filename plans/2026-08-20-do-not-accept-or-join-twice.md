@@ -138,9 +138,9 @@ contact request id and group id — not by chat id, because the same request app
 `ChatInfo.ContactRequest` (`<@N`) in the chat list and under `ChatInfo.Direct` (`@N`) in the chat,
 and those two views must agree. They are maintained by the shared `acceptContactRequest` and by a
 new shared `joinGroup`, so every caller participates without changing its call site and a failed
-accept re-enables the buttons. Every view derives from the record instead of owning a flag, which
-deletes the parameter chain, the per-view flags and the `KeyChangeEffect` that existed only to reset
-them on chat change.
+accept re-enables the buttons. The views this change covers derive from the record instead of owning
+a flag, which deletes the parameter chain, the per-view flags and the `KeyChangeEffect` that existed
+only to reset them on chat change. The contacts list is not covered - see "Not covered".
 
 The record is taken before the request is sent rather than inside the background coroutine, so a
 second tap in the same view is blocked too — the previous per-view flags were set synchronously at
@@ -203,6 +203,12 @@ change addresses it.
 
 **`acceptMemberContact` and `apiAcceptMember`** keep their per-view flags; they are the same shape
 but were left out of scope.
+
+**The contacts list still offers Accept while an accept is in flight** - `ContactListNavView.kt`
+opens `contactRequestAlertDialog` without checking, and `ContactListNavLink.swift` has its own
+buttons rather than the ones this change gates. It is the same defect in one more view on each
+platform, left out to keep the change small; the outcome is now a clear error from fix 1 rather than
+the agent error, and the contacts list is a sheet, so the other views are not tappable behind it.
 
 ## Testing
 
