@@ -6,9 +6,9 @@ import androidx.compose.ui.graphics.asComposeImageBitmap
 import chat.simplex.common.simplexWindowState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
-import org.jetbrains.skia.AnimationFrameInfo
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Codec
+import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.Data
 
 // Animated images are decoded from data received from other users, which is what the bounds below are for
@@ -19,7 +19,12 @@ private const val MAX_ANIMATED_RASTER_BYTES: Long = 1920L * 1920 * 4
 private const val MAX_ANIMATED_SIDE = 4096
 // Skia copies the encoded bytes into native memory and scans them to count frames
 private const val MAX_ANIMATED_FILE_SIZE = 32 * 1024 * 1024
-// Frames may declare no delay, 100ms is what browsers substitute for it
+// Counting the frames also builds a table of them, which a file of minimal frames can make several times its
+// own size. The longest animation in this repository has 1041 frames.
+private const val MAX_ANIMATED_FRAMES = 10_000
+// A frame may declare no delay, and 10ms or less is how "as fast as possible" is written. Browsers substitute
+// 100ms for both.
+private const val UNSPECIFIED_FRAME_DURATION_MS = 10
 private const val DEFAULT_FRAME_DURATION_MS = 100L
 // Bounds the frame rate of the rest
 private const val MIN_FRAME_DURATION_MS = 20L
@@ -65,7 +70,7 @@ private fun animatableCodec(data: ByteArray): Codec? {
     }
     val info = codec.imageInfo
     // Counting frames scans the file, while dimensions are only read from the header
-    if (rasterWithinBounds(info.width, info.height, info.bytesPerPixel) && codec.frameCount > 1) return codec
+    if (rasterWithinBounds(info.width, info.height, info.bytesPerPixel) && codec.frameCount in 2..MAX_ANIMATED_FRAMES) return codec
   } catch (e: Throwable) {
     Log.e(TAG, "Unable to read animated image: $e")
   }
@@ -92,9 +97,12 @@ internal fun rasterWithinBounds(width: Int, height: Int, bytesPerPixel: Int): Bo
 private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame: (ImageBitmap) -> Unit) {
   val bitmap = Bitmap()
   try {
-    // allocPixels returns false on failure, and reading a frame into an unallocated bitmap throws
-    if (!bitmap.allocPixels(codec.imageInfo)) return
-    // In skiko 0.9.4 getFrameInfo reads past its own buffer until the frame count has been taken
+    // A frame that has alpha cannot be read into an opaque bitmap, and the codec reports the alpha type of
+    // the first frame only, so a GIF that starts with an opaque frame disposed to the background would stop
+    // animating on the second one. allocPixels returns false rather than throwing.
+    if (!bitmap.allocPixels(codec.imageInfo.withColorAlphaType(ColorAlphaType.PREMUL))) return
+    // Frames are only parsed by reading the frame count, and until they are, getFrameInfo below reports
+    // uninitialised memory rather than failing
     val frameCount = codec.frameCount
     // The loop below only suspends inside the range, so without frames it would spin uncancellably
     if (frameCount < 2) return
@@ -103,19 +111,22 @@ private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame
     while (true) {
       for (i in 0 until frameCount) {
         awaitFramesAreSeen(blurred)
+        // One frame at a time, reading the whole array costs an object per frame
+        val info = codec.getFrameInfo(i)
         val startedDecoding = System.nanoTime()
-        codec.readPixels(bitmap, i)
+        // The bitmap still holds the previous frame, and without saying so the codec decodes the whole chain
+        // from the last independent frame: 9.10ms a frame against 0.07ms for images/groups.gif
+        if (i > 0 && info.requiredFrame == i - 1) codec.readPixels(bitmap, i, i - 1) else codec.readPixels(bitmap, i)
         // Two in a row as this is wall time, one frame can overrun by being descheduled
         if (System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000) slowFrames++ else slowFrames = 0
+        // A new wrapper around the same raster, so the state changes. The bitmap is never closed, as the
+        // wrapper points at its pixels and a frame may still be drawn
+        showFrame(bitmap.asComposeImageBitmap())
         if (slowFrames >= 2) {
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
-        // A new wrapper around the same raster, so the state changes. The bitmap is never closed, as the
-        // wrapper points at its pixels and a frame may still be drawn
-        showFrame(bitmap.asComposeImageBitmap())
-        // One frame at a time, reading the whole array costs an object per frame
-        delay(frameDuration(codec.getFrameInfo(i)))
+        delay(frameDuration(info.duration))
       }
       if (loopsLeft == 0) return
       if (loopsLeft > 0) loopsLeft--
@@ -136,7 +147,6 @@ private suspend fun awaitFramesAreSeen(blurred: State<Boolean>?) {
 private fun framesAreSeen(blurred: State<Boolean>?): Boolean =
   simplexWindowState.windowVisible.value && blurred?.value != true
 
-private fun frameDuration(info: AnimationFrameInfo): Long {
-  val declared = info.duration.toLong()
-  return if (declared <= 0) DEFAULT_FRAME_DURATION_MS else declared.coerceAtLeast(MIN_FRAME_DURATION_MS)
-}
+internal fun frameDuration(declaredMs: Int): Long =
+  if (declaredMs <= UNSPECIFIED_FRAME_DURATION_MS) DEFAULT_FRAME_DURATION_MS
+  else declaredMs.toLong().coerceAtLeast(MIN_FRAME_DURATION_MS)

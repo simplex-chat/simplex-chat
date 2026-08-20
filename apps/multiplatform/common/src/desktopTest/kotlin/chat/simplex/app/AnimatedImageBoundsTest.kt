@@ -1,8 +1,10 @@
 package chat.simplex.app
 
+import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
 import chat.simplex.common.platform.rasterWithinBounds
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -89,6 +91,30 @@ class AnimatedImageBoundsTest {
     // Long enough for the RIFF tag, too short for the format that follows it
     assertFalse(looksAnimatable("RIFF".toByteArray()))
     assertFalse(looksAnimatable("RIFF1234WEB".toByteArray()))
+  }
+
+  @Test
+  fun testFrameDurationSubstitutesTheDefaultForFramesInAHurry() {
+    // Skia reports a GIF delay in milliseconds, so "no delay" and "one centisecond" arrive as 0 and 10
+    assertEquals(100, frameDuration(0))
+    assertEquals(100, frameDuration(10))
+    // Negative durations are not expected from Skia, but they are read from the file
+    assertEquals(100, frameDuration(-1))
+  }
+
+  @Test
+  fun testFrameDurationKeepsAuthoredDelays() {
+    assertEquals(70, frameDuration(70))
+    assertEquals(600, frameDuration(600))
+    assertEquals(Int.MAX_VALUE.toLong(), frameDuration(Int.MAX_VALUE))
+  }
+
+  @Test
+  fun testFrameDurationRaisesDelaysBelowTheFloor() {
+    assertEquals(20, frameDuration(11))
+    assertEquals(20, frameDuration(19))
+    assertEquals(20, frameDuration(20))
+    assertEquals(21, frameDuration(21))
   }
 
   private fun bytes(vararg values: Int): ByteArray = values.map { it.toByte() }.toByteArray()
