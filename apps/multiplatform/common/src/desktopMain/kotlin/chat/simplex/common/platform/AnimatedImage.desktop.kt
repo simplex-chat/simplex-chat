@@ -31,7 +31,7 @@ private const val MIN_FRAME_DURATION_MS = 20L
 // A frame costing more than this holds most of a core to show under 10 frames a second
 private const val MAX_FRAME_DECODE_MS = 100L
 // Far above what a frame within the bounds above can cost, so only a stall reaches it
-internal const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
+private const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
 // What a frame that decodes too slowly owes, and the debt an animation stops at
 private const val SLOW_FRAME_COST = 2
 internal const val MAX_SLOW_FRAME_DEBT = 4
