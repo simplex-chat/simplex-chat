@@ -58,7 +58,7 @@ fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: () -> Boo
   val frame = remember(data, still) { mutableStateOf(still, neverEqualPolicy()) }
   LaunchedEffect(data, still) {
     withContext(animationDecoder) {
-      val animation = animatableCodec(data) ?: return@withContext
+      val animation = openAnimation(data) ?: return@withContext
       try {
         playFrames(animation, hidden) { frame.value = it }
       } finally {
@@ -73,7 +73,7 @@ fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: () -> Boo
 @OptIn(ExperimentalCoroutinesApi::class)
 private val animationDecoder = Dispatchers.Default.limitedParallelism(2)
 
-private fun animatableCodec(data: ByteArray): Animation? {
+private fun openAnimation(data: ByteArray): Animation? {
   if (!looksAnimatable(data) || data.size > MAX_ANIMATED_FILE_SIZE) return null
   var codec: Codec? = null
   var animation: Animation? = null
@@ -97,10 +97,9 @@ private fun animatableCodec(data: ByteArray): Animation? {
 private fun animationWithinBounds(codec: Codec): Animation? {
   val info = codec.imageInfo
   if (!rasterWithinBounds(info.width, info.height, info.bytesPerPixel)) return null
-  // Counting frames scans the file, while dimensions are only read from the header. Fewer than two frames
-  // must not reach playFrames, whose loop only suspends inside the range and would spin uncancellably.
+  // Counting frames scans the file, while dimensions are only read from the header
   val frameCount = codec.frameCount
-  if (frameCount !in 2..MAX_ANIMATED_FRAMES) return null
+  if (!frameCountWithinBounds(frameCount)) return null
   val requiredFrames = IntArray(frameCount)
   val frameDelays = LongArray(frameCount)
   for (i in 0 until frameCount) {
@@ -178,6 +177,13 @@ private suspend fun awaitFramesAreSeen(hidden: () -> Boolean) {
 
 private fun framesAreSeen(hidden: () -> Boolean): Boolean =
   simplexWindowState.windowVisible.value && !hidden()
+
+/**
+ * Whether this is an animation of a length worth holding frames for. A file of no frames would spin the
+ * playback loop uncancellably, as it only suspends inside the range of frames, and one of a single frame
+ * would decode that frame again for as long as it was shown.
+ */
+internal fun frameCountWithinBounds(frameCount: Int): Boolean = frameCount in 2..MAX_ANIMATED_FRAMES
 
 /**
  * The frame the codec may decode [index] from, which is the previous one when the bitmap still holds what

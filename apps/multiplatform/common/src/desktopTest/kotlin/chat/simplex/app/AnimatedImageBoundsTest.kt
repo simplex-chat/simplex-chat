@@ -1,5 +1,6 @@
 package chat.simplex.app
 
+import chat.simplex.common.platform.frameCountWithinBounds
 import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
 import chat.simplex.common.platform.priorFrame
@@ -106,6 +107,19 @@ class AnimatedImageBoundsTest {
     assertEquals(-1, priorFrame(5, -1))
     // The first frame of a loop continues nothing, and -1 is both its required frame and no prior frame
     assertEquals(-1, priorFrame(0, -1))
+  }
+
+  @Test
+  fun testOnlyAnimationsWorthHoldingFramesForAreWithinBounds() {
+    // No frames would spin the playback loop uncancellably, and one frame is a still image
+    assertFalse(frameCountWithinBounds(0))
+    assertFalse(frameCountWithinBounds(1))
+    assertFalse(frameCountWithinBounds(-1))
+    assertTrue(frameCountWithinBounds(2))
+    // The longest animation in this repository, and the bound itself
+    assertTrue(frameCountWithinBounds(1041))
+    assertTrue(frameCountWithinBounds(10_000))
+    assertFalse(frameCountWithinBounds(10_001))
   }
 
   @Test
