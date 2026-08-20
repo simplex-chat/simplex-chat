@@ -36,6 +36,7 @@ let a sender disrupt the app.
 | rebuilt frame chain bound | a frame the codec is given no prior frame for is rebuilt from its whole chain, and Skia recurses to do it: frames alternating their disposal make that chain as long as the file likes, and 8000 frames of it overflows the native stack and kills the app, which no catch can prevent. Real animations rebuild nothing at all |
 | destination allocated with a premultiplied alpha type | the codec reports the alpha type of the first frame, and a frame that has alpha cannot be read into an opaque bitmap |
 | frame duration floor, and 100ms substituted for delays of 10ms and less | a 4.6MB GIF can hold 200 000 zero-delay frames, and Skia reports the usual "as fast as possible" delay of one centisecond as 10ms |
+| a frame is waited out for what it cost as well as what it asks for | a file whose frames each cost just under the stopping threshold owes nothing and would otherwise decode as fast as it can forever; waiting out the cost leaves any animation at most half a decoder thread |
 | an animation that owes too much for its frames stops on the one it reached | frames that alternate expensive with cheap are never slow twice in a row, so a count that resets never stops them |
 | single exception boundary around every native call that reads the file | the frame count and repeat count are read from it too |
 
@@ -59,9 +60,11 @@ Pixels are identical either way. The cost of a frame is then its own, and an ani
 reached once it owes too much: a frame over 100ms counts double what a frame under it forgives. This is wall
 time, so a single frame can overrun by being descheduled, and a busy machine should not turn a cheap
 animation into a still - but a file whose frames alternate expensive and cheap is never slow twice in a row,
-and a run of them is what a count that resets would miss. Measured on a 1920x1920 GIF of 400 such frames,
-which holds 67% of a core indefinitely against a count that resets, and stops after 78 frames with one that
-decays.
+and a run of them is what a count that resets would miss. Measured on a 1920x1920 GIF of 400 such frames, which holds
+67% of a core indefinitely against a count that resets. Frames tuned to stay just under the threshold owe
+nothing at all, which is why a frame is also waited out for what it cost: that file drops from 38% of a core
+to 34%, the one that alternates from 67% to 41%, and the GIFs in `images/` stay where they were, since a real
+animation always decodes a frame in less time than it asks to show it.
 
 Two optimisations were measured and **rejected**. Both were measured before the prior frame was reused, so
 their per-frame figures are against a decode that was two orders of magnitude more expensive; the conclusions

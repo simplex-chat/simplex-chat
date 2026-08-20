@@ -145,7 +145,8 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
         val startedDecoding = System.nanoTime()
         codec.readPixels(bitmap, i, animation.priorFrames[i])
         // Wall time, so a frame can overrun by being descheduled rather than by being expensive
-        debt = slowFrameDebt(debt, System.nanoTime() - startedDecoding > MAX_FRAME_DECODE_MS * 1_000_000)
+        val decodedInMs = (System.nanoTime() - startedDecoding) / 1_000_000
+        debt = slowFrameDebt(debt, decodedInMs > MAX_FRAME_DECODE_MS)
         // A new wrapper each frame, as its identity is what says the drawn image changed. The bitmap itself
         // is never closed, since the wrapper points at its pixels and a frame may still be drawn.
         showFrame(bitmap.asComposeImageBitmap())
@@ -153,7 +154,10 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
           Log.d(TAG, "Animation too expensive to decode, stopping on this frame")
           return
         }
-        delay(animation.frameDelays[i])
+        // Waiting out what the frame cost as well as what it asks for leaves the animation at most half of
+        // a decoder thread, however expensive its frames are. Frames cheaper than their delay, which is all
+        // of a real animation's, wait exactly as long as they always did.
+        delay(maxOf(animation.frameDelays[i], decodedInMs))
       }
       if (loopsLeft == 0) return
       if (loopsLeft > 0) loopsLeft--
