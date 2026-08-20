@@ -3,6 +3,7 @@ package chat.simplex.app
 import chat.simplex.common.platform.MAX_SLOW_FRAME_DEBT
 import chat.simplex.common.platform.MAX_WAITED_FRAME_COST_MS
 import chat.simplex.common.platform.frameWait
+import chat.simplex.common.platform.fileSizeWithinBounds
 import chat.simplex.common.platform.frameCountWithinBounds
 import chat.simplex.common.platform.frameDuration
 import chat.simplex.common.platform.looksAnimatable
@@ -113,6 +114,16 @@ class AnimatedImageBoundsTest {
   }
 
   @Test
+  fun testOnlyFilesSmallEnoughToScanAreWithinBounds() {
+    // Skia copies the whole file into native memory and scans it to count the frames
+    assertTrue(fileSizeWithinBounds(0))
+    // The largest animation in this repository
+    assertTrue(fileSizeWithinBounds(6_013_354))
+    assertTrue(fileSizeWithinBounds(32 * 1024 * 1024))
+    assertFalse(fileSizeWithinBounds(32 * 1024 * 1024 + 1))
+  }
+
+  @Test
   fun testOnlyAnimationsWorthHoldingFramesForAreWithinBounds() {
     // No frames would spin the playback loop uncancellably, and one frame is a still image
     assertFalse(frameCountWithinBounds(0))
@@ -178,6 +189,7 @@ class AnimatedImageBoundsTest {
   fun testAFrameDearerThanItsDelayIsWaitedOut() {
     // Half a decoder thread at most, however expensive the frame
     assertEquals(85, frameWait(20, 85))
+    assertEquals(500, frameWait(20, 500))
     assertEquals(1000, frameWait(20, 1000))
   }
 

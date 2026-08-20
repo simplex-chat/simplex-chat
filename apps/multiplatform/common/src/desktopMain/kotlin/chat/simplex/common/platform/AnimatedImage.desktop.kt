@@ -32,7 +32,7 @@ private const val MIN_FRAME_DURATION_MS = 20L
 private const val MAX_FRAME_DECODE_MS = 100L
 // Far above what a frame within the bounds above can cost, so only a stall reaches it
 internal const val MAX_WAITED_FRAME_COST_MS = 10 * MAX_FRAME_DECODE_MS
-// What a frame that decodes too slowly owes, and what an animation may owe before it stops
+// What a frame that decodes too slowly owes, and the debt an animation stops at
 private const val SLOW_FRAME_COST = 2
 internal const val MAX_SLOW_FRAME_DEBT = 4
 // What Skia calls a frame that is decoded without one
@@ -74,7 +74,7 @@ fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, hidden: () -> Boo
 private val animationDecoder = Dispatchers.Default.limitedParallelism(2)
 
 private fun openAnimation(data: ByteArray): Animation? {
-  if (!looksAnimatable(data) || data.size > MAX_ANIMATED_FILE_SIZE) return null
+  if (!looksAnimatable(data) || !fileSizeWithinBounds(data.size)) return null
   var codec: Codec? = null
   var animation: Animation? = null
   try {
@@ -166,7 +166,7 @@ private suspend fun playFrames(animation: Animation, hidden: () -> Boolean, show
   }
 }
 
-// Composition survives the window being minimised or hidden in the tray, and the caller knows when its own
+// Composition survives the window being minimized or hidden in the tray, and the caller knows when its own
 // image cannot be seen where it is
 private suspend fun awaitFramesAreSeen(hidden: () -> Boolean) {
   if (framesAreSeen(hidden)) return
@@ -186,6 +186,9 @@ private fun framesAreSeen(hidden: () -> Boolean): Boolean =
  */
 internal fun frameWait(delayMs: Long, costMs: Long): Long =
   maxOf(delayMs, costMs.coerceAtMost(MAX_WAITED_FRAME_COST_MS))
+
+/** Whether a file is small enough to copy into native memory and scan for its frames. */
+internal fun fileSizeWithinBounds(size: Int): Boolean = size <= MAX_ANIMATED_FILE_SIZE
 
 /**
  * Whether this is an animation of a length worth holding frames for. A file of no frames would spin the
