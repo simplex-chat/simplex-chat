@@ -22,8 +22,8 @@ actual fun SimpleAndAnimatedImageView(
   // The small view is the chat list preview: a 36sp box that the desktop layout keeps on screen the whole
   // time. Decoding an animation at its own resolution to fill it would hold a raster and spend a frame of
   // work per listed chat, without pause, so it keeps the still image as it did before.
-  val frame = if (smallView) null else rememberAnimatedImage(data, imageBitmap, blurred)
-  ImageView(BitmapPainter(frame?.value ?: imageBitmap)) {
+  val frame = if (smallView) imageBitmap else rememberAnimatedImage(data, imageBitmap, blurred)
+  ImageView(BitmapPainter(frame)) {
     if (getLoadedFilePath(file) != null) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
         ImageFullScreenView(imageProvider, close)

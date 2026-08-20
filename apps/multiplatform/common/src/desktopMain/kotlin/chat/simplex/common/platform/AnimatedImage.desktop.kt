@@ -19,13 +19,12 @@ private const val MAX_ANIMATED_RASTER_BYTES: Long = 1920L * 1920 * 4
 private const val MAX_ANIMATED_SIDE = 4096
 // Skia copies the encoded bytes into native memory and scans them to count frames
 private const val MAX_ANIMATED_FILE_SIZE = 32 * 1024 * 1024
-// Counting the frames builds a table of them that a file of minimal frames makes several times its own size,
-// which is paid to read the count and released by closing the codec rather than held while the image is on
-// screen. The longest animation in this repository has 1041 frames.
+// Counting the frames also builds a table of them, which a file of minimal frames makes several times its own
+// size, and the codec holds it for as long as the animation plays. The longest animation here has 1041 frames.
 private const val MAX_ANIMATED_FRAMES = 10_000
 // A frame may declare no delay, and 10ms or less is how "as fast as possible" is written. Browsers substitute
 // 100ms for both.
-private const val UNSPECIFIED_FRAME_DURATION_MS = 10
+private const val MAX_UNSPECIFIED_FRAME_DURATION_MS = 10
 private const val DEFAULT_FRAME_DURATION_MS = 100L
 // Bounds the frame rate of the rest
 private const val MIN_FRAME_DURATION_MS = 20L
@@ -39,7 +38,7 @@ private const val NO_PRIOR_FRAME = -1
  * fails to decode. Decoding runs off the UI thread and stops when the caller leaves the composition.
  */
 @Composable
-fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, blurred: State<Boolean>? = null): State<ImageBitmap> {
+fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, blurred: State<Boolean>? = null): ImageBitmap {
   // The state is keyed as the decoding is, so frames are not written into a replaced state.
   // blurred is not a key, it pauses the animation instead of restarting it
   val frame = remember(data, still) { mutableStateOf(still) }
@@ -53,7 +52,7 @@ fun rememberAnimatedImage(data: ByteArray, still: ImageBitmap, blurred: State<Bo
       }
     }
   }
-  return frame
+  return frame.value
 }
 
 // Decoding several large animations must not starve the long running calls that share this pool
@@ -72,7 +71,8 @@ private fun animatableCodec(data: ByteArray): Codec? {
       encoded.close()
     }
     val info = codec.imageInfo
-    // Counting frames scans the file, while dimensions are only read from the header
+    // Counting frames scans the file, while dimensions are only read from the header. Fewer than two frames
+    // must not reach playFrames, whose loop only suspends inside the range and would spin uncancellably.
     if (rasterWithinBounds(info.width, info.height, info.bytesPerPixel) && codec.frameCount in 2..MAX_ANIMATED_FRAMES) return codec
   } catch (e: Throwable) {
     Log.e(TAG, "Unable to read animated image: $e")
@@ -107,8 +107,6 @@ private suspend fun playFrames(codec: Codec, blurred: State<Boolean>?, showFrame
     // Frames are only parsed by reading the frame count, and until they are, getFrameInfo below reports
     // uninitialised memory rather than failing
     val frameCount = codec.frameCount
-    // The loop below only suspends inside the range, so without frames it would spin uncancellably
-    if (frameCount < 2) return
     var loopsLeft = codec.repetitionCount // negative repeats forever
     var slowFrames = 0
     while (true) {
@@ -158,5 +156,5 @@ internal fun priorFrame(index: Int, requiredFrame: Int): Int =
   if (requiredFrame == index - 1) index - 1 else NO_PRIOR_FRAME
 
 internal fun frameDuration(declaredMs: Int): Long =
-  if (declaredMs <= UNSPECIFIED_FRAME_DURATION_MS) DEFAULT_FRAME_DURATION_MS
+  if (declaredMs <= MAX_UNSPECIFIED_FRAME_DURATION_MS) DEFAULT_FRAME_DURATION_MS
   else declaredMs.toLong().coerceAtLeast(MIN_FRAME_DURATION_MS)
