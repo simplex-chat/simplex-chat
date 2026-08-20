@@ -28,11 +28,20 @@ fun ComposeContextMemberContactActionsView(
   groupDirectInv: GroupDirectInvitation
 ) {
   val inProgress = rememberSaveable { mutableStateOf(false) }
-  val progressByTimeout by rememberProgressByTimeout(inProgress)
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+  LaunchedEffect(inProgress.value) {
+    progressByTimeout = if (inProgress.value) {
+      delay(500)
+      inProgress.value
+    } else {
+      false
+    }
+  }
 
   KeyChangeEffect(chatModel.chatId.value) {
     if (inProgress.value) {
       inProgress.value = false
+      progressByTimeout = false
     }
   }
 

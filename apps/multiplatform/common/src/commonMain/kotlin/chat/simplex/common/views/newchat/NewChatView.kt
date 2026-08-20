@@ -303,7 +303,16 @@ fun ActiveProfilePicker(
     filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 
-  val progressByTimeout by rememberProgressByTimeout(switchingProfile)
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
+  LaunchedEffect(switchingProfile.value) {
+    progressByTimeout = if (switchingProfile.value) {
+      delay(500)
+      switchingProfile.value
+    } else {
+      false
+    }
+  }
 
   @Composable
   fun ProfilePickerUserOption(user: User) {

@@ -584,7 +584,15 @@ struct ComposeView: View {
                 clearState()
             }
         }
-        .progressByTimeout(composeState.inProgress, $composeState.progressByTimeout)
+        .onChange(of: composeState.inProgress) { inProgress in
+            if inProgress {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    composeState.progressByTimeout = composeState.inProgress
+                }
+            } else {
+                composeState.progressByTimeout = false
+            }
+        }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 showTakePhoto = true

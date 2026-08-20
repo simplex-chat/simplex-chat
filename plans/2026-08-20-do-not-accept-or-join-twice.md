@@ -158,10 +158,10 @@ Join buttons. The connect composer belongs to the chat itself, not to a scope wi
 
 **5. Client: the progress indicator appears after 0.5s instead of 1s** (android, desktop, ios).
 
-The effect behind it was copied into 5 Kotlin and 4 Swift views; it is now one helper per platform,
-which is also what makes the threshold a single constant. Two of the Swift copies had drifted — the
-deferred write captured the value that started the delay rather than reading the current one, so an
-operation that finished before the delay elapsed left the indicator on with nothing to turn it off.
+Accepting a request or joining a group usually takes longer than 1s, so the button looked inert for
+a second before anything acknowledged the tap - which is what prompts a second tap. The threshold is
+per view; extracting the effect the views share was considered and left out, to keep the change to
+the timing.
 
 ## Alternatives considered and rejected
 

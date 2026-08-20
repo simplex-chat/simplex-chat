@@ -1573,8 +1573,14 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
-  ProgressByTimeoutEffect(composeState.value.inProgress) {
-    composeState.value = composeState.value.copy(progressByTimeout = it)
+  LaunchedEffect(composeState.value.inProgress) {
+    val newProgressByTimeout = if (composeState.value.inProgress) {
+      delay(500)
+      composeState.value.inProgress
+    } else {
+      false
+    }
+    composeState.value = composeState.value.copy(progressByTimeout = newProgressByTimeout)
   }
 
   val relayListExpanded = remember { mutableStateOf(false) }

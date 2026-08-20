@@ -76,7 +76,15 @@ struct CIGroupInvitationView: View {
         .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
-        .progressByTimeout(inProgress, $progressByTimeout)
+        .onChange(of: inProgress) { inPrgrs in
+            if inPrgrs {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    progressByTimeout = inProgress
+                }
+            } else {
+                progressByTimeout = false
+            }
+        }
 
         if action {
             v.simultaneousGesture(TapGesture().onEnded { joinGroup(groupInvitation.groupId) })

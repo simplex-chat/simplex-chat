@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -21,6 +22,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.delay
 
 @Composable
 fun ComposeContextContactRequestActionsView(
@@ -28,7 +30,15 @@ fun ComposeContextContactRequestActionsView(
   contactRequestId: Long
 ) {
   val inProgress = rememberAcceptingContactRequest(contactRequestId)
-  val progressByTimeout by rememberProgressByTimeout(inProgress)
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+  LaunchedEffect(inProgress.value) {
+    progressByTimeout = if (inProgress.value) {
+      delay(500)
+      inProgress.value
+    } else {
+      false
+    }
+  }
 
   Box(
     Modifier.height(60.dp),

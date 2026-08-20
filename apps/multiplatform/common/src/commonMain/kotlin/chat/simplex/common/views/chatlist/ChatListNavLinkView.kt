@@ -73,7 +73,15 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     }
     is ChatInfo.Group -> {
       val inProgress = rememberJoiningGroup(chat.chatInfo.groupInfo.groupId)
-      val progressByTimeout by rememberProgressByTimeout(inProgress)
+      var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+      LaunchedEffect(inProgress.value) {
+        progressByTimeout = if (inProgress.value) {
+          delay(500)
+          inProgress.value
+        } else {
+          false
+        }
+      }
       val defaultClickAction = { if (!inProgress.value && chatModel.chatId.value != chat.id) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) } }
       ChatListNavLinkLayout(
         chatLinkPreview = {

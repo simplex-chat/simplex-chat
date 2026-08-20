@@ -26,22 +26,7 @@ extension View {
             self
         }
     }
-
-    func progressByTimeout(_ inProgress: Bool, _ progressByTimeout: Binding<Bool>) -> some View {
-        task(id: inProgress) {
-            if inProgress {
-                try? await Task.sleep(nanoseconds: progressTimeout)
-                if !Task.isCancelled {
-                    progressByTimeout.wrappedValue = true
-                }
-            } else {
-                progressByTimeout.wrappedValue = false
-            }
-        }
-    }
 }
-
-private let progressTimeout: UInt64 = 500_000000
 
 extension Notification.Name {
     static let chatViewWillBeginScrolling = Notification.Name("chatWillBeginScrolling")
