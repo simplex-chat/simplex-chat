@@ -60,13 +60,26 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
            userId != chatModel.currentUser?.userId {
             logger.debug("NtfManager.processNotificationResponse changeActiveUser")
             changeActiveUser(userId, viewPwd: nil)
+            // the currently open chat belongs to the previous profile and is absent from the
+            // switched profile's chats, so drop it to land on the chat list instead of a blank chat view
+            chatModel.chatId = nil
         }
-        if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
+        if content.categoryIdentifier == ntfCategoryContactRequest,
            let chatId = content.userInfo["chatId"] as? String {
-            if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
-            } else {
-                chatModel.ntfContactRequest = NTFContactRequest(chatId: chatId)
+            if action == ntfActionAcceptContact {
+                if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
+                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
+                } else {
+                    chatModel.ntfContactRequest = NTFContactRequest(chatId: chatId)
+                }
+            } else if action == UNNotificationDefaultActionIdentifier,
+                      case .contactRequest = chatModel.getChat(chatId)?.chatInfo {
+                // a plain tap (not the Accept button) surfaces the accept/reject dialog for the request;
+                // a contact request has no openable chat view, so it cannot be opened like a message.
+                // require the request to be loaded (changeActiveUser above loads chats synchronously)
+                // so the dialog always has buttons, and drop any open chat so it presents over the list
+                chatModel.chatId = nil
+                chatModel.showingContactRequest = NTFContactRequest(chatId: chatId)
             }
         } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
             if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
