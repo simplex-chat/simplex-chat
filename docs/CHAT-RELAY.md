@@ -190,6 +190,8 @@ docker compose run --rm --entrypoint sh relay -c \
   'simplex-chat-relay -d "$DB_CONN" -e "/set profile image file /avatar.png"'
 ```
 
+The stack also runs [sql_exporter](https://github.com/burningalchemist/sql_exporter), which publishes relay metrics read from the database (channels by relay status, members, queued deliveries and the age of the oldest one, messages in the last 24 hours) on `127.0.0.1:9399/metrics`. Edit `sql_exporter.yml` to change the queries, and remove the `metrics` service if they are not needed.
+
 The compose file already runs the relay with the web-preview options, writing previews and the CORS file to `/var/www/relay-web-channels`. To serve them, follow [Serve the previews with Caddy](#serve-the-previews-with-caddy) and [Reload CORS automatically](#reload-cors-automatically) below, but skip the `usermod -aG relay caddy` step: with Docker the files are world-readable and there is no `relay` user.
 
 ## Channel web previews

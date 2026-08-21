@@ -26,6 +26,22 @@ services:
       - ./out:/out
     restart: unless-stopped
 
+  metrics:
+    image: burningalchemist/sql_exporter:latest
+    container_name: chat-relay-metrics
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Percent-encode the password if it contains URL-reserved characters.
+      SQLEXPORTER_TARGET_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+    volumes:
+      - ./sql_exporter.yml:/etc/sql_exporter/sql_exporter.yml:ro
+    command: ["-config.file=/etc/sql_exporter/sql_exporter.yml"]
+    ports:
+      - "127.0.0.1:9399:9399"
+    restart: unless-stopped
+
   db:
     image: postgres:18
     container_name: chat-relay-db
