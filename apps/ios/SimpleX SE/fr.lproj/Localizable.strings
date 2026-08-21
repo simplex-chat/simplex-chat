@@ -32,7 +32,7 @@
 "Database passphrase is different from saved in the keychain." = "La phrase secrète de la base de données est différente de celle enregistrée dans la keychain.";
 
 /* No comment provided by engineer. */
-"Database passphrase is required to open chat." = "La phrase secrète de la base de données est nécessaire pour ouvrir le chat.";
+"Database passphrase is required to open chat." = "La phrase secrète de la base de données est nécessaire pour ouvrir la messagerie.";
 
 /* No comment provided by engineer. */
 "Database upgrade required" = "Mise à niveau de la base de données nécessaire";
@@ -80,7 +80,7 @@
 "Please create a profile in the SimpleX app" = "Veuillez créer un profil dans l'app SimpleX";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "Les paramètres de chat sélectionnés ne permettent pas l'envoi de ce message.";
+"Selected chat preferences prohibit this message." = "Les paramètres de conversation sélectionnés ne permettent pas l'envoi de ce message.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "L'envoi d'un message prend plus de temps que prévu.";

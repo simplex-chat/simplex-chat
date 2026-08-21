@@ -6268,9 +6268,6 @@ alert subtitle */
 "This setting applies to messages in your current chat profile **%@**." = "此设置适用于您当前聊天资料 **%@** 中的消息。";
 
 /* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "此设置用于当前个人资料 **%@**。";
-
-/* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "只为新联系人设置了消失时间。";
 
 /* No comment provided by engineer. */

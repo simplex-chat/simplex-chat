@@ -5507,9 +5507,6 @@ server test failure */
 "This setting applies to messages in your current chat profile **%@**." = "To ustawienie dotyczy wiadomości Twojego bieżącego profilu czatu **%@**.";
 
 /* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "To ustawienie jest dla Twojego obecnego profilu **%@**.";
-
-/* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Czas zniknięcia jest ustawiony tylko dla nowych kontaktów.";
 
 /* No comment provided by engineer. */

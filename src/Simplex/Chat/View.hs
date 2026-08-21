@@ -1917,6 +1917,8 @@ viewSndQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
     showSwitchStatus = \case
       SSSendingQKEY -> "switch started"
       SSSendingQTEST -> "switch secured"
+      SSSecuringQueue -> "switch confirmed"
+      SSSendingQEND -> "switch secured"
 
 viewContactSwitch :: Contact -> SwitchProgress -> [StyledString]
 viewContactSwitch _ (SwitchProgress _ SPConfirmed _) = []

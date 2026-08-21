@@ -6389,9 +6389,6 @@ alert subtitle */
 "This setting applies to messages in your current chat profile **%@**." = "Esta configuración se aplica a los mensajes del perfil actual **%@**.";
 
 /* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Esta configuración se aplica al perfil actual **%@**.";
-
-/* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "El nombre SimpleX no está registrado. Por favor, comprueba el nombre.";
 
 /* No comment provided by engineer. */

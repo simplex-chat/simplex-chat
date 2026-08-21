@@ -238,7 +238,7 @@ directoryCommands =
       "Group settings"
       [ CBCCommand "role" "View new member role" idParam,
         CBCCommand "filter" "Anti-spam filter" idParam,
-        CBCCommand "link" "View group link" idParam,
+        CBCCommand "link" "View and upgrade group link" idParam,
         CBCCommand "delete" "Remove a group from directory" (Just "<ID>:'<NAME>'")
       ]
   ]
