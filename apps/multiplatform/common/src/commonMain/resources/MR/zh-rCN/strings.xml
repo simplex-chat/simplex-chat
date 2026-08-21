@@ -2505,7 +2505,7 @@
     <string name="v6_4_1_welcome_contacts">欢迎联系人👋</string>
     <string name="rcv_direct_event_group_inv_link_received">来自%1$s群的连接请求</string>
     <string name="this_setting_is_for_your_current_profile">此设置用于当前个人资料</string>
-    <string name="settings_section_title_contact_requests_from_groups">来自群的联络请求</string>
+    <string name="settings_section_title_contact_requests_from_groups">群内的联络请求</string>
     <string name="member_is_deleted_cant_accept_request">成员被删除——无法接受请求</string>
     <string name="allow_files_and_media_only_if">只有你的联系人允许的情况下才允许文件和媒体。</string>
     <string name="allow_your_contacts_to_send_files_and_media">允许你的联系人发送文件和媒体。</string>
@@ -2924,4 +2924,5 @@
     <string name="v7_0_simplex_names">SimpleX 公开名称 (测试)</string>
     <string name="info_row_file_servers">文件服务器</string>
     <string name="share_text_file_servers">文件服务器：%s</string>
+    <string name="group_invitations">群邀请</string>
 </resources>
