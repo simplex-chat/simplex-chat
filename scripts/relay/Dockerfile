@@ -2,7 +2,8 @@
 
 ARG CHAT_REF=88df79d1e26921c7d1835fc8484fade596356fb6
 ARG GHC=9.6.3
-ARG CABAL=3.10.1.0
+# 3.10.1.0 predates the Hackage root key rotation and fails `cabal update`.
+ARG CABAL=3.10.2.0
 
 # ---- build ----------------------------------------------------------------
 FROM ubuntu:22.04 AS build
