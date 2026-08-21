@@ -19,15 +19,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       llvm-12 llvm-12-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# cabal update is retried: on a failed fetch cabal falls back to the mirrors in
-# Hackage's mirrors.json, which are dead, and the last one aborts the build.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org \
       | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
         BOOTSTRAP_HASKELL_GHC_VERSION="${GHC}" \
         BOOTSTRAP_HASKELL_CABAL_VERSION="${CABAL}" sh \
     && ghcup set ghc "${GHC}" \
-    && ghcup set cabal "${CABAL}" \
-    && { cabal update || { sleep 5; cabal update; } || { sleep 20; cabal update; }; }
+    && ghcup set cabal "${CABAL}"
+
+# Kept out of the layer above so that a failure here does not reinstall GHC.
+# Retried because a failed fetch falls back to the mirrors in Hackage's
+# mirrors.json, which are dead, and the last one aborts the build.
+RUN cabal update || { sleep 5; cabal update; } || { sleep 20; cabal update; }
 
 # Declared after the toolchain layers so that changing the ref does not rebuild
 # them. Unlike `clone --branch`, this form also accepts a commit hash.
