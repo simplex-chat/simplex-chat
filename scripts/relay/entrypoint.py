@@ -78,6 +78,11 @@ def main():
 
     common = [BIN, "--relay", "--headless", "--user-display-name", name]
 
+    # Only applied when the address is created, which the one-shot below does.
+    address_server = os.environ.get("RELAY_ADDRESS_SERVER")
+    if address_server:
+        common += ["--relay-address-server", address_server]
+
     # The image is applied only when the profile is created.
     if not os.path.exists(ADDR_FILE):
         oneshot = common + (["--user-image-file", image_file] if image_file else []) + ["-d", conn]
