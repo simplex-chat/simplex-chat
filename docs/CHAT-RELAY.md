@@ -144,7 +144,7 @@ Instead of the binary and `systemd` setup above, you can build and run the relay
    cp .env.example .env
    ```
 
-   Set `RELAY_NAME` (display name), `RELAY_WEB_DOMAIN` (the domain previews are served from), and `POSTGRES_PASSWORD`. `CHAT_REF` pins the `simplex-chat` tag that is built.
+   Set `RELAY_NAME` (display name), `RELAY_WEB_DOMAIN` (the domain previews are served from), and `POSTGRES_PASSWORD`. `CHAT_REF` pins the `simplex-chat` ref that is built (tag, branch or commit). `RELAY_RTS_OPTS` overrides the GHC runtime options the relay runs with, given without the `+RTS`/`-RTS` markers.
 
 3. Create the directory the relay writes previews and the CORS file to, owned by the container's user (UID `1000`):
 

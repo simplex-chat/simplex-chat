@@ -3,7 +3,7 @@
 # slim runtime with only the libraries the binary links against. A bare
 # `scratch` image cannot run this dynamically-linked binary.
 
-ARG CHAT_REF=v7.0.0-beta.5
+ARG CHAT_REF=88df79d1e26921c7d1835fc8484fade596356fb6
 ARG GHC=9.6.3
 ARG CABAL=3.10.1.0
 
@@ -31,16 +31,19 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org \
     && ghcup set cabal "${CABAL}" \
     && cabal update
 
-# CHAT_REF is declared here, after the toolchain layers, so changing the tag
-# reuses everything above and rebuilds only the clone + compile below.
+# CHAT_REF is declared here, after the toolchain layers, so changing the ref
+# reuses everything above and rebuilds only the fetch + compile below. The
+# fetch form accepts a commit hash as well as a tag or branch.
 ARG CHAT_REF
-RUN git clone --depth 1 --branch "${CHAT_REF}" \
-      https://github.com/simplex-chat/simplex-chat /project
 WORKDIR /project
+RUN git init -q . \
+    && git remote add origin https://github.com/simplex-chat/simplex-chat \
+    && git fetch -q --depth 1 origin "${CHAT_REF}" \
+    && git checkout -q FETCH_HEAD
 
 # Compile the executable with PostgreSQL persistence and strip it. The cabal
 # store (compiled dependencies) and dist-newstyle are cache mounts, so a
-# different tag recompiles only changed code, not every dependency.
+# different ref recompiles only changed code, not every dependency.
 RUN --mount=type=cache,target=/root/.cabal/store,sharing=locked \
     --mount=type=cache,target=/project/dist-newstyle,sharing=locked \
     cp scripts/cabal.project.local.linux cabal.project.local \

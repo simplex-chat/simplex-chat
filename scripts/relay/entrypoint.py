@@ -12,6 +12,7 @@ binary conn-req blob plus short-link data, re-encoded on display), so the
 relay's own output is the canonical source.
 """
 import os
+import shlex
 import subprocess
 import sys
 
@@ -20,12 +21,30 @@ WEB_ROOT = "/var/www/relay-web-channels"
 ADDR_FILE = "/out/relay-address.txt"
 CAPTURE_TIMEOUT = 180  # seconds; first address creation involves an SMP round-trip
 
+# GHC runtime options for the relay, overridable with RELAY_RTS_OPTS. The binary
+# is built with -rtsopts, so it accepts them on the command line.
+DEFAULT_RTS_OPTS = "-N -F1.2 -A16m -I0.01 -Iw15"
+
 
 def require(name):
     value = os.environ.get(name)
     if not value:
         sys.exit(f"{name} is required")
     return value
+
+
+def rts_args():
+    """Configured RTS options, wrapped in the +RTS/-RTS markers.
+
+    RELAY_RTS_OPTS holds bare options ("-N -A16m"); the markers are added here
+    and ignored if they are given anyway.
+    """
+    opts = [
+        o
+        for o in shlex.split(os.environ.get("RELAY_RTS_OPTS") or DEFAULT_RTS_OPTS)
+        if o not in ("+RTS", "-RTS")
+    ]
+    return ["+RTS", *opts, "-RTS"] if opts else []
 
 
 def find_address(text):
@@ -92,7 +111,7 @@ def main():
         "--relay-web-interval", "30",
         "-d", conn,
         "--create-schema",
-    ]
+    ] + rts_args()
     os.execvp(relay[0], relay)
 
 
