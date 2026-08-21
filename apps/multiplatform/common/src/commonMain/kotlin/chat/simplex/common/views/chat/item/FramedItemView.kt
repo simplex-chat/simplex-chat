@@ -442,7 +442,7 @@ fun sendCommandMsg(chatsCtx: ChatModel.ChatsContext, chat: Chat, msg: String) {
       if (!chatItems.isNullOrEmpty()) {
         chatItems.forEach { aChatItem ->
           withContext(Dispatchers.Main) {
-            chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
+            chatModel.addSentChatItem(chatsCtx, chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
           }
         }
       }
