@@ -2518,7 +2518,7 @@
     <string name="share_old_link_alert_button">Condividi il link vecchio</string>
     <string name="share_group_profile_via_link_alert_text">Il link sarà breve e il profilo del gruppo verrà condiviso attraverso il link.</string>
     <string name="upgrade_group_link">Aggiorna il link del gruppo</string>
-    <string name="settings_section_title_contact_requests_from_groups">Richieste di contatto dai gruppi</string>
+    <string name="settings_section_title_contact_requests_from_groups">Richieste di contatto nei gruppi</string>
     <string name="member_is_deleted_cant_accept_request">Il membro è eliminato - impossibile accettare la richiesta</string>
     <string name="rcv_direct_event_group_inv_link_received">connessione richiesta dal gruppo %1$s</string>
     <string name="this_setting_is_for_your_current_profile">Questa impostazione è per il tuo profilo attuale</string>
@@ -2941,4 +2941,5 @@
     <string name="v7_0_channels_contributors">Aggiungi collaboratori.</string>
     <string name="info_row_file_servers">Server di file</string>
     <string name="share_text_file_servers">Server di file: %s</string>
+    <string name="group_invitations">Inviti in gruppi</string>
 </resources>
