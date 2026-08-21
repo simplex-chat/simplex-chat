@@ -14,6 +14,8 @@ WEB_ROOT = "/var/www/relay-web-channels"
 ADDR_FILE = "/out/relay-address.txt"
 CAPTURE_TIMEOUT = 180  # seconds
 DEFAULT_RTS_OPTS = "-N -F1.2 -A16m -I0.01 -Iw15"
+DEFAULT_POOL_SIZE = "4"  # the binary defaults to a single connection
+DEFAULT_QUEUE_SIZE = "65536"
 
 
 def require(name):
@@ -88,6 +90,8 @@ def main():
         "--relay-web-interval", "30",
         "-d", conn,
         "--create-schema",
+        "--pool-size", os.environ.get("RELAY_POOL_SIZE") or DEFAULT_POOL_SIZE,
+        "--queue-size", os.environ.get("RELAY_QUEUE_SIZE") or DEFAULT_QUEUE_SIZE,
     ] + rts_args()
     os.execvp(relay[0], relay)
 

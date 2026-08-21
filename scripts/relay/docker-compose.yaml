@@ -14,7 +14,10 @@ services:
     environment:
       RELAY_NAME: ${RELAY_NAME}
       RELAY_WEB_DOMAIN: ${RELAY_WEB_DOMAIN}
-      RELAY_RTS_OPTS: ${RELAY_RTS_OPTS:-}    # empty: entrypoint default
+      # Empty values fall back to the entrypoint defaults.
+      RELAY_RTS_OPTS: ${RELAY_RTS_OPTS:-}
+      RELAY_POOL_SIZE: ${RELAY_POOL_SIZE:-}
+      RELAY_QUEUE_SIZE: ${RELAY_QUEUE_SIZE:-}
       # Password is passed as PGPASSWORD to keep it out of argv.
       DB_CONN: postgresql://${POSTGRES_USER}@db:5432/${POSTGRES_DB}
       PGPASSWORD: ${POSTGRES_PASSWORD}
