@@ -129,7 +129,7 @@ systemctl start simplex-relay
 
 ## Run with Docker
 
-Instead of the binary and `systemd` setup above, you can build and run the relay with Docker Compose. It builds `simplex-chat` from source with PostgreSQL support, runs it against a PostgreSQL container, and generates channel web previews. The files are in [`scripts/relay`](https://github.com/simplex-chat/simplex-chat/tree/master/scripts/relay). You need Docker with the Compose plugin.
+The relay can also be built and run with Docker Compose, using PostgreSQL for storage. The files are in [`scripts/relay`](https://github.com/simplex-chat/simplex-chat/tree/master/scripts/relay).
 
 1. Clone the repository and switch to the relay directory:
 
@@ -138,15 +138,13 @@ Instead of the binary and `systemd` setup above, you can build and run the relay
    cd simplex-chat/scripts/relay
    ```
 
-2. Copy the example environment file and edit it:
+2. Copy the example environment file, then set `RELAY_NAME`, `RELAY_WEB_DOMAIN` and `POSTGRES_PASSWORD` in it:
 
    ```sh
    cp .env.example .env
    ```
 
-   Set `RELAY_NAME` (display name), `RELAY_WEB_DOMAIN` (the domain previews are served from), and `POSTGRES_PASSWORD`. `CHAT_REF` pins the `simplex-chat` ref that is built (tag, branch or commit). `RELAY_RTS_OPTS` overrides the GHC runtime options the relay runs with, given without the `+RTS`/`-RTS` markers.
-
-3. Create the directory the relay writes previews and the CORS file to, owned by the container's user (UID `1000`):
+3. Create the directory for the previews and the CORS file, owned by the container's user (UID `1000`):
 
    ```sh
    mkdir -p /var/www/relay-web-channels/channel
@@ -154,7 +152,7 @@ Instead of the binary and `systemd` setup above, you can build and run the relay
    chmod 0755 /var/www/relay-web-channels
    ```
 
-4. Create the output directory for the relay address (also owned by UID `1000`), then build and start:
+4. Create the output directory for the relay address, then build and start:
 
    ```sh
    mkdir -p out && chown 1000:1000 out
@@ -162,17 +160,15 @@ Instead of the binary and `systemd` setup above, you can build and run the relay
    docker compose up -d
    ```
 
-   The first build compiles `simplex-chat` from source and takes a while. PostgreSQL starts first; the relay creates its profile and address on the first start.
+   The first build compiles from source and takes a while.
 
-5. Read the relay address, written to a file on the first start:
+5. Read the relay address, written on the first start:
 
    ```sh
    cat out/relay-address.txt
    ```
 
-   It is also in the logs: `docker compose logs relay | grep -A1 "address is created"`.
-
-To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml` that mounts it and sets `RELAY_IMAGE_FILE`:
+To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml`:
 
 ```yaml
 services:
@@ -183,16 +179,14 @@ services:
       - ./avatar.png:/avatar.png:ro
 ```
 
-To run a one-off command against the relay's database (e.g. to change the picture later), override the entrypoint:
+To run a one-off command against the relay's database, override the entrypoint:
 
 ```sh
 docker compose run --rm --entrypoint sh relay -c \
   'simplex-chat-relay -d "$DB_CONN" -e "/set profile image file /avatar.png"'
 ```
 
-The stack also runs [sql_exporter](https://github.com/burningalchemist/sql_exporter), which publishes relay metrics read from the database (channels by relay status, members, queued deliveries and the age of the oldest one, messages in the last 24 hours) on `127.0.0.1:9399/metrics`. Edit `sql_exporter.yml` to change the queries, and remove the `metrics` service if they are not needed.
-
-The compose file already runs the relay with the web-preview options, writing previews and the CORS file to `/var/www/relay-web-channels`. To serve them, follow [Serve the previews with Caddy](#serve-the-previews-with-caddy) and [Reload CORS automatically](#reload-cors-automatically) below, but skip the `usermod -aG relay caddy` step: with Docker the files are world-readable and there is no `relay` user.
+Relay metrics from the database are published by [sql_exporter](https://github.com/burningalchemist/sql_exporter) on `127.0.0.1:9399/metrics`, with the queries in `sql_exporter.yml`.
 
 ## Channel web previews
 
