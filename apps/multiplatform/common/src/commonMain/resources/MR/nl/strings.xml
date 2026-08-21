@@ -1278,7 +1278,7 @@
     <string name="receipts_contacts_title_disable">Ontvangst bevestiging uitschakelen\?</string>
     <string name="receipts_contacts_title_enable">Ontvangst bevestiging inschakelen\?</string>
     <string name="receipts_contacts_override_enabled">Het verzenden van ontvangst bevestiging is ingeschakeld voor %d-contactpersonen</string>
-    <string name="receipts_section_description">Deze instellingen gelden voor uw huidige profiel</string>
+    <string name="these_settings_are_for_your_current_profile">Deze instellingen gelden voor uw huidige profiel</string>
     <string name="receipts_contacts_disable_keep_overrides">Uitschakelen (overschrijvingen behouden)</string>
     <string name="receipts_contacts_enable_for_all">Inschakelen voor iedereen</string>
     <string name="receipts_contacts_enable_keep_overrides">Inschakelen (overschrijvingen behouden)</string>

@@ -1454,7 +1454,7 @@ server test step */
 "Contact preferences" = "Kişi tercihleri";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Gruplardan gelen iletişim talepleri";
+"Contact requests in groups" = "Gruplardan gelen iletişim talepleri";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "kişi kabul etmeli…";
@@ -5464,9 +5464,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Bu ayar, geçerli sohbet profiliniz **%@** deki mesajlara uygulanır.";
-
-/* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Bu ayar, mevcut profiliniz içindir.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Kaybolma süresi yalnızca yeni kişiler için ayarlanır.";

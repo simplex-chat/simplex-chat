@@ -1204,7 +1204,7 @@
     <string name="lock_not_enabled">SimpleX Kilit aktif değil!</string>
     <string name="chat_lock">SimpleX Kilit</string>
     <string name="connect_via_member_address_alert_title">Doğrudan bağlanılsın mı?</string>
-    <string name="receipts_section_description">Bu ayarlar mevcut profiliniz içindir</string>
+    <string name="these_settings_are_for_your_current_profile">Bu ayarlar mevcut profiliniz içindir</string>
     <string name="smp_servers_test_failed">Sunucu testi başarısız!</string>
     <string name="verify_connection">Bağlantıyı onayla</string>
     <string name="add_contact_or_create_group">Yeni sohbet başlat</string>

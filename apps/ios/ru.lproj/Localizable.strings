@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Предпочтения контакта";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Запросы на соединение из групп";
+"Contact requests in groups" = "Запросы на соединение из групп";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "контакт должен принять…";
@@ -6387,9 +6387,6 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Эта настройка применяется к сообщениям в Вашем текущем профиле чата **%@**.";
-
-/* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Эта настройка применяется к Вашему текущему профилю чата **%@**.";
 
 /* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "Это SimpleX имя не зарегистрировано. Пожалуйста, проверьте имя.";

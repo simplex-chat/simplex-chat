@@ -13,15 +13,45 @@ from enum import StrEnum
 from typing import Any, TypedDict
 
 from . import _native
-from .types import T, CR, CEvt
+from .types import CR, CEvt, T
 
 
-class ChatAPIError(Exception):
+class ChatError(Exception):
+    """Base class for every failure of a chat command.
+
+    Catch this for both `ChatAPIError` and `api.ChatCommandError`.
+    """
+
+
+class ChatAPIError(ChatError):
     """Raised when chat_send_cmd / chat_recv_msg_wait returns a chat error."""
 
     def __init__(self, message: str, chat_error: T.ChatError | None = None):
         super().__init__(message)
         self.chat_error = chat_error
+
+    @property
+    def error_type(self) -> str | None:
+        """Tag of the nested `errorType`, e.g. `noActiveUser`, or None."""
+        return self._nested("errorType").get("type")
+
+    @property
+    def store_error_type(self) -> str | None:
+        """Tag of the nested `storeError`, e.g. `duplicateName`, or None."""
+        return self._nested("storeError").get("type")
+
+    @property
+    def command_error(self) -> str | None:
+        """What the core says the caller did wrong, or None.
+
+        The only part of a `commandError` worth reading: the tag says nothing.
+        """
+        error = self._nested("errorType")
+        return error.get("message") if error.get("type") == "commandError" else None
+
+    def _nested(self, key: str) -> dict[str, Any]:
+        nested = (self.chat_error or {}).get(key)  # type: ignore[attr-defined]
+        return nested if isinstance(nested, dict) else {}
 
 
 class ChatInitError(Exception):

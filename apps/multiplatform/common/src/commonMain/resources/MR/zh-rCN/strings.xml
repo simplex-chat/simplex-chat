@@ -1344,7 +1344,7 @@
     <string name="connect_via_member_address_alert_desc">连接请求将发送给该群成员。</string>
     <string name="settings_is_storing_in_clear_text">密码以明文形式存储在设置中。</string>
     <string name="error_synchronizing_connection">同步连接时出错</string>
-    <string name="receipts_section_description">这些设置适用于你当前的个人资料</string>
+    <string name="these_settings_are_for_your_current_profile">这些设置适用于你当前的个人资料</string>
     <string name="snd_conn_event_ratchet_sync_allowed">允许为 %s 重新协商加密</string>
     <string name="receipts_contacts_enable_for_all">为所有人启用</string>
     <string name="conn_event_ratchet_sync_required">需要重新协商加密</string>

@@ -233,7 +233,8 @@ actual fun getFileName(uri: URI): String? {
       val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
       cursor.moveToFirst()
       // Can make an exception
-      cursor.getString(nameIndex)
+      // the provider controls this value, and callers use it as a bare file name
+      cursor.getString(nameIndex)?.let { File(it).name }
     }
   } catch (e: Exception) {
     null
@@ -340,6 +341,19 @@ actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolea
 
     VideoPlayerInterface.PreviewAndDuration(null, 0, 0)
   }
+
+actual suspend fun hasVideoTrack(uri: URI): Boolean {
+  val mmr = MediaMetadataRetriever()
+  return try {
+    mmr.setDataSource(androidAppContext, uri.toUri())
+    mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+  } catch (e: Exception) {
+    Log.e(TAG, "Utils.android hasVideoTrack error: ${e.message}")
+    false
+  } finally {
+    mmr.release()
+  }
+}
 
 actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encodeToString(this, Base64.DEFAULT)
 

@@ -1416,7 +1416,7 @@ server test step */
 "Contact preferences" = "Preferencje kontaktu";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Prośby o kontakt od grup";
+"Contact requests in groups" = "Prośby o kontakt od grup";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "kontakt powinien zaakceptować…";
@@ -5505,9 +5505,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "To ustawienie dotyczy wiadomości Twojego bieżącego profilu czatu **%@**.";
-
-/* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "To ustawienie jest dla Twojego obecnego profilu **%@**.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Czas zniknięcia jest ustawiony tylko dla nowych kontaktów.";

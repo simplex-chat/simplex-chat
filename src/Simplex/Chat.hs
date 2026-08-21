@@ -137,6 +137,7 @@ defaultChatConfig =
       relayRequestExpiry = (10, nominalDay),
       deviceNameForRemote = "",
       remoteCompression = True,
+      updateGroupLinksFromApp = False,
       chatHooks = defaultChatHooks
     }
 

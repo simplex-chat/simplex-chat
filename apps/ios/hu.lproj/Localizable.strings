@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Partnerbeállítások";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Partneri kapcsolatkérések a csoportokból";
+"Contact requests in groups" = "Partneri kapcsolatkérések a csoportokból";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "a partnernek el kell fogadnia…";
@@ -6387,9 +6387,6 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Ez a beállítás csak az Ön jelenlegi **%@** nevű csevegési profiljában lévő üzenetekre vonatkozik.";
-
-/* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Ez a beállítás csak a jelenlegi **%@** nevű csevegési profiljára vonatkozik.";
 
 /* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "Ez a SimpleX-név nincs regisztrálva. Ellenőrizze a nevet.";

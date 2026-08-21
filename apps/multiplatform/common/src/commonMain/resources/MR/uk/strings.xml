@@ -1271,7 +1271,7 @@
     <string name="abort_switch_receiving_address_confirm">Скасувати</string>
     <string name="choose_file_title">Виберіть файл</string>
     <string name="receipts_section_contacts">Контакти</string>
-    <string name="receipts_section_description">Ці налаштування стосуються вашого поточного профілю</string>
+    <string name="these_settings_are_for_your_current_profile">Ці налаштування стосуються вашого поточного профілю</string>
     <string name="receipts_contacts_title_disable">Вимкнути повідомлення про доставку?</string>
     <string name="receipts_contacts_title_enable">Увімкнути повідомлення про доставку?</string>
     <string name="conn_event_ratchet_sync_allowed">можлива перезапис шифрування</string>

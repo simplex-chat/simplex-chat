@@ -1201,7 +1201,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               case cReq of
                 CRContactUri crData@ConnReqUriData {crClientData} e2e -> do
                   let pqSup = PQSupportOff
-                  lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+                  lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
                     Nothing -> throwChatError CEInvalidConnReq
                     Just _ -> do
                       let chatV = initialChatVersion
@@ -2618,24 +2618,35 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId, memberId = membershipMemId} = membership
-            if sameGroupLinkId groupLinkId groupLinkId'
-              then do
-                subMode <- chatReadVar subscriptionMode
-                dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-                connIds@(cmdId, acId) <- prepareAgentJoin user Nothing True connRequest
-                withStore' $ \db -> do
-                  setViaGroupLinkUri db groupId connId
-                  createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
-                  updateGroupMemberStatusById db userId hostId GSMemAccepted
-                  updateGroupMemberStatus db userId membership GSMemAccepted
-                joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
-                toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
-              else do
-                let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
-                (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
-                withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
-                toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
-                toView $ CEvtReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
+                -- hostContact is only reported for group links, where the client replaces
+                -- the transient host connection view with the group and removes its chat
+                joinGroupAsync hostContact_ sameLink = do
+                  subMode <- chatReadVar subscriptionMode
+                  dm <- encodeConnInfo $ XGrpAcpt membershipMemId
+                  connIds@(cmdId, acId) <- prepareAgentJoin user Nothing True connRequest
+                  withStore' $ \db -> do
+                    when sameLink $ setViaGroupLinkUri db groupId connId
+                    createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
+                    updateGroupMemberStatusById db userId hostId GSMemAccepted
+                    updateGroupMemberStatus db userId membership GSMemAccepted
+                  joinAgentConnectionAsync cmdId False acId True connRequest dm subMode
+                  toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} hostContact_
+                createInvitationItem invStatus = do
+                  let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = invStatus}) memRole
+                  (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
+                  withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
+                  toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
+            if
+              | sameGroupLinkId groupLinkId groupLinkId' ->
+                  joinGroupAsync (Just ct) True
+              | isTrue (autoAcceptGroupInvitations user) ->
+                  -- a resent invitation returns the existing group, so only join while still invited
+                  when (memberStatus membership == GSMemInvited) $ do
+                    joinGroupAsync Nothing False
+                    createInvitationItem CIGISAccepted
+              | otherwise -> do
+                  createInvitationItem CIGISPending
+                  toView $ CEvtReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
       where
         GroupInvitation {groupProfile = GroupProfile {publicGroup}} = inv
         brokerTs = metaBrokerTs msgMeta
@@ -3707,7 +3718,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
               -- in channels, link data is updated by the owner making the change in runUpdateGroupProfile;
               -- other owners receiving the update do not refresh the same link
-              unless (useRelays' g'') $
+              ChatConfig {updateGroupLinksFromApp} <- asks config
+              unless (useRelays' g'' || updateGroupLinksFromApp) $
                 void $ forkIO $ void $ setGroupLinkData' NRMBackground user g''
             Just _ -> updateGroupPrefs_ msgSigned g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           -- relay advertises its web capability now that the owner's version is known (bumped by saveGroupRcvMsg)

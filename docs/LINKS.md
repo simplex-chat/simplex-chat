@@ -1,5 +1,19 @@
 # Links to Community Publications
 
+## SimpleX Chat Wants Its 400K+ Users to Become Investors Too
+
+It's FOSS
+
+Article
+
+Image: itsfoss-simplex-crowdfunding.webp
+
+Language: English
+
+Date: Aug 14, 2026
+
+https://itsfoss.com/news/simplex-chat-investment-drive/
+
 ## SimpleX Chat: Private Monero Communities — and Now a Chance to Invest
 
 Monerica
@@ -15,6 +29,22 @@ Language: English
 Date: Aug 10, 2026
 
 https://blog.monerica.com/articles/simplex-chat-private-monero-communities
+
+## Web3 Summit Talk: "SimpleX Community Credits: Making Privacy Profitable"
+
+SimpleX Chat
+
+Conference talk, Video
+
+Alain Brenzikofer presents our design for Community Credits at Web3 Summit – a payment solution for private infrastructure payments on SimpleX network. See the whitepaper at: https://simplex.chat/credits/whitepaper.pdf
+
+Image: simplex-web3-summit-talk.jpg
+
+Language: English
+
+Date: Jul 2026
+
+https://www.youtube.com/watch?v=UhW8AuoRgxg
 
 ## SimpleX Chat: Product Showcase - Removing User Identifiers From Messaging
 

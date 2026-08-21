@@ -1290,7 +1290,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">L\'invio delle ricevute di consegna sarà attivo per tutti i contatti in tutti i profili di chat visibili.</string>
     <string name="receipts_contacts_override_disabled">L\'invio di ricevute è disattivato per %d contatti</string>
     <string name="sync_connection_force_desc">La crittografia funziona e il nuovo accordo sulla crittografia non è richiesto. Potrebbero verificarsi errori di connessione!</string>
-    <string name="receipts_section_description">Queste impostazioni sono per il tuo profilo attuale</string>
+    <string name="these_settings_are_for_your_current_profile">Queste impostazioni sono per il tuo profilo attuale</string>
     <string name="receipts_section_description_1">Possono essere sovrascritte nelle impostazioni dei contatti e dei gruppi.</string>
     <string name="receipts_contacts_enable_for_all">Attiva per tutti</string>
     <string name="receipts_contacts_enable_keep_overrides">Attiva (mantieni sostituzioni)</string>
@@ -2916,7 +2916,7 @@
     <string name="signature_missing_alert_desc">Il canale ha richiesto di firmare questo messaggio, ma la firma non è presente.</string>
     <string name="channel_simplex_name">Nome SimpleX per il canale</string>
     <string name="get_simplex_name_beta">Ottieni nome SimpleX (BETA)</string>
-    <string name="register_test_name">Registra un nome di prova</string>
+    <string name="register_test_name">Come registrare un nome di prova</string>
     <string name="remove_name">Rimuovi nome</string>
     <string name="save_simplex_name_question">Salvare il nome SimpleX?</string>
     <string name="to_verify_channel_member_key">Per verificare le chiavi con questo iscritto, confrontate (o scansionate) il codice sui vostri dispositivi.</string>

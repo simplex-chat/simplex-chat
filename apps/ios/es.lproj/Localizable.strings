@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Preferencias de contacto";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Solicitudes de contacto en grupo";
+"Contact requests in groups" = "Solicitudes de contacto en grupo";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "el contacto debe aceptarte…";
@@ -6387,9 +6387,6 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Esta configuración se aplica a los mensajes del perfil actual **%@**.";
-
-/* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Esta configuración se aplica al perfil actual **%@**.";
 
 /* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "El nombre SimpleX no está registrado. Por favor, comprueba el nombre.";

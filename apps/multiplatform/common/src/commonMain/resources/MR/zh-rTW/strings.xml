@@ -2444,7 +2444,7 @@
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">未使用 Tor 或 VPN 時，你的 IP 地址會對檔案伺服器可見。</string>
     <string name="sanitize_links_toggle">移除連結追蹤</string>
     <string name="this_setting_is_for_your_current_profile">此設定適用於你目前的個人檔案</string>
-    <string name="receipts_section_description">這些設定適用於你目前的個人檔案</string>
+    <string name="these_settings_are_for_your_current_profile">這些設定適用於你目前的個人檔案</string>
     <string name="receipts_section_description_1">可在聯絡人和群組設定中覆寫這些設定。</string>
     <string name="receipts_contacts_override_enabled">已為 %d 個聯絡人啟用送達回條</string>
     <string name="receipts_contacts_override_disabled">已為 %d 個聯絡人停用送達回條</string>

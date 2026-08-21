@@ -481,7 +481,7 @@
     <string name="enter_correct_passphrase">Въведи правилна парола.</string>
     <string name="feature_enabled_for_you">активирано за вас</string>
     <string name="enter_password_to_show">Въведи парола в търсенето</string>
-    <string name="receipts_section_description">Тези настройки са за текущия ви профил</string>
+    <string name="these_settings_are_for_your_current_profile">Тези настройки са за текущия ви профил</string>
     <string name="receipts_section_description_1">Те могат да бъдат променени в настройките за всеки контакт и група.</string>
     <string name="settings_developer_tools">Инструменти за разработчици</string>
     <string name="receipts_contacts_disable_for_all">Деактивиране за всички</string>

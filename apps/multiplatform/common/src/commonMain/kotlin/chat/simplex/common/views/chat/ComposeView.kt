@@ -285,7 +285,22 @@ expect fun AttachmentSelection(
 )
 
 fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
-  val groups = uris.groupBy { isImage(it) || isVideoUri(it) }
+  // The extension is enough to classify every format except .webm, which is just as commonly an
+  // audio-only container as a video one. An audio-only file has no frame to embed and is sent as a file,
+  // but that can only be told from the content, so reading it is deferred to a background thread.
+  // Only done here, where files arrive without the user saying how to send them (drag & drop, paste) -
+  // an explicitly picked video is still sent as one.
+  if (uris.none { isWebmUri(it) }) {
+    attachFiles(uris, emptySet())
+  } else {
+    CoroutineScope(Dispatchers.IO).launch {
+      attachFiles(uris, uris.filter { isWebmUri(it) && hasVideoTrack(it) }.toSet())
+    }
+  }
+}
+
+private fun MutableState<ComposeState>.attachFiles(uris: List<URI>, webmVideos: Set<URI>) {
+  val groups = uris.groupBy { isImage(it) || (isVideoUri(it) && (!isWebmUri(it) || it in webmVideos)) }
   val media = groups[true] ?: emptyList()
   val files = groups[false] ?: emptyList()
   if (media.isNotEmpty()) {
@@ -298,8 +313,11 @@ fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
 private fun isVideoUri(uri: URI): Boolean {
   val name = getFileName(uri)?.lowercase() ?: return false
   return name.endsWith(".mov") || name.endsWith(".avi") || name.endsWith(".mp4") ||
-      name.endsWith(".mpg") || name.endsWith(".mpeg") || name.endsWith(".mkv")
+      name.endsWith(".mpg") || name.endsWith(".mpeg") || name.endsWith(".mkv") ||
+      name.endsWith(".webm")
 }
+
+private fun isWebmUri(uri: URI): Boolean = getFileName(uri)?.lowercase()?.endsWith(".webm") == true
 
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {

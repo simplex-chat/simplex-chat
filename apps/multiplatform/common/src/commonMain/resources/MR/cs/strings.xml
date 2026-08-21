@@ -1246,7 +1246,7 @@
     <string name="snd_conn_event_ratchet_sync_required">vyžadováno opětovné vyjednávání šifrování pro %s</string>
     <string name="receipts_contacts_override_disabled">Odesílání potvrzení o doručení je vypnuto pro %d kontakty.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Odesílání potvrzení o doručení bude povoleno pro všechny kontakty ve všech viditelných profilech chatu.</string>
-    <string name="receipts_section_description">Toto nastavení je pro váš aktuální profil</string>
+    <string name="these_settings_are_for_your_current_profile">Toto nastavení je pro váš aktuální profil</string>
     <string name="conn_event_ratchet_sync_allowed">opětovné vyjednávání šifrování povoleno</string>
     <string name="snd_conn_event_ratchet_sync_allowed">opětovné vyjednávání šifrování povoleno pro %s</string>
     <string name="conn_event_ratchet_sync_required">vyžadováno opětovné vyjednávání šifrování</string>

@@ -1607,7 +1607,7 @@
     <string name="onboarding_network_operators_continue">Ievada tīkla operatori turpināt</string>
     <string name="incoming_video_call">Ienākošais video zvans</string>
     <string name="incoming_audio_call">Ienākošais audio zvans</string>
-    <string name="receipts_section_description">Čeki</string>
+    <string name="these_settings_are_for_your_current_profile">Čeki</string>
     <string name="receipts_section_description_1">Čeku apraksts 1</string>
     <string name="receipts_section_contacts">Čeku kontakti</string>
     <string name="receipts_contacts_title_enable">Čeku kontakti iespējot</string>

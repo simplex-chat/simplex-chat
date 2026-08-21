@@ -1475,7 +1475,7 @@
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet kivonata különbözik.</string>
-    <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
+    <string name="these_settings_are_for_your_current_profile">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információkat a <font color="#0088ff">GitHub-tárolónkban</font> talál.]]></string>
     <string name="error_showing_content">Hiba történt a tartalom megjelenítésekor</string>
@@ -2881,7 +2881,7 @@
     <string name="signature_missing_alert_desc">A csatorna megköveteli az üzenet aláírását, de az hiányzik.</string>
     <string name="channel_simplex_name">Csatorna SimpleX-neve</string>
     <string name="get_simplex_name_beta">SimpleX-név beszerzése (béta)</string>
-    <string name="register_test_name">Egy név regisztrálása tesztelési céllal</string>
+    <string name="register_test_name">Útmutató egy név regisztrálásához tesztelési céllal</string>
     <string name="remove_name">Név eltávolítása</string>
     <string name="save_simplex_name_question">Menti a SimpleX-nevet?</string>
     <string name="to_verify_channel_member_key">A kulcsok ellenőrzéséhez ezzel a feliratkozóval hasonlítsa össze (vagy olvassa be) az eszközökön található kódot.</string>
