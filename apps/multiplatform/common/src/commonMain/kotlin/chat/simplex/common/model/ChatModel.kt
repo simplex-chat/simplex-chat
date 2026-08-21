@@ -363,6 +363,13 @@ object ChatModel {
     }
   }
 
+  suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    activeCtx.addChatItem(rhId, cInfo, cItem)
+    if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
+      chatsContext.addChatItem(rhId, cInfo, cItem)
+    }
+  }
+
   // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
@@ -1821,6 +1828,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val isChannel: Boolean
     get() = groupInfo_?.useRelays == true
+
+  val inMainChatList: Boolean
+    get() = groupChatScope() == null || groupInfo_?.membership?.memberPending == true
 }
 
 @Serializable

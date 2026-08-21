@@ -70,6 +70,44 @@ This is a byte-for-byte revert of the unintended part of `b97e1e0f1`, with the
 feature's guard preserved. `chats[i]` get/set is the established idiom used at nine
 other sites in the same class.
 
+## The revert alone would break #5909
+
+A pending invitee's own **sent** support message reaches only the **active** context —
+`ComposeView` send/forward and `FramedItemView` command-send all call
+`chatsCtx.addChatItem`, and in a member-support chat `chatsCtx` is the *secondary*
+context. Before this change that call wrote `chatsContext.chats[i]`, i.e. the primary
+list, so the group's main-list preview did update — but only as a side effect of the
+bug, at whatever index happened to line up.
+
+Reverting the four sites therefore removes it: the secondary updates its own list and
+the primary is never touched, so the invitee's sent support messages stop appearing as
+the group's preview. Confirmed by testing during review.
+
+So the revert is paired with an explicit dispatch, which does the same thing on purpose
+and at the right index:
+
+```kotlin
+suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+  activeCtx.addChatItem(rhId, cInfo, cItem)
+  if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
+    chatsContext.addChatItem(rhId, cInfo, cItem)
+  }
+}
+```
+
+`ChatInfo.inMainChatList` (`groupChatScope() == null || membership.memberPending`) is
+the same rule `addChatItem` already applies to decide whether an item updates the main
+list preview, now named once instead of spelled out.
+
+Cross-context dispatch stays with the **caller**, matching how `processReceivedMsg`
+hands received items to both contexts and how `ChatView` handles deletes. No
+`ChatsContext` method reaches into the other context — which is the invariant this
+whole fix restores.
+
+Passing the scoped `cInfo` to the primary is safe: `updateChatInfo` strips the scope
+before storing it, and `chatItemBelongsToScope` returns false in the primary context
+for a scoped `cInfo`, so the item never enters the primary item list.
+
 ## Why it is safe
 
 - Behaviour for the **primary** context is unchanged: `chats === chatsContext.chats`
