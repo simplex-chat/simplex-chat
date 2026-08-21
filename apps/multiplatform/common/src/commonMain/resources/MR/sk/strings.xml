@@ -270,7 +270,7 @@
     <string name="accept_pending_member_alert_confirmation_as_member">Prijať ako člena</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">Prijať ako pozorovateľa</string>
     <string name="accept_conditions">Prijať podmienky</string>
-    <string name="accept_connection_request__question">Prijať žiadosť o pripojenie?</string>
+    <string name="accept_connection_request__question">Prijať žiadosť o spojenie?</string>
     <string name="chat_banner_accept_contact_request">Prijať žiadosť o kontakt</string>
     <string name="accept_contact_request">Prijať žiadosť o kontakt</string>
     <string name="relay_status_accepted">prijaté</string>
@@ -1208,4 +1208,5 @@
     <string name="icon_descr_instant_notifications">Okamžité notifikácie</string>
     <string name="service_notifications">Okamžité notifikácie!</string>
     <string name="service_notifications_disabled">Okamžité notifikácie sú vypnuté!</string>
+    <string name="duplicates_label">duplikáty</string>
 </resources>
