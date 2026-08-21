@@ -15,11 +15,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-// Bounds an animated image must satisfy before the desktop chat holds decoded frames for it. They are checked
-// here as arithmetic, without a decoder: skiko's native library is not on the test runtime classpath, and
-// these numbers are the part that has to be right about a file composed by someone else.
-// Not covered here, and verified by hand against Skia instead: that a crafted file reports the dimensions it
-// declares, and that a real animation reports more than one frame.
+// The bounds an animated image must satisfy, checked as arithmetic: skiko's native library is not on the
+// test runtime classpath, and these numbers are the part that has to be right about someone else's file.
 class AnimatedImageBoundsTest {
   private val BYTES_PER_PIXEL = 4 // what a GIF or WebP decodes to
 
@@ -31,8 +28,7 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testHugeDeclaredDimensionsAreRejected() {
-    // 65535x65535 is a 17GB raster, and a GIF declaring it fits in 35 bytes. The side bound rejects it
-    // before anything is multiplied, which is also what keeps the product from wrapping.
+    // A 17GB raster, declared by a GIF of 35 bytes
     assertFalse(rasterWithinBounds(65535, 65535, BYTES_PER_PIXEL))
   }
 
@@ -47,7 +43,6 @@ class AnimatedImageBoundsTest {
     // Only 2.1MP, so the raster bound alone would animate this with a 65535-pixel scanline
     assertFalse(rasterWithinBounds(65535, 32, BYTES_PER_PIXEL))
     assertFalse(rasterWithinBounds(32, 65535, BYTES_PER_PIXEL))
-    // A banner-shaped animation is wide but sane on both counts, and keeps playing
     assertTrue(rasterWithinBounds(3000, 500, BYTES_PER_PIXEL))
     assertTrue(rasterWithinBounds(4096, 900, BYTES_PER_PIXEL))
   }
@@ -68,8 +63,7 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testWiderColorTypesCountAgainstTheSameBudget() {
-    // The file chooses its color type, so the bound counts bytes rather than assuming four per pixel: the
-    // 1920x1920 that fits at four bytes is twice the raster at eight
+    // The file chooses its color type, so the 1920x1920 that fits at four bytes is twice the raster at eight
     assertFalse(rasterWithinBounds(1920, 1920, 8))
     assertTrue(rasterWithinBounds(1357, 1357, 8))
     // A color type claiming no bytes per pixel would otherwise make any raster look free
@@ -87,7 +81,7 @@ class AnimatedImageBoundsTest {
   fun testPhotosNeverReachTheAnimationDecoder() {
     assertFalse(looksAnimatable(bytes(0x89, 'P'.code, 'N'.code, 'G'.code, 0x0D, 0x0A, 0x1A, 0x0A)))
     assertFalse(looksAnimatable(bytes(0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46)))
-    // A RIFF container that is not WebP - a wave file, say - is not an animation either
+    // A RIFF container that is not WebP, a wave file say
     assertFalse(looksAnimatable("RIFF????WAVEfmt ".toByteArray()))
   }
 
@@ -102,19 +96,17 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testPriorFrameIsReusedOnlyWhenTheBitmapHoldsIt() {
-    // The bitmap holds frame 4, which is what frame 5 continues
     assertEquals(4, priorFrame(5, 4))
-    // An older required frame is no longer in the bitmap, and Skia refuses a frame it did not ask for. This
-    // is also how a predecessor disposed to what came before it is skipped, as Skia never requires one.
+    // An older required frame is no longer in the bitmap, which is also how a predecessor disposed to what
+    // came before it is skipped, as Skia never requires one
     assertEquals(-1, priorFrame(5, 2))
     assertEquals(-1, priorFrame(5, -1))
-    // The first frame of a loop continues nothing, and -1 is both its required frame and no prior frame
+    // For the first frame, -1 is both its required frame and no prior frame
     assertEquals(-1, priorFrame(0, -1))
   }
 
   @Test
   fun testOnlyFilesSmallEnoughToScanAreWithinBounds() {
-    // Skia copies the whole file into native memory and scans it to count the frames
     assertTrue(fileSizeWithinBounds(0))
     // The largest animation in this repository
     assertTrue(fileSizeWithinBounds(6_013_354))
@@ -124,7 +116,6 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testOnlyAnimationsWorthHoldingFramesForAreWithinBounds() {
-    // No frames would spin the playback loop uncancellably, and one frame is a still image
     assertFalse(frameCountWithinBounds(0))
     assertFalse(frameCountWithinBounds(1))
     assertFalse(frameCountWithinBounds(-1))
@@ -137,10 +128,8 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testAnimationsThatRebuildNothingAreWithinBounds() {
-    // What every animation in this repository looks like: each frame continues the one before it, so the
-    // bitmap always holds what the codec asks for and nothing is ever rebuilt
+    // What a real animation looks like: each frame continues the one before it, so nothing is rebuilt
     assertTrue(rebuiltFramesWithinBounds(IntArray(5000) { it - 1 }))
-    // A frame that continues nothing starts a chain of its own
     assertTrue(rebuiltFramesWithinBounds(intArrayOf(-1, -1, -1)))
   }
 
@@ -152,8 +141,8 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testLongRebuiltChainsAreRejected() {
-    // Frames alternating their disposal make every other frame rebuild the whole chain before it, which Skia
-    // recurses through natively: 8000 frames of it overflows the stack and kills the app
+    // Alternating disposal makes every other frame rebuild the chain before it, which Skia recurses through:
+    // 8000 frames of that overflows the native stack and kills the app
     val alternating = IntArray(8000) { if (it % 2 == 0) it - 2 else it - 1 }
     assertFalse(rebuiltFramesWithinBounds(alternating))
     // The bound is on what a rebuild costs, not on how long the animation is
@@ -162,7 +151,6 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testRebuiltChainBoundIsExact() {
-    // A chain of exactly 64 rebuilt frames is allowed, 65 is not
     fun chainOf(length: Int) = IntArray(length + 2) { if (it == length + 1) it - 2 else it - 1 }
     assertTrue(rebuiltFramesWithinBounds(chainOf(64)))
     assertFalse(rebuiltFramesWithinBounds(chainOf(65)))
@@ -178,7 +166,6 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testAFrameCheaperThanItsDelayWaitsAsItAlwaysDid() {
-    // Every frame of a real animation, by three orders of magnitude
     assertEquals(70, frameWait(70, 0))
     assertEquals(70, frameWait(70, 2))
     assertEquals(70, frameWait(70, 70))
@@ -186,7 +173,6 @@ class AnimatedImageBoundsTest {
 
   @Test
   fun testAFrameDearerThanItsDelayIsWaitedOut() {
-    // Half a decoder thread at most, however expensive the frame
     assertEquals(85, frameWait(20, 85))
     assertEquals(500, frameWait(20, 500))
     assertEquals(1000, frameWait(20, 1000))
@@ -197,7 +183,6 @@ class AnimatedImageBoundsTest {
     // Wall time counts a machine that suspended mid-decode, which the frame never spent
     assertEquals(1000, frameWait(20, 30_000))
     assertEquals(1000, frameWait(20, 8L * 60 * 60 * 1000))
-    // A frame that asks for longer than the clamp still gets what it asks for
     assertEquals(5000, frameWait(5000, 30_000))
   }
 
@@ -234,7 +219,6 @@ class AnimatedImageBoundsTest {
     var debt = 0
     repeat(1000) { debt = slowFrameDebt(debt, tooSlow = false) }
     assertEquals(0, debt)
-    // A long cheap animation is no closer to stopping, and no further from it either
     debt = slowFrameDebt(debt, tooSlow = true)
     debt = slowFrameDebt(debt, tooSlow = true)
     assertTrue(debt >= MAX_SLOW_FRAME_DEBT)
@@ -245,7 +229,7 @@ class AnimatedImageBoundsTest {
     // Skia reports a GIF delay in milliseconds, so "no delay" and "one centisecond" arrive as 0 and 10
     assertEquals(100, frameDuration(0))
     assertEquals(100, frameDuration(10))
-    // Negative durations are not expected from Skia, but they are read from the file
+    // Not expected from Skia, but read from the file
     assertEquals(100, frameDuration(-1))
   }
 
