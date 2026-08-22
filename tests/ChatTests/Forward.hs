@@ -5,8 +5,10 @@ module ChatTests.Forward where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (concurrently_)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate)
 import qualified Data.Text as T
@@ -18,6 +20,9 @@ import Test.Hspec hiding (it)
 chatForwardTests :: SpecWith TestParams
 chatForwardTests = do
   describe "forward messages" $ do
+    it "from channel: the recipient receives the channel link" testForwardChannelToContact
+    it "from channel: the channel is known to the recipient" testForwardChannelKnownGroup
+    it "from channel: the link is removed when the destination group prohibits links" testForwardChannelLinkRemoved
     it "from contact to contact" testForwardContactToContact
     it "from contact to group" testForwardContactToGroup
     it "from contact to notes" testForwardContactToNotes
@@ -42,6 +47,101 @@ chatForwardTests = do
     it "from contact to contact" testForwardContactToContactMulti
     it "from group to group" testForwardGroupToGroupMulti
     it "with relative paths: multiple files from contact to contact" testMultiForwardFiles
+
+testForwardChannelToContact :: HasCallStack => TestParams -> IO ()
+testForwardChannelToContact ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          connectUsers cath dan
+          alice #> "#team hi"
+          bob <# "#team> hi"
+          cath <# "#team> hi [>>]"
+          threadDelay 1000000
+          -- the channel is not known to dan: the item includes the channel name and link
+          cath `send` "@dan <- #team hi"
+          cath <# "@dan <- #team"
+          cath <## "      hi"
+          dan <# "cath> <- #team"
+          dan <## "      hi"
+          -- forwarding the received item onwards sends the same link
+          connectUsers dan alice
+          dan `send` "@alice <- @cath hi"
+          dan <# "@alice <- #team"
+          dan <## "      hi"
+          alice <# "dan> <- #team"
+          alice <## "      hi"
+
+testForwardChannelKnownGroup :: HasCallStack => TestParams -> IO ()
+testForwardChannelKnownGroup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          connectUsers cath dan
+          alice #> "#team hi"
+          bob <# "#team> hi"
+          cath <# "#team> hi [>>]"
+          dan <# "#team> hi [>>]"
+          threadDelay 1000000
+          -- the channel is known to dan: the item references the local group
+          cath `send` "@dan <- #team hi"
+          cath <# "@dan <- #team"
+          cath <## "      hi"
+          dan <# "cath> <- #team"
+          dan <## "      hi"
+          -- forwarding onwards rebuilds the link from the local group
+          dan ##> "/c"
+          inv <- getInvitation dan
+          alice ##> ("/c " <> inv)
+          alice <## "confirmation sent!"
+          concurrently_
+            (alice <## "dan_1 (Daniel): contact is connected")
+            (dan <## "alice_1 (Alice): contact is connected")
+          dan `send` "@alice_1 <- @cath hi"
+          dan <# "@alice_1 <- #team"
+          dan <## "      hi"
+          alice <# "dan_1> <- #team"
+          alice <## "      hi"
+
+testForwardChannelLinkRemoved :: HasCallStack => TestParams -> IO ()
+testForwardChannelLinkRemoved ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          createGroup2 "club" cath dan
+          cath ##> "/set links #club off"
+          cath <## "updated group preferences:"
+          cath <## "SimpleX links: off"
+          dan <## "cath updated group #club:"
+          dan <## "updated group preferences:"
+          dan <## "SimpleX links: off"
+          alice #> "#team hi"
+          bob <# "#team> hi"
+          cath <# "#team> hi [>>]"
+          threadDelay 1000000
+          cath `send` "#club <- #team hi"
+          cath <# "#club <- #team"
+          cath <## "      hi"
+          -- the link and the simplex name are removed; the name text remains
+          dan <# "#club cath> <- #team"
+          dan <## "      hi"
+          -- forwarding the received item onwards sends no link
+          connectUsers dan alice
+          dan `send` "@alice <- #club hi"
+          dan <# "@alice <- #team"
+          dan <## "      hi"
+          alice <# "dan> -> forwarded"
+          alice <## "      hi"
 
 testForwardContactToContact :: HasCallStack => TestParams -> IO ()
 testForwardContactToContact =

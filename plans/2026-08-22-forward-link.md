@@ -69,7 +69,10 @@ data ForwardLink = ForwardLink
   as stored, without regard to local verification state - the recipient
   verifies it when tapping the name). `displayName` from `GroupProfile`. `msgId` = the item's
   `CIMeta.itemSharedMsgId`; if it is `Nothing`, omit the whole `ForwardLink`.
-- Local `ciff`: `CIFFGroup ... {chatLinkShared = BoolDef (isJust forwardLink_)}`.
+- Local `ciff`: `CIFFGroup ... {chatLinkShared = BoolDef linkShared}` where
+  `linkShared = sourcePublic gInfo && isJust itemSharedMsgId` - the same
+  condition under which `ciffForwardLink` later returns a link (the link value
+  is computed at the `mcForward` call site, after the `ciff` is built).
 - The two `mcForward` call sites - `sendContactContentMessages.prepareMsgs`
   (Commands.hs:4772) and `prepareGroupMsg` (Internal.hs:208-209), both matching
   `(Nothing, Just _) -> pure (mcForward mc, Nothing)` on
@@ -108,8 +111,11 @@ itemForwarded = case chatMsgEvent of
    with an existing query that filters on it (Store/Groups.hs:2009-2015). New
    query `getGroupInfoByPublicGroupId`; on a match, compare the received
    `groupLink` with the stored one (`sameShortLinkContact`); when both match ->
-   `CIFFGroup {groupId = Just gId, chatItemId = Nothing, chatLinkShared =
-   BoolDef True}`.
+   `CIFFGroup {groupId = Just gId, chatItemId = ciId_, chatLinkShared =
+   BoolDef True}`, where `ciId_` is resolved from the received `msgId` by
+   `shared_msg_id` in the group (`getGroupCIIdBySharedMsgId_`) - `CIFFGroup`
+   stores no wire `msgId`, so without this resolution forwarding such an item
+   again could not reconstruct the link.
 4. Lookup miss, or the link differs from the stored one -> `CIFFGroupLink`
    with the wire fields.
 
@@ -121,7 +127,8 @@ fwd_from_chat_item_id`, Store/Messages.hs:606). Migration (SQLite + Postgres,
 same shape) adds:
 
 - `fwd_chat_link_shared INTEGER` (0/1; NULL is read as false; `chatLinkShared`)
-- `fwd_from_group_link TEXT` (strEncoded ShortLinkContact)
+- `fwd_from_group_link BLOB/BYTEA` (the `ToField (ConnShortLink c)` instance
+  stores `Binary . strEncode`, matching `short_link_contact`)
 - `fwd_from_public_group_id BLOB/BYTEA`
 - `fwd_from_simplex_name TEXT`
 - `fwd_from_shared_msg_id BLOB/BYTEA`

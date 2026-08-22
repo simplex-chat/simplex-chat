@@ -49,7 +49,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..), SimplexDomain)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1319,13 +1319,15 @@ itemDeletedTs = \case
 data CIForwardedFrom
   = CIFFUnknown
   | CIFFContact {chatName :: Text, msgDir :: MsgDirection, contactId :: Maybe ContactId, chatItemId :: Maybe ChatItemId}
-  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId}
+  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId, chatLinkShared :: BoolDef}
+  | CIFFGroupLink {chatName :: Text, msgDir :: MsgDirection, groupLink :: ShortLinkContact, publicGroupId :: B64UrlByteString, simplexName :: Maybe (StrJSON "SimplexDomain" SimplexDomain), sharedMsgId :: SharedMsgId}
   deriving (Show)
 
 data CIForwardedFromTag
   = CIFFUnknown_
   | CIFFContact_
   | CIFFGroup_
+  | CIFFGroupLink_
 
 instance FromField CIForwardedFromTag where fromField = fromTextField_ textDecode
 
@@ -1336,11 +1338,13 @@ instance TextEncoding CIForwardedFromTag where
     "unknown" -> Just CIFFUnknown_
     "contact" -> Just CIFFContact_
     "group" -> Just CIFFGroup_
+    "groupLink" -> Just CIFFGroupLink_
     _ -> Nothing
   textEncode = \case
     CIFFUnknown_ -> "unknown"
     CIFFContact_ -> "contact"
     CIFFGroup_ -> "group"
+    CIFFGroupLink_ -> "groupLink"
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],

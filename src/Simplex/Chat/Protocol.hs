@@ -57,6 +57,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import qualified Simplex.FileTransfer.Description as FD
+import Simplex.Messaging.Agent.Protocol (SimplexDomain)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
 import qualified Simplex.Messaging.Crypto as C
@@ -688,7 +689,19 @@ data MsgContainer = MsgContainer
     asGroup :: Maybe Bool,
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
-    forward :: Maybe Bool
+    forward :: Maybe Bool,
+    forwardLink :: Maybe ForwardLink
+  }
+  deriving (Eq, Show)
+
+-- attribution of a message forwarded from a channel (public group)
+data ForwardLink = ForwardLink
+  { displayName :: Text,
+    groupLink :: ShortLinkContact,
+    -- the recipient looks up the local group by this id, then compares groupLink with the stored link
+    publicGroupId :: B64UrlByteString,
+    simplexName :: Maybe (StrJSON "SimplexDomain" SimplexDomain),
+    msgId :: SharedMsgId -- the original item's SharedMsgId
   }
   deriving (Eq, Show)
 
@@ -704,7 +717,8 @@ mcSimple content =
       asGroup = Nothing,
       quote = Nothing,
       parent = Nothing,
-      forward = Nothing
+      forward = Nothing,
+      forwardLink = Nothing
     }
 
 mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
@@ -713,8 +727,8 @@ mcQuote q c = (mcSimple c) {quote = Just q}
 mcComment :: MsgRef -> MsgContent -> MsgContainer
 mcComment p c = (mcSimple c) {parent = Just p}
 
-mcForward :: MsgContent -> MsgContainer
-mcForward c = (mcSimple c) {forward = Just True}
+mcForward :: Maybe ForwardLink -> MsgContent -> MsgContainer
+mcForward fl c = (mcSimple c) {forward = Just True, forwardLink = fl}
 
 data MsgContent
   = MCText {text :: Text}
@@ -895,6 +909,8 @@ instance ToJSON MsgContent where
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
     MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
+
+$(JQ.deriveJSON defaultJSON ''ForwardLink)
 
 $(JQ.deriveJSON defaultJSON ''MsgContainer)
 

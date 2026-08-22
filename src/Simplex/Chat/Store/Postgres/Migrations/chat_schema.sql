@@ -349,7 +349,12 @@ CREATE TABLE test_chat_schema.chat_items (
     item_msg_body bytea,
     item_chat_binding text,
     item_signatures bytea,
-    item_signed_by_group_member_id bigint
+    item_signed_by_group_member_id bigint,
+    fwd_chat_link_shared smallint,
+    fwd_from_group_link bytea,
+    fwd_from_public_group_id bytea,
+    fwd_from_simplex_name text,
+    fwd_from_shared_msg_id bytea
 );
 
 

@@ -1010,8 +1010,9 @@ forwardedFrom = \case
   CIFFUnknown -> ["-> forwarded"]
   CIFFContact c MDSnd _ _ -> ["<- you @" <> (plain . viewName) c]
   CIFFContact c MDRcv _ _ -> ["<- @" <> (plain . viewName) c]
-  CIFFGroup g MDSnd _ _ -> ["<- you #" <> (plain . viewName) g]
-  CIFFGroup g MDRcv _ _ -> ["<- #" <> (plain . viewName) g]
+  CIFFGroup g MDSnd _ _ _ -> ["<- you #" <> (plain . viewName) g]
+  CIFFGroup g MDRcv _ _ _ -> ["<- #" <> (plain . viewName) g]
+  CIFFGroupLink g _ _ _ simplexName_ _ -> ["<- #" <> (plain . viewName) g <> maybe "" (\n -> " (#" <> plain (fullDomainName $ unStrJSON n) <> ")") simplexName_]
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
 sentByMember GroupInfo {membership} = \case

@@ -3925,13 +3925,15 @@ enum class MsgDirection {
 sealed class CIForwardedFrom {
   @Serializable @SerialName("unknown") object Unknown: CIForwardedFrom()
   @Serializable @SerialName("contact") class Contact(override val chatName: String, val msgDir: MsgDirection, val contactId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
-  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
+  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null, val chatLinkShared: Boolean = false): CIForwardedFrom()
+  @Serializable @SerialName("groupLink") class GroupLink(override val chatName: String, val msgDir: MsgDirection, val groupLink: String, val publicGroupId: String, val simplexName: String? = null, val sharedMsgId: String): CIForwardedFrom()
 
   open val chatName: String
     get() = when (this) {
         Unknown -> ""
         is Contact -> chatName
         is Group -> chatName
+        is GroupLink -> chatName
       }
 
   val chatTypeApiIdMsgId: Triple<ChatType, Long, Long?>?
@@ -3939,7 +3941,12 @@ sealed class CIForwardedFrom {
       Unknown -> null
       is Contact -> if (contactId != null) Triple(ChatType.Direct, contactId, chatItemId) else null
       is Group -> if (groupId != null) Triple(ChatType.Group, groupId, chatItemId) else null
+      is GroupLink -> null
     }
+
+  // the link of the source channel of a forwarded message, for channels not known locally
+  val sourceGroupLink: String?
+    get() = if (this is GroupLink) groupLink else null
 
   fun text(chatType: ChatType): String =
     if (chatType == ChatType.Local) {
@@ -3949,7 +3956,14 @@ sealed class CIForwardedFrom {
         generalGetString(MR.strings.saved_from_description).format(chatName)
       }
     } else {
-      generalGetString(MR.strings.forwarded_description)
+      when (this) {
+        is Group -> generalGetString(MR.strings.forwarded_from_description).format(chatName)
+        // the name is the forwarder's claim, shown as plain text
+        is GroupLink ->
+          if (simplexName != null) generalGetString(MR.strings.forwarded_from_name_description).format(chatName, simplexName)
+          else generalGetString(MR.strings.forwarded_from_description).format(chatName)
+        else -> generalGetString(MR.strings.forwarded_description)
+      }
     }
 }
 
