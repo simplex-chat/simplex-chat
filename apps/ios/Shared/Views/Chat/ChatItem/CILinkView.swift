@@ -103,11 +103,20 @@ func showInvalidLinkAlert(_ uri: String, error: String? = nil) {
 
 func sanitizeUri(_ s: String) -> (url: (uri: URL, sanitizedUri: URL?)?, error: String?) {
     let parsed = parseSanitizeUri(s, safe: false)
-    return if let uri = URL(string: s), let uriInfo = parsed?.uriInfo {
-        (url: (uri: uri, sanitizedUri: uriInfo.sanitized.flatMap { URL(string: $0) }), error: nil)
+    return if let uri = urlForOpening(s), let uriInfo = parsed?.uriInfo {
+        (url: (uri: uri, sanitizedUri: uriInfo.sanitized.flatMap { urlForOpening($0) }), error: nil)
     } else {
         (url: nil, error: parsed?.parseError)
     }
+}
+
+// non-ASCII characters make a link an IRI, not a URI; on iOS < 17 URL(string:) rejects it.
+// Percent-encode the non-ASCII octets (RFC 3987) as a fallback. Identity for ASCII input.
+private func urlForOpening(_ s: String) -> URL? {
+    if let url = URL(string: s) { return url }
+    var allowed = CharacterSet()
+    allowed.insert(charactersIn: UnicodeScalar(UInt8(0)) ... UnicodeScalar(UInt8(127)))
+    return s.addingPercentEncoding(withAllowedCharacters: allowed).flatMap { URL(string: $0) }
 }
 
 struct LargeLinkPreview_Previews: PreviewProvider {
