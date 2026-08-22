@@ -1,0 +1,5 @@
+CREATE INDEX 'badge_invoices_offer_id' ON 'badge_invoices'('offer_id'); --> badge_offers(offer_id)
+CREATE INDEX 'badge_invoices_price_id' ON 'badge_invoices'('price_id'); --> badge_prices(price_id)
+CREATE INDEX 'badge_issuances_entry_id' ON 'badge_issuances'('entry_id'); --> badge_ledger(entry_id)
+CREATE INDEX 'badge_offers_price_id' ON 'badge_offers'('price_id'); --> badge_prices(price_id)
+CREATE INDEX 'users_shown_badge_id' ON 'users'('shown_badge_id'); --> badge_purchases(badge_purchase_id)
