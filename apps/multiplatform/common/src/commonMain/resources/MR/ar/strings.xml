@@ -2491,7 +2491,7 @@
     <string name="share_old_link_alert_button">شارك الرابط القديم</string>
     <string name="share_group_profile_via_link_alert_text">سيكون الرابط قصيراً، وسيتم مشاركة الملف التعريفي للمجموعة عبر الرابط.</string>
     <string name="upgrade_group_link">رقِّ رابط المجموعة</string>
-    <string name="settings_section_title_contact_requests_from_groups">طلبات التواصل من المجموعات</string>
+    <string name="settings_section_title_contact_requests_from_groups">طلبات التواصل في المجموعات</string>
     <string name="member_is_deleted_cant_accept_request">حُذف العضو - لا يمكن قبول الطلب</string>
     <string name="rcv_direct_event_group_inv_link_received">طُلب اتصال من المجموعة %1$s</string>
     <string name="this_setting_is_for_your_current_profile">هذا الإعداد لملف تعريفك الحالي</string>
@@ -2913,4 +2913,5 @@
     <string name="v7_0_simplex_names_descr">الأسماء العامة لقناتك أو لشركتك.</string>
     <string name="info_row_file_servers">خوادم الملفات</string>
     <string name="share_text_file_servers">خوادم الملفات: %s</string>
+    <string name="group_invitations">دعوات المجموعات</string>
 </resources>
