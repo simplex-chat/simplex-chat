@@ -208,7 +208,9 @@ prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowG
 prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
   (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of
     (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
-    (Nothing, Just _) -> pure (mcForward mc, Nothing)
+    (Nothing, Just ciff) -> do
+      fl_ <- liftIO $ ciffForwardLink db ciff
+      pure (mcForward fl_ mc, Nothing)
     (Just quotedItemId, Nothing) -> do
       CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
         getGroupCIWithReactions db user g quotedItemId
@@ -230,6 +232,20 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
     quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, Just m)
     quoteData ChatItem {chatDir = CIChannelRcv, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv Nothing, False, Nothing)
     quoteData _ _ = throwError SEInvalidQuote
+
+-- the attribution of a forwarded message is computed from the item's CIForwardedFrom,
+-- so a message forwarded again is attributed to the original source
+ciffForwardLink :: DB.Connection -> CIForwardedFrom -> IO (Maybe ForwardLink)
+ciffForwardLink db = \case
+  CIFFGroup {groupId = Just gId, chatItemId = Just ciId} ->
+    getGroupProfileById db gId >>= \case
+      Just GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink, publicGroupId}} -> do
+        msgId_ <- getChatItemSharedMsgId_ db ciId
+        pure $ (\msgId -> ForwardLink {displayName, groupLink, publicGroupId, msgId}) <$> msgId_
+      _ -> pure Nothing
+  CIFFGroupLink {chatName, groupLink, publicGroupId, sharedMsgId} ->
+    pure $ Just ForwardLink {displayName = chatName, groupLink, publicGroupId, msgId = sharedMsgId}
+  _ -> pure Nothing
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
 updatedMentionNames mc ft_ mentions = case ft_ of

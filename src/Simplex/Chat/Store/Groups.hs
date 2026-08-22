@@ -128,6 +128,8 @@ module Simplex.Chat.Store.Groups
     getRelayServedGroups,
     getRelayPublishableGroups,
     getRelayInactiveGroups,
+    getGroupViaPublicGroupId,
+    getGroupProfileById,
     createJoiningMember,
     getMemberJoinRequest,
     createJoiningMemberConnection,
@@ -2018,6 +2020,20 @@ getRelayPublishableGroups db User {userId, userContactId} =
   where
     toRow ((gId, pgId) :. accessRow) = (gId, pgId, toPublicGroupAccess accessRow)
 
+getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, Maybe ShortLinkContact))
+getGroupViaPublicGroupId db User {userId} publicGroupId =
+  maybeFirstRow id $
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, gp.group_link
+        FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        WHERE g.user_id = ? AND gp.public_group_id = ?
+        LIMIT 1
+      |]
+      (userId, publicGroupId)
+
 getRelayInactiveGroups :: DB.Connection -> StoreCxt -> User -> NominalDiffTime -> IO [GroupInfo]
 getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do
   currentTs <- getCurrentTime
@@ -2779,6 +2795,26 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             WHERE g.group_id = ?
           |]
             (Only groupId)
+    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
+      let publicGroupAccess = toPublicGroupAccess accessRow
+       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, groupPreferences, memberAdmission}
+
+getGroupProfileById :: DB.Connection -> GroupId -> IO (Maybe GroupProfile)
+getGroupProfileById db groupId =
+  maybeFirstRow toGroupProfile $
+    DB.query
+      db
+      [sql|
+        SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
+               gp.group_type, gp.group_link, gp.public_group_id,
+               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+               gp.preferences, gp.member_admission
+        FROM group_profiles gp
+        JOIN groups g ON gp.group_profile_id = g.group_profile_id
+        WHERE g.group_id = ?
+      |]
+      (Only groupId)
+  where
     toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
       let publicGroupAccess = toPublicGroupAccess accessRow
        in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, groupPreferences, memberAdmission}
