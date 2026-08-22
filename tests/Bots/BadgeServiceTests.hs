@@ -12,14 +12,17 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Exception (SomeException, finally, try)
+import Control.Exception (SomeException, evaluate, finally, try)
+import qualified Data.Aeson as J
 import Data.List (find)
 import Data.Maybe (fromJust, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime)
 import Data.Word (Word32)
+import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Service (BadgeCatalog (..), BadgeOffer (..), BadgePrice (..))
+import Simplex.Chat.Badges.Types (BadgeItemStatus (..), BadgeOfferId (..), OfferDiscount (..))
 import Simplex.Chat.Controller (ChatConfig)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
@@ -48,6 +51,8 @@ badgeServiceTests = do
   it "should seed the catalog idempotently and preserve a deprecated price" testBadgeServiceCatalogSeeding
   it "should price 3 months at 2x and 12 months at 6x the monthly price" testBadgeCatalogOfferTotal
   it "should fill total for every seeded offer" testBadgeCatalogTotalsFillsSeededOffers
+  it "should reject an offer with freeMonths >= months instead of wrapping" testBadgeCatalogOfferTotalRejectsBadFreeMonths
+  it "should encode BadgeItemStatus on the wire as active/deprecated/disabled" testBadgeItemStatusJsonWireFormat
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -193,6 +198,40 @@ testBadgeCatalogTotalsFillsSeededOffers _ps = do
   let BadgeCatalog {offers} = catalogTotals (defaultCatalog now)
   length offers `shouldBe` 4
   all (\BadgeOffer {total} -> isJust total) offers `shouldBe` True
+
+-- A Word8 subtraction of freeMonths from months is unsigned and unguarded: an offer with
+-- freeMonths >= months (a typo, a future repricing) would wrap silently
+-- (3 - 12 :: Word8 == 247) and hand out a wildly wrong charge. offerTotal must instead fail
+-- loudly, naming the offer, before it ever reaches that subtraction.
+testBadgeCatalogOfferTotalRejectsBadFreeMonths :: HasCallStack => TestParams -> IO ()
+testBadgeCatalogOfferTotalRejectsBadFreeMonths _ps = do
+  now <- getCurrentTime
+  let BadgeCatalog {prices} = defaultCatalog now
+      price@BadgePrice {priceId} = fromJust $ find (\BadgePrice {badgeType} -> badgeType == BTSupporter) prices
+      badOffer =
+        BadgeOffer
+          { offerId = BadgeOfferId "test-bad-offer-freeMonths-ge-months",
+            priceId = Just priceId,
+            months = 3,
+            discount = ODFreeMonths 12,
+            status = BISActive,
+            createdAt = now,
+            total = Nothing
+          }
+  result <- try (evaluate (offerTotal price (Just badOffer))) :: IO (Either SomeException CurrencyAmount)
+  case result of
+    Left _ -> pure ()
+    Right (CurrencyAmount total) ->
+      expectationFailure $ "offerTotal should reject freeMonths >= months, got: " <> show total
+
+-- BadgeItemStatus's JSON crosses the wire (BadgePrice/BadgeOffer.status), so pinning finding
+-- 2's TextEncoding-derived encoding to what the earlier TH-derived instance produced proves
+-- the change is invisible on the wire, not just asserted to be.
+testBadgeItemStatusJsonWireFormat :: HasCallStack => TestParams -> IO ()
+testBadgeItemStatusJsonWireFormat _ps = do
+  J.encode BISActive `shouldBe` "\"active\""
+  J.encode BISDeprecated `shouldBe` "\"deprecated\""
+  J.encode BISDisabled `shouldBe` "\"disabled\""
 
 #if defined(dbPostgres)
 runMigrationsToRun :: DBStore -> MigrationsToRun -> IO ()

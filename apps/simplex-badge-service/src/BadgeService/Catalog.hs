@@ -15,8 +15,10 @@ module BadgeService.Catalog
   )
 where
 
+import Control.Exception (evaluate)
+import Control.Monad (void)
 import Data.List (find)
-import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges (BadgeType (..))
@@ -129,10 +131,25 @@ defaultCatalog createdAt =
 offerTotal :: BadgePrice -> Maybe BadgeOffer -> CurrencyAmount
 offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} Nothing =
   CurrencyAmount monthPriceMinor
-offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} (Just BadgeOffer {months, discount}) =
+offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} (Just offer@BadgeOffer {months, discount}) =
   CurrencyAmount $ case discount of
-    ODFreeMonths freeMonths -> fromIntegral (months - freeMonths) * monthPriceMinor
+    ODFreeMonths freeMonths -> fromIntegral (chargeableMonths offer months freeMonths) * monthPriceMinor
     ODDiscount percent -> (fromIntegral months * monthPriceMinor * fromIntegral (100 - percent)) `div` 100
+
+-- | months - freeMonths, but only once it's known safe: a bare 'Word8' subtraction is
+-- unsigned and unguarded, so an offer seeded with freeMonths >= months (a typo, a future
+-- repricing, operator tooling) would silently wrap (3 - 12 :: Word8 == 247) and this
+-- money-computing module would hand out a wildly wrong charge without any sign anything
+-- went wrong. freeMonths >= months isn't a value to compute a (wrong) answer for at all —
+-- it charges for zero or a negative number of months, which isn't an offer — so this fails
+-- loudly and by name instead of ever reaching the subtraction.
+chargeableMonths :: BadgeOffer -> Word8 -> Word8 -> Word8
+chargeableMonths BadgeOffer {offerId = BadgeOfferId oid} months freeMonths
+  | freeMonths >= months =
+      error $
+        "offerTotal: offer " <> T.unpack oid <> " has freeMonths (" <> show freeMonths
+          <> ") >= months (" <> show months <> "), which is not a chargeable offer"
+  | otherwise = months - freeMonths
 
 -- | Fills every offer's 'total' (A2) with 'offerTotal' applied to that offer's pinned
 -- price. Overwrites unconditionally, so it is idempotent to call again. It is a total
@@ -152,13 +169,23 @@ catalogTotals BadgeCatalog {prices, offers} =
 -- service's own tables. Never updates or deletes an existing row: repricing appends a new
 -- price and deprecates the old one (UX §3) via B1's 'setPriceStatus', not a seed edit, so a
 -- price deprecated out from under a re-seed stays deprecated.
+--
+-- Validates every offer's total before writing anything: 'catalogTotals' forces
+-- 'chargeableMonths'' guard for each offer, so a catalog with a bad offer (freeMonths >=
+-- months) fails the service at startup, by name, instead of persisting a row that would
+-- only misprice a purchase later.
 seedCatalog :: DBStore -> IO ()
 seedCatalog st = do
   createdAt <- getCurrentTime
-  let BadgeCatalog {prices, offers} = defaultCatalog createdAt
+  let catalog@BadgeCatalog {prices, offers} = defaultCatalog createdAt
+      BadgeCatalog {offers = pricedOffers} = catalogTotals catalog
+  mapM_ forceTotal pricedOffers
   withTransaction st $ \db -> do
     mapM_ (insertPrice db) prices
     mapM_ (insertOffer db) offers
+  where
+    forceTotal BadgeOffer {total = Just (CurrencyAmount amount)} = void $ evaluate amount
+    forceTotal BadgeOffer {total = Nothing} = pure ()
 
 insertPrice :: DB.Connection -> BadgePrice -> IO ()
 insertPrice db BadgePrice {priceId = BadgePriceId pid, badgeType, monthPrice = CurrencyAmount amt, currency, status, createdAt} =
@@ -166,7 +193,7 @@ insertPrice db BadgePrice {priceId = BadgePriceId pid, badgeType, monthPrice = C
     db
     "INSERT INTO sx_badge_service_badge_prices (price_id, badge_type, month_price, currency, status, created_at) \
     \VALUES (?,?,?,?,?,?) ON CONFLICT (price_id) DO NOTHING"
-    (pid, textEncode badgeType, amt, currency, itemStatusText status, createdAt)
+    (pid, textEncode badgeType, amt, currency, textEncode status, createdAt)
 
 insertOffer :: DB.Connection -> BadgeOffer -> IO ()
 insertOffer db BadgeOffer {offerId = BadgeOfferId oid, priceId, months, discount, status, createdAt} =
@@ -174,18 +201,9 @@ insertOffer db BadgeOffer {offerId = BadgeOfferId oid, priceId, months, discount
     db
     "INSERT INTO sx_badge_service_badge_offers (offer_id, price_id, months, free_months, discount, status, created_at) \
     \VALUES (?,?,?,?,?,?,?) ON CONFLICT (offer_id) DO NOTHING"
-    (oid, unBadgePriceId <$> priceId, months, freeMonthsColumn, discountColumn, itemStatusText status, createdAt)
+    (oid, unBadgePriceId <$> priceId, months, freeMonthsColumn, discountColumn, textEncode status, createdAt)
   where
     unBadgePriceId (BadgePriceId pid) = pid
     (freeMonthsColumn, discountColumn) = case discount of
       ODFreeMonths freeMonths -> (Just freeMonths, Nothing :: Maybe Word8)
       ODDiscount percent -> (Nothing :: Maybe Word8, Just percent)
-
--- Not a TextEncoding instance: BadgeItemStatus has no wire representation of its own
--- outside JSON (see Badges/Types.hs), and this spelling only ever round-trips through the
--- column it is written to.
-itemStatusText :: BadgeItemStatus -> Text
-itemStatusText = \case
-  BISActive -> "active"
-  BISDeprecated -> "deprecated"
-  BISDisabled -> "disabled"

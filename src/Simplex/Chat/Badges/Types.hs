@@ -39,7 +39,7 @@ import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))
@@ -187,6 +187,32 @@ data UserBadgeState = UserBadgeState
     alert :: Maybe BadgeAlert
   }
 
+-- BadgeItemStatus crosses both the wire (BadgePrice/BadgeOffer JSON) and the
+-- badge_prices/badge_offers.status columns (A4's seedCatalog); TextEncoding is the single
+-- spelling both ToJSON/FromJSON and ToField/FromField derive from, so the two can't drift
+-- into two independent encodings of the same enum.
+instance TextEncoding BadgeItemStatus where
+  textEncode = \case
+    BISActive -> "active"
+    BISDeprecated -> "deprecated"
+    BISDisabled -> "disabled"
+  textDecode s = case s of
+    "active" -> Just BISActive
+    "deprecated" -> Just BISDeprecated
+    "disabled" -> Just BISDisabled
+    _ -> Nothing
+
+instance ToJSON BadgeItemStatus where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+instance FromJSON BadgeItemStatus where
+  parseJSON = textParseJSON "BadgeItemStatus"
+
+instance ToField BadgeItemStatus where toField = toField . textEncode
+
+instance FromField BadgeItemStatus where fromField = fromTextField_ textDecode
+
 -- DB column spelling for BadgePurchaseStatus: the type does not cross the wire, so this spelling
 -- is only ever read back from the badge_purchases.status column it was written to. The payment
 -- statuses of the same rows are PaymentService.Types' InvoiceStatus and PaymentStatus, which
@@ -216,7 +242,5 @@ instance ToField BadgePurchaseStatus where toField = toField . textEncode
 instance FromField BadgePurchaseStatus where fromField = fromTextField_ textDecode
 
 -- JSON
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "BIS") ''BadgeItemStatus)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "OD") ''OfferDiscount)

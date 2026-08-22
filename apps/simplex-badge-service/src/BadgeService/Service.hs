@@ -97,8 +97,9 @@ processQueuedRequests env = do
     handleServiceRequest cc u reqId reqData
 
 -- Seeded here, after migrations and before badgePostStartHook starts the bot: every start
--- of the service (and B8's operator subcommand, which calls seedCatalog the same way) must
--- see the catalog before it can serve a request.
+-- of the service must see the catalog before it can serve a request. B8's operator
+-- subcommand (not yet implemented) will need to call seedCatalog the same way, so operator
+-- tooling sees the same catalog.
 badgePreStartHook :: BadgeServiceOpts -> ChatController -> IO ()
 badgePreStartHook opts ChatController {config, chatStore} = do
   runBadgeServiceMigrations opts config chatStore
