@@ -128,7 +128,7 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | Step | Title | Deps | Status |
 |---|---|---|---|
 | A1 | Register the client badge migration, add `STRICT` | — | ☑ |
-| A2 | JSON instances for badge protocol types, and the offer `total` | — | ☐ |
+| A2 | JSON instances for badge protocol types, and the offer `total` | — | ☑ |
 | A3 | Service schema: `web_orders`, `codes`, `provider_events` | — | ☐ |
 | A4 | `Catalog.hs`: internal pricing, totals, seeding | A2, A5 | ☐ |
 | A5 | Cabal dependencies for the service | — | ☐ |

@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Badges.Service
   ( BadgeServiceRequest (..),
@@ -24,9 +26,11 @@ module Simplex.Chat.Badges.Service
     StatementDebitType (..),
   ) where
 
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
-import Data.Int (Int64)
+import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.TH as JQ
+import qualified Data.Aeson.Types as JT
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8, Word16, Word32)
@@ -35,6 +39,7 @@ import Simplex.Chat.Badges.Types
 import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Version (VersionScope)
 import Simplex.Messaging.Version.Internal (Version (..))
 
@@ -52,6 +57,7 @@ data BadgeServiceRequest = BadgeServiceRequest
     purchaseKey :: Maybe C.PublicKeyEd25519, -- optional for BSCGetBadgeCatalog, required for other commands
     request :: BadgeServiceCommand
   }
+  deriving (Show)
 
 data BadgeServiceCommand
   = BSCGetBadgeCatalog
@@ -77,6 +83,7 @@ data BadgeServiceCommand
         balance :: BadgeBalance
       }
   | BSCPauseBadge
+  deriving (Show)
 
 data BadgeUpgrade = BadgeUpgrade
   { fromPurchaseKey :: C.PublicKeyEd25519,
@@ -84,6 +91,7 @@ data BadgeUpgrade = BadgeUpgrade
     receiptSignature :: C.Signature 'C.Ed25519,
     balance :: BadgeBalance
   }
+  deriving (Show)
 
 data BadgeServiceResponse
   = BSPBadgeCatalog
@@ -105,6 +113,7 @@ data BadgeServiceResponse
         message :: Maybe Text,
         retryAfter :: Maybe Word32
       }
+  deriving (Show)
 
 data BadgeCatalog = BadgeCatalog
   { prices :: [BadgePrice],
@@ -128,7 +137,8 @@ data BadgeOffer = BadgeOffer
     months :: Word8,
     discount :: OfferDiscount,
     status :: BadgeItemStatus,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    total :: Maybe CurrencyAmount -- absent when the store layer hasn't computed totals yet (catalogTotals, A4); the service always fills it
   }
   deriving (Show)
 
@@ -160,7 +170,7 @@ data StatementEntryType = SECredit {credit :: StatementCreditType} | SEDebit {de
 
 data StatementCreditType
   = SCPayment {invoiceId :: Maybe InvoiceId} -- absent for store and code payments
-  | SCCharge {chargeId :: Int64}
+  | SCCharge {chargeId :: Text} -- subscription_charges.charge_id TEXT NOT NULL PRIMARY KEY
   | SCSupport
   | SCTransferIn {fromPurchaseKey :: C.PublicKeyEd25519}
   | SCOpening
@@ -244,3 +254,93 @@ instance ToJSON BadgeServiceErrorCode where
 
 instance FromJSON BadgeServiceErrorCode where
   parseJSON = textParseJSON "BadgeServiceErrorCode"
+
+-- JSON
+
+-- StatementCreditType/StatementDebitType are hand-written (not TH-derived) so that an unrecognised
+-- "type" decodes into SCUnknown/SDUnknown and re-encodes verbatim from the stored object, per
+-- docs/protocol/badges-rpc.md: "An unknown type is stored as received and decoded after an app upgrade."
+
+(.=?) :: ToJSON v => J.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+key .=? value = maybe id ((:) . (key .=)) value
+
+instance FromJSON StatementCreditType where
+  parseJSON (J.Object v) = do
+    tag <- v .: "type" :: JT.Parser Text
+    case tag of
+      "payment" -> SCPayment <$> v .:? "invoiceId"
+      "charge" -> SCCharge <$> v .: "chargeId"
+      "support" -> pure SCSupport
+      "transferIn" -> SCTransferIn <$> v .: "fromPurchaseKey"
+      "opening" -> pure SCOpening
+      _ -> pure $ SCUnknown tag v
+  parseJSON invalid = JT.prependFailure "bad StatementCreditType, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON StatementCreditType where
+  toJSON = \case
+    SCUnknown {json} -> J.Object json
+    SCPayment {invoiceId} -> J.object $ ("invoiceId" .=? invoiceId) ["type" .= ("payment" :: Text)]
+    SCCharge {chargeId} -> J.object ["type" .= ("charge" :: Text), "chargeId" .= chargeId]
+    SCSupport -> J.object ["type" .= ("support" :: Text)]
+    SCTransferIn {fromPurchaseKey} -> J.object ["type" .= ("transferIn" :: Text), "fromPurchaseKey" .= fromPurchaseKey]
+    SCOpening -> J.object ["type" .= ("opening" :: Text)]
+  toEncoding = \case
+    SCUnknown {json} -> JE.value $ J.Object json
+    SCPayment {invoiceId} -> J.pairs $ "type" .= ("payment" :: Text) <> maybe mempty ("invoiceId" .=) invoiceId
+    SCCharge {chargeId} -> J.pairs $ "type" .= ("charge" :: Text) <> "chargeId" .= chargeId
+    SCSupport -> J.pairs $ "type" .= ("support" :: Text)
+    SCTransferIn {fromPurchaseKey} -> J.pairs $ "type" .= ("transferIn" :: Text) <> "fromPurchaseKey" .= fromPurchaseKey
+    SCOpening -> J.pairs $ "type" .= ("opening" :: Text)
+
+instance FromJSON StatementDebitType where
+  parseJSON (J.Object v) = do
+    tag <- v .: "type" :: JT.Parser Text
+    case tag of
+      "refund" -> pure SDRefund
+      "upgrade" -> SDUpgrade <$> v .: "toPurchaseKey"
+      "transferOut" -> SDTransferOut <$> v .: "toPurchaseKey"
+      "support" -> pure SDSupport
+      "badge" -> pure SDBadge
+      "lapse" -> pure SDLapse
+      _ -> pure $ SDUnknown tag v
+  parseJSON invalid = JT.prependFailure "bad StatementDebitType, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON StatementDebitType where
+  toJSON = \case
+    SDUnknown {json} -> J.Object json
+    SDRefund -> J.object ["type" .= ("refund" :: Text)]
+    SDUpgrade {toPurchaseKey} -> J.object ["type" .= ("upgrade" :: Text), "toPurchaseKey" .= toPurchaseKey]
+    SDTransferOut {toPurchaseKey} -> J.object ["type" .= ("transferOut" :: Text), "toPurchaseKey" .= toPurchaseKey]
+    SDSupport -> J.object ["type" .= ("support" :: Text)]
+    SDBadge -> J.object ["type" .= ("badge" :: Text)]
+    SDLapse -> J.object ["type" .= ("lapse" :: Text)]
+  toEncoding = \case
+    SDUnknown {json} -> JE.value $ J.Object json
+    SDRefund -> J.pairs $ "type" .= ("refund" :: Text)
+    SDUpgrade {toPurchaseKey} -> J.pairs $ "type" .= ("upgrade" :: Text) <> "toPurchaseKey" .= toPurchaseKey
+    SDTransferOut {toPurchaseKey} -> J.pairs $ "type" .= ("transferOut" :: Text) <> "toPurchaseKey" .= toPurchaseKey
+    SDSupport -> J.pairs $ "type" .= ("support" :: Text)
+    SDBadge -> J.pairs $ "type" .= ("badge" :: Text)
+    SDLapse -> J.pairs $ "type" .= ("lapse" :: Text)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "SE") ''StatementEntryType)
+
+$(JQ.deriveJSON defaultJSON ''StatementEntry)
+
+$(JQ.deriveJSON defaultJSON ''BadgeBalance)
+
+$(JQ.deriveJSON defaultJSON ''BadgeStatement)
+
+$(JQ.deriveJSON defaultJSON ''BadgePrice)
+
+$(JQ.deriveJSON defaultJSON ''BadgeOffer)
+
+$(JQ.deriveJSON defaultJSON ''BadgeCatalog)
+
+$(JQ.deriveJSON defaultJSON ''BadgeUpgrade)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BSP") ''BadgeServiceResponse)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BSC") ''BadgeServiceCommand)
+
+$(JQ.deriveJSON defaultJSON ''BadgeServiceRequest)
