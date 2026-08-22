@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
+import System.FilePath ((</>))
 
 data BadgeServiceOpts = BadgeServiceOpts
   { coreOptions :: CoreChatOpts,
@@ -22,12 +23,21 @@ data BadgeServiceOpts = BadgeServiceOpts
     clientService :: Bool,
     noAddress :: Bool,
     runCLI :: Bool,
-    testing :: Bool
+    testing :: Bool,
+    configFile :: FilePath
   }
 
 badgeServiceOpts :: FilePath -> FilePath -> Parser BadgeServiceOpts
 badgeServiceOpts appDir defaultDbName = do
   coreOptions <- coreChatOptsP appDir defaultDbName
+  configFile <-
+    strOption
+      ( long "config"
+          <> metavar "FILE"
+          <> help "Path to the badge service deployment configuration (ini)"
+          <> value (appDir </> "badge_service.ini")
+          <> showDefault
+      )
   serviceName <-
     strOption
       ( long "service-name"
@@ -57,7 +67,8 @@ badgeServiceOpts appDir defaultDbName = do
         clientService,
         noAddress,
         runCLI,
-        testing = False
+        testing = False,
+        configFile
       }
 
 getBadgeServiceOpts :: FilePath -> FilePath -> IO BadgeServiceOpts

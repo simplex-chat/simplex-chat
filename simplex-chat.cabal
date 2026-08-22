@@ -417,6 +417,7 @@ executable simplex-badge-service
       StrictData
   other-modules:
       BadgeService.Catalog
+      BadgeService.Config
       BadgeService.Options
       BadgeService.Service
       BadgeService.Store.Migrate
@@ -431,6 +432,7 @@ executable simplex-badge-service
     , crypton ==0.34.*
     , directory ==1.3.*
     , file-embed ==0.0.15.*
+    , filepath ==1.4.*
     , http-client ==0.7.*
     , http-client-tls ==0.3.*
     , http-types ==0.12.*
@@ -693,6 +695,7 @@ test-suite simplex-chat-test
       API.Docs.Types
       API.TypeInfo
       BadgeService.Catalog
+      BadgeService.Config
       BadgeService.Options
       BadgeService.Service
       BadgeService.Store.Migrate

@@ -6,6 +6,7 @@
 module Bots.BadgeServiceTests where
 
 import BadgeService.Catalog (catalogTotals, defaultCatalog, offerTotal, seedCatalog)
+import BadgeService.Config (BadgeServiceConfig (..), readBadgeServiceConfig)
 import BadgeService.Options
 import BadgeService.Service
 import ChatClient
@@ -13,8 +14,11 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (SomeException, evaluate, finally, try)
+import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
-import Data.List (find)
+import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Char8 as BC
+import Data.List (find, isInfixOf)
 import Data.Maybe (fromJust, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
@@ -32,6 +36,8 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, createDBStore)
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..), BBSSecretKey (..), bbsKeyGen)
+import Simplex.Messaging.Encoding.String (strEncode)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
@@ -53,6 +59,16 @@ badgeServiceTests = do
   it "should fill total for every seeded offer" testBadgeCatalogTotalsFillsSeededOffers
   it "should reject an offer with freeMonths >= months instead of wrapping" testBadgeCatalogOfferTotalRejectsBadFreeMonths
   it "should encode BadgeItemStatus on the wire as active/deprecated/disabled" testBadgeItemStatusJsonWireFormat
+  it "should fail to start on a missing config file, naming the file" testBadgeServiceConfigMissingFile
+  it "should fail to start on an unparsable value, naming the key" testBadgeServiceConfigUnparsableValue
+  it "should fail to start on an unknown key in a known section" testBadgeServiceConfigUnknownKey
+  it "should fail to start on a missing [issuer] section" testBadgeServiceConfigMissingIssuerSection
+  it "should fail to start on a missing [codes] section" testBadgeServiceConfigMissingCodesSection
+  it "should fail to start on a half-configured [btcpay] section" testBadgeServiceConfigHalfConfiguredBtcPay
+  it "should fail to start on a half-configured [stripe] section" testBadgeServiceConfigHalfConfiguredStripe
+  it "should fail to start when a provider is configured without [web]" testBadgeServiceConfigProviderRequiresWeb
+  it "should start with just [issuer] and [codes], no provider section" testBadgeServiceConfigMinimalStarts
+  it "should start the service from a complete config with web and both providers" testBadgeServiceCompleteConfigStarts
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -77,12 +93,56 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} =
       clientService = True,
       noAddress = False,
       runCLI = False,
-      testing = True
+      testing = True,
+      configFile = badgeServiceConfigPath ps
     }
 
+badgeServiceConfigPath :: FilePath -> FilePath
+badgeServiceConfigPath tmpPath = tmpPath </> "badge_service.ini"
+
+-- Generates a real issuer key file (the two-line `badge keygen` output: "secret ..\npublic
+-- ..") and a real 32-byte code secret (base64-encoded), at fixed names under tmpPath. A6
+-- doesn't read either file's contents -- that's B3 and B4 -- but the harness must still hand
+-- every later step real files at real paths, per the config keys naming secrets as files.
+writeTestBadgeServiceSecrets :: FilePath -> IO (FilePath, FilePath)
+writeTestBadgeServiceSecrets tmpPath = do
+  let issuerKeyFile = tmpPath </> "badge-issuer.keys"
+      codeSecretFile = tmpPath </> "badge-code.secret"
+  Right (BBSPublicKey pk, BBSSecretKey sk) <- bbsKeyGen
+  writeFile issuerKeyFile $ "secret " <> BC.unpack (strEncode sk) <> "\npublic " <> BC.unpack (strEncode pk) <> "\n"
+  codeSecret <- getRandomBytes 32
+  writeFile codeSecretFile $ BC.unpack (B64.encode codeSecret) <> "\n"
+  pure (issuerKeyFile, codeSecretFile)
+
+issuerCodesIniLines :: FilePath -> FilePath -> [String]
+issuerCodesIniLines issuerKeyFile codeSecretFile =
+  [ "[issuer]",
+    "key_file = " <> issuerKeyFile,
+    "key_idx = 1",
+    "",
+    "[codes]",
+    "secret_file = " <> codeSecretFile,
+    "default_expiry_days = 365"
+  ]
+
+-- Writes a complete but minimal badge_service.ini (required sections only, no provider
+-- section) at the path mkBadgeServiceOpts points BadgeServiceOpts's configFile at. Provider
+-- sections are omitted until E2 and F1 add them.
+writeTestBadgeServiceConfig :: TestParams -> IO ()
+writeTestBadgeServiceConfig TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  writeFile (badgeServiceConfigPath tmpPath) $ unlines (issuerCodesIniLines issuerKeyFile codeSecretFile)
+
 withBadgeService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()) -> IO ()
-withBadgeService ps test = do
+withBadgeService ps = withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps)
+
+-- Shared by withBadgeService and testBadgeServiceCompleteConfigStarts: the two-phase startup
+-- dance (CreateMyAddress, then ShowMyAddress) is the same regardless of what the config looks
+-- like, as long as it's valid; writeConfig is what varies.
+withBadgeServiceConfig :: HasCallStack => TestParams -> IO () -> (TestCC -> String -> IO ()) -> IO ()
+withBadgeServiceConfig ps writeConfig test = do
   let opts = mkBadgeServiceOpts ps
+  writeConfig
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
   runBadgeService testCfg opts (pure ())
@@ -232,6 +292,173 @@ testBadgeItemStatusJsonWireFormat _ps = do
   J.encode BISActive `shouldBe` "\"active\""
   J.encode BISDeprecated `shouldBe` "\"deprecated\""
   J.encode BISDisabled `shouldBe` "\"disabled\""
+
+testBadgeServiceConfigMissingFile :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigMissingFile TestParams {tmpPath} = do
+  let path = tmpPath </> "missing.ini"
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` (path `isInfixOf`)
+
+testBadgeServiceConfigUnparsableValue :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigUnparsableValue TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "unparsable.ini"
+  writeFile path $
+    unlines
+      [ "[issuer]",
+        "key_file = " <> issuerKeyFile,
+        "key_idx = not-a-number",
+        "",
+        "[codes]",
+        "secret_file = " <> codeSecretFile,
+        "default_expiry_days = 365"
+      ]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("key_idx" `isInfixOf`)
+
+testBadgeServiceConfigUnknownKey :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigUnknownKey TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "unknown-key.ini"
+  writeFile path $
+    unlines $
+      issuerCodesIniLines issuerKeyFile codeSecretFile
+        ++ [ "",
+             "[web]",
+             "port = 8080",
+             "base_url = https://badges.example.org",
+             "support_contact = https://simplex.chat/contact",
+             "bogus_key = 1"
+           ]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("bogus_key" `isInfixOf`)
+
+testBadgeServiceConfigMissingIssuerSection :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigMissingIssuerSection TestParams {tmpPath} = do
+  (_issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "no-issuer.ini"
+  writeFile path $ unlines ["[codes]", "secret_file = " <> codeSecretFile, "default_expiry_days = 365"]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("[issuer]" `isInfixOf`)
+
+testBadgeServiceConfigMissingCodesSection :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigMissingCodesSection TestParams {tmpPath} = do
+  (issuerKeyFile, _codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "no-codes.ini"
+  writeFile path $ unlines ["[issuer]", "key_file = " <> issuerKeyFile, "key_idx = 1"]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("[codes]" `isInfixOf`)
+
+testBadgeServiceConfigHalfConfiguredBtcPay :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigHalfConfiguredBtcPay TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "half-btcpay.ini"
+  writeFile path $
+    unlines $
+      issuerCodesIniLines issuerKeyFile codeSecretFile
+        ++ [ "",
+             "[web]",
+             "port = 8080",
+             "base_url = https://badges.example.org",
+             "support_contact = https://simplex.chat/contact",
+             "",
+             "[btcpay]",
+             "url = https://btcpay.example.org",
+             "store_id = teststore"
+           ]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("btcpay" `isInfixOf`)
+
+testBadgeServiceConfigHalfConfiguredStripe :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigHalfConfiguredStripe TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let stripeKeyFile = tmpPath </> "stripe.key"
+      path = tmpPath </> "half-stripe.ini"
+  writeFile path $
+    unlines $
+      issuerCodesIniLines issuerKeyFile codeSecretFile
+        ++ [ "",
+             "[web]",
+             "port = 8080",
+             "base_url = https://badges.example.org",
+             "support_contact = https://simplex.chat/contact",
+             "",
+             "[stripe]",
+             "secret_key_file = " <> stripeKeyFile
+           ]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("stripe" `isInfixOf`)
+
+testBadgeServiceConfigProviderRequiresWeb :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigProviderRequiresWeb TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let apiKeyFile = tmpPath </> "btcpay-api.key"
+      webhookFile = tmpPath </> "btcpay-webhook.secret"
+      path = tmpPath </> "provider-no-web.ini"
+  writeFile apiKeyFile "api-key\n"
+  writeFile webhookFile "webhook-secret\n"
+  writeFile path $
+    unlines $
+      issuerCodesIniLines issuerKeyFile codeSecretFile
+        ++ [ "",
+             "[btcpay]",
+             "url = https://btcpay.example.org",
+             "store_id = teststore",
+             "api_key_file = " <> apiKeyFile,
+             "webhook_secret_file = " <> webhookFile
+           ]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("[web]" `isInfixOf`)
+
+testBadgeServiceConfigMinimalStarts :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigMinimalStarts TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "minimal.ini"
+  writeFile path $ unlines (issuerCodesIniLines issuerKeyFile codeSecretFile)
+  result <- readBadgeServiceConfig path
+  case result of
+    Right BadgeServiceConfig {web} -> web `shouldBe` Nothing
+    Left err -> expectationFailure $ "expected a minimal config to parse, got: " <> err
+
+-- Proves a fully populated ini -- issuer, codes, web and both providers -- starts the real
+-- service end to end, not just that readBadgeServiceConfig accepts it.
+testBadgeServiceCompleteConfigStarts :: HasCallStack => TestParams -> IO ()
+testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
+  withBadgeServiceConfig ps writeCompleteConfig $ \client bsLink -> do
+    let redeemReq =
+          "{\"version\":1,\"request\":{\"type\":\"purchaseBadge\",\"payment\":{\"type\":\"code\",\"code\":\"TEST-CODE\"}}}"
+    client ##> ("/_service_request 1 " <> bsLink <> " " <> redeemReq)
+    client <## "service response: {\"code\":\"unsupported_version\",\"type\":\"error\"}"
+  where
+    writeCompleteConfig = do
+      (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+      let apiKeyFile = tmpPath </> "btcpay-api.key"
+          btcWebhookFile = tmpPath </> "btcpay-webhook.secret"
+          stripeKeyFile = tmpPath </> "stripe.key"
+          stripeWebhookFile = tmpPath </> "stripe-webhook.secret"
+      writeFile apiKeyFile "btcpay-api-key\n"
+      writeFile btcWebhookFile "btcpay-webhook-secret\n"
+      writeFile stripeKeyFile "sk_test_123\n"
+      writeFile stripeWebhookFile "whsec_test_123\n"
+      writeFile (badgeServiceConfigPath tmpPath) $
+        unlines $
+          issuerCodesIniLines issuerKeyFile codeSecretFile
+            ++ [ "",
+                 "[web]",
+                 "port = 0",
+                 "base_url = https://badges.example.org",
+                 "support_contact = https://simplex.chat/contact",
+                 "",
+                 "[btcpay]",
+                 "url = https://btcpay.example.org",
+                 "store_id = teststore",
+                 "api_key_file = " <> apiKeyFile,
+                 "webhook_secret_file = " <> btcWebhookFile,
+                 "",
+                 "[stripe]",
+                 "secret_key_file = " <> stripeKeyFile,
+                 "webhook_secret_file = " <> stripeWebhookFile
+               ]
 
 #if defined(dbPostgres)
 runMigrationsToRun :: DBStore -> MigrationsToRun -> IO ()

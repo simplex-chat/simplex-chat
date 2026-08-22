@@ -11,6 +11,7 @@ module BadgeService.Service
 where
 
 import BadgeService.Catalog (seedCatalog)
+import BadgeService.Config (BadgeServiceEnv, newBadgeServiceEnv, readBadgeServiceConfig)
 import BadgeService.Options
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import Control.Concurrent.STM
@@ -34,14 +35,16 @@ import System.Exit (exitFailure)
 
 data ServiceState = ServiceState
   { serviceCC :: TMVar ChatController,
+    serviceEnv :: TMVar BadgeServiceEnv,
     serviceRequestQ :: TQueue (User, AgentInvId, J.Object)
   }
 
 newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
+  serviceEnv <- newEmptyTMVarIO
   serviceRequestQ <- newTQueueIO
-  pure ServiceState {serviceCC, serviceRequestQ}
+  pure ServiceState {serviceCC, serviceEnv, serviceRequestQ}
 
 welcomeGetOpts :: IO BadgeServiceOpts
 welcomeGetOpts = do
@@ -58,7 +61,7 @@ badgeService opts cfg = do
   env <- newServiceState
   let chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ badgePreStartHook opts,
+          { preStartHook = Just $ badgePreStartHook opts env,
             postStartHook = Just $ badgePostStartHook opts env
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc ->
@@ -80,7 +83,7 @@ badgeServiceCLI opts = do
         pure ev
       chatHooks =
         defaultChatHooks
-          { preStartHook = Just $ badgePreStartHook opts,
+          { preStartHook = Just $ badgePreStartHook opts env,
             postStartHook = Just $ badgePostStartHook opts env,
             eventHook = Just eventHook
           }
@@ -100,10 +103,19 @@ processQueuedRequests env = do
 -- of the service must see the catalog before it can serve a request. B8's operator
 -- subcommand (not yet implemented) will need to call seedCatalog the same way, so operator
 -- tooling sees the same catalog.
-badgePreStartHook :: BadgeServiceOpts -> ChatController -> IO ()
-badgePreStartHook opts ChatController {config, chatStore} = do
+--
+-- The badge service env is built here too, once, after migrations and seedCatalog: it reads
+-- and validates badge_service.ini, exits on a bad config (naming the file and the offending
+-- key), and stores the built env for badgePostStartHook and the request handlers to reach.
+badgePreStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
+badgePreStartHook opts@BadgeServiceOpts {configFile} ServiceState {serviceEnv} ChatController {config, chatStore} = do
   runBadgeServiceMigrations opts config chatStore
   seedCatalog chatStore
+  readBadgeServiceConfig configFile >>= \case
+    Left e -> putStrLn e >> exitFailure
+    Right bsConfig -> do
+      bsEnv <- newBadgeServiceEnv bsConfig chatStore
+      atomically $ putTMVar serviceEnv bsEnv
 
 badgePostStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
 badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
