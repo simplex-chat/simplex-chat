@@ -2715,12 +2715,14 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Hivatkozás létrehozása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder</source>
+        <target state="translated">Közösségi finanszírozás a Wefunder oldalon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder.</source>
+        <target state="translated">Közösségi finanszírozás a Wefunder oldalon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -4778,8 +4780,9 @@ Hiba: %2$@</target>
         <target>A csoportmeghívó már nem érvényes, a küldője eltávolította.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitations" xml:space="preserve">
+      <trans-unit id="Group invitations" xml:space="preserve" approved="no">
         <source>Group invitations</source>
+        <target state="translated">Meghívások csoportokba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -10776,12 +10779,14 @@ Megismétli a csatlakozási kérést?</target>
         <target>Mostantól küldhet üzeneteket %@ számára</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat</source>
+        <target state="translated">Mostantól befektethet a SimpleX Chatbe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat! 🚀</source>
+        <target state="translated">Mostantól befektethet a SimpleX Chatbe! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
