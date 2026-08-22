@@ -57,7 +57,6 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import qualified Simplex.FileTransfer.Description as FD
-import Simplex.Messaging.Agent.Protocol (SimplexDomain)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
 import qualified Simplex.Messaging.Crypto as C
@@ -700,7 +699,6 @@ data ForwardLink = ForwardLink
     groupLink :: ShortLinkContact,
     -- the recipient looks up the local group by this id, then compares groupLink with the stored link
     publicGroupId :: B64UrlByteString,
-    simplexName :: Maybe (StrJSON "SimplexDomain" SimplexDomain),
     msgId :: SharedMsgId -- the original item's SharedMsgId
   }
   deriving (Eq, Show)

@@ -790,7 +790,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
     prohibited = styled (colored Red) ("[unexpected chat item created, please report to developers]" :: String)
 
 viewChatItemInfo :: AChatItem -> ChatItemInfo -> TimeZone -> [StyledString]
-viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTimed, createdAt}}) ChatItemInfo {itemVersions, forwardedFromChatItem} tz =
+viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTimed, createdAt, itemForwarded}}) ChatItemInfo {itemVersions, forwardedFromChatItem} tz =
   ["sent at: " <> ts itemTs]
     <> receivedAt
     <> toBeDeletedAt
@@ -822,7 +822,11 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
               (SMDRcv, GroupChat gInfo _scopeInfo) -> Just $ "#" <> viewGroupName gInfo
               _ -> Nothing
             fwdItemId = "chat item id: " <> (T.pack . show $ aChatItemId fwdACI)
-        _ -> []
+        -- the source channel item is not stored locally: only the channel name is shown
+        _ -> case itemForwarded of
+          Just (CIFFGroup g _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
+          Just (CIFFGroupLink g _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
+          _ -> []
 
 localTs :: TimeZone -> UTCTime -> String
 localTs tz ts = do
@@ -1012,7 +1016,7 @@ forwardedFrom = \case
   CIFFContact c MDRcv _ _ -> ["<- @" <> (plain . viewName) c]
   CIFFGroup g MDSnd _ _ _ -> ["<- you #" <> (plain . viewName) g]
   CIFFGroup g MDRcv _ _ _ -> ["<- #" <> (plain . viewName) g]
-  CIFFGroupLink g _ _ _ simplexName_ _ -> ["<- #" <> (plain . viewName) g <> maybe "" (\n -> " (#" <> plain (fullDomainName $ unStrJSON n) <> ")") simplexName_]
+  CIFFGroupLink g _ _ _ _ -> ["<- #" <> (plain . viewName) g]
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
 sentByMember GroupInfo {membership} = \case

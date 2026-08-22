@@ -11,7 +11,6 @@ m20260822_forward_link =
 ALTER TABLE chat_items ADD COLUMN fwd_chat_link_shared INTEGER;
 ALTER TABLE chat_items ADD COLUMN fwd_from_group_link BLOB;
 ALTER TABLE chat_items ADD COLUMN fwd_from_public_group_id BLOB;
-ALTER TABLE chat_items ADD COLUMN fwd_from_simplex_name TEXT;
 ALTER TABLE chat_items ADD COLUMN fwd_from_shared_msg_id BLOB;
 |]
 
@@ -21,6 +20,5 @@ down_m20260822_forward_link =
 ALTER TABLE chat_items DROP COLUMN fwd_chat_link_shared;
 ALTER TABLE chat_items DROP COLUMN fwd_from_group_link;
 ALTER TABLE chat_items DROP COLUMN fwd_from_public_group_id;
-ALTER TABLE chat_items DROP COLUMN fwd_from_simplex_name;
 ALTER TABLE chat_items DROP COLUMN fwd_from_shared_msg_id;
 |]

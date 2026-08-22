@@ -67,6 +67,12 @@ testForwardChannelToContact ps =
           cath <## "      hi"
           dan <# "cath> <- #team"
           dan <## "      hi"
+          dan ##> "/item info @cath hi"
+          dan <##. "sent at: "
+          dan <##. "received at: "
+          dan <## "message history:"
+          dan .<## ": hi"
+          dan <## "forwarded from: #team"
           -- forwarding the received item onwards sends the same link
           connectUsers dan alice
           dan `send` "@alice <- @cath hi"
@@ -132,9 +138,15 @@ testForwardChannelLinkRemoved ps =
           cath `send` "#club <- #team hi"
           cath <# "#club <- #team"
           cath <## "      hi"
-          -- the link and the simplex name are removed; the name text remains
+          -- the link is removed; the name text remains
           dan <# "#club cath> <- #team"
           dan <## "      hi"
+          dan ##> "/item info #club hi"
+          dan <##. "sent at: "
+          dan <##. "received at: "
+          dan <## "message history:"
+          dan .<## ": hi"
+          dan <## "forwarded from: #team"
           -- forwarding the received item onwards sends no link
           connectUsers dan alice
           dan `send` "@alice <- #club hi"

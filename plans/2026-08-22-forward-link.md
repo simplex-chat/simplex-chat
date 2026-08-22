@@ -2,16 +2,16 @@
 
 When a message is forwarded from a channel (public group), the sending client
 attaches the source channel's name, join link, identity and message id;
-recipients see "forwarded from \<name\>" or
-"forwarded from \<name\> (#\<simplex name\>)" and can open or join the channel.
+recipients see "forwarded from \<name\>" and can open or join the channel.
 
 - The link is attached whenever the source is a public group; for other sources
   only `forward: true` is sent.
 - `forward = Just True` is always set alongside `forwardLink`, so old clients
   show plain "forwarded".
+- The simplex name is not included: paired with a forwarder-chosen link it
+  would be an unverifiable claim. It can be added later as a verifiable claim.
 - When a forwarded message is received in a group that prohibits SimpleX links
-  for the sender, the link and simplex name (a name resolves like a link) are
-  removed.
+  for the sender, the link is removed.
 
 ## Protocol
 
@@ -23,7 +23,6 @@ data ForwardLink = ForwardLink
   { displayName :: Text,
     groupLink :: ShortLinkContact,
     publicGroupId :: B64UrlByteString, -- the recipient looks up the local group by this id, then compares groupLink with the stored link
-    simplexName :: Maybe (StrJSON "SimplexDomain" SimplexDomain),
     msgId :: SharedMsgId -- the original item's SharedMsgId
   }
 ```
@@ -45,15 +44,12 @@ data ForwardLink = ForwardLink
                chatItemId :: Maybe ChatItemId, chatLinkShared :: BoolDef}
   | CIFFGroupLink {chatName :: Text, msgDir :: MsgDirection,
                    groupLink :: ShortLinkContact, publicGroupId :: B64UrlByteString,
-                   simplexName :: Maybe (StrJSON "SimplexDomain" SimplexDomain),
                    sharedMsgId :: SharedMsgId}
 ```
 
 - `chatLinkShared :: BoolDef` (Types.hs:2267; `omittedField = Just (BoolDef
   False)`, so JSON serialized before this change parses with the field set to
-  false). `BoolDef True` records that the sent message included the link. The
-  name is not stored: for a locally known group the UI shows
-  "forwarded from \<chatName\>" without the simplex name.
+  false). `BoolDef True` records that the sent message included the link.
 - `CIFFGroupLink` is the recipient's variant for an unknown channel; the user
   opens it via the connection plan.
 - New tag `CIFFGroupLink_` / `"groupLink"` in `CIForwardedFromTag` (:1325).
@@ -64,11 +60,9 @@ data ForwardLink = ForwardLink
 
 - Build `Maybe ForwardLink` from the source group's
   `groupProfile.publicGroup :: Maybe PublicGroupProfile` (Types.hs:872), which
-  includes `groupLink`, `publicGroupId`, and
-  `publicGroupAccess >>= groupDomainClaim` for the domain (`claimDomain`, sent
-  as stored, without regard to local verification state - the recipient
-  verifies it when tapping the name). `displayName` from `GroupProfile`. `msgId` = the item's
-  `CIMeta.itemSharedMsgId`; if it is `Nothing`, omit the whole `ForwardLink`.
+  includes `groupLink` and `publicGroupId`. `displayName` from `GroupProfile`.
+  `msgId` = the item's `CIMeta.itemSharedMsgId`; if it is `Nothing`, omit the
+  whole `ForwardLink`.
 - Local `ciff`: `CIFFGroup ... {chatLinkShared = BoolDef linkShared}` where
   `linkShared = sourcePublic gInfo && isJust itemSharedMsgId` - the same
   condition under which `ciffForwardLink` later returns a link (the link value
@@ -98,7 +92,7 @@ itemForwarded = case chatMsgEvent of
 
 1. `forwardLink = Nothing` -> `CIFFUnknown` (today's behavior).
 2. Destination is a group where SimpleX links are prohibited for the sender ->
-   remove the link and the simplex name: store `CIFFGroup {chatName =
+   remove the link: store `CIFFGroup {chatName =
    displayName, msgDir = MDRcv, groupId = Nothing, chatItemId = Nothing,
    chatLinkShared = BoolDef False}` - attribution text only. The check runs
    where `itemForwarded` is computed today: `chatDirection` is in scope, and
@@ -130,7 +124,6 @@ same shape) adds:
 - `fwd_from_group_link BLOB/BYTEA` (the `ToField (ConnShortLink c)` instance
   stores `Binary . strEncode`, matching `short_link_contact`)
 - `fwd_from_public_group_id BLOB/BYTEA`
-- `fwd_from_simplex_name TEXT`
 - `fwd_from_shared_msg_id BLOB/BYTEA`
 
 Code changes: the CIFF-to-row tuple (Store/Messages.hs:657-660), the
@@ -140,16 +133,15 @@ on both backends.
 
 ## View / UI
 
-- `View.hs:1010`: render the source name for `CIFFGroup`; for `CIFFGroupLink`
-  render the name and, when present, the simplex name.
+- `View.hs:1010`: render the source name for `CIFFGroup` and `CIFFGroupLink`.
+- `/item info` renders "forwarded from: #\<chatName\>" from `itemForwarded`
+  when the source item is not stored locally (`CIFFGroupLink` and link-removed
+  `CIFFGroup`).
 - The `CIForwardedFrom` JSON reaches the apps in `CIMeta`: the iOS
   (`ChatTypes.swift`) and Kotlin (`ChatModel.kt`) mirrors are extended with the
-  new field and variant. Header text: `CIFFGroup` ->
-  "forwarded from \<chatName\>"; `CIFFGroupLink` ->
-  "forwarded from \<chatName\> (#\<simplexName\>)" when the name is present,
-  otherwise "forwarded from \<chatName\>". Tapping the header opens the
-  connection plan for `groupLink` (existing planAndConnect paths). The name
-  renders as plain text - it is the forwarder's claim, not a verified value.
+  new field and variant. Header text for `CIFFGroup` and `CIFFGroupLink`:
+  "forwarded from \<chatName\>". Tapping the header opens the
+  connection plan for `groupLink` (existing planAndConnect paths).
 
 ## Tests
 
@@ -159,8 +151,8 @@ on both backends.
    "forwarded from" with the name.
 2. Forward to a group where the recipient is a member of the source channel:
    the recipient stores `CIFFGroup` with the local groupId.
-3. Destination group with SimpleX links prohibited: the link and simplex name
-   are removed; attribution text only.
+3. Destination group with SimpleX links prohibited: the link is removed;
+   attribution text only.
 4. Forwarding a received forwarded item again sends the original channel's
    link.
 5. Old-client compatibility: a container with `forward: true` and no

@@ -518,7 +518,6 @@ CREATE TABLE chat_items(
   fwd_chat_link_shared INTEGER,
   fwd_from_group_link BLOB,
   fwd_from_public_group_id BLOB,
-  fwd_from_simplex_name TEXT,
   fwd_from_shared_msg_id BLOB
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);

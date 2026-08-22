@@ -239,13 +239,12 @@ ciffForwardLink :: DB.Connection -> CIForwardedFrom -> IO (Maybe ForwardLink)
 ciffForwardLink db = \case
   CIFFGroup {groupId = Just gId, chatItemId = Just ciId} ->
     getGroupProfileById db gId >>= \case
-      Just GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink, publicGroupId, publicGroupAccess}} -> do
+      Just GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink, publicGroupId}} -> do
         msgId_ <- getChatItemSharedMsgId_ db ciId
-        let simplexName = StrJSON . claimDomain <$> (publicGroupAccess >>= groupDomainClaim)
-        pure $ (\msgId -> ForwardLink {displayName, groupLink, publicGroupId, simplexName, msgId}) <$> msgId_
+        pure $ (\msgId -> ForwardLink {displayName, groupLink, publicGroupId, msgId}) <$> msgId_
       _ -> pure Nothing
-  CIFFGroupLink {chatName, groupLink, publicGroupId, simplexName, sharedMsgId} ->
-    pure $ Just ForwardLink {displayName = chatName, groupLink, publicGroupId, simplexName, msgId = sharedMsgId}
+  CIFFGroupLink {chatName, groupLink, publicGroupId, sharedMsgId} ->
+    pure $ Just ForwardLink {displayName = chatName, groupLink, publicGroupId, msgId = sharedMsgId}
   _ -> pure Nothing
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)

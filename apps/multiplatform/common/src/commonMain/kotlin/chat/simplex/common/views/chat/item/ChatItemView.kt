@@ -335,7 +335,7 @@ fun ChatItemView(
               .combinedClickable(
                 onLongClick = { showMenu.value = true },
                 onClick = {
-                  if (appPlatform.isAndroid && (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null)) {
+                  if (appPlatform.isAndroid && (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null || cItem.meta.itemForwarded?.sourceGroupLink != null)) {
                     hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
                   }
                   onClick()
