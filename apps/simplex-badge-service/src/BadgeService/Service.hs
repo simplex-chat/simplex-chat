@@ -10,6 +10,7 @@ module BadgeService.Service
   )
 where
 
+import BadgeService.Catalog (seedCatalog)
 import BadgeService.Options
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import Control.Concurrent.STM
@@ -95,9 +96,13 @@ processQueuedRequests env = do
     (u, reqId, reqData) <- atomically $ readTQueue $ serviceRequestQ env
     handleServiceRequest cc u reqId reqData
 
+-- Seeded here, after migrations and before badgePostStartHook starts the bot: every start
+-- of the service (and B8's operator subcommand, which calls seedCatalog the same way) must
+-- see the catalog before it can serve a request.
 badgePreStartHook :: BadgeServiceOpts -> ChatController -> IO ()
-badgePreStartHook opts ChatController {config, chatStore} =
+badgePreStartHook opts ChatController {config, chatStore} = do
   runBadgeServiceMigrations opts config chatStore
+  seedCatalog chatStore
 
 badgePostStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
 badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do

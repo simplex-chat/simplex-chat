@@ -416,6 +416,7 @@ executable simplex-badge-service
   default-extensions:
       StrictData
   other-modules:
+      BadgeService.Catalog
       BadgeService.Options
       BadgeService.Service
       BadgeService.Store.Migrate
@@ -691,6 +692,7 @@ test-suite simplex-chat-test
       API.Docs.Syntax.Types
       API.Docs.Types
       API.TypeInfo
+      BadgeService.Catalog
       BadgeService.Options
       BadgeService.Service
       BadgeService.Store.Migrate
