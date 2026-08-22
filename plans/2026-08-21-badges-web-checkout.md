@@ -169,7 +169,7 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | F3 | Card return-URL resume | E5, F2 | ☐ |
 | F4 | Refunds and disputes | B7, F2 | ☐ |
 | F5 | Stripe scenario tests | F2, F4 | ☐ |
-| G0 | Remove the store purchase action | — | ☐ |
+| G0 | Remove the store purchase action | — | ☑ |
 | G1 | Kotlin: payment-method screen and browser hand-off | C2, D5, G0 | ☐ |
 | G2 | Kotlin: redeem view | B8, C4, G0 | ☐ |
 | G3 | Swift: redeem view | B8, C4, G0 | ☐ |
