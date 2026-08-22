@@ -131,7 +131,7 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | A2 | JSON instances for badge protocol types, and the offer `total` | — | ☑ |
 | A3 | Service schema: `web_orders`, `codes`, `provider_events` | — | ☑ |
 | A4 | `Catalog.hs`: internal pricing, totals, seeding | A2, A5 | ☐ |
-| A5 | Cabal dependencies for the service | — | ☐ |
+| A5 | Cabal dependencies for the service | — | ☑ |
 | A6 | `badge_service.ini`: configuration file | A3, A4, A5 | ☐ |
 | B1 | Store layer: purchases, ledger, issuances, codes, catalog | A2, A3, A4, A5 | ☐ |
 | B2 | `Ledger.hs`: pure transitions and property tests | A5 | ☐ |
