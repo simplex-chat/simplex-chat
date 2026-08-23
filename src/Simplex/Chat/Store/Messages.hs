@@ -174,9 +174,8 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Preferences (SGroupFeature (..), groupFeatureMemberAllowed')
 import Simplex.Chat.Types.Shared
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId, sameShortLinkContact)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import Simplex.Messaging.Agent.Store.Common (withSavepoint)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
@@ -562,41 +561,13 @@ createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, 
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
-createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c), Maybe CIForwardedFrom)
-createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, signedMsg_, signedByGMId_, forwardedByMember} sharedMsgId_ ciContent timed live userMention hasLink itemTs createdAt = do
+createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
+createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, signedMsg_, signedByGMId_, forwardedByMember} sharedMsgId_ ciContent itemForwarded timed live userMention hasLink itemTs createdAt = do
   let showAsGroup = case chatDirection of CDChannelRcv {} -> True; _ -> False
-  itemForwarded <- rcvForwardedFrom
   ciId <- createNewChatItem_ db user chatDirection showAsGroup (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember (toMsgVerified (signMessagesRequired chatDirection) msgSigned) signedMsg_ signedByGMId_ createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
-  pure (ciId, quotedItem, itemForwarded)
+  pure (ciId, quotedItem)
   where
-    rcvForwardedFrom :: IO (Maybe CIForwardedFrom)
-    rcvForwardedFrom = case chatMsgEvent of
-      ACME _ (XMsgNew MsgContainer {forward, forwardLink}) | forward == Just True -> case forwardLink of
-        Nothing -> pure $ Just CIFFUnknown
-        Just ForwardLink {displayName, groupLink, publicGroupId, memberId = fwdMemberId, msgId = fwdMsgId}
-          | linkProhibited -> pure $ Just $ CIFFGroup displayName MDRcv Nothing Nothing Nothing Nothing (BoolDef False)
-          | otherwise ->
-              getGroupViaPublicGroupId db user publicGroupId >>= \case
-                Just (gId, Just storedLink)
-                  | sameShortLinkContact groupLink storedLink -> do
-                      ciId_ <- fwdItemId_ gId
-                      pure $ Just $ CIFFGroup displayName MDRcv (Just gId) ciId_ fwdMemberId (Just fwdMsgId) (BoolDef True)
-                _ -> pure $ Just $ CIFFGroupLink displayName MDRcv groupLink publicGroupId fwdMemberId fwdMsgId
-          where
-            fwdItemId_ gId = case fwdMemberId of
-              Nothing -> getGroupChatItemBySharedMsgId_ db user gId Nothing fwdMsgId
-              Just mId ->
-                getGroupMemberViaMemberId_ db user gId mId >>= \case
-                  Just (gmId, category) ->
-                    let scope = if category == GCUserMember then Nothing else Just gmId
-                     in getGroupChatItemBySharedMsgId_ db user gId scope fwdMsgId
-                  Nothing -> pure Nothing
-      _ -> pure Nothing
-    linkProhibited = case chatDirection of
-      CDGroupRcv gInfo _ m -> not $ groupFeatureMemberAllowed SGFSimplexLinks m gInfo
-      CDChannelRcv GroupInfo {fullGroupPreferences} _ -> not $ groupFeatureMemberAllowed' SGFSimplexLinks GROwner fullGroupPreferences
-      _ -> False
     quotedMsg = cmToQuotedMsg chatMsgEvent
     quoteRow :: NewQuoteRow
     quoteRow = case quotedMsg of
