@@ -87,6 +87,7 @@ testForwardLink =
     { displayName = "team",
       groupLink = CSLContact SLSSimplex CCTChannel srv (LinkKey "\1\2\3\4\5\6\7\8\1\2\3\4\5\6\7\8\1\2\3\4\5\6\7\8\1\2\3\4\5\6\7\8"),
       publicGroupId = B64UrlByteString "\1\2\3\4",
+      memberId = Just $ MemberId "\1\2\3\4",
       msgId = SharedMsgId "\5\6\7\8"
     }
 
@@ -217,8 +218,11 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"live\":true}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {live = Just True})
   it "x.msg.new forward with channel link" $
-    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"forwardLink\":{\"displayName\":\"team\",\"groupLink\":\"simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w\",\"publicGroupId\":\"AQIDBA==\",\"msgId\":\"BQYHCA==\"}}}"
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"forwardLink\":{\"displayName\":\"team\",\"groupLink\":\"simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w\",\"publicGroupId\":\"AQIDBA==\",\"memberId\":\"AQIDBA==\",\"msgId\":\"BQYHCA==\"}}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ mcForward (Just testForwardLink) (MCText "hello"))
+  it "x.msg.new forward with channel link without author" $
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"forwardLink\":{\"displayName\":\"team\",\"groupLink\":\"simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w\",\"publicGroupId\":\"AQIDBA==\",\"msgId\":\"BQYHCA==\"}}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ mcForward (Just (testForwardLink {memberId = Nothing} :: ForwardLink)) (MCText "hello"))
   it "x.msg.new simple text with file" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       #==# XMsgNew ((mcSimple (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})

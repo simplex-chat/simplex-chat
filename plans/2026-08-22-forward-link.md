@@ -23,9 +23,15 @@ data ForwardLink = ForwardLink
   { displayName :: Text,
     groupLink :: ShortLinkContact,
     publicGroupId :: B64UrlByteString, -- the recipient looks up the local group by this id, then compares groupLink with the stored link
+    memberId :: Maybe MemberId, -- the author, only for items the author sent as themselves
     msgId :: SharedMsgId -- the original item's SharedMsgId
   }
 ```
+
+`memberId` is absent for items sent as the channel: their authorship is the
+channel's, and subscribers do not see the author's member id. The fill rule is
+`chatItemMember` (Messages.hs:369): the member for received authored items,
+the membership for own items sent as themselves, absent otherwise.
 
 - New field `forwardLink :: Maybe ForwardLink` in `MsgContainer`
   (Protocol.hs:678) after `forward`; `mcSimple` (:695) sets
@@ -41,11 +47,15 @@ data ForwardLink = ForwardLink
 
 ```haskell
   | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId,
-               chatItemId :: Maybe ChatItemId, chatLinkShared :: BoolDef}
+               chatItemId :: Maybe ChatItemId, memberId :: Maybe MemberId,
+               itemSharedMsgId :: Maybe SharedMsgId, chatLinkShared :: BoolDef}
   | CIFFGroupLink {chatName :: Text, msgDir :: MsgDirection,
                    groupLink :: ShortLinkContact, publicGroupId :: B64UrlByteString,
-                   sharedMsgId :: SharedMsgId}
+                   memberId :: Maybe MemberId, sharedMsgId :: SharedMsgId}
 ```
+
+Both variants retain the wire `memberId` and `sharedMsgId`, so a re-forward
+re-serializes `ForwardLink` from the CIFF without item lookups.
 
 - `chatLinkShared :: BoolDef` (Types.hs:2267; `omittedField = Just (BoolDef
   False)`, so JSON serialized before this change parses with the field set to
@@ -58,24 +68,21 @@ data ForwardLink = ForwardLink
 
 `Commands.hs` `APIForwardChatItems`, `prepareForward` group branch (:1094-1110):
 
-- Build `Maybe ForwardLink` from the source group's
-  `groupProfile.publicGroup :: Maybe PublicGroupProfile` (Types.hs:872), which
-  includes `groupLink` and `publicGroupId`. `displayName` from `GroupProfile`.
-  `msgId` = the item's `CIMeta.itemSharedMsgId`; if it is `Nothing`, omit the
-  whole `ForwardLink`.
-- Local `ciff`: `CIFFGroup ... {chatLinkShared = BoolDef linkShared}` where
-  `linkShared = sourcePublic gInfo && isJust itemSharedMsgId` - the same
-  condition under which `ciffForwardLink` later returns a link (the link value
-  is computed at the `mcForward` call site, after the `ciff` is built).
+- Local `ciff`: `CIFFGroup` with `memberId = memberId' <$> chatItemMember
+  gInfo ci`, the item's `itemSharedMsgId`, and `chatLinkShared = BoolDef
+  linkShared` where `linkShared = sourcePublic gInfo && isJust
+  itemSharedMsgId` - the same condition under which `ciffForwardLink` later
+  returns a link (the link value is computed at the `mcForward` call site,
+  after the `ciff` is built).
 - The two `mcForward` call sites - `sendContactContentMessages.prepareMsgs`
   (Commands.hs:4772) and `prepareGroupMsg` (Internal.hs:208-209), both matching
   `(Nothing, Just _) -> pure (mcForward mc, Nothing)` on
   `(quotedItemId, itemForwarded)` - compute the link from the
   `CIForwardedFrom` in scope: `ciffForwardLink db ciff` returns the link for
-  `CIFFGroup` from the group profile read by `groupId` (current name and
-  link), for `CIFFGroupLink` from its stored fields, and `Nothing` for other
-  variants. Deriving from the stored `CIForwardedFrom` attributes a
-  re-forwarded message to the original source.
+  `CIFFGroup` with `groupId` and `sharedMsgId` set, reading the group profile
+  (current name and link), for `CIFFGroupLink` from its stored fields, and
+  `Nothing` for other variants. Deriving from the stored `CIForwardedFrom`
+  attributes a re-forwarded message to the original source.
 - `forwardCIFF` (:1130) already returns the original `CIForwardedFrom` when a
   forwarded item is forwarded again, so a received `CIFFGroupLink` item is sent
   onwards with the same link.
@@ -103,13 +110,15 @@ itemForwarded = case chatMsgEvent of
    state is checked without a member role. Direct chats: the link is kept.
 3. Lookup by `publicGroupId`: `group_profiles.public_group_id` is a column
    with an existing query that filters on it (Store/Groups.hs:2009-2015). New
-   query `getGroupInfoByPublicGroupId`; on a match, compare the received
+   query `getGroupViaPublicGroupId`; on a match, compare the received
    `groupLink` with the stored one (`sameShortLinkContact`); when both match ->
-   `CIFFGroup {groupId = Just gId, chatItemId = ciId_, chatLinkShared =
-   BoolDef True}`, where `ciId_` is resolved from the received `msgId` by
-   `shared_msg_id` in the group (`getGroupCIIdBySharedMsgId_`) - `CIFFGroup`
-   stores no wire `msgId`, so without this resolution forwarding such an item
-   again could not reconstruct the link.
+   `CIFFGroup` with `groupId`, the wire `memberId` and `msgId`, `chatLinkShared
+   = BoolDef True`, and `chatItemId = ciId_` resolved by the id query factored
+   out of `getGroupChatItemBySharedMsgId` (`getGroupChatItemBySharedMsgId_`).
+   The author scope: wire `memberId` absent -> `Nothing` (items sent as the
+   channel and own items are stored with `group_member_id` NULL); present ->
+   the member resolved by `member_id`, with the user's own membership mapped
+   to `Nothing`; an unknown member -> no item.
 4. Lookup miss, or the link differs from the stored one -> `CIFFGroupLink`
    with the wire fields.
 
@@ -124,6 +133,7 @@ same shape) adds:
 - `fwd_from_group_link BLOB/BYTEA` (the `ToField (ConnShortLink c)` instance
   stores `Binary . strEncode`, matching `short_link_contact`)
 - `fwd_from_public_group_id BLOB/BYTEA`
+- `fwd_from_member_id BLOB/BYTEA`
 - `fwd_from_shared_msg_id BLOB/BYTEA`
 
 Code changes: the CIFF-to-row tuple (Store/Messages.hs:657-660), the

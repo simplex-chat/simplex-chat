@@ -699,6 +699,8 @@ data ForwardLink = ForwardLink
     groupLink :: ShortLinkContact,
     -- the recipient looks up the local group by this id, then compares groupLink with the stored link
     publicGroupId :: B64UrlByteString,
+    -- the author, only for items the author sent as themselves; absent for items sent as the channel
+    memberId :: Maybe MemberId,
     msgId :: SharedMsgId -- the original item's SharedMsgId
   }
   deriving (Eq, Show)

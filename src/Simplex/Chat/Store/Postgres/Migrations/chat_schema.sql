@@ -353,6 +353,7 @@ CREATE TABLE test_chat_schema.chat_items (
     fwd_chat_link_shared smallint,
     fwd_from_group_link bytea,
     fwd_from_public_group_id bytea,
+    fwd_from_member_id bytea,
     fwd_from_shared_msg_id bytea
 );
 

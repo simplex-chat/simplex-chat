@@ -711,7 +711,7 @@ processChatCommand cxt nm = \case
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
         Just (CIFFContact _ _ (Just ctId) (Just fwdItemId)) ->
           Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTDirect ctId Nothing) fwdItemId)
-        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId) _) ->
+        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId) _ _ _) ->
           -- TODO [knocking] getAChatItem doesn't differentiate how to read based on scope - it should, instead of using group filter
           Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTGroup gId Nothing) fwdItemId)
         _ -> pure Nothing
@@ -1100,7 +1100,9 @@ processChatCommand cxt nm = \case
               let itemId = chatItemId' ci
                   -- the same condition ciffForwardLink checks when the link is attached to the sent message
                   linkShared = sourcePublic gInfo && isJust itemSharedMsgId
-                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) (BoolDef linkShared))
+                  -- absent for items sent as the channel: their authorship is the channel's
+                  fwdMemberId = memberId' <$> chatItemMember gInfo ci
+                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) fwdMemberId itemSharedMsgId (BoolDef linkShared))
                   -- updates text to reflect current mentioned member names
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   -- only includes mentions when forwarding to the same group

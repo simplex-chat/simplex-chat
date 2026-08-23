@@ -237,14 +237,13 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
 -- so a message forwarded again is attributed to the original source
 ciffForwardLink :: DB.Connection -> CIForwardedFrom -> IO (Maybe ForwardLink)
 ciffForwardLink db = \case
-  CIFFGroup {groupId = Just gId, chatItemId = Just ciId} ->
+  CIFFGroup {groupId = Just gId, memberId, itemSharedMsgId = Just msgId} ->
     getGroupProfileById db gId >>= \case
-      Just GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink, publicGroupId}} -> do
-        msgId_ <- getChatItemSharedMsgId_ db ciId
-        pure $ (\msgId -> ForwardLink {displayName, groupLink, publicGroupId, msgId}) <$> msgId_
+      Just GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink, publicGroupId}} ->
+        pure $ Just ForwardLink {displayName, groupLink, publicGroupId, memberId, msgId}
       _ -> pure Nothing
-  CIFFGroupLink {chatName, groupLink, publicGroupId, sharedMsgId} ->
-    pure $ Just ForwardLink {displayName = chatName, groupLink, publicGroupId, msgId = sharedMsgId}
+  CIFFGroupLink {chatName, groupLink, publicGroupId, memberId, sharedMsgId} ->
+    pure $ Just ForwardLink {displayName = chatName, groupLink, publicGroupId, memberId, msgId = sharedMsgId}
   _ -> pure Nothing
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
