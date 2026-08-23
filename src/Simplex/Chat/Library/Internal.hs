@@ -233,8 +233,7 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
     quoteData ChatItem {chatDir = CIChannelRcv, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv Nothing, False, Nothing)
     quoteData _ _ = throwError SEInvalidQuote
 
--- the attribution of a forwarded message is computed from the item's CIForwardedFrom,
--- so a message forwarded again is attributed to the original source
+-- re-forwarded message is attributed to the original source
 ciffForwardLink :: DB.Connection -> CIForwardedFrom -> IO (Maybe ForwardLink)
 ciffForwardLink db = \case
   CIFFGroup {groupId = Just gId, memberId, itemSharedMsgId = Just msgId} ->

@@ -563,7 +563,7 @@ createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, 
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
 createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c), Maybe CIForwardedFrom)
-createNewRcvChatItem db user@User {userId} chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, signedMsg_, signedByGMId_, forwardedByMember} sharedMsgId_ ciContent timed live userMention hasLink itemTs createdAt = do
+createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, signedMsg_, signedByGMId_, forwardedByMember} sharedMsgId_ ciContent timed live userMention hasLink itemTs createdAt = do
   let showAsGroup = case chatDirection of CDChannelRcv {} -> True; _ -> False
   itemForwarded <- rcvForwardedFrom
   ciId <- createNewChatItem_ db user chatDirection showAsGroup (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember (toMsgVerified (signMessagesRequired chatDirection) msgSigned) signedMsg_ signedByGMId_ createdAt
@@ -584,24 +584,17 @@ createNewRcvChatItem db user@User {userId} chatDirection RcvMessage {msgId, chat
                       pure $ Just $ CIFFGroup displayName MDRcv (Just gId) ciId_ fwdMemberId (Just fwdMsgId) (BoolDef True)
                 _ -> pure $ Just $ CIFFGroupLink displayName MDRcv groupLink publicGroupId fwdMemberId fwdMsgId
           where
-            -- items sent as the channel and the user's own items are stored without a member
             fwdItemId_ gId = case fwdMemberId of
               Nothing -> getGroupChatItemBySharedMsgId_ db user gId Nothing fwdMsgId
               Just mId ->
-                fwdAuthorScope gId mId >>= \case
-                  Just scope -> getGroupChatItemBySharedMsgId_ db user gId scope fwdMsgId
+                getGroupMemberViaMemberId_ db user gId mId >>= \case
+                  Just (gmId, category) ->
+                    let scope = if category == GCUserMember then Nothing else Just gmId
+                     in getGroupChatItemBySharedMsgId_ db user gId scope fwdMsgId
                   Nothing -> pure Nothing
-            fwdAuthorScope gId mId =
-              maybeFirstRow toScope $
-                DB.query
-                  db
-                  "SELECT group_member_id, member_category FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?"
-                  (userId, gId, mId)
-            toScope (gmId, category) = if category == GCUserMember then Nothing else Just (gmId :: GroupMemberId)
       _ -> pure Nothing
     linkProhibited = case chatDirection of
       CDGroupRcv gInfo _ m -> not $ groupFeatureMemberAllowed SGFSimplexLinks m gInfo
-      -- a channel message is posted with owner authority; only the feature's enable state applies
       CDChannelRcv GroupInfo {fullGroupPreferences} _ -> not $ groupFeatureMemberAllowed' SGFSimplexLinks GROwner fullGroupPreferences
       _ -> False
     quotedMsg = cmToQuotedMsg chatMsgEvent

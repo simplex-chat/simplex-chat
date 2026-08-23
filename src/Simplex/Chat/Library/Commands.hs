@@ -1098,9 +1098,7 @@ processChatCommand cxt nm = \case
             ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
             ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText, meta = CIMeta {itemSharedMsgId}}) (mc, file) = do
               let itemId = chatItemId' ci
-                  -- the same condition ciffForwardLink checks when the link is attached to the sent message
                   linkShared = sourcePublic gInfo && isJust itemSharedMsgId
-                  -- absent for items sent as the channel: their authorship is the channel's
                   fwdMemberId = memberId' <$> chatItemMember gInfo ci
                   ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) fwdMemberId itemSharedMsgId (BoolDef linkShared))
                   -- updates text to reflect current mentioned member names

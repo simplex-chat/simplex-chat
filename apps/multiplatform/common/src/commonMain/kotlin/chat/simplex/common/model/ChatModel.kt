@@ -3944,7 +3944,6 @@ sealed class CIForwardedFrom {
       is GroupLink -> null
     }
 
-  // the link of the source channel of a forwarded message, for channels not known locally
   val sourceGroupLink: String?
     get() = if (this is GroupLink) groupLink else null
 

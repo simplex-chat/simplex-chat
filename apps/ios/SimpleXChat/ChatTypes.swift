@@ -4355,7 +4355,6 @@ public enum CIForwardedFrom: Decodable, Hashable {
         }
     }
 
-    // the link of the source channel of a forwarded message, for channels not known locally
     public var sourceGroupLink: String? {
         switch self {
         case let .groupLink(_, _, groupLink, _, _, _): groupLink

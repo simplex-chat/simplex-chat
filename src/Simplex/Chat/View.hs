@@ -822,7 +822,6 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
               (SMDRcv, GroupChat gInfo _scopeInfo) -> Just $ "#" <> viewGroupName gInfo
               _ -> Nothing
             fwdItemId = "chat item id: " <> (T.pack . show $ aChatItemId fwdACI)
-        -- the source channel item is not stored locally: only the channel name is shown
         _ -> case itemForwarded of
           Just (CIFFGroup g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           Just (CIFFGroupLink g _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]

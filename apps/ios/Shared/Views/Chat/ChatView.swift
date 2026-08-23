@@ -2885,7 +2885,6 @@ struct ChatView: View {
                     }
                 }
             } else if let link = chatItem.meta.itemForwarded?.sourceGroupLink, let url = URL(string: link) {
-                // the source channel is not known locally: open the connection plan for its link
                 goToItemInnerButton(alignStart, "arrow.right", touchInProgress: touchInProgress) {
                     closeKeyboardAndRun {
                         ChatModel.shared.appOpenUrl = url

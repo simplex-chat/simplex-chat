@@ -301,7 +301,6 @@ fun ChatItemView(
       } else {
         val sourceGroupLink = cItem.meta.itemForwarded?.sourceGroupLink
         if (sourceGroupLink != null) {
-          // the source channel is not known locally: open the connection plan for its link
           GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
             uriHandler.openVerifiedSimplexUri(sourceGroupLink)
           }
