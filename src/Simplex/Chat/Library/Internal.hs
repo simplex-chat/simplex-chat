@@ -250,14 +250,16 @@ rcvForwardedFrom db user chatDirection RcvMessage {chatMsgEvent} = case chatMsgE
   ACME _ (XMsgNew MsgContainer {forward = Just True, forwardLink}) -> case forwardLink of
     Nothing -> pure $ Just CIFFUnknown
     Just fl@ForwardLink {displayName}
-      | linkProhibited -> pure $ Just $ CIFFGroup displayName MDRcv Nothing Nothing Nothing Nothing (BoolDef False)
-      | otherwise -> Just <$> forwardLinkCIFF db user fl
+      | linkAllowed -> Just <$> forwardLinkCIFF db user fl
+      | otherwise -> pure $ Just $ CIFFGroup displayName MDRcv Nothing Nothing Nothing Nothing (BoolDef False)
   _ -> pure Nothing
   where
-    linkProhibited = case chatDirection of
-      CDGroupRcv gInfo _ m -> not $ groupFeatureMemberAllowed SGFSimplexLinks m gInfo
-      CDChannelRcv GroupInfo {fullGroupPreferences} _ -> not $ groupFeatureMemberAllowed' SGFSimplexLinks GROwner fullGroupPreferences
-      _ -> False
+    linkAllowed = case chatDirection of
+      CDGroupRcv gInfo _ GroupMember {memberRole} -> allowed memberRole gInfo
+      CDChannelRcv gInfo _ -> allowed GROwner gInfo
+      _ -> True
+      where
+        allowed role = groupFeatureMemberAllowed' SGFSimplexLinks role . fullGroupPreferences
 
 forwardLinkCIFF :: DB.Connection -> User -> ForwardLink -> IO CIForwardedFrom
 forwardLinkCIFF db user ForwardLink {displayName, groupLink, publicGroupId, memberId, msgId} =

@@ -101,13 +101,10 @@ itemForwarded = case chatMsgEvent of
 2. Destination is a group where SimpleX links are prohibited for the sender ->
    remove the link: store `CIFFGroup {chatName =
    displayName, msgDir = MDRcv, groupId = Nothing, chatItemId = Nothing,
-   chatLinkShared = BoolDef False}` - attribution text only. The check runs
-   where `itemForwarded` is computed today: `chatDirection` is in scope, and
-   `CDGroupRcv gInfo _ member` (Messages.hs:395) includes both values for
-   `groupFeatureMemberAllowed SGFSimplexLinks member gInfo` (the check used by
-   `redactedMemberProfile`, Internal.hs:1266). `CDChannelRcv gInfo _` includes
-   no sender member (a message from the channel), so the feature's enable
-   state is checked without a member role. Direct chats: the link is kept.
+   chatLinkShared = BoolDef False}` - attribution text only. The check: the
+   sender's role (the member's for `CDGroupRcv`, `GROwner` for `CDChannelRcv` -
+   a channel message is posted with owner authority) against the group's
+   SimplexLinks feature. Direct chats: the link is kept.
 3. Lookup by `publicGroupId`: `group_profiles.public_group_id` is a column
    with an existing query that filters on it (Store/Groups.hs:2009-2015). New
    query `getGroupViaPublicGroupId`; on a match, compare the received
