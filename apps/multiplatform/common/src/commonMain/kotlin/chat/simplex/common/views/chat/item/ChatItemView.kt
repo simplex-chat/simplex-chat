@@ -298,13 +298,6 @@ fun ChatItemView(
             closeReportsIfNeeded()
           }
         }
-      } else {
-        val sourceGroupLink = cItem.meta.itemForwarded?.sourceGroupLink
-        if (sourceGroupLink != null) {
-          GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
-            uriHandler.openVerifiedSimplexUri(sourceGroupLink)
-          }
-        }
       }
     }
 
@@ -334,7 +327,7 @@ fun ChatItemView(
               .combinedClickable(
                 onLongClick = { showMenu.value = true },
                 onClick = {
-                  if (appPlatform.isAndroid && (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null || cItem.meta.itemForwarded?.sourceGroupLink != null)) {
+                  if (appPlatform.isAndroid && (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null)) {
                     hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
                   }
                   onClick()

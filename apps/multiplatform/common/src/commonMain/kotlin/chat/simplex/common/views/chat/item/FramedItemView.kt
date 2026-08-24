@@ -23,6 +23,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
@@ -101,6 +102,20 @@ fun FramedItemView(
   }
 
   @Composable
+  fun HeaderText(caption: String, italic: Boolean) {
+    Text(
+      buildAnnotatedString {
+        withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
+          append(caption)
+        }
+      },
+      style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
+  }
+
+  @Composable
   fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
@@ -120,16 +135,40 @@ fun FramedItemView(
           tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
         )
       }
-      Text(
-        buildAnnotatedString {
-          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
-            append(caption)
+      HeaderText(caption, italic)
+    }
+  }
+
+  @Composable
+  fun ForwardedFromHeader(forwarded: CIForwardedFrom) {
+    val sentColor = MaterialTheme.appColors.sentQuote
+    val receivedColor = MaterialTheme.appColors.receivedQuote
+    val sourceIcon = if (forwarded.sourceGroupType == GroupType.Channel) MR.images.ic_bigtop_updates else MR.images.ic_group
+    Column(
+      Modifier
+        .background(if (sent) sentColor else receivedColor)
+        .fillMaxWidth()
+        .clickable {
+          val target = forwarded.chatTypeApiIdMsgId
+          val link = forwarded.sourceGroupLink
+          if (target != null) {
+            val (chatType, apiId, itemId) = target
+            withBGApi { openChat(secondaryChatsCtx = null, chat.remoteHostId, chatType, apiId, itemId) }
+          } else if (link != null) {
+            uriHandler?.openVerifiedSimplexUri(link)
           }
-        },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
+        }
+        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = 6.dp),
+      verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+      Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(painterResource(MR.images.ic_forward), stringResource(MR.strings.forwarded_from), Modifier.size(18.dp), tint = if (isInDarkTheme()) FileDark else FileLight)
+        HeaderText(stringResource(MR.strings.forwarded_from), italic = true)
+      }
+      Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(painterResource(sourceIcon), forwarded.chatName, Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+        HeaderText(forwarded.chatName, italic = false)
+      }
     }
   }
 
@@ -293,8 +332,18 @@ fun FramedItemView(
             }
           } else {
             Header()
-            if (ci.meta.itemForwarded != null) {
-              FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+            val forwarded = ci.meta.itemForwarded
+            if (forwarded != null) {
+              val fromGroup = when (forwarded) {
+                is CIForwardedFrom.Group -> forwarded.groupType != null
+                is CIForwardedFrom.GroupLink -> true
+                else -> false
+              }
+              if (fromGroup && chatInfo.chatType != ChatType.Local) {
+                ForwardedFromHeader(forwarded)
+              } else {
+                FramedItemHeader(forwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+              }
             }
           }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {

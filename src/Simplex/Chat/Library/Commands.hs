@@ -1098,9 +1098,9 @@ processChatCommand cxt nm = \case
             ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
             ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText, meta = CIMeta {itemSharedMsgId}}) (mc, file) = do
               let itemId = chatItemId' ci
-                  linkShared = sourcePublic gInfo && isJust itemSharedMsgId
                   fwdMemberId = memberId' <$> chatItemMember gInfo ci
-                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) fwdMemberId itemSharedMsgId (BoolDef linkShared))
+                  fwdGroupType = itemSharedMsgId *> sourceGroupType gInfo
+                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) fwdMemberId itemSharedMsgId fwdGroupType)
                   -- updates text to reflect current mentioned member names
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   -- only includes mentions when forwarding to the same group
@@ -1110,8 +1110,8 @@ processChatCommand cxt nm = \case
               where
                 forwardName :: GroupInfo -> ContactName
                 forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
-                sourcePublic :: GroupInfo -> Bool
-                sourcePublic GroupInfo {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
+                sourceGroupType :: GroupInfo -> Maybe GroupType
+                sourceGroupType GroupInfo {groupProfile = GroupProfile {publicGroup}} = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
         CTLocal -> do
           (_, items) <- getCommandLocalChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq ci <$$> prepareMsgReq ci) items

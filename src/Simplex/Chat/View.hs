@@ -824,7 +824,7 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
             fwdItemId = "chat item id: " <> (T.pack . show $ aChatItemId fwdACI)
         _ -> case itemForwarded of
           Just (CIFFGroup g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
-          Just (CIFFGroupLink g _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
+          Just (CIFFGroupLink g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           _ -> []
 
 localTs :: TimeZone -> UTCTime -> String
@@ -1015,7 +1015,7 @@ forwardedFrom = \case
   CIFFContact c MDRcv _ _ -> ["<- @" <> (plain . viewName) c]
   CIFFGroup g MDSnd _ _ _ _ _ -> ["<- you #" <> (plain . viewName) g]
   CIFFGroup g MDRcv _ _ _ _ _ -> ["<- #" <> (plain . viewName) g]
-  CIFFGroupLink g _ _ _ _ _ -> ["<- #" <> (plain . viewName) g]
+  CIFFGroupLink g _ _ _ _ _ _ -> ["<- #" <> (plain . viewName) g]
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
 sentByMember GroupInfo {membership} = \case

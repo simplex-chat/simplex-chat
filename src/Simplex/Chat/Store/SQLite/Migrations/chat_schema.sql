@@ -515,7 +515,7 @@ CREATE TABLE chat_items(
   item_chat_binding TEXT,
   item_signatures BLOB,
   item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  fwd_chat_link_shared INTEGER,
+  fwd_from_group_type TEXT,
   fwd_from_group_link BLOB,
   fwd_from_public_group_id BLOB,
   fwd_from_member_id BLOB,

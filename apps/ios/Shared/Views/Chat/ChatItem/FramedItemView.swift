@@ -75,7 +75,23 @@ struct FramedItemView: View {
                             }
                         })
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
-                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
+                    let fromGroup = switch itemForwarded {
+                    case .group: itemForwarded.sourceGroupType != nil && chat.chatInfo.chatType != .local
+                    case .groupLink: chat.chatInfo.chatType != .local
+                    default: false
+                    }
+                    if fromGroup {
+                        forwardedFromHeader(itemForwarded)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                if let (chatType, apiId, msgId) = itemForwarded.chatTypeApiIdMsgId {
+                                    im.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
+                                } else if let link = itemForwarded.sourceGroupLink, let url = URL(string: link) {
+                                    ChatModel.shared.appOpenUrl = url
+                                }
+                            })
+                    } else {
+                        framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
+                    }
                 }
 
                 ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: framedMsgContentView)
@@ -216,6 +232,47 @@ struct FramedItemView: View {
         } else {
             v
         }
+    }
+
+    @ViewBuilder func forwardedFromHeader(_ itemForwarded: CIForwardedFrom) -> some View {
+        let v = VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrowshape.turn.up.forward")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 14, height: 14)
+                Text("forwarded from")
+                    .font(.caption)
+                    .italic()
+                    .lineLimit(1)
+            }
+            HStack(spacing: 6) {
+                Image(systemName: sourceGroupIcon(itemForwarded))
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 14, height: 14)
+                    .foregroundColor(theme.colors.primary)
+                Text(itemForwarded.chatName)
+                    .font(.caption)
+                    .lineLimit(1)
+            }
+        }
+        .foregroundColor(theme.colors.secondary)
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
+        .padding(.bottom, 6)
+        .overlay(DetermineWidth())
+        .frame(minWidth: msgWidth, alignment: .leading)
+        .background(chatItemFrameContextColor(chatItem, theme))
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
+        } else {
+            v
+        }
+    }
+
+    private func sourceGroupIcon(_ itemForwarded: CIForwardedFrom) -> String {
+        itemForwarded.sourceGroupType == .channel ? "antenna.radiowaves.left.and.right" : "person.2"
     }
 
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {

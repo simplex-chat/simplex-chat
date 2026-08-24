@@ -251,7 +251,7 @@ rcvForwardedFrom db user chatDirection RcvMessage {chatMsgEvent} = case chatMsgE
     Nothing -> pure $ Just CIFFUnknown
     Just fl@ForwardLink {displayName}
       | linkAllowed -> Just <$> forwardLinkCIFF db user fl
-      | otherwise -> pure $ Just $ CIFFGroup displayName MDRcv Nothing Nothing Nothing Nothing (BoolDef False)
+      | otherwise -> pure $ Just $ CIFFGroup displayName MDRcv Nothing Nothing Nothing Nothing Nothing
   _ -> pure Nothing
   where
     linkAllowed = case chatDirection of
@@ -267,9 +267,13 @@ forwardLinkCIFF db user ForwardLink {displayName, groupLink, publicGroupId, memb
     Just (gId, Just storedLink)
       | sameShortLinkContact groupLink storedLink -> do
           ciId_ <- itemId_ gId
-          pure $ CIFFGroup displayName MDRcv (Just gId) ciId_ memberId (Just msgId) (BoolDef True)
-    _ -> pure $ CIFFGroupLink displayName MDRcv groupLink publicGroupId memberId msgId
+          pure $ CIFFGroup displayName MDRcv (Just gId) ciId_ memberId (Just msgId) linkGroupType
+    _ -> pure $ CIFFGroupLink displayName MDRcv groupLink publicGroupId memberId msgId linkGroupType
   where
+    linkGroupType = case groupLink of
+      CSLContact _ CCTChannel _ _ -> Just GTChannel
+      CSLContact _ CCTGroup _ _ -> Just GTGroup
+      _ -> Nothing
     itemId_ gId = case memberId of
       Nothing -> getGroupChatItemBySharedMsgId_ db user gId Nothing msgId
       Just mId ->

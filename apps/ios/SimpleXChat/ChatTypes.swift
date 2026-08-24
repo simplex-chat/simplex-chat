@@ -4328,15 +4328,23 @@ public enum MsgDirection: String, Decodable, Hashable {
 public enum CIForwardedFrom: Decodable, Hashable {
     case unknown
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
-    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?, memberId: String?, itemSharedMsgId: String?, chatLinkShared: Bool?)
-    case groupLink(chatName: String, msgDir: MsgDirection, groupLink: String, publicGroupId: String, memberId: String?, sharedMsgId: String)
+    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?, memberId: String?, itemSharedMsgId: String?, groupType: GroupType?)
+    case groupLink(chatName: String, msgDir: MsgDirection, groupLink: String, publicGroupId: String, memberId: String?, sharedMsgId: String, groupType: GroupType?)
 
     var chatName: String {
         switch self {
         case .unknown: ""
         case let .contact(chatName, _, _, _): chatName
         case let .group(chatName, _, _, _, _, _, _): chatName
-        case let .groupLink(chatName, _, _, _, _, _): chatName
+        case let .groupLink(chatName, _, _, _, _, _, _): chatName
+        }
+    }
+
+    public var sourceGroupType: GroupType? {
+        switch self {
+        case let .group(_, _, _, _, _, _, groupType): groupType
+        case let .groupLink(_, _, _, _, _, _, groupType): groupType
+        default: nil
         }
     }
 
@@ -4357,7 +4365,7 @@ public enum CIForwardedFrom: Decodable, Hashable {
 
     public var sourceGroupLink: String? {
         switch self {
-        case let .groupLink(_, _, groupLink, _, _, _): groupLink
+        case let .groupLink(_, _, groupLink, _, _, _, _): groupLink
         default: nil
         }
     }

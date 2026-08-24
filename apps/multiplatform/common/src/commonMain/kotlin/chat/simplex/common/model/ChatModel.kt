@@ -3925,8 +3925,8 @@ enum class MsgDirection {
 sealed class CIForwardedFrom {
   @Serializable @SerialName("unknown") object Unknown: CIForwardedFrom()
   @Serializable @SerialName("contact") class Contact(override val chatName: String, val msgDir: MsgDirection, val contactId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
-  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null, val memberId: String? = null, val itemSharedMsgId: String? = null, val chatLinkShared: Boolean = false): CIForwardedFrom()
-  @Serializable @SerialName("groupLink") class GroupLink(override val chatName: String, val msgDir: MsgDirection, val groupLink: String, val publicGroupId: String, val memberId: String? = null, val sharedMsgId: String): CIForwardedFrom()
+  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null, val memberId: String? = null, val itemSharedMsgId: String? = null, val groupType: GroupType? = null): CIForwardedFrom()
+  @Serializable @SerialName("groupLink") class GroupLink(override val chatName: String, val msgDir: MsgDirection, val groupLink: String, val publicGroupId: String, val memberId: String? = null, val sharedMsgId: String, val groupType: GroupType? = null): CIForwardedFrom()
 
   open val chatName: String
     get() = when (this) {
@@ -3946,6 +3946,13 @@ sealed class CIForwardedFrom {
 
   val sourceGroupLink: String?
     get() = if (this is GroupLink) groupLink else null
+
+  val sourceGroupType: GroupType?
+    get() = when (this) {
+      is Group -> groupType
+      is GroupLink -> groupType
+      else -> null
+    }
 
   fun text(chatType: ChatType): String =
     if (chatType == ChatType.Local) {

@@ -48,18 +48,20 @@ the membership for own items sent as themselves, absent otherwise.
 ```haskell
   | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId,
                chatItemId :: Maybe ChatItemId, memberId :: Maybe MemberId,
-               itemSharedMsgId :: Maybe SharedMsgId, chatLinkShared :: BoolDef}
+               itemSharedMsgId :: Maybe SharedMsgId, groupType :: Maybe GroupType}
   | CIFFGroupLink {chatName :: Text, msgDir :: MsgDirection,
                    groupLink :: ShortLinkContact, publicGroupId :: B64UrlByteString,
-                   memberId :: Maybe MemberId, sharedMsgId :: SharedMsgId}
+                   memberId :: Maybe MemberId, sharedMsgId :: SharedMsgId,
+                   groupType :: Maybe GroupType}
 ```
 
 Both variants retain the wire `memberId` and `sharedMsgId`, so a re-forward
 re-serializes `ForwardLink` from the CIFF without item lookups.
 
-- `chatLinkShared :: BoolDef` (Types.hs:2267; `omittedField = Just (BoolDef
-  False)`, so JSON serialized before this change parses with the field set to
-  false). `BoolDef True` records that the sent message included the link.
+- `groupType` in `CIFFGroup` is present exactly when the sent message included
+  the link, so it doubles as that marker; the apps read it for the source type
+  icon without lookups. In `CIFFGroupLink` it mirrors the link's type so the
+  apps avoid inspecting the URI.
 - `CIFFGroupLink` is the recipient's variant for an unknown channel; the user
   opens it via the connection plan.
 - New tag `CIFFGroupLink_` / `"groupLink"` in `CIForwardedFromTag` (:1325).
@@ -69,11 +71,10 @@ re-serializes `ForwardLink` from the CIFF without item lookups.
 `Commands.hs` `APIForwardChatItems`, `prepareForward` group branch (:1094-1110):
 
 - Local `ciff`: `CIFFGroup` with `memberId = memberId' <$> chatItemMember
-  gInfo ci`, the item's `itemSharedMsgId`, and `chatLinkShared = BoolDef
-  linkShared` where `linkShared = sourcePublic gInfo && isJust
-  itemSharedMsgId` - the same condition under which `ciffForwardLink` later
-  returns a link (the link value is computed at the `mcForward` call site,
-  after the `ciff` is built).
+  gInfo ci`, the item's `itemSharedMsgId`, and `groupType = itemSharedMsgId *>
+  sourceGroupType gInfo` - `Just` the source profile's type under the same
+  condition in which `ciffForwardLink` later returns a link (the link value is
+  computed at the `mcForward` call site, after the `ciff` is built).
 - The two `mcForward` call sites - `sendContactContentMessages.prepareMsgs`
   (Commands.hs:4772) and `prepareGroupMsg` (Internal.hs:208-209), both matching
   `(Nothing, Just _) -> pure (mcForward mc, Nothing)` on
@@ -99,19 +100,20 @@ itemForwarded = case chatMsgEvent of
 
 1. `forwardLink = Nothing` -> `CIFFUnknown` (today's behavior).
 2. Destination is a group where SimpleX links are prohibited for the sender ->
-   remove the link: store `CIFFGroup {chatName =
-   displayName, msgDir = MDRcv, groupId = Nothing, chatItemId = Nothing,
-   chatLinkShared = BoolDef False}` - attribution text only. The check: the
-   sender's role (the member's for `CDGroupRcv`, `GROwner` for `CDChannelRcv` -
-   a channel message is posted with owner authority) against the group's
-   SimplexLinks feature. Direct chats: the link is kept.
+   remove the link: store `CIFFGroup` with only the name and `msgDir = MDRcv` -
+   attribution text only. The check: the sender's role (the member's for
+   `CDGroupRcv`, `GROwner` for `CDChannelRcv` - a channel message is posted
+   with owner authority) against the group's SimplexLinks feature. Direct
+   chats: the link is kept.
 3. Lookup by `publicGroupId`: `group_profiles.public_group_id` is a column
    with an existing query that filters on it (Store/Groups.hs:2009-2015). New
    query `getGroupViaPublicGroupId`; on a match, compare the received
    `groupLink` with the stored one (`sameShortLinkContact`); when both match ->
-   `CIFFGroup` with `groupId`, the wire `memberId` and `msgId`, `chatLinkShared
-   = BoolDef True`, and `chatItemId = ciId_` resolved by the id query factored
-   out of `getGroupChatItemBySharedMsgId` (`getGroupChatItemBySharedMsgId_`).
+   `CIFFGroup` with `groupId`, the wire `memberId` and `msgId`, `groupType`
+   from the link's `ContactConnType` (equal to the stored link's type -
+   `sameShortLinkContact` compares it), and `chatItemId = ciId_` resolved by
+   the id query factored out of `getGroupChatItemBySharedMsgId`
+   (`getGroupChatItemBySharedMsgId_`).
    The author scope: wire `memberId` absent -> `Nothing` (items sent as the
    channel and own items are stored with `group_member_id` NULL); present ->
    the member resolved by `member_id`, with the user's own membership mapped
@@ -126,7 +128,7 @@ fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id,
 fwd_from_chat_item_id`, Store/Messages.hs:606). Migration (SQLite + Postgres,
 same shape) adds:
 
-- `fwd_chat_link_shared INTEGER` (0/1; NULL is read as false; `chatLinkShared`)
+- `fwd_from_group_type TEXT` (`GroupType`'s `TextEncoding`)
 - `fwd_from_group_link BLOB/BYTEA` (the `ToField (ConnShortLink c)` instance
   stores `Binary . strEncode`, matching `short_link_contact`)
 - `fwd_from_public_group_id BLOB/BYTEA`
@@ -146,9 +148,17 @@ on both backends.
   `CIFFGroup`).
 - The `CIForwardedFrom` JSON reaches the apps in `CIMeta`: the iOS
   (`ChatTypes.swift`) and Kotlin (`ChatModel.kt`) mirrors are extended with the
-  new field and variant. Header text for `CIFFGroup` and `CIFFGroupLink`:
-  "forwarded from \<chatName\>". Tapping the header opens the
-  connection plan for `groupLink` (existing planAndConnect paths).
+  new field and variant.
+- Group-attributed forwards in non-local chats - `CIFFGroupLink` always,
+  `CIFFGroup` when `groupType` is present - render a two-row header at double
+  the single-header height: row 1 - forward icon + "forwarded from" (current
+  style); row 2 - source type icon in accent color + name in regular color.
+  The type icon (channel vs group) reads the CIFF's `groupType`. The whole
+  header opens the source: known group - the chat at the original item;
+  unknown - the connection plan for `groupLink`. All other forwards, including
+  the link-removed name-only `CIFFGroup`, keep the single-line header.
+- The goto arrow beside the bubble applies only to locally resolved items
+  (`chatTypeApiIdMsgId`), never to joining.
 
 ## Tests
 
