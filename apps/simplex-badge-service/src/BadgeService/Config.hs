@@ -23,6 +23,8 @@ module BadgeService.Config
     newBadgeServiceEnv,
     checkFailureBuckets,
     debitFailureBuckets,
+    sweepSignerBuckets,
+    sweepSignerBucketsIO,
   )
 where
 
@@ -326,12 +328,24 @@ parseThrottle path ini
       globalStart <- optionalWord32 path "throttle" "global_failure_start_tokens" (blStartTokens defaultGlobalFailureLimits) ini
       catalogCapacity <- optionalWord32 path "throttle" "catalog_capacity" (blCapacity defaultCatalogLimits) ini
       catalogStart <- optionalWord32 path "throttle" "catalog_start_tokens" (blStartTokens defaultCatalogLimits) ini
+      nonZeroCapacity path "signer_failure_capacity" signerCapacity
+      nonZeroCapacity path "global_failure_capacity" globalCapacity
+      nonZeroCapacity path "catalog_capacity" catalogCapacity
       pure
         ThrottleConfig
           { signerFailure = BucketLimits {blCapacity = signerCapacity, blStartTokens = signerStart},
             globalFailure = BucketLimits {blCapacity = globalCapacity, blStartTokens = globalStart},
             catalog = BucketLimits {blCapacity = catalogCapacity, blStartTokens = catalogStart}
           }
+
+-- | Capacity 0 parses fine as a 'Word32' but is meaningless (a bucket that never refills has
+-- no finite retryAfter, per 'BucketLimits'' Haddock) -- reject it at config-parse time, naming
+-- the key, the same way every other malformed value in this file fails fast, rather than
+-- letting it reach 'bucketStatus' and silently degrade one throttle to a spurious 'internal'
+-- response via the catch-all.
+nonZeroCapacity :: FilePath -> Text -> Word32 -> Either String ()
+nonZeroCapacity path key 0 = configError path ("key '" <> T.unpack key <> "' in section [throttle] must be greater than 0 (a capacity of 0 never refills)")
+nonZeroCapacity _ _ _ = Right ()
 
 -- Validation helpers ---------------------------------------------------------
 
@@ -452,9 +466,23 @@ bucketStatus now' tb0 =
 debitBucket :: TokenBucket -> TokenBucket
 debitBucket tb@TokenBucket {tbTokens} = tb {tbTokens = max 0 (tbTokens - 1)}
 
--- | The per-signer failure-bucket family: every signer key gets its own 'TokenBucket', built
--- from 'sbLimits' the first time that key is seen. Keyed by the key's encoded bytes rather
--- than 'C.PublicKeyEd25519' itself, which has no 'Ord' instance.
+-- | The per-signer failure-bucket family: a signer key gets a 'TokenBucket' entry ONLY once
+-- it has actually failed a redemption (via 'debitSignerBucket') -- never merely from being
+-- checked ('peekSignerBucket'). This is the fix for an unbounded-memory hazard: 'purchaseKey'
+-- is attacker-controlled and free to mint, 'purchaseBadge' deliberately skips the
+-- pre-existing-record check (it's the normal first-purchase path), so every signed
+-- 'purchaseBadge{code}' -- including one that never reaches processing, and one whose code
+-- turns out valid -- reaches this bucket. A version that inserted on every peek let one cheap
+-- keypair buy one permanent map entry, for free, before authentication. Because only a
+-- classified failure debits (badges-rpc.md's "only a failed redemption debits a token", and
+-- the B5 brief's "only a failed redemption debits a token"), and a debit also always spends
+-- one token from the single shared 'globalFailureBucket' (see 'BadgeServiceEnv'), the number
+-- of NEW entries creatable in any window is bounded by how many tokens that shared bucket can
+-- grant in that window -- capped at its capacity (default 600) regardless of how many
+-- distinct keys an attacker mints, because minting keys is free but making them each fail is
+-- not. 'sweepSignerBuckets' additionally reclaims entries whose bucket has fully recovered,
+-- keeping steady-state well under that cap. Keyed by the key's encoded bytes rather than
+-- 'C.PublicKeyEd25519' itself, which has no 'Ord' instance.
 data SignerBucketFamily = SignerBucketFamily
   { sbLimits :: BucketLimits,
     sbBuckets :: TVar (M.Map ByteString TokenBucket)
@@ -463,18 +491,48 @@ data SignerBucketFamily = SignerBucketFamily
 newSignerBucketFamily :: BucketLimits -> IO SignerBucketFamily
 newSignerBucketFamily limits = SignerBucketFamily limits <$> newTVarIO M.empty
 
+-- | Read-only for a key with no entry yet: computes the check against an ephemeral bucket (as
+-- if freshly created from 'sbLimits') WITHOUT inserting it -- a bare pre-processing check,
+-- however many times repeated, from however many distinct keys, never grows the map (the
+-- property 'SignerBucketFamily''s Haddock proves). A key that already has a real entry (from
+-- a past debit) has its refill persisted back, which never grows the map either, only updates
+-- an existing key.
 peekSignerBucket :: UTCTime -> C.PublicKeyEd25519 -> SignerBucketFamily -> STM (Either Word32 ())
 peekSignerBucket now' signerKey SignerBucketFamily {sbLimits, sbBuckets} = do
   buckets <- readTVar sbBuckets
   let keyBytes = strEncode signerKey
-      tb0 = M.findWithDefault (newTokenBucket sbLimits now') keyBytes buckets
-      (ok, retryAfter, tb') = bucketStatus now' tb0
-  writeTVar sbBuckets $! M.insert keyBytes tb' buckets
-  pure $ if ok then Right () else Left retryAfter
+  case M.lookup keyBytes buckets of
+    Nothing ->
+      let (ok, retryAfter, _) = bucketStatus now' (newTokenBucket sbLimits now')
+       in pure $ if ok then Right () else Left retryAfter
+    Just tb0 -> do
+      let (ok, retryAfter, tb') = bucketStatus now' tb0
+      writeTVar sbBuckets $! M.insert keyBytes tb' buckets
+      pure $ if ok then Right () else Left retryAfter
 
-debitSignerBucket :: C.PublicKeyEd25519 -> SignerBucketFamily -> STM ()
-debitSignerBucket signerKey SignerBucketFamily {sbBuckets} =
-  modifyTVar' sbBuckets $ M.adjust debitBucket (strEncode signerKey)
+-- | The only thing that can insert a NEW key into the map (see 'SignerBucketFamily''s
+-- Haddock): a first-ever failure starts that signer's bucket at 'sbLimits' (refilled to
+-- 'now'', same as a fresh bucket would be) and immediately spends the one token this debit is
+-- for; a key with an existing entry just has its own bucket refilled-then-debited.
+debitSignerBucket :: UTCTime -> C.PublicKeyEd25519 -> SignerBucketFamily -> STM ()
+debitSignerBucket now' signerKey SignerBucketFamily {sbLimits, sbBuckets} =
+  modifyTVar' sbBuckets $ \buckets ->
+    let keyBytes = strEncode signerKey
+        tb0 = M.findWithDefault (newTokenBucket sbLimits now') keyBytes buckets
+     in M.insert keyBytes (debitBucket (refillBucket now' tb0)) buckets
+
+-- | Reclaims every signer entry whose bucket has fully recovered (refilled back to capacity)
+-- as of 'now'' -- indistinguishable from a key that never failed, so safe to forget. Returns
+-- the number evicted. Composes with, but does not replace, 'debitSignerBucket' never
+-- inserting from a mere peek: this bounds steady-state size further, on top of the growth-rate
+-- cap that holds even if this is never called.
+sweepSignerBuckets :: UTCTime -> SignerBucketFamily -> STM Int
+sweepSignerBuckets now' SignerBucketFamily {sbBuckets} = do
+  buckets <- readTVar sbBuckets
+  let recovered tb = tbTokens (refillBucket now' tb) >= fromIntegral (tbCapacity tb)
+      kept = M.filter (not . recovered) buckets
+  writeTVar sbBuckets kept
+  pure (M.size buckets - M.size kept)
 
 peekGlobalBucket :: UTCTime -> TVar TokenBucket -> STM (Either Word32 ())
 peekGlobalBucket now' var = do
@@ -543,7 +601,20 @@ checkFailureBuckets BadgeServiceEnv {now, signerFailureBucket, globalFailureBuck
 -- redemption can fail here. B7 calls this after a failed classification; B10 asserts the
 -- accounting.
 debitFailureBuckets :: BadgeServiceEnv -> C.PublicKeyEd25519 -> IO ()
-debitFailureBuckets BadgeServiceEnv {signerFailureBucket, globalFailureBucket} signerKey =
+debitFailureBuckets BadgeServiceEnv {now, signerFailureBucket, globalFailureBucket} signerKey = do
+  now' <- now
   atomically $ do
-    debitSignerBucket signerKey signerFailureBucket
+    debitSignerBucket now' signerKey signerFailureBucket
     modifyTVar' globalFailureBucket debitBucket
+
+-- | Sweeps the per-signer bucket map (see 'SignerBucketFamily''s Haddock), using the env's
+-- injectable clock rather than 'getCurrentTime' directly, so a test can prove eviction without
+-- sleeping. Not run on a timer in B5: the map only ever gains an entry via 'debitFailureBuckets'
+-- (see its Haddock), which nothing in B5 calls yet (no code classifier exists), so the map is
+-- provably empty for the whole of this step regardless of sweeping. Exported so B7 (which
+-- starts calling 'debitFailureBuckets' for real) or whichever step owns the service's
+-- background-thread lifecycle can wire this on a timer without redoing the eviction logic.
+sweepSignerBucketsIO :: BadgeServiceEnv -> IO Int
+sweepSignerBucketsIO BadgeServiceEnv {now, signerFailureBucket} = do
+  now' <- now
+  atomically $ sweepSignerBuckets now' signerFailureBucket

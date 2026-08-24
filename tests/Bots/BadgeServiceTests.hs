@@ -9,7 +9,23 @@
 module Bots.BadgeServiceTests where
 
 import BadgeService.Catalog (catalogTotals, defaultCatalog, offerTotal, seedCatalog)
-import BadgeService.Config (BadgeServiceConfig (..), readBadgeServiceConfig)
+import BadgeService.Config
+  ( BadgeServiceConfig (..),
+    BadgeServiceEnv (..),
+    BucketLimits (..),
+    -- 'CodesConfig'/'IssuerConfig' import only their constructors, not '(..)': their field
+    -- 'issuerKeyFile' is already a pervasive local variable name below (writeTestBadgeServiceSecrets
+    -- and its many callers), so importing the field selector too would shadow it (Werror).
+    CodesConfig (CodesConfig),
+    IssuerConfig (IssuerConfig),
+    SignerBucketFamily (..),
+    ThrottleConfig (..),
+    checkFailureBuckets,
+    debitFailureBuckets,
+    newBadgeServiceEnv,
+    readBadgeServiceConfig,
+    sweepSignerBuckets,
+  )
 import BadgeService.Credentials (issueSignedBadge, loadIssuerKey)
 import BadgeService.Options
 import BadgeService.Service
@@ -18,9 +34,9 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (atomically, readTVarIO)
 import Control.Exception (SomeException, evaluate, finally, try)
-import Control.Monad (void)
+import Control.Monad (replicateM, void)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -28,6 +44,7 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LBC
 import Data.List (find, isInfixOf)
+import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
@@ -104,6 +121,9 @@ badgeServiceTests = do
   it "should respond bad_request to purchaseBadge funded by apple" testBadgeServicePurchaseBadgeAppleBadRequest
   it "should reject purchaseBadge{code} with rate_limited before processing when the per-signer bucket is drained" testBadgeServicePurchaseCodeThrottlePreCheck
   it "should turn a pure exception forced only during response encoding into internal, without escaping runHandler" testBadgeServiceCatchAllContainsPureException
+  it "should not grow the per-signer bucket map from checks alone, across many distinct keys" testBadgeServiceThrottlePeekDoesNotGrowMap
+  it "should add exactly one bucket entry per distinct key that actually fails, and let a sweep evict recovered ones" testBadgeServiceThrottleDebitBoundedAndSweepEvicts
+  it "should reject a [throttle] capacity of 0 at config-parse time, naming the key" testBadgeServiceConfigThrottleZeroCapacity
   it "should migrate web_orders, codes and provider_events up and down" testBadgeServiceWebOrderSchemaMigration
   it "should seed the catalog idempotently and preserve a deprecated price" testBadgeServiceCatalogSeeding
   it "should price 3 months at 2x and 12 months at 6x the monthly price" testBadgeCatalogOfferTotal
@@ -415,6 +435,84 @@ testBadgeServiceCatchAllContainsPureException _ps = do
   KM.lookup "message" caughtObj `shouldBe` Nothing -- never leaks the caught exception's own text
   goodObj <- runHandler "test-req-after-pure-exception" (pure $ BSPError {code = BSEBadRequest, message = Nothing, retryAfter = Nothing})
   KM.lookup "code" goodObj `shouldBe` Just (J.String "bad_request")
+
+-- Builds a real BadgeServiceEnv directly (real issuer key + code secret files, production-
+-- shaped [throttle] defaults) against an already-migrated store, without going through a live
+-- service -- so the throttle's own STM state can be inspected and driven directly.
+mkTestBadgeServiceEnv :: TestParams -> DBStore -> IO BadgeServiceEnv
+mkTestBadgeServiceEnv TestParams {tmpPath} st = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let cfg =
+        BadgeServiceConfig
+          { issuer = IssuerConfig issuerKeyFile 1,
+            codes = CodesConfig codeSecretFile 365,
+            web = Nothing,
+            btcpay = Nothing,
+            stripe = Nothing,
+            service = Nothing,
+            reconcile = Nothing,
+            throttle =
+              ThrottleConfig
+                { signerFailure = BucketLimits {blCapacity = 10, blStartTokens = 10},
+                  globalFailure = BucketLimits {blCapacity = 600, blStartTokens = 600},
+                  catalog = BucketLimits {blCapacity = 600, blStartTokens = 600}
+                }
+          }
+  newBadgeServiceEnv cfg st
+
+-- Fix round 1 (unbounded per-signer map): the convincing form the review asked for. Driving
+-- many distinct, never-before-seen signer keys through the pre-processing throttle check
+-- (checkFailureBuckets, called for every signed purchaseBadge{code}) must NOT insert anything
+-- into the per-signer bucket map -- a pre-check, however many times repeated or against
+-- however many distinct attacker-minted keys, costs nothing. SignerBucketFamily's Haddock
+-- states the property this proves directly: only an actual debit (a real failed redemption)
+-- can grow the map.
+testBadgeServiceThrottlePeekDoesNotGrowMap :: HasCallStack => TestParams -> IO ()
+testBadgeServiceThrottlePeekDoesNotGrowMap ps =
+  withFreshBadgeStore ps $ \st -> do
+    bsEnv <- mkTestBadgeServiceEnv ps st
+    keys <- replicateM 500 (fst <$> mkTestKeyPair)
+    mapM_ (checkFailureBuckets bsEnv) keys
+    mapSize <- Map.size <$> readTVarIO (sbBuckets (signerFailureBucket bsEnv))
+    mapSize `shouldBe` 0
+
+-- The other half: an ACTUAL failure (debitFailureBuckets, called by B7 after a classified
+-- code_invalid/used/expired) DOES cost exactly one map entry per distinct signer -- the
+-- intended, bounded cost (bounded by the shared global failure budget, since every debit also
+-- spends one of its tokens; see SignerBucketFamily's Haddock). A sweep, given a `now'` far
+-- enough past for that signer's own bucket to have fully refilled -- the injectable clock,
+-- not a real sleep -- then reclaims every such entry.
+testBadgeServiceThrottleDebitBoundedAndSweepEvicts :: HasCallStack => TestParams -> IO ()
+testBadgeServiceThrottleDebitBoundedAndSweepEvicts ps =
+  withFreshBadgeStore ps $ \st -> do
+    bsEnv <- mkTestBadgeServiceEnv ps st
+    keys <- replicateM 20 (fst <$> mkTestKeyPair)
+    mapM_ (debitFailureBuckets bsEnv) keys
+    sizeAfterDebits <- Map.size <$> readTVarIO (sbBuckets (signerFailureBucket bsEnv))
+    sizeAfterDebits `shouldBe` 20 -- exactly one entry per distinct key that actually failed
+    -- 1 hour is far more than the 6 minutes a capacity-10/10-per-hour bucket needs to regain
+    -- the single token one debit spent; using the injectable clock, not a real sleep.
+    wellPastFullRefill <- addUTCTime 3600 <$> getCurrentTime
+    evicted <- atomically $ sweepSignerBuckets wellPastFullRefill (signerFailureBucket bsEnv)
+    evicted `shouldBe` 20
+    sizeAfterSweep <- Map.size <$> readTVarIO (sbBuckets (signerFailureBucket bsEnv))
+    sizeAfterSweep `shouldBe` 0
+
+-- Fix round 1 (minor): a [throttle] capacity of 0 would otherwise reach bucketStatus's own
+-- guard (an `error`, since a bucket that never refills has no finite retryAfter) and get
+-- silently swallowed into a spurious internal by the catch-all. An operator typo should fail
+-- fast at config-parse time instead, like every other malformed value in this file, naming
+-- the offending key.
+testBadgeServiceConfigThrottleZeroCapacity :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigThrottleZeroCapacity TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "zero-capacity-throttle.ini"
+  writeFile path $
+    unlines $
+      issuerCodesIniLines issuerKeyFile codeSecretFile
+        ++ ["", "[throttle]", "signer_failure_capacity = 0"]
+  Left err <- readBadgeServiceConfig path
+  err `shouldSatisfy` ("signer_failure_capacity" `isInfixOf`)
 
 -- Applies every migration except 20260821_badge_service_web, then exercises that one
 -- migration's up/down/up cycle directly, checking the three new tables appear and
