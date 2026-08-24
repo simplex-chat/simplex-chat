@@ -102,10 +102,10 @@ fun FramedItemView(
   }
 
   @Composable
-  fun HeaderText(caption: String, italic: Boolean) {
+  fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp) {
     Text(
       buildAnnotatedString {
-        withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
+        withStyle(SpanStyle(fontSize = fontSize, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
           append(caption)
         }
       },
@@ -116,14 +116,20 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
+  fun headerModifier(pad: Boolean, onClick: (() -> Unit)? = null): Modifier {
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
+    return Modifier
+      .background(if (sent) sentColor else receivedColor)
+      .fillMaxWidth()
+      .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+      .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
+  }
+
+  @Composable
+  fun HeaderRow(modifier: Modifier, caption: String, italic: Boolean, icon: Painter?, iconColor: Color?) {
     Row(
-      Modifier
-        .background(if (sent) sentColor else receivedColor)
-        .fillMaxWidth()
-        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp),
+      modifier,
       horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -140,33 +146,8 @@ fun FramedItemView(
   }
 
   @Composable
-  fun ForwardedFromHeader(forwarded: CIForwardedFrom) {
-    val sentColor = MaterialTheme.appColors.sentQuote
-    val receivedColor = MaterialTheme.appColors.receivedQuote
-    Column(
-      Modifier
-        .background(if (sent) sentColor else receivedColor)
-        .fillMaxWidth()
-        .clickable {
-          val target = forwarded.chatTypeApiIdMsgId
-          val link = forwarded.sourceGroupLink
-          if (target != null) {
-            val (chatType, apiId, itemId) = target
-            withBGApi { openChat(secondaryChatsCtx = null, chat.remoteHostId, chatType, apiId, itemId) }
-          } else if (link != null) {
-            withBGApi { planAndConnect(chat.remoteHostId, link, close = null) }
-          }
-        }
-        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = 6.dp),
-      verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-      val caption = stringResource(if (chatInfo.chatType == ChatType.Local) MR.strings.saved_from else MR.strings.forwarded_from)
-      Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(painterResource(MR.images.ic_forward), caption, Modifier.size(18.dp), tint = if (isInDarkTheme()) FileDark else FileLight)
-        HeaderText(caption, italic = true)
-      }
-      HeaderText(forwarded.chatName, italic = false)
-    }
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
+    HeaderRow(headerModifier(pad), caption, italic, icon, iconColor)
   }
 
   @Composable
@@ -331,7 +312,7 @@ fun FramedItemView(
             Header()
             val forwarded = ci.meta.itemForwarded
             if (forwarded != null) {
-              val twoRow = if (chatInfo.chatType == ChatType.Local) {
+              val twoRowHeader = if (chatInfo.chatType == ChatType.Local) {
                 forwarded.chatTypeApiIdMsgId != null || forwarded.sourceGroupLink != null
               } else {
                 when (forwarded) {
@@ -340,8 +321,24 @@ fun FramedItemView(
                   else -> false
                 }
               }
-              if (twoRow) {
-                ForwardedFromHeader(forwarded)
+              if (twoRowHeader) {
+                val caption = stringResource(if (chatInfo.chatType == ChatType.Local) MR.strings.saved_from else MR.strings.forwarded_from)
+                Column(
+                  headerModifier(pad = true, onClick = {
+                    val target = forwarded.chatTypeApiIdMsgId
+                    val link = forwarded.sourceGroupLink
+                    if (target != null) {
+                      val (chatType, apiId, itemId) = target
+                      withBGApi { openChat(secondaryChatsCtx = null, chat.remoteHostId, chatType, apiId, itemId) }
+                    } else if (link != null) {
+                      withBGApi { planAndConnect(chat.remoteHostId, link, close = null) }
+                    }
+                  }),
+                  verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  HeaderRow(Modifier, caption, true, painterResource(MR.images.ic_forward), null)
+                  HeaderText(forwarded.chatName, italic = false, fontSize = 15.sp)
+                }
               } else {
                 FramedItemHeader(forwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
               }
