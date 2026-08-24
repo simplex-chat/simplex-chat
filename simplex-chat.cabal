@@ -418,6 +418,7 @@ executable simplex-badge-service
       StrictData
   other-modules:
       BadgeService.Catalog
+      BadgeService.Codes
       BadgeService.Config
       BadgeService.Ledger
       BadgeService.Options
@@ -699,12 +700,14 @@ test-suite simplex-chat-test
       API.Docs.Types
       API.TypeInfo
       BadgeService.Catalog
+      BadgeService.Codes
       BadgeService.Config
       BadgeService.Ledger
       BadgeService.Options
       BadgeService.Service
       BadgeService.Store
       BadgeService.Store.Migrate
+      Bots.BadgeCodeTests
       Bots.BadgeLedgerTests
       Bots.BadgeServiceTests
       Broadcast.Bot

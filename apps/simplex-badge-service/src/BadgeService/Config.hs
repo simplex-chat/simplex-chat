@@ -20,6 +20,8 @@ module BadgeService.Config
   )
 where
 
+import BadgeService.Codes (loadCodeSecret)
+import Data.ByteString (ByteString)
 import Data.Ini (Ini, keys, lookupValue, readIniFile, sections)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -318,8 +320,14 @@ data BadgeServiceEnv = BadgeServiceEnv
     store :: DBStore,
     -- | Every service component reads the clock through this, and none calls
     --   'getCurrentTime' directly, so a test can advance service time without sleeping.
-    now :: IO UTCTime
+    now :: IO UTCTime,
+    -- | Decoded once at startup from '[codes] secret_file' (rejected there if it fails to
+    --   decode to at least 32 bytes): the long-lived HMAC key behind every order-derived
+    --   redemption code. See 'BadgeService.Codes.deriveOrderCode' and 'loadCodeSecret'.
+    codeSecret :: ByteString
   }
 
 newBadgeServiceEnv :: BadgeServiceConfig -> DBStore -> IO BadgeServiceEnv
-newBadgeServiceEnv cfg st = pure BadgeServiceEnv {config = cfg, store = st, now = getCurrentTime}
+newBadgeServiceEnv cfg st = do
+  codeSecret <- loadCodeSecret (codesSecretFile (codes cfg))
+  pure BadgeServiceEnv {config = cfg, store = st, now = getCurrentTime, codeSecret}

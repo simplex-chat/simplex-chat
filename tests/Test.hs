@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
+import Bots.BadgeCodeTests
 import Bots.BadgeLedgerTests
 import Bots.BadgeServiceTests
 import Bots.BroadcastTests
@@ -66,6 +67,7 @@ main = do
 #endif
       describe "Supporter badges" badgeTests
       describe "Supporter badges" badgeLedgerTests
+      describe "Supporter badges" badgeCodeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
