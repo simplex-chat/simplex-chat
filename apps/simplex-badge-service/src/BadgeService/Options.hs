@@ -1,16 +1,20 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module BadgeService.Options
   ( BadgeServiceOpts (..),
+    BadgeServiceCommand (..),
     getBadgeServiceOpts,
+    getBadgeServiceCommand,
     badgeServiceOpts,
     mkChatOpts,
   )
 where
 
+import BadgeService.Admin (AdminOpts (..), adminCommandParser)
 import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
@@ -26,6 +30,16 @@ data BadgeServiceOpts = BadgeServiceOpts
     testing :: Bool,
     configFile :: FilePath
   }
+
+-- | Either the plain service run -- the DEFAULT when no subcommand is given -- or the
+-- operator @codes@ subcommand ("BadgeService.Admin"). 'hsubparser' alone makes a subcommand
+-- mandatory, which would break every existing way of starting the service, so
+-- 'badgeServiceCommand' wraps it in 'optional' (decision 3): both branches of the parser
+-- always run, and only the VALUE produced (not the parser structure) depends on whether
+-- @codes@ was given.
+data BadgeServiceCommand
+  = RunService BadgeServiceOpts
+  | RunAdmin AdminOpts
 
 badgeServiceOpts :: FilePath -> FilePath -> Parser BadgeServiceOpts
 badgeServiceOpts appDir defaultDbName = do
@@ -77,6 +91,35 @@ getBadgeServiceOpts appDir defaultDbName =
     info
       (helper <*> versionOption <*> badgeServiceOpts appDir defaultDbName)
       (header versionStr <> fullDesc <> progDesc "Start SimpleX Badge Service with DB_FILE options")
+  where
+    versionStr = versionString versionNumber
+    versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
+    versionAndUpdate = versionStr <> "\n" <> updateStr
+
+-- | Parses either the plain service run or the @codes@ subcommand (see 'BadgeServiceCommand').
+-- Plain 'Applicative' combinators, not @do@\/'ApplicativeDo': 'Parser' has no 'Monad'
+-- instance, and GHC's 'ApplicativeDo' desugaring does not always find an applicative-only
+-- reading of a @do@ block ending in a 'case' over an earlier bind, as this one does.
+-- @--config@ and the core database options are parsed unconditionally by 'badgeServiceOpts',
+-- so they apply the same way to both branches: the subcommand loads the same ini as a
+-- service run.
+badgeServiceCommand :: FilePath -> FilePath -> Parser BadgeServiceCommand
+badgeServiceCommand appDir defaultDbName =
+  toCommand <$> badgeServiceOpts appDir defaultDbName <*> optional codesSubparser
+  where
+    codesSubparser =
+      hsubparser $
+        command "codes" (info adminCommandParser (progDesc "Operator commands for redemption codes"))
+    toCommand opts@BadgeServiceOpts {coreOptions, configFile} = \case
+      Nothing -> RunService opts
+      Just adminCmd -> RunAdmin AdminOpts {adminCoreOptions = coreOptions, adminConfigFile = configFile, adminCmd}
+
+getBadgeServiceCommand :: FilePath -> FilePath -> IO BadgeServiceCommand
+getBadgeServiceCommand appDir defaultDbName =
+  execParser $
+    info
+      (helper <*> versionOption <*> badgeServiceCommand appDir defaultDbName)
+      (header versionStr <> fullDesc <> progDesc "Start SimpleX Badge Service, or run an operator subcommand")
   where
     versionStr = versionString versionNumber
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")

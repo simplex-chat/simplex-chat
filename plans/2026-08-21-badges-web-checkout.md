@@ -140,7 +140,7 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | B5 | RPC dispatcher: envelope, version, signer, throttle | A2, A6, B1 | ☑ |
 | B6 | `getBadgeCatalog` | A4, B1, B2, B5 | ☐ |
 | B7 | `purchaseBadge{code}` and `issueBadge` | B1, B2, B3, B4, B5 | ☐ |
-| B8 | `codes` operator subcommand | A4, B1, B3 | ☐ |
+| B8 | `codes` operator subcommand | A4, B1, B3 | ☑ |
 | B9 | Service address publication | A6, B5 | ☐ |
 | B10 | Service integration tests | B7, B8 | ☐ |
 | C1 | `Store/Badges.hs`: client badge store | A1, A2 | ☐ |
