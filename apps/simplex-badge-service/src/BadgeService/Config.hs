@@ -21,6 +21,7 @@ module BadgeService.Config
 where
 
 import BadgeService.Codes (loadCodeSecret)
+import BadgeService.Credentials (loadIssuerKey)
 import Data.ByteString (ByteString)
 import Data.Ini (Ini, keys, lookupValue, readIniFile, sections)
 import Data.Maybe (isJust)
@@ -28,6 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
+import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Util (eitherToMaybe)
 import System.Directory (doesFileExist)
 import Text.Read (readMaybe)
@@ -324,10 +326,14 @@ data BadgeServiceEnv = BadgeServiceEnv
     -- | Decoded once at startup from '[codes] secret_file' (rejected there if it fails to
     --   decode to at least 32 bytes): the long-lived HMAC key behind every order-derived
     --   redemption code. See 'BadgeService.Codes.deriveOrderCode' and 'loadCodeSecret'.
-    codeSecret :: ByteString
+    codeSecret :: ByteString,
+    -- | The issuer BBS secret key loaded from '[issuer] key_file' (B4): loaded once at
+    --   startup, alongside 'config', so a malformed or absent key file fails fast.
+    issuerKey :: BBSSecretKey
   }
 
 newBadgeServiceEnv :: BadgeServiceConfig -> DBStore -> IO BadgeServiceEnv
 newBadgeServiceEnv cfg st = do
   codeSecret <- loadCodeSecret (codesSecretFile (codes cfg))
-  pure BadgeServiceEnv {config = cfg, store = st, now = getCurrentTime, codeSecret}
+  issuerKey <- loadIssuerKey (issuerKeyFile (issuer cfg)) (issuerKeyIdx (issuer cfg))
+  pure BadgeServiceEnv {config = cfg, store = st, now = getCurrentTime, codeSecret, issuerKey}

@@ -136,7 +136,7 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | B1 | Store layer: purchases, ledger, issuances, codes, catalog | A2, A3, A4, A5 | ☑ |
 | B2 | `Ledger.hs`: pure transitions and property tests | A5 | ☑ |
 | B3 | `Codes.hs`: derive, encode, hash, classify | A5, A6, B1 | ☑ |
-| B4 | Issuer key loading and credential signing | A5, A6, B2 | ☐ |
+| B4 | Issuer key loading and credential signing | A5, A6, B2 | ☑ |
 | B5 | RPC dispatcher: envelope, version, signer, throttle | A2, A6, B1 | ☐ |
 | B6 | `getBadgeCatalog` | A4, B1, B2, B5 | ☐ |
 | B7 | `purchaseBadge{code}` and `issueBadge` | B1, B2, B3, B4, B5 | ☐ |

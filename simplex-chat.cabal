@@ -420,6 +420,7 @@ executable simplex-badge-service
       BadgeService.Catalog
       BadgeService.Codes
       BadgeService.Config
+      BadgeService.Credentials
       BadgeService.Ledger
       BadgeService.Options
       BadgeService.Service
@@ -702,6 +703,7 @@ test-suite simplex-chat-test
       BadgeService.Catalog
       BadgeService.Codes
       BadgeService.Config
+      BadgeService.Credentials
       BadgeService.Ledger
       BadgeService.Options
       BadgeService.Service

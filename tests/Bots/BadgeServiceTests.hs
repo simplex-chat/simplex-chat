@@ -9,6 +9,7 @@ module Bots.BadgeServiceTests where
 
 import BadgeService.Catalog (catalogTotals, defaultCatalog, offerTotal, seedCatalog)
 import BadgeService.Config (BadgeServiceConfig (..), readBadgeServiceConfig)
+import BadgeService.Credentials (issueSignedBadge, loadIssuerKey)
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store
@@ -26,10 +27,12 @@ import Data.List (find, isInfixOf)
 import Data.Maybe (fromJust, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
-import Data.Time.Clock (addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Calendar.WeekDate (toWeekDate)
+import Data.Time.Clock (DiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay, secondsToDiffTime)
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeMasterKey (..), BadgeType (..))
-import Simplex.Chat.Badges.Service (BadgeCatalog (..), BadgeOffer (..), BadgePrice (..))
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeRequest (..), BadgeType (..), verifyCredential)
+import Simplex.Chat.Badges.Service (BadgeCatalog (..), BadgeOffer (..), BadgePrice (..), BadgeServiceErrorCode (..))
 import Simplex.Chat.Badges.Types
   ( BadgeItemStatus (..),
     BadgeLedgerEntry (..),
@@ -52,6 +55,7 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..), BBSSecretKey (..), bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strEncode)
+import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
@@ -87,6 +91,14 @@ badgeServiceTests = do
   it "should disable a price out of the active catalog while both stay reachable by id" testBadgeStoreSetPriceStatusDisabled
   it "should return the redeeming purchase key from getCodeByHash" testBadgeStoreGetCodeByHashRedeemer
   it "should clear both redemption columns and set unredeemed_at" testBadgeStoreUnredeemCode
+  it "should sign a credential that verifies with the matching public key, and fail with a different one" testBadgeCredentialSignAndVerify
+  it "should set badgeExpiry to the next Sunday at 23:59:59 UTC" testBadgeCredentialExpiryIsSundayEndOfDay
+  it "should roll a periodEnd already on a Sunday to the following Sunday" testBadgeCredentialExpirySundayRollsToFollowingSunday
+  it "should reject a badgeRequest with non-empty badgeExtra as bad_request" testBadgeCredentialRejectsNonEmptyBadgeExtra
+  it "should load a valid issuer key file" testBadgeIssuerKeyLoadsValidFile
+  it "should fail fast on a missing issuer key file" testBadgeIssuerKeyMissingFile
+  it "should fail fast on an issuer key file without a 'secret' line" testBadgeIssuerKeyMalformedFile
+  it "should fail fast on a non-positive key_idx" testBadgeIssuerKeyNonPositiveIdx
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -621,6 +633,100 @@ testBadgeStoreUnredeemCode ps =
       Just storedUnredeemedAt -> abs (diffUTCTime storedUnredeemedAt unredeemAt) < 1 `shouldBe` True
       Nothing -> expectationFailure "unredeemed_at should be set after unredeemCode"
     redeemer `shouldBe` Nothing
+
+-- B4 issuer key + credential signing -----------------------------------------
+
+sundayEndOfDay :: DiffTime
+sundayEndOfDay = secondsToDiffTime (23 * 3600 + 59 * 60 + 59)
+
+testBadgeRequest :: BadgeMasterKey -> BadgeRequest
+testBadgeRequest masterKey = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}}
+
+-- Signs a real credential (via issueSignedBadge, never reimplementing BBS) and checks it
+-- verifies with the matching public key -- and, the other side of the same property, fails
+-- with an unrelated one.
+testBadgeCredentialSignAndVerify :: HasCallStack => TestParams -> IO ()
+testBadgeCredentialSignAndVerify _ps = do
+  Right (pk, sk) <- bbsKeyGen
+  Right (otherPk, _) <- bbsKeyGen
+  masterKey <- BadgeMasterKey <$> getRandomBytes 32
+  now <- getCurrentTime
+  result <- issueSignedBadge 1 sk (testBadgeRequest masterKey) now
+  case result of
+    Left e -> expectationFailure $ "expected a signed credential, got: " <> show e
+    Right cred -> do
+      verifyCredential pk cred `shouldReturn` True
+      verifyCredential otherPk cred `shouldReturn` False
+
+-- A periodEnd that is NOT already a Sunday must still land on a Sunday at 23:59:59 UTC.
+testBadgeCredentialExpiryIsSundayEndOfDay :: HasCallStack => TestParams -> IO ()
+testBadgeCredentialExpiryIsSundayEndOfDay _ps = do
+  Right (_, sk) <- bbsKeyGen
+  masterKey <- BadgeMasterKey <$> getRandomBytes 32
+  let periodEnd = UTCTime (fromGregorian 2026 8 20) 0 -- a Thursday
+  Right BadgeCredential {badgeInfo = BadgeInfo {badgeExpiry}} <- issueSignedBadge 1 sk (testBadgeRequest masterKey) periodEnd
+  case badgeExpiry of
+    Nothing -> expectationFailure "expected badgeExpiry to be set"
+    Just (UTCTime day tod) -> do
+      let (_, _, dow) = toWeekDate day -- 1 = Monday .. 7 = Sunday
+      dow `shouldBe` 7
+      tod `shouldBe` sundayEndOfDay
+
+-- The boundary case: a periodEnd already on a Sunday must expire on the FOLLOWING Sunday, not
+-- the same day -- a non-strict implementation would silently cost every such badge a week of
+-- validity.
+testBadgeCredentialExpirySundayRollsToFollowingSunday :: HasCallStack => TestParams -> IO ()
+testBadgeCredentialExpirySundayRollsToFollowingSunday _ps = do
+  Right (_, sk) <- bbsKeyGen
+  masterKey <- BadgeMasterKey <$> getRandomBytes 32
+  let periodEnd = UTCTime (fromGregorian 2026 8 23) 0 -- already a Sunday
+      expectedExpiry = UTCTime (fromGregorian 2026 8 30) sundayEndOfDay -- the following Sunday
+  Right BadgeCredential {badgeInfo = BadgeInfo {badgeExpiry}} <- issueSignedBadge 1 sk (testBadgeRequest masterKey) periodEnd
+  badgeExpiry `shouldBe` Just expectedExpiry
+
+-- issueBadge itself rejects a non-empty badgeExtra; issueSignedBadge must surface that as
+-- BSEBadRequest rather than letting the raw BBS error leak.
+testBadgeCredentialRejectsNonEmptyBadgeExtra :: HasCallStack => TestParams -> IO ()
+testBadgeCredentialRejectsNonEmptyBadgeExtra _ps = do
+  Right (_, sk) <- bbsKeyGen
+  masterKey <- BadgeMasterKey <$> getRandomBytes 32
+  now <- getCurrentTime
+  let req = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = "reserved"}}
+  result <- issueSignedBadge 1 sk req now
+  result `shouldBe` Left BSEBadRequest
+
+-- Round-trips a real `simplex-chat badge keygen`-shaped file (the format written by
+-- writeTestBadgeServiceSecrets) through loadIssuerKey and checks the loaded secret matches.
+testBadgeIssuerKeyLoadsValidFile :: HasCallStack => TestParams -> IO ()
+testBadgeIssuerKeyLoadsValidFile TestParams {tmpPath} = do
+  Right (BBSPublicKey pk, sk@(BBSSecretKey skBytes)) <- bbsKeyGen
+  let path = tmpPath </> "valid-issuer.keys"
+  writeFile path $ "secret " <> BC.unpack (strEncode skBytes) <> "\npublic " <> BC.unpack (strEncode pk) <> "\n"
+  loaded <- loadIssuerKey path 1
+  loaded `shouldBe` sk
+
+expectDies :: forall a. HasCallStack => IO a -> IO ()
+expectDies action = do
+  r <- try action :: IO (Either ExitCode a)
+  case r of
+    Left (ExitFailure _) -> pure ()
+    Left ExitSuccess -> expectationFailure "expected a failing exit, got ExitSuccess"
+    Right _ -> expectationFailure "expected loadIssuerKey to fail fast, but it returned"
+
+testBadgeIssuerKeyMissingFile :: HasCallStack => TestParams -> IO ()
+testBadgeIssuerKeyMissingFile TestParams {tmpPath} =
+  expectDies $ loadIssuerKey (tmpPath </> "missing-issuer.keys") 1
+
+testBadgeIssuerKeyMalformedFile :: HasCallStack => TestParams -> IO ()
+testBadgeIssuerKeyMalformedFile TestParams {tmpPath} = do
+  let path = tmpPath </> "malformed-issuer.keys"
+  writeFile path "not the expected keygen output\n"
+  expectDies $ loadIssuerKey path 1
+
+testBadgeIssuerKeyNonPositiveIdx :: HasCallStack => TestParams -> IO ()
+testBadgeIssuerKeyNonPositiveIdx TestParams {tmpPath} = do
+  (issuerKeyFile, _) <- writeTestBadgeServiceSecrets tmpPath
+  expectDies $ loadIssuerKey issuerKeyFile 0
 
 #if defined(dbPostgres)
 runMigrationsToRun :: DBStore -> MigrationsToRun -> IO ()
