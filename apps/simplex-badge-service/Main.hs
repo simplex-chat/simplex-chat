@@ -4,7 +4,7 @@
 module Main where
 
 import BadgeService.Admin (runAdminCmd)
-import BadgeService.Options (BadgeServiceCommand (..), BadgeServiceOpts (..), getBadgeServiceCommand)
+import BadgeService.Options (BadgeServiceOpts (..), CliCommand (..), getBadgeServiceCommand)
 import BadgeService.Service
 import Simplex.Chat.Terminal (terminalChatConfig)
 import System.Directory (getAppUserDataDirectory)

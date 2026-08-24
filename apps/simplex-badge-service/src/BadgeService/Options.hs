@@ -6,7 +6,7 @@
 
 module BadgeService.Options
   ( BadgeServiceOpts (..),
-    BadgeServiceCommand (..),
+    CliCommand (..),
     getBadgeServiceOpts,
     getBadgeServiceCommand,
     badgeServiceOpts,
@@ -32,12 +32,15 @@ data BadgeServiceOpts = BadgeServiceOpts
   }
 
 -- | Either the plain service run -- the DEFAULT when no subcommand is given -- or the
--- operator @codes@ subcommand ("BadgeService.Admin"). 'hsubparser' alone makes a subcommand
--- mandatory, which would break every existing way of starting the service, so
--- 'badgeServiceCommand' wraps it in 'optional' (decision 3): both branches of the parser
--- always run, and only the VALUE produced (not the parser structure) depends on whether
--- @codes@ was given.
-data BadgeServiceCommand
+-- operator @codes@ subcommand ("BadgeService.Admin"). Named apart from
+-- 'Simplex.Chat.Badges.Service.BadgeServiceCommand' (the RPC protocol's command sum, unrelated
+-- and imported into "BadgeService.Service" alongside this module): that name was already
+-- taken, and a CLI-invocation type borrowing it would have been confusing on its own terms
+-- regardless of the clash. 'hsubparser' alone makes a subcommand mandatory, which would break
+-- every existing way of starting the service, so 'badgeServiceCommand' wraps it in 'optional'
+-- (decision 3): both branches of the parser always run, and only the VALUE produced (not the
+-- parser structure) depends on whether @codes@ was given.
+data CliCommand
   = RunService BadgeServiceOpts
   | RunAdmin AdminOpts
 
@@ -96,14 +99,14 @@ getBadgeServiceOpts appDir defaultDbName =
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
--- | Parses either the plain service run or the @codes@ subcommand (see 'BadgeServiceCommand').
+-- | Parses either the plain service run or the @codes@ subcommand (see 'CliCommand').
 -- Plain 'Applicative' combinators, not @do@\/'ApplicativeDo': 'Parser' has no 'Monad'
 -- instance, and GHC's 'ApplicativeDo' desugaring does not always find an applicative-only
 -- reading of a @do@ block ending in a 'case' over an earlier bind, as this one does.
 -- @--config@ and the core database options are parsed unconditionally by 'badgeServiceOpts',
 -- so they apply the same way to both branches: the subcommand loads the same ini as a
 -- service run.
-badgeServiceCommand :: FilePath -> FilePath -> Parser BadgeServiceCommand
+badgeServiceCommand :: FilePath -> FilePath -> Parser CliCommand
 badgeServiceCommand appDir defaultDbName =
   toCommand <$> badgeServiceOpts appDir defaultDbName <*> optional codesSubparser
   where
@@ -114,7 +117,7 @@ badgeServiceCommand appDir defaultDbName =
       Nothing -> RunService opts
       Just adminCmd -> RunAdmin AdminOpts {adminCoreOptions = coreOptions, adminConfigFile = configFile, adminCmd}
 
-getBadgeServiceCommand :: FilePath -> FilePath -> IO BadgeServiceCommand
+getBadgeServiceCommand :: FilePath -> FilePath -> IO CliCommand
 getBadgeServiceCommand appDir defaultDbName =
   execParser $
     info
