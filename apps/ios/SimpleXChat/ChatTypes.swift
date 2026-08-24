@@ -4331,7 +4331,7 @@ public enum CIForwardedFrom: Decodable, Hashable {
     case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?, memberId: String?, sharedMsgId_: String?, groupType: GroupType?)
     case groupLink(chatName: String, msgDir: MsgDirection, groupLink: String, publicGroupId: String, memberId: String?, sharedMsgId: String, groupType: GroupType?)
 
-    var chatName: String {
+    public var chatName: String {
         switch self {
         case .unknown: ""
         case let .contact(chatName, _, _, _): chatName
