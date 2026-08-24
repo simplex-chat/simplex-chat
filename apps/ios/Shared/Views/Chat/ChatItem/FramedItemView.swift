@@ -246,16 +246,9 @@ struct FramedItemView: View {
                     .italic()
                     .lineLimit(1)
             }
-            HStack(spacing: 6) {
-                Image(systemName: sourceGroupIcon(itemForwarded))
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 14, height: 14)
-                    .foregroundColor(theme.colors.primary)
-                Text(itemForwarded.chatName)
-                    .font(.caption)
-                    .lineLimit(1)
-            }
+            Text(itemForwarded.chatName)
+                .font(.caption)
+                .lineLimit(1)
         }
         .foregroundColor(theme.colors.secondary)
         .padding(.horizontal, 12)
@@ -269,10 +262,6 @@ struct FramedItemView: View {
         } else {
             v
         }
-    }
-
-    private func sourceGroupIcon(_ itemForwarded: CIForwardedFrom) -> String {
-        itemForwarded.sourceGroupType == .channel ? "antenna.radiowaves.left.and.right" : "person.2"
     }
 
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {

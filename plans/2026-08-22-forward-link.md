@@ -152,11 +152,11 @@ on both backends.
 - Group-attributed forwards in non-local chats - `CIFFGroupLink` always,
   `CIFFGroup` when `groupType` is present - render a two-row header at double
   the single-header height: row 1 - forward icon + "forwarded from" (current
-  style); row 2 - source type icon in accent color + name in regular color.
-  The type icon (channel vs group) reads the CIFF's `groupType`. The whole
-  header opens the source: known group - the chat at the original item;
-  unknown - the connection plan for `groupLink`. All other forwards, including
-  the link-removed name-only `CIFFGroup`, keep the single-line header.
+  style); row 2 - the name in the header text style, starting under the
+  forward icon. The whole header opens the source: known group - the chat,
+  positioned at the original item when `chatItemId` is present; unknown - the
+  connection plan for `groupLink`. All other forwards, including the
+  link-removed name-only `CIFFGroup`, keep the single-line header.
 - The goto arrow beside the bubble applies only to locally resolved items
   (`chatTypeApiIdMsgId`), never to joining.
 

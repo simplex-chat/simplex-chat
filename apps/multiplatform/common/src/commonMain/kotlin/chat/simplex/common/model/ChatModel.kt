@@ -3947,13 +3947,6 @@ sealed class CIForwardedFrom {
   val sourceGroupLink: String?
     get() = if (this is GroupLink) groupLink else null
 
-  val sourceGroupType: GroupType?
-    get() = when (this) {
-      is Group -> groupType
-      is GroupLink -> groupType
-      else -> null
-    }
-
   fun text(chatType: ChatType): String =
     if (chatType == ChatType.Local) {
       if (chatName.isEmpty()) {

@@ -143,7 +143,6 @@ fun FramedItemView(
   fun ForwardedFromHeader(forwarded: CIForwardedFrom) {
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
-    val sourceIcon = if (forwarded.sourceGroupType == GroupType.Channel) MR.images.ic_bigtop_updates else MR.images.ic_group
     Column(
       Modifier
         .background(if (sent) sentColor else receivedColor)
@@ -165,10 +164,7 @@ fun FramedItemView(
         Icon(painterResource(MR.images.ic_forward), stringResource(MR.strings.forwarded_from), Modifier.size(18.dp), tint = if (isInDarkTheme()) FileDark else FileLight)
         HeaderText(stringResource(MR.strings.forwarded_from), italic = true)
       }
-      Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(painterResource(sourceIcon), forwarded.chatName, Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
-        HeaderText(forwarded.chatName, italic = false)
-      }
+      HeaderText(forwarded.chatName, italic = false)
     }
   }
 
