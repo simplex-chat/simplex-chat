@@ -835,8 +835,8 @@ export namespace CIForwardedFrom {
     groupId?: number // int64
     chatItemId?: number // int64
     memberId?: string
-    itemSharedMsgId?: string
-    chatLinkShared: boolean
+    sharedMsgId_?: string
+    groupType?: GroupType
   }
 
   export interface GroupLink extends Interface {
@@ -847,6 +847,7 @@ export namespace CIForwardedFrom {
     publicGroupId: string
     memberId?: string
     sharedMsgId: string
+    groupType?: GroupType
   }
 }
 

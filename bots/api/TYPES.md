@@ -833,8 +833,8 @@ Group:
 - groupId: int64?
 - chatItemId: int64?
 - memberId: string?
-- itemSharedMsgId: string?
-- chatLinkShared: bool
+- sharedMsgId_: string?
+- groupType: [GroupType](#grouptype)?
 
 GroupLink:
 - type: "groupLink"
@@ -844,6 +844,7 @@ GroupLink:
 - publicGroupId: string
 - memberId: string?
 - sharedMsgId: string
+- groupType: [GroupType](#grouptype)?
 
 
 ---

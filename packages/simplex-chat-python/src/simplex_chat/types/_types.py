@@ -573,8 +573,8 @@ class CIForwardedFrom_group(TypedDict):
     groupId: NotRequired[int]  # int64
     chatItemId: NotRequired[int]  # int64
     memberId: NotRequired[str]
-    itemSharedMsgId: NotRequired[str]
-    chatLinkShared: bool
+    sharedMsgId_: NotRequired[str]
+    groupType: NotRequired["GroupType"]
 
 class CIForwardedFrom_groupLink(TypedDict):
     type: Literal["groupLink"]
@@ -584,6 +584,7 @@ class CIForwardedFrom_groupLink(TypedDict):
     publicGroupId: str
     memberId: NotRequired[str]
     sharedMsgId: str
+    groupType: NotRequired["GroupType"]
 
 CIForwardedFrom = (
     CIForwardedFrom_unknown
