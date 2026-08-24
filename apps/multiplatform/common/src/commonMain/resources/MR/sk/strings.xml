@@ -590,7 +590,7 @@
     <string name="rcv_group_event_changed_your_role">zmenil vašu rolu na %s</string>
     <string name="change_role">Zmeniť rolu</string>
     <string name="change_member_role_question">Zmeniť rolu?</string>
-    <string name="error_changing_role">Chyba pri zmene roli</string>
+    <string name="error_changing_role">Chyba pri zmene role</string>
     <string name="icon_descr_expand_role">Rozšíriť výber rolí</string>
     <string name="initial_member_role">Počiatočná rola</string>
     <string name="group_member_role_member">člen</string>
@@ -1272,4 +1272,10 @@
     <string name="smp_servers_new_server">Nový server</string>
     <string name="ok">OK</string>
     <string name="privacy_chat_list_open_web_link">Otvoriť odkaz</string>
+    <string name="error_aborting_address_change">Chyba prerušovania zmeny adresy</string>
+    <string name="error_accepting_operator_conditions"></string>
+    <string name="error_accepting_contact_request"></string>
+    <string name="error_adding_members">Chyba pridávania člena(ov)</string>
+    <string name="error_adding_relay">Chyba pridávania relé</string>
+    <string name="servers_info_sessions_errors">Chyby</string>
 </resources>
