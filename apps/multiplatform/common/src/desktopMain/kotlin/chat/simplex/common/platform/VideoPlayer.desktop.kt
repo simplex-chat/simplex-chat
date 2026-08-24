@@ -235,7 +235,13 @@ actual class VideoPlayer actual constructor(
         // there too - converting off that thread races a resize on format renegotiation and segfaults
         // inside skia while reading pixels of the previous, smaller buffer
         val holder = java.util.concurrent.atomic.AtomicReference<BufferedImage?>(null)
-        javax.swing.SwingUtilities.invokeAndWait { holder.set(surface.bitmap.value?.toAwtImage()) }
+        // invokeAndWait rethrows whatever the conversion threw, wrapped, and the callers of this have
+        // no handler; a frame that cannot be converted is a missing preview, not a failed send
+        try {
+          javax.swing.SwingUtilities.invokeAndWait { holder.set(surface.bitmap.value?.toAwtImage()) }
+        } catch (e: Exception) {
+          Log.e(TAG, "getBitmapFromVideo snapshot failed: ${e.stackTraceToString()}")
+        }
         holder.get()
       }
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()

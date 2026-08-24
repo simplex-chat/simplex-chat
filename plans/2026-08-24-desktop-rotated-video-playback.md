@@ -66,12 +66,24 @@ The dimensions come from a received file, so they are attacker-chosen and are tr
 
 - Both track sides are used or neither. One side from the track beside the other from libvlc's
   padded size never described the same picture, and transposing such a pair compounds it.
-- The requested area is capped, scaling down and keeping the aspect. An unbounded request is an
+- The requested area is capped, scaling down and keeping the aspect where both sides can shrink;
+  a side pinned at 1 takes the whole budget on the other side instead, since scaling cannot keep
+  the aspect of a 2000000000x1 declaration and hold the area at once. An unbounded request is an
   out-of-memory from a message: 16000x16000 is 1 GB of RV32, requested from vlc and copied into
   a java array of the same size. The cap also keeps `width * height * 4` inside an `Int`.
 - Neither side can be zero, so a 1x4000 or 4000x1 file cannot produce an empty buffer.
+- The sides are only swapped when the track's own sides are used. The size libvlc passes is
+  already rotated, so swapping that pair would recreate the squash for a file that declares a
+  rotation and a zero-sized track.
 - A frame is dropped rather than displayed when it does not fill the bitmap skia is told to
-  read, which is the memory-safety half of the crash above.
+  read, when the format it was rendered with is not the one the bitmap was sized by, and before
+  any buffer has been allocated. The checks and the copy run inside the render callback, on
+  vlc's thread: the native buffer is only guaranteed to exist for the duration of the callback,
+  so code deferred to another thread would read through a pointer vlc may have freed on a format
+  change. Only the copied frame is handed to the event thread.
+- The bitmap is published only when skia reports that it took the pixels, and a snapshot that
+  cannot be converted is logged and left empty rather than thrown into callers that have no
+  handler for it.
 
 ## Testing
 
