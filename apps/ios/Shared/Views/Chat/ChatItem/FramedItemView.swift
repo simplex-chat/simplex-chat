@@ -87,7 +87,7 @@ struct FramedItemView: View {
                     if twoRowHeader {
                         let caption: LocalizedStringKey = chat.chatInfo.chatType == .local ? "saved from" : "forwarded from"
                         headerFrame(pad: true) {
-                            VStack(alignment: .leading, spacing: 6) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 headerRow(icon: "arrowshape.turn.up.forward", caption: Text(caption).italic())
                                 Text(itemForwarded.chatName)
                                     .font(.subheadline)
