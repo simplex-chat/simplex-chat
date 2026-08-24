@@ -2925,4 +2925,5 @@
     <string name="info_row_file_servers">文件服务器</string>
     <string name="share_text_file_servers">文件服务器：%s</string>
     <string name="group_invitations">群邀请</string>
+    <string name="forwarded_from">转发自</string>
 </resources>
