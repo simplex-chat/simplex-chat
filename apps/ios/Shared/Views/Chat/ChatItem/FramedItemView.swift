@@ -85,7 +85,15 @@ struct FramedItemView: View {
                         }
                     }
                     if twoRow {
-                        forwardedFromHeader(itemForwarded)
+                        let caption: LocalizedStringKey = chat.chatInfo.chatType == .local ? "saved from" : "forwarded from"
+                        headerFrame(pad: true) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                headerRow(icon: "arrowshape.turn.up.forward", caption: Text(caption).italic())
+                                Text(itemForwarded.chatName)
+                                    .font(.subheadline)
+                                    .lineLimit(1)
+                            }
+                        }
                             .simultaneousGesture(TapGesture().onEnded {
                                 if let (chatType, apiId, msgId) = itemForwarded.chatTypeApiIdMsgId {
                                     im.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
@@ -212,7 +220,13 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
-        let v = HStack(spacing: 6) {
+        headerFrame(pad: pad) {
+            headerRow(icon: icon, iconColor: iconColor, caption: caption)
+        }
+    }
+
+    @ViewBuilder private func headerRow(icon: String?, iconColor: Color? = nil, caption: Text) -> some View {
+        HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
                     .resizable()
@@ -224,44 +238,17 @@ struct FramedItemView: View {
                 .font(.caption)
                 .lineLimit(1)
         }
-        .foregroundColor(theme.colors.secondary)
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
-        .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
-        .overlay(DetermineWidth())
-        .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, theme))
-        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
-            v.frame(maxWidth: mediaWidth, alignment: .leading)
-        } else {
-            v
-        }
     }
 
-    @ViewBuilder func forwardedFromHeader(_ itemForwarded: CIForwardedFrom) -> some View {
-        let caption: LocalizedStringKey = chat.chatInfo.chatType == .local ? "saved from" : "forwarded from"
-        let v = VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: "arrowshape.turn.up.forward")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 14, height: 14)
-                Text(caption)
-                    .font(.caption)
-                    .italic()
-                    .lineLimit(1)
-            }
-            Text(itemForwarded.chatName)
-                .font(.caption)
-                .lineLimit(1)
-        }
-        .foregroundColor(theme.colors.secondary)
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
-        .padding(.bottom, 6)
-        .overlay(DetermineWidth())
-        .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, theme))
+    @ViewBuilder private func headerFrame(pad: Bool = false, @ViewBuilder _ content: () -> some View) -> some View {
+        let v = content()
+            .foregroundColor(theme.colors.secondary)
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
+            .overlay(DetermineWidth())
+            .frame(minWidth: msgWidth, alignment: .leading)
+            .background(chatItemFrameContextColor(chatItem, theme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
