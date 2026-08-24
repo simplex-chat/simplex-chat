@@ -655,8 +655,8 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
         (Just CIFFUnknown_, Nothing, Nothing, Nothing, Nothing, Nothing) :. noLinkRow
       Just CIFFContact {chatName, msgDir, contactId, chatItemId} ->
         (Just CIFFContact_, Just chatName, Just msgDir, contactId, Nothing, chatItemId) :. noLinkRow
-      Just CIFFGroup {chatName, msgDir, groupId, chatItemId, memberId, itemSharedMsgId, groupType} ->
-        (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, chatItemId) :. (groupType, Nothing, Nothing, memberId, itemSharedMsgId)
+      Just CIFFGroup {chatName, msgDir, groupId, chatItemId, memberId, sharedMsgId_, groupType} ->
+        (Just CIFFGroup_, Just chatName, Just msgDir, Nothing, groupId, chatItemId) :. (groupType, Nothing, Nothing, memberId, sharedMsgId_)
       Just CIFFGroupLink {chatName, msgDir, groupLink, publicGroupId, memberId, sharedMsgId = fwdSharedMsgId, groupType} ->
         (Just CIFFGroupLink_, Just chatName, Just msgDir, Nothing, Nothing, Nothing) :. (groupType, Just groupLink, Just publicGroupId, memberId, Just fwdSharedMsgId)
     noLinkRow :: ChatItemForwardedLinkRow

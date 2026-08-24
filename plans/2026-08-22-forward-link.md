@@ -48,7 +48,7 @@ the membership for own items sent as themselves, absent otherwise.
 ```haskell
   | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId,
                chatItemId :: Maybe ChatItemId, memberId :: Maybe MemberId,
-               itemSharedMsgId :: Maybe SharedMsgId, groupType :: Maybe GroupType}
+               sharedMsgId_ :: Maybe SharedMsgId, groupType :: Maybe GroupType}
   | CIFFGroupLink {chatName :: Text, msgDir :: MsgDirection,
                    groupLink :: ShortLinkContact, publicGroupId :: B64UrlByteString,
                    memberId :: Maybe MemberId, sharedMsgId :: SharedMsgId,

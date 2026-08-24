@@ -236,7 +236,7 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
 -- re-forwarded message is attributed to the original source
 ciffForwardLink :: DB.Connection -> CIForwardedFrom -> IO (Maybe ForwardLink)
 ciffForwardLink db = \case
-  CIFFGroup {groupId = Just gId, memberId, itemSharedMsgId = Just msgId} ->
+  CIFFGroup {groupId = Just gId, memberId, sharedMsgId_ = Just msgId} ->
     getGroupProfileById db gId >>= \case
       Just GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink, publicGroupId}} ->
         pure $ Just ForwardLink {displayName, groupLink, publicGroupId, memberId, msgId}
