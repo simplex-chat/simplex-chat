@@ -936,9 +936,9 @@ swipe action</note>
         <target>Toutes les données de l'application sont supprimées.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
-        <target>Toutes les conversations et tous les messages seront supprimés - il est impossible de revenir en arrière !</target>
+        <target state="translated">Toutes les conversations et tous les messages seront supprimés — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
@@ -971,14 +971,14 @@ swipe action</note>
         <target>Tous les messages et fichiers sont envoyés **chiffrés de bout en bout**, avec une sécurité post-quantique dans les messages directs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone!</source>
-        <target>Tous les messages seront supprimés - il n'est pas possible de revenir en arrière !</target>
+        <target state="translated">Tous les messages seront supprimés — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target>Tous les messages seront supprimés - impossible de revenir en arrière ! Les messages seront supprimés UNIQUEMENT pour vous.</target>
+        <target state="translated">Tous les messages seront supprimés — cette action est irréversible ! Les messages seront supprimés UNIQUEMENT pour vous.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
@@ -1862,14 +1862,14 @@ alert subtitle</note>
         <target>Page Web du canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Channel will be deleted for all subscribers - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Channel will be deleted for all subscribers - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Channel will be deleted for all subscribers - this cannot be undone!</source>
-        <target>Le canal sera supprimé pour tous les abonné·es ; ceci ne peut pas être annulé !</target>
+        <target state="translated">Le canal sera supprimé pour tous les abonnés — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Channel will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Channel will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Channel will be deleted for you - this cannot be undone!</source>
-        <target>Le canal sera supprimé pour vous ; ceci ne peut pas être annulé !</target>
+        <target state="translated">Le canal sera supprimé pour vous — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Channel will start working with %d of %d relays. Continue?" xml:space="preserve">
@@ -1997,14 +1997,14 @@ alert subtitle</note>
         <target>Thème de la conversation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
-        <target>La conversation sera supprimée pour tous les membres - cela ne peut pas être annulé !</target>
+        <target state="translated">La conversation sera supprimée pour tous les membres — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for you - this cannot be undone!</source>
-        <target>La conversation sera supprimée pour vous - il n'est pas possible de revenir en arrière !</target>
+        <target state="translated">La conversation sera supprimée pour vous — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat with admins" xml:space="preserve">
@@ -2530,9 +2530,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Demandes de contact des groupes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Contact will be deleted - this cannot be undone!</source>
-        <target>Le contact sera supprimé - il n'est pas possible de revenir en arrière !</target>
+        <target state="translated">Le contact sera supprimé — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -2715,12 +2715,14 @@ Il s'agit de votre propre lien unique !</target>
         <target>Création d'un lien…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder</source>
+        <target state="translated">Financement participatif sur Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder.</source>
+        <target state="translated">Financement participatif sur Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -4778,8 +4780,9 @@ Erreur : %2$@</target>
         <target>L'invitation du groupe n'est plus valide, elle a été supprimé par l'expéditeur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitations" xml:space="preserve">
+      <trans-unit id="Group invitations" xml:space="preserve" approved="no">
         <source>Group invitations</source>
+        <target state="translated">Invitations de groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -4832,14 +4835,14 @@ Erreur : %2$@</target>
         <target>Message d'accueil du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for all members - this cannot be undone!</source>
-        <target>Le groupe va être supprimé pour tout les membres - impossible de revenir en arrière !</target>
+        <target state="translated">Le groupe va être supprimé pour tout les membres — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for you - this cannot be undone!</source>
-        <target>Le groupe va être supprimé pour vous - impossible de revenir en arrière !</target>
+        <target state="translated">Le groupe va être supprimé pour vous — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Groups" xml:space="preserve">
@@ -5689,9 +5692,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Le membre est supprimé ; impossible d'accepter la demande</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member messages will be deleted - this cannot be undone!</source>
-        <target>Les messages des membres seront supprimés ; ceci ne peut pas être annulé !</target>
+        <target state="translated">Les messages des membres seront supprimés — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -5699,14 +5702,14 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Signalements des membres</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from chat - this cannot be undone!</source>
-        <target>Le membre sera retiré de la conversation - cette action est irréversible !</target>
+        <target state="translated">Le membre sera retiré de la conversation — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target>Ce membre sera retiré du groupe - impossible de revenir en arrière !</target>
+        <target state="translated">Ce membre sera retiré du groupe — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
@@ -7581,9 +7584,9 @@ swipe action</note>
         <target>Échec du test de relais !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay will be removed from channel - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Relay will be removed from channel - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Relay will be removed from channel - this cannot be undone!</source>
-        <target>Le relais sera supprimé du canal ; cette action est irréversible !</target>
+        <target state="translated">Le relais sera supprimé du canal — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Relays added: %@." xml:space="preserve">
@@ -8538,9 +8541,9 @@ chat item action</note>
         <target>Infos serveurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Servers statistics will be reset - this cannot be undone!</source>
-        <target>Les statistiques des serveurs seront réinitialisées - il n'est pas possible de revenir en arrière !</target>
+        <target state="translated">Les statistiques des serveurs seront réinitialisées — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Session code" xml:space="preserve">
@@ -9158,9 +9161,9 @@ report reason</note>
         <target>Signalements d'abonnés</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Subscriber will be removed from channel - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Subscriber will be removed from channel - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Subscriber will be removed from channel - this cannot be undone!</source>
-        <target>L'abonné sera supprimé du canal ; cette action est irréversible !</target>
+        <target state="translated">L'abonné sera supprimé du canal — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Subscribers" xml:space="preserve">
@@ -9650,24 +9653,24 @@ vos contacts et vos groupes.</target>
         <target>Ce nom SimpleX n'est pas enregistré. Vérifiez-le.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Cette action ne peut être annulée - tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</target>
+        <target state="translated">Cette action est irréversible — tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
-        <target>Cette action ne peut être annulée - les messages envoyés et reçus avant la date sélectionnée seront supprimés. Cela peut prendre plusieurs minutes.</target>
+        <target state="translated">Cette action est irréversible — les messages envoyés et reçus avant la date sélectionnée seront supprimés. Cela peut prendre plusieurs minutes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Cette action est irréversible : les messages envoyés et reçus dans cette conversation avant la date sélectionnée seront supprimés.</target>
+        <target state="translated">Cette action est irréversible — les messages envoyés et reçus dans cette conversation avant la date sélectionnée seront supprimés.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
-        <target>Cette action ne peut être annulée - votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.</target>
+        <target state="translated">Cette action est irréversible — votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
@@ -10776,12 +10779,14 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez maintenant envoyer des messages à %@</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat</source>
+        <target state="translated">Vous pouvez désormais investir dans SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat! 🚀</source>
+        <target state="translated">Vous pouvez désormais investir dans SimpleX Chat ! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
