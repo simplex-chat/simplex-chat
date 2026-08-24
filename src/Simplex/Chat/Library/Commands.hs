@@ -711,7 +711,7 @@ processChatCommand cxt nm = \case
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
         Just (CIFFContact _ _ (Just ctId) (Just fwdItemId)) ->
           Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTDirect ctId Nothing) fwdItemId)
-        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
+        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId) _ _ _) ->
           -- TODO [knocking] getAChatItem doesn't differentiate how to read based on scope - it should, instead of using group filter
           Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTGroup gId Nothing) fwdItemId)
         _ -> pure Nothing
@@ -1096,9 +1096,11 @@ processChatCommand cxt nm = \case
           catMaybes <$> mapM (\ci -> ciComposeMsgReq gInfo ci <$$> prepareMsgReq ci) items
           where
             ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
-            ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText}) (mc, file) = do
+            ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText, meta = CIMeta {itemSharedMsgId}}) (mc, file) = do
               let itemId = chatItemId' ci
-                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId))
+                  fwdMemberId = memberId' <$> chatItemMember gInfo ci
+                  fwdGroupType = itemSharedMsgId *> sourceGroupType gInfo
+                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) fwdMemberId itemSharedMsgId fwdGroupType)
                   -- updates text to reflect current mentioned member names
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   -- only includes mentions when forwarding to the same group
@@ -1108,6 +1110,8 @@ processChatCommand cxt nm = \case
               where
                 forwardName :: GroupInfo -> ContactName
                 forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
+                sourceGroupType :: GroupInfo -> Maybe GroupType
+                sourceGroupType GroupInfo {groupProfile = GroupProfile {publicGroup}} = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
         CTLocal -> do
           (_, items) <- getCommandLocalChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq ci <$$> prepareMsgReq ci) items
@@ -4769,7 +4773,9 @@ processChatCommand cxt nm = \case
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, _), fInv_) -> do
                 (mc', quotedItem_) <- case (quotedItemId, itemForwarded) of
                   (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
-                  (Nothing, Just _) -> pure (mcForward mc, Nothing)
+                  (Nothing, Just ciff) -> do
+                    fl_ <- liftIO $ ciffForwardLink db ciff
+                    pure (mcForward fl_ mc, Nothing)
                   (Just qiId, Nothing) -> do
                     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
                       getDirectChatItem db user contactId qiId

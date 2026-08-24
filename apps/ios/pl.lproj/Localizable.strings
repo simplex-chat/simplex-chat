@@ -4646,7 +4646,7 @@ chat item action */
 "Saved from" = "Zapisane od";
 
 /* No comment provided by engineer. */
-"saved from %@" = "zapisane od %@";
+"saved from" = "zapisane od";
 
 /* message info title */
 "Saved message" = "Zachowano wiadomość";

@@ -1723,7 +1723,7 @@
     <string name="v5_7_forward">Препращане и запазване на съобщения</string>
     <string name="v5_7_call_sounds">Звуци по време на разговор</string>
     <string name="saved_description">запазено</string>
-    <string name="saved_from_description">запазено от %s</string>
+    <string name="saved_from">запазено от</string>
     <string name="saved_chat_item_info_tab">Запазено</string>
     <string name="saved_from_chat_item_info_title">Запазено от</string>
     <string name="recipients_can_not_see_who_message_from">Получателят(ите) не могат да видят от кого е това съобщение.</string>

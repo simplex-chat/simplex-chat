@@ -53,7 +53,7 @@
     <string name="sender_you_pronoun">Jūs</string>
     <string name="forwarded_description">pārsūtīts</string>
     <string name="saved_description">saglabāts</string>
-    <string name="saved_from_description">saglabāts no %s</string>
+    <string name="saved_from">saglabāts no</string>
     <string name="invalid_chat">nederīga tērzēšana</string>
     <string name="invalid_data">nederīgi dati</string>
     <string name="error_showing_message">kļūda, rādot ziņojumu</string>

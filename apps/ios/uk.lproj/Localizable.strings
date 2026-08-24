@@ -4650,7 +4650,7 @@ chat item action */
 "Saved from" = "Збережено з";
 
 /* No comment provided by engineer. */
-"saved from %@" = "збережено з %@";
+"saved from" = "збережено з";
 
 /* message info title */
 "Saved message" = "Збережене повідомлення";

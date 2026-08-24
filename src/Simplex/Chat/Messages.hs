@@ -1319,13 +1319,15 @@ itemDeletedTs = \case
 data CIForwardedFrom
   = CIFFUnknown
   | CIFFContact {chatName :: Text, msgDir :: MsgDirection, contactId :: Maybe ContactId, chatItemId :: Maybe ChatItemId}
-  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId}
+  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId, memberId :: Maybe MemberId, sharedMsgId_ :: Maybe SharedMsgId, groupType :: Maybe GroupType}
+  | CIFFGroupLink {chatName :: Text, msgDir :: MsgDirection, groupLink :: ShortLinkContact, publicGroupId :: B64UrlByteString, memberId :: Maybe MemberId, sharedMsgId :: SharedMsgId, groupType :: Maybe GroupType}
   deriving (Show)
 
 data CIForwardedFromTag
   = CIFFUnknown_
   | CIFFContact_
   | CIFFGroup_
+  | CIFFGroupLink_
 
 instance FromField CIForwardedFromTag where fromField = fromTextField_ textDecode
 
@@ -1336,11 +1338,13 @@ instance TextEncoding CIForwardedFromTag where
     "unknown" -> Just CIFFUnknown_
     "contact" -> Just CIFFContact_
     "group" -> Just CIFFGroup_
+    "groupLink" -> Just CIFFGroupLink_
     _ -> Nothing
   textEncode = \case
     CIFFUnknown_ -> "unknown"
     CIFFContact_ -> "contact"
     CIFFGroup_ -> "group"
+    CIFFGroupLink_ -> "groupLink"
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],

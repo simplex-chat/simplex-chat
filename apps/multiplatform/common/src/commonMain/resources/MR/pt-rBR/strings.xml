@@ -1809,7 +1809,7 @@
     <string name="migrate_from_device_error_exporting_archive">Erro ao exportar banco de dados</string>
     <string name="migrate_from_device_error_verifying_passphrase">Erro ao verificar a senha:</string>
     <string name="saved_description">salvo</string>
-    <string name="saved_from_description">salvo de %s</string>
+    <string name="saved_from">salvo de</string>
     <string name="forwarded_from_chat_item_info_title">Encaminhado de</string>
     <string name="voice_messages_not_allowed">Mensagens de voz não permitidas</string>
     <string name="new_message">Nova mensagem</string>

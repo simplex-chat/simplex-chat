@@ -195,7 +195,7 @@
     <string name="connect_plan_repeat_join_request">Repetă cererea de alăturare?</string>
     <string name="restart_chat_button">Reporniți conversația</string>
     <string name="saved_description">salvat</string>
-    <string name="saved_from_description">salvat de la %s</string>
+    <string name="saved_from">salvat de la</string>
     <string name="save_verb">Salvează</string>
     <string name="saved_chat_item_info_tab">Salvat</string>
     <string name="saved_from_chat_item_info_title">Salvat din</string>

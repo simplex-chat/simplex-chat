@@ -5271,7 +5271,7 @@ chat item action */
 "Saved from" = "保存自";
 
 /* No comment provided by engineer. */
-"saved from %@" = "保存自 %@";
+"saved from" = "保存自";
 
 /* message info title */
 "Saved message" = "已保存的消息";

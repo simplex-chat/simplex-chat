@@ -1767,7 +1767,7 @@
     <string name="network_type_ethernet">חיבור קווי</string>
     <string name="network_type_cellular">סלולרי</string>
     <string name="saved_description">נשמר</string>
-    <string name="saved_from_description">נשמר מ%s</string>
+    <string name="saved_from">נשמר מ</string>
     <string name="forwarded_chat_item_info_tab">הועבר</string>
     <string name="forwarded_description">הועבר</string>
     <string name="settings_section_title_network_connection">מחובר לרשת</string>

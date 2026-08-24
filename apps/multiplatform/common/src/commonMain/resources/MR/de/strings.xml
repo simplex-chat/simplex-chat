@@ -1805,7 +1805,7 @@
     <string name="audio_device_wired_headphones">Kopfhörer</string>
     <string name="network_option_rcv_concurrency">Gelijktijdige ontvangst</string>
     <string name="recipients_can_not_see_who_message_from">Empfänger können nicht sehen, von wem die Nachricht stammt.</string>
-    <string name="saved_from_description">abgespeichert von %s</string>
+    <string name="saved_from">abgespeichert von</string>
     <string name="saved_chat_item_info_tab">Abgespeichert</string>
     <string name="saved_description">abgespeichert</string>
     <string name="forwarded_chat_item_info_tab">Weitergeleitet</string>

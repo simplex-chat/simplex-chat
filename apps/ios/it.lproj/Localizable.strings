@@ -5346,7 +5346,7 @@ chat item action */
 "Saved from" = "Salvato da";
 
 /* No comment provided by engineer. */
-"saved from %@" = "salvato da %@";
+"saved from" = "salvato da";
 
 /* message info title */
 "Saved message" = "Messaggio salvato";

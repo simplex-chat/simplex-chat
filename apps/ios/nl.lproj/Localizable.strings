@@ -4411,7 +4411,7 @@ chat item action */
 "Saved from" = "Opgeslagen van";
 
 /* No comment provided by engineer. */
-"saved from %@" = "opgeslagen van %@";
+"saved from" = "opgeslagen van";
 
 /* message info title */
 "Saved message" = "Opgeslagen bericht";

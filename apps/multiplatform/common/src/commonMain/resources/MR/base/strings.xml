@@ -65,8 +65,9 @@
   <string name="live">LIVE</string>
   <string name="moderated_description">moderated</string>
   <string name="forwarded_description">forwarded</string>
+  <string name="forwarded_from">forwarded from</string>
   <string name="saved_description">saved</string>
-  <string name="saved_from_description">saved from %s</string>
+  <string name="saved_from">saved from</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
   <string name="error_showing_message">error showing message</string>

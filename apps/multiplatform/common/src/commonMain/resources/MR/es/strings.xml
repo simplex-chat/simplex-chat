@@ -1724,7 +1724,7 @@
     <string name="feature_roles_all_members">todos los miembros</string>
     <string name="allow_to_send_simplex_links">Se permite enviar enlaces SimpleX.</string>
     <string name="saved_description">guardado</string>
-    <string name="saved_from_description">guardado desde %s</string>
+    <string name="saved_from">guardado desde</string>
     <string name="saved_chat_item_info_tab">Guardado</string>
     <string name="saved_from_chat_item_info_title">Guardado desde</string>
     <string name="forwarded_from_chat_item_info_title">Reenviado por</string>

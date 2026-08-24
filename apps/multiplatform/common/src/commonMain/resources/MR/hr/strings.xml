@@ -590,7 +590,7 @@
     <string name="incognito_info_protects">Anonimni režim štiti Vašu privatnost koristeći novi nasumični profil za svaki kontakt.</string>
     <string name="custom_time_unit_weeks">nedelje</string>
     <string name="agent_internal_error_title">Interna greška</string>
-    <string name="saved_from_description">Sačuvano od %s</string>
+    <string name="saved_from">Sačuvano od</string>
     <string name="saved_description">sačuvano</string>
     <string name="group_member_status_invited">pozvan</string>
     <string name="saved_message_title">Sačuvana poruka</string>

@@ -1720,7 +1720,7 @@
     <string name="v5_7_new_interface_languages">Litvanya Kullanıcı Arayüzü</string>
     <string name="network_type_other">Diğer</string>
     <string name="saved_description">kaydedildi</string>
-    <string name="saved_from_description">%s tarafından kaydedildi</string>
+    <string name="saved_from">kaydedildi:</string>
     <string name="forwarded_chat_item_info_tab">İletildi</string>
     <string name="saved_chat_item_info_tab">Kaydedildi</string>
     <string name="download_file">İndir</string>

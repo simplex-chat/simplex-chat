@@ -201,7 +201,7 @@
     <string name="moderated_description">modereret</string>
     <string name="forwarded_description">videresendt</string>
     <string name="saved_description">gemt</string>
-    <string name="saved_from_description">gemt fra %s</string>
+    <string name="saved_from">gemt fra</string>
     <string name="invalid_chat">ugyldig chat</string>
     <string name="invalid_data">ugyldige data</string>
     <string name="error_showing_message">fejl ved visning af besked</string>

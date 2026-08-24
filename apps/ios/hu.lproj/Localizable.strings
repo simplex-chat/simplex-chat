@@ -5346,7 +5346,7 @@ chat item action */
 "Saved from" = "Mentve innen";
 
 /* No comment provided by engineer. */
-"saved from %@" = "mentve innen: %@";
+"saved from" = "mentve innen:";
 
 /* message info title */
 "Saved message" = "Mentett üzenet";

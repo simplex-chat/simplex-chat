@@ -1729,7 +1729,7 @@
     <string name="audio_device_speaker">Garsiakalbis</string>
     <string name="v5_7_network">Tinklo valdymas</string>
     <string name="saved_description">išsaugota</string>
-    <string name="saved_from_description">išsaugota iš %s</string>
+    <string name="saved_from">išsaugota iš</string>
     <string name="saved_chat_item_info_tab">Išsaugota</string>
     <string name="voice_messages_not_allowed">Balso žinutės neleidžiamos</string>
     <string name="network_type_network_wifi">WiFi</string>
