@@ -40,6 +40,7 @@ library
       Simplex.Chat.AppSettings
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
+      Simplex.Chat.Badges.Months
       Simplex.Chat.Badges.Service
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
@@ -418,6 +419,7 @@ executable simplex-badge-service
   other-modules:
       BadgeService.Catalog
       BadgeService.Config
+      BadgeService.Ledger
       BadgeService.Options
       BadgeService.Service
       BadgeService.Store
@@ -698,10 +700,12 @@ test-suite simplex-chat-test
       API.TypeInfo
       BadgeService.Catalog
       BadgeService.Config
+      BadgeService.Ledger
       BadgeService.Options
       BadgeService.Service
       BadgeService.Store
       BadgeService.Store.Migrate
+      Bots.BadgeLedgerTests
       Bots.BadgeServiceTests
       Broadcast.Bot
       Broadcast.Options
