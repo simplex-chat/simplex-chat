@@ -102,9 +102,10 @@ fun FramedItemView(
   }
 
   @Composable
-  fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp) {
+  fun HeaderText(caption: String, italic: Boolean, fontSize: TextUnit = 12.sp, modifier: Modifier = Modifier) {
     Text(
-      buildAnnotatedString {
+      modifier = modifier,
+      text = buildAnnotatedString {
         withStyle(SpanStyle(fontSize = fontSize, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
           append(caption)
         }
@@ -337,7 +338,7 @@ fun FramedItemView(
                   verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                   HeaderRow(Modifier, caption, true, painterResource(MR.images.ic_forward), null)
-                  HeaderText(forwarded.chatName, italic = false, fontSize = 15.sp)
+                  HeaderText(forwarded.chatName, italic = false, fontSize = 15.sp, modifier = Modifier.offset(y = (-2).dp))
                 }
               } else {
                 FramedItemHeader(forwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
