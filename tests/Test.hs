@@ -65,9 +65,7 @@ main = do
 #endif
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
-      describe "Supporter badges" badgeTests
-      describe "Supporter badges" badgeLedgerTests
-      describe "Supporter badges" badgeCodeTests
+      describe "Supporter badges" $ badgeTests >> badgeLedgerTests >> badgeCodeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
