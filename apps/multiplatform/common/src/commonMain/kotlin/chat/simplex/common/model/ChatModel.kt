@@ -3948,18 +3948,8 @@ sealed class CIForwardedFrom {
     get() = if (this is GroupLink) groupLink else null
 
   fun text(chatType: ChatType): String =
-    if (chatType == ChatType.Local) {
-      if (chatName.isEmpty()) {
-        generalGetString(MR.strings.saved_description)
-      } else {
-        generalGetString(MR.strings.saved_from_description).format(chatName)
-      }
-    } else {
-      when (this) {
-        is Group, is GroupLink -> generalGetString(MR.strings.forwarded_from_description).format(chatName)
-        else -> generalGetString(MR.strings.forwarded_description)
-      }
-    }
+    if (chatType == ChatType.Local) generalGetString(MR.strings.saved_description)
+    else generalGetString(MR.strings.forwarded_description)
 }
 
 @Serializable

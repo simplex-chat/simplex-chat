@@ -3519,7 +3519,7 @@ chat item action */
 "Saved from" = "Запазено от";
 
 /* No comment provided by engineer. */
-"saved from %@" = "запазено от %@";
+"saved from" = "запазено от";
 
 /* message info title */
 "Saved message" = "Запазено съобщение";

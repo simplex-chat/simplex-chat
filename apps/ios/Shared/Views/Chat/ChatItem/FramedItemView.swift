@@ -75,18 +75,22 @@ struct FramedItemView: View {
                             }
                         })
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
-                    let fromGroup = switch itemForwarded {
-                    case .group: itemForwarded.sourceGroupType != nil && chat.chatInfo.chatType != .local
-                    case .groupLink: chat.chatInfo.chatType != .local
-                    default: false
+                    let twoRow: Bool = if chat.chatInfo.chatType == .local {
+                        itemForwarded.chatTypeApiIdMsgId != nil || itemForwarded.sourceGroupLink != nil
+                    } else {
+                        switch itemForwarded {
+                        case let .group(_, _, _, _, _, _, groupType): groupType != nil
+                        case .groupLink: true
+                        default: false
+                        }
                     }
-                    if fromGroup {
+                    if twoRow {
                         forwardedFromHeader(itemForwarded)
                             .simultaneousGesture(TapGesture().onEnded {
                                 if let (chatType, apiId, msgId) = itemForwarded.chatTypeApiIdMsgId {
                                     im.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
-                                } else if let link = itemForwarded.sourceGroupLink, let url = URL(string: link) {
-                                    ChatModel.shared.appOpenUrl = url
+                                } else if let link = itemForwarded.sourceGroupLink {
+                                    planAndConnect(link, theme: theme, dismiss: false)
                                 }
                             })
                     } else {
@@ -235,13 +239,14 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder func forwardedFromHeader(_ itemForwarded: CIForwardedFrom) -> some View {
+        let caption: LocalizedStringKey = chat.chatInfo.chatType == .local ? "saved from" : "forwarded from"
         let v = VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "arrowshape.turn.up.forward")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 14, height: 14)
-                Text("forwarded from")
+                Text(caption)
                     .font(.caption)
                     .italic()
                     .lineLimit(1)

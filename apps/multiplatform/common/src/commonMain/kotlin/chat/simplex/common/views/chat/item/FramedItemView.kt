@@ -154,15 +154,16 @@ fun FramedItemView(
             val (chatType, apiId, itemId) = target
             withBGApi { openChat(secondaryChatsCtx = null, chat.remoteHostId, chatType, apiId, itemId) }
           } else if (link != null) {
-            uriHandler?.openVerifiedSimplexUri(link)
+            withBGApi { planAndConnect(chat.remoteHostId, link, close = null) }
           }
         }
         .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = 6.dp),
       verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
+      val caption = stringResource(if (chatInfo.chatType == ChatType.Local) MR.strings.saved_from else MR.strings.forwarded_from)
       Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(painterResource(MR.images.ic_forward), stringResource(MR.strings.forwarded_from), Modifier.size(18.dp), tint = if (isInDarkTheme()) FileDark else FileLight)
-        HeaderText(stringResource(MR.strings.forwarded_from), italic = true)
+        Icon(painterResource(MR.images.ic_forward), caption, Modifier.size(18.dp), tint = if (isInDarkTheme()) FileDark else FileLight)
+        HeaderText(caption, italic = true)
       }
       HeaderText(forwarded.chatName, italic = false)
     }
@@ -330,12 +331,16 @@ fun FramedItemView(
             Header()
             val forwarded = ci.meta.itemForwarded
             if (forwarded != null) {
-              val fromGroup = when (forwarded) {
-                is CIForwardedFrom.Group -> forwarded.groupType != null
-                is CIForwardedFrom.GroupLink -> true
-                else -> false
+              val twoRow = if (chatInfo.chatType == ChatType.Local) {
+                forwarded.chatTypeApiIdMsgId != null || forwarded.sourceGroupLink != null
+              } else {
+                when (forwarded) {
+                  is CIForwardedFrom.Group -> forwarded.groupType != null
+                  is CIForwardedFrom.GroupLink -> true
+                  else -> false
+                }
               }
-              if (fromGroup && chatInfo.chatType != ChatType.Local) {
+              if (twoRow) {
                 ForwardedFromHeader(forwarded)
               } else {
                 FramedItemHeader(forwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)

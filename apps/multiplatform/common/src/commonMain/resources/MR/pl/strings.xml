@@ -1731,7 +1731,7 @@
     <string name="forward_message">Przekaż wiadomość…</string>
     <string name="saved_chat_item_info_tab">Zapisane</string>
     <string name="saved_description">zapisane</string>
-    <string name="saved_from_description">zapisane od %s</string>
+    <string name="saved_from">zapisane od</string>
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="v5_7_forward">Przesyłaj dalej i zapisuj wiadomości</string>
     <string name="audio_device_earpiece">Słuchawki douszne</string>

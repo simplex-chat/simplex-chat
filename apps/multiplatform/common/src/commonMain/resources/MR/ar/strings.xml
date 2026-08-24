@@ -1710,7 +1710,7 @@
     <string name="recipients_can_not_see_who_message_from">لا يستطيع المُستلم/ون معرفة مَن أرسل هذه الرسالة.</string>
     <string name="saved_description">حُفظت</string>
     <string name="saved_from_chat_item_info_title">حُفظت مِن</string>
-    <string name="saved_from_description">حُفظت مِن %s</string>
+    <string name="saved_from">حُفظت مِن</string>
     <string name="audio_device_speaker">السماعة</string>
     <string name="audio_device_earpiece">سماعة الأذن</string>
     <string name="audio_device_wired_headphones">سماعات الرأس</string>

@@ -5346,7 +5346,7 @@ chat item action */
 "Saved from" = "Guardado desde";
 
 /* No comment provided by engineer. */
-"saved from %@" = "Guardado desde %@";
+"saved from" = "Guardado desde";
 
 /* message info title */
 "Saved message" = "Mensaje guardado";

@@ -1718,7 +1718,7 @@
     <string name="saved_description">已保存</string>
     <string name="saved_chat_item_info_tab">已保存</string>
     <string name="saved_from_chat_item_info_title">保存自</string>
-    <string name="saved_from_description">保存自%s</string>
+    <string name="saved_from">保存自</string>
     <string name="forwarded_chat_item_info_tab">已转发</string>
     <string name="forwarded_from_chat_item_info_title">转发自</string>
     <string name="audio_device_bluetooth">蓝牙</string>

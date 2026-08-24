@@ -1725,7 +1725,7 @@
     <string name="audio_device_wired_headphones">Casque audio</string>
     <string name="v5_7_forward_descr">La source du message reste privée.</string>
     <string name="saved_description">enregistré</string>
-    <string name="saved_from_description">enregistré depuis %s</string>
+    <string name="saved_from">enregistré depuis</string>
     <string name="forwarded_chat_item_info_tab">Transféré</string>
     <string name="forwarded_from_chat_item_info_title">Transféré depuis</string>
     <string name="recipients_can_not_see_who_message_from">Le(s) destinataire(s) ne peut(vent) pas voir de qui provient ce message.</string>

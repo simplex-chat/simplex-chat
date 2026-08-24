@@ -1799,7 +1799,7 @@
     <string name="v5_7_network_descr">Более надёжное соединение с сетью.</string>
     <string name="v5_7_network">Статус сети</string>
     <string name="saved_description">сохранено</string>
-    <string name="saved_from_description">сохранено из %s</string>
+    <string name="saved_from">сохранено из</string>
     <string name="forwarded_chat_item_info_tab">Переслано</string>
     <string name="forwarded_from_chat_item_info_title">Переслано из</string>
     <string name="recipients_can_not_see_who_message_from">Получатели не видят от кого это сообщение.</string>

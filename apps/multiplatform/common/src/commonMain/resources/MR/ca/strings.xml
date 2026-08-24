@@ -1573,7 +1573,7 @@
     <string name="note_folder_local_display_name">Notes privades</string>
     <string name="receiving_files_not_yet_supported">la recepció de fitxers encara no està suportada</string>
     <string name="display_name_requested_to_connect">sol·licitada connexió</string>
-    <string name="saved_from_description">desat des de %s</string>
+    <string name="saved_from">desat des de</string>
     <string name="simplex_link_contact">Adreça de contacte SimpleX</string>
     <string name="simplex_link_group">Enllaç de grup SimpleX</string>
     <string name="simplex_link_mode">Enllaços SimpleX</string>

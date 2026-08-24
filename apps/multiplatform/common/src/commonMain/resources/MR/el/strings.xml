@@ -2051,7 +2051,7 @@
     <string name="saved_description">αποθηκευμένο</string>
     <string name="saved_chat_item_info_tab">Αποθηκευμένο</string>
     <string name="saved_from_chat_item_info_title">Αποθηκευμένο από</string>
-    <string name="saved_from_description">αποθηκευμένο από %s</string>
+    <string name="saved_from">αποθηκευμένο από</string>
     <string name="saved_message_title">Αποθηκευμένο μήνυμα</string>
     <string name="saved_ICE_servers_will_be_removed">Οι αποθηκευμένοι διακομιστές WebRTC ICE θα αφαιρεθούν.</string>
     <string name="save_group_profile">Αποθήκευση προφίλ ομάδας</string>

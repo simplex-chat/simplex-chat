@@ -149,14 +149,22 @@ on both backends.
 - The `CIForwardedFrom` JSON reaches the apps in `CIMeta`: the iOS
   (`ChatTypes.swift`) and Kotlin (`ChatModel.kt`) mirrors are extended with the
   new field and variant.
-- Group-attributed forwards in non-local chats - `CIFFGroupLink` always,
-  `CIFFGroup` when `groupType` is present - render a two-row header at double
-  the single-header height: row 1 - forward icon + "forwarded from" (current
-  style); row 2 - the name in the header text style, starting under the
-  forward icon. The whole header opens the source: known group - the chat,
-  positioned at the original item when `chatItemId` is present; unknown - the
-  connection plan for `groupLink`. All other forwards, including the
-  link-removed name-only `CIFFGroup`, keep the single-line header.
+- The sender and the recipient of a forwarded message see the same header; the
+  only difference between them is the goto arrow, shown where the original
+  item exists locally (`chatTypeApiIdMsgId`), in notes too.
+- Two-row header at double the single-header height - row 1: forward icon +
+  "forwarded from" ("saved from" in notes); row 2: the name in the header text
+  style, starting under the forward icon. Rendered when the attribution is
+  part of the message - `CIFFGroupLink`, and `CIFFGroup` with `groupType`
+  present - and in notes whenever navigation is possible (a local target or a
+  link), items saved from contacts and p2p groups included. The whole header
+  opens the source: known - the chat, positioned at the original item when
+  `chatItemId` is present; unknown - `planAndConnect` with `groupLink`.
+- All other forwards keep the single-line header: "forwarded" (p2p forwards
+  without attribution, the link-removed name-only `CIFFGroup`) or "saved"
+  (non-navigable notes items). The `forwarded_from_description` and
+  `saved_from_description` strings are removed; "forwarded from" and
+  "saved from" are added.
 - The goto arrow beside the bubble applies only to locally resolved items
   (`chatTypeApiIdMsgId`), never to joining.
 

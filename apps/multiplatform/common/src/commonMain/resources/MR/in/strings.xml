@@ -755,7 +755,7 @@
     <string name="moderated_description">dimoderasi</string>
     <string name="invalid_chat">obrolan tidak valid</string>
     <string name="forwarded_description">diteruskan</string>
-    <string name="saved_from_description">disimpan dari %s</string>
+    <string name="saved_from">disimpan dari</string>
     <string name="receiving_files_not_yet_supported">terima berkas belum didukung</string>
     <string name="sender_you_pronoun">anda</string>
     <string name="unknown_message_format">format pesan tak diketahui</string>

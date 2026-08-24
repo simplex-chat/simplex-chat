@@ -4629,7 +4629,7 @@ chat item action */
 "Saved from" = "Tarafından kaydedildi";
 
 /* No comment provided by engineer. */
-"saved from %@" = "%@ tarafından kaydedildi";
+"saved from" = "kaydedildi:";
 
 /* message info title */
 "Saved message" = "Kaydedilmiş mesaj";

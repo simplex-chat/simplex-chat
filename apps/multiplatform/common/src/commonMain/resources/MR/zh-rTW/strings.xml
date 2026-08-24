@@ -1935,7 +1935,7 @@
     <string name="report_item_archived">已封存的報告</string>
     <string name="report_item_visibility_submitter">只有你和審核員能夠檢視</string>
     <string name="report_item_visibility_moderators">只有傳送者和審核員能夠檢視</string>
-    <string name="saved_from_description">已儲存自 %s</string>
+    <string name="saved_from">已儲存自</string>
     <string name="e2ee_info_no_pq_short">此聊天受到端對端加密保護。</string>
     <string name="report_reason_other">另一個原因</string>
     <string name="report_reason_profile">不當的個人檔案</string>

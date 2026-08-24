@@ -5346,7 +5346,7 @@ chat item action */
 "Saved from" = "Enregistré depuis";
 
 /* No comment provided by engineer. */
-"saved from %@" = "enregistré à partir de %@";
+"saved from" = "enregistré à partir de";
 
 /* message info title */
 "Saved message" = "Message enregistré";
