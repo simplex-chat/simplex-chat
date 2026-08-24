@@ -75,7 +75,7 @@ struct FramedItemView: View {
                             }
                         })
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
-                    let twoRow: Bool = if chat.chatInfo.chatType == .local {
+                    let twoRowHeader: Bool = if chat.chatInfo.chatType == .local {
                         itemForwarded.chatTypeApiIdMsgId != nil || itemForwarded.sourceGroupLink != nil
                     } else {
                         switch itemForwarded {
@@ -84,7 +84,7 @@ struct FramedItemView: View {
                         default: false
                         }
                     }
-                    if twoRow {
+                    if twoRowHeader {
                         let caption: LocalizedStringKey = chat.chatInfo.chatType == .local ? "saved from" : "forwarded from"
                         headerFrame(pad: true) {
                             VStack(alignment: .leading, spacing: 6) {
@@ -94,13 +94,13 @@ struct FramedItemView: View {
                                     .lineLimit(1)
                             }
                         }
-                            .simultaneousGesture(TapGesture().onEnded {
-                                if let (chatType, apiId, msgId) = itemForwarded.chatTypeApiIdMsgId {
-                                    im.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
-                                } else if let link = itemForwarded.sourceGroupLink {
-                                    planAndConnect(link, theme: theme, dismiss: false)
-                                }
-                            })
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if let (chatType, apiId, msgId) = itemForwarded.chatTypeApiIdMsgId {
+                                im.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
+                            } else if let link = itemForwarded.sourceGroupLink {
+                                planAndConnect(link, theme: theme, dismiss: false)
+                            }
+                        })
                     } else {
                         framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                     }
@@ -219,13 +219,13 @@ struct FramedItemView: View {
         }
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
+    func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
         headerFrame(pad: pad) {
             headerRow(icon: icon, iconColor: iconColor, caption: caption)
         }
     }
 
-    @ViewBuilder private func headerRow(icon: String?, iconColor: Color? = nil, caption: Text) -> some View {
+    private func headerRow(icon: String?, iconColor: Color? = nil, caption: Text) -> some View {
         HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
