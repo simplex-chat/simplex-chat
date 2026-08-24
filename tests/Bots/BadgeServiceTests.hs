@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Bots.BadgeServiceTests where
 
@@ -9,10 +11,12 @@ import BadgeService.Catalog (catalogTotals, defaultCatalog, offerTotal, seedCata
 import BadgeService.Config (BadgeServiceConfig (..), readBadgeServiceConfig)
 import BadgeService.Options
 import BadgeService.Service
+import BadgeService.Store
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.STM (atomically)
 import Control.Exception (SomeException, evaluate, finally, try)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
@@ -22,11 +26,20 @@ import Data.List (find, isInfixOf)
 import Data.Maybe (fromJust, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
-import Data.Time.Clock (getCurrentTime)
+import Data.Time.Clock (addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeType (..))
+import Simplex.Chat.Badges (BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Service (BadgeCatalog (..), BadgeOffer (..), BadgePrice (..))
-import Simplex.Chat.Badges.Types (BadgeItemStatus (..), BadgeOfferId (..), OfferDiscount (..))
+import Simplex.Chat.Badges.Types
+  ( BadgeItemStatus (..),
+    BadgeLedgerEntry (..),
+    BadgeOfferId (..),
+    BadgePurchaseStatus (..),
+    LedgerCreditType (..),
+    LedgerDebitType (..),
+    LedgerEntryType (..),
+    OfferDiscount (..),
+  )
 import Simplex.Chat.Controller (ChatConfig)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
@@ -36,6 +49,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, createDBStore)
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..), BBSSecretKey (..), bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strEncode)
 import System.FilePath ((</>))
@@ -69,6 +83,10 @@ badgeServiceTests = do
   it "should fail to start when a provider is configured without [web]" testBadgeServiceConfigProviderRequiresWeb
   it "should start with just [issuer] and [codes], no provider section" testBadgeServiceConfigMinimalStarts
   it "should start the service from a complete config with web and both providers" testBadgeServiceCompleteConfigStarts
+  it "should create a purchase and append ledger entries readable back in order" testBadgeStorePurchaseAndLedger
+  it "should disable a price out of the active catalog while both stay reachable by id" testBadgeStoreSetPriceStatusDisabled
+  it "should return the redeeming purchase key from getCodeByHash" testBadgeStoreGetCodeByHashRedeemer
+  it "should clear both redemption columns and set unredeemed_at" testBadgeStoreUnredeemCode
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -459,6 +477,150 @@ testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
                  "secret_key_file = " <> stripeKeyFile,
                  "webhook_secret_file = " <> stripeWebhookFile
                ]
+
+-- B1 store layer -------------------------------------------------------------
+
+-- A fresh, migrated badge-service database, independent of any running bot: these tests
+-- exercise BadgeService.Store directly against BadgeServiceTests' own store, the same way
+-- testBadgeServiceCatalogSeeding does.
+withFreshBadgeStore :: TestParams -> (DBStore -> IO a) -> IO a
+withFreshBadgeStore ps test = do
+  let dbOpts = toDBOpts (dbOptions $ coreOptions $ mkBadgeServiceOpts ps) chatSuffix False chatDBFunctions
+  Right st <- createDBStore dbOpts badgeServiceSchemaMigrations (MigrationConfig MCError Nothing)
+  test st `finally` closeDBStore st
+
+mkTestKeyPair :: IO (C.PublicKeyEd25519, C.PrivateKeyEd25519)
+mkTestKeyPair = do
+  drg <- C.newRandom
+  (pub, priv :: C.PrivateKeyEd25519) <- atomically $ C.generateKeyPair drg
+  pure (pub, priv)
+
+expectRight :: HasCallStack => IO (Either ServiceError a) -> IO a
+expectRight action =
+  action >>= \case
+    Right a -> pure a
+    Left e -> expectationFailure ("expected Right, got: " <> show e) >> error "unreachable"
+
+-- Creates a purchase, appends three ledger entries (an opening credit and two badge debits)
+-- and asserts getLedgerSince returns all three in ascending entry_id order with the expected
+-- changeMonths, and getLastLedgerEntry returns exactly the last one appended.
+testBadgeStorePurchaseAndLedger :: HasCallStack => TestParams -> IO ()
+testBadgeStorePurchaseAndLedger ps =
+  withFreshBadgeStore ps $ \st -> do
+    (purchaseKey, _) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    now <- getCurrentTime
+    BadgePurchaseRow {badgePurchaseId, status} <-
+      expectRight $ withServiceTransaction st $ \db -> createPurchase db purchaseKey masterKey BTSupporter now
+    status `shouldBe` PSIssued
+    let mkEntry changeMonths entryType balanceMonths =
+          BadgeLedgerEntry
+            { entryId = 0,
+              entryUuid = "test-entry-" <> tshow' (badgePurchaseId, changeMonths, balanceMonths),
+              badgePurchaseId,
+              changeMonths,
+              balanceMonths,
+              balanceStartTs = now,
+              balanceBadgeType = BTSupporter,
+              wasPausedSince = Nothing,
+              serviceCreatedAt = now,
+              createdAt = now,
+              entryType
+            }
+        tshow' = fromString . show
+    entry1 <- expectRight $ withServiceTransaction st $ \db -> appendLedgerEntry db (mkEntry 3 (LECredit CTOpening) 3)
+    entry2 <- expectRight $ withServiceTransaction st $ \db -> appendLedgerEntry db (mkEntry (-1) (LEDebit DTBadge) 2)
+    entry3 <- expectRight $ withServiceTransaction st $ \db -> appendLedgerEntry db (mkEntry (-1) (LEDebit DTBadge) 1)
+    entryId entry1 < entryId entry2 && entryId entry2 < entryId entry3 `shouldBe` True
+    allEntries <- expectRight $ withServiceTransaction st $ \db -> getLedgerSince db badgePurchaseId Nothing
+    map entryId allEntries `shouldBe` [entryId entry1, entryId entry2, entryId entry3]
+    map changeMonths allEntries `shouldBe` [3, -1, -1]
+    lastEntry <- expectRight $ withServiceTransaction st $ \db -> getLastLedgerEntry db badgePurchaseId
+    (entryId <$> lastEntry) `shouldBe` Just (entryId entry3)
+    sinceFirst <- expectRight $ withServiceTransaction st $ \db -> getLedgerSince db badgePurchaseId (Just (entryId entry1))
+    map entryId sinceFirst `shouldBe` [entryId entry2, entryId entry3]
+
+-- setPriceStatus BISDisabled removes the price and every offer pinned to it from
+-- getActiveCatalog, while getPriceById and getOfferById still resolve both.
+testBadgeStoreSetPriceStatusDisabled :: HasCallStack => TestParams -> IO ()
+testBadgeStoreSetPriceStatusDisabled ps =
+  withFreshBadgeStore ps $ \st -> do
+    seedCatalog st
+    BadgeCatalog {prices = seededPrices} <- expectRight $ withServiceTransaction st getActiveCatalog
+    let BadgePrice {priceId = targetPriceId} = head seededPrices
+    pinnedOfferIds <- expectRight $ withServiceTransaction st $ \db -> do
+      BadgeCatalog {offers} <- getActiveCatalog db
+      pure [offerId | BadgeOffer {offerId, priceId = Just pid} <- offers, pid == targetPriceId]
+    length pinnedOfferIds > 0 `shouldBe` True
+    _ <- expectRight $ withServiceTransaction st $ \db -> setPriceStatus db targetPriceId BISDisabled
+    BadgeCatalog {prices = pricesAfter, offers = offersAfter} <- expectRight $ withServiceTransaction st getActiveCatalog
+    any (\BadgePrice {priceId} -> priceId == targetPriceId) pricesAfter `shouldBe` False
+    any (\BadgeOffer {priceId} -> priceId == Just targetPriceId) offersAfter `shouldBe` False
+    priceStillById <- expectRight $ withServiceTransaction st $ \db -> getPriceById db targetPriceId
+    case priceStillById of
+      Just BadgePrice {status} -> status `shouldBe` BISDisabled
+      Nothing -> expectationFailure "disabled price should still resolve by id"
+    mapM_
+      ( \oid -> do
+          offerStillById <- expectRight $ withServiceTransaction st $ \db -> getOfferById db oid
+          isJust offerStillById `shouldBe` True
+      )
+      pinnedOfferIds
+
+-- Inserts a code, marks it redeemed by one purchase's key, and asserts getCodeByHash returns
+-- that same purchase key alongside the code row.
+testBadgeStoreGetCodeByHashRedeemer :: HasCallStack => TestParams -> IO ()
+testBadgeStoreGetCodeByHashRedeemer ps =
+  withFreshBadgeStore ps $ \st -> do
+    (purchaseKey, _) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    now <- getCurrentTime
+    BadgePurchaseRow {badgePurchaseId} <-
+      expectRight $ withServiceTransaction st $ \db -> createPurchase db purchaseKey masterKey BTSupporter now
+    codeHash <- getRandomBytes 32
+    let expiresAt = addUTCTime (30 * nominalDay) now
+        newCode = NewBadgeCode {codeHash, badgeType = BTSupporter, months = 3, batch = "test-batch", expiresAt}
+    _ <- expectRight $ withServiceTransaction st $ \db -> insertCodes db [newCode] now
+    beforeRedeem <- expectRight $ withServiceTransaction st $ \db -> getCodeByHash db codeHash
+    case beforeRedeem of
+      Just (_, redeemer) -> redeemer `shouldBe` Nothing
+      Nothing -> expectationFailure "code should exist before redemption"
+    _ <- expectRight $ withServiceTransaction st $ \db -> markCodeRedeemed db codeHash badgePurchaseId now
+    afterRedeem <- expectRight $ withServiceTransaction st $ \db -> getCodeByHash db codeHash
+    case afterRedeem of
+      Just (BadgeCode {redeemedPurchaseId}, redeemer) -> do
+        redeemedPurchaseId `shouldBe` Just badgePurchaseId
+        redeemer `shouldBe` Just purchaseKey
+      Nothing -> expectationFailure "code should exist after redemption"
+
+-- unredeemCode clears redeemed_purchase_id and redeemed_at and sets unredeemed_at, re-opening
+-- the code for another redemption.
+testBadgeStoreUnredeemCode :: HasCallStack => TestParams -> IO ()
+testBadgeStoreUnredeemCode ps =
+  withFreshBadgeStore ps $ \st -> do
+    (purchaseKey, _) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    now <- getCurrentTime
+    BadgePurchaseRow {badgePurchaseId} <-
+      expectRight $ withServiceTransaction st $ \db -> createPurchase db purchaseKey masterKey BTSupporter now
+    codeHash <- getRandomBytes 32
+    let expiresAt = addUTCTime (30 * nominalDay) now
+        newCode = NewBadgeCode {codeHash, badgeType = BTSupporter, months = 3, batch = "test-batch", expiresAt}
+    _ <- expectRight $ withServiceTransaction st $ \db -> insertCodes db [newCode] now
+    _ <- expectRight $ withServiceTransaction st $ \db -> markCodeRedeemed db codeHash badgePurchaseId now
+    unredeemAt <- getCurrentTime
+    _ <- expectRight $ withServiceTransaction st $ \db -> unredeemCode db codeHash unredeemAt
+    Just (BadgeCode {redeemedPurchaseId, redeemedAt, unredeemedAt}, redeemer) <-
+      expectRight $ withServiceTransaction st $ \db -> getCodeByHash db codeHash
+    redeemedPurchaseId `shouldBe` Nothing
+    redeemedAt `shouldBe` Nothing
+    -- Postgres TIMESTAMPTZ truncates to microseconds, so an exact Haskell UTCTime round-trip
+    -- isn't guaranteed on that backend; comparing within a second confirms the column was
+    -- actually set to the given time without depending on sub-microsecond precision surviving.
+    case unredeemedAt of
+      Just storedUnredeemedAt -> abs (diffUTCTime storedUnredeemedAt unredeemAt) < 1 `shouldBe` True
+      Nothing -> expectationFailure "unredeemed_at should be set after unredeemCode"
+    redeemer `shouldBe` Nothing
 
 #if defined(dbPostgres)
 runMigrationsToRun :: DBStore -> MigrationsToRun -> IO ()
