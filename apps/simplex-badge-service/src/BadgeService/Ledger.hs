@@ -33,10 +33,16 @@ data LedgerState = LedgerState
 -- @k = min balanceMonths (fullMonthsBetween balanceStartTs t)@: capped at the balance so a long
 -- absence on a small or zero balance can never lapse more months than are actually owed. Returns
 -- 'Nothing' (state unchanged) when @k@ would be 0 — never 'Just (0, _)'.
+--
+-- The new 'balanceStartTs' is reached by stepping 'addMonths' 1 forward @k@ times, not by a
+-- direct @addMonths k@ jump: 'fullMonthsBetween' counts months the same iterated way (see its
+-- Haddock), and 'issue' always advances one month at a time, so all three must agree on the same
+-- stepwise sequence or a boundary computed here can land past where 'issue' would place it,
+-- letting a re-'issue' at the same instant slip through the guard below.
 advance :: UTCTime -> LedgerState -> Maybe (Int, LedgerState)
 advance t st@LedgerState {balanceMonths, balanceStartTs}
   | k <= 0 = Nothing
-  | otherwise = Just (k, st {balanceMonths = balanceMonths - k, balanceStartTs = addMonths k balanceStartTs})
+  | otherwise = Just (k, st {balanceMonths = balanceMonths - k, balanceStartTs = iterate (addMonths 1) balanceStartTs !! k})
   where
     k = min balanceMonths (fullMonthsBetween balanceStartTs t)
 
@@ -55,8 +61,14 @@ debitAll _reason st = st {balanceMonths = 0}
 
 -- | @consume@: issues a credential for @[balanceStartTs, addMonths 1 balanceStartTs)@, debiting
 -- one month. 'Nothing' when @balanceMonths == 0@ (nothing to issue) or when the current month is
--- already issued (@balanceStartTs > t@ — 'balanceStartTs' only reaches the next period's start
--- once this one has been consumed); the caller tells the two apart by the balance.
+-- already issued (@balanceStartTs > t@); the caller tells the two apart by the balance.
+--
+-- This guard only works because 'advance' steps to the same month boundaries 'issue' does (see
+-- 'advance''s Haddock): whenever 'advance' is not capped by a low balance, its resulting
+-- @balanceStartTs@ is @<= t@ and the /next/ boundary after it is @> t@ by construction, so the
+-- 'issue' that follows always leaves @balanceStartTs' > t@ — a second 'issue' at the same @t@ is
+-- correctly rejected. A freshly 'credit'ed balance sets @balanceStartTs == t@ exactly, which must
+-- stay issuable, so this guard is strictly @>@, never @>=@.
 issue :: UTCTime -> LedgerState -> Maybe (LedgerState, UTCTime, UTCTime)
 issue t st@LedgerState {balanceMonths, balanceStartTs}
   | balanceMonths == 0 = Nothing

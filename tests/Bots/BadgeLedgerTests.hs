@@ -31,9 +31,17 @@ badgeLedgerTests = modifyMaxSuccess (const 500) $ do
   prop "re-running issue inside an already-issued period appends nothing (property 4)" prop_issueIdempotentWithinPeriod
   prop "advance lapses only fully elapsed, unissued months (property 5)" prop_advanceOnlyFullyElapsed
   it "reproduces the worked example: buy 3 months, app off a month, reissue (property 6)" testWorkedExample
+  it "does not double-issue when a Feb clamp puts balanceStartTs exactly on t (property 4 regression, seeds 6/7)" testFebClampRegression
 
 noon :: DiffTime
 noon = secondsToDiffTime (12 * 3600)
+
+-- | Independent oracle for "n months forward, stepping one month at a time": the ledger's own
+-- month-boundary definition (see 'fullMonthsBetween' and 'advance' in BadgeService.Ledger), used
+-- here instead of a direct @addMonths n@ jump because the two disagree once a Feb clamp falls
+-- partway through the span (regression for the property-4 counterexample below).
+iterAddMonths :: Int -> UTCTime -> UTCTime
+iterAddMonths n t0 = iterate (addMonths 1) t0 !! n
 
 endOfDay :: DiffTime
 endOfDay = secondsToDiffTime (23 * 3600 + 59 * 60 + 59)
@@ -50,10 +58,27 @@ genDebitType :: Gen StatementDebitType
 genDebitType = elements [SDRefund, SDBadge, SDLapse, SDSupport]
 
 genTime :: Gen UTCTime
-genTime = do
+genTime = oneof [genUniformTime, genClampProneTime]
+
+genUniformTime :: Gen UTCTime
+genUniformTime = do
   dayOffset <- chooseInt (0, 3000)
   secOfDay <- chooseInt (0, 86399)
   pure $ UTCTime (addDays (toInteger dayOffset) (fromGregorian 2020 1 1)) (secondsToDiffTime (toInteger secOfDay))
+
+-- | Dates on the 28th-31st of a month, the only days where 'addMonths' can clamp. Direct-jump vs.
+-- iterated-step boundary computations only diverge when a clamp falls partway through a span, so
+-- a uniformly-random day-of-month (as in 'genUniformTime') samples that region far too thinly —
+-- the property-4 regression below needed 493 QuickCheck cases to surface it. Picking the
+-- day-of-month explicitly from the clamp-prone range, with month/year otherwise random, makes
+-- every generated history exercise that region directly instead of by chance.
+genClampProneTime :: Gen UTCTime
+genClampProneTime = do
+  year <- chooseInt (2020, 2028)
+  month <- chooseInt (1, 12)
+  day <- elements [28, 29, 30, 31]
+  secOfDay <- chooseInt (0, 86399)
+  pure $ UTCTime (fromGregorian (toInteger year) month day) (secondsToDiffTime (toInteger secOfDay))
 
 genLedgerState :: Gen LedgerState
 genLedgerState = do
@@ -138,7 +163,7 @@ verifyRow :: Row -> Bool
 verifyRow (Row kind t prev next) = case kind of
   EKLapse k ->
     balanceMonths next == balanceMonths prev - k
-      && balanceStartTs next == addMonths k (balanceStartTs prev)
+      && balanceStartTs next == iterAddMonths k (balanceStartTs prev)
       && balanceBadgeType next == balanceBadgeType prev
   EKCredit n ->
     balanceMonths next == balanceMonths prev + n
@@ -207,9 +232,9 @@ prop_advanceOnlyFullyElapsed = forAll genStateAndTime $ \(st, t) -> case advance
     property $
       k > 0
         && k <= balanceMonths st
-        && addMonths k (balanceStartTs st) <= t
-        && (k == balanceMonths st || addMonths (k + 1) (balanceStartTs st) > t)
-        && balanceStartTs st' == addMonths k (balanceStartTs st)
+        && iterAddMonths k (balanceStartTs st) <= t
+        && (k == balanceMonths st || iterAddMonths (k + 1) (balanceStartTs st) > t)
+        && balanceStartTs st' == iterAddMonths k (balanceStartTs st)
         && balanceMonths st' == balanceMonths st - k
 
 genSunday :: Gen UTCTime
@@ -263,3 +288,34 @@ testWorkedExample = do
   periodStart4 `shouldBe` mayTen
   periodEnd4 `shouldBe` junTen
   sundayAfter periodEnd4 `shouldBe` UTCTime (fromGregorian 2026 6 14) endOfDay
+
+-- | Exact counterexample from the property-4 falsification (QuickCheck seeds 6 and 7, 493 tests
+-- in): a direct 11-month jump from Apr 29, 2020 overshoots Mar 28, 2021 by a day (it lands on Mar
+-- 29), while the true, iterated 11th month boundary (stepping through the Feb 2021 clamp) lands
+-- exactly on Mar 28. The old 'fullMonthsBetween' picked 10 months via its overshoot-correction
+-- check, leaving 'advance' at Feb 28, and 'issue' then walked one more month to land its new
+-- 'balanceStartTs' exactly on @t@ — which the old @balanceStartTs > t@ guard failed to reject on
+-- a same-instant re-issue, so a second 'issue' fired and silently debited a month nobody paid
+-- for. This pins the fix: 'fullMonthsBetween' must count the same 11 months 'advance' resolves
+-- to, and the second 'issue' at the same @t@ must be rejected.
+testFebClampRegression :: IO ()
+testFebClampRegression = do
+  let start = UTCTime (fromGregorian 2020 4 29) (secondsToDiffTime (15 * 3600 + 16 * 60 + 21))
+      t = UTCTime (fromGregorian 2021 3 28) (secondsToDiffTime (15 * 3600 + 16 * 60 + 21))
+      st0 = LedgerState {balanceMonths = 18, balanceStartTs = start, balanceBadgeType = BTInvestor}
+  -- advance resolves 11 fully elapsed months (not 10): the direct jump and the iterated boundary
+  -- must agree, and here the iterated boundary lands exactly on t.
+  Just (lapsed, st1) <- pure (advance t st0)
+  lapsed `shouldBe` 11
+  balanceStartTs st1 `shouldBe` t
+  balanceMonths st1 `shouldBe` 7
+  -- issuing at t is legitimate: balanceStartTs == t, the boundary was just reached, not consumed.
+  Just (st2, periodStart, periodEnd) <- pure (issue t st1)
+  periodStart `shouldBe` t
+  balanceStartTs st2 `shouldBe` periodEnd
+  balanceStartTs st2 `shouldSatisfy` (> t)
+  -- re-running advance-then-issue at the same t must now append nothing: no further lapse (the
+  -- new start is already past t)...
+  advance t st2 `shouldBe` Nothing
+  -- ...and no second issuance.
+  issue t st2 `shouldBe` Nothing

@@ -8,7 +8,7 @@ module Simplex.Chat.Badges.Months
   )
 where
 
-import Data.Time.Calendar (addDays, addGregorianMonthsClip, toGregorian)
+import Data.Time.Calendar (addDays, addGregorianMonthsClip)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (UTCTime (..), secondsToDiffTime)
 
@@ -17,21 +17,18 @@ import Data.Time.Clock (UTCTime (..), secondsToDiffTime)
 addMonths :: Int -> UTCTime -> UTCTime
 addMonths n (UTCTime day tod) = UTCTime (addGregorianMonthsClip (fromIntegral n) day) tod
 
--- | The largest @m >= 0@ with @addMonths m start <= t@. Returns 0 when @t < start@.
+-- | The largest @m >= 0@ with the @m@-times-iterated one-month step from @start@ landing at or
+-- before @t@. Returns 0 when @t < start@.
 --
--- 'addMonths' is monotonic and moves to a new calendar month on every step, so the plain
--- year/month difference between @start@ and @t@ is never more than one month away from the
--- answer; at most one correction step is needed either way.
+-- This deliberately steps one month at a time via 'addMonths' 1, rather than jumping straight to
+-- @addMonths m start@ for a candidate @m@: 'addMonths' is /not/ additive under clamping (a Feb
+-- clamp encountered partway through a multi-month span permanently lowers the day-of-month for
+-- every later step), so a direct @m@-month jump from @start@ can land on a different date than
+-- @m@ single-month steps chained through the same intermediate clamps. That divergence is
+-- path-dependent, so there is no O(1) closed form here — the only way to agree with 'issue'
+-- (which always advances one month at a time) is to step the same way.
 fullMonthsBetween :: UTCTime -> UTCTime -> Int
-fullMonthsBetween start t
-  | t < start = 0
-  | addMonths (approx + 1) start <= t = approx + 1
-  | addMonths approx start > t = approx - 1
-  | otherwise = approx
-  where
-    (sy, sm, _) = toGregorian (utctDay start)
-    (ty, tm, _) = toGregorian (utctDay t)
-    approx = fromInteger (ty - sy) * 12 + (tm - sm)
+fullMonthsBetween start t = length (takeWhile (<= t) (drop 1 (iterate (addMonths 1) start)))
 
 -- | 23:59:59 UTC of the next Sunday strictly after @t@. A @t@ that already falls on a Sunday
 -- yields the following Sunday (7 days later), never the same day.
