@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Bots.BadgeServiceTests where
@@ -19,20 +20,42 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.STM (atomically)
 import Control.Exception (SomeException, evaluate, finally, try)
+import Control.Monad (void)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BC
+import qualified Data.ByteString.Lazy.Char8 as LBC
 import Data.List (find, isInfixOf)
 import Data.Maybe (fromJust, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (DiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay, secondsToDiffTime)
 import Data.Word (Word32)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeRequest (..), BadgeType (..), verifyCredential)
-import Simplex.Chat.Badges.Service (BadgeCatalog (..), BadgeOffer (..), BadgePrice (..), BadgeServiceErrorCode (..))
+import Simplex.Chat.Badges.Service
+  ( -- 'BadgeBalance', 'StatementEntry' and 'StatementEntryType' import only their
+    -- constructors, not '(..)': their field names (entryId, changeMonths, balanceMonths,
+    -- createdAt, ...) duplicate 'BadgeLedgerEntry''s (Badges.Types), which the existing B1
+    -- ledger tests below already use as bare selectors -- importing the field selectors here
+    -- too would make those pre-existing, untouched uses ambiguous.
+    BadgeBalance (BadgeBalance),
+    BadgeCatalog (..),
+    BadgeOffer (..),
+    BadgePrice (..),
+    BadgeServiceCommand (..),
+    BadgeServiceErrorCode (..),
+    BadgeServiceRequest (..),
+    BadgeServiceResponse (..),
+    StatementCreditType (SCOpening),
+    StatementEntry (StatementEntry),
+    StatementEntryType (SECredit),
+    pattern VersionBadgeService,
+  )
 import Simplex.Chat.Badges.Types
   ( BadgeItemStatus (..),
     BadgeLedgerEntry (..),
@@ -43,9 +66,10 @@ import Simplex.Chat.Badges.Types
     LedgerEntryType (..),
     OfferDiscount (..),
   )
-import Simplex.Chat.Controller (ChatConfig)
+import Simplex.Chat.Controller (ChatConfig, ChatController (chatStore))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection)
@@ -70,7 +94,16 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 
 badgeServiceTests :: SpecWith TestParams
 badgeServiceTests = do
-  it "should respond with unsupported_version to redeem" testBadgeServiceRedeemUnsupported
+  it "should respond unsupported_version to a request below minSupportedBadgeVersion" testBadgeServiceUnsupportedVersion
+  it "should respond bad_request to a request that fails to decode" testBadgeServiceMalformedRequest
+  it "should respond bad_request when purchaseKey differs from the verified signer" testBadgeServiceSignerMismatch
+  it "should respond unknown_purchase_key to issueBadge from an unknown key" testBadgeServiceIssueBadgeUnknownKey
+  it "should never respond unknown_purchase_key to purchaseBadge from an unknown key" testBadgeServicePurchaseBadgeUnknownKeyIsNotUnknownPurchaseKey
+  it "should respond bad_request to pauseBadge from a signer with an existing purchase" testBadgeServicePauseBadgeKnownSignerBadRequest
+  it "should respond unknown_purchase_key to pauseBadge from an unknown key" testBadgeServicePauseBadgeUnknownKey
+  it "should respond bad_request to purchaseBadge funded by apple" testBadgeServicePurchaseBadgeAppleBadRequest
+  it "should reject purchaseBadge{code} with rate_limited before processing when the per-signer bucket is drained" testBadgeServicePurchaseCodeThrottlePreCheck
+  it "should turn a pure exception forced only during response encoding into internal, without escaping runHandler" testBadgeServiceCatchAllContainsPureException
   it "should migrate web_orders, codes and provider_events up and down" testBadgeServiceWebOrderSchemaMigration
   it "should seed the catalog idempotently and preserve a deprecated price" testBadgeServiceCatalogSeeding
   it "should price 3 months at 2x and 12 months at 6x the monthly price" testBadgeCatalogOfferTotal
@@ -164,13 +197,19 @@ writeTestBadgeServiceConfig TestParams {tmpPath} = do
   writeFile (badgeServiceConfigPath tmpPath) $ unlines (issuerCodesIniLines issuerKeyFile codeSecretFile)
 
 withBadgeService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()) -> IO ()
-withBadgeService ps = withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps)
+withBadgeService ps = withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps) (pure ())
 
 -- Shared by withBadgeService and testBadgeServiceCompleteConfigStarts: the two-phase startup
 -- dance (CreateMyAddress, then ShowMyAddress) is the same regardless of what the config looks
--- like, as long as it's valid; writeConfig is what varies.
-withBadgeServiceConfig :: HasCallStack => TestParams -> IO () -> (TestCC -> String -> IO ()) -> IO ()
-withBadgeServiceConfig ps writeConfig test = do
+-- like, as long as it's valid; writeConfig is what varies. 'betweenPhases' runs after the
+-- first phase's badge service has been killed and before the second one starts: the ONLY
+-- window where nothing holds the database open, so a test that needs to seed a row directly
+-- (e.g. B1's createPurchase, for a "known signer" case) must do it here, via a fresh
+-- 'withFreshBadgeStore' -- opening a second connection to the SAME sqlite file WHILE the
+-- service's own phase is running deadlocks against its writer lock (verified: reliably fails
+-- 'createDBStore' with a pattern-match-on-Right, i.e. sqlite busy, when tried in that window).
+withBadgeServiceConfig :: HasCallStack => TestParams -> IO () -> IO () -> (TestCC -> String -> IO ()) -> IO ()
+withBadgeServiceConfig ps writeConfig betweenPhases test = do
   let opts = mkBadgeServiceOpts ps
   writeConfig
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
@@ -183,6 +222,7 @@ withBadgeServiceConfig ps writeConfig test = do
     (sLink, _) <- getContactLinks bs False
     bs <## "auto_accept off"
     pure sLink
+  betweenPhases
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
   runBadgeService testCfg opts $
     withNewTestChatCfg ps testCfg "client" bobProfile $ \client ->
@@ -194,13 +234,187 @@ runBadgeService cfg opts action = do
   threadDelay 500000
   action `finally` killThread t
 
-testBadgeServiceRedeemUnsupported :: HasCallStack => TestParams -> IO ()
-testBadgeServiceRedeemUnsupported ps =
+-- B5 RPC dispatcher -----------------------------------------------------------
+
+-- Sends the JSON-encoded 'BadgeServiceRequest' unsigned.
+sendServiceRequest :: TestCC -> String -> BadgeServiceRequest -> IO ()
+sendServiceRequest client bsLink req =
+  client ##> ("/_service_request 1 " <> bsLink <> " " <> LBC.unpack (J.encode req))
+
+-- Sends the JSON-encoded 'BadgeServiceRequest' signed with 'priv' (the agent verifies the
+-- signature and delivers the corresponding public key as CEvtServiceRequest's signerKey).
+sendSignedServiceRequest :: TestCC -> String -> C.PrivateKeyEd25519 -> BadgeServiceRequest -> IO ()
+sendSignedServiceRequest client bsLink priv req =
+  client
+    ##> ( "/_service_request 1 " <> bsLink <> " sign_key=" <> BC.unpack (strEncode (C.StoredPrivateKey priv))
+            <> " "
+            <> LBC.unpack (J.encode req)
+        )
+
+-- Reads one raw "service response: {...}" line and returns the decoded JSON object, for
+-- assertions that can't be pinned to one exact line (e.g. a retryAfter whose value depends on
+-- wall-clock timing).
+getServiceResponseObject :: HasCallStack => TestCC -> IO J.Object
+getServiceResponseObject client = do
+  line <- getTermLine client
+  case T.stripPrefix "service response: " (T.pack line) of
+    Just json | Just (J.Object o) <- J.decode (LBC.pack (T.unpack json)) -> pure o
+    _ -> expectationFailure ("expected a service response line, got: " <> line) >> error "unreachable"
+
+testBadgeRequestCommand :: BadgeMasterKey -> ServicePayment -> BadgeServiceCommand
+testBadgeRequestCommand masterKey payment =
+  BSCPurchaseBadge {badgeRequest = testBadgeRequest masterKey, payment, upgrade = Nothing}
+
+-- StatementEntry/BadgeBalance/StatementEntryType are constructed positionally: only their
+-- constructors are imported (see the import list above), not their field selectors, to avoid
+-- colliding with BadgeLedgerEntry's identically-named fields used elsewhere in this file.
+-- Field order: entryId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType,
+-- wasPausedSince, createdAt, entryType.
+testIssueBadgeCommand :: BadgeMasterKey -> UTCTime -> BadgeServiceCommand
+testIssueBadgeCommand masterKey now =
+  BSCIssueBadge
+    { badgeRequest = testBadgeRequest masterKey,
+      balance = BadgeBalance (StatementEntry "test-entry" 1 1 now BTSupporter Nothing now (SECredit SCOpening))
+    }
+
+-- version 0 is below minSupportedBadgeVersion (1): the version gate must reject it before
+-- looking at the command at all, so 'getBadgeCatalog' (which needs no other fields) is enough
+-- to isolate the gate.
+testBadgeServiceUnsupportedVersion :: HasCallStack => TestParams -> IO ()
+testBadgeServiceUnsupportedVersion ps =
   withBadgeService ps $ \client bsLink -> do
-    let redeemReq =
-          "{\"version\":1,\"request\":{\"type\":\"purchaseBadge\",\"payment\":{\"type\":\"code\",\"code\":\"TEST-CODE\"}}}"
-    client ##> ("/_service_request 1 " <> bsLink <> " " <> redeemReq)
+    client ##> ("/_service_request 1 " <> bsLink <> " {\"version\":0,\"request\":{\"type\":\"getBadgeCatalog\"}}")
     client <## "service response: {\"code\":\"unsupported_version\",\"type\":\"error\"}"
+
+-- A syntactically valid JSON object that does not decode into BadgeServiceRequest (missing
+-- version and request) must fail at step 1, before the version gate ever runs.
+testBadgeServiceMalformedRequest :: HasCallStack => TestParams -> IO ()
+testBadgeServiceMalformedRequest ps =
+  withBadgeService ps $ \client bsLink -> do
+    client ##> ("/_service_request 1 " <> bsLink <> " {\"foo\":\"bar\"}")
+    client <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+
+-- A request signed by one key but asserting a different key as purchaseKey must be rejected
+-- regardless of what it asks for.
+testBadgeServiceSignerMismatch :: HasCallStack => TestParams -> IO ()
+testBadgeServiceSignerMismatch ps =
+  withBadgeService ps $ \client bsLink -> do
+    (_signerPub, signerPriv) <- mkTestKeyPair
+    (assertedPub, _assertedPriv) <- mkTestKeyPair
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just assertedPub, request = BSCGetBadgeCatalog}
+    sendSignedServiceRequest client bsLink signerPriv req
+    client <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+
+-- issueBadge always requires an existing purchase record; a fresh, never-purchased key must
+-- be rejected with unknown_purchase_key before it ever reaches the (not yet implemented) B7
+-- handler.
+testBadgeServiceIssueBadgeUnknownKey :: HasCallStack => TestParams -> IO ()
+testBadgeServiceIssueBadgeUnknownKey ps =
+  withBadgeService ps $ \client bsLink -> do
+    (pub, priv) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    now <- getCurrentTime
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = testIssueBadgeCommand masterKey now}
+    sendSignedServiceRequest client bsLink priv req
+    client <## "service response: {\"code\":\"unknown_purchase_key\",\"type\":\"error\"}"
+
+-- The rule easy to get backwards (B5 brief): purchaseBadge from an unknown key is the normal
+-- first-purchase case, not an identity error. Before B7 lands it reaches the not-implemented
+-- handler (internal); after B7 the code classifier answers it -- either way, the assertion
+-- that must hold across that later change is that it is never unknown_purchase_key.
+testBadgeServicePurchaseBadgeUnknownKeyIsNotUnknownPurchaseKey :: HasCallStack => TestParams -> IO ()
+testBadgeServicePurchaseBadgeUnknownKeyIsNotUnknownPurchaseKey ps =
+  withBadgeService ps $ \client bsLink -> do
+    (pub, priv) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = testBadgeRequestCommand masterKey (SPCode "UNKNOWN-CODE")}
+    sendSignedServiceRequest client bsLink priv req
+    respObj <- getServiceResponseObject client
+    KM.lookup "code" respObj `shouldNotBe` Just (J.String "unknown_purchase_key")
+    KM.lookup "code" respObj `shouldBe` Just (J.String "internal")
+
+-- pauseBadge is always bad_request (decision 5 / §6), but ONLY once the signer/record
+-- precondition passes -- a signer with a real purchase row (B1's createPurchase) must reach
+-- that bad_request, not an identity error.
+testBadgeServicePauseBadgeKnownSignerBadRequest :: HasCallStack => TestParams -> IO ()
+testBadgeServicePauseBadgeKnownSignerBadRequest ps = do
+  (pub, priv) <- mkTestKeyPair
+  masterKey <- BadgeMasterKey <$> getRandomBytes 32
+  now <- getCurrentTime
+  -- The purchase row is seeded in the gap between withBadgeServiceConfig's two startup
+  -- phases, reopening the SAME already-migrated store the harness itself reopens there to
+  -- read the invite link (chatStore, via a plain TestCC) -- NOT a fresh createDBStore with
+  -- just badgeServiceSchemaMigrations, which builds an isolated, from-scratch database (as
+  -- withFreshBadgeStore's other callers rely on) and mismatches against the real one, already
+  -- carrying the full chat/agent migration history the live service ran.
+  let seedPurchase =
+        withTestChat ps serviceDbPrefix $ \bs -> do
+          bs <## "subscribed 1 connections on server localhost" -- consume, as the harness's own reopen does
+          void $ expectRight $ withServiceTransaction (chatStore (chatController bs)) $ \db -> createPurchase db pub masterKey BTSupporter now
+  withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps) seedPurchase $ \client bsLink -> do
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = BSCPauseBadge}
+    sendSignedServiceRequest client bsLink priv req
+    client <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+
+-- The same command from a key with no purchase row at all must fail the identity check
+-- instead, before pauseBadge's own (always bad_request) handling ever runs.
+testBadgeServicePauseBadgeUnknownKey :: HasCallStack => TestParams -> IO ()
+testBadgeServicePauseBadgeUnknownKey ps =
+  withBadgeService ps $ \client bsLink -> do
+    (pub, priv) <- mkTestKeyPair
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = BSCPauseBadge}
+    sendSignedServiceRequest client bsLink priv req
+    client <## "service response: {\"code\":\"unknown_purchase_key\",\"type\":\"error\"}"
+
+-- Store-evidence verification is out of scope (§6): every non-code payment method is
+-- permanently bad_request, not "not implemented".
+testBadgeServicePurchaseBadgeAppleBadRequest :: HasCallStack => TestParams -> IO ()
+testBadgeServicePurchaseBadgeAppleBadRequest ps =
+  withBadgeService ps $ \client bsLink -> do
+    (pub, priv) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = testBadgeRequestCommand masterKey (SPApple {jws = "test-jws"})}
+    sendSignedServiceRequest client bsLink priv req
+    client <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+
+-- With the per-signer bucket started at capacity 1 and zero tokens ([throttle] override, B5
+-- decision 5), a single purchaseBadge{code} must be rejected BEFORE processing, with
+-- rate_limited and a non-zero retryAfter -- the accounting (debit-on-failure) is B10's, this
+-- step only asserts the pre-processing check.
+testBadgeServicePurchaseCodeThrottlePreCheck :: HasCallStack => TestParams -> IO ()
+testBadgeServicePurchaseCodeThrottlePreCheck ps = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets (tmpPath ps)
+  let writeConfig =
+        writeFile (badgeServiceConfigPath (tmpPath ps)) $
+          unlines $
+            issuerCodesIniLines issuerKeyFile codeSecretFile
+              ++ ["", "[throttle]", "signer_failure_capacity = 1", "signer_failure_start_tokens = 0"]
+  withBadgeServiceConfig ps writeConfig (pure ()) $ \client bsLink -> do
+    (pub, priv) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = testBadgeRequestCommand masterKey (SPCode "TEST-CODE")}
+    sendSignedServiceRequest client bsLink priv req
+    respObj <- getServiceResponseObject client
+    KM.lookup "code" respObj `shouldBe` Just (J.String "rate_limited")
+    case KM.lookup "retryAfter" respObj of
+      Just (J.Number n) -> n `shouldSatisfy` (> 0)
+      other -> expectationFailure $ "expected a positive retryAfter, got: " <> show other
+
+-- The convincing form (B5 brief): forces a genuine 'error' thunk hidden behind a Just, so it
+-- is NOT forced by constructing or returning the response -- only by fully encoding it, which
+-- is exactly the laziness gap a "catch around only the IO action" would miss. runHandler must
+-- catch it, respond internal, and remain usable for the next call (proving the exception did
+-- not corrupt anything or propagate past this function -- the property that keeps
+-- processQueuedRequests' single-threaded forever loop alive for every other user).
+testBadgeServiceCatchAllContainsPureException :: HasCallStack => TestParams -> IO ()
+testBadgeServiceCatchAllContainsPureException _ps = do
+  let boom = error "boom: pure exception forced only during response encoding, not before" :: Text
+      badResponse = BSPError {code = BSEInternal, message = Just boom, retryAfter = Nothing}
+  caughtObj <- runHandler "test-req-pure-exception" (pure badResponse)
+  KM.lookup "code" caughtObj `shouldBe` Just (J.String "internal")
+  KM.lookup "message" caughtObj `shouldBe` Nothing -- never leaks the caught exception's own text
+  goodObj <- runHandler "test-req-after-pure-exception" (pure $ BSPError {code = BSEBadRequest, message = Nothing, retryAfter = Nothing})
+  KM.lookup "code" goodObj `shouldBe` Just (J.String "bad_request")
 
 -- Applies every migration except 20260821_badge_service_web, then exercises that one
 -- migration's up/down/up cycle directly, checking the three new tables appear and
@@ -454,11 +668,15 @@ testBadgeServiceConfigMinimalStarts TestParams {tmpPath} = do
 -- service end to end, not just that readBadgeServiceConfig accepts it.
 testBadgeServiceCompleteConfigStarts :: HasCallStack => TestParams -> IO ()
 testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
-  withBadgeServiceConfig ps writeCompleteConfig $ \client bsLink -> do
+  withBadgeServiceConfig ps writeCompleteConfig (pure ()) $ \client bsLink -> do
+    -- What matters here is that the service starts and answers at all; the request omits
+    -- purchaseBadge's required badgeRequest on purpose, so the real dispatcher's decode step
+    -- (B5) fails it with bad_request -- a stable, step-independent response, unlike e.g.
+    -- getBadgeCatalog's answer, which will change once B6 lands.
     let redeemReq =
           "{\"version\":1,\"request\":{\"type\":\"purchaseBadge\",\"payment\":{\"type\":\"code\",\"code\":\"TEST-CODE\"}}}"
     client ##> ("/_service_request 1 " <> bsLink <> " " <> redeemReq)
-    client <## "service response: {\"code\":\"unsupported_version\",\"type\":\"error\"}"
+    client <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
   where
     writeCompleteConfig = do
       (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath

@@ -12,6 +12,8 @@ module Simplex.Chat.Badges.Service
     BadgeServiceVersion,
     VersionBadgeService,
     pattern VersionBadgeService,
+    minSupportedBadgeVersion,
+    currentBadgeVersion,
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
     BadgeServiceErrorCode (..),
@@ -51,6 +53,20 @@ type VersionBadgeService = Version BadgeServiceVersion
 
 pattern VersionBadgeService :: Word16 -> VersionBadgeService
 pattern VersionBadgeService v = Version v
+
+-- | The oldest client version the service still answers (badges-rpc.md:9): a request below
+-- this gets 'BSEUnsupportedVersion'. Below 'currentBadgeVersion' only because a version bump
+-- is expected to stay backwards compatible for a while, not because the service itself has
+-- ever spoken more than one version yet.
+minSupportedBadgeVersion :: VersionBadgeService
+minSupportedBadgeVersion = VersionBadgeService 1
+
+-- | The newest version this service deployment speaks. A response answers within
+-- @min(request.version, currentBadgeVersion)@; at version 1 there is no version-conditional
+-- field, so this constant has no runtime effect yet -- it exists so a later version bump has
+-- something to gate on from day one.
+currentBadgeVersion :: VersionBadgeService
+currentBadgeVersion = VersionBadgeService 1
 
 data BadgeServiceRequest = BadgeServiceRequest
   { version :: VersionBadgeService,
