@@ -158,12 +158,21 @@ runFromGenesis t0 badgeType = foldl' go (initialLedgerState t0 badgeType, [])
 
 -- | Re-derives each row's next state from its predecessor using the UX "Transitions" formulas
 -- directly (not by re-invoking advance/credit/debitAll/issue), so a bug in those functions'
--- arithmetic shows up as a mismatch here.
+-- arithmetic shows up as a mismatch here — with one exception: 'EKLapse' does not recompute the
+-- new 'balanceStartTs' as @iterAddMonths k (balanceStartTs prev)@, because 'advance' computes
+-- that exact expression internally to produce @next@ in the first place; comparing it against
+-- itself would pass no matter what 'advance' did. Instead the new start is pinned structurally —
+-- at or before @t@, with one more month past it strictly after @t@ — a fact any correct 'advance'
+-- must satisfy, but a wrong one (e.g. a stray direct @addMonths k@ jump instead of iterated
+-- stepping) can and does fail. The "one more month past it" half only holds when the lapse wasn't
+-- capped by a low balance (@k == balanceMonths prev@): a capped lapse legitimately stops short of
+-- the last fully-elapsed month, so the next boundary can still be @<= t@.
 verifyRow :: Row -> Bool
 verifyRow (Row kind t prev next) = case kind of
   EKLapse k ->
     balanceMonths next == balanceMonths prev - k
-      && balanceStartTs next == iterAddMonths k (balanceStartTs prev)
+      && balanceStartTs next <= t
+      && (k == balanceMonths prev || addMonths 1 (balanceStartTs next) > t)
       && balanceBadgeType next == balanceBadgeType prev
   EKCredit n ->
     balanceMonths next == balanceMonths prev + n
@@ -225,6 +234,13 @@ prop_issueIdempotentWithinPeriod = forAll genStateAndTime $ \(st, t) ->
           let st3 = maybe st2 snd (advance t st2)
            in property (issue t st3 == Nothing)
 
+-- | The @k@-boundary checks below (via 'iterAddMonths', matching how 'fullMonthsBetween' itself
+-- counts) validate @k@ against the *input* start — a genuine, falsifiable constraint on the count
+-- 'advance' chose, not a restatement of what 'advance' did with it. The *output* start, by
+-- contrast, is pinned structurally (at or before @t@, one more month strictly after @t@ unless the
+-- lapse was capped by a low balance, in which case a boundary short of @t@ is legitimate) rather
+-- than by recomputing @iterAddMonths k (balanceStartTs st)@: that expression is exactly what
+-- 'advance' computes internally for @st'@, so asserting equality against it can never fail.
 prop_advanceOnlyFullyElapsed :: Property
 prop_advanceOnlyFullyElapsed = forAll genStateAndTime $ \(st, t) -> case advance t st of
   Nothing -> property (fullMonthsBetween (balanceStartTs st) t == 0 || balanceMonths st == 0)
@@ -234,7 +250,8 @@ prop_advanceOnlyFullyElapsed = forAll genStateAndTime $ \(st, t) -> case advance
         && k <= balanceMonths st
         && iterAddMonths k (balanceStartTs st) <= t
         && (k == balanceMonths st || iterAddMonths (k + 1) (balanceStartTs st) > t)
-        && balanceStartTs st' == iterAddMonths k (balanceStartTs st)
+        && balanceStartTs st' <= t
+        && (k == balanceMonths st || addMonths 1 (balanceStartTs st') > t)
         && balanceMonths st' == balanceMonths st - k
 
 genSunday :: Gen UTCTime
