@@ -182,6 +182,7 @@ badgeServiceTests = do
   it "should debit the per-signer bucket once per failed redemption and not at all for a success, replay, badgeExtra or tier mismatch" testBadgeServiceFailureDebitsBucketOncePerFailure
   it "should rate_limit a fresh signer once the global failure budget is drained, and let the same code succeed after it refills" testBadgeServiceGlobalFailureBudgetRefills
   it "should issue the second period with debit(lapse) before debit(badge), then serve the cached credential" testBadgeServiceIssueBadgeSecondPeriod
+  it "should serve the cached credential when issueBadge repeats inside the last funded month" testBadgeServiceIssueBadgeCachedInLastFundedMonth
   it "should return no credential and a zero-balance statement when the balance is exhausted" testBadgeServiceIssueBadgeExhaustedBalance
   it "should credit a second code to the existing purchase with its own payment and no second issuance" testBadgeServiceSecondCodeSamePurchaseKey
   it "should respond bad_request to a badgeRequest naming a tier the funding does not cover, on every path" testBadgeServiceTierMismatchIsBadRequest
@@ -1627,6 +1628,38 @@ testBadgeServiceIssueBadgeSecondPeriod ps = do
 
 badgeCredentialExpiry :: BadgeCredential -> Maybe UTCTime
 badgeCredentialExpiry BadgeCredential {badgeInfo = BadgeInfo {badgeExpiry}} = badgeExpiry
+
+-- The regression guard for the B7 defect B10 found and fixed (plan §9): inside the month that the
+-- LAST funded month paid for, the balance is zero AND the month is already issued, and 'issue'
+-- refuses for both reasons at once. Classifying that by the balance answered @credential = null@
+-- and lost the client a credential the service had already signed, stored and delivered --
+-- exactly the retry-after-a-timeout case RPC §Idempotency exists for, which is C3's worker's
+-- normal failure mode. The right answer is the cached credential, both at the instant of issue
+-- and later in the same month; the month AFTER it is the genuinely exhausted case, which
+-- 'testBadgeServiceIssueBadgeExhaustedBalance' holds.
+testBadgeServiceIssueBadgeCachedInLastFundedMonth :: HasCallStack => TestParams -> IO ()
+testBadgeServiceIssueBadgeCachedInLastFundedMonth ps = do
+  clock <- newTestClock testClockStart
+  signer <- newTestSigner
+  codeRef <- newIORef ""
+  let seedCode = seedTestCodes ps [(BTSupporter, 1, testCodeExpiry)] >>= writeIORef codeRef . head
+  withBadgeServiceClock ps (readIORef clock) (writeTestBadgeServiceConfig ps) seedCode $ \client bsLink -> do
+    code <- readIORef codeRef
+    sendRequest client bsLink signer (purchaseCodeRequest signer BTSupporter code)
+    (cred1, statement1) <- expectCredential "redeem the only funded month" client
+    statementShape statement1 `shouldBe` [(1, 1, "credit payment (no invoiceId)"), (-1, 0, "debit badge")]
+    let req = issueRequest signer BTSupporter "" unknownEntryUuid
+    sendRequest client bsLink signer req
+    (cached, statement2) <- expectCredential "issueBadge in the month just issued" client
+    cached `shouldBe` cred1
+    statementShape statement2 `shouldBe` statementShape statement1
+    -- and ten days later, still inside the same period (which ends 2026-04-10)
+    advanceTestClockSeconds clock (10 * nominalDay)
+    sendRequest client bsLink signer req
+    (cachedLater, statement3) <- expectCredential "issueBadge ten days into the issued month" client
+    cachedLater `shouldBe` cred1
+    statementShape statement3 `shouldBe` statementShape statement1
+  withServiceDB ps $ \db -> serviceRowCounts db `shouldReturn` (1, 1, 2, 1, 1)
 
 -- Brief 7 / B10 item 10: an exhausted balance is not an error -- no credential, and a statement
 -- ending at zero months that says why.

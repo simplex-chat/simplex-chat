@@ -660,12 +660,14 @@ data IssuePlan
   = -- | A period to issue: it is signed, then recorded as one @debit(badge)@ entry and one
     -- issuance row. Carries the state @issue@ left, the period start and the period end.
     IssuePeriod LedgerState UTCTime UTCTime
-  | -- | The current month is already issued -- a positive balance whose @balanceStartTs@ a
-    -- previous @issue@ moved past @now@. Its credential is fetched, not signed, and neither a
-    -- @debit(badge)@ entry nor an issuance row is written: that month's pair already exists and
-    -- B2's property 3 keeps them 1:1.
+  | -- | The current month is already issued -- a @balanceStartTs@ a previous @issue@ moved past
+    -- @now@. Its credential is fetched, not signed, and neither a @debit(badge)@ entry nor an
+    -- issuance row is written: that month's pair already exists and B2's property 3 keeps them
+    -- 1:1. This holds whatever the balance is: the month after the LAST funded one is issued is
+    -- both already issued and unfunded, and it is the already-issued half that decides the answer.
     IssueCached
-  | -- | Nothing to issue: the balance is exhausted. Not an error -- the statement shows why.
+  | -- | Nothing to issue: the balance is exhausted AND the month it would cover has not been
+    -- issued. Not an error -- the statement shows why.
     IssueExhausted
 
 -- | An 'IssuePlan' with its credential resolved.
@@ -716,9 +718,23 @@ planLedger now' creditWith wasPaused st0 =
     st2 = maybe st1 (\(_, _, st) -> st) credited
     issuePlan = case issue now' st2 of
       Just (st3, periodStart, periodEnd) -> IssuePeriod st3 periodStart periodEnd
+      -- @issue@ refuses for two independent reasons -- an exhausted balance, and a current month
+      -- that is already issued -- and the two need opposite answers. Ask which one directly
+      -- (@balanceStartTs > now@ is @issue@'s own already-issued guard) rather than inferring it
+      -- from the balance: after the LAST funded month is issued BOTH hold at once, and reading
+      -- the balance alone reports that as exhausted, refusing to hand back a credential the
+      -- service has already signed, stored and delivered. That is the one case RPC §Idempotency
+      -- is about -- C3's worker retrying after a timeout -- and it would lose the user a month
+      -- they paid for (B7 defect, found and fixed by B10; plan §9).
+      --
+      -- @balanceStartTs > now@ can only have been set by a previous @issue@: 'initialLedgerState'
+      -- sets it to @now@, 'credit' to @max balanceStartTs now@, and 'advance' steps it only to
+      -- boundaries at or before @now@. So an issuance covering @now@ always exists here, which is
+      -- what 'resolveIssue' then fetches.
       Nothing -> case st2 of
-        LedgerState {balanceMonths = 0} -> IssueExhausted
-        _ -> IssueCached
+        LedgerState {balanceStartTs = startTs}
+          | startTs > now' -> IssueCached
+          | otherwise -> IssueExhausted
 
 -- | Step 5: the only IO between the pure plan and the write, and the only place a credential is
 -- produced. A fresh period is SIGNED (B4); an already-issued month has its credential FETCHED;
