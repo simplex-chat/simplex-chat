@@ -1,5 +1,8 @@
-html {
-    scroll-snap-type: none;
+.footer.page {
+    scroll-snap-align: end;
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
 }
 
 .livestream {
