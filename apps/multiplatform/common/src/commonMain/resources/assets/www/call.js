@@ -54,6 +54,8 @@ let inactiveCallMediaSources = {
 let activeCall;
 let notConnectedCall;
 let answerTimeout = 30000;
+// How long a call is allowed to stay disconnected before it is ended
+let reconnectTimeout = 30000;
 var useWorker = false;
 var isDesktop = false;
 var localizedState = "";
@@ -206,6 +208,9 @@ const processCommand = (function () {
         localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
+        // disconnect call if it does not reconnect in time
+        let disconnectedTimeout;
+        let wasConnected = false;
         if (pc.connectionState) {
             pc.addEventListener("connectionstatechange", connectionStateChange);
         }
@@ -216,43 +221,44 @@ const processCommand = (function () {
         async function connectionStateChange() {
             // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
             // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
-            if (pc.connectionState !== "failed")
+            // Once the call is connected failed needs to work otherwise the call would go on forever
+            if (pc.connectionState !== "failed" || wasConnected)
                 connectionHandler();
         }
         async function connectionHandler() {
-            var _a;
-            sendMessageToNative({
-                resp: {
-                    type: "connection",
-                    state: {
-                        connectionState: (_a = pc.connectionState) !== null && _a !== void 0 ? _a : (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
-                            ? pc.iceConnectionState
-                            : pc.iceConnectionState == "completed"
-                                ? "connected"
-                                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
-                        iceConnectionState: pc.iceConnectionState,
-                        iceGatheringState: pc.iceGatheringState,
-                        signalingState: pc.signalingState,
-                    },
-                },
-            });
-            if (pc.connectionState == "disconnected" ||
-                pc.connectionState == "failed" ||
-                (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))) {
-                clearConnectionTimeout();
-                if (pc.connectionState) {
-                    pc.removeEventListener("connectionstatechange", connectionStateChange);
+            if (reconnecting()) {
+                // The call was connected and lost connection should be reconnected without any action as long as connection issue is fixed
+                // call only ends if it doesn't reconnect within reconnectTimeout timeframe.
+                // "reconnecting" is reported instead of "disconnected"/"failed"
+                if (disconnectedTimeout === undefined) {
+                    sendConnectionState("reconnecting");
+                    disconnectedTimeout = setTimeout(() => {
+                        disconnectedTimeout = undefined;
+                        if (activeCall === call && !connected()) {
+                            // call ends because call did not reconnect
+                            // makes sure to set call to disconnected
+                            sendConnectionState("disconnected");
+                            terminateCall();
+                        }
+                    }, reconnectTimeout);
                 }
-                else {
-                    pc.removeEventListener("iceconnectionstatechange", connectionStateChange);
-                }
-                if (activeCall) {
-                    setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
-                }
-                endCall();
+                return;
             }
-            else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
+            if (wasConnected && connecting()) {
+                return;
+            }
+            if (connected()) {
+                const restored = wasConnected;
+                wasConnected = true;
+                clearDisconnectedTimeout();
                 clearConnectionTimeout();
+                // reconnecting turns back to connected
+                // client keeps original call duration
+                if (restored) {
+                    sendConnectionState();
+                    return;
+                }
+                sendConnectionState();
                 const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
                     const { type, state } = stat;
@@ -270,12 +276,76 @@ const processCommand = (function () {
                         break;
                     }
                 }
+                return;
             }
+            sendConnectionState();
+            if (disconnected() || failed()) {
+                // the call was not connected
+                terminateCall();
+            }
+        }
+        function sendConnectionState(state) {
+            var _a;
+            sendMessageToNative({
+                resp: {
+                    type: "connection",
+                    state: {
+                        connectionState: (_a = state !== null && state !== void 0 ? state : pc.connectionState) !== null && _a !== void 0 ? _a : (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+                            ? pc.iceConnectionState
+                            : pc.iceConnectionState == "completed"
+                                ? "connected"
+                                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
+                        iceConnectionState: pc.iceConnectionState,
+                        iceGatheringState: pc.iceGatheringState,
+                        signalingState: pc.signalingState,
+                    },
+                },
+            });
+        }
+        // webView 69-70 has no connectionState, and it reports a connected call as "completed" as well
+        function connected() {
+            return (pc.connectionState == "connected" ||
+                (!pc.connectionState && (pc.iceConnectionState == "connected" || pc.iceConnectionState == "completed")));
+        }
+        function connecting() {
+            return (pc.connectionState == "connecting" ||
+                pc.connectionState == "new" ||
+                (!pc.connectionState && (pc.iceConnectionState == "checking" || pc.iceConnectionState == "new")));
+        }
+        function disconnected() {
+            return pc.connectionState == "disconnected" || (!pc.connectionState && pc.iceConnectionState == "disconnected");
+        }
+        function failed() {
+            return pc.connectionState == "failed" || (!pc.connectionState && pc.iceConnectionState == "failed");
+        }
+        // the connected call lost connection and could reconnect
+        function reconnecting() {
+            return wasConnected && (disconnected() || failed());
+        }
+        function terminateCall() {
+            clearConnectionTimeout();
+            clearDisconnectedTimeout();
+            if (pc.connectionState) {
+                pc.removeEventListener("connectionstatechange", connectionStateChange);
+            }
+            else {
+                pc.removeEventListener("iceconnectionstatechange", connectionStateChange);
+            }
+            if (activeCall) {
+                setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
+            }
+            endCall();
         }
         function clearConnectionTimeout() {
             if (connectionTimeout) {
                 clearTimeout(connectionTimeout);
                 connectionTimeout = undefined;
+            }
+        }
+        function clearDisconnectedTimeout() {
+            if (disconnectedTimeout !== undefined) {
+                clearTimeout(disconnectedTimeout);
+                disconnectedTimeout = undefined;
             }
         }
     }
@@ -296,6 +366,8 @@ const processCommand = (function () {
                     console.log("starting outgoing call - capabilities");
                     if (activeCall)
                         endCall();
+                    // Stop a preview stream from an earlier pre-connect outgoing call being replaced (activeCall may be null here)
+                    stopNotConnectedCall();
                     let localStream = null;
                     try {
                         localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && (await browserHasCamera()), VideoCamera.User);
@@ -332,7 +404,8 @@ const processCommand = (function () {
                     if (activeCall)
                         endCall();
                     // It can be already defined on Android when switching calls (if the previous call was outgoing)
-                    notConnectedCall = undefined;
+                    // Stop its preview tracks before clearing, otherwise camera/mic stay live
+                    stopNotConnectedCall();
                     inactiveCallMediaSources.mic = true;
                     inactiveCallMediaSources.camera = command.media == CallMediaType.Video;
                     inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
@@ -1129,6 +1202,13 @@ const processCommand = (function () {
         if (activeCall) {
             activeCall.localStream.getTracks().forEach((track) => track.stop());
             activeCall.localScreenStream.getTracks().forEach((track) => track.stop());
+        }
+    }
+    // Call on any path that abandons notConnectedCall, otherwise its preview camera/mic tracks stay live.
+    function stopNotConnectedCall() {
+        if (notConnectedCall) {
+            notConnectedCall.localStream.getTracks().forEach((track) => track.stop());
+            notConnectedCall = undefined;
         }
     }
     function resetVideoElements() {
