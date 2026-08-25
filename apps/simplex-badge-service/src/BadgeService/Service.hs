@@ -18,9 +18,10 @@ where
 import BadgeService.Catalog (catalogTotals, seedCatalog)
 import BadgeService.Codes (RedeemOutcome (..), classifyRedemption, codeHash, normalizeCode)
 import BadgeService.Config
-  ( BadgeServiceConfig (issuer),
+  ( BadgeServiceConfig (issuer, service),
     BadgeServiceEnv (..),
     IssuerConfig (issuerKeyIdx),
+    ServiceConfig (serviceAddressFile),
     checkFailureBuckets,
     debitFailureBuckets,
     newBadgeServiceEnv,
@@ -54,7 +55,7 @@ import BadgeService.Store
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Exception (SomeAsyncException (..), SomeException, catch, evaluate, fromException, throwIO)
+import Control.Exception (IOException, SomeAsyncException (..), SomeException, catch, evaluate, fromException, throwIO)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Control.Monad.IO.Class (liftIO)
 import Control.Logger.Simple
@@ -66,6 +67,7 @@ import Data.Int (Int64)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUID
@@ -104,9 +106,11 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
 import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.Store.Profiles (UserContactLink (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -255,8 +259,49 @@ badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
     Nothing -> putStrLn "No current user" >> exitFailure
     -- DR required for service RPC; autoAccept off because badge service ignores contact events.
     Just _ -> do
-      unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
+      unless noAddress $ do
+        initializeBotAddress' (not testing) (Just True) False cc
+        publishServiceAddress env cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
+
+-- | Persists the bot's contact address to '[service] address_file' (A6 parses that key; this
+-- adds no configuration field), so an operator can publish it without scraping the startup log.
+-- No-op when the key is unset.
+--
+-- Re-reads the address with a second 'ShowMyAddress' rather than threading the value
+-- 'initializeBotAddress'' already resolved: that function is shared with three other bots
+-- (broadcast, bot-advanced, the directory service) and changing its signature to return the
+-- link would touch all of them for a need only this one has.
+--
+-- The file is always OVERWRITTEN with the address just read from the store: an operator who
+-- restarts the service must never find a file left over from a previous run whose address has
+-- since changed (e.g. the profile was reset) -- a stale file is worse than a briefly-missing
+-- one. If the file already held a different address, that is logged as a warning before the
+-- overwrite, since it should not happen in normal operation.
+--
+-- A write failure -- an unwritable path or a parent directory that does not exist, neither of
+-- which this creates -- is logged and does NOT stop the service: 'initializeBotAddress'' already
+-- put the same address on stdout (unless 'testing'), so the operator still has it, and nothing
+-- about serving RPC requests depends on this file.
+publishServiceAddress :: ServiceState -> ChatController -> IO ()
+publishServiceAddress ServiceState {serviceEnv} cc = do
+  BadgeServiceEnv {config = bsConfig} <- atomically $ readTMVar serviceEnv
+  case serviceAddressFile =<< service bsConfig of
+    Nothing -> pure ()
+    Just path ->
+      sendChatCmd cc ShowMyAddress >>= \case
+        Right (CRUserContactLink _ UserContactLink {connLinkContact = CCLink {connFullLink, connShortLink}}) ->
+          writeAddressFile path (safeDecodeUtf8 (maybe (strEncode connFullLink) strEncode connShortLink))
+        _ -> logError $ "badge service: could not read contact address to write to address_file " <> T.pack path
+
+writeAddressFile :: FilePath -> Text -> IO ()
+writeAddressFile path address = do
+  previous <- (Just <$> TIO.readFile path) `catch` \(_ :: IOException) -> pure Nothing
+  case previous of
+    Just old | T.strip old /= address -> logWarn $ "badge service address_file " <> T.pack path <> " held a different address; overwriting"
+    _ -> pure ()
+  (TIO.writeFile path (address <> "\n") >> logInfo ("badge service address written to " <> T.pack path))
+    `catch` \(e :: IOException) -> logError $ "badge service: failed to write address_file " <> T.pack path <> ": " <> tshow e
 
 handleServiceRequest :: BadgeServiceEnv -> ChatController -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
 handleServiceRequest bsEnv cc User {userId} reqId signerKey reqData = do

@@ -51,6 +51,7 @@ import Data.Maybe (fromJust, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (DiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay, secondsToDiffTime)
@@ -148,6 +149,7 @@ badgeServiceTests = do
   it "should fail to start when a provider is configured without [web]" testBadgeServiceConfigProviderRequiresWeb
   it "should start with just [issuer] and [codes], no provider section" testBadgeServiceConfigMinimalStarts
   it "should start the service from a complete config with web and both providers" testBadgeServiceCompleteConfigStarts
+  it "should publish the same address to address_file across two starts, matching the client's address" testBadgeServicePublishesAddressFile
   it "should omit a disabled price and its offers from getBadgeCatalog, and keep a deprecated one" testBadgeServiceGetCatalogDisabledDeprecated
   it "should respond unknown_purchase_key to a signed getBadgeCatalog from an unknown key" testBadgeServiceGetCatalogUnknownSignerKey
   it "should heal the ledger on a signed getBadgeCatalog, appending exactly one debit(lapse), and heal nothing on a repeat" testBadgeServiceGetCatalogHealsLedger
@@ -848,6 +850,42 @@ testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
                  "secret_key_file = " <> stripeKeyFile,
                  "webhook_secret_file = " <> stripeWebhookFile
                ]
+
+-- B9 service address publication -----------------------------------------------------------
+
+-- Proves both facts the brief's manual Verify line asks for: 'address_file' holds the SAME
+-- address after the first start (before 'betweenPhases') as after the second, and that address
+-- -- read straight out of the file, not from 'bsLink' -- is one a client's @/c@ accepts (sends a
+-- connection request for, rather than rejecting as malformed). The badge service disables
+-- auto-accept ('badgePostStartHook' passes 'False' to 'initializeBotAddress''), so "connection
+-- request sent!" is as far as this goes and is the right stopping point -- 'BroadcastTests.hs'
+-- (an auto-accepting bot) is the pattern this borrows the client side of.
+--
+-- Read strictly: Prelude's lazy 'readFile' would leave 'addressFile' open (a thunk holding the
+-- handle) across 'betweenPhases' into the second start, and the second start's own write --
+-- exclusive against any still-open handle, even a reader's -- would then fail with "resource
+-- busy (file is locked)".
+testBadgeServicePublishesAddressFile :: HasCallStack => TestParams -> IO ()
+testBadgeServicePublishesAddressFile ps@TestParams {tmpPath} = do
+  let addressFile = tmpPath </> "bot_address.txt"
+      writeConfig = do
+        (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+        writeFile (badgeServiceConfigPath tmpPath) $
+          unlines $
+            issuerCodesIniLines issuerKeyFile codeSecretFile
+              ++ ["", "[service]", "address_file = " <> addressFile]
+  firstContentsRef <- newIORef T.empty
+  withBadgeServiceConfig
+    ps
+    writeConfig
+    (TIO.readFile addressFile >>= writeIORef firstContentsRef)
+    $ \client bsLink -> do
+      firstContents <- readIORef firstContentsRef
+      secondContents <- TIO.readFile addressFile
+      firstContents `shouldBe` secondContents
+      T.strip secondContents `shouldBe` T.pack bsLink
+      client ##> ("/c " <> T.unpack (T.strip secondContents))
+      client <## "connection request sent!"
 
 -- B6 getBadgeCatalog -----------------------------------------------------------
 
