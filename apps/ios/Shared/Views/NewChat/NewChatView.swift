@@ -1295,6 +1295,7 @@ private func showOpenKnownGroupAlert(
         information: groupInfo.nextConnectPrepared || groupInfo.businessChat != nil
             ? nil
             : memberRoleInformation(groupInfo.membership.memberRole, isChannel: groupInfo.useRelays),
+        secondaryInformation: true,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
             groupInfo.useRelays

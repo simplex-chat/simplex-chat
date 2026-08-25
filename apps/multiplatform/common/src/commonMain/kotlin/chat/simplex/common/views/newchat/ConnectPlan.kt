@@ -668,6 +668,7 @@ private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: ((
         else -> if (isChannel) MR.strings.connect_plan_you_are_contributor else MR.strings.connect_plan_you_are_member
       })
     },
+    secondaryInformation = true,
     confirmText = generalGetString(
       if (groupInfo.useRelays) {
         MR.strings.connect_plan_open_channel
