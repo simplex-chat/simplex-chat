@@ -19,6 +19,7 @@
   <string name="connect_plan_connect_to_name">Connect to %s</string>
   <string name="connect_plan_open_new_chat">Open new chat</string>
   <string name="connect_plan_open_group">Open group</string>
+  <string name="connect_plan_open_new_group">Open new group</string>
   <string name="connect_plan_you_are_observer">You are an observer</string>
   <string name="connect_plan_you_are_member">You are a member</string>
   <string name="connect_plan_you_are_moderator">You are a moderator</string>
@@ -3174,6 +3175,7 @@
   <string name="relay_address_alert_title">Relay address</string>
   <string name="relay_address_alert_message">This is a chat relay address, it cannot be used to connect.</string>
   <string name="connect_plan_open_channel">Open channel</string>
+  <string name="connect_plan_open_new_channel">Open new channel</string>
   <string name="connect_plan_you_are_subscriber">You are a subscriber</string>
   <string name="connect_plan_you_are_contributor">You are a contributor</string>
   <string name="connect_plan_this_is_your_link_for_channel">Your channel</string>
