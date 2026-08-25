@@ -1273,8 +1273,6 @@
     <string name="ok">OK</string>
     <string name="privacy_chat_list_open_web_link">Otvoriť odkaz</string>
     <string name="error_aborting_address_change">Chyba prerušovania zmeny adresy</string>
-    <string name="error_accepting_operator_conditions"></string>
-    <string name="error_accepting_contact_request"></string>
     <string name="error_adding_members">Chyba pridávania člena(ov)</string>
     <string name="error_adding_relay">Chyba pridávania relé</string>
     <string name="servers_info_sessions_errors">Chyby</string>
