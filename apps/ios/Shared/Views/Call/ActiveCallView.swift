@@ -176,11 +176,18 @@ struct ActiveCallView: View {
                     ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
                     : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
-                    call.connectedAt = .now
+                    // connectedAt is only set once, so that the call duration is not reset
+                    // when the call is reconnected after any connectivity issue like using cellular data and travelling
+                    if call.connectedAt == nil {
+                        call.connectedAt = .now
+                    }
                     if !wasConnected {
                         CallSoundsPlayer.shared.vibrate(long: false)
                         wasConnected = true
                     }
+                } else if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
+                          case .reconnecting = callStatus {
+                    call.callState = .reconnecting
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
