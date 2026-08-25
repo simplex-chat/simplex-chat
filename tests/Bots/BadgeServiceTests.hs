@@ -159,6 +159,7 @@ badgeServiceTests = do
   it "should fill total for every seeded offer" testBadgeCatalogTotalsFillsSeededOffers
   it "should reject an offer with freeMonths >= months instead of wrapping" testBadgeCatalogOfferTotalRejectsBadFreeMonths
   it "should reject an offer with discount > 100 instead of wrapping into an overcharge" testBadgeCatalogOfferTotalRejectsBadDiscount
+  it "should reject a total that overflows Word32 instead of wrapping into a wrong charge" testBadgeCatalogOfferTotalRejectsOverflow
   it "should encode BadgeItemStatus on the wire as active/deprecated/disabled" testBadgeItemStatusJsonWireFormat
   it "should fail to start on a missing config file, naming the file" testBadgeServiceConfigMissingFile
   it "should fail to start on an unparsable value, naming the key" testBadgeServiceConfigUnparsableValue
@@ -178,6 +179,7 @@ badgeServiceTests = do
   it "should create a purchase and append ledger entries readable back in order" testBadgeStorePurchaseAndLedger
   it "should disable a price out of the active catalog while both stay reachable by id" testBadgeStoreSetPriceStatusDisabled
   it "should return the redeeming purchase key from getCodeByHash" testBadgeStoreGetCodeByHashRedeemer
+  it "should refuse to redeem a revoked code, leaving the row untouched" testBadgeStoreMarkCodeRedeemedRefusesRevoked
   it "should clear both redemption columns and set unredeemed_at" testBadgeStoreUnredeemCode
   it "should redeem a valid code into a verifiable credential, with a credit(payment) then debit(badge) ledger" testBadgeServiceRedeemCodeIssuesCredential
   it "should return the same credential and write no new row when the identical request is repeated" testBadgeServiceRedeemCodeIdempotent
@@ -734,6 +736,34 @@ testBadgeCatalogOfferTotalRejectsBadDiscount _ps = do
             total = Nothing
           }
   offerTotal price (Just badOffer) `shouldBe` Nothing
+
+-- The third wrap in this money-computing module, after the two subtractions above: both arms of
+-- offerTotal multiply a price by a month count, and a Word32 product wraps at 12 months above a
+-- monthly price of ~35,791 currency units. A wrapped product is a WRONG CHARGE -- worse than the
+-- freeMonths wrap, which only reads as unavailable -- so the intermediate is Word64 and the
+-- result is range-checked back into the Word32 a CurrencyAmount holds. Unreachable at any
+-- plausible price, and refused rather than trusted, exactly like its two siblings.
+testBadgeCatalogOfferTotalRejectsOverflow :: HasCallStack => TestParams -> IO ()
+testBadgeCatalogOfferTotalRejectsOverflow _ps = do
+  now <- getCurrentTime
+  let BadgeCatalog {prices} = defaultCatalog now
+      price@BadgePrice {priceId} = fromJust $ find (\BadgePrice {badgeType} -> badgeType == BTSupporter) prices
+      absurdPrice = price {monthPrice = CurrencyAmount (maxBound :: Word32)}
+      offerWith discount =
+        BadgeOffer
+          { offerId = BadgeOfferId "test-overflow-offer",
+            priceId = Just priceId,
+            months = 12,
+            discount,
+            status = BISActive,
+            createdAt = now,
+            total = Nothing
+          }
+  -- 12 * maxBound overflows both ways round
+  offerTotal absurdPrice (Just (offerWith (ODDiscount 0))) `shouldBe` Nothing
+  offerTotal absurdPrice (Just (offerWith (ODFreeMonths 1))) `shouldBe` Nothing
+  -- but the same absurd price for exactly one month still fits, and is still priced
+  offerTotal absurdPrice Nothing `shouldBe` Just (CurrencyAmount maxBound)
 
 -- BadgeItemStatus's JSON crosses the wire (BadgePrice/BadgeOffer.status), so pinning finding
 -- 2's TextEncoding-derived encoding to what the earlier TH-derived instance produced proves
@@ -1970,6 +2000,32 @@ testBadgeServiceNoTableLinksOrdersToPurchases ps =
     references <- forM tableNames refsOf
     map refTable (filter holdsOrderRef references) `shouldBe` ["sx_badge_service_web_orders"]
     map refTable (filter (\refs -> holdsOrderRef refs && holdsPurchaseRef refs) references) `shouldBe` []
+    -- The column scan above is per-table and cannot see a join built out of two hops. This one
+    -- exists and is complete: @web_orders.invoice_id -> @invoices <- @payments.invoice_id, then
+    -- @payments.payment_id <- @badge_purchases.payment_id. It is empty only because
+    -- 'createCodePayment' hardcodes invoice_id NULL for a code payment -- nothing in the schema
+    -- enforces that, so it is asserted here, over rows shaped exactly as a settled web order and
+    -- a code redemption leave them.
+    withConnection st $ \db -> do
+      DB.execute_ db "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES ('b10-invoice','btcpay',1000,1000,'USD','2026-03-10','paid','2026-03-10','2026-03-10')"
+      DB.execute_ db "INSERT INTO sx_badge_service_web_orders (order_id, invoice_id, method, short_ref, badge_type, months, status, created_at, updated_at) VALUES ('b10-order','b10-invoice','btc','B10RF','supporter',3,'paid','2026-03-10','2026-03-10')"
+      DB.execute_ db "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at) VALUES ('b10-payment', NULL, 'code', 'settled', '2026-03-10', '2026-03-10')"
+      DB.execute_ db "INSERT INTO sx_badge_service_badge_purchases (purchase_key, master_key, initial_badge_type, current_badge_type, payment_id, status, created_at, updated_at) VALUES (x'0102', x'0304', 'supporter', 'supporter', 'b10-payment', 'issued', '2026-03-10', '2026-03-10')"
+    -- one long line each: this module is compiled with CPP, which eats a backslash-newline string
+    -- gap as a line continuation before GHC ever lexes the literal
+    let joinedOrdersToPurchases = do
+          [Only n] <-
+            withConnection st $ \db ->
+              DB.query_ db "SELECT count(*) FROM sx_badge_service_web_orders o JOIN sx_badge_service_payments p ON p.invoice_id = o.invoice_id JOIN sx_badge_service_badge_purchases bp ON bp.payment_id = p.payment_id"
+          pure (n :: Int)
+    -- positive control: the join is written correctly and DOES resolve an order to a purchase the
+    -- moment a payment carries the order's invoice. Without this, "0 rows" could mean a typo.
+    withConnection st $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET invoice_id = 'b10-invoice'"
+    joinedOrdersToPurchases `shouldReturn` 1
+    withConnection st $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET invoice_id = NULL"
+    -- and with the payment shaped as this milestone writes it, there is no path from the order to
+    -- the purchase at all (docs/protocol/badges-web.md §7)
+    joinedOrdersToPurchases `shouldReturn` 0
 #endif
 
 -- B8's Verify line, formally owed by B10: @codes issue@ mints the requested number of codes,
@@ -2170,6 +2226,34 @@ testBadgeStoreGetCodeByHashRedeemer ps =
         redeemedPurchaseId `shouldBe` Just badgePurchaseId
         redeemer `shouldBe` Just purchaseKey
       Nothing -> expectationFailure "code should exist after redemption"
+
+-- markCodeRedeemed refuses a REVOKED code, not only an already-redeemed one. B8's `codes revoke`
+-- runs in a second process against the same database, and the service separates classification
+-- from this write by the signing IO, so a revocation issued in that window must not be silently
+-- overwritten -- which is the whole point of being able to revoke a code that is being abused.
+-- SECodeConflict is what the handler re-classifies on, and a revoked code then answers
+-- code_invalid.
+testBadgeStoreMarkCodeRedeemedRefusesRevoked :: HasCallStack => TestParams -> IO ()
+testBadgeStoreMarkCodeRedeemedRefusesRevoked ps =
+  withFreshBadgeStore ps $ \st -> do
+    (purchaseKey, _) <- mkTestKeyPair
+    masterKey <- BadgeMasterKey <$> getRandomBytes 32
+    now <- getCurrentTime
+    BadgePurchaseRow {badgePurchaseId} <-
+      expectRight $ withServiceTransaction st $ \db -> createPurchase db purchaseKey masterKey BTSupporter now
+    codeHash <- getRandomBytes 32
+    let newCode = NewBadgeCode {codeHash, badgeType = BTSupporter, months = 3, batch = "test-batch", expiresAt = addUTCTime (30 * nominalDay) now}
+    _ <- expectRight $ withServiceTransaction st $ \db -> insertCodes db [newCode] now
+    _ <- expectRight $ withServiceTransaction st $ \db -> revokeCode db codeHash now
+    conflicted <- withServiceTransaction st $ \db -> markCodeRedeemed db codeHash badgePurchaseId now
+    conflicted `shouldBe` Left SECodeConflict
+    -- and the refusal left the row alone: still revoked, still unredeemed
+    Just (BadgeCode {redeemedPurchaseId, redeemedAt, revokedAt}, redeemer) <-
+      expectRight $ withServiceTransaction st $ \db -> getCodeByHash db codeHash
+    redeemedPurchaseId `shouldBe` Nothing
+    redeemedAt `shouldBe` Nothing
+    isJust revokedAt `shouldBe` True
+    redeemer `shouldBe` Nothing
 
 -- unredeemCode clears redeemed_purchase_id and redeemed_at and sets unredeemed_at, re-opening
 -- the code for another redemption.

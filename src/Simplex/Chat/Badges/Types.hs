@@ -83,7 +83,15 @@ data LedgerCreditType
   = -- | badge_ledger.payment_id TEXT REFERENCES payments -- the payment's own id, not the
     -- invoice's: a code payment has no invoice at all, and an invoice-funded payment reaches
     -- its invoice through payments.invoice_id.
-    CTPayment {paymentId :: Text}
+    --
+    -- 'Maybe' because the SERVICE and the CLIENT hold different halves of the same ledger. The
+    -- service mints the payment row and names it here; the client copies the same entries into
+    -- its own badge_ledger and has no payments row at all for a code redemption -- that row
+    -- exists only in the service database, and the wire carries no payment id (the statement's
+    -- SCPayment carries the INVOICE's id, which a code payment does not have). So the client
+    -- writes NULL, and this field must be able to hold it. It was 'Text' between B7 and B10,
+    -- which would have blocked C1 on its first write (plan §9).
+    CTPayment {paymentId :: Maybe Text}
   | CTCharge {chargeId :: Int64}
   | CTSupport
   | CTTransferIn {fromPurchaseId :: Maybe Int64}

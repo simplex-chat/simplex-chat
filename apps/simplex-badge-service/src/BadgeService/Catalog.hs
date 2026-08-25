@@ -18,7 +18,7 @@ where
 import Data.List (find)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Word (Word8)
+import Data.Word (Word8, Word32, Word64)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Service (BadgeCatalog (..), BadgeOffer (..), BadgePrice (..))
 import Simplex.Chat.Badges.Types (BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
@@ -120,19 +120,35 @@ defaultCatalog createdAt =
           total = Nothing
         }
 
--- | The only place a total is computed. 'CurrencyAmount' has no 'Num' instance, so every
--- step unwraps to 'Word32', computes, and re-wraps. 'Nothing' means exactly one month
--- (there is no unpriced multi-month path: a longer duration is only ever expressed as an
--- offer). A 'freeMonths' offer charges for the months that aren't free; an 'ODDiscount'
--- offer floors the discounted total, computed over integers so no floating point appears
--- anywhere in the pricing path.
+-- | The only place a total is computed. 'CurrencyAmount' has no 'Num' instance, so every step
+-- unwraps to 'Word32', computes in 'Word64' and re-wraps through 'minorUnits', which refuses a
+-- product that no longer fits. 'Nothing' for the offer means exactly one month (there is no
+-- unpriced multi-month path: a longer duration is only ever expressed as an offer). A
+-- 'freeMonths' offer charges for the months that aren't free; an 'ODDiscount' offer floors the
+-- discounted total, computed over integers so no floating point appears anywhere in the pricing
+-- path.
 offerTotal :: BadgePrice -> Maybe BadgeOffer -> Maybe CurrencyAmount
 offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} Nothing =
   Just (CurrencyAmount monthPriceMinor)
 offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} (Just BadgeOffer {months, discount}) =
-  CurrencyAmount <$> case discount of
-    ODFreeMonths freeMonths -> (\m -> fromIntegral m * monthPriceMinor) <$> chargeableMonths months freeMonths
-    ODDiscount percent -> (\pct -> (fromIntegral months * monthPriceMinor * fromIntegral (100 - pct)) `div` 100) <$> discountedPercent percent
+  fmap CurrencyAmount . minorUnits =<< case discount of
+    ODFreeMonths freeMonths -> (\m -> fromIntegral m * monthPrice64) <$> chargeableMonths months freeMonths
+    ODDiscount percent -> (\pct -> (fromIntegral months * monthPrice64 * fromIntegral (100 - pct)) `div` 100) <$> discountedPercent percent
+  where
+    monthPrice64 = fromIntegral monthPriceMinor :: Word64
+
+-- | Brings a total computed in 'Word64' back into the 'Word32' a 'CurrencyAmount' holds, or
+-- refuses. Both arms above multiply a price by a month count, and at 12 months a 'Word32'
+-- multiplication wraps above a monthly price of about 35,791 currency units -- a wrapped product
+-- is a WRONG CHARGE, which is the one outcome this module must never produce. It is unreachable
+-- at any plausible price, exactly like the two subtraction wraps B6 closed by name
+-- ('chargeableMonths', 'discountedPercent'), and it is refused for the same reason and in the
+-- same way: one malformed or absurd row costs one unpriced offer, never a wrong total. The whole
+-- computation stays in integers -- no floating point appears anywhere in the pricing path.
+minorUnits :: Word64 -> Maybe Word32
+minorUnits total
+  | total <= fromIntegral (maxBound :: Word32) = Just (fromIntegral total)
+  | otherwise = Nothing
 
 -- | months - freeMonths, but only once it's known safe: a bare 'Word8' subtraction is
 -- unsigned and unguarded, so an offer with freeMonths >= months (a typo, a future

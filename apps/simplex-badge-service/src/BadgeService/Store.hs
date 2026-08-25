@@ -281,12 +281,15 @@ ledgerSelectColumns =
 -- would persist through (@charge_id@) is @subscription_charges@\' TEXT primary key. Both
 -- directions reject that constructor explicitly rather than inventing a silent, possibly
 -- wrong, numeric<->text coercion; subscriptions are out of scope (plan \'6), so nothing writes
--- one. @'CTPayment' {paymentId}@ had the same defect and is now 'Text', matching
--- @badge_ledger.payment_id TEXT REFERENCES payments@ (B7, plan \'9).
+-- one. @'CTPayment' {paymentId}@ had the same defect and is now @'Maybe' 'Text'@, matching
+-- @badge_ledger.payment_id TEXT REFERENCES payments@, which is NULLABLE (B7, widened in B10,
+-- plan \'9). The service always names its payment row; the CLIENT, copying the same entries into
+-- its own ledger, has no payments row for a code redemption and writes NULL -- so both directions
+-- here carry the 'Maybe' through rather than requiring an id the client cannot have.
 encodeLedgerEntryType :: LedgerEntryType -> ExceptT ServiceError IO LedgerTypeRow
 encodeLedgerEntryType = \case
   LECredit creditType -> case creditType of
-    CTPayment {paymentId} -> pure ("credit", Just "payment", Nothing, Just paymentId, Nothing, Nothing, Nothing)
+    CTPayment {paymentId} -> pure ("credit", Just "payment", Nothing, paymentId, Nothing, Nothing, Nothing)
     CTCharge {} -> throwError $ SEDecodeError "CTCharge.chargeId (Int64) does not fit the charge_id TEXT column; unresolved type mismatch, see SDD progress log"
     CTSupport -> pure ("credit", Just "support", Nothing, Nothing, Nothing, Nothing, Nothing)
     CTTransferIn {fromPurchaseId} -> pure ("credit", Just "transfer_in", Nothing, Nothing, Nothing, fromPurchaseId, Nothing)
@@ -303,7 +306,8 @@ encodeLedgerEntryType = \case
 
 decodeLedgerEntryType :: LedgerTypeRow -> Either ServiceError LedgerEntryType
 decodeLedgerEntryType row = case row of
-  ("credit", Just "payment", _, Just paymentId, _, _, _) -> Right $ LECredit (CTPayment paymentId)
+  -- payment_id is read whether or not it is there: a NULL is what a client-written entry holds.
+  ("credit", Just "payment", _, paymentId, _, _, _) -> Right $ LECredit (CTPayment paymentId)
   ("credit", Just "support", _, _, _, _, _) -> Right $ LECredit CTSupport
   ("credit", Just "transfer_in", _, _, _, fromPurchaseId, _) -> Right $ LECredit (CTTransferIn fromPurchaseId)
   ("credit", Just "opening", _, _, _, _, _) -> Right $ LECredit CTOpening
@@ -551,16 +555,21 @@ getCodeByHash db codeHash = do
       code <- liftEither $ rowToCode codeRow
       pure $ Just (code, redeemerKey)
 
--- | Claims an unredeemed code for a purchase. Guarded by @redeemed_purchase_id IS NULL@ so an
--- existing redemption is never overwritten: on no rows affected, a follow-up existence check
--- distinguishes an unknown code ('SECodeNotFound') from one already claimed ('SECodeConflict'),
--- which the caller answers by re-classifying.
+-- | Claims an unredeemed, unrevoked code for a purchase. Guarded by
+-- @redeemed_purchase_id IS NULL AND revoked_at IS NULL@ so neither an existing redemption nor a
+-- revocation is overwritten: on no rows affected, a follow-up existence check distinguishes an
+-- unknown code ('SECodeNotFound') from one already claimed or revoked ('SECodeConflict'), which
+-- the caller answers by re-classifying — a revoked code then classifies as 'RedeemRevoked' and is
+-- answered @code_invalid@, which is the right answer.
 --
--- The badge service's own request loop is single-threaded, so two redemptions of one code
--- cannot overlap there and this guard is not what makes B7 correct (see
--- @BadgeService.Service.redemptionRetries@, which also records the ledger's lack of an
--- equivalent). It is kept because it costs nothing and because this row is also written out of
--- band, by B8's operator tooling.
+-- __The revocation half of the guard is load-bearing, unlike the redemption half.__ B8's
+-- @codes revoke@ runs in a SECOND PROCESS against the same database, and this service separates
+-- classification from this write by the signing IO — so a revocation issued in that window would
+-- otherwise be silently overwritten and the code redeemed anyway. That is the whole point of
+-- being able to revoke a code that is being abused. The redemption half cannot fire today (the
+-- request loop is single-threaded, see @BadgeService.Service.redemptionRetries@, which also
+-- records the ledger's lack of an equivalent guard); it is kept because it costs nothing and
+-- because 'unredeemCode' also writes this row out of band.
 markCodeRedeemed :: DB.Connection -> ByteString -> Int64 -> UTCTime -> ExceptT ServiceError IO ()
 markCodeRedeemed db codeHash badgePurchaseId now = do
   rows <-
@@ -570,7 +579,7 @@ markCodeRedeemed db codeHash badgePurchaseId now = do
         [sql|
           UPDATE sx_badge_service_codes
           SET redeemed_purchase_id = ?, redeemed_at = ?
-          WHERE code_hash = ? AND redeemed_purchase_id IS NULL
+          WHERE code_hash = ? AND redeemed_purchase_id IS NULL AND revoked_at IS NULL
           RETURNING code_hash
         |]
         (badgePurchaseId, now, Binary codeHash)

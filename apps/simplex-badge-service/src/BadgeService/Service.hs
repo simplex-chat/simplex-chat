@@ -995,7 +995,9 @@ handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest pre
               let st0 = maybe (initialLedgerState now' badgeType) ledgerStateOf lastEntry
               pure $ Right (Just row, planLedger now' creditWith (lastEntry >>= entryWasPausedSince) st0)
       where
-        creditWith = Just (months, CTPayment paymentUuid)
+        -- the service always has its payments row to name; the client's copy of this entry
+        -- carries NULL, which is why the field is a 'Maybe' (plan \'9)
+        creditWith = Just (months, CTPayment (Just paymentUuid))
     writeTxn now' badgeType paymentUuid row_ plan db = do
       row <- maybe (createPurchase db signerKey (requestMasterKey badgeRequest) badgeType now') pure row_
       let pid = rowPurchaseId row
@@ -1005,7 +1007,11 @@ handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest pre
       -- leaves the purchase's pointer at the first one rather than repointing it
       when (isNothing (rowPaymentId row)) $ attachPurchasePayment db pid paymentUuid now'
       writeLedgerPlan db now' pid badgeType plan
-      -- last, so a code claimed in between rolls back everything above with it
+      -- the last WRITE, so a code claimed or revoked in between rolls back everything above with
+      -- it. 'purchaseStatement' runs after it and can append a debit(lapse) of its own, but never
+      -- here: this transaction has just issued or cached a period, so the state it leaves has
+      -- balanceStartTs at or past now and 'advance' inside 'healLedger' returns Nothing. That is
+      -- an argument about this call site, not a property of 'purchaseStatement'.
       markCodeRedeemed db hash pid now'
       purchaseStatement now' db Nothing pid
 
