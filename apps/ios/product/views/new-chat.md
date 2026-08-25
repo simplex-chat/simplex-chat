@@ -118,10 +118,18 @@ When `planAndConnect` encounters a `.simplexLink(_, .relay, _, _)`, it shows a "
 | Context | Channel behavior | Group behavior |
 |---|---|---|
 | Prepare alert icon | `antenna.radiowaves.left.and.right.circle.fill` | `person.2.circle.fill` |
-| Prepare alert title | "Open new channel" | "Open new group" |
+| Prepare alert title | "Open channel" | "Open group" |
 | Error text | "Error opening channel" | "Error opening group" |
 | Own-link confirm | "This is your link for channel" with only "Open channel" + "Cancel" (no incognito/profile options) | Full incognito/profile selection |
-| Known group alert | "Open channel" / "Open new channel" | "Open group" / "Open new group" |
+| Known group alert | "Open channel", with the membership role line | "Open group", with the membership role line |
+
+The known group alert shows an information line with the user's role, in the
+secondary color (matching the subscriber count): "You are a subscriber" /
+"You are a contributor" for channels, "You are an observer" / "You are a
+member" for groups, and "You are a moderator" / "You are an admin" /
+"You are an owner" for both. The line is omitted for prepared chats
+(`nextConnectPrepared`) and business chats, so the prepare and known alerts
+differ only by this line.
 
 ### Pre-Join Relay Info
 

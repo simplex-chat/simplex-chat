@@ -344,7 +344,7 @@ Similarly, in `planAndConnect()` (`NewChatView.swift`), `.simplexLink(_, .relay,
 
 When `groupShortLinkInfo?.direct == false` (channel relay link), the prepare alert uses:
 - Channel icon: `antenna.radiowaves.left.and.right.circle.fill`
-- Title: "Open new channel"
+- Title: "Open channel"
 - Error: "Error opening channel"
 - `apiPrepareGroup` call passes `directLink: false`
 - Stores `groupShortLinkInfo.groupRelays` in `ChatModel.shared.channelRelayHostnames`
@@ -355,7 +355,7 @@ For channels: shows "This is your link for channel" with only "Open channel" + "
 
 ### Known Group Alert (`showOpenKnownGroupAlert`)
 
-For channels (`groupInfo.useRelays`): titles become "Open channel" / "Open new channel".
+For channels (`groupInfo.useRelays`): the title is "Open channel"; for groups, "Open group"; business chats keep "Open chat" / "Open new chat". Unless the chat is merely prepared (`nextConnectPrepared`) or a business chat, the alert shows an information line with the user's membership role (`memberRoleInformation`) in the secondary color: subscriber/contributor for channels, observer/member for groups, moderator/admin/owner for both.
 
 ---
 
