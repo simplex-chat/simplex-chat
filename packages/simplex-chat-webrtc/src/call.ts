@@ -306,6 +306,8 @@ let inactiveCallMediaSources: CallMediaSources = {
 let activeCall: Call | undefined
 let notConnectedCall: NotConnectedCall | undefined
 let answerTimeout = 30_000
+// How long a call is allowed to stay disconnected before it is ended
+let reconnectTimeout = 30_000
 var useWorker = false
 var isDesktop = false
 var localizedState = ""
@@ -490,6 +492,9 @@ const processCommand = (function () {
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
+    // disconnect call if it does not reconnect in time
+    let disconnectedTimeout: number | undefined
+    let wasConnected = false
     if (pc.connectionState) {
       pc.addEventListener("connectionstatechange", connectionStateChange)
     } else {
@@ -500,44 +505,44 @@ const processCommand = (function () {
     async function connectionStateChange() {
       // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
       // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
-      if (pc.connectionState !== "failed") connectionHandler()
+      // Once the call is connected failed needs to work otherwise the call would go on forever
+      if (pc.connectionState !== "failed" || wasConnected) connectionHandler()
     }
 
     async function connectionHandler() {
-      sendMessageToNative({
-        resp: {
-          type: "connection",
-          state: {
-            connectionState:
-              pc.connectionState ??
-              (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
-                ? pc.iceConnectionState
-                : pc.iceConnectionState == "completed"
-                ? "connected"
-                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
-            iceConnectionState: pc.iceConnectionState,
-            iceGatheringState: pc.iceGatheringState,
-            signalingState: pc.signalingState,
-          },
-        },
-      })
-      if (
-        pc.connectionState == "disconnected" ||
-        pc.connectionState == "failed" ||
-        (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))
-      ) {
-        clearConnectionTimeout()
-        if (pc.connectionState) {
-          pc.removeEventListener("connectionstatechange", connectionStateChange)
-        } else {
-          pc.removeEventListener("iceconnectionstatechange", connectionStateChange)
+      if (reconnecting()) {
+        // The call was connected and lost connection should be reconnected without any action as long as connection issue is fixed
+        // call only ends if it doesn't reconnect within reconnectTimeout timeframe.
+        // "reconnecting" is reported instead of "disconnected"/"failed"
+        if (disconnectedTimeout === undefined) {
+          sendConnectionState("reconnecting")
+          disconnectedTimeout = setTimeout(() => {
+            disconnectedTimeout = undefined
+            if (activeCall === call && !connected()) {
+              // call ends because call did not reconnect
+              // makes sure to set call to disconnected
+              sendConnectionState("disconnected")
+              terminateCall()
+            }
+          }, reconnectTimeout)
         }
-        if (activeCall) {
-          setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
-        }
-        endCall()
-      } else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
+        return
+      }
+      if (wasConnected && connecting()) {
+        return
+      }
+      if (connected()) {
+        const restored = wasConnected
+        wasConnected = true
+        clearDisconnectedTimeout()
         clearConnectionTimeout()
+        // reconnecting turns back to connected
+        // client keeps original call duration
+        if (restored) {
+          sendConnectionState()
+          return
+        }
+        sendConnectionState()
         const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
           const {type, state} = stat
@@ -555,16 +560,93 @@ const processCommand = (function () {
             break
           }
         }
+        return
+      }
+      sendConnectionState()
+      if (disconnected() || failed()) {
+        // the call was not connected
+        terminateCall()
       }
     }
 
+
+    function sendConnectionState(state?: string) {
+      sendMessageToNative({
+        resp: {
+          type: "connection",
+          state: {
+            connectionState:
+              state ??
+              pc.connectionState ??
+              (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+                ? pc.iceConnectionState
+                : pc.iceConnectionState == "completed"
+                ? "connected"
+                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
+            iceConnectionState: pc.iceConnectionState,
+            iceGatheringState: pc.iceGatheringState,
+            signalingState: pc.signalingState,
+          },
+        },
+      })
+    }
+
+    // webView 69-70 has no connectionState, and it reports a connected call as "completed" as well
+    function connected(): boolean {
+      return (
+        pc.connectionState == "connected" ||
+        (!pc.connectionState && (pc.iceConnectionState == "connected" || pc.iceConnectionState == "completed"))
+      )
+    }
+    function connecting(): boolean {
+      return (
+        pc.connectionState == "connecting" ||
+        pc.connectionState == "new" ||
+        (!pc.connectionState && (pc.iceConnectionState == "checking" || pc.iceConnectionState == "new"))
+      )
+    }
+
+    function disconnected(): boolean {
+      return pc.connectionState == "disconnected" || (!pc.connectionState && pc.iceConnectionState == "disconnected")
+    }
+
+    function failed(): boolean {
+      return pc.connectionState == "failed" || (!pc.connectionState && pc.iceConnectionState == "failed")
+    }
+
+    // the connected call lost connection and could reconnect
+    function reconnecting(): boolean {
+      return wasConnected && (disconnected() || failed())
+    }
+
+    function terminateCall() {
+      clearConnectionTimeout()
+      clearDisconnectedTimeout()
+      if (pc.connectionState) {
+        pc.removeEventListener("connectionstatechange", connectionStateChange)
+      } else {
+        pc.removeEventListener("iceconnectionstatechange", connectionStateChange)
+      }
+      if (activeCall) {
+        setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
+      }
+      endCall()
+    }
     function clearConnectionTimeout() {
       if (connectionTimeout) {
         clearTimeout(connectionTimeout)
         connectionTimeout = undefined
       }
     }
+
+    function clearDisconnectedTimeout() {
+      if (disconnectedTimeout !== undefined) {
+        clearTimeout(disconnectedTimeout)
+        disconnectedTimeout = undefined
+      }
+    }
   }
+
 
   function serialize<T>(x: T): string {
     return LZString.compressToBase64(JSON.stringify(x))
