@@ -362,9 +362,9 @@ testBadgeServiceIssueBadgeUnknownKey ps =
     client <## "service response: {\"code\":\"unknown_purchase_key\",\"type\":\"error\"}"
 
 -- The rule easy to get backwards (B5 brief): purchaseBadge from an unknown key is the normal
--- first-purchase case, not an identity error. Before B7 lands it reaches the not-implemented
--- handler (internal); after B7 the code classifier answers it -- either way, the assertion
--- that must hold across that later change is that it is never unknown_purchase_key.
+-- first-purchase case, not an identity error. B7's code classifier now answers it: "UNKNOWN-CODE"
+-- normalizes to 11 characters and fails the check character, so it is code_invalid -- reached
+-- only because the identity check let an unknown key through in the first place.
 testBadgeServicePurchaseBadgeUnknownKeyIsNotUnknownPurchaseKey :: HasCallStack => TestParams -> IO ()
 testBadgeServicePurchaseBadgeUnknownKeyIsNotUnknownPurchaseKey ps =
   withBadgeService ps $ \client bsLink -> do
@@ -374,7 +374,7 @@ testBadgeServicePurchaseBadgeUnknownKeyIsNotUnknownPurchaseKey ps =
     sendSignedServiceRequest client bsLink priv req
     respObj <- getServiceResponseObject client
     KM.lookup "code" respObj `shouldNotBe` Just (J.String "unknown_purchase_key")
-    KM.lookup "code" respObj `shouldBe` Just (J.String "internal")
+    KM.lookup "code" respObj `shouldBe` Just (J.String "code_invalid")
 
 -- pauseBadge is always bad_request (decision 5 / §6), but ONLY once the signer/record
 -- precondition passes -- a signer with a real purchase row (B1's createPurchase) must reach

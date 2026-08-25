@@ -28,11 +28,13 @@ module BadgeService.Store
     getPurchaseByKey,
     createPurchase,
     createCodePayment,
+    attachPurchasePayment,
 
     -- * Ledger
     getLastLedgerEntry,
     appendLedgerEntry,
     getLedgerSince,
+    getLedgerEntryIdByUuid,
 
     -- * Issuances
     NewIssuance (..),
@@ -108,8 +110,11 @@ data ServiceError
   | SECodeNotFound
   | SEPriceNotFound
   | SEOfferNotFound
-  | -- | 'createCodePayment' only: the purchase already has a payment attached.
+  | -- | 'attachPurchasePayment' only: the purchase already has a payment attached.
     SEPaymentConflict
+  | -- | 'markCodeRedeemed' only: the code was redeemed by a concurrent request between the
+    -- caller's classification and its write. The caller re-classifies from the code row.
+    SECodeConflict
   | SEDecodeError Text
   deriving (Eq, Show)
 
@@ -211,14 +216,14 @@ createPurchase db purchaseKey masterKey@(BadgeMasterKey mk) badgeType now = do
 codePaymentProviderText :: Text
 codePaymentProviderText = "code"
 
--- | Writes the @payments@ row (caller-minted UUID as @payment_id@, @provider = 'code'@,
--- @invoice_id@ NULL, @status = 'settled'@ via 'PSSettled'\'s 'ToField'), then points
--- the purchase's @payment_id@ at it. The second write is guarded by @payment_id IS NULL@ so a
--- purchase that already has a payment is never silently repointed; on no rows affected, a
--- follow-up existence check distinguishes an unknown purchase ('SEPurchaseNotFound') from one
--- that already has a payment ('SEPaymentConflict').
-createCodePayment :: DB.Connection -> Int64 -> Text -> UTCTime -> ExceptT ServiceError IO ()
-createCodePayment db badgePurchaseId paymentId now = do
+-- | Writes the @payments@ row alone (caller-minted UUID as @payment_id@, @provider = 'code'@,
+-- @invoice_id@ NULL, @status = 'settled'@ via 'PSSettled'\'s 'ToField'). Attaching it
+-- to the purchase is 'attachPurchasePayment', a separate call because the two are not always
+-- paired: @badge_purchases.payment_id@ is @UNIQUE@ and holds at most one payment, so a second
+-- code redeemed under a purchase key that already has one still needs its @payments@ row (the
+-- @credit(payment)@ ledger entry references it) but must not repoint the purchase.
+createCodePayment :: DB.Connection -> Text -> UTCTime -> ExceptT ServiceError IO ()
+createCodePayment db paymentId now =
   liftIO $
     DB.execute
       db
@@ -227,6 +232,13 @@ createCodePayment db badgePurchaseId paymentId now = do
         VALUES (?,?,?,?,?,?)
       |]
       (paymentId, Nothing :: Maybe Text, codePaymentProviderText, PSSettled, now, now)
+
+-- | Points the purchase's @payment_id@ at an existing payment. Guarded by @payment_id IS NULL@
+-- so a purchase that already has a payment is never silently repointed; on no rows affected, a
+-- follow-up existence check distinguishes an unknown purchase ('SEPurchaseNotFound') from one
+-- that already has a payment ('SEPaymentConflict').
+attachPurchasePayment :: DB.Connection -> Int64 -> Text -> UTCTime -> ExceptT ServiceError IO ()
+attachPurchasePayment db badgePurchaseId paymentId now = do
   attached <-
     liftIO $
       DB.query
@@ -265,18 +277,16 @@ ledgerSelectColumns =
   "entry_id, entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_badge_type, was_paused_since, service_created_at, created_at, "
     <> "entry_type, entry_credit_type, entry_debit_type, payment_id, charge_id, from_purchase_id, to_purchase_id"
 
--- | @'CTPayment' {invoiceId}@ and @'CTCharge' {chargeId}@ are typed 'Int64' in
--- "Simplex.Chat.Badges.Types", but the columns they would persist through (@payment_id@,
--- @charge_id@) are the referenced tables' TEXT primary keys. This is not this step's
--- decision to paper over: it is already recorded as an open finding awaiting a human ruling
--- (SDD progress log, Phase A: "LedgerCreditType CTPayment.invoiceId/CTCharge.chargeId left
--- alone -- wrong against TEXT columns but marked confirmed... needs a human decision"). Both
--- directions reject the two constructors explicitly rather than inventing a silent, possibly
--- wrong, numeric<->text coercion.
+-- | @'CTCharge' {chargeId}@ is typed 'Int64' in "Simplex.Chat.Badges.Types", but the column it
+-- would persist through (@charge_id@) is @subscription_charges@\' TEXT primary key. Both
+-- directions reject that constructor explicitly rather than inventing a silent, possibly
+-- wrong, numeric<->text coercion; subscriptions are out of scope (plan \'6), so nothing writes
+-- one. @'CTPayment' {paymentId}@ had the same defect and is now 'Text', matching
+-- @badge_ledger.payment_id TEXT REFERENCES payments@ (B7, plan \'9).
 encodeLedgerEntryType :: LedgerEntryType -> ExceptT ServiceError IO LedgerTypeRow
 encodeLedgerEntryType = \case
   LECredit creditType -> case creditType of
-    CTPayment {} -> throwError $ SEDecodeError "CTPayment.invoiceId (Int64) does not fit the payment_id TEXT column; unresolved type mismatch, see SDD progress log"
+    CTPayment {paymentId} -> pure ("credit", Just "payment", Nothing, Just paymentId, Nothing, Nothing, Nothing)
     CTCharge {} -> throwError $ SEDecodeError "CTCharge.chargeId (Int64) does not fit the charge_id TEXT column; unresolved type mismatch, see SDD progress log"
     CTSupport -> pure ("credit", Just "support", Nothing, Nothing, Nothing, Nothing, Nothing)
     CTTransferIn {fromPurchaseId} -> pure ("credit", Just "transfer_in", Nothing, Nothing, Nothing, fromPurchaseId, Nothing)
@@ -293,6 +303,7 @@ encodeLedgerEntryType = \case
 
 decodeLedgerEntryType :: LedgerTypeRow -> Either ServiceError LedgerEntryType
 decodeLedgerEntryType row = case row of
+  ("credit", Just "payment", _, Just paymentId, _, _, _) -> Right $ LECredit (CTPayment paymentId)
   ("credit", Just "support", _, _, _, _, _) -> Right $ LECredit CTSupport
   ("credit", Just "transfer_in", _, _, _, fromPurchaseId, _) -> Right $ LECredit (CTTransferIn fromPurchaseId)
   ("credit", Just "opening", _, _, _, _, _) -> Right $ LECredit CTOpening
@@ -360,6 +371,21 @@ getLedgerSince db badgePurchaseId sinceEntryId = do
           ("SELECT " <> ledgerSelectColumns <> " FROM sx_badge_service_badge_ledger WHERE badge_purchase_id = ? AND entry_id > ? ORDER BY entry_id ASC")
           (badgePurchaseId, sinceId)
   liftEither $ mapM rowToLedgerEntry rows
+
+-- | Resolves the wire @entryId@ (the row's @entry_uuid@, which is what a client asserts) to the
+-- local @entry_id@ 'getLedgerSince' queries on, scoped to one purchase: an entry belonging to a
+-- different purchase resolves to 'Nothing', so an asserted uuid cannot be used to probe another
+-- purchase's ledger. 'Nothing' also covers a uuid the service simply does not hold, which the
+-- RPC treats as an assertion that names nothing and answers with the complete history.
+getLedgerEntryIdByUuid :: DB.Connection -> Int64 -> Text -> ExceptT ServiceError IO (Maybe Int64)
+getLedgerEntryIdByUuid db badgePurchaseId entryUuid = do
+  rows <-
+    liftIO $
+      DB.query
+        db
+        "SELECT entry_id FROM sx_badge_service_badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?"
+        (badgePurchaseId, entryUuid)
+  pure $ fromOnly <$> listToMaybe rows
 
 -- Issuances ---------------------------------------------------------------------
 
@@ -525,6 +551,10 @@ getCodeByHash db codeHash = do
       code <- liftEither $ rowToCode codeRow
       pure $ Just (code, redeemerKey)
 
+-- | Claims an unredeemed code for a purchase. Guarded by @redeemed_purchase_id IS NULL@ so a
+-- redemption is never overwritten by a second one racing it: on no rows affected, a follow-up
+-- existence check distinguishes an unknown code ('SECodeNotFound') from one another request
+-- redeemed in between ('SECodeConflict'), which the caller answers by re-classifying.
 markCodeRedeemed :: DB.Connection -> ByteString -> Int64 -> UTCTime -> ExceptT ServiceError IO ()
 markCodeRedeemed db codeHash badgePurchaseId now = do
   rows <-
@@ -534,11 +564,18 @@ markCodeRedeemed db codeHash badgePurchaseId now = do
         [sql|
           UPDATE sx_badge_service_codes
           SET redeemed_purchase_id = ?, redeemed_at = ?
-          WHERE code_hash = ?
+          WHERE code_hash = ? AND redeemed_purchase_id IS NULL
           RETURNING code_hash
         |]
         (badgePurchaseId, now, Binary codeHash)
-  when (null (rows :: [Only (Binary ByteString)])) $ throwError SECodeNotFound
+  when (null (rows :: [Only (Binary ByteString)])) $ do
+    exists <-
+      liftIO $
+        DB.query
+          db
+          "SELECT 1 FROM sx_badge_service_codes WHERE code_hash = ?"
+          (Only (Binary codeHash))
+    throwError $ if null (exists :: [Only Int]) then SECodeNotFound else SECodeConflict
 
 -- | Clears both redemption columns and sets @unredeemed_at@, which both re-enables
 -- redemption and reopens E4's disclosure window.

@@ -80,7 +80,10 @@ data LedgerEntryType = LECredit {credit :: LedgerCreditType} | LEDebit {debit ::
 
 -- confirmed
 data LedgerCreditType
-  = CTPayment {invoiceId :: Int64}
+  = -- | badge_ledger.payment_id TEXT REFERENCES payments -- the payment's own id, not the
+    -- invoice's: a code payment has no invoice at all, and an invoice-funded payment reaches
+    -- its invoice through payments.invoice_id.
+    CTPayment {paymentId :: Text}
   | CTCharge {chargeId :: Int64}
   | CTSupport
   | CTTransferIn {fromPurchaseId :: Maybe Int64}
