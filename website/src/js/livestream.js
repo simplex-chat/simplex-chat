@@ -15,7 +15,7 @@ function showLocalTime() {
         timeZoneName: 'short'
     });
 
-    local.textContent = 'In your time zone: ' + format.format(start);
+    local.textContent = 'Your time: ' + format.format(start);
     local.removeAttribute('hidden');
 }
 
