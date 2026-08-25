@@ -13,6 +13,7 @@
 module Simplex.Chat.Names.Service.Default
   ( namesService,
     nameDeployment,
+    namesDevMock,
     devMockChain,
   )
 where
@@ -29,6 +30,12 @@ devMockChain = unsafePerformIO newMockChain
 
 namesService :: NamesService
 namesService = mockNamesService devMockChain
+
+-- | True while the binding above is the mock. Name resolution reads it to fall
+-- back to the mock's own records: the mock chain lives in this process, so no
+-- SMP names role can see a name bought through it. Goes away with this module.
+namesDevMock :: Bool
+namesDevMock = True
 
 -- | The deployment the client signs against. Must match the service.
 nameDeployment :: SnrcDeployment

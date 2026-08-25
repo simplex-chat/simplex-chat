@@ -59,7 +59,7 @@ import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Names.Service
-import Simplex.Chat.Names.Service.Default (nameDeployment, namesService)
+import Simplex.Chat.Names.Service.Default (nameDeployment, namesDevMock, namesService)
 import Simplex.Chat.Names.Snrc
 import qualified Simplex.Chat.Wallet as W
 import Simplex.Chat.Wallet.Stealth
@@ -1474,7 +1474,7 @@ processChatCommand cxt nm = \case
         CTDomain d -> resolveDomain d
         where
           resolveDomain d = do
-            nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
+            nr <- resolveNameRec user nm d
             case firstNameLink CCTContact (nrSimplexContact nr) of
               Just sLnk -> resolveShortLink sLnk
               Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
@@ -1590,7 +1590,7 @@ processChatCommand cxt nm = \case
             UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+                NameRecord {nrSimplexContact} <- resolveNameRec user nm domain
                 unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
@@ -2667,7 +2667,7 @@ processChatCommand cxt nm = \case
     claim <- maybe (throwCmdError "group has no name to verify") pure $ publicGroupAccess >>= groupDomainClaim
     -- checks the profile link, not the link we joined through (which may have rotated)
     (verified, reason) <-
-      tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) (claimDomain claim)) >>= \case
+      tryAllErrors (resolveNameRec user nm (claimDomain claim)) >>= \case
         Right NameRecord {nrSimplexChannel}
           | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing)
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
@@ -3543,7 +3543,7 @@ processChatCommand cxt nm = \case
         let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
         forM_ (claimDomain <$> newClaim) $ \newDomain ->
           when domainChanged $ do
-            NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) newDomain
+            NameRecord {nrSimplexChannel} <- resolveNameRec user nm newDomain
             unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
@@ -4659,7 +4659,7 @@ processChatCommand cxt nm = \case
         -- local search only: look up #d then @d in the store, without online name resolution
         | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
         | otherwise ->
-            tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
+            tryAllErrors (resolveNameRec user nm d) >>= \case
               Right nr
                 | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
                     (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
@@ -4810,7 +4810,7 @@ processChatCommand cxt nm = \case
           -- resolve a name to its first contact/channel short link
           resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
           resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
-            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain) (ExceptT . pure) nameRec
+            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (resolveNameRec user nm nameDomain) (ExceptT . pure) nameRec
             let (candidates, ctType') = case nameType of
                   NTContact -> (nrSimplexContact, CCTContact)
                   NTPublicGroup -> (nrSimplexChannel, CCTChannel)
@@ -5314,12 +5314,49 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
 nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . strDecode . encodeUtf8)
 
+-- | Resolve a name, falling back to the names service while it is the dev mock.
+--
+-- The mock chain lives in this process, so a name bought through it is invisible
+-- to the SMP names role that 'resolveSimplexName' asks, and every flow that
+-- resolves a name would fail on one that was just bought. A name the service
+-- does not have re-throws the agent's error, so callers' NOT_FOUND handling
+-- still applies. Development only, and goes away with 'namesDevMock'.
+resolveNameRec :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRecord
+resolveNameRec user nm d =
+  tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
+    Right nr -> pure nr
+    Left e@ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}
+      | namesDevMock ->
+          liftIO (resolveName namesService $ strEncode d)
+            >>= either (const $ throwError e) (pure . devNameRecord)
+    Left e -> throwError e
+
+-- | A names service record as the agent's resolver would have returned it. Only
+-- the fields the mock service knows about are filled; the rest are empty, which
+-- is what an on-chain record with no optional entries resolves to anyway.
+devNameRecord :: NameRecordView -> NameRecord
+devNameRecord NameRecordView {nrvName, nrvOwner, nrvContact, nrvChannel} =
+  NameRecord
+    { nrName = safeDecodeUtf8 nrvName,
+      nrNickname = "",
+      nrWebsite = "",
+      nrLocation = "",
+      nrSimplexContact = map safeDecodeUtf8 nrvContact,
+      nrSimplexChannel = map safeDecodeUtf8 nrvChannel,
+      nrEth = Nothing,
+      nrBtc = Nothing,
+      nrXmr = Nothing,
+      nrDot = Nothing,
+      nrOwner = safeDecodeUtf8 $ checksumAddress nrvOwner,
+      nrResolver = safeDecodeUtf8 $ checksumAddress $ sdResolver nameDeployment
+    }
+
 verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe Bool, Maybe Text)
 verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain, proof = proof_} connLink_ = case (proof_, connLink_) of
   (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
   (_, Nothing) -> pure (Nothing, Just "no connection link to check the name against")
   (Just proof, Just (ACSL SCMContact profileSLnk)) -> do
-    NameRecord {nrSimplexContact, nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+    NameRecord {nrSimplexContact, nrSimplexChannel} <- resolveNameRec user nm domain
     let resolvedLinks = case nameType of
           NTContact -> nrSimplexContact
           NTPublicGroup -> nrSimplexChannel
