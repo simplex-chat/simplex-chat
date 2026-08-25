@@ -12,6 +12,16 @@ permalink: "/crowdfunding/index.html"
   .cf-ask { display: block; margin-top: 14px; }
   .cf-form { display: flex; gap: 8px; max-width: 30rem; flex-wrap: wrap; margin-top: 12px; }
   .cf-form input[type=email] { flex: 1; min-width: 220px; border: 1px solid #4f4f4f; border-radius: 9999px; padding: 10px 18px; background: transparent; color: inherit; }
+  #article .ls-banner { display: block; clear: both; margin: 32px 0; padding: 20px 24px; border-radius: 10px; background: #DBEEFF; text-decoration: none; }
+  .dark #article .ls-banner { background: #1B325C; }
+  #article .ls-banner-label { display: block; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #0053D0; }
+  .dark #article .ls-banner-label { color: #70F0F9; }
+  #article .ls-banner-title { display: block; margin-top: 8px; font-size: 1.35rem; font-weight: 600; line-height: 1.25; color: #023789; }
+  .dark #article .ls-banner-title { color: #ffffff; }
+  #article .ls-banner-date { display: block; margin-top: 6px; color: #3F484B; }
+  .dark #article .ls-banner-date { color: #ffffff; }
+  #article .ls-banner-cta { display: inline-block; margin-top: 16px; font-weight: 500; color: #0053D0; }
+  .dark #article .ls-banner-cta { color: #70F0F9; }
 </style>
 
 # Get a Stake in SimpleX Chat
@@ -19,6 +29,13 @@ permalink: "/crowdfunding/index.html"
 <img src="/img/crowdfunding/crowdfunding_1.jpg" width="50%" class="float-to-right" style="border-radius: 10px;">
 
 SimpleX Chat &mdash; the company that builds the first and the only messaging network without any user IDs &mdash; is raising its community round. By investing, you can benefit from the company growth, and help us build the future of private and secure communications. [Learn more and invest on Wefunder](https://wefunder.com/simplex.chat?utm_source=website).
+
+<a class="ls-banner" href="/livestream/">
+<span class="ls-banner-label">Live event</span>
+<span class="ls-banner-title">SimpleX Chat: Foundation for the Future</span>
+<span class="ls-banner-date">Livestream and Q&amp;A for investors. Tuesday, September 15, 2026 at 5:00 PM UTC.</span>
+<span class="ls-banner-cta">Register for event updates and Q&amp;A</span>
+</a>
 
 ## Every other network can identify users
 
