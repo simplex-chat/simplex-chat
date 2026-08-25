@@ -3011,4 +3011,5 @@
     <string name="info_row_file_servers">Datei-Server</string>
     <string name="share_text_file_servers">Datei-Server: %s</string>
     <string name="group_invitations">Gruppeneinladungen</string>
+    <string name="forwarded_from">weitergeleitet aus</string>
 </resources>
