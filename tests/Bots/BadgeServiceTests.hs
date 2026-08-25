@@ -41,14 +41,13 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.STM (atomically, readTVarIO)
 import Control.Exception (SomeException, finally, try)
-import Control.Monad (forM, forM_, replicateM, void)
+import Control.Monad (forM_, replicateM, void)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
-import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LBC
@@ -59,7 +58,6 @@ import Data.Maybe (fromJust, isJust, mapMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as TIO
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
@@ -131,6 +129,13 @@ import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
 import BadgeService.Store.SQLite.Migrations (badgeServiceSchemaMigrations)
 import Database.SQLite.Simple (Only (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
+-- Reachable only from the two '#if !defined(dbPostgres)' tests below (the schema-linkage scan and
+-- the no-plaintext-at-rest scan), so they are imported here rather than unconditionally: under
+-- 'client_postgres' the code that uses them is compiled out and an unconditional import would
+-- make that build warn (-Wunused-imports).
+import Control.Monad (forM)
+import qualified Data.ByteString as BS
+import Data.Text.Encoding (encodeUtf8)
 #endif
 
 badgeServiceTests :: SpecWith TestParams
@@ -1518,6 +1523,13 @@ testBadgeServiceCodeFailureOutcomes ps = do
 -- back rate_limited instead of code_invalid. The fourth genuine failure must be rate_limited,
 -- which pins each of the three preceding ones at exactly one token. A fresh signer is unaffected
 -- by another signer's drained bucket and gets its own outcome.
+--
+-- BOTH buckets are overridden, because "debits neither" is a claim about both and every debit
+-- spends one token from each. The global budget is set to exactly one more than the number of
+-- genuine failures here (3 + the fresh signer's one at the end), so a single spurious GLOBAL
+-- debit anywhere in the four non-failure requests leaves nothing for that last request and turns
+-- it into rate_limited. With the global left at its default 600, a service that debited the
+-- shared budget on every success would have passed this example unchanged.
 testBadgeServiceFailureDebitsBucketOncePerFailure :: HasCallStack => TestParams -> IO ()
 testBadgeServiceFailureDebitsBucketOncePerFailure ps = do
   clock <- newTestClock testClockStart
@@ -1525,7 +1537,15 @@ testBadgeServiceFailureDebitsBucketOncePerFailure ps = do
   otherSigner <- newTestSigner
   codesRef <- newIORef []
   let writeConfig =
-        writeTestBadgeServiceConfigWith ps ["", "[throttle]", "signer_failure_capacity = 3", "signer_failure_start_tokens = 3"]
+        writeTestBadgeServiceConfigWith
+          ps
+          [ "",
+            "[throttle]",
+            "signer_failure_capacity = 3",
+            "signer_failure_start_tokens = 3",
+            "global_failure_capacity = 4",
+            "global_failure_start_tokens = 4"
+          ]
       seedCodes = seedTestCodes ps [(BTSupporter, 3, testCodeExpiry), (BTLegend, 3, testCodeExpiry)] >>= writeIORef codesRef
   withBadgeServiceClock ps (readIORef clock) writeConfig seedCodes $ \client bsLink -> do
     [supporterCode, legendCode] <- readIORef codesRef
@@ -1552,15 +1572,30 @@ testBadgeServiceFailureDebitsBucketOncePerFailure ps = do
     -- the bucket is now empty: the fourth is refused before it is even classified
     sendRequest client bsLink signer (purchaseCodeRequest signer BTSupporter unknown4)
     expectRateLimited "fourth failure" client
-    -- another signer's bucket is its own
+    -- another signer's bucket is its own -- and this is also the global budget's last token, so
+    -- it only answers code_invalid if nothing above spent one it should not have
     sendRequest client bsLink otherSigner (purchaseCodeRequest otherSigner BTSupporter unknown4)
     expectErrorCode "fresh signer" client "code_invalid"
 
 -- The brief's global-budget bullet and B10 item 13: the service-wide failure budget is drained by
 -- three DIFFERENT signers, so the fourth -- a fresh signer presenting a perfectly VALID code --
 -- is rate_limited before the code is classified. That leaves the code unredeemed, which is what
--- lets the same request succeed once the bucket has refilled. The refill is reached by moving
--- A6's clock an hour, not by sleeping.
+-- lets the same request succeed once the bucket has refilled. Time moves through A6's clock; no
+-- test sleeps.
+--
+-- The clock is advanced in two PARTIAL steps rather than one full hour, so that "a rate_limited
+-- rejection must not debit again" (item 13) is actually pinned rather than merely stated. Both
+-- buckets refill at capacity tokens per hour, and 'debitBucket' clamps at zero, so a spurious
+-- debit is invisible unless the bucket is left short of the threshold afterwards:
+--
+--   * 900s at capacity 3 puts the global budget at 0.75 tokens -- still below 1, so the valid
+--     code is refused, with 0.25 of margin either side of the threshold;
+--   * a further 600s adds 0.5. Without a debit that is 1.25 and the retry succeeds; with one it
+--     is 0.5 and the retry would still be refused.
+--
+-- The per-signer capacity is 1 for the same reason, from the other side: it refills 1 token per
+-- hour, so a signer bucket debited by the rejection would hold 1500/3600 = 0.42 tokens at the
+-- retry and refuse it. Either bucket being debited by a rejection fails this example.
 testBadgeServiceGlobalFailureBudgetRefills :: HasCallStack => TestParams -> IO ()
 testBadgeServiceGlobalFailureBudgetRefills ps = do
   clock <- newTestClock testClockStart
@@ -1568,7 +1603,15 @@ testBadgeServiceGlobalFailureBudgetRefills ps = do
   redeemer <- newTestSigner
   codeRef <- newIORef ""
   let writeConfig =
-        writeTestBadgeServiceConfigWith ps ["", "[throttle]", "global_failure_capacity = 3", "global_failure_start_tokens = 3"]
+        writeTestBadgeServiceConfigWith
+          ps
+          [ "",
+            "[throttle]",
+            "signer_failure_capacity = 1",
+            "signer_failure_start_tokens = 1",
+            "global_failure_capacity = 3",
+            "global_failure_start_tokens = 3"
+          ]
       seedCode = seedOneSupporterCode ps >>= writeIORef codeRef
   withBadgeServiceClock ps (readIORef clock) writeConfig seedCode $ \client bsLink -> do
     code <- readIORef codeRef
@@ -1576,10 +1619,12 @@ testBadgeServiceGlobalFailureBudgetRefills ps = do
       unknownCode <- mintUnknownCode
       sendRequest client bsLink failingSigner (purchaseCodeRequest failingSigner BTSupporter unknownCode)
       expectErrorCode ("global budget failure " <> show n) client "code_invalid"
+    -- 0.75 of a token: refused, and far enough below the threshold that no rounding decides it
+    advanceTestClockSeconds clock 900
     sendRequest client bsLink redeemer (purchaseCodeRequest redeemer BTSupporter code)
     expectRateLimited "valid code with the global budget drained" client
-    -- capacity 3 refills 3 tokens per hour, so an hour of service time is a full bucket
-    advanceTestClockSeconds clock 3600
+    -- +0.5: enough only if the rejection above spent nothing
+    advanceTestClockSeconds clock 600
     sendRequest client bsLink redeemer (purchaseCodeRequest redeemer BTSupporter code)
     (_, statement) <- expectCredential "same code after the budget refilled" client
     statementShape statement `shouldBe` [(3, 3, "credit payment (no invoiceId)"), (-1, 2, "debit badge")]
@@ -1591,12 +1636,12 @@ testBadgeServiceGlobalFailureBudgetRefills ps = do
 -- in that order -- plus a second issuance; a third call inside the same month returns the cached
 -- credential and writes nothing.
 --
--- The code funds FOUR months, so a month is still funded after the second period is issued. With
--- three the second issuance would exhaust the balance, and a third call inside that same,
--- already-issued month answers with NO credential instead of the cached one: 'planLedger' tells
--- 'IssueCached' from 'IssueExhausted' by the balance alone, so a zero balance hides an
--- already-issued month. That is a real defect (RPC "Idempotency"), reported by B10 rather than
--- pinned here -- asserting it would enshrine it.
+-- The code funds FOUR months, so a month is still funded after the second period is issued. Three
+-- would work too now: exhausting the balance in an already-issued month is answered with that
+-- month's cached credential since the B7 defect this step found was fixed, and
+-- 'testBadgeServiceIssueBadgeCachedInLastFundedMonth' holds exactly that case. Four is kept
+-- deliberately, so this example exercises the multi-period path with a balance still funded and
+-- stays independent of the cached-in-the-last-month behaviour it used to collide with.
 testBadgeServiceIssueBadgeSecondPeriod :: HasCallStack => TestParams -> IO ()
 testBadgeServiceIssueBadgeSecondPeriod ps = do
   clock <- newTestClock testClockStart
@@ -1862,30 +1907,69 @@ testBadgeServiceCachedIssuanceAtClampedMonthBoundary ps = do
   withServiceDB ps $ \db -> serviceRowCounts db `shouldReturn` (1, 1, 3, 2, 1)
 
 #if !defined(dbPostgres)
+-- What one table holds, as the database itself reports it: its declared foreign-key targets and
+-- its column names.
+data TableRefs = TableRefs
+  { refTable :: Text,
+    refFkTargets :: [Text],
+    refColumns :: [Text]
+  }
+  deriving (Show)
+
+-- | A table holds an order (purchase) reference if it declares a foreign key to that table __or__
+-- names a column after it. The name half is the load-bearing one for what comes next: a plain
+-- @web_order_id TEXT@ with no @REFERENCES@ clause is invisible to 'pragma_foreign_key_list', and
+-- D0 -- the very next step -- is what adds order tables. A false alarm from an innocent column
+-- name (@sort_order@) is the intended trade: it costs one reader a minute, and the failure it
+-- guards against costs the privacy claim the whole web checkout rests on.
+holdsOrderRef :: TableRefs -> Bool
+holdsOrderRef TableRefs {refFkTargets, refColumns} =
+  any ("web_orders" `T.isSuffixOf`) refFkTargets || any ("order" `T.isInfixOf`) refColumns
+
+holdsPurchaseRef :: TableRefs -> Bool
+holdsPurchaseRef TableRefs {refFkTargets, refColumns} =
+  any ("badge_purchases" `T.isSuffixOf`) refFkTargets || any ("purchase" `T.isInfixOf`) refColumns
+
 -- The brief's schema assertion (§3 Linkage), and the regression guard for the privacy claim the
 -- whole web-checkout design rests on: an order and a purchase must never be joinable, so NO table
--- may carry a column referencing @web_orders and a column referencing @badge_purchases at once.
--- Enumerated from the database itself (sqlite_master plus each table's foreign keys), not from
--- the migration source, so it fails the day a later step adds such a column. Reads a SQLite file,
--- hence the guard: A3's Postgres run of this spec would break on it otherwise.
+-- may carry a reference to @web_orders and a reference to @badge_purchases at once. Enumerated
+-- from the database itself (sqlite_master, each table's foreign keys and each table's columns),
+-- not from the migration source, so it fails the day a later step adds such a column. Reads a
+-- SQLite file, hence the guard: A3's Postgres run of this spec would break on it otherwise.
+--
+-- Three anti-vacuity controls, because an assertion that only ever says "no rows matched" is one
+-- typo away from proving nothing: the enumeration must see both tables by name, it must see the
+-- real declared foreign key from @codes to @badge_purchases, and -- the control for the half that
+-- foreign keys cannot see -- a probe table carrying both columns with NO foreign keys at all must
+-- be caught, then dropped before the real scan.
 testBadgeServiceNoTableLinksOrdersToPurchases :: HasCallStack => TestParams -> IO ()
 testBadgeServiceNoTableLinksOrdersToPurchases ps =
   withFreshBadgeStore ps $ \st -> do
-    tables <- withConnection st $ \db ->
-      DB.query_ db "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-    let tableNames = map fromOnly tables :: [Text]
-    -- the enumeration must actually see the two tables in question, or it proves nothing
+    let refsOf table = do
+          fks <- withConnection st $ \db -> DB.query db "SELECT \"table\" FROM pragma_foreign_key_list(?)" (Only table)
+          cols <- withConnection st $ \db -> DB.query db "SELECT name FROM pragma_table_info(?)" (Only table)
+          pure TableRefs {refTable = table, refFkTargets = map fromOnly fks, refColumns = map fromOnly cols}
+        listTables =
+          map fromOnly
+            <$> withConnection
+              st
+              (\db -> DB.query_ db "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+    -- control 3, first: exactly the shape D0 could add without a REFERENCES clause
+    withConnection st $ \db -> DB.execute_ db "CREATE TABLE b10_linkage_probe (web_order_id TEXT, badge_purchase_id INTEGER)"
+    probe <- refsOf "b10_linkage_probe"
+    (refTable probe, holdsOrderRef probe, holdsPurchaseRef probe) `shouldBe` ("b10_linkage_probe", True, True)
+    refFkTargets probe `shouldBe` [] -- and it is caught with no foreign key to go on
+    withConnection st $ \db -> DB.execute_ db "DROP TABLE b10_linkage_probe"
+    tableNames <- listTables
+    -- controls 1 and 2: the enumeration sees both tables, and sees a real declared foreign key
     tableNames `shouldSatisfy` elem "sx_badge_service_web_orders"
     tableNames `shouldSatisfy` elem "sx_badge_service_codes"
-    references <- forM tableNames $ \table -> do
-      refs <- withConnection st $ \db -> DB.query db "SELECT \"table\" FROM pragma_foreign_key_list(?)" (Only table)
-      pure (table, map fromOnly refs :: [Text])
-    -- and it must actually see foreign keys: @codes does reference @badge_purchases, so a pragma
-    -- that returned nothing would make the assertion below vacuous
-    map fst (filter (refersTo "badge_purchases" . snd) references) `shouldSatisfy` elem "sx_badge_service_codes"
-    map fst (filter (\(_, refs) -> refersTo "web_orders" refs && refersTo "badge_purchases" refs) references) `shouldBe` []
-  where
-    refersTo suffix = any (suffix `T.isSuffixOf`)
+    tableNames `shouldSatisfy` notElem "b10_linkage_probe"
+    codeRefs <- refsOf "sx_badge_service_codes"
+    refFkTargets codeRefs `shouldSatisfy` any ("badge_purchases" `T.isSuffixOf`)
+    references <- forM tableNames refsOf
+    map refTable (filter holdsOrderRef references) `shouldBe` ["sx_badge_service_web_orders"]
+    map refTable (filter (\refs -> holdsOrderRef refs && holdsPurchaseRef refs) references) `shouldBe` []
 #endif
 
 -- B8's Verify line, formally owed by B10: @codes issue@ mints the requested number of codes,
@@ -1921,6 +2005,11 @@ testBadgeServiceCodesIssueRevokeStatus ps@TestParams {tmpPath} = do
   -- the property the whole design hinges on: no plaintext code anywhere in the database file,
   -- neither as printed nor as normalized. Reads the SQLite file, hence the guard.
   dbBytes <- BC.readFile (tmpPath </> (serviceDbPrefix <> "_chat.db"))
+  -- positive control FIRST: the batch label is stored in the clear and must be found in these
+  -- bytes. Without it every assertion below is an absence, and an absence passes for the wrong
+  -- reason the day the rows move to another file, the file is renamed, or the scan reads a
+  -- database that was never written to.
+  (testCodeBatch, encodeUtf8 testCodeBatch `BS.isInfixOf` dbBytes) `shouldBe` (testCodeBatch, True)
   forM_ issued $ \code -> do
     (code, encodeUtf8 code `BS.isInfixOf` dbBytes) `shouldBe` (code, False)
     (code, encodeUtf8 (Codes.normalizeCode code) `BS.isInfixOf` dbBytes) `shouldBe` (code, False)

@@ -731,6 +731,14 @@ planLedger now' creditWith wasPaused st0 =
       -- sets it to @now@, 'credit' to @max balanceStartTs now@, and 'advance' steps it only to
       -- boundaries at or before @now@. So an issuance covering @now@ always exists here, which is
       -- what 'resolveIssue' then fetches.
+      --
+      -- __That argument assumes the clock does not run backwards.__ It is an unstated premise
+      -- everywhere else in this module too, and it is stated here because an unstated premise is
+      -- what hid the defect above. Under a backwards jump past the start of the issued period,
+      -- @now@ falls outside it, 'getIssuanceForPeriod' matches nothing and 'resolveIssue' answers
+      -- 'internal' with a logged error, having written nothing — safe, but not the answer this
+      -- branch promises. Only a rewound host clock can produce it: 'BadgeServiceEnv.now' is the
+      -- one clock read, and nothing here persists a time it did not come from.
       Nothing -> case st2 of
         LedgerState {balanceStartTs = startTs}
           | startTs > now' -> IssueCached

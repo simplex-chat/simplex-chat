@@ -61,7 +61,14 @@ debitAll _reason st = st {balanceMonths = 0}
 
 -- | @consume@: issues a credential for @[balanceStartTs, addMonths 1 balanceStartTs)@, debiting
 -- one month. 'Nothing' when @balanceMonths == 0@ (nothing to issue) or when the current month is
--- already issued (@balanceStartTs > t@); the caller tells the two apart by the balance.
+-- already issued (@balanceStartTs > t@).
+--
+-- __A caller telling those two apart must test @balanceStartTs > t@, never the balance.__ The two
+-- reasons are not exclusive: once the LAST funded month has been issued both hold at once, and a
+-- caller reading the balance there calls an already-issued month exhausted — refusing to hand back
+-- a credential that was already issued and stored, which is what @badges-rpc.md@ §Idempotency is
+-- about. That was a real defect in @BadgeService.Service.planLedger@ (found and fixed in B10, plan
+-- §9); this comment used to instruct it.
 --
 -- This guard only works because 'advance' steps to the same month boundaries 'issue' does (see
 -- 'advance''s Haddock): whenever 'advance' is not capped by a low balance, its resulting
