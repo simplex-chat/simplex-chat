@@ -60,7 +60,10 @@ actual fun ActiveCallView() {
           try {
             val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
             if (callStatus == WebRTCCallStatus.Connected) {
-              chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
+              // Makes sure it uses the connected value so if call reconnects it doesn't use the reconnecting value
+              chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = call.connectedAt ?: Clock.System.now())
+            } else if (callStatus == WebRTCCallStatus.Reconnecting) {
+              chatModel.activeCall.value = call.copy(callState = CallState.Reconnecting)
             }
             withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
           } catch (e: Throwable) {
