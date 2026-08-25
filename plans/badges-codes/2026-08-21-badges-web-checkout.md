@@ -4,6 +4,7 @@
 **Branch:** `sh/badges-codes` (off `badges`)
 **Status:** approved, multi-session. This file is the source of truth; agents update the progress tracker in it.
 **Supersedes:** `plans/2026-08-04-badges-mvp-scope.md` milestone 2, the in-app invoice flow. Milestone 3 (store purchase) is unaffected.
+**Design:** `plans/badges-codes/badges-flow-mvp.svg` — every screen in the app and on the site, the states between them, and the site at phone width. It records five deviations from this plan, each argued in its own caption: a landing page D3 does not specify, B4 merging D3's method and checkout screens, no in-app wizard at all, the badge art on the tier cards against D2's logo-only rule, and a storage perk that has no implementation anywhere yet.
 **Citation keys:** `plans/2026-07-30-supporter-badges-v3-ux.md` = **UX §n**; `plans/2026-07-31-badges-core-implementation.md` = **core §n**; `docs/protocol/badges-rpc.md` = **RPC §n**; `plans/2026-08-04-badges-mvp-scope.md` = **MVP §n** (superseded, but still the source for the provider-event rules).
 
 ---
