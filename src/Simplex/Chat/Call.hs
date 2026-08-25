@@ -180,19 +180,21 @@ data WebRTCExtraInfo = WebRTCExtraInfo
   }
   deriving (Eq, Show)
 
-data WebRTCCallStatus = WCSConnecting | WCSConnected | WCSDisconnected | WCSFailed
+data WebRTCCallStatus = WCSConnecting | WCSConnected | WCSReconnecting | WCSDisconnected | WCSFailed
   deriving (Show)
 
 instance StrEncoding WebRTCCallStatus where
   strEncode = \case
     WCSConnecting -> "connecting"
     WCSConnected -> "connected"
+    WCSReconnecting -> "reconnecting"
     WCSDisconnected -> "disconnected"
     WCSFailed -> "failed"
   strP =
     A.takeTill (== ' ') >>= \case
       "connecting" -> pure WCSConnecting
       "connected" -> pure WCSConnected
+      "reconnecting" -> pure WCSReconnecting
       "disconnected" -> pure WCSDisconnected
       "failed" -> pure WCSFailed
       _ -> fail "bad WebRTCCallStatus"
