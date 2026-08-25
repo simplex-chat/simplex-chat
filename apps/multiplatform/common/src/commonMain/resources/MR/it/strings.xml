@@ -2942,4 +2942,5 @@
     <string name="info_row_file_servers">Server di file</string>
     <string name="share_text_file_servers">Server di file: %s</string>
     <string name="group_invitations">Inviti in gruppi</string>
+    <string name="forwarded_from">inoltrato da</string>
 </resources>
