@@ -990,6 +990,12 @@
     <string name="video_descr">ビデオ</string>
     <string name="alert_title_msg_bad_hash">メッセージのハッシュ値問題</string>
     <string name="you_are_observer">あなたはオブザーバーです</string>
+    <string name="connect_plan_you_are_observer">あなたはオブザーバーです</string>
+    <string name="connect_plan_you_are_member">あなたはメンバーです</string>
+    <string name="connect_plan_you_are_moderator">あなたはモデレーターです</string>
+    <string name="connect_plan_you_are_admin">あなたは管理者です</string>
+    <string name="connect_plan_you_are_owner">あなたはオーナーです</string>
+    <string name="connect_plan_you_are_subscriber">あなたは購読者です</string>
     <string name="observer_cant_send_message_desc">グループの管理者に連絡してください。</string>
     <string name="video_will_be_received_when_contact_completes_uploading">動画は相手がアップロードを完了した時点で受信するができます。</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[SOCKSプロキシがサポートしていない場合、<i>.onion hostを使用する</i>、は「いいえ」に設定します。]]></string>

@@ -926,6 +926,13 @@
     <string name="moderate_message_will_be_marked_warning">該訊息將對所有成員標記為已移除。</string>
     <string name="observer_cant_send_message_title">你是觀察員</string>
     <string name="you_are_observer">你是觀察員</string>
+    <string name="connect_plan_you_are_observer">你是觀察員</string>
+    <string name="connect_plan_you_are_member">你是成員</string>
+    <string name="connect_plan_you_are_moderator">你是審核員</string>
+    <string name="connect_plan_you_are_admin">你是管理員</string>
+    <string name="connect_plan_you_are_owner">你是擁有者</string>
+    <string name="connect_plan_you_are_subscriber">你是訂閱者</string>
+    <string name="connect_plan_you_are_contributor">你是貢獻者</string>
     <string name="group_member_role_observer">觀察員</string>
     <string name="error_updating_link_for_group">更新群組連接時出錯</string>
     <string name="observer_cant_send_message_desc">請聯絡群組管理員。</string>

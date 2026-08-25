@@ -7055,6 +7055,27 @@ alert title */
 /* No comment provided by engineer. */
 "you are subscriber" = "Вы подписчик";
 
+/* new chat alert */
+"You are an observer" = "Вы читатель";
+
+/* new chat alert */
+"You are a member" = "Вы член группы";
+
+/* new chat alert */
+"You are a moderator" = "Вы модератор";
+
+/* new chat alert */
+"You are an admin" = "Вы админ";
+
+/* new chat alert */
+"You are an owner" = "Вы владелец";
+
+/* new chat alert */
+"You are a subscriber" = "Вы подписчик";
+
+/* new chat alert */
+"You are a contributor" = "Вы соавтор";
+
 /* snd group event chat item */
 "you blocked %@" = "Вы заблокировали %@";
 

@@ -19,7 +19,11 @@
   <string name="connect_plan_connect_to_name">Connect to %s</string>
   <string name="connect_plan_open_new_chat">Open new chat</string>
   <string name="connect_plan_open_group">Open group</string>
-  <string name="connect_plan_open_new_group">Open new group</string>
+  <string name="connect_plan_you_are_observer">You are an observer</string>
+  <string name="connect_plan_you_are_member">You are a member</string>
+  <string name="connect_plan_you_are_moderator">You are a moderator</string>
+  <string name="connect_plan_you_are_admin">You are an admin</string>
+  <string name="connect_plan_you_are_owner">You are an owner</string>
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
 
@@ -3170,7 +3174,8 @@
   <string name="relay_address_alert_title">Relay address</string>
   <string name="relay_address_alert_message">This is a chat relay address, it cannot be used to connect.</string>
   <string name="connect_plan_open_channel">Open channel</string>
-  <string name="connect_plan_open_new_channel">Open new channel</string>
+  <string name="connect_plan_you_are_subscriber">You are a subscriber</string>
+  <string name="connect_plan_you_are_contributor">You are a contributor</string>
   <string name="connect_plan_this_is_your_link_for_channel">Your channel</string>
   <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[This is your link for channel <b>%1$s</b>!]]></string>
   <string name="error_opening_channel">Error opening channel</string>

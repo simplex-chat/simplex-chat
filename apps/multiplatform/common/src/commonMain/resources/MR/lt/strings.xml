@@ -1547,6 +1547,10 @@
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Jums reikės autentifikuotis kai paleidžiate programėlę arba pratęsiate jos naudojimą po 30 sekundžių fone.</string>
     <string name="no_history">Nėra istorijos</string>
     <string name="you_are_observer">esate stebėtojas</string>
+    <string name="connect_plan_you_are_observer">Esate stebėtojas</string>
+    <string name="connect_plan_you_are_member">Esate narys</string>
+    <string name="connect_plan_you_are_admin">Esate administratorius</string>
+    <string name="connect_plan_you_are_owner">Esate savininkas</string>
     <string name="only_stored_on_members_devices">(saugo tik grupės nariai)</string>
     <string name="your_simplex_contact_address">Jūsų SimpleX adresas</string>
     <string name="smp_servers_scan_qr">Nuskanuoti serverio QR kodą</string>

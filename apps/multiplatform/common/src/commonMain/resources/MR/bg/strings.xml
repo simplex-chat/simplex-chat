@@ -1301,6 +1301,11 @@
     <string name="auth_unlock">Отключи</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Ще трябва да се идентифицирате, когато стартирате или възобновите приложението след 30 секунди във фонов режим.</string>
     <string name="you_are_observer">вие сте наблюдател</string>
+    <string name="connect_plan_you_are_observer">Вие сте наблюдател</string>
+    <string name="connect_plan_you_are_member">Вие сте член</string>
+    <string name="connect_plan_you_are_moderator">Вие сте модератор</string>
+    <string name="connect_plan_you_are_admin">Вие сте админ</string>
+    <string name="connect_plan_you_are_owner">Вие сте собственик</string>
     <string name="gallery_video_button">Видео</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Можете да <font color="#0088ff">се свържете с разработчиците на SimpleX Chat, за да задавате въпроси и да получавате актуализации</font>;.]]></string>
     <string name="contact_wants_to_connect_with_you">иска да се свърже с вас!</string>

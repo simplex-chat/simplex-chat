@@ -595,6 +595,13 @@
     <string name="initial_member_role">Počiatočná rola</string>
     <string name="group_member_role_member">člen</string>
     <string name="group_member_role_moderator">moderátor</string>
+    <string name="connect_plan_you_are_observer">Ste pozorovateľ</string>
+    <string name="connect_plan_you_are_member">Ste člen</string>
+    <string name="connect_plan_you_are_moderator">Ste moderátor</string>
+    <string name="connect_plan_you_are_admin">Ste správca</string>
+    <string name="connect_plan_you_are_owner">Ste majiteľ</string>
+    <string name="connect_plan_you_are_subscriber">Ste odberateľ</string>
+    <string name="connect_plan_you_are_contributor">Ste prispievateľ</string>
     <string name="feature_roles_moderators">moderátori</string>
     <string name="v6_4_role_moderator">Nová skupinová rola: Moderátor</string>
     <string name="new_member_role">Nová rola člena</string>

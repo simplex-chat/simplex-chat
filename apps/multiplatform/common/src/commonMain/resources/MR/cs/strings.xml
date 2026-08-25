@@ -931,6 +931,11 @@
     <string name="moderate_verb">Moderovat</string>
     <string name="observer_cant_send_message_desc">Kontaktujte prosím správce skupiny.</string>
     <string name="you_are_observer">jste pozorovatel</string>
+    <string name="connect_plan_you_are_observer">Jste pozorovatel</string>
+    <string name="connect_plan_you_are_member">Jste člen</string>
+    <string name="connect_plan_you_are_moderator">Jste moderátor</string>
+    <string name="connect_plan_you_are_admin">Jste správce</string>
+    <string name="connect_plan_you_are_owner">Jste vlastník</string>
     <string name="group_member_role_observer">pozorovatel</string>
     <string name="moderate_message_will_be_deleted_warning">Zpráva bude smazána pro všechny členy.</string>
     <string name="moderate_message_will_be_marked_warning">Zpráva bude pro všechny členy označena jako moderovaná.</string>

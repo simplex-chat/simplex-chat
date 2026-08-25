@@ -7052,6 +7052,27 @@ alert title */
 /* No comment provided by engineer. */
 "you are observer" = "Ön megfigyelő";
 
+/* new chat alert */
+"You are an observer" = "Ön megfigyelő";
+
+/* new chat alert */
+"You are a member" = "Ön tag";
+
+/* new chat alert */
+"You are a moderator" = "Ön moderátor";
+
+/* new chat alert */
+"You are an admin" = "Ön adminisztrátor";
+
+/* new chat alert */
+"You are an owner" = "Ön tulajdonos";
+
+/* new chat alert */
+"You are a subscriber" = "Ön feliratkozó";
+
+/* new chat alert */
+"You are a contributor" = "Ön közreműködő";
+
 /* No comment provided by engineer. */
 "you are subscriber" = "Ön feliratkozó";
 

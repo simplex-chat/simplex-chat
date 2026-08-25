@@ -23,6 +23,7 @@
     <string name="callstatus_accepted">কলটি গৃহীত হয়েছে</string>
     <string name="smp_servers_preset_add">পূর্বনির্ধারিত সার্ভারগুলি যুক্ত করুন</string>
     <string name="group_member_role_admin">অ্যাডমিন</string>
+    <string name="connect_plan_you_are_admin">আপনি একজন অ্যাডমিন</string>
     <string name="button_add_welcome_message">স্বাগত বার্তা যুক্ত করুন</string>
     <string name="users_add">প্রোফাইল যুক্ত করুন</string>
     <string name="color_secondary_variant">আনুষঙ্গিক রং</string>
