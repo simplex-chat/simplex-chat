@@ -637,11 +637,13 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
         _ -> Nothing
       newState_ = case (callStatus, receivedStatus) of
         (Just CISCallProgress, WCSConnected) -> Nothing -- if call in-progress received connected -> no change
+        (Just CISCallProgress, WCSReconnecting) -> Nothing -- the call is attempting to reconnect
         (Just CISCallProgress, WCSDisconnected) -> Just (CISCallEnded, callDuration) -- calculate in-progress duration
         (Just CISCallProgress, WCSFailed) -> Just (CISCallEnded, callDuration) -- whether call disconnected or failed
         (Just CISCallPending, WCSDisconnected) -> Just (CISCallMissed, 0)
         (Just CISCallEnded, _) -> Nothing -- if call already ended or failed -> no change
         (Just CISCallError, _) -> Nothing
+        (Just _, WCSReconnecting) -> Nothing
         (Just _, WCSConnecting) -> Just (CISCallNegotiated, 0)
         (Just _, WCSConnected) -> Just (CISCallProgress, 0) -- if call ended that was never connected, duration = 0
         (Just _, WCSDisconnected) -> Just (CISCallEnded, 0)
