@@ -22,6 +22,7 @@ module BadgeService.Config
     BadgeServiceEnv (..),
     newBadgeServiceEnv,
     checkFailureBuckets,
+    takeCatalogBucket,
     debitFailureBuckets,
     sweepSignerBuckets,
     sweepSignerBucketsIO,
@@ -35,6 +36,7 @@ import Data.ByteString (ByteString)
 import Data.Ini (Ini, keys, lookupValue, readIniFile, sections)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust)
+import Data.Functor (($>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
@@ -594,6 +596,22 @@ checkFailureBuckets BadgeServiceEnv {now, signerFailureBucket, globalFailureBuck
     pure $ case signerResult of
       Left _ -> signerResult
       Right () -> globalResult
+
+-- | The gate for an UNSIGNED 'getBadgeCatalog' (B5 decision 5). Unlike the failure buckets,
+-- this one is spent by every request, not only by failures: an unsigned catalog request has
+-- no signer to key on and no notion of "failing", so the only thing that can bound it is the
+-- request itself. Peek and debit are one STM transaction so two concurrent requests cannot
+-- both see the last token. A signed request never reaches here -- it is bounded by having a
+-- purchase row at all, which 'checkSignerRecord' already requires.
+takeCatalogBucket :: BadgeServiceEnv -> IO (Either Word32 ())
+takeCatalogBucket BadgeServiceEnv {now, catalogBucket} = do
+  now' <- now
+  atomically $ do
+    tb <- readTVar catalogBucket
+    let (ok, retryAfter, tb') = bucketStatus now' tb
+    if ok
+      then writeTVar catalogBucket (debitBucket tb') $> Right ()
+      else writeTVar catalogBucket tb' $> Left retryAfter
 
 -- | Debits one token from both failure buckets after a failed 'purchaseBadge{code}'
 -- redemption (code_invalid / code_used / code_expired, including a checksum rejection that

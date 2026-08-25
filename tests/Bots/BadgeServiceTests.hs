@@ -35,14 +35,16 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.STM (atomically, readTVarIO)
-import Control.Exception (SomeException, evaluate, finally, try)
+import Control.Exception (SomeException, finally, try)
 import Control.Monad (replicateM, void)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LBC
+import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.List (find, isInfixOf)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, isJust)
@@ -54,12 +56,15 @@ import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (DiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay, secondsToDiffTime)
 import Data.Word (Word32)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeRequest (..), BadgeType (..), verifyCredential)
+import Simplex.Chat.Badges.Months (addMonths)
 import Simplex.Chat.Badges.Service
   ( -- 'BadgeBalance', 'StatementEntry' and 'StatementEntryType' import only their
     -- constructors, not '(..)': their field names (entryId, changeMonths, balanceMonths,
     -- createdAt, ...) duplicate 'BadgeLedgerEntry''s (Badges.Types), which the existing B1
     -- ledger tests below already use as bare selectors -- importing the field selectors here
-    -- too would make those pre-existing, untouched uses ambiguous.
+    -- too would make those pre-existing, untouched uses ambiguous. 'BadgeStatement' is safe
+    -- to import with '(..)': 'entries'/'previousEntryId' are unique names nothing else here
+    -- uses.
     BadgeBalance (BadgeBalance),
     BadgeCatalog (..),
     BadgeOffer (..),
@@ -68,9 +73,11 @@ import Simplex.Chat.Badges.Service
     BadgeServiceErrorCode (..),
     BadgeServiceRequest (..),
     BadgeServiceResponse (..),
+    BadgeStatement (..),
     StatementCreditType (SCOpening),
+    StatementDebitType (SDLapse),
     StatementEntry (StatementEntry),
-    StatementEntryType (SECredit),
+    StatementEntryType (SECredit, SEDebit),
     pattern VersionBadgeService,
   )
 import Simplex.Chat.Badges.Types
@@ -140,6 +147,10 @@ badgeServiceTests = do
   it "should fail to start when a provider is configured without [web]" testBadgeServiceConfigProviderRequiresWeb
   it "should start with just [issuer] and [codes], no provider section" testBadgeServiceConfigMinimalStarts
   it "should start the service from a complete config with web and both providers" testBadgeServiceCompleteConfigStarts
+  it "should omit a disabled price and its offers from getBadgeCatalog, and keep a deprecated one" testBadgeServiceGetCatalogDisabledDeprecated
+  it "should respond unknown_purchase_key to a signed getBadgeCatalog from an unknown key" testBadgeServiceGetCatalogUnknownSignerKey
+  it "should heal the ledger on a signed getBadgeCatalog, appending exactly one debit(lapse), and heal nothing on a repeat" testBadgeServiceGetCatalogHealsLedger
+  it "should rate_limit a third unsigned getBadgeCatalog once the catalog bucket is drained, without affecting a signed one" testBadgeServiceGetCatalogBucketThrottle
   it "should create a purchase and append ledger entries readable back in order" testBadgeStorePurchaseAndLedger
   it "should disable a price out of the active catalog while both stay reachable by id" testBadgeStoreSetPriceStatusDisabled
   it "should return the redeeming purchase key from getCodeByHash" testBadgeStoreGetCodeByHashRedeemer
@@ -280,6 +291,17 @@ getServiceResponseObject client = do
   case T.stripPrefix "service response: " (T.pack line) of
     Just json | Just (J.Object o) <- J.decode (LBC.pack (T.unpack json)) -> pure o
     _ -> expectationFailure ("expected a service response line, got: " <> line) >> error "unreachable"
+
+-- Decodes a service response object into 'BadgeServiceResponse' (B6): used by every B6 test
+-- that inspects the catalog or the statement, rather than digging through the raw JSON object
+-- the way B5's throttle tests do (those only ever need 'code'/'retryAfter', which never
+-- justified the extra decode step).
+getServiceResponse :: HasCallStack => TestCC -> IO BadgeServiceResponse
+getServiceResponse client = do
+  obj <- getServiceResponseObject client
+  case JT.parseEither J.parseJSON (J.Object obj) :: Either String BadgeServiceResponse of
+    Right resp -> pure resp
+    Left err -> expectationFailure ("failed to decode service response: " <> err) >> error "unreachable"
 
 testBadgeRequestCommand :: BadgeMasterKey -> ServicePayment -> BadgeServiceCommand
 testBadgeRequestCommand masterKey payment =
@@ -587,9 +609,10 @@ testBadgeCatalogOfferTotal _ps = do
   where
     assertOfferTotal priceFor offer@BadgeOffer {months, priceId = Just pid} = do
       let BadgePrice {monthPrice = CurrencyAmount monthly} = priceFor pid
-          CurrencyAmount total = offerTotal (priceFor pid) (Just offer)
           multiplier = if months == 3 then 2 else 6 :: Word32
-      total `shouldBe` monthly * multiplier
+      case offerTotal (priceFor pid) (Just offer) of
+        Just (CurrencyAmount total) -> total `shouldBe` monthly * multiplier
+        Nothing -> expectationFailure "seeded offer must have a chargeable total"
     assertOfferTotal _ BadgeOffer {priceId = Nothing} =
       expectationFailure "seeded offer must be pinned to a price"
 
@@ -603,8 +626,9 @@ testBadgeCatalogTotalsFillsSeededOffers _ps = do
 
 -- A Word8 subtraction of freeMonths from months is unsigned and unguarded: an offer with
 -- freeMonths >= months (a typo, a future repricing) would wrap silently
--- (3 - 12 :: Word8 == 247) and hand out a wildly wrong charge. offerTotal must instead fail
--- loudly, naming the offer, before it ever reaches that subtraction.
+-- (3 - 12 :: Word8 == 247) and hand out a wildly wrong charge. offerTotal must instead
+-- answer Nothing -- a typed absence, not an 'error' -- so one malformed row read inside a
+-- request (B6) can never take down the single-threaded request loop (§9).
 testBadgeCatalogOfferTotalRejectsBadFreeMonths :: HasCallStack => TestParams -> IO ()
 testBadgeCatalogOfferTotalRejectsBadFreeMonths _ps = do
   now <- getCurrentTime
@@ -620,11 +644,7 @@ testBadgeCatalogOfferTotalRejectsBadFreeMonths _ps = do
             createdAt = now,
             total = Nothing
           }
-  result <- try (evaluate (offerTotal price (Just badOffer))) :: IO (Either SomeException CurrencyAmount)
-  case result of
-    Left _ -> pure ()
-    Right (CurrencyAmount total) ->
-      expectationFailure $ "offerTotal should reject freeMonths >= months, got: " <> show total
+  offerTotal price (Just badOffer) `shouldBe` Nothing
 
 -- BadgeItemStatus's JSON crosses the wire (BadgePrice/BadgeOffer.status), so pinning finding
 -- 2's TextEncoding-derived encoding to what the earlier TH-derived instance produced proves
@@ -805,6 +825,173 @@ testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
                  "secret_key_file = " <> stripeKeyFile,
                  "webhook_secret_file = " <> stripeWebhookFile
                ]
+
+-- B6 getBadgeCatalog -----------------------------------------------------------
+
+-- A disabled price (and every offer pinned to it) must be absent from the RPC catalog, while
+-- a deprecated price (and its offers) must still be present -- getActiveCatalog's own
+-- invariant (already proved at the store level by testBadgeStoreSetPriceStatusDisabled),
+-- surfaced here through the live RPC path handleGetBadgeCatalog actually calls.
+testBadgeServiceGetCatalogDisabledDeprecated :: HasCallStack => TestParams -> IO ()
+testBadgeServiceGetCatalogDisabledDeprecated ps = do
+  priceIdsRef <- newIORef Nothing
+  let seedStatuses =
+        withTestChat ps serviceDbPrefix $ \bs -> do
+          bs <## "subscribed 1 connections on server localhost"
+          priceIds <- expectRight $ withServiceTransaction (chatStore (chatController bs)) $ \db -> do
+            BadgeCatalog {prices} <- getActiveCatalog db
+            case prices of
+              [BadgePrice {priceId = pid1}, BadgePrice {priceId = pid2}] -> do
+                setPriceStatus db pid1 BISDisabled
+                setPriceStatus db pid2 BISDeprecated
+                pure (pid1, pid2)
+              _ -> error "expected exactly the two default seeded prices"
+          writeIORef priceIdsRef (Just priceIds)
+  withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps) seedStatuses $ \client bsLink -> do
+    Just (disabledId, deprecatedId) <- readIORef priceIdsRef
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
+    sendServiceRequest client bsLink req
+    resp <- getServiceResponse client
+    case resp of
+      BSPBadgeCatalog {catalog = BadgeCatalog {prices, offers}} -> do
+        any (\BadgePrice {priceId} -> priceId == disabledId) prices `shouldBe` False
+        any (\BadgePrice {priceId} -> priceId == deprecatedId) prices `shouldBe` True
+        any (\BadgeOffer {priceId} -> priceId == Just disabledId) offers `shouldBe` False
+        any (\BadgeOffer {priceId} -> priceId == Just deprecatedId) offers `shouldBe` True
+      other -> expectationFailure $ "expected BSPBadgeCatalog, got: " <> show other
+
+-- getBadgeCatalog applies checkSignerRecord like every other signed command (B5): a signed
+-- request from a key with no purchase row must fail the identity check before
+-- handleGetBadgeCatalog ever runs, the same way B5 already proved for issueBadge/pauseBadge.
+testBadgeServiceGetCatalogUnknownSignerKey :: HasCallStack => TestParams -> IO ()
+testBadgeServiceGetCatalogUnknownSignerKey ps =
+  withBadgeService ps $ \client bsLink -> do
+    (pub, priv) <- mkTestKeyPair
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = BSCGetBadgeCatalog}
+    sendSignedServiceRequest client bsLink priv req
+    client <## "service response: {\"code\":\"unknown_purchase_key\",\"type\":\"error\"}"
+
+-- StatementEntry is constructed/matched positionally (see the import list's Haddock): field
+-- order entryId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType,
+-- wasPausedSince, createdAt, entryType. Used to compare two statements for equality without
+-- needing an Eq instance on StatementEntry itself (there isn't one).
+statementEntryKey :: StatementEntry -> (Text, Int, Int)
+statementEntryKey (StatementEntry entryId changeMonths balanceMonths _ _ _ _ _) = (entryId, changeMonths, balanceMonths)
+
+-- A signed getBadgeCatalog heals the purchase's ledger to `now` (B2's `advance`) in the SAME
+-- transaction that reads the statement back (RPC "Statement and balance"), so the balance the
+-- client is told is the balance the database holds. With balance_start_ts backdated two
+-- months on a balance of 3, healing appends exactly one debit(lapse) of -2, leaving a balance
+-- of 1; an identical second request must append nothing further, since the ledger is already
+-- healed to (approximately) now.
+testBadgeServiceGetCatalogHealsLedger :: HasCallStack => TestParams -> IO ()
+testBadgeServiceGetCatalogHealsLedger ps = do
+  (pub, priv) <- mkTestKeyPair
+  masterKey <- BadgeMasterKey <$> getRandomBytes 32
+  purchaseIdRef <- newIORef Nothing
+  let seedBackdatedLedger =
+        withTestChat ps serviceDbPrefix $ \bs -> do
+          bs <## "subscribed 1 connections on server localhost"
+          now <- getCurrentTime
+          let backdated = addMonths (-2) now
+          badgePurchaseId <- expectRight $ withServiceTransaction (chatStore (chatController bs)) $ \db -> do
+            BadgePurchaseRow {badgePurchaseId} <- createPurchase db pub masterKey BTSupporter now
+            _ <-
+              appendLedgerEntry
+                db
+                BadgeLedgerEntry
+                  { entryId = 0,
+                    entryUuid = "test-opening-entry",
+                    badgePurchaseId,
+                    changeMonths = 3,
+                    balanceMonths = 3,
+                    balanceStartTs = backdated,
+                    balanceBadgeType = BTSupporter,
+                    wasPausedSince = Nothing,
+                    serviceCreatedAt = now,
+                    createdAt = now,
+                    entryType = LECredit CTOpening
+                  }
+            pure badgePurchaseId
+          writeIORef purchaseIdRef (Just badgePurchaseId)
+  statement1Ref <- newIORef Nothing
+  statement2Ref <- newIORef Nothing
+  withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps) seedBackdatedLedger $ \client bsLink -> do
+    let req = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = BSCGetBadgeCatalog}
+    sendSignedServiceRequest client bsLink priv req
+    resp1 <- getServiceResponse client
+    case resp1 of
+      BSPBadgeCatalog {badgeStatement = Just stmt} -> writeIORef statement1Ref (Just stmt)
+      other -> expectationFailure $ "expected a statement on the first request, got: " <> show other
+    sendSignedServiceRequest client bsLink priv req
+    resp2 <- getServiceResponse client
+    case resp2 of
+      BSPBadgeCatalog {badgeStatement = Just stmt} -> writeIORef statement2Ref (Just stmt)
+      other -> expectationFailure $ "expected a statement on the second request, got: " <> show other
+  Just badgePurchaseId <- readIORef purchaseIdRef
+  Just BadgeStatement {entries = entries1} <- readIORef statement1Ref
+  Just BadgeStatement {entries = entries2} <- readIORef statement2Ref
+  case entries1 of
+    [_opening, StatementEntry _ changeMonths balanceMonths _ _ _ _ (SEDebit SDLapse)] -> do
+      changeMonths `shouldBe` (-2)
+      balanceMonths `shouldBe` 1
+    other -> expectationFailure $ "expected exactly [opening, lapse(-2)], got " <> show (length other) <> " entries"
+  map statementEntryKey entries2 `shouldBe` map statementEntryKey entries1 -- second request heals nothing further
+  -- the balance the RPC reported must match a freshly read getLastLedgerEntry -- reopened
+  -- only after the service (and its exclusive hold on the sqlite file) has been killed, same
+  -- as withBadgeServiceConfig's own between-phases reopen.
+  lastEntry <-
+    withTestChat ps serviceDbPrefix $ \bs -> do
+      bs <## "subscribed 1 connections on server localhost"
+      expectRight $ withServiceTransaction (chatStore (chatController bs)) $ \db -> getLastLedgerEntry db badgePurchaseId
+  case (lastEntry, entries1) of
+    (Just BadgeLedgerEntry {balanceMonths = storedBalance}, [_, StatementEntry _ _ wireBalance _ _ _ _ _]) ->
+      storedBalance `shouldBe` wireBalance
+    _ -> expectationFailure "expected a stored last ledger entry matching the wire statement's balance"
+
+-- The catalog bucket (B5 decision 5) is spent by every UNSIGNED getBadgeCatalog, success or
+-- not; a signed request never touches it (bounded instead by requiring a purchase row).
+-- Overriding the bucket to capacity 2 via A6's [throttle] harness: the first two unsigned
+-- requests in the window succeed, a third gives rate_limited with a positive retryAfter, and
+-- a signed request (from a key with a real purchase row) is unaffected by the drained bucket.
+testBadgeServiceGetCatalogBucketThrottle :: HasCallStack => TestParams -> IO ()
+testBadgeServiceGetCatalogBucketThrottle ps = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets (tmpPath ps)
+  (pub, priv) <- mkTestKeyPair
+  masterKey <- BadgeMasterKey <$> getRandomBytes 32
+  let writeConfig =
+        writeFile (badgeServiceConfigPath (tmpPath ps)) $
+          unlines $
+            issuerCodesIniLines issuerKeyFile codeSecretFile
+              ++ ["", "[throttle]", "catalog_capacity = 2", "catalog_start_tokens = 2"]
+      seedPurchase =
+        withTestChat ps serviceDbPrefix $ \bs -> do
+          bs <## "subscribed 1 connections on server localhost"
+          now <- getCurrentTime
+          void $ expectRight $ withServiceTransaction (chatStore (chatController bs)) $ \db -> createPurchase db pub masterKey BTSupporter now
+  withBadgeServiceConfig ps writeConfig seedPurchase $ \client bsLink -> do
+    let unsignedReq = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
+        signedReq = BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = BSCGetBadgeCatalog}
+        expectCatalog label client' = do
+          resp <- getServiceResponse client'
+          case resp of
+            BSPBadgeCatalog {} -> pure ()
+            other -> expectationFailure $ label <> " expected BSPBadgeCatalog, got: " <> show other
+    -- drain the 2-token catalog bucket
+    sendServiceRequest client bsLink unsignedReq
+    expectCatalog "first unsigned request" client
+    sendServiceRequest client bsLink unsignedReq
+    expectCatalog "second unsigned request" client
+    -- a third request in the same window is rejected before processing
+    sendServiceRequest client bsLink unsignedReq
+    respObj <- getServiceResponseObject client
+    KM.lookup "code" respObj `shouldBe` Just (J.String "rate_limited")
+    case KM.lookup "retryAfter" respObj of
+      Just (J.Number n) -> n `shouldSatisfy` (> 0)
+      other -> expectationFailure $ "expected a positive retryAfter, got: " <> show other
+    -- a signed request bypasses the catalog bucket entirely, even fully drained
+    sendSignedServiceRequest client bsLink priv signedReq
+    expectCatalog "signed request" client
 
 -- B1 store layer -------------------------------------------------------------
 

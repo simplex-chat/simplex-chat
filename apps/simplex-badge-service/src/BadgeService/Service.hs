@@ -15,27 +15,58 @@ module BadgeService.Service
   )
 where
 
-import BadgeService.Catalog (seedCatalog)
-import BadgeService.Config (BadgeServiceEnv (..), checkFailureBuckets, newBadgeServiceEnv, readBadgeServiceConfig)
+import BadgeService.Catalog (catalogTotals, seedCatalog)
+import BadgeService.Config (BadgeServiceEnv (..), checkFailureBuckets, newBadgeServiceEnv, readBadgeServiceConfig, takeCatalogBucket)
+import BadgeService.Ledger (LedgerState (..), advance)
 import BadgeService.Options
-import BadgeService.Store (getPurchaseByKey, withServiceTransaction)
+import BadgeService.Store
+  ( BadgePurchaseRow (..),
+    ServiceError (..),
+    appendLedgerEntry,
+    getActiveCatalog,
+    getLastLedgerEntry,
+    getLedgerSince,
+    getPurchaseByKey,
+    withServiceTransaction,
+  )
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import Control.Concurrent.STM
 import Control.Exception (SomeException, catch, evaluate)
+import Control.Monad.Except (ExceptT, throwError)
+import Control.Monad.IO.Class (liftIO)
 import Control.Logger.Simple
 import Control.Monad
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Lazy as LBS
+import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
+import qualified Data.UUID as UUID
+import qualified Data.UUID.V4 as UUID
 import Data.Word (Word32)
 import Simplex.Chat.Badges.Service
-  ( BadgeServiceCommand (..),
+  ( BadgeCatalog (..),
+    BadgeOffer (..),
+    BadgePrice (..),
+    BadgeServiceCommand (..),
     BadgeServiceErrorCode (..),
     BadgeServiceRequest (..),
     BadgeServiceResponse (..),
+    BadgeStatement (..),
+    StatementCreditType (..),
+    StatementDebitType (..),
+    StatementEntry (..),
+    StatementEntryType (..),
     minSupportedBadgeVersion,
+  )
+import Simplex.Chat.Badges.Types
+  ( BadgeLedgerEntry (..),
+    BadgeOfferId (..),
+    LedgerCreditType (..),
+    LedgerDebitType (..),
+    LedgerEntryType (..),
   )
 import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Controller
@@ -45,6 +76,7 @@ import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
@@ -250,7 +282,7 @@ dispatchCommand :: BadgeServiceEnv -> Maybe C.PublicKeyEd25519 -> BadgeServiceCo
 dispatchCommand _ _ (BSCGetBadgeInvoice {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
 dispatchCommand _ _ (BSCUpgradeBadgeSubscription {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
 dispatchCommand _ _ BSCPauseBadge = pure $ errorResponse BSEBadRequest Nothing Nothing
-dispatchCommand _ _ BSCGetBadgeCatalog = pure notImplemented
+dispatchCommand bsEnv purchaseKey BSCGetBadgeCatalog = handleGetBadgeCatalog bsEnv purchaseKey
 dispatchCommand _ _ (BSCIssueBadge {}) = pure notImplemented
 dispatchCommand bsEnv purchaseKey (BSCPurchaseBadge {payment}) = dispatchPurchase bsEnv purchaseKey payment
 
@@ -275,3 +307,161 @@ dispatchPurchase _ _ (SPApple {}) = pure $ errorResponse BSEBadRequest Nothing N
 dispatchPurchase _ _ (SPGoogle {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
 dispatchPurchase _ _ (SPInvoice {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
 dispatchPurchase _ _ (SPReceipt {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
+
+-- getBadgeCatalog (B6) --------------------------------------------------------
+
+-- | Answers the catalog, and for a signed request the signer's statement as well.
+--
+-- Unsigned requests spend a token from the service-wide catalog bucket first (B5 decision 5):
+-- there is no signer to key on and no failure to count, so the request itself is the only
+-- thing that can be bounded. A signed request is not subject to it -- 'checkSignerRecord'
+-- has already required an existing purchase row, which is the bound.
+--
+-- Both halves are read in ONE transaction, and it is a writing one: healing the ledger
+-- (@advance now@) persists its @debit(lapse)@ row in the same transaction that then reads the
+-- statement back, so the balance a client is told is the balance the database holds. This is
+-- the only read command that writes (RPC "Statement and balance").
+handleGetBadgeCatalog :: BadgeServiceEnv -> Maybe C.PublicKeyEd25519 -> IO BadgeServiceResponse
+handleGetBadgeCatalog bsEnv@BadgeServiceEnv {store, now} signerKey = case signerKey of
+  Nothing ->
+    takeCatalogBucket bsEnv >>= \case
+      Left retryAfter -> pure $ errorResponse BSERateLimited Nothing (Just retryAfter)
+      Right () -> respond Nothing
+  Just key -> respond (Just key)
+  where
+    respond key = do
+      now' <- now
+      withServiceTransaction store (catalogTxn now' key) >>= \case
+        Left e -> do
+          logError $ "getBadgeCatalog failed: " <> tshow e
+          pure $ errorResponse BSEInternal Nothing Nothing
+        Right (catalog, badgeStatement) -> do
+          logUnpricedOffers catalog
+          pure BSPBadgeCatalog {catalog, badgeStatement}
+    catalogTxn now' key db = do
+      -- catalogTotals is applied to what the DATABASE holds, never to Catalog.hs's defaults,
+      -- so a price the operator deprecated or disabled is reflected without a rebuild
+      -- (decision 8): the site, the RPC catalog and the charge all read this one result.
+      catalog <- catalogTotals <$> getActiveCatalog db
+      statement <- mapM (purchaseStatement now' db) key
+      pure (catalog, statement)
+
+-- | An offer that is pinned to a price the catalog also returned, yet still has no total,
+-- is a malformed offer (@freeMonths >= months@): the client will render it as unavailable,
+-- and nothing else in the system would ever say why. 'chargeableMonths' stopped saying so
+-- with 'error' precisely so a request thread survives it (§9), so this is the only place it
+-- gets named.
+logUnpricedOffers :: BadgeCatalog -> IO ()
+logUnpricedOffers BadgeCatalog {prices, offers} =
+  forM_ offers $ \BadgeOffer {offerId = BadgeOfferId oid, priceId, total} ->
+    case (priceId, total) of
+      (Just pid, Nothing)
+        | any (\BadgePrice {priceId = pid'} -> pid' == pid) prices ->
+            logWarn $ "catalog offer " <> oid <> " has a pinned price but no chargeable total"
+      _ -> pure ()
+
+-- | Heals the purchase's ledger to @now@, then reads the whole of it back as a statement.
+--
+-- @advance@ is run against the last stored entry's state and, when it yields months, ONE
+-- @debit(lapse)@ row is written for them (B2's calling convention: one row, whatever @k@ is).
+-- A purchase with no ledger at all has nothing to heal and nothing to lapse -- there is no
+-- balance to lapse from -- so it returns an empty statement rather than inventing an opening
+-- entry.
+--
+-- 'previousEntryId' is 'Nothing': 'getBadgeCatalog' carries no cursor, so this is always the
+-- full ledger, which is what that field's absence means.
+purchaseStatement :: UTCTime -> DB.Connection -> C.PublicKeyEd25519 -> ExceptT ServiceError IO BadgeStatement
+purchaseStatement now' db key = do
+  purchase <- getPurchaseByKey db key
+  case purchase of
+    -- unreachable: checkSignerRecord already required the row for a signed request. Refused
+    -- rather than answered with an empty statement, which would look like a real ledger.
+    Nothing -> throwError $ SEDecodeError "getBadgeCatalog: signer has no purchase row"
+    Just BadgePurchaseRow {badgePurchaseId} -> do
+      healLedger now' db badgePurchaseId
+      entries <- mapM (liftEither' . toStatementEntry) =<< getLedgerSince db badgePurchaseId Nothing
+      pure BadgeStatement {entries, previousEntryId = Nothing}
+  where
+    liftEither' = either throwError pure
+
+healLedger :: UTCTime -> DB.Connection -> Int64 -> ExceptT ServiceError IO ()
+healLedger now' db badgePurchaseId =
+  getLastLedgerEntry db badgePurchaseId >>= \case
+    Nothing -> pure ()
+    Just BadgeLedgerEntry {balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince} ->
+      case advance now' LedgerState {balanceMonths, balanceStartTs, balanceBadgeType} of
+        Nothing -> pure ()
+        Just (k, LedgerState {balanceMonths = balanceMonths', balanceStartTs = balanceStartTs'}) -> do
+          entryUuid <- liftIO (UUID.toText <$> UUID.nextRandom)
+          void $
+            appendLedgerEntry
+              db
+              BadgeLedgerEntry
+                { entryId = 0, -- assigned by the database
+                  entryUuid,
+                  badgePurchaseId,
+                  changeMonths = negate k,
+                  balanceMonths = balanceMonths',
+                  -- the entry's balance_start_ts is the state advance left, NOT the time the
+                  -- row was created; created_at/service_created_at carry that (B2)
+                  balanceStartTs = balanceStartTs',
+                  balanceBadgeType,
+                  wasPausedSince,
+                  serviceCreatedAt = now',
+                  createdAt = now',
+                  entryType = LEDebit DTLapse
+                }
+
+-- | The stored ledger row as the client sees it. 'entryId' on the wire is the row's
+-- @entry_uuid@, not its @entry_id@: the uuid is what the service authors and the client
+-- copies verbatim (core §1), while @entry_id@ is a per-database IDENTITY that means nothing
+-- outside this one service.
+--
+-- Four entry types are refused rather than converted, and none of them can be reached by
+-- anything in this milestone:
+--
+--   * @CTPayment@ and @CTCharge@ carry 'Int64' ids against @TEXT@ columns -- the unresolved
+--     mismatch §9 records as needing a decision before C1. 'BadgeService.Store' already
+--     refuses to read or write them, so a row of either type cannot exist; inventing a
+--     numeric-to-text coercion here is exactly what that refusal exists to prevent.
+--   * @CTTransferIn@, @DTUpgrade@ and @DTTransferOut@ store a purchase *id* while the wire
+--     types carry a purchase *key*. Converting needs an id-to-key lookup the store does not
+--     expose, and transfers and upgrades are out of scope (§6), so nothing writes them.
+--
+-- A refusal fails the whole response with 'internal' rather than dropping the entry: a
+-- statement that silently omits a ledger row is a wrong balance, which is worse than no
+-- answer.
+toStatementEntry :: BadgeLedgerEntry -> Either ServiceError StatementEntry
+toStatementEntry BadgeLedgerEntry {entryUuid, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince, createdAt, entryType} = do
+  entryType' <- statementEntryType entryType
+  Right
+    StatementEntry
+      { entryId = entryUuid,
+        changeMonths,
+        balanceMonths,
+        balanceStartTs,
+        balanceBadgeType,
+        wasPausedSince,
+        createdAt,
+        entryType = entryType'
+      }
+
+statementEntryType :: LedgerEntryType -> Either ServiceError StatementEntryType
+statementEntryType = \case
+  LECredit creditType -> SECredit <$> case creditType of
+    CTSupport -> Right SCSupport
+    CTOpening -> Right SCOpening
+    CTUnknown {tag, json} -> Right SCUnknown {tag, json}
+    CTPayment {} -> unresolved "credit(payment)" "invoiceId is Int64 against a TEXT column (§9, open before C1)"
+    CTCharge {} -> unresolved "credit(charge)" "chargeId is Int64 against a TEXT column (§9, open before C1)"
+    CTTransferIn {} -> unresolved "credit(transfer_in)" "stores a purchase id, the wire carries a purchase key; transfers are out of scope (§6)"
+  LEDebit debitType -> SEDebit <$> case debitType of
+    DTRefund -> Right SDRefund
+    DTSupport -> Right SDSupport
+    DTBadge -> Right SDBadge
+    DTLapse -> Right SDLapse
+    DTUnknown {tag, json} -> Right SDUnknown {tag, json}
+    DTUpgrade {} -> unresolved "debit(upgrade)" "stores a purchase id, the wire carries a purchase key; upgrades are out of scope (§6)"
+    DTTransferOut {} -> unresolved "debit(transfer_out)" "stores a purchase id, the wire carries a purchase key; transfers are out of scope (§6)"
+  where
+    unresolved what why = Left $ SEDecodeError ("cannot put " <> what <> " in a statement: " <> why)

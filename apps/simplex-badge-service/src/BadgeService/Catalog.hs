@@ -128,28 +128,32 @@ defaultCatalog createdAt =
 -- offer). A 'freeMonths' offer charges for the months that aren't free; an 'ODDiscount'
 -- offer floors the discounted total, computed over integers so no floating point appears
 -- anywhere in the pricing path.
-offerTotal :: BadgePrice -> Maybe BadgeOffer -> CurrencyAmount
+offerTotal :: BadgePrice -> Maybe BadgeOffer -> Maybe CurrencyAmount
 offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} Nothing =
-  CurrencyAmount monthPriceMinor
-offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} (Just offer@BadgeOffer {months, discount}) =
-  CurrencyAmount $ case discount of
-    ODFreeMonths freeMonths -> fromIntegral (chargeableMonths offer months freeMonths) * monthPriceMinor
-    ODDiscount percent -> (fromIntegral months * monthPriceMinor * fromIntegral (100 - percent)) `div` 100
+  Just (CurrencyAmount monthPriceMinor)
+offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} (Just BadgeOffer {months, discount}) =
+  CurrencyAmount <$> case discount of
+    ODFreeMonths freeMonths -> (\m -> fromIntegral m * monthPriceMinor) <$> chargeableMonths months freeMonths
+    ODDiscount percent -> Just ((fromIntegral months * monthPriceMinor * fromIntegral (100 - percent)) `div` 100)
 
 -- | months - freeMonths, but only once it's known safe: a bare 'Word8' subtraction is
--- unsigned and unguarded, so an offer seeded with freeMonths >= months (a typo, a future
+-- unsigned and unguarded, so an offer with freeMonths >= months (a typo, a future
 -- repricing, operator tooling) would silently wrap (3 - 12 :: Word8 == 247) and this
 -- money-computing module would hand out a wildly wrong charge without any sign anything
 -- went wrong. freeMonths >= months isn't a value to compute a (wrong) answer for at all —
--- it charges for zero or a negative number of months, which isn't an offer — so this fails
--- loudly and by name instead of ever reaching the subtraction.
-chargeableMonths :: BadgeOffer -> Word8 -> Word8 -> Word8
-chargeableMonths BadgeOffer {offerId = BadgeOfferId oid} months freeMonths
-  | freeMonths >= months =
-      error $
-        "offerTotal: offer " <> T.unpack oid <> " has freeMonths (" <> show freeMonths
-          <> ") >= months (" <> show months <> "), which is not a chargeable offer"
-  | otherwise = months - freeMonths
+-- it charges for zero or a negative number of months, which isn't an offer.
+--
+-- It used to say so with 'error'. That was safe while 'seedCatalog' was the only caller and
+-- forced it at startup, and stopped being safe the moment B6 ran totals over rows read from
+-- the database inside a request: the bot's request loop is single-threaded, so one bad row
+-- would have taken the service down for every user (§9). 'Nothing' instead — which A2
+-- already defines on the wire as "this offer is unavailable, do not compute a price for it"
+-- — keeps the blast radius to the one offer, and 'seedCatalog' still fails the process at
+-- startup, by name, for a bad *default* catalog.
+chargeableMonths :: Word8 -> Word8 -> Maybe Word8
+chargeableMonths months freeMonths
+  | freeMonths >= months = Nothing
+  | otherwise = Just (months - freeMonths)
 
 -- | Fills every offer's 'total' (A2) with 'offerTotal' applied to that offer's pinned
 -- price. Overwrites unconditionally, so it is idempotent to call again. It is a total
@@ -161,7 +165,7 @@ catalogTotals BadgeCatalog {prices, offers} =
   BadgeCatalog {prices, offers = map fillTotal offers}
   where
     fillTotal offer@BadgeOffer {priceId} =
-      offer {total = offerTotal <$> pricedBy priceId <*> pure (Just offer)}
+      offer {total = pricedBy priceId >>= \price -> offerTotal price (Just offer)}
     pricedBy Nothing = Nothing
     pricedBy (Just pid) = find (\BadgePrice {priceId = pid'} -> pid' == pid) prices
 
@@ -179,13 +183,22 @@ seedCatalog st = do
   createdAt <- getCurrentTime
   let catalog@BadgeCatalog {prices, offers} = defaultCatalog createdAt
       BadgeCatalog {offers = pricedOffers} = catalogTotals catalog
-  mapM_ forceTotal pricedOffers
+  mapM_ requireTotal pricedOffers
   withTransaction st $ \db -> do
     mapM_ (insertPrice db) prices
     mapM_ (insertOffer db) offers
   where
-    forceTotal BadgeOffer {total = Just (CurrencyAmount amount)} = void $ evaluate amount
-    forceTotal BadgeOffer {total = Nothing} = pure ()
+    -- Every seeded offer is pinned to a price (see 'defaultCatalog'), so a 'Nothing' total
+    -- here cannot mean "unpinned" -- it can only mean the offer is not chargeable at all
+    -- (freeMonths >= months). 'chargeableMonths' no longer says so with 'error', because a
+    -- request thread must not die of it (§9), so startup has to make the check itself or
+    -- nothing would: a bad default catalog would seed silently and every client would see
+    -- that offer as unavailable forever.
+    requireTotal BadgeOffer {offerId = BadgeOfferId oid, total = Nothing} =
+      ioError . userError $
+        "seedCatalog: offer " <> T.unpack oid
+          <> " has no chargeable total (freeMonths >= months, or no pinned price)"
+    requireTotal BadgeOffer {total = Just (CurrencyAmount amount)} = void $ evaluate amount
 
 insertPrice :: DB.Connection -> BadgePrice -> IO ()
 insertPrice db BadgePrice {priceId = BadgePriceId pid, badgeType, monthPrice = CurrencyAmount amt, currency, status, createdAt} =
