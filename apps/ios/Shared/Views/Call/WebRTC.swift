@@ -77,6 +77,7 @@ enum CallState {
     case answerReceived     // incoming - webrtc answer received via API
     case negotiated         // outgoing - webrtc offer processed and answer sent, incoming - webrtc answer processed
     case connected
+    case reconnecting
     case ended
 
     var text: LocalizedStringKey {
@@ -89,6 +90,7 @@ enum CallState {
         case .answerReceived: return "received confirmation…"
         case .negotiated: return "connecting…"
         case .connected: return "connected"
+        case .reconnecting: return "reconnecting…"
         case .ended: return "ended"
         }
     }
