@@ -2715,12 +2715,14 @@ This is your own one-time link!</source>
         <target>Creando enlace…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder</source>
+        <target state="translated">Crowdfunding en Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder.</source>
+        <target state="translated">Crowdfunding en Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -4778,8 +4780,9 @@ Error: %2$@</target>
         <target>La invitación al grupo ya no es válida, ha sido eliminada por el remitente.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitations" xml:space="preserve">
+      <trans-unit id="Group invitations" xml:space="preserve" approved="no">
         <source>Group invitations</source>
+        <target state="translated">Invitaciones en grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -10776,12 +10779,14 @@ Repeat join request?</source>
         <target>Ya puedes chatear con %@</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat</source>
+        <target state="translated">Ahora puedes invertir en SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat! 🚀</source>
+        <target state="translated">Ahora puedes invertir en SimpleX Chat! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
