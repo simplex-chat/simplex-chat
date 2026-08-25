@@ -136,6 +136,7 @@ badgeServiceTests = do
   it "should price 3 months at 2x and 12 months at 6x the monthly price" testBadgeCatalogOfferTotal
   it "should fill total for every seeded offer" testBadgeCatalogTotalsFillsSeededOffers
   it "should reject an offer with freeMonths >= months instead of wrapping" testBadgeCatalogOfferTotalRejectsBadFreeMonths
+  it "should reject an offer with discount > 100 instead of wrapping into an overcharge" testBadgeCatalogOfferTotalRejectsBadDiscount
   it "should encode BadgeItemStatus on the wire as active/deprecated/disabled" testBadgeItemStatusJsonWireFormat
   it "should fail to start on a missing config file, naming the file" testBadgeServiceConfigMissingFile
   it "should fail to start on an unparsable value, naming the key" testBadgeServiceConfigUnparsableValue
@@ -646,6 +647,28 @@ testBadgeCatalogOfferTotalRejectsBadFreeMonths _ps = do
           }
   offerTotal price (Just badOffer) `shouldBe` Nothing
 
+-- The sibling hazard, on the ODDiscount side: a Word8 subtraction of percent from 100 is
+-- unsigned and unguarded, so an offer with percent > 100 (a typo, a future repricing) would
+-- wrap silently (100 - 101 :: Word8 == 255) and hand out a 2.55x OVERCHARGE, worse than the
+-- freeMonths hazard above since it inflates the price instead of merely reading as
+-- unavailable. offerTotal must instead answer Nothing, the same way, for the same reason.
+testBadgeCatalogOfferTotalRejectsBadDiscount :: HasCallStack => TestParams -> IO ()
+testBadgeCatalogOfferTotalRejectsBadDiscount _ps = do
+  now <- getCurrentTime
+  let BadgeCatalog {prices} = defaultCatalog now
+      price@BadgePrice {priceId} = fromJust $ find (\BadgePrice {badgeType} -> badgeType == BTSupporter) prices
+      badOffer =
+        BadgeOffer
+          { offerId = BadgeOfferId "test-bad-offer-discount-gt-100",
+            priceId = Just priceId,
+            months = 3,
+            discount = ODDiscount 101,
+            status = BISActive,
+            createdAt = now,
+            total = Nothing
+          }
+  offerTotal price (Just badOffer) `shouldBe` Nothing
+
 -- BadgeItemStatus's JSON crosses the wire (BadgePrice/BadgeOffer.status), so pinning finding
 -- 2's TextEncoding-derived encoding to what the earlier TH-derived instance produced proves
 -- the change is invisible on the wire, not just asserted to be.
@@ -831,7 +854,11 @@ testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
 -- A disabled price (and every offer pinned to it) must be absent from the RPC catalog, while
 -- a deprecated price (and its offers) must still be present -- getActiveCatalog's own
 -- invariant (already proved at the store level by testBadgeStoreSetPriceStatusDisabled),
--- surfaced here through the live RPC path handleGetBadgeCatalog actually calls.
+-- surfaced here through the live RPC path handleGetBadgeCatalog actually calls. Also asserts
+-- decision 8 at the wire boundary: every remaining offer's total is populated, so a client
+-- never has to (and can't, since it doesn't have the prices) compute one itself -- deleting
+-- the handler's catalogTotals call would still pass every other assertion in this test file
+-- without this one.
 testBadgeServiceGetCatalogDisabledDeprecated :: HasCallStack => TestParams -> IO ()
 testBadgeServiceGetCatalogDisabledDeprecated ps = do
   priceIdsRef <- newIORef Nothing
@@ -858,6 +885,7 @@ testBadgeServiceGetCatalogDisabledDeprecated ps = do
         any (\BadgePrice {priceId} -> priceId == deprecatedId) prices `shouldBe` True
         any (\BadgeOffer {priceId} -> priceId == Just disabledId) offers `shouldBe` False
         any (\BadgeOffer {priceId} -> priceId == Just deprecatedId) offers `shouldBe` True
+        all (\BadgeOffer {total} -> isJust total) offers `shouldBe` True
       other -> expectationFailure $ "expected BSPBadgeCatalog, got: " <> show other
 
 -- getBadgeCatalog applies checkSignerRecord like every other signed command (B5): a signed

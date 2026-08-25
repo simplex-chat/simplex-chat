@@ -195,11 +195,16 @@ handleServiceRequest bsEnv cc User {userId} reqId signerKey reqData = do
 -- (encoding it and demanding the whole encoded length) before returning, all still inside the
 -- 'catch' below. Laziness would otherwise let an exception escape uncaught: 'action' finishing
 -- and returning a lazily-built 'BadgeServiceResponse' does not itself throw, even if a field
--- deep inside is an unevaluated 'error' thunk (as 'BadgeService.Catalog.chargeableMonths'
--- produces for a malformed offer, once B6\/B7 wire catalog totals into request handling) --
--- that thunk would only be forced later, by 'sendChatCmd''s own JSON encoding, OUTSIDE this
--- function, where nothing would catch it. Forcing the encoding here, inside the 'catch',
--- is what makes this a genuine catch-all rather than one that only covers IO exceptions.
+-- deep inside is an unevaluated 'error' thunk -- that thunk would only be forced later, by
+-- 'sendChatCmd''s own JSON encoding, OUTSIDE this function, where nothing would catch it.
+-- Forcing the encoding here, inside the 'catch', is what makes this a genuine catch-all
+-- rather than one that only covers IO exceptions. Nothing in the currently implemented
+-- commands is known to build such a thunk -- B6 closed the one concrete hazard this used to
+-- cite by name, 'BadgeService.Catalog.chargeableMonths', which now returns 'Maybe' instead of
+-- calling 'error' -- so this guards against a partial function in some future response field,
+-- not a specific one today; 'testBadgeServiceCatchAllContainsPureException' proves the
+-- mechanism directly against a constructed thunk, since no real one currently exists to test
+-- against.
 --
 -- 'processQueuedRequests' is a single-threaded 'forever' loop: an exception that got out of
 -- here would kill the service for every user, not just fail the one request that caused it.
@@ -246,45 +251,52 @@ dispatchRequest bsEnv signerKey reqData =
       | otherwise ->
           checkSignerRecord bsEnv request purchaseKey >>= \case
             Left err -> pure $ errorResponse err Nothing Nothing
-            Right () -> dispatchCommand bsEnv purchaseKey request
+            Right purchaseRow -> dispatchCommand bsEnv purchaseKey purchaseRow request
 
 decodeRequest :: J.Object -> Either String BadgeServiceRequest
 decodeRequest = JT.parseEither J.parseJSON . J.Object
 
--- | The signer\/record precondition, applied to every command before dispatch:
---   * 'getBadgeCatalog' may be unsigned (no key at all); nothing further is required of it.
+-- | The signer\/record precondition, applied to every command before dispatch. Returns the
+-- looked-up row on success ('Nothing' when none was required), so a handler that needs it
+-- (B6's 'handleGetBadgeCatalog'; B7's future 'issueBadge') reads it once here rather than
+-- looking it up again itself in a second transaction:
+--   * 'getBadgeCatalog' may be unsigned (no key at all); nothing further is required of it,
+--     and there is no row to return.
 --   * 'purchaseBadge' requires a signature but NOT a pre-existing record -- an unknown key is
 --     the normal first-purchase case, because B7 is what creates the purchase row. Getting
---     this inverted would make first purchases impossible.
+--     this inverted would make first purchases impossible. No row is looked up, so none is
+--     returned even though the request is signed.
 --   * every other command, including a *signed* 'getBadgeCatalog', requires both a signature
 --     and an existing purchase row: no key at all is 'bad_request' (nothing was signed), an
---     unknown key is 'unknown_purchase_key'.
-checkSignerRecord :: BadgeServiceEnv -> BadgeServiceCommand -> Maybe C.PublicKeyEd25519 -> IO (Either BadgeServiceErrorCode ())
-checkSignerRecord _ BSCGetBadgeCatalog Nothing = pure $ Right ()
+--     unknown key is 'unknown_purchase_key'; found, the row is returned.
+checkSignerRecord :: BadgeServiceEnv -> BadgeServiceCommand -> Maybe C.PublicKeyEd25519 -> IO (Either BadgeServiceErrorCode (Maybe BadgePurchaseRow))
+checkSignerRecord _ BSCGetBadgeCatalog Nothing = pure $ Right Nothing
 checkSignerRecord bsEnv BSCGetBadgeCatalog (Just key) = requirePurchaseRecord bsEnv key
 checkSignerRecord _ (BSCPurchaseBadge {}) Nothing = pure $ Left BSEBadRequest
-checkSignerRecord _ (BSCPurchaseBadge {}) (Just _) = pure $ Right ()
+checkSignerRecord _ (BSCPurchaseBadge {}) (Just _) = pure $ Right Nothing
 checkSignerRecord _ _ Nothing = pure $ Left BSEBadRequest
 checkSignerRecord bsEnv _ (Just key) = requirePurchaseRecord bsEnv key
 
-requirePurchaseRecord :: BadgeServiceEnv -> C.PublicKeyEd25519 -> IO (Either BadgeServiceErrorCode ())
+requirePurchaseRecord :: BadgeServiceEnv -> C.PublicKeyEd25519 -> IO (Either BadgeServiceErrorCode (Maybe BadgePurchaseRow))
 requirePurchaseRecord BadgeServiceEnv {store} key =
   withServiceTransaction store (\db -> getPurchaseByKey db key) >>= \case
-    Right (Just _) -> pure $ Right ()
+    Right (Just row) -> pure $ Right (Just row)
     Right Nothing -> pure $ Left BSEUnknownPurchaseKey
     Left _ -> pure $ Left BSEInternal
 
 -- | Dispatch on the command, once the signer\/record precondition already passed.
 -- 'getBadgeInvoice', 'upgradeBadgeSubscription' and 'pauseBadge' are out of scope (decision 5
--- \/ §6) and always 'bad_request'; 'getBadgeCatalog' and 'issueBadge' are B6\/B7's commands and
--- answer 'internal' \"not implemented\" until those steps land.
-dispatchCommand :: BadgeServiceEnv -> Maybe C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
-dispatchCommand _ _ (BSCGetBadgeInvoice {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
-dispatchCommand _ _ (BSCUpgradeBadgeSubscription {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
-dispatchCommand _ _ BSCPauseBadge = pure $ errorResponse BSEBadRequest Nothing Nothing
-dispatchCommand bsEnv purchaseKey BSCGetBadgeCatalog = handleGetBadgeCatalog bsEnv purchaseKey
-dispatchCommand _ _ (BSCIssueBadge {}) = pure notImplemented
-dispatchCommand bsEnv purchaseKey (BSCPurchaseBadge {payment}) = dispatchPurchase bsEnv purchaseKey payment
+-- \/ §6) and always 'bad_request'; 'issueBadge' is B7's command and answers 'internal'
+-- \"not implemented\" until that step lands. 'getBadgeCatalog' (B6) and, later, 'issueBadge'
+-- are the two commands that use the 'Maybe' 'BadgePurchaseRow' 'checkSignerRecord' already
+-- looked up; every other clause below ignores it.
+dispatchCommand :: BadgeServiceEnv -> Maybe C.PublicKeyEd25519 -> Maybe BadgePurchaseRow -> BadgeServiceCommand -> IO BadgeServiceResponse
+dispatchCommand _ _ _ (BSCGetBadgeInvoice {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
+dispatchCommand _ _ _ (BSCUpgradeBadgeSubscription {}) = pure $ errorResponse BSEBadRequest Nothing Nothing
+dispatchCommand _ _ _ BSCPauseBadge = pure $ errorResponse BSEBadRequest Nothing Nothing
+dispatchCommand bsEnv _ purchaseRow BSCGetBadgeCatalog = handleGetBadgeCatalog bsEnv purchaseRow
+dispatchCommand _ _ _ (BSCIssueBadge {}) = pure notImplemented
+dispatchCommand bsEnv purchaseKey _ (BSCPurchaseBadge {payment}) = dispatchPurchase bsEnv purchaseKey payment
 
 -- | 'checkSignerRecord' already requires a signature for every 'purchaseBadge', so
 -- 'purchaseKey' is 'Just' here in every reachable case; the 'Nothing' clause only keeps this
@@ -312,38 +324,44 @@ dispatchPurchase _ _ (SPReceipt {}) = pure $ errorResponse BSEBadRequest Nothing
 
 -- | Answers the catalog, and for a signed request the signer's statement as well.
 --
+-- Takes the 'Maybe' 'BadgePurchaseRow' 'checkSignerRecord' already looked up ('Nothing' for
+-- an unsigned request, 'Just' the row for a signed one -- an unknown signed key never reaches
+-- here, 'checkSignerRecord' already answered 'unknown_purchase_key'), rather than a key: a
+-- second lookup by key here would open a second transaction reading the same row.
+--
 -- Unsigned requests spend a token from the service-wide catalog bucket first (B5 decision 5):
 -- there is no signer to key on and no failure to count, so the request itself is the only
--- thing that can be bounded. A signed request is not subject to it -- 'checkSignerRecord'
--- has already required an existing purchase row, which is the bound.
+-- thing that can be bounded. A signed request is not subject to it -- the row already in hand
+-- is the bound.
 --
 -- Both halves are read in ONE transaction, and it is a writing one: healing the ledger
 -- (@advance now@) persists its @debit(lapse)@ row in the same transaction that then reads the
 -- statement back, so the balance a client is told is the balance the database holds. This is
 -- the only read command that writes (RPC "Statement and balance").
-handleGetBadgeCatalog :: BadgeServiceEnv -> Maybe C.PublicKeyEd25519 -> IO BadgeServiceResponse
-handleGetBadgeCatalog bsEnv@BadgeServiceEnv {store, now} signerKey = case signerKey of
+handleGetBadgeCatalog :: BadgeServiceEnv -> Maybe BadgePurchaseRow -> IO BadgeServiceResponse
+handleGetBadgeCatalog bsEnv@BadgeServiceEnv {store, now} purchaseRow = case purchaseRow of
   Nothing ->
     takeCatalogBucket bsEnv >>= \case
       Left retryAfter -> pure $ errorResponse BSERateLimited Nothing (Just retryAfter)
       Right () -> respond Nothing
-  Just key -> respond (Just key)
+  Just row -> respond (Just row)
   where
-    respond key = do
+    respond row = do
       now' <- now
-      withServiceTransaction store (catalogTxn now' key) >>= \case
+      withServiceTransaction store (catalogTxn now' row) >>= \case
         Left e -> do
           logError $ "getBadgeCatalog failed: " <> tshow e
           pure $ errorResponse BSEInternal Nothing Nothing
         Right (catalog, badgeStatement) -> do
           logUnpricedOffers catalog
           pure BSPBadgeCatalog {catalog, badgeStatement}
-    catalogTxn now' key db = do
+    catalogTxn now' row db = do
       -- catalogTotals is applied to what the DATABASE holds, never to Catalog.hs's defaults,
       -- so a price the operator deprecated or disabled is reflected without a rebuild
       -- (decision 8): the site, the RPC catalog and the charge all read this one result.
       catalog <- catalogTotals <$> getActiveCatalog db
-      statement <- mapM (purchaseStatement now' db) key
+      -- getBadgeCatalog carries no cursor, so this is always the full ledger (Nothing).
+      statement <- mapM (purchaseStatement now' db Nothing) row
       pure (catalog, statement)
 
 -- | An offer that is pinned to a price the catalog also returned, yet still has no total,
@@ -360,7 +378,9 @@ logUnpricedOffers BadgeCatalog {prices, offers} =
             logWarn $ "catalog offer " <> oid <> " has a pinned price but no chargeable total"
       _ -> pure ()
 
--- | Heals the purchase's ledger to @now@, then reads the whole of it back as a statement.
+-- | Heals the purchase's ledger to @now@, then reads it back as a statement -- the whole
+-- ledger when @sinceEntryId@ is 'Nothing', or only entries strictly after it otherwise
+-- (matches 'getLedgerSince'\'s own semantics).
 --
 -- @advance@ is run against the last stored entry's state and, when it yields months, ONE
 -- @debit(lapse)@ row is written for them (B2's calling convention: one row, whatever @k@ is).
@@ -368,19 +388,23 @@ logUnpricedOffers BadgeCatalog {prices, offers} =
 -- balance to lapse from -- so it returns an empty statement rather than inventing an opening
 -- entry.
 --
--- 'previousEntryId' is 'Nothing': 'getBadgeCatalog' carries no cursor, so this is always the
--- full ledger, which is what that field's absence means.
-purchaseStatement :: UTCTime -> DB.Connection -> C.PublicKeyEd25519 -> ExceptT ServiceError IO BadgeStatement
-purchaseStatement now' db key = do
-  purchase <- getPurchaseByKey db key
-  case purchase of
-    -- unreachable: checkSignerRecord already required the row for a signed request. Refused
-    -- rather than answered with an empty statement, which would look like a real ledger.
-    Nothing -> throwError $ SEDecodeError "getBadgeCatalog: signer has no purchase row"
-    Just BadgePurchaseRow {badgePurchaseId} -> do
-      healLedger now' db badgePurchaseId
-      entries <- mapM (liftEither' . toStatementEntry) =<< getLedgerSince db badgePurchaseId Nothing
-      pure BadgeStatement {entries, previousEntryId = Nothing}
+-- Takes the purchase row directly rather than a key: every caller has already looked it up
+-- once (B6's 'handleGetBadgeCatalog' via 'checkSignerRecord'; B7's future 'issueBadge' the
+-- same way), and looking it up again here would open a second transaction reading the same
+-- row -- so there is no "signer has no purchase row" case to handle any more.
+--
+-- @sinceEntryId@ is also threaded through rather than hardcoded, so a future cursor-carrying
+-- caller (B7) can reuse this function instead of duplicating it. 'getBadgeCatalog' (B6)
+-- always passes 'Nothing' -- it carries no cursor -- for which 'previousEntryId' being
+-- 'Nothing' below is exactly correct (RPC: "absent for the full ledger"). 'previousEntryId'
+-- is meant to echo the client's *asserted* (wire, 'Text') entryId, which this function is
+-- never given, only the resolved 'Int64' to query on -- a real cursor caller needs to carry
+-- that wire value through separately to fill it in for real; nothing today constructs one.
+purchaseStatement :: UTCTime -> DB.Connection -> Maybe Int64 -> BadgePurchaseRow -> ExceptT ServiceError IO BadgeStatement
+purchaseStatement now' db sinceEntryId BadgePurchaseRow {badgePurchaseId} = do
+  healLedger now' db badgePurchaseId
+  entries <- mapM (liftEither' . toStatementEntry) =<< getLedgerSince db badgePurchaseId sinceEntryId
+  pure BadgeStatement {entries, previousEntryId = Nothing}
   where
     liftEither' = either throwError pure
 

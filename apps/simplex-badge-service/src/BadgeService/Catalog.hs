@@ -15,8 +15,6 @@ module BadgeService.Catalog
   )
 where
 
-import Control.Exception (evaluate)
-import Control.Monad (void)
 import Data.List (find)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -134,7 +132,7 @@ offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} Nothing =
 offerTotal BadgePrice {monthPrice = CurrencyAmount monthPriceMinor} (Just BadgeOffer {months, discount}) =
   CurrencyAmount <$> case discount of
     ODFreeMonths freeMonths -> (\m -> fromIntegral m * monthPriceMinor) <$> chargeableMonths months freeMonths
-    ODDiscount percent -> Just ((fromIntegral months * monthPriceMinor * fromIntegral (100 - percent)) `div` 100)
+    ODDiscount percent -> (\pct -> (fromIntegral months * monthPriceMinor * fromIntegral (100 - pct)) `div` 100) <$> discountedPercent percent
 
 -- | months - freeMonths, but only once it's known safe: a bare 'Word8' subtraction is
 -- unsigned and unguarded, so an offer with freeMonths >= months (a typo, a future
@@ -154,6 +152,21 @@ chargeableMonths :: Word8 -> Word8 -> Maybe Word8
 chargeableMonths months freeMonths
   | freeMonths >= months = Nothing
   | otherwise = Just (months - freeMonths)
+
+-- | @100 - percent@, but only once it's known safe: the sibling of 'chargeableMonths', same
+-- hazard. A bare 'Word8' subtraction is unsigned and unguarded, so an offer with @percent >
+-- 100@ (a typo, a future repricing) would wrap (@100 - 101 :: Word8 == 255@) and this
+-- money-computing module would hand out a 2.55x overcharge instead of a crash or a refusal —
+-- worse than 'chargeableMonths'' hazard, since a wrap on the discount side inflates the
+-- price rather than reading as merely "unavailable". 'Store.decodeDiscount' does not range-
+-- check @percent@ on the way in, so a malformed row can reach this. @percent > 100@ isn't a
+-- value to compute a (wrong) discount for at all, so this answers 'Nothing' the same way
+-- 'chargeableMonths' does, for the same reason (§9): one bad row must cost one unpriced
+-- offer, never a request thread and never a wrong charge.
+discountedPercent :: Word8 -> Maybe Word8
+discountedPercent percent
+  | percent > 100 = Nothing
+  | otherwise = Just percent
 
 -- | Fills every offer's 'total' (A2) with 'offerTotal' applied to that offer's pinned
 -- price. Overwrites unconditionally, so it is idempotent to call again. It is a total
@@ -188,17 +201,21 @@ seedCatalog st = do
     mapM_ (insertPrice db) prices
     mapM_ (insertOffer db) offers
   where
-    -- Every seeded offer is pinned to a price (see 'defaultCatalog'), so a 'Nothing' total
-    -- here cannot mean "unpinned" -- it can only mean the offer is not chargeable at all
-    -- (freeMonths >= months). 'chargeableMonths' no longer says so with 'error', because a
-    -- request thread must not die of it (§9), so startup has to make the check itself or
-    -- nothing would: a bad default catalog would seed silently and every client would see
-    -- that offer as unavailable forever.
+    -- Rejects 'total = Nothing' unconditionally, whatever the reason: not chargeable
+    -- (freeMonths >= months, discount > 100) or genuinely unpinned. Every seeded offer is
+    -- pinned to a price today (see 'defaultCatalog'), so only the first reason is reachable
+    -- right now -- but this is stricter than the predecessor this replaced, which accepted
+    -- an unpinned offer's 'Nothing' unconditionally (§9: a real behaviour change, recorded
+    -- there since a future unpinned *default* offer would now fail startup rather than seed
+    -- with no total). 'chargeableMonths'/'discountedPercent' no longer say "impossible offer"
+    -- with 'error', because a request thread must not die of it (§9), so startup has to make
+    -- the check itself or nothing would: a bad default catalog would seed silently and every
+    -- client would see that offer as unavailable forever.
     requireTotal BadgeOffer {offerId = BadgeOfferId oid, total = Nothing} =
       ioError . userError $
         "seedCatalog: offer " <> T.unpack oid
-          <> " has no chargeable total (freeMonths >= months, or no pinned price)"
-    requireTotal BadgeOffer {total = Just (CurrencyAmount amount)} = void $ evaluate amount
+          <> " has no chargeable total (freeMonths >= months, discount > 100, or no pinned price)"
+    requireTotal BadgeOffer {total = Just _} = pure ()
 
 insertPrice :: DB.Connection -> BadgePrice -> IO ()
 insertPrice db BadgePrice {priceId = BadgePriceId pid, badgeType, monthPrice = CurrencyAmount amt, currency, status, createdAt} =

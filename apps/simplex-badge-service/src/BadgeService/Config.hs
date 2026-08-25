@@ -568,7 +568,8 @@ data BadgeServiceEnv = BadgeServiceEnv
     -- control against a distributed guesser -- see 'signerFailureBucket''s Haddock.
     globalFailureBucket :: TVar TokenBucket,
     -- | B5 decision 5: bounds unsigned 'getBadgeCatalog' (no signer to key on), 600/hour,
-    -- burst 600, service-wide. Unused until B6 wires 'getBadgeCatalog' itself.
+    -- burst 600, service-wide. Spent by 'BadgeService.Service.handleGetBadgeCatalog' (B6) via
+    -- 'takeCatalogBucket', on every unsigned request.
     catalogBucket :: TVar TokenBucket
   }
 
