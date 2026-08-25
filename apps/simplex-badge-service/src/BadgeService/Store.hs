@@ -112,8 +112,8 @@ data ServiceError
   | SEOfferNotFound
   | -- | 'attachPurchasePayment' only: the purchase already has a payment attached.
     SEPaymentConflict
-  | -- | 'markCodeRedeemed' only: the code was redeemed by a concurrent request between the
-    -- caller's classification and its write. The caller re-classifies from the code row.
+  | -- | 'markCodeRedeemed' only: the code was already claimed by another redemption, so this one
+    -- must not overwrite it. The caller re-classifies from the code row.
     SECodeConflict
   | SEDecodeError Text
   deriving (Eq, Show)
@@ -551,10 +551,16 @@ getCodeByHash db codeHash = do
       code <- liftEither $ rowToCode codeRow
       pure $ Just (code, redeemerKey)
 
--- | Claims an unredeemed code for a purchase. Guarded by @redeemed_purchase_id IS NULL@ so a
--- redemption is never overwritten by a second one racing it: on no rows affected, a follow-up
--- existence check distinguishes an unknown code ('SECodeNotFound') from one another request
--- redeemed in between ('SECodeConflict'), which the caller answers by re-classifying.
+-- | Claims an unredeemed code for a purchase. Guarded by @redeemed_purchase_id IS NULL@ so an
+-- existing redemption is never overwritten: on no rows affected, a follow-up existence check
+-- distinguishes an unknown code ('SECodeNotFound') from one already claimed ('SECodeConflict'),
+-- which the caller answers by re-classifying.
+--
+-- The badge service's own request loop is single-threaded, so two redemptions of one code
+-- cannot overlap there and this guard is not what makes B7 correct (see
+-- @BadgeService.Service.redemptionRetries@, which also records the ledger's lack of an
+-- equivalent). It is kept because it costs nothing and because this row is also written out of
+-- band, by B8's operator tooling.
 markCodeRedeemed :: DB.Connection -> ByteString -> Int64 -> UTCTime -> ExceptT ServiceError IO ()
 markCodeRedeemed db codeHash badgePurchaseId now = do
   rows <-

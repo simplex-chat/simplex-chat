@@ -54,7 +54,7 @@ import BadgeService.Store
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
-import Control.Exception (SomeException, catch, evaluate)
+import Control.Exception (SomeAsyncException (..), SomeException, catch, evaluate, fromException, throwIO)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Control.Monad.IO.Class (liftIO)
 import Control.Logger.Simple
@@ -209,8 +209,25 @@ sweepSignerBucketsLoop env = do
   bsEnv <- atomically $ readTMVar $ serviceEnv env
   forever $ do
     threadDelay $ signerBucketSweepIntervalSeconds * 1000000
-    evicted <- sweepSignerBucketsIO bsEnv
-    when (evicted > 0) $ logInfo $ "badge service swept " <> tshow evicted <> " recovered signer failure buckets"
+    sweepOnce bsEnv `catch` logSweepFailure
+  where
+    sweepOnce bsEnv = do
+      evicted <- sweepSignerBucketsIO bsEnv
+      when (evicted > 0) $ logInfo $ "badge service swept " <> tshow evicted <> " recovered signer failure buckets"
+
+-- | Keeps a failure inside the sweep from taking the service down: 'raceAny_' is
+-- 'waitAnyCancel', so an exception escaping this arm cancels the request loop with it and the
+-- service stops answering for every user -- the same reasoning 'runHandler' documents for the
+-- request path. Nothing in the sweep is known to throw ('sweepSignerBucketsIO' is one STM
+-- transaction over pure arithmetic), so this guards against a future one, not a present one.
+--
+-- An asynchronous exception is re-thrown rather than logged: this handler sits inside a
+-- 'forever' loop, so swallowing a cancellation would make the thread uncancellable and
+-- 'raceAny_'\'s own shutdown would hang on it.
+logSweepFailure :: SomeException -> IO ()
+logSweepFailure e = case fromException e of
+  Just (SomeAsyncException _) -> throwIO e
+  Nothing -> logError $ "badge service signer bucket sweep failed: " <> tshow e
 
 -- Seeded here, after migrations and before badgePostStartHook starts the bot: every start
 -- of the service must see the catalog before it can serve a request. B8's operator
@@ -571,12 +588,26 @@ statementEntryType = \case
 
 -- purchaseBadge{code} and issueBadge (B7) -------------------------------------
 
--- | One retry of the whole redemption. A code claimed by a concurrent request between the
--- classification and the write ('SECodeConflict') is re-classified from the top, and that
--- second pass reaches a terminal answer -- a replay for the same key, @code_used@ for another
--- -- because the code is now redeemed and cannot become unredeemed by itself.
-redemptionAttempts :: Int
-redemptionAttempts = 1
+-- | How many times a redemption is RETRIED (so one retry is two attempts) after
+-- 'SECodeConflict' -- the code was claimed between this request's classification and its write.
+-- One is enough: the second pass reaches a terminal answer -- a replay for the same key,
+-- @code_used@ for another -- because a redeemed code cannot become unredeemed by itself.
+--
+-- This cannot arise today. The request loop ('processServiceEvents' and
+-- 'processQueuedRequests') handles one request at a time in a single 'forever' thread, so no
+-- two redemptions overlap. 'markCodeRedeemed''s guard is kept anyway: it costs nothing, and the
+-- code row is also written out of band by B8's operator tooling ('unredeemCode', 'revokeCode').
+--
+-- __The ledger carries no equivalent guard, and that is a precondition on ever dispatching
+-- requests concurrently__ (plan \'9). Two overlapping commands on one purchase key would both
+-- plan from the same 'getLastLedgerEntry' and both append, producing two entries whose
+-- 'balanceMonths' derive from the same base -- a silently wrong balance, and for two
+-- 'issueBadge' calls, two issuances for one period. What makes the plan-then-sign-then-write
+-- split safe is the single-threaded loop, not this retry and not the code-row guard; whoever
+-- makes dispatch concurrent must serialise per purchase key or add a compare-and-append to the
+-- ledger first.
+redemptionRetries :: Int
+redemptionRetries = 1
 
 -- | What @issue@ (B2) says should happen, computed in memory before anything is signed or
 -- written.
@@ -646,8 +677,8 @@ planLedger now' creditWith wasPaused st0 =
 
 -- | Step 5: the only IO between the pure plan and the write, and the only place a credential is
 -- produced. A fresh period is SIGNED (B4); an already-issued month has its credential FETCHED;
--- an exhausted balance has none. A signing failure returns its error code with nothing written
--- at all, so a redeemed-nothing code stays retryable (brief step 5).
+-- an exhausted balance has none. **A signing failure returns 'internal' with nothing written at
+-- all**, so a code that granted nothing stays unredeemed and retryable (brief step 5).
 --
 -- @badgePurchaseId_@ is 'Nothing' only for a purchase that does not exist yet, which cannot be
 -- in the 'IssueCached' state -- that state needs a stored ledger entry, which needs a purchase.
@@ -655,7 +686,18 @@ resolveIssue :: BadgeServiceEnv -> UTCTime -> Maybe Int64 -> BadgeRequest -> Iss
 resolveIssue BadgeServiceEnv {config = bsConfig, store, issuerKey} now' badgePurchaseId_ badgeRequest = \case
   IssuePeriod st periodStart periodEnd ->
     issueSignedBadge (issuerKeyIdx (issuer bsConfig)) issuerKey badgeRequest periodEnd >>= \case
-      Left code -> pure $ Left code
+      -- 'issueSignedBadge' collapses EVERY failure to 'bad_request' (B4), a BBS signing failure
+      -- included -- and that one is a service fault, not a client one. 'bad_request' is terminal
+      -- for the attempted command (RPC "Errors"), so returning it here would tell the client
+      -- never to retry a purchase whose code is still valid and still unredeemed, which is the
+      -- opposite of what step 5 wants. The one genuinely client-caused failure, a non-empty
+      -- 'badgeExtra', is refused by the handlers before anything is classified, planned or
+      -- signed ('badgeExtraEmpty'), so everything reaching here is ours to own: 'internal',
+      -- which the client may retry. The underlying error is not available to log -- B4 discards
+      -- it -- so the message names only the operation.
+      Left _ -> do
+        logError "signing a badge credential failed"
+        pure $ Left BSEInternal
       Right cred -> pure $ Right $ IssuedPeriod st periodStart periodEnd cred
   IssueCached -> case badgePurchaseId_ of
     Nothing -> do
@@ -761,6 +803,16 @@ issuanceCredential BadgeIssuance {credential} = credential
 requestedBadgeType :: BadgeRequest -> BadgeType
 requestedBadgeType BadgeRequest {badgeInfo = BadgeInfo {badgeType}} = badgeType
 
+-- | @badgeExtra@ is reserved and must be empty (RPC "Commands"). 'issueSignedBadge' rejects a
+-- non-empty one itself, but by the time that comes back it is indistinguishable from a signing
+-- failure, and the two need opposite answers: a non-empty @badgeExtra@ is a client fault
+-- ('bad_request', terminal), a signing failure is a service fault ('internal', retryable).
+-- Refusing it here, before anything is classified, planned or signed, is what lets
+-- 'resolveIssue' map everything else to 'internal' -- and it leaves the code unredeemed and the
+-- throttle buckets untouched, since a malformed request is not a failed redemption.
+badgeExtraEmpty :: BadgeRequest -> Bool
+badgeExtraEmpty BadgeRequest {badgeInfo = BadgeInfo {badgeExtra}} = T.null badgeExtra
+
 requestMasterKey :: BadgeRequest -> BadgeMasterKey
 requestMasterKey BadgeRequest {masterKey} = masterKey
 
@@ -787,7 +839,9 @@ resolveCursor db pid entryUuid =
 -- and the same-key replay debit nothing: they are not failures, and an honest client that
 -- repeats a request after a timeout must not be throttled for it.
 handlePurchaseCode :: BadgeServiceEnv -> C.PublicKeyEd25519 -> BadgeRequest -> Text -> IO BadgeServiceResponse
-handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest presentedCode = attempt redemptionAttempts
+handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest presentedCode
+  | not (badgeExtraEmpty badgeRequest) = pure badRequest
+  | otherwise = attempt redemptionRetries
   where
     hash = codeHash (normalizeCode presentedCode)
     attempt attemptsLeft = do
@@ -818,14 +872,21 @@ handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest pre
     replay now' pid =
       withServiceTransaction store (replayTxn now' pid) >>= \case
         Left e -> storeFailed "purchaseBadge{code} replay" e
-        Right (credential, statement) -> do
+        Right (Left code) -> pure $ errorResponse code Nothing Nothing
+        Right (Right (credential, statement)) -> do
           when (isNothing credential) $
             logWarn $ "no badge issuance found for the redemption being replayed by purchase " <> tshow pid
           pure BSPBadgeCredential {credential, receipt = Nothing, statement}
-    replayTxn now' pid db = do
-      issuance <- getIssuanceForRedeemedCode db hash
-      statement <- purchaseStatement now' db Nothing pid
-      pure (issuanceCredential <$> issuance, statement)
+    replayTxn now' pid db =
+      getIssuanceForRedeemedCode db hash >>= \case
+        -- the tier check every other path applies, here against the credential actually being
+        -- handed back: replaying a supporter redemption under a legend badgeRequest must answer
+        -- like any other tier mismatch rather than return a credential of the other tier. When
+        -- there is no issuance there is nothing to return and so nothing to mismatch.
+        Just BadgeIssuance {badgeType} | badgeType /= requestedBadgeType badgeRequest -> pure $ Left BSEBadRequest
+        issuance -> do
+          statement <- purchaseStatement now' db Nothing pid
+          pure $ Right (issuanceCredential <$> issuance, statement)
     redeem attemptsLeft now' badgeType months
       -- The service signs exactly the content the client sent (RPC "Commands"), so a request
       -- naming a tier the code does not fund is refused rather than silently signed as the
@@ -843,9 +904,10 @@ handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest pre
                 Left code -> pure $ errorResponse code Nothing Nothing
                 Right result ->
                   withServiceTransaction store (writeTxn now' badgeType paymentUuid row_ plan {lpIssue = result}) >>= \case
-                    -- another request redeemed this code between the classification and this
-                    -- write; nothing of ours committed, so re-classify and answer what the code
-                    -- now is (a replay for this key, code_used for any other)
+                    -- the code was claimed between the classification and this write; nothing of
+                    -- ours committed, so re-classify and answer what the code now is (a replay
+                    -- for this key, code_used for any other). Unreachable while the request loop
+                    -- is single-threaded -- see 'redemptionRetries' for why that matters.
                     Left SECodeConflict | attemptsLeft > 0 -> attempt (attemptsLeft - 1)
                     Left e -> storeFailed "purchaseBadge{code} write" e
                     Right statement ->
@@ -887,8 +949,11 @@ handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest pre
 handleIssueBadge :: BadgeServiceEnv -> BadgePurchaseRow -> BadgeRequest -> BadgeBalance -> IO BadgeServiceResponse
 handleIssueBadge bsEnv@BadgeServiceEnv {store, now} row badgeRequest badgeBalance
   -- as for purchaseBadge: the service signs the content it was sent, so a request naming a tier
-  -- other than the purchase's own is refused rather than signed
+  -- other than the purchase's own, or carrying a reserved badgeExtra, is refused rather than
+  -- signed -- and refused here, before anything is planned, so 'internal' below can mean only a
+  -- service fault
   | requestedBadgeType badgeRequest /= currentType = pure badRequest
+  | not (badgeExtraEmpty badgeRequest) = pure badRequest
   | otherwise = do
       now' <- now
       withServiceTransaction store (planTxn now') >>= \case
