@@ -56,6 +56,7 @@ enum class CallState {
   AnswerReceived,
   Negotiated,
   Connected,
+  Reconnecting,
   Ended;
 
   val text: String get() = when(this) {
@@ -67,6 +68,7 @@ enum class CallState {
     AnswerReceived -> generalGetString(MR.strings.callstate_received_confirmation)
     Negotiated -> generalGetString(MR.strings.callstate_connecting)
     Connected -> generalGetString(MR.strings.callstate_connected)
+    Reconnecting -> generalGetString(MR.strings.callstate_reconnecting)
     Ended -> generalGetString(MR.strings.callstate_ended)
   }
 }
@@ -173,6 +175,7 @@ enum class RTCIceCandidateType(val value: String) {
 enum class WebRTCCallStatus(val value: String) {
   @SerialName("connected") Connected("connected"),
   @SerialName("connecting") Connecting("connecting"),
+  @SerialName("reconnecting") Reconnecting("reconnecting"),
   @SerialName("disconnected") Disconnected("disconnected"),
   @SerialName("failed") Failed("failed")
 }
