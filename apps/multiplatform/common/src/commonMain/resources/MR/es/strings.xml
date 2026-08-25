@@ -2938,4 +2938,6 @@
     <string name="v7_0_channels_relays">Gestiona tus servidores.</string>
     <string name="v7_0_simplex_names_descr">Nombres públicos para tu canal o negocio.</string>
     <string name="v7_0_simplex_names">Nombres públicos SimpleX (BETA)</string>
+    <string name="forwarded_from">reenviado desde</string>
+    <string name="group_invitations">Invitación de grupo</string>
 </resources>
