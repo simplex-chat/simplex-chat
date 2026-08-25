@@ -16,6 +16,7 @@ where
 
 import BadgeService.Admin (AdminOpts (..), adminCommandParser)
 import qualified Data.Text as T
+import Data.Time.Clock (UTCTime, getCurrentTime)
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
@@ -28,7 +29,14 @@ data BadgeServiceOpts = BadgeServiceOpts
     noAddress :: Bool,
     runCLI :: Bool,
     testing :: Bool,
-    configFile :: FilePath
+    configFile :: FilePath,
+    -- | The clock 'BadgeService.Config.newBadgeServiceEnv' installs as
+    -- 'BadgeService.Config.BadgeServiceEnv.now', which is the only clock any service component
+    -- reads. Always 'getCurrentTime' in production -- the CLI parser below has no option for
+    -- it. The test harness, which builds this record directly rather than parsing it, passes a
+    -- settable clock so a test can advance service time (a throttle bucket's refill window, a
+    -- month boundary) without sleeping.
+    serviceClock :: IO UTCTime
   }
 
 -- | Either the plain service run -- the DEFAULT when no subcommand is given -- or the
@@ -85,7 +93,8 @@ badgeServiceOpts appDir defaultDbName = do
         noAddress,
         runCLI,
         testing = False,
-        configFile
+        configFile,
+        serviceClock = getCurrentTime
       }
 
 getBadgeServiceOpts :: FilePath -> FilePath -> IO BadgeServiceOpts

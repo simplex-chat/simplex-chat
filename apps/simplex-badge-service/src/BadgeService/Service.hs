@@ -242,13 +242,13 @@ logSweepFailure e = case fromException e of
 -- and validates badge_service.ini, exits on a bad config (naming the file and the offending
 -- key), and stores the built env for badgePostStartHook and the request handlers to reach.
 badgePreStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
-badgePreStartHook opts@BadgeServiceOpts {configFile} ServiceState {serviceEnv} ChatController {config, chatStore} = do
+badgePreStartHook opts@BadgeServiceOpts {configFile, serviceClock} ServiceState {serviceEnv} ChatController {config, chatStore} = do
   runBadgeServiceMigrations opts config chatStore
   seedCatalog chatStore
   readBadgeServiceConfig configFile >>= \case
     Left e -> putStrLn e >> exitFailure
     Right bsConfig -> do
-      bsEnv <- newBadgeServiceEnv bsConfig chatStore
+      bsEnv <- newBadgeServiceEnv bsConfig chatStore serviceClock
       atomically $ putTMVar serviceEnv bsEnv
 
 badgePostStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()

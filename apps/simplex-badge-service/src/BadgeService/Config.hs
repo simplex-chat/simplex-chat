@@ -39,7 +39,7 @@ import Data.Maybe (isJust)
 import Data.Functor (($>))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, diffUTCTime)
 import Data.Word (Word32)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Crypto as C
@@ -573,15 +573,20 @@ data BadgeServiceEnv = BadgeServiceEnv
     catalogBucket :: TVar TokenBucket
   }
 
-newBadgeServiceEnv :: BadgeServiceConfig -> DBStore -> IO BadgeServiceEnv
-newBadgeServiceEnv cfg st = do
+-- | @clock@ becomes the env's 'now' and is also what the two service-wide buckets are
+-- initialised against, so every instant the service reads -- a handler's, a bucket's refill
+-- origin -- comes from one source. Production passes 'getCurrentTime'
+-- ('BadgeService.Options.serviceClock'); a test passes a settable clock so it can advance
+-- service time (a bucket's refill window, a month boundary) without sleeping.
+newBadgeServiceEnv :: BadgeServiceConfig -> DBStore -> IO UTCTime -> IO BadgeServiceEnv
+newBadgeServiceEnv cfg st clock = do
   codeSecret <- loadCodeSecret (codesSecretFile (codes cfg))
   issuerKey <- loadIssuerKey (issuerKeyFile (issuer cfg)) (issuerKeyIdx (issuer cfg))
-  now0 <- getCurrentTime
+  now0 <- clock
   signerFailureBucket <- newSignerBucketFamily (signerFailure (throttle cfg))
   globalFailureBucket <- newTVarIO (newTokenBucket (globalFailure (throttle cfg)) now0)
   catalogBucket <- newTVarIO (newTokenBucket (catalog (throttle cfg)) now0)
-  pure BadgeServiceEnv {config = cfg, store = st, now = getCurrentTime, codeSecret, issuerKey, signerFailureBucket, globalFailureBucket, catalogBucket}
+  pure BadgeServiceEnv {config = cfg, store = st, now = clock, codeSecret, issuerKey, signerFailureBucket, globalFailureBucket, catalogBucket}
 
 -- | The pre-processing gate for a signed 'purchaseBadge{code}' (B5 decision 5): peeks both
 -- the caller's per-signer bucket and the service-wide failure budget, WITHOUT debiting either
