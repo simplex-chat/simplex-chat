@@ -1,0 +1,116 @@
+---
+title: "SimpleX Chat: Foundation for the Future - livestream and Q&A"
+description: "Livestream and Q&A for SimpleX Chat equity crowdfunding investors, on Tuesday, September 15, 2026 at 5:00 PM UTC. Register for event updates."
+permalink: /livestream/
+templateEngineOverride: njk
+---
+
+<!DOCTYPE html>
+<html class="bg-[#C1E3FE] dark:bg-[#050920]" lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    {% include "dark-mode.html" %}
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}"/>
+    <meta name="Content-Type" content="text/html;charset=utf-8"/>
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ permalink }}" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}{{ permalink }}" />
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="{{ title }}"/>
+    <meta property="og:description" content="{{ description }}"/>
+    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/livestream/share-livestream.jpg"/>
+    <meta name="twitter:card" content="summary_large_image"/>
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+    <meta name="theme-color" content="#C1E3FE">
+
+    <link rel="preload" href="/img/design_3/section-4-desktop.webp" as="image" type="image/webp" media="(min-width: 960px)">
+    <link rel="preload" href="/img/design_3/section-4-desktop-light.webp" as="image" type="image/webp" media="(min-width: 960px) and (prefers-color-scheme: light)">
+    <link rel="preload" href="/img/design_3/section-4-mobile.webp" as="image" type="image/webp" media="(max-width: 959px)">
+    <link rel="preload" href="/img/design_3/section-4-mobile-light.webp" as="image" type="image/webp" media="(max-width: 959px) and (prefers-color-scheme: light)">
+
+    <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-ExtraLight.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Light.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Medium.ttf" as="font" type="font/ttf" crossorigin>
+
+    <link href="/css/tailwind.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/design3.css">
+    <link rel="stylesheet" href="/css/design3-nav.css">
+    <link rel="stylesheet" href="/css/livestream.css">
+    <script>
+        function detectMobileBrowser() {
+            const ua = navigator.userAgent;
+
+            if (/CriOS/.test(ua)) {
+                document.documentElement.classList.add('chrome-ios');
+            }
+            else if (/Safari/.test(ua) && /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)) {
+                document.documentElement.classList.add('safari-ios');
+            }
+            else if (/Chrome/.test(ua) && /Android/.test(ua)) {
+                document.documentElement.classList.add('chrome-android');
+            }
+        }
+
+        detectMobileBrowser();
+    </script>
+</head>
+
+<body class="bg-[#C1E3FE] dark:bg-[#050920] change-nav-color">
+    {% include "navbar.html" %}
+
+    <div class="screen">
+        <main>
+            <div class="section-bg"></div>
+
+            <section id="livestream" class="page livestream">
+                <div class="area">
+                    <div class="text-container">
+                        <h1>SimpleX Chat:<br>Foundation<br>For the Future</h1>
+                        <p class="subtitle">Livestream and Q&amp;A for SimpleX Chat Crowdfunding Investors</p>
+
+                        <div class="event-time">
+                            <time class="event-utc" datetime="2026-09-15T17:00:00Z">Tuesday, September 15, 2026 at 5:00 PM UTC</time>
+                            <p class="event-local" hidden></p>
+                        </div>
+
+                        <div class="actions">
+                            <a class="register-btn" href="https://use.simplex.chat/livestream" target="_blank" rel="noopener">Register for event updates and Q&amp;A</a>
+                            <a class="invest-link gradient-text" href="https://wefunder.com/simplex.chat?utm_source=livestream_page" target="_blank" rel="noopener">Learn more and invest on Wefunder</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        {% include "footer.html" %}
+    </div>
+
+    <div id="register" class="register-overlay">
+        <div class="register-card" role="dialog" aria-labelledby="register-title">
+            <h2 id="register-title">Register for event updates and Q&amp;A</h2>
+            <p>We will send you the updates about the event, and you will be able to ask any questions.</p>
+
+            <form action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=6f73f92ffa&amp;f_id=006bf8e3f0" method="post" target="_blank">
+                <input type="email" name="EMAIL" placeholder="Enter your email address" aria-label="Email address" required>
+                <span aria-hidden="true" class="bot-field">
+                    <input type="text" name="b_ddd892b258ae36e5438e6d4e1_6f73f92ffa" tabindex="-1" value="">
+                </span>
+                <input type="submit" name="subscribe" value="Register">
+            </form>
+
+            <button type="button" class="close-register" aria-label="Close">
+                <svg viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script src="/js/livestream.js"></script>
+</body>
+
+</html>
