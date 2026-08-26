@@ -1562,9 +1562,9 @@ data ChatErrorType
     -- @retryAfter@ is seconds, populated by the service's @rate_limited@. A failure with no
     -- service involved (a credential that does not verify) uses 'BSEInternal'.
     --
-    -- The message field is named apart from the @message :: String@ that the rest of this union
-    -- carries: a record field has one type across a whole data type, and this one is the wire's
-    -- optional 'Text'.
+    -- The message field is named apart from the @message :: String@ that 15 other constructors
+    -- of this union carry: a record field has one type across a whole data type, and this one is
+    -- the wire's optional 'Text'.
     CEBadgeServiceError {badgeError :: BadgeServiceErrorCode, badgeErrorMessage :: Maybe Text, retryAfter :: Maybe Word32}
   | CEInternalError {message :: String}
   | CEException {message :: String}

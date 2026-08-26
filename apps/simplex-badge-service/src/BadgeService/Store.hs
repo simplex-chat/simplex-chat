@@ -143,10 +143,12 @@ withServiceTransaction st action =
 
 -- Purchases and payments -----------------------------------------------------
 
--- | The service's own projection of a @badge_purchases@ row. The shared 'Types.BadgePurchase'
--- carries client-only columns (@user_id@, @purchase_priv_key@, alert bookkeeping) that only
--- exist on the client's own table (added by the client-only @20260731_user_badges@
--- migration); the service's table has just the columns 'badgeSchema' creates.
+-- | The service's own projection of a @badge_purchases@ row. The single shared purchase record
+-- core §3 drafted as @Badges.Types.BadgePurchase@ carried client-only columns (@user_id@,
+-- @purchase_priv_key@, alert bookkeeping) that only exist on the client's own table (added by
+-- the client-only @20260731_user_badges@ migration); the service's table has just the columns
+-- 'badgeSchema' creates. That draft is gone: the client's half is
+-- 'Simplex.Chat.Store.Badges.UserBadgePurchase' and this is the service's.
 data BadgePurchaseRow = BadgePurchaseRow
   { badgePurchaseId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,

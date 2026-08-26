@@ -81,13 +81,22 @@ The protocol entry (`StatementEntry`, §4): `entryId`, `changeMonths`, `balanceM
 
 Domain types — `src/Simplex/Chat/Badges/Types.hs`. Records:
 
-- `BadgePurchase`
+- `BadgePurchase` — **superseded, and the type no longer exists.** One record could not describe
+  both sides: the client's table has `user_id`/`purchase_priv_key` that the service's has not,
+  and the draft's `priceId`/`offerId`/`credential` are columns of neither. It became three types —
+  `Simplex.Chat.Store.Badges.UserBadgePurchase` (the client row, secrets included),
+  `BadgeService.Store.BadgePurchaseRow` (the service row) and `UserBadge` below (the API
+  projection, no secrets, the one that crosses the FFI). See §9 of
+  `plans/badges-codes/2026-08-21-badges-web-checkout.md`, entries C1 and C2.
 - `BadgePayment`
 - `BadgeLedgerEntry`
 - `BadgeCharge`
 - `BadgeIssuance`
 - `BadgeAlert`
-- `UserBadgeState`
+- `UserBadge` — one badge as the badge surfaces render it; added by C2 in place of the deleted
+  `BadgePurchase`
+- `UserBadgeState` — C2 trimmed it to `badges`/`shownBadgeId`; `payments`, `renewsAt`, `willRenew`
+  and `alert` are unimplemented and were removed rather than shipped permanently empty
 
 Id newtypes:
 

@@ -5205,7 +5205,7 @@ presentUserBadgeToContacts :: User -> CM ()
 presentUserBadgeToContacts user' = do
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
-  withChatLock "addUserBadge" $ forM_ contacts $ \ct ->
+  withChatLock "presentUserBadgeToContacts" $ forM_ contacts $ \ct ->
     case contactSendConn_ ct of
       Right conn
         | not (connIncognito conn) -> do

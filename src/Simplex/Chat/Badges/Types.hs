@@ -209,9 +209,17 @@ data BadgeAlert = BadgeAlert
 -- network.
 --
 -- @monthsLeft@ and @paidThrough@ come from the purchase's LAST ledger entry: the balance the
--- client believes it holds, and 'Simplex.Chat.Badges.Months.addMonths' applied to it. Both are
--- absent from a purchase with no ledger entry yet. @paidThrough@ is deliberately not the
--- credential's expiry (UX §2.11 forbids presenting one as the other).
+-- client believes it holds, and 'Simplex.Chat.Badges.Months.addMonths' applied to it.
+--
+-- __They differ on a purchase with no ledger entry.__ @paidThrough@ is 'Nothing' — no entry, no
+-- date — while @monthsLeft@ is @0@, which is indistinguishable from a balance that has run out.
+-- Only @paidThrough@ separates "nothing is known yet" from "nothing is left", so a caller
+-- rendering both must branch on @paidThrough@, not on @monthsLeft == 0@. @monthsLeft@ is not a
+-- 'Maybe' because every other reader wants a number, and the one distinction it would carry is
+-- already carried next to it.
+--
+-- @paidThrough@ is deliberately not the credential's expiry (UX §2.11 forbids presenting one as
+-- the other).
 data UserBadge = UserBadge
   { badgePurchaseId :: Int64,
     badgeType :: BadgeType,

@@ -100,12 +100,15 @@ import Database.SQLite.Simple.QQ (sql)
 -- | The client's own projection of a @badge_purchases@ row: exactly its columns, with the
 -- client-only @user_id@ and @purchase_priv_key@ that the service's table does not have.
 --
--- This is deliberately NOT 'Simplex.Chat.Badges.Types.BadgePurchase'. That record declares
--- @priceId@, @offerId@ and @credential@, none of which is a column of this table: the price and
--- offer of a purchase live on its @badge_invoices@ rows (one per invoice, so not a function of
--- the purchase), and the credential lives on its @badge_issuances@ rows (one per period). A row
--- type that had to invent three fields to be constructed would report a purchase the database
--- does not hold. 'BadgeService.Store.BadgePurchaseRow' is the same decision on the service side.
+-- This is deliberately NOT the single shared purchase record core §3 drafted as
+-- @Badges.Types.BadgePurchase@. That draft declared @priceId@, @offerId@ and @credential@, none
+-- of which is a column of this table: the price and offer of a purchase live on its
+-- @badge_invoices@ rows (one per invoice, so not a function of the purchase), and the credential
+-- lives on its @badge_issuances@ rows (one per period). A row type that had to invent three
+-- fields to be constructed would report a purchase the database does not hold.
+-- 'BadgeService.Store.BadgePurchaseRow' is the same decision on the service side. C2 deleted the
+-- draft once both row types existed and split its API half off as
+-- 'Simplex.Chat.Badges.Types.UserBadge', which carries no secrets and so may cross the FFI.
 data UserBadgePurchase = UserBadgePurchase
   { badgePurchaseId :: Int64,
     userId :: UserId,

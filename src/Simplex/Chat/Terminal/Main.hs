@@ -4,6 +4,7 @@
 
 module Simplex.Chat.Terminal.Main where
 
+import Control.Applicative ((<|>))
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
 import Control.Monad
@@ -37,7 +38,7 @@ simplexChatCLI cfg server_ = do
 badgeOptsOverride :: ChatConfig -> ChatOpts -> ChatConfig
 badgeOptsOverride cfg ChatOpts {optBadgeServiceAddress, optBadgeWebUrl, optBadgeIssuerKeys} =
   cfg
-    { badgeServiceAddress = maybe (badgeServiceAddress cfg) Just optBadgeServiceAddress,
+    { badgeServiceAddress = optBadgeServiceAddress <|> badgeServiceAddress cfg,
       badgeWebBaseUrl = fromMaybe (badgeWebBaseUrl cfg) optBadgeWebUrl,
       badgePublicKeys = if null optBadgeIssuerKeys then badgePublicKeys cfg else M.fromList optBadgeIssuerKeys
     }
