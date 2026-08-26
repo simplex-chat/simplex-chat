@@ -14,6 +14,7 @@ module Simplex.Chat.Help
     markdownInfo,
     settingsInfo,
     databaseHelpInfo,
+    namesHelpInfo,
   )
 where
 
@@ -88,7 +89,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "incognito", "remote", "settings", "db"],
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "incognito", "remote", "settings", "db", "names"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/chats           " <> " - most recent chats",
@@ -216,6 +217,27 @@ myAddressHelpInfo =
       "Please note: you can receive spam contact requests, but it's safe to delete the address!",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
+    ]
+
+namesHelpInfo :: [StyledString]
+namesHelpInfo =
+  map
+    styleMarkdown
+    [ green "SimpleX name commands:",
+      indent <> highlight "/name register <service> <name> <simplex_link>",
+      indent <> indent <> " - register a name for your address or channel",
+      indent <> highlight "/name address" <> " - show the address that owns the names you register",
+      "",
+      green "Arguments:",
+      indent <> highlight "<service>     " <> " - address of the names service to register with",
+      indent <> highlight "<name>        " <> " - the name to register, e.g. " <> highlight "alice.simplex",
+      indent <> highlight "<simplex_link>" <> " - the contact address or channel the name should resolve to",
+      "",
+      "Registration takes a few seconds: the name is committed first, and revealed",
+      "after a short wait, so the service cannot register it before you do.",
+      "",
+      "Please note: this is in development. The name is registered against a mock,",
+      "not a blockchain, and it cannot yet be edited, transferred or renewed."
     ]
 
 incognitoHelpInfo :: [StyledString]

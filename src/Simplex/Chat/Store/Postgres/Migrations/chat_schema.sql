@@ -1510,13 +1510,34 @@ CREATE TABLE test_chat_schema.users (
     active_order bigint DEFAULT 0 NOT NULL,
     auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
     is_user_chat_relay smallint DEFAULT 0 NOT NULL,
-    client_service smallint DEFAULT 0 NOT NULL
+    client_service smallint DEFAULT 0 NOT NULL,
+    wallet_seed_id bigint,
+    wallet_account_index bigint
 );
 
 
 
 ALTER TABLE test_chat_schema.users ALTER COLUMN user_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME test_chat_schema.users_user_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.wallet_seeds (
+    wallet_seed_id bigint NOT NULL,
+    seed bytea NOT NULL,
+    next_account_index bigint DEFAULT 0 NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.wallet_seeds ALTER COLUMN wallet_seed_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.wallet_seeds_wallet_seed_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1881,6 +1902,11 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_seeds
+    ADD CONSTRAINT wallet_seeds_pkey PRIMARY KEY (wallet_seed_id);
 
 
 
@@ -2633,6 +2659,10 @@ CREATE UNIQUE INDEX idx_user_contact_links_group_id ON test_chat_schema.user_con
 
 
 
+CREATE INDEX idx_users_wallet_seed_id ON test_chat_schema.users USING btree (wallet_seed_id);
+
+
+
 CREATE INDEX idx_xftp_file_descriptions_user_id ON test_chat_schema.xftp_file_descriptions USING btree (user_id);
 
 
@@ -3305,6 +3335,11 @@ ALTER TABLE ONLY test_chat_schema.user_contact_links
 
 ALTER TABLE ONLY test_chat_schema.user_contact_links
     ADD CONSTRAINT user_contact_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.users
+    ADD CONSTRAINT users_wallet_seed_id_fkey FOREIGN KEY (wallet_seed_id) REFERENCES test_chat_schema.wallet_seeds(wallet_seed_id) ON DELETE RESTRICT;
 
 
 

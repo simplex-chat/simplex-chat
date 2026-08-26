@@ -1144,6 +1144,11 @@ SimplexDomainNotReady:
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
 
+NameRegistrationFailed:
+- type: "nameRegistrationFailed"
+- nameRegCode: string
+- nameRegMessage: string?
+
 NotResolvedLocally:
 - type: "notResolvedLocally"
 

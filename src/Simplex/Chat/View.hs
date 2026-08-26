@@ -53,6 +53,7 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AddressSettings (..), AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
+import Simplex.Chat.Names.Protocol (NameRegPhase (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -181,6 +182,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     HSRemote -> remoteHelpInfo
     HSSettings -> settingsInfo
     HSDatabase -> databaseHelpInfo
+    HSNames -> namesHelpInfo
   CRWelcome user -> chatWelcome user
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
   CRUserContactLink u UserContactLink {connLinkContact, addressSettings} -> ttyUser u $ connReqContact_ showFullLinks "Your chat address:" connLinkContact <> viewAddressSettings addressSettings
@@ -188,6 +190,15 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
+  CRNameAddress u addrs ->
+    ttyUser u $ case addrs of
+      [] -> ["no name addresses yet - one is created for each name you register"]
+      as -> "name addresses:" : map (\(nm, addr, path) -> plain $ "  " <> nm <> " -> " <> addr <> "  " <> path) as
+  CRNameRegistered u nm owner path expiry txHash ->
+    ttyUser u
+      [ plain $ "name registered: " <> nm <> " -> " <> owner <> " (expires " <> tshow expiry <> ", tx " <> safeDecodeUtf8 (strEncode txHash) <> ")",
+        plain $ "  derivation path: " <> path
+      ]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -474,6 +485,14 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
         <> maybe [] (\k -> [plain $ "signed by " <> safeDecodeUtf8 (strEncode k)]) sigKey_
         <> ["request: " <> viewJSON req]
   CEvtServiceReplySent (AgentConnId cId) -> [plain $ "service reply sent, connection id: " <> safeDecodeUtf8 (strEncode cId)]
+  CEvtNameRegistrationProgress u nm regPhase waitMs ->
+    ttyUser u [plain $ "name " <> nm <> ": " <> phaseText]
+    where
+      phaseText = case regPhase of
+        NRPhaseCommitting -> "committing"
+        NRPhaseCommitted -> "committed" <> maybe "" (\ms -> ". waiting " <> tshow (ms `div` 1000) <> "s before revealing") waitMs
+        NRPhaseRevealing -> "revealing"
+        NRPhaseRegistered -> "registered"
   CEvtContactRequestRejected u Contact {localDisplayName = c} _reason -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
@@ -2794,6 +2813,12 @@ viewChatError isCmd logLevel testView = \case
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CEServerProtocol p -> [plain $ "Servers for protocol " <> strEncode p <> " cannot be configured by the users"]
     CECommandError e -> ["bad chat command: " <> plain e]
+    CENameRegistrationFailed code msg retryAfter ->
+      [ "name registration failed: "
+          <> plain code
+          <> maybe "" ((": " <>) . plain) msg
+          <> maybe "" (\s -> plain (" (retry after " <> tshow s <> "s)")) retryAfter
+      ]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]

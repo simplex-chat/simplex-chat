@@ -33,6 +33,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Word (Word32)
 import Data.Char
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, partitionEithers, rights)
@@ -58,6 +59,9 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import Simplex.Chat.Names.Protocol
+import Simplex.Chat.Store.Wallets (boundAccount, getNameKeys, getOrCreateAccountRef, recordNameKey, takeNameIndex)
+import Simplex.Chat.Wallet (AccountRef (..), WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, newSeed, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -104,6 +108,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BIP39 (MnemonicStrength (..))
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1455,25 +1460,72 @@ processChatCommand cxt nm = \case
             pure ct_
         pure $ CRContactRequestRejected user cReq ct_
   APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user -> do
-    cReq <- resolveServiceTarget user sendTarget
+    cReq <- resolveServiceTarget nm user sendTarget
     respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) (LB.toStrict $ J.encode request)
     resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
     pure $ CRServiceResponse user resp
+  APINameRegister sendTarget nm' sLink -> withUser $ \user -> do
+    (seedId, nameIx, acctIx, owner) <- deriveNameOwner user
+    cReq <- resolveServiceTarget nm user sendTarget
+    g <- asks random
+    secret <- NameSecret <$> atomically (C.randomBytes 32 g)
+    let ttl = defaultNameTtl
+        commitment = mkCommitment nm' owner secret ttl
+        -- a service error ends the registration, so it is raised here rather
+        -- than repeated at each step
+        sendNames c = do
+          let req = NamesRequest currentNamesVersion c
+          respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq Nothing Nothing (LB.toStrict $ J.encode req)
+          either (const $ throwCmdError "invalid names response") pure (J.eitherDecodeStrict' respData) >>= \case
+            NRPError {nrCode, nrMessage, nrRetryAfter} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage nrRetryAfter
+            r -> pure r
+        progress phase waitMs = toView $ CEvtNameRegistrationProgress user nm' phase waitMs
+    progress NRPhaseCommitting Nothing
+    sendNames (NRCommit commitment) >>= \case
+      NRPCommitted {} -> pure ()
+      _ -> throwCmdError "unexpected commit response"
+    progress NRPhaseCommitted (Just commitWaitMs)
+    liftIO $ threadDelay $ fromIntegral commitWaitMs * 1000
+    progress NRPhaseRevealing Nothing
+    (expiry', txHash') <-
+      sendNames (NRReveal nm' owner secret ttl sLink) >>= \case
+        NRPRegistered {nrExpiry, nrTxHash} -> pure (nrExpiry, nrTxHash)
+        _ -> throwCmdError "unexpected reveal response"
+    progress NRPhaseRegistered Nothing
+    -- Recorded only after the name is actually registered: an index consumed by
+    -- a failed attempt is simply skipped, which costs nothing, while recording
+    -- a name we do not own would make the list lie.
+    let path = renderNameKeyPath acctIx nameIx
+    withFastStore' $ \db -> recordNameKey db seedId path nm'
+    pure $ CRNameRegistered user nm' (tshow owner) path expiry' txHash'
     where
-      resolveServiceTarget user = \case
-        CTFullContact cReq -> pure cReq
-        CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
-        CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
-          NTContact -> resolveDomain nameDomain
-          _ -> throwCmdError "service request target must be a contact"
-        CTDomain d -> resolveDomain d
-        where
-          resolveDomain d = do
-            nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
-            case firstNameLink CCTContact (nrSimplexContact nr) of
-              Just sLnk -> resolveShortLink sLnk
-              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
-          resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+      -- The seed is created on first registration and persisted, so the owner
+      -- address survives restart — a name whose key we cannot re-derive is lost.
+      --
+      -- One key per name: the index is taken here, so a second registration by
+      -- the same profile lands on a different address rather than sharing one.
+      deriveNameOwner user = do
+        g <- asks random
+        (seed, AccountRef {arIndex}) <-
+          withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
+        nameIx <- withFastStore' $ \db -> takeNameIndex db user
+        acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed arIndex nameIx
+        pure (wsId seed, nameIx, arIndex, accountAddress acc)
+  APINameAddress -> withUser $ \user -> do
+    -- Read-only: never creates a seed. A key appears when you register a name,
+    -- not when you ask which address you have.
+    --
+    -- There is no single "profile address" any more: each name has its own key,
+    -- so this answers with one row per name.
+    acc_ <- withFastStore' $ \db -> boundAccount db user
+    addrs <- case acc_ of
+      Nothing -> pure []
+      Just (seed, AccountRef {arIndex}) -> do
+        named <- withFastStore' $ \db -> getNameKeys db (wsId seed)
+        forM named $ \(nm_, path) -> do
+          acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveAtPath seed arIndex path
+          pure (nm_, tshow (accountAddress acc), path)
+    pure $ CRNameAddress user addrs
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
@@ -5021,6 +5073,32 @@ processChatCommand cxt nm = \case
       gVar <- asks random
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
+-- | Resolve a service connect target to a contact connection request, shared by
+-- the service-request and name-registration commands.
+resolveServiceTarget :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> CM ConnReqContact
+resolveServiceTarget nm user = \case
+  CTFullContact cReq -> pure cReq
+  CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
+  CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
+    NTContact -> resolveDomain nameDomain
+    _ -> throwCmdError "service request target must be a contact"
+  CTDomain d -> resolveDomain d
+  where
+    resolveDomain d = do
+      nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
+      case firstNameLink CCTContact (nrSimplexContact nr) of
+        Just sLnk -> resolveShortLink sLnk
+        Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
+    resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+
+-- | Default name lifetime (365 days). Real min-commitment-age enforcement deferred.
+defaultNameTtl :: NameTtl
+defaultNameTtl = 31536000
+
+-- | Hardcoded commit→reveal wait in ms, standing in for the on-chain minimum commitment age.
+commitWaitMs :: Word32
+commitWaitMs = 1000
+
 firstNameLink :: ContactConnType -> [Text] -> Maybe (ConnShortLink 'CMContact)
 firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
   where
@@ -5527,6 +5605,8 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
+      "/name register " *> (APINameRegister <$> strP <* A.space <*> displayNameP <* A.space <*> textP),
+      "/name address" $> APINameAddress,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -5646,6 +5726,7 @@ chatCommandP =
       ("/help remote" <|> "/hr") $> ChatHelp HSRemote,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
+      ("/help names" <|> "/help name" <|> "/hn") $> ChatHelp HSNames,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
