@@ -2862,6 +2862,12 @@ testC5StorePaymentsUnsupported ps =
 -- The agent's 'serviceRequestTimeout' is shortened to two seconds for this example only: its
 -- default is thirty, which is longer than any terminal assertion waits, and what is being pinned
 -- is what happens AFTER the timeout, not how long the default is.
+--
+-- The message asserted here is the TIMEOUT one, and that is the whole point of asserting it in
+-- full: nothing is listening, so the request expires as @A_SERVICE ASETimeout@, which is the one
+-- outcome of 'sendBadgeRequest' that may have been delivered. It must not tell the user the
+-- request was not delivered, and it must not invite a retry of the same code, which would arrive
+-- as a different signer and be answered @code_used@ (plan §9).
 testC5ServiceStoppedIsInternal :: HasCallStack => TestParams -> IO ()
 testC5ServiceStoppedIsInternal ps =
   -- the two startup phases publish the service's address and then it stays down: 'withService' is
@@ -2871,10 +2877,18 @@ testC5ServiceStoppedIsInternal ps =
     let cfg = (badgeClientCfg sLink pk) {agentConfig = testAgentCfg {serviceRequestTimeout = 2}}
     withNewTestChatCfg ps cfg badgeClientDbPrefix aliceProfile $ \alice -> do
       alice ##> "/_badge catalog 1"
-      alice <##. "badge service error: internal, The badge service could not be reached, and the request was not delivered."
+      alice <## badgeTimeoutError
       alice ##> purchaseCodeCmd "C5-SERVICE-DOWN"
-      alice <##. "badge service error: internal, The badge service could not be reached, and the request was not delivered."
+      alice <## badgeTimeoutError
       noClientBadgeRows "with the service stopped" alice
+
+-- | 'sendBadgeRequest''s timeout sentence, spelled out rather than derived from the function under
+-- test: it carries no @Details:@ tail, so the whole line is compared.
+badgeTimeoutError :: String
+badgeTimeoutError =
+  "badge service error: internal, The badge service did not answer in time."
+    <> " The request may still have been delivered, so a code presented with it may already have been used,"
+    <> " and entering it again will not help. Please contact support."
 
 -- Supersession and the slot -----------------------------------------------------
 

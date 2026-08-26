@@ -5479,7 +5479,18 @@ sendBadgeRequest nm user signKey req =
       pure $ either (badgeRequestFailed . responseFailed) id $ J.eitherDecodeStrict' respData
     -- a sentence first, then the error itself: the apps render an 'internal' code by showing this
     -- message (G2), and a bare 'Show' of a 'ChatError' is not something to put in front of a user
-    requestFailed e = "The badge service could not be reached, and the request was not delivered. Details: " <> tshow e
+    --
+    -- the agent's request timeout gets its own sentence, because it is the ONE outcome here that
+    -- may have been DELIVERED: the service can have received the request and consumed the code,
+    -- with only the reply lost. Saying "not delivered" would steer the user into re-entering the
+    -- same code, and 'redeemBadgeCode' mints a FRESH purchase key per call, so the retry reaches
+    -- the service as a different signer and is answered @code_used@ (plan §9) — burning a code
+    -- they paid for. Everything else this collapses is a genuine non-delivery: an unresolvable
+    -- target, a transport failure before the send, or an agent error other than the timeout.
+    requestFailed = \case
+      ChatErrorAgent {agentError = AGENT (A_SERVICE ASETimeout)} ->
+        "The badge service did not answer in time. The request may still have been delivered, so a code presented with it may already have been used, and entering it again will not help. Please contact support."
+      e -> "The badge service could not be reached, and the request was not delivered. Details: " <> tshow e
     responseFailed e = "The badge service answered with something this app version cannot read. Details: " <> T.pack e
     badgeRequestFailed e = BSPError {code = BSEInternal, message = Just e, retryAfter = Nothing}
 
