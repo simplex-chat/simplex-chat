@@ -218,6 +218,13 @@ data BadgeAlert = BadgeAlert
 -- 'Maybe' because every other reader wants a number, and the one distinction it would carry is
 -- already carried next to it.
 --
+-- __@monthsLeft@ excludes the month currently issued.__ It is the balance AFTER the running
+-- period was debited, and 'Simplex.Chat.Library.Commands.badgePaidThrough' adds that balance to
+-- a 'balanceStartTs' a successful issue moved to the END of that period — so a freshly redeemed
+-- 3-month code reads as @monthsLeft = 2@ with @paidThrough@ three months out. The pair is
+-- consistent and both figures are right; it is @monthsLeft@ ALONE that reads as if a month had
+-- been lost. A surface showing one number should show @paidThrough@ (G4, G5).
+--
 -- @paidThrough@ is deliberately not the credential's expiry (UX §2.11 forbids presenting one as
 -- the other).
 data UserBadge = UserBadge

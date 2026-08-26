@@ -384,7 +384,12 @@ createIssuance db NewBadgeIssuance {badgePurchaseId, badgeType, periodStart, per
 hasIssuanceForPeriod :: DB.Connection -> Int64 -> UTCTime -> IO Bool
 hasIssuanceForPeriod db badgePurchaseId periodStart =
   fromOnly . head
-    <$> DB.query db "SELECT EXISTS (SELECT 1 FROM badge_issuances WHERE badge_purchase_id = ? AND period_start = ?)" (badgePurchaseId, periodStart)
+    <$> DB.query
+      db
+      [sql|
+        SELECT EXISTS (SELECT 1 FROM badge_issuances WHERE badge_purchase_id = ? AND period_start = ?)
+      |]
+      (badgePurchaseId, periodStart)
 
 -- Ledger ----------------------------------------------------------------------
 

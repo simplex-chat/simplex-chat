@@ -5300,6 +5300,11 @@ startBadgeWorkers = mapM_ $ \User {userId} -> void $ getBadgeWorker True userId
 --
 -- The timer is this loop's own wait rather than a shared scheduler, and it is 'threadDelay''
 -- rather than 'timeout' because a day in microseconds does not fit an 'Int' on 32-bit builds.
+--
+-- Every iteration gates on 'waitChatStartedAndActivated' first, as 'cleanupManager',
+-- 'runRelayGroupLinkChecks' and 'expireChatItems' do: after @APISuspendChat@ the timer keeps
+-- firing, and without the gate a pass would read the store and send a signed request through a
+-- suspended agent.
 runBadgeWorker :: UserId -> Worker -> CM ()
 runBadgeWorker userId Worker {doWork} = do
   interval <- asks $ badgePassInterval . config
@@ -5336,8 +5341,13 @@ issueDueBadgePeriod user@User {userId} = do
           resp <- sendBadgeRequest NRMBackground user (Just purchasePrivKey) (badgeIssueRequest purchase balance)
           storeBadgeIssueResponse now user purchase (Just lastEntry) resp
       | otherwise -> pure BadgeUnchanged
-    -- unreachable via C1's createPurchase, which always inserts an opening credit, but a shown
-    -- purchase stuck with no ledger row would otherwise stall forever with no signal at all
+    -- unreachable, but NOT because a purchase is created with an opening credit — nothing in this
+    -- milestone writes one (plan §9), and 'createPurchase' inserts the purchase row alone.
+    -- 'redeemBadgeCode' is the only writer of a purchase row and of @shown_badge_id@, it refuses a
+    -- statement carrying no issued period BEFORE it writes anything, and it inserts that
+    -- statement's entries in the same transaction as the purchase row — so a shown purchase always
+    -- has ledger rows. A shown purchase stuck with none would otherwise stall forever with no
+    -- signal at all
     Just (UserBadgePurchase {badgePurchaseId}, Nothing) -> do
       logWarn $ "badge worker: shown purchase " <> tshow badgePurchaseId <> " (user " <> tshow userId <> ") has no ledger entries; nothing to issue"
       pure BadgeUnchanged
