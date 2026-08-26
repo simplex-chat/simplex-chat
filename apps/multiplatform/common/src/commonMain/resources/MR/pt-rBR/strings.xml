@@ -874,6 +874,13 @@
     <string name="switch_verb">Trocar</string>
     <string name="group_is_decentralized">Totalmente descentralizado — visível apenas para os membros.</string>
     <string name="you_are_observer">você é um observador</string>
+    <string name="connect_plan_you_are_observer">Você é um observador</string>
+    <string name="connect_plan_you_are_member">Você é um membro</string>
+    <string name="connect_plan_you_are_moderator">Você é um moderador</string>
+    <string name="connect_plan_you_are_admin">Você é um administrador</string>
+    <string name="connect_plan_you_are_owner">Você é um proprietário</string>
+    <string name="connect_plan_you_are_subscriber">Você é um inscrito</string>
+    <string name="connect_plan_you_are_contributor">Você é um colaborador</string>
     <string name="voice_message_with_duration">Mensagem de voz (%1$s)</string>
     <string name="share_link">Compartilhar link</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger sua privacidade, o SimpleX usa IDs separados para cada um dos seus contatos.</string>

@@ -1219,6 +1219,13 @@
     <string name="update_network_settings_question">تحديث إعدادات الشبكة؟</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">سيؤدي تحديث الإعدادات إلى إعادة توصيل العميل بجميع الخوادم.</string>
     <string name="you_are_observer">أنت المراقب</string>
+    <string name="connect_plan_you_are_observer">أنت المراقب</string>
+    <string name="connect_plan_you_are_member">أنت عضو</string>
+    <string name="connect_plan_you_are_moderator">أنت مُشرف</string>
+    <string name="connect_plan_you_are_admin">أنت المُدير</string>
+    <string name="connect_plan_you_are_owner">أنت المالك</string>
+    <string name="connect_plan_you_are_subscriber">أنت مشترك</string>
+    <string name="connect_plan_you_are_contributor">أنت مساهم</string>
     <string name="you_are_invited_to_group">أنت مدعو إلى المجموعة</string>
     <string name="callstate_waiting_for_confirmation">في انتظار التأكيد…</string>
     <string name="unknown_database_error_with_info">خطأ غير معروف في قاعدة البيانات: %s</string>

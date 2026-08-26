@@ -7052,6 +7052,27 @@ alert title */
 /* No comment provided by engineer. */
 "you are observer" = "vous êtes observateur";
 
+/* new chat alert */
+"You are an observer" = "Vous êtes observateur";
+
+/* new chat alert */
+"You are a member" = "Vous êtes membre";
+
+/* new chat alert */
+"You are a moderator" = "Vous êtes modérateur";
+
+/* new chat alert */
+"You are an admin" = "Vous êtes admin";
+
+/* new chat alert */
+"You are an owner" = "Vous êtes propriétaire";
+
+/* new chat alert */
+"You are a subscriber" = "Vous êtes abonné·e";
+
+/* new chat alert */
+"You are a contributor" = "Vous êtes contributeur";
+
 /* No comment provided by engineer. */
 "you are subscriber" = "vous êtes abonné·e";
 

@@ -1012,6 +1012,13 @@
     <string name="moderate_verb">Moderieren</string>
     <string name="moderate_message_will_be_marked_warning">Diese Nachricht wird für alle Mitglieder als moderiert gekennzeichnet.</string>
     <string name="you_are_observer">Sie sind Beobachter</string>
+    <string name="connect_plan_you_are_observer">Sie sind Beobachter</string>
+    <string name="connect_plan_you_are_member">Sie sind Mitglied</string>
+    <string name="connect_plan_you_are_moderator">Sie sind Moderator</string>
+    <string name="connect_plan_you_are_admin">Sie sind Admin</string>
+    <string name="connect_plan_you_are_owner">Sie sind Eigentümer</string>
+    <string name="connect_plan_you_are_subscriber">Sie sind Abonnent</string>
+    <string name="connect_plan_you_are_contributor">Sie sind Mitwirkender</string>
     <string name="observer_cant_send_message_title">Sie sind Beobachter</string>
     <string name="group_member_role_observer">Beobachter</string>
     <string name="initial_member_role">Anfängliche Rolle</string>

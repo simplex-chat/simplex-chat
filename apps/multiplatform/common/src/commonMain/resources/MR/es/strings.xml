@@ -2665,6 +2665,13 @@
     <string name="relay_test_step_wait_response">Espera respuesta</string>
     <string name="channel_member_you">tú</string>
     <string name="you_are_subscriber">eres suscriptor</string>
+    <string name="connect_plan_you_are_observer">Eres observador</string>
+    <string name="connect_plan_you_are_member">Eres miembro</string>
+    <string name="connect_plan_you_are_moderator">Eres moderador</string>
+    <string name="connect_plan_you_are_admin">Eres administrador</string>
+    <string name="connect_plan_you_are_owner">Eres propietario</string>
+    <string name="connect_plan_you_are_subscriber">Eres suscriptor</string>
+    <string name="connect_plan_you_are_contributor">Eres colaborador</string>
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Puedes compartir el enlace o código QR. Cualquiera podrá unirse al canal.</string>
     <string name="relay_section_footer_subscriber">Te conectaste al canal mediante este enlace de servidor.</string>
     <string name="chat_banner_your_channel">Tu canal</string>

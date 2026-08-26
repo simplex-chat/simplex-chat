@@ -4420,6 +4420,18 @@ server test failure */
 /* No comment provided by engineer. */
 "you are observer" = "вие сте наблюдател";
 
+/* new chat alert */
+"You are an observer" = "Вие сте наблюдател";
+
+/* new chat alert */
+"You are a member" = "Вие сте член";
+
+/* new chat alert */
+"You are an admin" = "Вие сте админ";
+
+/* new chat alert */
+"You are an owner" = "Вие сте собственик";
+
 /* snd group event chat item */
 "you blocked %@" = "вие блокирахте %@";
 

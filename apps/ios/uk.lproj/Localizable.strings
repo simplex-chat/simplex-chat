@@ -6057,6 +6057,21 @@ alert title */
 /* No comment provided by engineer. */
 "you are observer" = "ви спостерігач";
 
+/* new chat alert */
+"You are an observer" = "Ви спостерігач";
+
+/* new chat alert */
+"You are a member" = "Ви учасник";
+
+/* new chat alert */
+"You are a moderator" = "Ви модератор";
+
+/* new chat alert */
+"You are an admin" = "Ви адмін";
+
+/* new chat alert */
+"You are an owner" = "Ви власник";
+
 /* snd group event chat item */
 "you blocked %@" = "ви заблокували %@";
 

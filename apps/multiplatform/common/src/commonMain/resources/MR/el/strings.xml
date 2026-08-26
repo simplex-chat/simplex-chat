@@ -2429,6 +2429,11 @@
     <string name="not_connected_to_server_to_receive_messages_no_sub">Δεν είσαι συνδεδεμένος στον διακομιστή που χρησιμοποιείται για τη λήψη μηνυμάτων από αυτή τη σύνδεση (δεν υπάρχει συνδρομή).</string>
     <string name="servers_info_proxied_servers_section_footer">Δεν είσαι συνδεδεμένος σε αυτούς τους διακομιστές. Για την παράδοση μηνυμάτων σε αυτούς, χρησιμοποιείται ιδιωτική δρομολόγηση.</string>
     <string name="you_are_observer">είσαι παρατηρητής</string>
+    <string name="connect_plan_you_are_observer">Είσαι παρατηρητής</string>
+    <string name="connect_plan_you_are_member">Είσαι μέλος</string>
+    <string name="connect_plan_you_are_moderator">Είσαι διαχειριστής</string>
+    <string name="connect_plan_you_are_admin">Είσαι διαχειριστής</string>
+    <string name="connect_plan_you_are_owner">Είσαι ιδιοκτήτης</string>
     <string name="observer_cant_send_message_title">είσαι παρατηρητής</string>
     <string name="snd_group_event_member_blocked">μπλόκαρες %s</string>
     <string name="one_hand_ui_change_instruction">Μπορείς να το αλλάξεις στις ρυθμίσεις Εμφάνισης.</string>

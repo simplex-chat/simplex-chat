@@ -1155,6 +1155,12 @@
     <string name="images_limit_title">Забагато зображень!</string>
     <string name="videos_limit_title">Забагато відео!</string>
     <string name="you_are_observer">ви спостерігач</string>
+    <string name="connect_plan_you_are_observer">Ви спостерігач</string>
+    <string name="connect_plan_you_are_member">Ви учасник</string>
+    <string name="connect_plan_you_are_moderator">Ви модератор</string>
+    <string name="connect_plan_you_are_admin">Ви адміністратор</string>
+    <string name="connect_plan_you_are_owner">Ви власник</string>
+    <string name="connect_plan_you_are_contributor">Ви автор</string>
     <string name="colored_text">кольоровий</string>
     <string name="callstatus_ended">дзвінок завершено %1$s</string>
     <string name="callstatus_error">помилка дзвінка</string>

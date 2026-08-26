@@ -936,6 +936,11 @@
     <string name="group_member_role_observer">Waarnemer</string>
     <string name="observer_cant_send_message_title">jij bent waarnemer</string>
     <string name="you_are_observer">je bent waarnemer</string>
+    <string name="connect_plan_you_are_observer">Je bent waarnemer</string>
+    <string name="connect_plan_you_are_member">Je bent lid</string>
+    <string name="connect_plan_you_are_moderator">Je bent moderator</string>
+    <string name="connect_plan_you_are_admin">Je bent beheerder</string>
+    <string name="connect_plan_you_are_owner">Je bent eigenaar</string>
     <string name="language_system">Systeem</string>
     <string name="v4_6_audio_video_calls">Audio en video oproepen</string>
     <string name="confirm_password">Bevestig wachtwoord</string>

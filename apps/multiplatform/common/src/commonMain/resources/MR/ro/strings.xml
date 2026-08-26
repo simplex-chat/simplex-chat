@@ -2195,6 +2195,11 @@
     <string name="migrate_from_device_stopping_chat">Se opresc conversațiile</string>
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="you_are_observer">ești observator</string>
+    <string name="connect_plan_you_are_observer">Ești observator</string>
+    <string name="connect_plan_you_are_member">Ești membru</string>
+    <string name="connect_plan_you_are_moderator">Ești moderator</string>
+    <string name="connect_plan_you_are_admin">Ești administrator</string>
+    <string name="connect_plan_you_are_owner">Ești proprietar</string>
     <string name="video_decoding_exception_desc">Videoclipul nu poate fi decodificat. Vă rugăm să încercați un alt videoclip sau să contactați dezvoltatorii.</string>
     <string name="maximum_message_size_reached_forwarding">Puteți copia și micșora dimensiunea mesajului pentru a-l trimite.</string>
     <string name="callstate_waiting_for_answer">aștept răspunsul…</string>

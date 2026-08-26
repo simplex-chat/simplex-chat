@@ -6095,6 +6095,21 @@ alert title */
 /* No comment provided by engineer. */
 "you are observer" = "jesteś obserwatorem";
 
+/* new chat alert */
+"You are an observer" = "Jesteś obserwatorem";
+
+/* new chat alert */
+"You are a member" = "Jesteś członkiem";
+
+/* new chat alert */
+"You are a moderator" = "Jesteś moderatorem";
+
+/* new chat alert */
+"You are an admin" = "Jesteś administratorem";
+
+/* new chat alert */
+"You are an owner" = "Jesteś właścicielem";
+
 /* snd group event chat item */
 "you blocked %@" = "zablokowałeś %@";
 

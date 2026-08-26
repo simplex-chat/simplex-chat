@@ -283,6 +283,7 @@
     <string name="cant_send_message_you_left">Nevar nosūtīt ziņu, jūs esat izgājis</string>
     <string name="cant_send_message_generic">Nevar nosūtīt ziņu</string>
     <string name="you_are_observer">Jūs esat vērotājs</string>
+    <string name="connect_plan_you_are_observer">Jūs esat vērotājs</string>
     <string name="reviewed_by_admins">Pārbaudīts ar administratoriem</string>
     <string name="cant_send_message_member_has_old_version">Nevar nosūtīt ziņu, dalībniekam ir veca versija</string>
     <string name="cant_send_commands_alert_text">Nevar Nosūtīt Komandas Brīdinājuma Teksts</string>

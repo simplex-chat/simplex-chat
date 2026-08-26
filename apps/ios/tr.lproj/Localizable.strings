@@ -6042,6 +6042,21 @@ alert title */
 /* No comment provided by engineer. */
 "you are observer" = "gözlemcisiniz";
 
+/* new chat alert */
+"You are an observer" = "Gözlemcisiniz";
+
+/* new chat alert */
+"You are a member" = "Üyesiniz";
+
+/* new chat alert */
+"You are a moderator" = "Moderatörsünüz";
+
+/* new chat alert */
+"You are an admin" = "Yöneticisiniz";
+
+/* new chat alert */
+"You are an owner" = "Sahipsiniz";
+
 /* snd group event chat item */
 "you blocked %@" = "engelledin %@";
 

@@ -7052,6 +7052,27 @@ alert title */
 /* No comment provided by engineer. */
 "you are observer" = "Tu rol es observador";
 
+/* new chat alert */
+"You are an observer" = "Eres observador";
+
+/* new chat alert */
+"You are a member" = "Eres miembro";
+
+/* new chat alert */
+"You are a moderator" = "Eres moderador";
+
+/* new chat alert */
+"You are an admin" = "Eres administrador";
+
+/* new chat alert */
+"You are an owner" = "Eres propietario";
+
+/* new chat alert */
+"You are a subscriber" = "Eres suscriptor";
+
+/* new chat alert */
+"You are a contributor" = "Eres colaborador";
+
 /* No comment provided by engineer. */
 "you are subscriber" = "eres suscriptor";
 
