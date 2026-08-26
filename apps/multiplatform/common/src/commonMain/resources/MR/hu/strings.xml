@@ -2907,4 +2907,5 @@
     <string name="info_row_file_servers">Fájlkiszolgálók</string>
     <string name="share_text_file_servers">Fájlkiszolgálók: %s</string>
     <string name="group_invitations">Meghívások csoportokba</string>
+    <string name="forwarded_from">továbbítva innen</string>
 </resources>
