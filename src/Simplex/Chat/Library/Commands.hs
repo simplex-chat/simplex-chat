@@ -56,10 +56,11 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeRequest (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeRequest (..), BadgeType (..), LocalBadge (..), generateMasterKey, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Badges.Months (addMonths)
 import Simplex.Chat.Badges.Service
   ( BadgeBalance (..),
+    BadgeCatalog (..),
     BadgeServiceCommand (..),
     BadgeServiceErrorCode (..),
     BadgeServiceRequest (..),
@@ -71,7 +72,7 @@ import Simplex.Chat.Badges.Service
     StatementEntryType (..),
     currentBadgeVersion,
   )
-import Simplex.Chat.Badges.Types (BadgeLedgerEntry (..), LedgerCreditType (..), LedgerDebitType (..), LedgerEntryType (..), UserBadge (..), UserBadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeLedgerEntry (..), BadgePurchasePayment (..), LedgerCreditType (..), LedgerDebitType (..), LedgerEntryType (..), UserBadge (..), UserBadgeState (..))
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -84,6 +85,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
+import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
@@ -92,7 +94,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
-import Simplex.Chat.Store.Badges (NewBadgeIssuance (..), UserBadgePurchase (..), createIssuance, getLastBadgeLedgerEntry, getShownPurchase, hasIssuanceForPeriod, insertLedgerEntries)
+import Simplex.Chat.Store.Badges (NewBadgeIssuance (..), UserBadgePurchase (..), createCodePayment, createIssuance, createPurchase, getLastBadgeLedgerEntry, getShownPurchase, hasIssuanceForPeriod, insertLedgerEntries, setShownPurchase, supersedePurchases)
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
@@ -1487,25 +1489,10 @@ processChatCommand cxt nm = \case
             pure ct_
         pure $ CRContactRequestRejected user cReq ct_
   APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user -> do
-    cReq <- resolveServiceTarget user sendTarget
+    cReq <- resolveServiceTarget nm user sendTarget
     respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) (LB.toStrict $ J.encode request)
     resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
     pure $ CRServiceResponse user resp
-    where
-      resolveServiceTarget user = \case
-        CTFullContact cReq -> pure cReq
-        CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
-        CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
-          NTContact -> resolveDomain nameDomain
-          _ -> throwCmdError "service request target must be a contact"
-        CTDomain d -> resolveDomain d
-        where
-          resolveDomain d = do
-            nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
-            case firstNameLink CCTContact (nrSimplexContact nr) of
-              Just sLnk -> resolveShortLink sLnk
-              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
-          resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
@@ -3581,8 +3568,19 @@ processChatCommand cxt nm = \case
     -- profile that has just crossed a month boundary re-issues without waiting for the timer
     lift $ void $ getBadgeWorker True userId
     pure CRBadgeState {user, badgeState, badgeWebBaseUrl}
-  APIGetBadgeCatalog _ -> throwChatError badgeNotImplemented
-  APIPurchaseBadge {} -> throwChatError badgeNotImplemented
+  -- unsigned and unlocked: it names no purchase, writes nothing and computes no price -- the
+  -- offers' totals are the service's (decision 8)
+  APIGetBadgeCatalog userId -> withUserId userId $ \user ->
+    sendBadgeRequest nm user Nothing catalogRequest >>= \case
+      BSPBadgeCatalog {catalog = BadgeCatalog {prices, offers}} -> pure CRBadgeCatalog {user, prices, offers}
+      BSPError {code, message, retryAfter} -> throwChatError CEBadgeServiceError {badgeError = code, badgeErrorMessage = message, retryAfter}
+      r -> throwChatError $ unexpectedBadgeResponse "getBadgeCatalog" r
+  APIPurchaseBadge {userId, payment} -> withUserId userId $ \user -> case payment of
+    BPPCode {code} -> redeemBadgeCode nm user code
+    -- the store payment flows are out of scope (plan §6): they present the evidence of a
+    -- payments row the app's purchase flow created, and neither that row nor its writer exists
+    BPPApple {} -> throwChatError $ localBadgeError storePaymentsUnsupported
+    BPPGoogle {} -> throwChatError $ localBadgeError storePaymentsUnsupported
   SetBotCommands commands -> withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
@@ -5204,14 +5202,14 @@ badgePaidThrough BadgeLedgerEntry {balanceMonths, balanceStartTs} = addMonths ba
 localBadgeError :: Text -> ChatErrorType
 localBadgeError t = CEBadgeServiceError {badgeError = BSEInternal, badgeErrorMessage = Just t, retryAfter = Nothing}
 
--- | The placeholder failure of the badge commands C4 implements. It is a 'CEBadgeServiceError'
--- rather than a command error because that is the error C4 raises from them, so the stub does
--- not train a client to expect a different shape from the one it will get.
-badgeNotImplemented :: ChatErrorType
-badgeNotImplemented = localBadgeError notImplementedMessage
+-- | A response of a shape the command it answers cannot have, reported as a local failure with
+-- the response in the message: the alternative is a silent no-op on a service that is speaking
+-- a protocol this build does not know.
+unexpectedBadgeResponse :: Text -> BadgeServiceResponse -> ChatErrorType
+unexpectedBadgeResponse cmd r = localBadgeError $ "unexpected badge service response to " <> cmd <> ": " <> tshow r
 
-notImplementedMessage :: Text
-notImplementedMessage = "not implemented"
+storePaymentsUnsupported :: Text
+storePaymentsUnsupported = "badge store payments are not supported"
 
 -- | Checks that a credential was signed by a configured issuer key.
 --
@@ -5319,7 +5317,8 @@ issueDueBadgePeriod user@User {userId} = do
     Just (purchase@UserBadgePurchase {purchasePrivKey}, Just lastEntry)
       | badgePeriodDue now lastEntry -> do
           balance <- assertedBadgeBalance lastEntry
-          resp <- sendBadgeRequest (Just purchasePrivKey) (badgeIssueRequest purchase balance)
+          -- the pass is the timer's, not a user's action, so its request is a background one
+          resp <- sendBadgeRequest NRMBackground user (Just purchasePrivKey) (badgeIssueRequest purchase balance)
           storeBadgeIssueResponse now user purchase (Just lastEntry) resp
       | otherwise -> pure BadgeUnchanged
     -- unreachable via C1's createPurchase, which always inserts an opening credit, but a shown
@@ -5412,11 +5411,176 @@ badgeIssueRequest UserBadgePurchase {purchaseKey, masterKey, currentBadgeType} b
           }
     }
 
--- | The single send path to the badge service, which C4 replaces with the lazy connection and
--- the signing. Until then every badge request fails locally, which is what the two stub command
--- handlers already report.
-sendBadgeRequest :: Maybe C.PrivateKeyEd25519 -> BadgeServiceRequest -> CM BadgeServiceResponse
-sendBadgeRequest _signKey _request = pure BSPError {code = BSEInternal, message = Just notImplementedMessage, retryAfter = Nothing}
+-- | The contact address of a service request's target, resolving a short link or a SimpleX name
+-- to the connection request the agent joins.
+--
+-- It is shared by @APISendServiceRequest@, which resolves whatever target the caller states, and
+-- by 'sendBadgeRequest', which resolves the one in 'ChatConfig.badgeServiceAddress': a badge
+-- service address may be published in any of these forms, so both need the same resolution.
+resolveServiceTarget :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> CM (ConnectionRequestUri 'CMContact)
+resolveServiceTarget nm user = \case
+  CTFullContact cReq -> pure cReq
+  CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
+  CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
+    NTContact -> resolveDomain nameDomain
+    _ -> throwCmdError "service request target must be a contact"
+  CTDomain d -> resolveDomain d
+  where
+    resolveDomain d = do
+      nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
+      case firstNameLink CCTContact (nrSimplexContact nr) of
+        Just sLnk -> resolveShortLink sLnk
+        Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
+    resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+
+-- | The single send path to the badge service: one RPC to 'ChatConfig.badgeServiceAddress',
+-- signed with the purchase key it is given or unsigned when it is 'Nothing' (RPC "Identity").
+--
+-- The connection is the service request's own: 'sendServiceRequestAsync' joins the service's
+-- contact address, waits for the one reply, and deletes the connection again, so nothing is
+-- contacted until a badge command actually sends something and a profile that never buys a
+-- badge never reaches the service at all.
+--
+-- __It returns its failures as 'BSPError' rather than throwing them.__ An unconfigured address,
+-- a timeout, an agent failure and a response that does not decode are all answers to the
+-- request, and both callers already handle a service error: the worker reports it and keeps its
+-- state, the commands raise it as 'CEBadgeServiceError'. Raising here instead would give the
+-- worker's pass a chat error of a different shape for the transport half of the same operation.
+-- 'BSEInternal' is the code for all four, on 'localBadgeError''s terms — no
+-- 'BadgeServiceErrorCode' denotes a failure of the client's own.
+--
+-- It takes the 'User' whose profile the request belongs to, rather than reading the active one:
+-- C3's worker runs a pass per profile and the profile it runs for need not be active, and the
+-- agent user of the connection must be that profile's (plan §9).
+sendBadgeRequest :: NetworkRequestMode -> User -> Maybe C.PrivateKeyEd25519 -> BadgeServiceRequest -> CM BadgeServiceResponse
+sendBadgeRequest nm user signKey req =
+  asks (badgeServiceAddress . config) >>= \case
+    Nothing -> pure $ badgeRequestFailed "badge service address is not configured"
+    Just target -> either (badgeRequestFailed . ("badge service request failed: " <>) . tshow) id <$> tryAllErrors (sendRequest target)
+  where
+    sendRequest target = do
+      cReq <- resolveServiceTarget nm user target
+      respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq Nothing signKey (LB.toStrict $ J.encode req)
+      pure $ either (badgeRequestFailed . ("invalid badge service response: " <>) . T.pack) id $ J.eitherDecodeStrict' respData
+    badgeRequestFailed e = BSPError {code = BSEInternal, message = Just e, retryAfter = Nothing}
+
+-- | The badge tiers a redemption code can fund, in the order a code is presented under.
+--
+-- __The client cannot know which tier a code funds before it is redeemed.__ A code is 20 opaque
+-- characters (B3) and carries no tier, the response is what states it (core §5), and no command
+-- reports a code's tier without redeeming it — yet @purchaseBadge@ refuses a @badgeRequest@
+-- naming a tier other than the code's with @bad_request@ (B7, plan §9), because the service
+-- signs the badge info it is sent. So the code is presented once per tier until the service
+-- stops refusing it.
+--
+-- The probe is safe and cheap by construction: the tier check runs before anything is planned,
+-- so a refused presentation writes nothing, leaves the code unredeemed and debits neither
+-- throttle bucket (B10), and the service can only ever issue the tier the code funds. It costs
+-- one extra round trip for a legend code and none for a supporter one. These are the two tiers
+-- @badge_codes.badge_type@ admits (@CHECK (badge_type IN ('supporter','legend'))@); lifetime
+-- codes are out of scope (plan §6).
+codeBadgeTypes :: NonEmpty BadgeType
+codeBadgeTypes = BTSupporter :| [BTLegend]
+
+-- | Redeems a code: the keys are minted in memory, the badge lock is held across the send and
+-- the writes, and the presentation happens after it is released.
+--
+-- Nothing is written before the response: the purchase row's two badge-type columns are NOT
+-- NULL and the tier is not known until the service states it (C1). A response lost in flight
+-- therefore consumes the code with nothing stored, and is recovered with the operator's
+-- @codes unredeem@ (H2) — never by re-presenting a key that was kept for a purchase that does
+-- not exist.
+redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
+redeemBadgeCode nm user@User {userId} code = do
+  g <- asks random
+  (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
+  -- one master key per redemption, held for the whole call and written with the purchase row it
+  -- belongs to: the service does not check the master key of a later issueBadge against the one
+  -- it recorded, so a rotated key would be answered with a credential bound to the old one
+  -- (plan §9). A fresh purchase key per redemption is the unlinkability rule (plan §3).
+  masterKey <- liftIO $ generateMasterKey g
+  user' <- withBadgeLock "purchaseBadge" userId $ do
+    (cred, statement) <- purchaseWithCode purchaseKey purchasePrivKey masterKey
+    now <- liftIO =<< asks (badgeCurrentTime . config)
+    storeRedeemedBadge now purchaseKey purchasePrivKey masterKey cred statement
+  -- outside the lock: 'presentUserBadgeToContacts' takes 'chatLock', which the badge lock waits
+  -- on, so broadcasting under it would invert the two lock orders
+  presentUserBadgeToContacts user'
+  badgeState <- getUserBadgeState user'
+  ChatConfig {badgeWebBaseUrl} <- asks config
+  pure CRBadgeState {user = user', badgeState, badgeWebBaseUrl}
+  where
+    purchaseWithCode purchaseKey purchasePrivKey masterKey = presentCode codeBadgeTypes
+      where
+        presentCode (badgeType :| tiers) =
+          sendBadgeRequest nm user (Just purchasePrivKey) (badgeCodeRequest purchaseKey masterKey badgeType code) >>= \case
+            BSPBadgeCredential {credential = Just cred, statement} -> pure (cred, statement)
+            -- the exhausted balance of an issueBadge, which a redemption cannot be: a code
+            -- credits the months it funds in the same transaction that issues them (B7)
+            BSPBadgeCredential {credential = Nothing} ->
+              throwChatError $ localBadgeError "badge service redeemed the code without issuing a credential"
+            -- the one refusal that is a question about the code rather than an answer about it
+            BSPError {code = BSEBadRequest} | tier : tiers' <- tiers -> presentCode (tier :| tiers')
+            BSPError {code = errCode, message, retryAfter} ->
+              throwChatError CEBadgeServiceError {badgeError = errCode, badgeErrorMessage = message, retryAfter}
+            r -> throwChatError $ unexpectedBadgeResponse "purchaseBadge" r
+    -- one transaction: the payment row, the purchase row with the held keys, the statement's
+    -- ledger rows, the issuance, the slot's supersession, the shown-badge pointer and the
+    -- profile's own badge columns either all land or none of them do
+    storeRedeemedBadge now purchaseKey purchasePrivKey masterKey cred statement = do
+      -- a credential that is not ours is discarded and nothing at all is written, the statement
+      -- included: a response we cannot verify is not a response to trust the rest of. The
+      -- failure is the client's own, so it is 'BSEInternal' with the reason (C2, plan §9).
+      verifyUserBadge cred >>= either (throwChatError . localBadgeError) pure
+      (periodStart, periodEnd) <-
+        maybe (throwChatError $ localBadgeError "badge service issued no period for the redeemed code") pure $
+          issuedBadgePeriod Nothing statement
+      case cred of
+        BadgeCredential {badgeInfo = info@BadgeInfo {badgeType, badgeExpiry = Just expiry}} -> do
+          user' <- withStore $ \db -> do
+            paymentId <- liftIO $ createCodePayment db now
+            UserBadgePurchase {badgePurchaseId} <- liftIO $ createPurchase db userId purchaseKey purchasePrivKey masterKey badgeType paymentId now
+            insertLedgerEntries db badgePurchaseId statement now
+            liftIO . void $
+              createIssuance db NewBadgeIssuance {badgePurchaseId, badgeType, periodStart, periodEnd, expiry, ledgerEntryId = Nothing, credential = cred} now
+            -- the slot is the new purchase's own (C1 reads it from the row), so the badge this
+            -- redemption replaces is superseded and this one becomes the profile's shown badge
+            supersedePurchases db userId badgePurchaseId now
+            setShownPurchase db userId badgePurchaseId
+            liftIO $ setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+          -- the command runs for the active profile ('withUserId'), but the active user is read
+          -- and compared rather than assumed, as C3's pass does: this TVar is the whole app's
+          -- current profile and nothing here may repoint it (plan §9)
+          activeUserId <- fmap (\User {userId = uId} -> uId) <$> chatReadVar currentUser
+          when (activeUserId == Just userId) $ chatWriteVar currentUser $ Just user'
+          pure user'
+        -- 'issueSignedBadge' always sets the expiry, so this is a malformed response rather than
+        -- a lifetime credential, and a lifetime badge has no issuance row to write anyway
+        _ -> throwChatError $ localBadgeError "issued badge credential carries no expiry"
+
+-- | The @purchaseBadge@ request redeeming a code, signed by the purchase key it mints.
+--
+-- 'badgeExpiry' is absent and 'badgeExtra' empty on the same terms as 'badgeIssueRequest': the
+-- service sets the expiry itself and refuses a non-empty extra.
+badgeCodeRequest :: C.PublicKeyEd25519 -> BadgeMasterKey -> BadgeType -> Text -> BadgeServiceRequest
+badgeCodeRequest purchaseKey masterKey badgeType code =
+  BadgeServiceRequest
+    { version = currentBadgeVersion,
+      purchaseKey = Just purchaseKey,
+      request =
+        BSCPurchaseBadge
+          { badgeRequest = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType, badgeExpiry = Nothing, badgeExtra = ""}},
+            payment = SPCode {code},
+            -- upgrades need store evidence or a receipt, both out of scope (plan §6), and a
+            -- purchase carrying one is refused before its payment is looked at (B7)
+            upgrade = Nothing
+          }
+    }
+
+-- | The unsigned @getBadgeCatalog@ request: it names no purchase, so it discloses nothing about
+-- the profile asking (RPC "Identity").
+catalogRequest :: BadgeServiceRequest
+catalogRequest = BadgeServiceRequest {version = currentBadgeVersion, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
 
 -- | What one applied badge response changed, which is what decides what happens once the badge
 -- lock is released.
@@ -5471,7 +5635,7 @@ storeBadgeIssueResponse now user@User {userId} UserBadgePurchase {badgePurchaseI
         _ -> badgeFailed "issued badge credential carries no expiry"
   BSPError {code, message, retryAfter} ->
     BadgeUnchanged <$ eToView (ChatError CEBadgeServiceError {badgeError = code, badgeErrorMessage = message, retryAfter})
-  r -> badgeFailed $ "unexpected badge service response to issueBadge: " <> tshow r
+  r -> BadgeUnchanged <$ eToView (ChatError $ unexpectedBadgeResponse "issueBadge" r)
   where
     badgeFailed e = BadgeUnchanged <$ eToView (ChatError $ localBadgeError e)
     -- the ledger the statement left, against the one that was held: nothing else the badge state

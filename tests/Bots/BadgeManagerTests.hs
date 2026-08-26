@@ -11,8 +11,9 @@
 --
 -- Registered under the "Supporter badges" hspec path so CI runs it (plan §4 rule 8), inside
 -- 'testBracket', which is what gives these tests a chat controller. No badge service is started
--- and no RPC is sent: 'sendBadgeRequest' is C3's stub, so the tests apply a response to the pass
--- directly, composing the pass's two production halves ('storeBadgeIssueResponse' under the
+-- and no RPC is sent: the test controllers configure no 'badgeServiceAddress', so
+-- 'sendBadgeRequest' fails locally without contacting anything, and the tests apply a response
+-- to the pass directly, composing the pass's two production halves ('storeBadgeIssueResponse' under the
 -- badge lock in production, then 'presentBadgeChange' outside it) exactly as
 -- 'issueDueBadgePeriod' and 'badgeManagerPass' compose them.
 --
@@ -324,12 +325,13 @@ testSignalsDuringPassRunOnePass ps = do
       alice <## "badge site: not configured"
     -- the three signals did not start a pass of their own: the first one is still running
     readTVarIO (passes gate) `shouldReturn` 1
-    -- released, it finds the month due and reports what C3's stub send path answers
+    -- released, it finds the month due and reports what its send path answers: this controller
+    -- has no 'badgeServiceAddress', so the request fails locally before anything is sent (C4)
     allowPass gate
-    alice <## "badge service error: internal, not implemented"
+    alice <## "badge service error: internal, badge service address is not configured"
     waitPasses gate 2
     allowPass gate
-    alice <## "badge service error: internal, not implemented"
+    alice <## "badge service error: internal, badge service address is not configured"
     -- and that is the only pass the three signals bought, however many they were
     reportsNothing alice
     readTVarIO (passes gate) `shouldReturn` 2
