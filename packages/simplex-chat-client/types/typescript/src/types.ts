@@ -240,6 +240,27 @@ export interface BadgeProof {
   proof: string
   badgeInfo: BadgeInfo
 }
+// Badge service error code. Clients must accept unknown codes: the service can be deployed ahead of them.
+
+export enum BadgeServiceErrorCode {
+  Bad_request = "bad_request",
+  Unsupported_version = "unsupported_version",
+  Unknown_purchase_key = "unknown_purchase_key",
+  Unknown_offer_id = "unknown_offer_id",
+  Offer_disabled = "offer_disabled",
+  Offer_mismatch = "offer_mismatch",
+  Product_unavailable = "product_unavailable",
+  Payment_not_entitled = "payment_not_entitled",
+  Payment_pending = "payment_pending",
+  Provider_unavailable = "provider_unavailable",
+  Rate_limited = "rate_limited",
+  Code_invalid = "code_invalid",
+  Code_used = "code_used",
+  Code_expired = "code_expired",
+  Receipt_invalid = "receipt_invalid",
+  Receipt_used = "receipt_used",
+  Internal = "internal",
+}
 
 export enum BadgeStatus {
   Active = "active",
@@ -1151,6 +1172,7 @@ export type ChatErrorType =
   | ChatErrorType.ConnectionUserChangeProhibited
   | ChatErrorType.PeerChatVRangeIncompatible
   | ChatErrorType.RelayTestError
+  | ChatErrorType.BadgeServiceError
   | ChatErrorType.InternalError
   | ChatErrorType.Exception
 
@@ -1230,6 +1252,7 @@ export namespace ChatErrorType {
     | "connectionUserChangeProhibited"
     | "peerChatVRangeIncompatible"
     | "relayTestError"
+    | "badgeServiceError"
     | "internalError"
     | "exception"
 
@@ -1593,6 +1616,13 @@ export namespace ChatErrorType {
   export interface RelayTestError extends Interface {
     type: "relayTestError"
     message: string
+  }
+
+  export interface BadgeServiceError extends Interface {
+    type: "badgeServiceError"
+    badgeError: BadgeServiceErrorCode
+    badgeErrorMessage?: string
+    retryAfter?: number // word32
   }
 
   export interface InternalError extends Interface {

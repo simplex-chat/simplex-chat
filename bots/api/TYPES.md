@@ -13,6 +13,7 @@ This file is generated automatically.
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
+- [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
@@ -412,6 +413,32 @@ BadSignature:
 - presHeader: string
 - proof: string
 - badgeInfo: [BadgeInfo](#badgeinfo)
+
+
+---
+
+## BadgeServiceErrorCode
+
+Badge service error code. Clients must accept unknown codes: the service can be deployed ahead of them.
+
+**Enum type**:
+- "bad_request"
+- "unsupported_version"
+- "unknown_purchase_key"
+- "unknown_offer_id"
+- "offer_disabled"
+- "offer_mismatch"
+- "product_unavailable"
+- "payment_not_entitled"
+- "payment_pending"
+- "provider_unavailable"
+- "rate_limited"
+- "code_invalid"
+- "code_used"
+- "code_expired"
+- "receipt_invalid"
+- "receipt_used"
+- "internal"
 
 
 ---
@@ -1360,6 +1387,12 @@ PeerChatVRangeIncompatible:
 RelayTestError:
 - type: "relayTestError"
 - message: string
+
+BadgeServiceError:
+- type: "badgeServiceError"
+- badgeError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
+- badgeErrorMessage: string?
+- retryAfter: word32?
 
 InternalError:
 - type: "internalError"

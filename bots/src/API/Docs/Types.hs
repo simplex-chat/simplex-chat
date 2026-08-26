@@ -35,6 +35,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
+import Simplex.Chat.Badges.Service (BadgeServiceErrorCode (..))
 import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -222,6 +223,7 @@ chatTypesDocsData =
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
+    (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", "Badge service error code. Clients must accept unknown codes: the service can be deployed ahead of them."),
     (sti @BadgeStatus, STEnum, "BS", [], "", ""),
     (sti @BadgeType, STEnum, "BT", ["BTUnknown"], "", ""),
     (sti @ChatFeature, STEnum, "CF", [], "", ""),
@@ -445,6 +447,7 @@ deriving instance Generic BlockingReason
 deriving instance Generic BrokerErrorType
 deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
+deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BadgeStatus
 deriving instance Generic BadgeType
 deriving instance Generic ChatBotCommand

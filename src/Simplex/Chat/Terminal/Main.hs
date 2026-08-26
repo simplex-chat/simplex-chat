@@ -7,6 +7,7 @@ module Simplex.Chat.Terminal.Main where
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
 import Control.Monad
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Network.Socket
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
@@ -25,7 +26,21 @@ simplexChatCLI :: ChatConfig -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> 
 simplexChatCLI cfg server_ = do
   appDir <- getAppUserDataDirectory "simplex"
   opts <- getChatOpts appDir "simplex_v1"
-  simplexChatCLI' cfg opts server_
+  simplexChatCLI' (badgeOptsOverride cfg opts) opts server_
+
+-- | Points the CLI at a locally run badge service (plan §10, H5). The bots build their own
+-- 'ChatOpts' with these unset, so only the CLI is affected.
+--
+-- The issuer keys REPLACE the configured map rather than merging into it: 'badgePublicKeys'
+-- ships eight production keys, index 1 among them, so a merge that kept the presets would leave
+-- a locally issued credential failing to verify against the production key at the same index.
+badgeOptsOverride :: ChatConfig -> ChatOpts -> ChatConfig
+badgeOptsOverride cfg ChatOpts {optBadgeServiceAddress, optBadgeWebUrl, optBadgeIssuerKeys} =
+  cfg
+    { badgeServiceAddress = maybe (badgeServiceAddress cfg) Just optBadgeServiceAddress,
+      badgeWebBaseUrl = fromMaybe (badgeWebBaseUrl cfg) optBadgeWebUrl,
+      badgePublicKeys = if null optBadgeIssuerKeys then badgePublicKeys cfg else M.fromList optBadgeIssuerKeys
+    }
 
 simplexChatCLI' :: ChatConfig -> ChatOpts -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
 simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort, coreOptions = CoreChatOpts {headless}} server_ = do

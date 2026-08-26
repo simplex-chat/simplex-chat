@@ -77,6 +77,11 @@ defaultChatConfig =
             (7, toBBSPublicKey "rl36D5mg2N3NmmEybxE_RBeU9YZ_zeXNPfp7ZMLtUEuf2Mo4OQM_Up1v5rX_IqICD-AIJcuyptEBsELx_PJQzpmiNuG5I4cWO6HkRKtc6fVFvgZMrDJjaascPd1CIyxX"),
             (8, toBBSPublicKey "joM3Bnt7JPt5JiwQwERHGjro2iVZ0mPD_clUh4hzkhxvbjuFrWuTmfSNA8PWBqGKEGNl13aRi1pMf6yY14E27c5C71JxWm7T-rZaBrGPEUWifhD-qidWuf3PU7KJCCWd")
           ],
+      -- the badge service address and the checkout site are set by release builds and by
+      -- --badge-service-address / --badge-web-url; unset means the feature is unconfigured
+      badgeServiceAddress = Nothing,
+      badgeWebBaseUrl = "",
+      badgeCurrentTime = getCurrentTime,
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options

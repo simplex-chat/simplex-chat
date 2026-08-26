@@ -126,7 +126,10 @@ testOpts =
       markRead = True,
       createBot = Nothing,
       userDisplayName = Nothing,
-      userImageFile = Nothing
+      userImageFile = Nothing,
+      optBadgeServiceAddress = Nothing,
+      optBadgeWebUrl = Nothing,
+      optBadgeIssuerKeys = []
     }
 
 testCoreOpts :: CoreChatOpts

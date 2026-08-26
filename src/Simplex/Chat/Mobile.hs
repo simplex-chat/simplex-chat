@@ -283,7 +283,10 @@ mobileChatOpts dbOptions =
       markRead = False,
       createBot = Nothing,
       userDisplayName = Nothing,
-      userImageFile = Nothing
+      userImageFile = Nothing,
+      optBadgeServiceAddress = Nothing,
+      optBadgeWebUrl = Nothing,
+      optBadgeIssuerKeys = []
     }
 
 defaultMobileConfig :: ChatConfig

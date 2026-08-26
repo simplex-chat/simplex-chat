@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -29,8 +30,11 @@ import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), WebPreviewConfig (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Types (ConnectTarget)
+import Simplex.Messaging.Agent.Protocol (ConnectionMode (..))
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
@@ -53,7 +57,19 @@ data ChatOpts = ChatOpts
     markRead :: Bool,
     createBot :: Maybe CreateBotOpts,
     userDisplayName :: Maybe Text,
-    userImageFile :: Maybe FilePath
+    userImageFile :: Maybe FilePath,
+    -- | @--badge-service-address@: the contact address of a badge service to use instead of the
+    -- one the build ships (which is none, outside release builds).
+    optBadgeServiceAddress :: Maybe (ConnectTarget 'CMContact),
+    -- | @--badge-web-url@: the badge checkout site to hand off to, overriding
+    -- 'Simplex.Chat.Controller.badgeWebBaseUrl'.
+    optBadgeWebUrl :: Maybe Text,
+    -- | @--badge-issuer-key IDX:BASE64URL@, repeatable. When any is given these REPLACE
+    -- 'Simplex.Chat.Controller.badgePublicKeys' outright rather than merging into it: the
+    -- shipped map already holds eight production keys, index 1 among them, so a merge that kept
+    -- the presets would leave a locally issued credential failing to verify against the
+    -- production key at the same index.
+    optBadgeIssuerKeys :: [(Int, BBSPublicKey)]
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -481,6 +497,29 @@ chatOptsP appDir defaultDbName = do
             <> metavar "FILE"
             <> help "Set user profile image from .png/.jpg/.jpeg file when the profile is created (requires --user-display-name); ignored if the user already exists (use \"/set profile image file <path>\" to change it)"
         )
+  optBadgeServiceAddress <-
+    optional $
+      option
+        strParse
+        ( long "badge-service-address"
+            <> metavar "LINK"
+            <> help "Contact address of the badge service to use for supporter badges"
+        )
+  optBadgeWebUrl <-
+    optional $
+      strOption
+        ( long "badge-web-url"
+            <> metavar "URL"
+            <> help "Base URL of the badge checkout site the app hands off to (must match the service's [web] base_url)"
+        )
+  optBadgeIssuerKeys <-
+    many $
+      option
+        parseBadgeIssuerKey
+        ( long "badge-issuer-key"
+            <> metavar "IDX:BASE64URL"
+            <> help "Badge issuer public key by index, from `simplex-chat badge keygen` (repeatable; replaces all built-in issuer keys)"
+        )
   pure
     ChatOpts
       { coreOptions,
@@ -507,7 +546,10 @@ chatOptsP appDir defaultDbName = do
         userDisplayName,
         userImageFile = case userImageFile of
           Just _ | isNothing userDisplayName -> error "--user-image-file option requires --user-display-name option"
-          _ -> userImageFile
+          _ -> userImageFile,
+        optBadgeServiceAddress,
+        optBadgeWebUrl,
+        optBadgeIssuerKeys
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]
@@ -515,6 +557,15 @@ parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
 
 strParse :: StrEncoding a => ReadM a
 strParse = eitherReader $ parseAll strP . encodeUtf8 . T.pack
+
+-- | @IDX:BASE64URL@ — the key index the credential names, and the key `badge keygen` prints.
+-- The index is separated from the key by the first colon, which base64url cannot contain.
+parseBadgeIssuerKey :: ReadM (Int, BBSPublicKey)
+parseBadgeIssuerKey = eitherReader $ \s -> case break (== ':') s of
+  (idx, ':' : key)
+    | [(i, "")] <- reads idx -> (,) i <$> parseAll strP (B.pack key)
+    | otherwise -> Left "badge issuer key index is not a number"
+  _ -> Left "badge issuer key must be IDX:BASE64URL"
 
 parseHostMode :: ReadM HostMode
 parseHostMode = eitherReader $ textToHostMode . T.pack

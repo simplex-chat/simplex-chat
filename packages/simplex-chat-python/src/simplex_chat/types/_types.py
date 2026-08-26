@@ -179,6 +179,10 @@ class BadgeProof(TypedDict):
     proof: str
     badgeInfo: "BadgeInfo"
 
+# Badge service error code. Clients must accept unknown codes: the service can be deployed ahead of them.
+
+BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "internal"]
+
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
 BadgeType = Literal["supporter", "legend", "investor"]
@@ -1042,6 +1046,12 @@ class ChatErrorType_relayTestError(TypedDict):
     type: Literal["relayTestError"]
     message: str
 
+class ChatErrorType_badgeServiceError(TypedDict):
+    type: Literal["badgeServiceError"]
+    badgeError: "BadgeServiceErrorCode"
+    badgeErrorMessage: NotRequired[str]
+    retryAfter: NotRequired[int]  # word32
+
 class ChatErrorType_internalError(TypedDict):
     type: Literal["internalError"]
     message: str
@@ -1125,11 +1135,12 @@ ChatErrorType = (
     | ChatErrorType_connectionUserChangeProhibited
     | ChatErrorType_peerChatVRangeIncompatible
     | ChatErrorType_relayTestError
+    | ChatErrorType_badgeServiceError
     | ChatErrorType_internalError
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "badgeServiceError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 

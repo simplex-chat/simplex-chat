@@ -48,7 +48,7 @@ import Data.Text.Encoding (decodeLatin1)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Version (showVersion)
-import Data.Word (Word16)
+import Data.Word (Word16, Word32)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Network.Socket (HostName)
 import Numeric.Natural
@@ -84,6 +84,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential)
+import Simplex.Chat.Badges.Service (BadgeOffer, BadgePrice, BadgeServiceErrorCode)
+import Simplex.Chat.Badges.Types (BadgePurchasePayment, UserBadgeState)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -143,6 +145,21 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
     badgePublicKeys :: Map Int BBSPublicKey,
+    -- | The badge service's contact address, as published by the operator's own service run.
+    -- 'Nothing' means the feature is unconfigured: badge requests fail with
+    -- 'CEBadgeServiceError' and the clients hide the browser hand-off. This plan carries no
+    -- address literal because the address is produced by the service run itself.
+    badgeServiceAddress :: Maybe (ConnectTarget 'CMContact),
+    -- | The badge checkout site, the base of the URL the app hands off to a browser. It travels
+    -- to the apps in 'CRBadgeState' rather than through the FFI, because 'ChatConfig' is not
+    -- readable from Kotlin or Swift. Empty means unconfigured, on the same terms as
+    -- 'badgeServiceAddress'. In a release build it must equal the service's @[web] base_url@:
+    -- Stripe's @success_url@ derives from that side and the hand-off URL from this one.
+    badgeWebBaseUrl :: Text,
+    -- | The only clock the client's badge code reads, so tests can advance client time without
+    -- sleeping. Defaults to 'getCurrentTime'; nothing but a test ever replaces it. This is the
+    -- client twin of @BadgeServiceOpts.serviceClock@.
+    badgeCurrentTime :: IO UTCTime,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -638,6 +655,9 @@ data ChatCommand
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
+  | APIGetBadgeState UserId -- the profile's badges, read from the local store, sending nothing
+  | APIGetBadgeCatalog UserId -- refresh badge prices and offers from the badge service
+  | APIPurchaseBadge {userId :: UserId, payment :: BadgePurchasePayment} -- present a payment (a redemption code, or store evidence) for a badge
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
@@ -840,6 +860,12 @@ data ChatResponse
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
+  | -- | The profile's badge state, plus the checkout site the app hands off to a browser.
+    -- @badgeWebBaseUrl@ is 'ChatConfig'\'s, which Kotlin and Swift cannot read; it rides on this
+    -- response because a badge state read is local, so the hand-off does not depend on the badge
+    -- service being reachable. It is empty when the feature is unconfigured.
+    CRBadgeState {user :: User, badgeState :: UserBadgeState, badgeWebBaseUrl :: Text}
+  | CRBadgeCatalog {user :: User, prices :: [BadgePrice], offers :: [BadgeOffer]}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
@@ -957,6 +983,10 @@ data ChatEvent
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
+  | -- | Emitted whenever the badge worker changes a profile's badge state; open badge surfaces
+    -- re-render from it. It carries no site URL: the URL is configuration, not state, and the
+    -- app already has it from the 'CRBadgeState' it loaded at start.
+    CEvtBadgeChanged {user :: User, badgeState :: UserBadgeState}
   | CEvtServiceRequest {user :: User, requestId :: AgentInvId, signerKey :: Maybe C.PublicKeyEd25519, requestData :: J.Object}
   | CEvtServiceReplySent {connectionId :: AgentConnId}
   | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
@@ -1527,6 +1557,15 @@ data ChatErrorType
   | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
   | CERelayTestError {message :: String}
+  | -- | A badge operation failed. @badgeError@ is the service's own error code, so the apps can
+    -- render the inline redeem errors of UX §2.8 from the code rather than from prose;
+    -- @retryAfter@ is seconds, populated by the service's @rate_limited@. A failure with no
+    -- service involved (a credential that does not verify) uses 'BSEInternal'.
+    --
+    -- The message field is named apart from the @message :: String@ that the rest of this union
+    -- carries: a record field has one type across a whole data type, and this one is the wire's
+    -- optional 'Text'.
+    CEBadgeServiceError {badgeError :: BadgeServiceErrorCode, badgeErrorMessage :: Maybe Text, retryAfter :: Maybe Word32}
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception)

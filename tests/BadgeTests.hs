@@ -2,6 +2,7 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -16,13 +17,16 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..), addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import qualified Simplex.Chat.Badges as CB
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types
+import Simplex.Chat.Controller (ChatCommand (..))
+import Simplex.Chat.Library.Commands (badgePaidThrough, parseChatCommand)
 -- PaymentStatus is hidden: its PSFailed collides with BadgePurchaseStatus's, and the column
 -- spellings of both are pinned below. The payment statuses are reached through PT instead.
 import Simplex.Chat.PaymentService hiding (PaymentStatus (..))
@@ -57,6 +61,9 @@ badgeTests = do
   it "round-trips every BadgeServiceCommand constructor" testBadgeServiceCommandJSON
   it "round-trips every BadgeServiceResponse constructor" testBadgeServiceResponseJSON
   it "round-trips BadgeServiceRequest JSON" testBadgeServiceRequestJSON
+  it "round-trips every BadgePurchasePayment constructor with the documented tags" testBadgePurchasePaymentJSON
+  it "parses the badge commands, and rejects the shapes that are not commands" testBadgeCommandParsers
+  it "derives the paid-through date from the last ledger entry, clamping the month" testBadgePaidThrough
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -422,6 +429,80 @@ testBadgeServiceRequestJSON = do
   (pub, _) <- mkKeyPair
   roundtripsBytes (BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Just pub, request = BSCPauseBadge})
   roundtripsBytes (BadgeServiceRequest {version = VersionBadgeService 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog})
+
+testBadgePurchasePaymentJSON :: IO ()
+testBadgePurchasePaymentJSON = do
+  roundtripsBytes BPPApple {paymentId = "pay-1", jws = "jws"}
+  roundtripsBytes BPPGoogle {paymentId = "pay-2", token = "token"}
+  roundtripsBytes BPPCode {code = "CODE"}
+  -- the tags are core §3's and are what APIPurchaseBadge's argument is written as, so they are
+  -- asserted literally rather than only through a round trip
+  J.encode BPPCode {code = "CODE"} `shouldBe` "{\"type\":\"code\",\"code\":\"CODE\"}"
+  J.encode BPPApple {paymentId = "p", jws = "j"} `shouldBe` "{\"type\":\"apple\",\"paymentId\":\"p\",\"jws\":\"j\"}"
+  J.encode BPPGoogle {paymentId = "p", token = "t"} `shouldBe` "{\"type\":\"google\",\"paymentId\":\"p\",\"token\":\"t\"}"
+
+testBadgeCommandParsers :: IO ()
+testBadgeCommandParsers = do
+  cred <- jsonCredential
+  -- `/badge add` is a different command and must not be caught by the `/_badge` parsers
+  parsesAs (LB.toStrict $ "/badge add " <> J.encode cred) $ \case
+    AddBadge _ -> True
+    _ -> False
+  parsesAs "/_badge state 1" $ \case
+    APIGetBadgeState 1 -> True
+    _ -> False
+  parsesAs "/_badge state 42" $ \case
+    APIGetBadgeState 42 -> True
+    _ -> False
+  parsesAs "/_badge catalog 7" $ \case
+    APIGetBadgeCatalog 7 -> True
+    _ -> False
+  parsesAs "/_badge purchase 3 {\"type\":\"code\",\"code\":\"ABCD-EFGH\"}" $ \case
+    APIPurchaseBadge {userId = 3, payment = BPPCode {code = "ABCD-EFGH"}} -> True
+    _ -> False
+  parsesAs "/_badge purchase 3 {\"type\":\"apple\",\"paymentId\":\"p\",\"jws\":\"j\"}" $ \case
+    APIPurchaseBadge {userId = 3, payment = BPPApple {paymentId = "p", jws = "j"}} -> True
+    _ -> False
+  failsToParse "/_badge state" -- the user id is not optional
+  failsToParse "/_badge state x"
+  failsToParse "/_badge purchase 3" -- the payment is not optional
+  failsToParse "/_badge purchase 3 {\"type\":\"invoice\",\"invoiceId\":\"i\"}" -- not a BadgePurchasePayment
+  failsToParse "/_badge shown 1 2" -- APISwitchShownBadge is out of scope (plan §6)
+  failsToParse "/_badge ack 1 renewalApproaching e off" -- APIAckBadgeAlert is out of scope
+  where
+    parsesAs s ok = case parseChatCommand s of
+      Right cmd | ok cmd -> pure ()
+      r -> expectationFailure $ "unexpected parse of " <> show s <> ": " <> show r
+    failsToParse s = case parseChatCommand s of
+      Left _ -> pure ()
+      Right cmd -> expectationFailure $ show s <> " should not parse, but gave: " <> show cmd
+
+testBadgePaidThrough :: IO ()
+testBadgePaidThrough = do
+  -- three months from 31 January lands on 30 April: addMonths clamps to the last valid day, and
+  -- badgePaidThrough must not reimplement that rule
+  badgePaidThrough (ledgerEntryAt 3 (day 2026 1 31)) `shouldBe` day 2026 4 30
+  badgePaidThrough (ledgerEntryAt 1 (day 2026 1 31)) `shouldBe` day 2026 2 28
+  -- an exhausted balance is paid through the instant it ran out, not through "no date"
+  badgePaidThrough (ledgerEntryAt 0 (day 2026 3 15)) `shouldBe` day 2026 3 15
+  where
+    day y m d = UTCTime (fromGregorian y m d) 0
+    ledgerEntryAt balanceMonths balanceStartTs =
+      BadgeLedgerEntry
+        { entryId = 1,
+          entryUuid = "e-1",
+          badgePurchaseId = 1,
+          -- deliberately NOT balanceMonths: a debit entry's change is -1 while its balance is
+          -- what is left, and a fixture that made the two equal could not tell them apart
+          changeMonths = -1,
+          balanceMonths,
+          balanceStartTs,
+          balanceBadgeType = BTSupporter,
+          wasPausedSince = Nothing,
+          serviceCreatedAt = balanceStartTs,
+          createdAt = balanceStartTs,
+          entryType = LEDebit DTBadge
+        }
 
 -- Helpers
 

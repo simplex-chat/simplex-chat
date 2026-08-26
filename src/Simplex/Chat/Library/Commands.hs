@@ -57,6 +57,9 @@ import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges.Months (addMonths)
+import Simplex.Chat.Badges.Service (BadgeServiceErrorCode (..))
+import Simplex.Chat.Badges.Types (BadgeLedgerEntry (..), UserBadge (..), UserBadgeState (..))
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -77,6 +80,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
+import Simplex.Chat.Store.Badges (UserBadgePurchase (..), getLastBadgeLedgerEntry, getShownPurchase)
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
@@ -3552,6 +3556,12 @@ processChatCommand cxt nm = \case
           pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
+  APIGetBadgeState userId -> withUserId userId $ \user -> do
+    badgeState <- getUserBadgeState user
+    ChatConfig {badgeWebBaseUrl} <- asks config
+    pure CRBadgeState {user, badgeState, badgeWebBaseUrl}
+  APIGetBadgeCatalog _ -> throwChatError badgeNotImplemented
+  APIPurchaseBadge {} -> throwChatError badgeNotImplemented
   SetBotCommands commands -> withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
@@ -5133,17 +5143,66 @@ createContactsSndFeatureItems user cts =
       CUPContact {preference} -> preference
       CUPUser {preference} -> preference
 
--- attach an issued badge credential to the user's own profile and present it to all current contacts.
--- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
-addUserBadge :: User -> BadgeCredential -> CM ()
-addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
+-- | The badge state of one profile, read from the local store: @APIGetBadgeState@ sends nothing.
+--
+-- Only the shown purchase is reported today. With the paid slot the only one in use (plan §6),
+-- and at most one issued purchase per slot, the shown purchase IS the profile's badge; the list
+-- is a list because the investor slot will add a second one.
+-- The purchase and its ledger are read in ONE transaction, so the balance reported cannot be
+-- from a ledger the worker replaced between the two reads.
+getUserBadgeState :: User -> CM UserBadgeState
+getUserBadgeState User {userId} = withFastStore $ \db ->
+  getShownPurchase db userId >>= \case
+    Nothing -> pure UserBadgeState {badges = [], shownBadgeId = Nothing}
+    Just UserBadgePurchase {badgePurchaseId, currentBadgeType, status, createdAt} -> do
+      lastEntry_ <- getLastBadgeLedgerEntry db badgePurchaseId
+      let badge =
+            UserBadge
+              { badgePurchaseId,
+                badgeType = currentBadgeType,
+                status,
+                monthsLeft = maybe 0 (\BadgeLedgerEntry {balanceMonths} -> balanceMonths) lastEntry_,
+                paidThrough = badgePaidThrough <$> lastEntry_,
+                createdAt
+              }
+      pure UserBadgeState {badges = [badge], shownBadgeId = Just badgePurchaseId}
+
+-- | The date a purchase is paid through: its balance of whole months added to the instant that
+-- balance started running. The clamping rule is 'addMonths'\'s and is not restated here, so the
+-- client and the service cannot disagree about "31 January plus one month".
+--
+-- This is NOT the credential's expiry, which is an issuance detail and must never be shown as a
+-- paid-through date (UX §2.11). A balance of zero yields the instant the balance ran out.
+badgePaidThrough :: BadgeLedgerEntry -> UTCTime
+badgePaidThrough BadgeLedgerEntry {balanceMonths, balanceStartTs} = addMonths balanceMonths balanceStartTs
+
+-- | The placeholder failure of the badge commands C4 implements. It is a 'CEBadgeServiceError'
+-- rather than a command error because that is the error C4 raises from them, so the stub does
+-- not train a client to expect a different shape from the one it will get.
+badgeNotImplemented :: ChatErrorType
+badgeNotImplemented = CEBadgeServiceError {badgeError = BSEInternal, badgeErrorMessage = Just "not implemented", retryAfter = Nothing}
+
+-- | Checks that a credential was signed by a configured issuer key.
+--
+-- It RETURNS its failures instead of throwing, because its three callers need three different
+-- outcomes: @AddBadge@ turns them into a command error, the redeem path (C4) into a
+-- 'CEBadgeServiceError', and the worker (C3) discards the credential and writes nothing. It
+-- takes no lock, so a caller already holding the per-user badge lock can call it.
+verifyUserBadge :: BadgeCredential -> CM (Either Text ())
+verifyUserBadge cred@(BadgeCredential keyIdx _ _ _) = do
   keys <- asks $ badgePublicKeys . config
-  key <- maybe (throwCmdError "unknown badge key index") pure $ M.lookup keyIdx keys
-  verified <- liftIO $ verifyCredential key cred
-  unless verified $ throwCmdError "badge credential does not verify against configured key"
-  now <- liftIO getCurrentTime
-  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
-  asks currentUser >>= atomically . (`writeTVar` Just user')
+  case M.lookup keyIdx keys of
+    Nothing -> pure $ Left "unknown badge key index"
+    Just key -> do
+      verified <- liftIO $ verifyCredential key cred
+      pure $ if verified then Right () else Left "badge credential does not verify against configured key"
+
+-- | Re-presents the user's profile, with its badge, to every non-incognito contact.
+--
+-- It takes 'chatLock', so a caller holding the per-user badge lock (which waits on 'chatLock'
+-- first) must RELEASE that lock before calling this, or the two lock orders invert.
+presentUserBadgeToContacts :: User -> CM ()
+presentUserBadgeToContacts user' = do
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
   withChatLock "addUserBadge" $ forM_ contacts $ \ct ->
@@ -5154,6 +5213,16 @@ addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
             p <- presentUserBadge user' Nothing $ userProfileDirect user' Nothing (Just ct') False
             void (sendDirectContactMessage user' ct' (XInfo p)) `catchAllErrors` eToView
       _ -> pure ()
+
+-- attach an issued badge credential to the user's own profile and present it to all current contacts.
+-- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
+addUserBadge :: User -> BadgeCredential -> CM ()
+addUserBadge user cred@(BadgeCredential _ _ _ info) = do
+  verifyUserBadge cred >>= either (throwCmdError . T.unpack) pure
+  now <- liftIO =<< asks (badgeCurrentTime . config)
+  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+  asks currentUser >>= atomically . (`writeTVar` Just user')
+  presentUserBadgeToContacts user'
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =
@@ -5781,6 +5850,9 @@ chatCommandP =
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNameDescr),
       ("/profile" <|> "/p") $> ShowProfile,
       "/badge add " *> (AddBadge <$> jsonP),
+      "/_badge state " *> (APIGetBadgeState <$> A.decimal),
+      "/_badge catalog " *> (APIGetBadgeCatalog <$> A.decimal),
+      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <* A.space <*> jsonP),
       "/set bot commands " *> (SetBotCommands <$> botCommandsP),
       "/delete bot commands" $> SetBotCommands [],
       "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayNameP <*> _strP <*> optional memberRole),

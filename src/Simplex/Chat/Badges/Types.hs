@@ -18,10 +18,12 @@ module Simplex.Chat.Badges.Types
     LedgerDebitType (..),
     BadgeAlertKind (..),
     BadgePurchase (..),
+    BadgePurchasePayment (..),
     BadgeLedgerEntry (..),
     BadgeCharge (..),
     BadgeIssuance (..),
     BadgeAlert (..),
+    UserBadge (..),
     UserBadgeState (..),
   ) where
 
@@ -34,12 +36,12 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
-import Simplex.Chat.PaymentService.Types (InvoiceId, StoredPayment)
+import Simplex.Chat.PaymentService.Types (InvoiceId)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))
@@ -133,6 +135,17 @@ data BadgePurchase = BadgePurchase
     updatedAt :: UTCTime
   }
 
+-- | The payment presented with @APIPurchaseBadge@, mapped to the wire
+-- 'Simplex.Chat.PaymentService.ServicePayment' when the request is sent. The store cases carry
+-- the @payments.payment_id@ of the row the app's purchase flow already created, which is what
+-- ties the store transaction to the purchase; a redemption code carries only itself, because a
+-- code redemption writes no rows until the service has answered (plan §5, C4).
+data BadgePurchasePayment
+  = BPPApple {paymentId :: Text, jws :: Text}
+  | BPPGoogle {paymentId :: Text, token :: Text}
+  | BPPCode {code :: Text}
+  deriving (Eq, Show)
+
 -- confirmed
 data BadgeLedgerEntry = BadgeLedgerEntry
   { entryId :: Int64,
@@ -186,17 +199,37 @@ data BadgeAlert = BadgeAlert
   }
   deriving (Show)
 
--- unconfirmed draft
-data UserBadgeState = UserBadgeState
-  { badges :: [BadgePurchase],
-    shownBadgeId :: Maybe Int64,
-    payments :: [StoredPayment],
+-- | One badge of a profile, as the badge surfaces render it (UX 2.2, 2.3, 2.6).
+--
+-- This is the API projection of a purchase, NOT its row: the row is
+-- 'Simplex.Chat.Store.Badges.UserBadgePurchase', which carries the purchase's PRIVATE KEY and
+-- badge master key, and neither may cross the FFI into Kotlin or Swift — the private key signs
+-- @issueBadge@ and the master key is the unlinkability secret. Nothing here is a secret, and
+-- every field is read from a row the client already holds, so @APIGetBadgeState@ needs no
+-- network.
+--
+-- @monthsLeft@ and @paidThrough@ come from the purchase's LAST ledger entry: the balance the
+-- client believes it holds, and 'Simplex.Chat.Badges.Months.addMonths' applied to it. Both are
+-- absent from a purchase with no ledger entry yet. @paidThrough@ is deliberately not the
+-- credential's expiry (UX §2.11 forbids presenting one as the other).
+data UserBadge = UserBadge
+  { badgePurchaseId :: Int64,
+    badgeType :: BadgeType,
+    status :: BadgePurchaseStatus,
     monthsLeft :: Int,
     paidThrough :: Maybe UTCTime,
-    renewsAt :: Maybe UTCTime,
-    willRenew :: Bool,
-    alert :: Maybe BadgeAlert
+    createdAt :: UTCTime
   }
+  deriving (Eq, Show)
+
+-- | Everything the badge surfaces render for one profile. @shownBadgeId@ names the badge whose
+-- credential the profile currently presents (@users.shown_badge_id@), which is the one whose
+-- paid-through date the badge screen shows.
+data UserBadgeState = UserBadgeState
+  { badges :: [UserBadge],
+    shownBadgeId :: Maybe Int64
+  }
+  deriving (Eq, Show)
 
 -- BadgeItemStatus crosses both the wire (BadgePrice/BadgeOffer JSON) and the
 -- badge_prices/badge_offers.status columns (A4's seedCatalog); TextEncoding is the single
@@ -255,3 +288,9 @@ instance FromField BadgePurchaseStatus where fromField = fromTextField_ textDeco
 -- JSON
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "OD") ''OfferDiscount)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BPP") ''BadgePurchasePayment)
+
+$(JQ.deriveJSON defaultJSON ''UserBadge)
+
+$(JQ.deriveJSON defaultJSON ''UserBadgeState)

@@ -44,6 +44,9 @@ import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (maxImageSize)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
+import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..))
+import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..), UserBadge (..), UserBadgeState (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -186,6 +189,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRUserContactLink u UserContactLink {connLinkContact, addressSettings} -> ttyUser u $ connReqContact_ showFullLinks "Your chat address:" connLinkContact <> viewAddressSettings addressSettings
   CRUserContactLinkUpdated u UserContactLink {addressSettings} -> ttyUser u $ viewAddressSettings addressSettings
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
+  CRBadgeState u badgeState url -> ttyUser u $ viewUserBadgeState badgeState <> [viewBadgeWebBaseUrl url]
+  CRBadgeCatalog u prices offers -> ttyUser u $ viewBadgeCatalog prices offers
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
@@ -468,6 +473,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CEvtGroupMemberUpdated {} -> []
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c (fromLocalProfile profile)
+  CEvtBadgeChanged u badgeState -> ttyUser u $ viewUserBadgeState badgeState
   CEvtServiceRequest u reqId sigKey_ req ->
     ttyUser u $
       [plain $ "service request " <> safeDecodeUtf8 (strEncode reqId)]
@@ -2806,6 +2812,12 @@ viewChatError isCmd logLevel testView = \case
     CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CERelayTestError e -> ["relay test error: " <> plain e]
+    CEBadgeServiceError code msg retryAfter ->
+      [ "badge service error: "
+          <> plain (textEncode code :: Text)
+          <> maybe "" (\m -> ", " <> plain m) msg
+          <> maybe "" (\s -> ", retry after " <> sShow s <> "s") retryAfter
+      ]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
@@ -2899,6 +2911,37 @@ viewConnectionEntityInactive :: ConnectionEntity -> Bool -> [StyledString]
 viewConnectionEntityInactive entity inactive
   | inactive = ["[" <> connEntityLabel entity <> "] connection is marked as inactive"]
   | otherwise = ["[" <> connEntityLabel entity <> "] inactive connection is marked as active"]
+
+viewUserBadgeState :: UserBadgeState -> [StyledString]
+viewUserBadgeState UserBadgeState {badges, shownBadgeId} = case badges of
+  [] -> ["no badges"]
+  _ -> map viewUserBadge badges
+  where
+    viewUserBadge UserBadge {badgePurchaseId, badgeType, status, monthsLeft, paidThrough} =
+      plain (textEncode badgeType :: Text)
+        <> " badge "
+        <> sShow badgePurchaseId
+        <> (if Just badgePurchaseId == shownBadgeId then " (shown)" else "")
+        <> ": "
+        <> plain (textEncode status :: Text)
+        <> ", "
+        <> sShow monthsLeft
+        <> " month(s) left"
+        -- the paid-through date, never the credential expiry (UX 2.11)
+        <> maybe "" (\t -> ", paid through " <> plain (formatTime defaultTimeLocale "%Y-%m-%d" t)) paidThrough
+
+viewBadgeWebBaseUrl :: Text -> StyledString
+viewBadgeWebBaseUrl url
+  | T.null url = "badge site: not configured"
+  | otherwise = "badge site: " <> plain url
+
+viewBadgeCatalog :: [BadgePrice] -> [BadgeOffer] -> [StyledString]
+viewBadgeCatalog prices offers = map viewPrice prices <> map viewOffer offers
+  where
+    viewPrice BadgePrice {priceId = BadgePriceId pId, badgeType, monthPrice = CurrencyAmount p, currency, status} =
+      "price " <> plain pId <> ": " <> plain (textEncode badgeType :: Text) <> " " <> sShow p <> " " <> plain currency <> " per month, " <> plain (textEncode status :: Text)
+    viewOffer BadgeOffer {offerId = BadgeOfferId oId, months, discount, status, total} =
+      "offer " <> plain oId <> ": " <> sShow months <> " month(s), " <> viewJSON discount <> maybe "" (\(CurrencyAmount t) -> ", total " <> sShow t) total <> ", " <> plain (textEncode status :: Text)
 
 viewJSON :: J.ToJSON a => a -> StyledString
 viewJSON = plain . LB.toStrict . J.encode

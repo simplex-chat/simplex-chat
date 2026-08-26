@@ -97,5 +97,8 @@ mkChatOpts BroadcastBotOpts {coreOptions, botDisplayName} =
       markRead = False,
       createBot = Just CreateBotOpts {botDisplayName, allowFiles = False, clientService = False},
       userDisplayName = Nothing,
-      userImageFile = Nothing
+      userImageFile = Nothing,
+      optBadgeServiceAddress = Nothing,
+      optBadgeWebUrl = Nothing,
+      optBadgeIssuerKeys = []
     }

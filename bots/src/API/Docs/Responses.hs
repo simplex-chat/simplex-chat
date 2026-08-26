@@ -129,6 +129,8 @@ undocumentedResponses =
     "CRAppSettings",
     "CRArchiveExported",
     "CRArchiveImported",
+    "CRBadgeCatalog",
+    "CRBadgeState",
     "CRBroadcastSent",
     "CRCallInvitations",
     "CRChatCleared",

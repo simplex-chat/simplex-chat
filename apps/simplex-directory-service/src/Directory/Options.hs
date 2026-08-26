@@ -230,5 +230,8 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
       markRead = False,
       createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False, clientService},
       userDisplayName = Nothing,
-      userImageFile = Nothing
+      userImageFile = Nothing,
+      optBadgeServiceAddress = Nothing,
+      optBadgeWebUrl = Nothing,
+      optBadgeIssuerKeys = []
     }
