@@ -872,6 +872,28 @@ issuanceCredential BadgeIssuance {credential} = credential
 requestedBadgeType :: BadgeRequest -> BadgeType
 requestedBadgeType BadgeRequest {badgeInfo = BadgeInfo {badgeType}} = badgeType
 
+-- | The request with its tier replaced by the one the FUNDING states, which is what
+-- 'handlePurchaseCode' signs.
+--
+-- A redemption code carries no tier (B3) and no command reports one without redeeming, so a
+-- client cannot name the tier of a code it is about to present -- and the response is what
+-- states it (core §5, UX 2.8). Refusing a mismatch, which this path did until C4, made code
+-- redemption unimplementable for any client that had not been told the tier out of band. The
+-- security property that refusal defended is kept in full by overriding instead: a credential
+-- can never exceed what its funding bought, because the tier is read from the code's row and
+-- never from the request.
+--
+-- __Only this path overrides.__ 'handleIssueBadge' keeps its own check against the purchase's
+-- @current_badge_type@, which the client HOLDS and can state, and it shares 'resolveIssue' with
+-- this one -- so the override lives here, at the one call site whose tier the client cannot
+-- know, and not in 'issueSignedBadge', where it would silence that check too.
+--
+-- Everything else the client sent is untouched, the master key above all: 'requestMasterKey'
+-- reads the original request, so the credential is bound to the key the client generated.
+withFundedBadgeType :: BadgeType -> BadgeRequest -> BadgeRequest
+withFundedBadgeType badgeType BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeExpiry, badgeExtra}} =
+  BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType, badgeExpiry, badgeExtra}}
+
 -- | @badgeExtra@ is reserved and must be empty (RPC "Commands"). 'issueSignedBadge' rejects a
 -- non-empty one itself, but by the time that comes back it is indistinguishable from a signing
 -- failure, and the two need opposite answers: a non-empty @badgeExtra@ is a client fault
@@ -941,46 +963,40 @@ handlePurchaseCode bsEnv@BadgeServiceEnv {store, now} signerKey badgeRequest pre
     replay now' pid =
       withServiceTransaction store (replayTxn now' pid) >>= \case
         Left e -> storeFailed "purchaseBadge{code} replay" e
-        Right (Left code) -> pure $ errorResponse code Nothing Nothing
-        Right (Right (credential, statement)) -> do
+        Right (credential, statement) -> do
           when (isNothing credential) $
             logWarn $ "no badge issuance found for the redemption being replayed by purchase " <> tshow pid
           pure BSPBadgeCredential {credential, receipt = Nothing, statement}
-    replayTxn now' pid db =
-      getIssuanceForRedeemedCode db hash >>= \case
-        -- the tier check every other path applies, here against the credential actually being
-        -- handed back: replaying a supporter redemption under a legend badgeRequest must answer
-        -- like any other tier mismatch rather than return a credential of the other tier. When
-        -- there is no issuance there is nothing to return and so nothing to mismatch.
-        Just BadgeIssuance {badgeType} | badgeType /= requestedBadgeType badgeRequest -> pure $ Left BSEBadRequest
-        issuance -> do
-          statement <- purchaseStatement now' db Nothing pid
-          pure $ Right (issuanceCredential <$> issuance, statement)
-    redeem attemptsLeft now' badgeType months
-      -- The service signs exactly the content the client sent (RPC "Commands"), so a request
-      -- naming a tier the code does not fund is refused rather than silently signed as the
-      -- code's tier or, worse, as the tier asked for.
-      | requestedBadgeType badgeRequest /= badgeType = pure badRequest
-      | otherwise = do
-          -- minted before the plan, so the credit entry can name the payment row it references,
-          -- and before the transaction, so nothing but writes happens inside it
-          paymentUuid <- UUID.toText <$> UUID.nextRandom
-          withServiceTransaction store (planTxn now' badgeType months paymentUuid) >>= \case
-            Left e -> storeFailed "purchaseBadge{code} planning" e
-            Right (Left code) -> pure $ errorResponse code Nothing Nothing
-            Right (Right (row_, plan)) ->
-              resolveIssue bsEnv now' (rowPurchaseId <$> row_) badgeRequest (lpIssue plan) >>= \case
-                Left code -> pure $ errorResponse code Nothing Nothing
-                Right result ->
-                  withServiceTransaction store (writeTxn now' badgeType paymentUuid row_ plan {lpIssue = result}) >>= \case
-                    -- the code was claimed between the classification and this write; nothing of
-                    -- ours committed, so re-classify and answer what the code now is (a replay
-                    -- for this key, code_used for any other). Unreachable while the request loop
-                    -- is single-threaded -- see 'redemptionRetries' for why that matters.
-                    Left SECodeConflict | attemptsLeft > 0 -> attempt (attemptsLeft - 1)
-                    Left e -> storeFailed "purchaseBadge{code} write" e
-                    Right statement ->
-                      pure BSPBadgeCredential {credential = issuedCredential result, receipt = Nothing, statement}
+    -- The replay applies no tier check of its own: the credential it hands back was signed with
+    -- the tier of the code that bought it, and 'withFundedBadgeType' means a request naming
+    -- another tier could not have produced a credential of that tier to begin with. A check here
+    -- would only refuse the honest client that repeats a request after a timeout without knowing
+    -- the tier -- the very case the idempotency rule exists for.
+    replayTxn now' pid db = do
+      issuance <- getIssuanceForRedeemedCode db hash
+      statement <- purchaseStatement now' db Nothing pid
+      pure (issuanceCredential <$> issuance, statement)
+    redeem attemptsLeft now' badgeType months = do
+      -- minted before the plan, so the credit entry can name the payment row it references,
+      -- and before the transaction, so nothing but writes happens inside it
+      paymentUuid <- UUID.toText <$> UUID.nextRandom
+      withServiceTransaction store (planTxn now' badgeType months paymentUuid) >>= \case
+        Left e -> storeFailed "purchaseBadge{code} planning" e
+        Right (Left code) -> pure $ errorResponse code Nothing Nothing
+        Right (Right (row_, plan)) ->
+          -- the tier signed is the CODE's, never the request's (see 'withFundedBadgeType')
+          resolveIssue bsEnv now' (rowPurchaseId <$> row_) (withFundedBadgeType badgeType badgeRequest) (lpIssue plan) >>= \case
+            Left code -> pure $ errorResponse code Nothing Nothing
+            Right result ->
+              withServiceTransaction store (writeTxn now' badgeType paymentUuid row_ plan {lpIssue = result}) >>= \case
+                -- the code was claimed between the classification and this write; nothing of
+                -- ours committed, so re-classify and answer what the code now is (a replay
+                -- for this key, code_used for any other). Unreachable while the request loop
+                -- is single-threaded -- see 'redemptionRetries' for why that matters.
+                Left SECodeConflict | attemptsLeft > 0 -> attempt (attemptsLeft - 1)
+                Left e -> storeFailed "purchaseBadge{code} write" e
+                Right statement ->
+                  pure BSPBadgeCredential {credential = issuedCredential result, receipt = Nothing, statement}
     planTxn now' badgeType months paymentUuid db =
       getPurchaseByKey db signerKey >>= \case
         -- the normal case: C4 mints a fresh key per redemption, so there is no purchase row and

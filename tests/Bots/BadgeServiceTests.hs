@@ -192,7 +192,7 @@ badgeServiceTests = do
   it "should serve the cached credential when issueBadge repeats inside the last funded month" testBadgeServiceIssueBadgeCachedInLastFundedMonth
   it "should return no credential and a zero-balance statement when the balance is exhausted" testBadgeServiceIssueBadgeExhaustedBalance
   it "should credit a second code to the existing purchase with its own payment and no second issuance" testBadgeServiceSecondCodeSamePurchaseKey
-  it "should respond bad_request to a badgeRequest naming a tier the funding does not cover, on every path" testBadgeServiceTierMismatchIsBadRequest
+  it "should sign the tier the code funds whatever tier the request names, and still refuse a tier mismatch on issueBadge" testBadgeServiceSignsFundedTier
   it "should respond bad_request to a purchase carrying an upgrade, leaving the code unredeemed" testBadgeServiceUpgradeIsBadRequest
   it "should respond bad_request to a reserved badgeExtra, leaving the code unredeemed" testBadgeServiceBadgeExtraIsBadRequest
   it "should return only the entries after an asserted cursor, and the full history for an unknown or another purchase's one" testBadgeServiceIssueBadgeCursor
@@ -1794,13 +1794,21 @@ testBadgeServiceSecondCodeSamePurchaseKey ps = do
         purchasePaymentId `shouldBe` Just firstPayment
       other -> expectationFailure $ "expected two credit entries with distinct payments, got: " <> show other
 
--- B10 item 6, the security assertion of this step: the service signs exactly the content the
--- client sent, so a badgeRequest naming a tier the funding does not cover is refused on ALL
--- THREE paths -- a fresh redemption, a replay of one, and issueBadge. Without this a supporter
--- code buys a signed legend credential, since 'issueSignedBadge' overrides only badgeExpiry.
--- The refusal must also leave the code intact: it is redeemed successfully in between.
-testBadgeServiceTierMismatchIsBadRequest :: HasCallStack => TestParams -> IO ()
-testBadgeServiceTierMismatchIsBadRequest ps = do
+-- B10 item 6, the security assertion of this step, in the form C4 left it: the tier a credential
+-- carries is the CODE's, never the request's. A client cannot know a code's tier before it
+-- redeems it -- a code carries none (B3) and the response is what states it (core §5) -- so
+-- 'purchaseBadge{code}' signs the tier the funding bought and ignores the one the request names
+-- ('withFundedBadgeType', plan §9). The property that replaced the old refusal is asserted
+-- directly: a LEGEND request over a SUPPORTER code yields a SUPPORTER credential, a supporter
+-- ledger and a supporter purchase row, so nothing a request says can buy a tier its funding did
+-- not. Drop the override and this reads back 'legend' on all three.
+--
+-- 'issueBadge' is deliberately unchanged: there the tier is the purchase's own
+-- 'current_badge_type', which the client HOLDS and must state, so a mismatch is still
+-- bad_request -- and that is why the override lives at this one call site and not in
+-- 'issueSignedBadge', which both paths share.
+testBadgeServiceSignsFundedTier :: HasCallStack => TestParams -> IO ()
+testBadgeServiceSignsFundedTier ps = do
   clock <- newTestClock testClockStart
   signer <- newTestSigner
   codeRef <- newIORef ""
@@ -1808,15 +1816,26 @@ testBadgeServiceTierMismatchIsBadRequest ps = do
   withBadgeServiceClock ps (readIORef clock) (writeTestBadgeServiceConfig ps) seedCode $ \client bsLink -> do
     code <- readIORef codeRef
     sendRequest client bsLink signer (purchaseCodeRequest signer BTLegend code)
-    expectErrorCode "legend request with a supporter code" client "bad_request"
-    sendRequest client bsLink signer (purchaseCodeRequest signer BTSupporter code)
-    _ <- expectCredential "the same code still redeems" client
+    (cred1, statement) <- expectCredential "legend request with a supporter code" client
+    let BadgeCredential {badgeInfo = BadgeInfo {badgeType = credentialType}} = cred1
+    ("credential tier" :: String, credentialType) `shouldBe` ("credential tier", BTSupporter)
+    statementShape statement `shouldBe` [(3, 3, "credit payment (no invoiceId)"), (-1, 2, "debit badge")]
+    -- the ledger the same request wrote is supporter entry by entry (field 5 of StatementEntry,
+    -- constructed positionally as everywhere else in this file)
+    let BadgeStatement {entries} = statement
+        entryTypes = map (\(StatementEntry _ _ _ _ bt _ _ _) -> bt) entries
+    ("ledger tiers" :: String, entryTypes) `shouldBe` ("ledger tiers", [BTSupporter, BTSupporter])
+    -- the replay under the same legend request hands back the very same supporter credential
     sendRequest client bsLink signer (purchaseCodeRequest signer BTLegend code)
-    expectErrorCode "legend request replaying a supporter redemption" client "bad_request"
+    (cred2, _) <- expectCredential "legend request replaying the same redemption" client
+    cred2 `shouldBe` cred1
     sendRequest client bsLink signer (issueRequest signer BTLegend "" unknownEntryUuid)
     expectErrorCode "issueBadge naming another tier" client "bad_request"
-  -- exactly what the one successful redemption writes: the three refusals wrote nothing
-  withServiceDB ps $ \db -> serviceRowCounts db `shouldReturn` (1, 1, 2, 1, 1)
+  withServiceDB ps $ \db -> do
+    -- exactly what the one redemption writes: the replay and the issueBadge refusal wrote nothing
+    serviceRowCounts db `shouldReturn` (1, 1, 2, 1, 1)
+    [Only purchaseType] <- DB.query_ db "SELECT current_badge_type FROM sx_badge_service_badge_purchases"
+    ("purchase tier" :: String, purchaseType :: BadgeType) `shouldBe` ("purchase tier", BTSupporter)
 
 -- B10 item 7: a purchase carrying an upgrade is refused before the payment is even looked at, so
 -- the code is not consumed by a request whose upgrade would have been silently dropped.

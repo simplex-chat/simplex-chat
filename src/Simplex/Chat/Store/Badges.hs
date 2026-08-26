@@ -47,6 +47,7 @@ module Simplex.Chat.Store.Badges
 
     -- * Ledger
     getLastBadgeLedgerEntry,
+    checkStatementEntries,
     insertLedgerEntries,
   )
 where
@@ -543,6 +544,21 @@ getLastBadgeLedgerEntry db badgePurchaseId = do
 -- complete history every time; only @issueBadge@ honours a cursor. Insertion is therefore
 -- @ON CONFLICT (entry_uuid) DO NOTHING@ against @idx_badge_ledger_uuid@ — a second delivery of
 -- the same statement writes nothing and changes nothing, rather than merely not crashing.
+-- | Whether every entry of a statement can be stored, without opening a transaction or touching
+-- the database.
+--
+-- 'insertLedgerEntries' is the only fallible call its callers make with rows already written in
+-- the same transaction, and a @Left@ from it does NOT roll them back: @withStore@ runs its
+-- 'ExceptT' inside the transaction, so a @Left@ returns normally and the transaction COMMITS
+-- what preceded it. A caller therefore asks this first, outside the transaction, and the only
+-- failure that reaches 'insertLedgerEntries' proper is one that would also have failed here.
+--
+-- It is exactly 'insertLedgerEntries'' own row conversion with the row discarded, so the two
+-- cannot disagree about what is storable.
+checkStatementEntries :: BadgeStatement -> Either StoreError ()
+checkStatementEntries BadgeStatement {entries} =
+  mapM_ (\StatementEntry {entryType} -> encodeLedgerEntryType =<< storedEntryType entryType) entries
+
 insertLedgerEntries :: DB.Connection -> Int64 -> BadgeStatement -> UTCTime -> ExceptT StoreError IO ()
 insertLedgerEntries db badgePurchaseId BadgeStatement {entries, previousEntryId} now = do
   rows <- liftEither $ mapM entryRow entries

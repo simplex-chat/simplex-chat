@@ -94,7 +94,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
-import Simplex.Chat.Store.Badges (NewBadgeIssuance (..), UserBadgePurchase (..), createCodePayment, createIssuance, createPurchase, getLastBadgeLedgerEntry, getShownPurchase, hasIssuanceForPeriod, insertLedgerEntries, setShownPurchase, supersedePurchases)
+import Simplex.Chat.Store.Badges (NewBadgeIssuance (..), UserBadgePurchase (..), checkStatementEntries, createCodePayment, createIssuance, createPurchase, getLastBadgeLedgerEntry, getShownPurchase, hasIssuanceForPeriod, insertLedgerEntries, setShownPurchase, supersedePurchases)
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
@@ -5211,6 +5211,11 @@ unexpectedBadgeResponse cmd r = localBadgeError $ "unexpected badge service resp
 storePaymentsUnsupported :: Text
 storePaymentsUnsupported = "badge store payments are not supported"
 
+-- | A statement carrying an entry this build cannot store, reported before any row is written
+-- (see 'checkStatementEntries').
+unstorableStatement :: StoreError -> Text
+unstorableStatement e = "badge service statement cannot be stored: " <> tshow e
+
 -- | Checks that a credential was signed by a configured issuer key.
 --
 -- It RETURNS its failures instead of throwing, because its three callers need three different
@@ -5456,31 +5461,17 @@ sendBadgeRequest :: NetworkRequestMode -> User -> Maybe C.PrivateKeyEd25519 -> B
 sendBadgeRequest nm user signKey req =
   asks (badgeServiceAddress . config) >>= \case
     Nothing -> pure $ badgeRequestFailed "badge service address is not configured"
-    Just target -> either (badgeRequestFailed . ("badge service request failed: " <>) . tshow) id <$> tryAllErrors (sendRequest target)
+    Just target -> either (badgeRequestFailed . requestFailed) id <$> tryAllErrors (sendRequest target)
   where
     sendRequest target = do
       cReq <- resolveServiceTarget nm user target
       respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq Nothing signKey (LB.toStrict $ J.encode req)
-      pure $ either (badgeRequestFailed . ("invalid badge service response: " <>) . T.pack) id $ J.eitherDecodeStrict' respData
+      pure $ either (badgeRequestFailed . responseFailed) id $ J.eitherDecodeStrict' respData
+    -- a sentence first, then the error itself: the apps render an 'internal' code by showing this
+    -- message (G2), and a bare 'Show' of a 'ChatError' is not something to put in front of a user
+    requestFailed e = "The badge service could not be reached, and the request was not delivered. Details: " <> tshow e
+    responseFailed e = "The badge service answered with something this app version cannot read. Details: " <> T.pack e
     badgeRequestFailed e = BSPError {code = BSEInternal, message = Just e, retryAfter = Nothing}
-
--- | The badge tiers a redemption code can fund, in the order a code is presented under.
---
--- __The client cannot know which tier a code funds before it is redeemed.__ A code is 20 opaque
--- characters (B3) and carries no tier, the response is what states it (core §5), and no command
--- reports a code's tier without redeeming it — yet @purchaseBadge@ refuses a @badgeRequest@
--- naming a tier other than the code's with @bad_request@ (B7, plan §9), because the service
--- signs the badge info it is sent. So the code is presented once per tier until the service
--- stops refusing it.
---
--- The probe is safe and cheap by construction: the tier check runs before anything is planned,
--- so a refused presentation writes nothing, leaves the code unredeemed and debits neither
--- throttle bucket (B10), and the service can only ever issue the tier the code funds. It costs
--- one extra round trip for a legend code and none for a supporter one. These are the two tiers
--- @badge_codes.badge_type@ admits (@CHECK (badge_type IN ('supporter','legend'))@); lifetime
--- codes are out of scope (plan §6).
-codeBadgeTypes :: NonEmpty BadgeType
-codeBadgeTypes = BTSupporter :| [BTLegend]
 
 -- | Redeems a code: the keys are minted in memory, the badge lock is held across the send and
 -- the writes, and the presentation happens after it is released.
@@ -5510,23 +5501,25 @@ redeemBadgeCode nm user@User {userId} code = do
   ChatConfig {badgeWebBaseUrl} <- asks config
   pure CRBadgeState {user = user', badgeState, badgeWebBaseUrl}
   where
-    purchaseWithCode purchaseKey purchasePrivKey masterKey = presentCode codeBadgeTypes
-      where
-        presentCode (badgeType :| tiers) =
-          sendBadgeRequest nm user (Just purchasePrivKey) (badgeCodeRequest purchaseKey masterKey badgeType code) >>= \case
-            BSPBadgeCredential {credential = Just cred, statement} -> pure (cred, statement)
-            -- the exhausted balance of an issueBadge, which a redemption cannot be: a code
-            -- credits the months it funds in the same transaction that issues them (B7)
-            BSPBadgeCredential {credential = Nothing} ->
-              throwChatError $ localBadgeError "badge service redeemed the code without issuing a credential"
-            -- the one refusal that is a question about the code rather than an answer about it
-            BSPError {code = BSEBadRequest} | tier : tiers' <- tiers -> presentCode (tier :| tiers')
-            BSPError {code = errCode, message, retryAfter} ->
-              throwChatError CEBadgeServiceError {badgeError = errCode, badgeErrorMessage = message, retryAfter}
-            r -> throwChatError $ unexpectedBadgeResponse "purchaseBadge" r
-    -- one transaction: the payment row, the purchase row with the held keys, the statement's
-    -- ledger rows, the issuance, the slot's supersession, the shown-badge pointer and the
-    -- profile's own badge columns either all land or none of them do
+    -- the tier the request names is not the client's to choose: a code carries none, and the
+    -- service signs the tier the CODE funds whatever this says (B7, plan §9). 'BTSupporter' is
+    -- what it states, and a legend code still returns a legend credential.
+    purchaseWithCode purchaseKey purchasePrivKey masterKey =
+      sendBadgeRequest nm user (Just purchasePrivKey) (badgeCodeRequest purchaseKey masterKey code) >>= \case
+        BSPBadgeCredential {credential = Just cred, statement} -> pure (cred, statement)
+        -- the exhausted balance of an issueBadge, which a redemption cannot be: a code
+        -- credits the months it funds in the same transaction that issues them (B7)
+        BSPBadgeCredential {credential = Nothing} ->
+          throwChatError $ localBadgeError "badge service redeemed the code without issuing a credential"
+        BSPError {code = errCode, message, retryAfter} ->
+          throwChatError CEBadgeServiceError {badgeError = errCode, badgeErrorMessage = message, retryAfter}
+        r -> throwChatError $ unexpectedBadgeResponse "purchaseBadge" r
+    -- Everything the response can be rejected for is checked FIRST, and then one transaction
+    -- writes the payment row, the purchase row with the held keys, the statement's ledger rows,
+    -- the issuance, the slot's supersession, the shown-badge pointer and the profile's own badge
+    -- columns. The order is the contract: a store function's 'Left' does NOT roll the
+    -- transaction back (see 'checkStatementEntries'), so a rejection reachable from a response
+    -- must be raised before the first row is written, not from inside.
     storeRedeemedBadge now purchaseKey purchasePrivKey masterKey cred statement = do
       -- a credential that is not ours is discarded and nothing at all is written, the statement
       -- included: a response we cannot verify is not a response to trust the rest of. The
@@ -5535,6 +5528,13 @@ redeemBadgeCode nm user@User {userId} code = do
       (periodStart, periodEnd) <-
         maybe (throwChatError $ localBadgeError "badge service issued no period for the redeemed code") pure $
           issuedBadgePeriod Nothing statement
+      -- BEFORE the transaction, because a 'Left' inside one does not roll it back: @withStore@
+      -- runs the 'ExceptT' inside 'withImmediateTransaction', so an unstorable entry type
+      -- reaching 'insertLedgerEntries' would COMMIT the payment and purchase rows written above
+      -- it and leave them orphaned. The two 'ExceptT' calls after it can only fail for a
+      -- purchase that is not this user's, which is the row created two statements earlier in
+      -- this very transaction.
+      either (throwChatError . localBadgeError . unstorableStatement) pure $ checkStatementEntries statement
       case cred of
         BadgeCredential {badgeInfo = info@BadgeInfo {badgeType, badgeExpiry = Just expiry}} -> do
           user' <- withStore $ \db -> do
@@ -5560,16 +5560,22 @@ redeemBadgeCode nm user@User {userId} code = do
 
 -- | The @purchaseBadge@ request redeeming a code, signed by the purchase key it mints.
 --
+-- __The badge type is stated but not chosen.__ A code carries no tier (B3), and the client has
+-- no way to learn one before redeeming, so the service signs the tier the CODE funds and
+-- ignores this field on this command (B7, plan §9); the response is what states the tier, which
+-- is what the purchase row is written with. The field is not optional on the wire, so it holds
+-- 'BTSupporter'.
+--
 -- 'badgeExpiry' is absent and 'badgeExtra' empty on the same terms as 'badgeIssueRequest': the
 -- service sets the expiry itself and refuses a non-empty extra.
-badgeCodeRequest :: C.PublicKeyEd25519 -> BadgeMasterKey -> BadgeType -> Text -> BadgeServiceRequest
-badgeCodeRequest purchaseKey masterKey badgeType code =
+badgeCodeRequest :: C.PublicKeyEd25519 -> BadgeMasterKey -> Text -> BadgeServiceRequest
+badgeCodeRequest purchaseKey masterKey code =
   BadgeServiceRequest
     { version = currentBadgeVersion,
       purchaseKey = Just purchaseKey,
       request =
         BSCPurchaseBadge
-          { badgeRequest = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType, badgeExpiry = Nothing, badgeExtra = ""}},
+          { badgeRequest = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}},
             payment = SPCode {code},
             -- upgrades need store evidence or a receipt, both out of scope (plan §6), and a
             -- purchase carrying one is refused before its payment is looked at (B7)
@@ -5604,10 +5610,10 @@ data BadgeChange
 -- is stored like any other.
 storeBadgeIssueResponse :: UTCTime -> User -> UserBadgePurchase -> Maybe BadgeLedgerEntry -> BadgeServiceResponse -> CM BadgeChange
 storeBadgeIssueResponse now user@User {userId} UserBadgePurchase {badgePurchaseId = pId} heldEntry_ = \case
-  BSPBadgeCredential {credential = Nothing, statement} -> do
+  BSPBadgeCredential {credential = Nothing, statement} -> storable statement $ do
     withStore $ \db -> insertLedgerEntries db pId statement now
     ledgerChange
-  BSPBadgeCredential {credential = Just cred, statement} ->
+  BSPBadgeCredential {credential = Just cred, statement} -> storable statement $
     verifyUserBadge cred >>= \case
       Left e -> badgeFailed e
       Right () -> case cred of
@@ -5638,6 +5644,11 @@ storeBadgeIssueResponse now user@User {userId} UserBadgePurchase {badgePurchaseI
   r -> BadgeUnchanged <$ eToView (ChatError $ unexpectedBadgeResponse "issueBadge" r)
   where
     badgeFailed e = BadgeUnchanged <$ eToView (ChatError $ localBadgeError e)
+    -- checked BEFORE the transaction opens, because a 'Left' inside one does not roll it back
+    -- (see 'checkStatementEntries'): every write this pass makes would otherwise commit around
+    -- an unstorable entry type, and the failure would arrive as a store error rather than as the
+    -- badge error every other failure of a pass is reported as
+    storable statement action = either (badgeFailed . unstorableStatement) (const action) $ checkStatementEntries statement
     -- the ledger the statement left, against the one that was held: nothing else the badge state
     -- reports comes from the ledger, so an unchanged last entry is an unchanged state
     ledgerChange = do
