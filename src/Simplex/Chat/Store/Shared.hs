@@ -73,6 +73,10 @@ data ChatLockEntity
   | CLUserContact Int64
   | CLContactRequest Int64
   | CLFile Int64
+  | -- | One signed badge operation per profile at a time: the monthly issuance pass and the
+    -- commands that send signed badge requests all take it, so they cannot interleave their
+    -- reads and writes of that profile's purchase, ledger and badge rows.
+    CLBadge UserId
   deriving (Eq, Ord)
 
 -- These error type constructors must be added to mobile apps

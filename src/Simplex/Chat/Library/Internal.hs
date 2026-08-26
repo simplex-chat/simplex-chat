@@ -159,6 +159,18 @@ withFileLock :: Text -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
+-- | Serializes the signed badge operations of one profile: the 'BadgeManager' pass and every
+-- command that sends a signed badge request take it, so one such operation per user is in
+-- flight and no two of them interleave their reads and writes of that profile's badge rows.
+--
+-- It is an ordinary entity lock over the shared 'entityLocks' map, so it inherits the
+-- @chatLock@-first order rather than introducing one. A holder must RELEASE it before calling
+-- anything that takes @chatLock@ itself — 'Simplex.Chat.Library.Commands.presentUserBadgeToContacts'
+-- in particular.
+withBadgeLock :: Text -> UserId -> CM a -> CM a
+withBadgeLock name = withEntityLock name . CLBadge
+{-# INLINE withBadgeLock #-}
+
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
 useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
   fromMaybe (rndAgentServers p) . L.nonEmpty . agentServerCfgs p opDomains

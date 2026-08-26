@@ -56,10 +56,22 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeRequest (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Badges.Months (addMonths)
-import Simplex.Chat.Badges.Service (BadgeServiceErrorCode (..))
-import Simplex.Chat.Badges.Types (BadgeLedgerEntry (..), UserBadge (..), UserBadgeState (..))
+import Simplex.Chat.Badges.Service
+  ( BadgeBalance (..),
+    BadgeServiceCommand (..),
+    BadgeServiceErrorCode (..),
+    BadgeServiceRequest (..),
+    BadgeServiceResponse (..),
+    BadgeStatement (..),
+    StatementCreditType (..),
+    StatementDebitType (..),
+    StatementEntry (..),
+    StatementEntryType (..),
+    currentBadgeVersion,
+  )
+import Simplex.Chat.Badges.Types (BadgeLedgerEntry (..), LedgerCreditType (..), LedgerDebitType (..), LedgerEntryType (..), UserBadge (..), UserBadgeState (..))
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -80,7 +92,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
-import Simplex.Chat.Store.Badges (UserBadgePurchase (..), getLastBadgeLedgerEntry, getShownPurchase)
+import Simplex.Chat.Store.Badges (NewBadgeIssuance (..), UserBadgePurchase (..), createIssuance, getLastBadgeLedgerEntry, getShownPurchase, insertLedgerEntries)
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
@@ -99,7 +111,8 @@ import qualified Simplex.Chat.Util as U
 import Simplex.Chat.Web (webPreviewWorker)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSizeHard)
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Client (cancelWorker, getAgentWorker)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), Worker (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Interface (execSQL)
@@ -254,6 +267,7 @@ startChatController mainApp enableSndFiles serviceRequests = do
           startDeliveryWorkers
           startRelayRequestWorker_
           startCleanupManager
+          startBadgeWorkers users
           void $ forkIO $ mapM_ startExpireCIs users
           startRelayChecks users
           startWebPreview users
@@ -350,7 +364,11 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, badgeWorkers} = do
+  -- the map is swapped out BEFORE the workers are cancelled: 'cancelWorker' leaves a worker's
+  -- action TMVar empty, so one left in the map would make the next 'getBadgeWorker' for that
+  -- user block on it forever
+  atomically (swapTVar badgeWorkers M.empty) >>= mapM_ cancelWorker
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
@@ -3559,6 +3577,9 @@ processChatCommand cxt nm = \case
   APIGetBadgeState userId -> withUserId userId $ \user -> do
     badgeState <- getUserBadgeState user
     ChatConfig {badgeWebBaseUrl} <- asks config
+    -- the badge screen opening or regaining focus is one of the three triggers of a pass, so a
+    -- profile that has just crossed a month boundary re-issues without waiting for the timer
+    lift $ void $ getBadgeWorker True userId
     pure CRBadgeState {user, badgeState, badgeWebBaseUrl}
   APIGetBadgeCatalog _ -> throwChatError badgeNotImplemented
   APIPurchaseBadge {} -> throwChatError badgeNotImplemented
@@ -3664,6 +3685,7 @@ processChatCommand cxt nm = \case
         CLUserContact ucId -> "UserContact " <> tshow ucId
         CLContactRequest crId -> "ContactRequest " <> tshow crId
         CLFile fId -> "File " <> tshow fId
+        CLBadge uId -> "Badge " <> tshow uId
   DebugEvent event -> toView event >> ok_
   GetAgentSubsTotal userId -> withUserId userId $ \user -> do
     users <- withStore' $ \db -> getUsers db
@@ -5176,11 +5198,20 @@ getUserBadgeState User {userId} = withFastStore $ \db ->
 badgePaidThrough :: BadgeLedgerEntry -> UTCTime
 badgePaidThrough BadgeLedgerEntry {balanceMonths, balanceStartTs} = addMonths balanceMonths balanceStartTs
 
+-- | A badge failure that is the CLIENT's own, reported in the shape a service failure is
+-- reported in: no 'BadgeServiceErrorCode' denotes a local failure, so it is 'BSEInternal' with
+-- the reason as the message.
+localBadgeError :: Text -> ChatErrorType
+localBadgeError t = CEBadgeServiceError {badgeError = BSEInternal, badgeErrorMessage = Just t, retryAfter = Nothing}
+
 -- | The placeholder failure of the badge commands C4 implements. It is a 'CEBadgeServiceError'
 -- rather than a command error because that is the error C4 raises from them, so the stub does
 -- not train a client to expect a different shape from the one it will get.
 badgeNotImplemented :: ChatErrorType
-badgeNotImplemented = CEBadgeServiceError {badgeError = BSEInternal, badgeErrorMessage = Just "not implemented", retryAfter = Nothing}
+badgeNotImplemented = localBadgeError notImplementedMessage
+
+notImplementedMessage :: Text
+notImplementedMessage = "not implemented"
 
 -- | Checks that a credential was signed by a configured issuer key.
 --
@@ -5223,6 +5254,247 @@ addUserBadge user cred@(BadgeCredential _ _ _ info) = do
   user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
   asks currentUser >>= atomically . (`writeTVar` Just user')
   presentUserBadgeToContacts user'
+
+-- BadgeManager ----------------------------------------------------------------
+--
+-- One worker per user (badge state is per profile), over the agent 'Worker' framework the
+-- controller already uses for delivery and relay requests. The worker holds no queue: a trigger
+-- only signals its @doWork@, and each pass derives its work from the stored purchase and its
+-- ledger, so lost and duplicated signals are harmless.
+
+-- | The badge worker of one user, creating it if it has none; @hasWork@ signals a pass.
+--
+-- Two of the three triggers signal through this call — chat start ('startBadgeWorkers') and
+-- @APIGetBadgeState@ — and nothing else does. The third is the worker's own timer, which is
+-- inside 'runBadgeWorker' rather than a signal.
+getBadgeWorker :: Bool -> UserId -> CM' Worker
+getBadgeWorker hasWork userId = do
+  ws <- asks badgeWorkers
+  a <- asks smpAgent
+  getAgentWorker "badge" hasWork a userId ws $ runBadgeWorker userId
+
+-- | Signals every user's badge worker at chat start, beside the other worker starts: a profile
+-- that crossed a month boundary while the app was closed re-issues without waiting for the timer.
+startBadgeWorkers :: [User] -> CM' ()
+startBadgeWorkers = mapM_ $ \User {userId} -> void $ getBadgeWorker True userId
+
+-- | The worker loop: wait for a signal or for 'badgePassInterval' to elapse, then run one pass.
+--
+-- The signal is TAKEN rather than read, and taken before the pass reads any state, so a signal
+-- arriving while a pass runs is not consumed by it and runs one more pass afterwards. Two
+-- passes for one user therefore never overlap: the framework runs one thread per worker, and
+-- that thread is here.
+--
+-- The timer is this loop's own wait rather than a shared scheduler, and it is 'threadDelay''
+-- rather than 'timeout' because a day in microseconds does not fit an 'Int' on 32-bit builds.
+runBadgeWorker :: UserId -> Worker -> CM ()
+runBadgeWorker userId Worker {doWork} = do
+  interval <- asks $ badgePassInterval . config
+  forever $ do
+    liftIO $ race_ (atomically $ takeTMVar doWork) (threadDelay' $ diffToMicroseconds interval)
+    badgeManagerPass userId `catchAllErrors` eToView
+
+-- | One pass for one user: the signed half under the per-user badge lock, then its presentation
+-- and event OUTSIDE that lock, since 'presentUserBadgeToContacts' takes 'chatLock'.
+badgeManagerPass :: UserId -> CM ()
+badgeManagerPass userId = do
+  user <- withFastStore (`getUser` userId)
+  withBadgeLock "badgeManagerPass" userId (issueDueBadgePeriod user) >>= presentBadgeChange
+
+-- | Re-issues the shown purchase's current month when its balance funds one and the month is
+-- unissued. Everything it does — the state it reads, the request it sends and the rows it
+-- writes — happens under the per-user badge lock, so it cannot interleave with a command that
+-- sends a signed badge request for the same profile.
+issueDueBadgePeriod :: User -> CM BadgeChange
+issueDueBadgePeriod user@User {userId} = do
+  now <- liftIO =<< asks (badgeCurrentTime . config)
+  -- the purchase and its last entry are read in ONE transaction, so the balance asserted to the
+  -- service cannot be from a ledger that changed between the two reads
+  due_ <- withFastStore $ \db ->
+    getShownPurchase db userId >>= \case
+      Nothing -> pure Nothing
+      Just p@UserBadgePurchase {badgePurchaseId = pId} -> Just . (p,) <$> getLastBadgeLedgerEntry db pId
+  case due_ of
+    Just (purchase@UserBadgePurchase {purchasePrivKey}, Just lastEntry)
+      | badgePeriodDue now lastEntry -> do
+          balance <- assertedBadgeBalance lastEntry
+          resp <- sendBadgeRequest (Just purchasePrivKey) (badgeIssueRequest purchase balance)
+          storeBadgeIssueResponse now user purchase (Just lastEntry) resp
+    _ -> pure BadgeUnchanged
+
+-- | Whether the month the balance would fund is unissued: a positive balance whose coverage
+-- window has already started.
+--
+-- This is @BadgeService.Ledger.issue@'s own guard, applied to the last entry the client holds.
+-- A previous issue moved 'balanceStartTs' to the END of the period it issued, so
+-- @balanceStartTs > now@ means the current month is already issued — and that is why the two
+-- reasons not to issue must be told apart by 'balanceStartTs' and never by the balance alone:
+-- once the last funded month has been issued both hold at once.
+badgePeriodDue :: UTCTime -> BadgeLedgerEntry -> Bool
+badgePeriodDue now BadgeLedgerEntry {balanceMonths, balanceStartTs} = balanceMonths > 0 && balanceStartTs <= now
+
+-- | The balance assertion of @issueBadge@: the last entry the client holds, back in the shape it
+-- arrived in. The service matches it by @entryId@ and returns what follows it; a mismatch is
+-- healed on the service side and answered with the complete history or an @opening@ credit.
+--
+-- The three entry types that cannot be put back on the wire are refused rather than coerced:
+-- they carry a purchase KEY where the stored columns hold a purchase id, or an @Int64@ charge id
+-- against a TEXT one, exactly as 'Simplex.Chat.Store.Badges' refuses them in the other
+-- direction. Nothing can write such a row today, so this raises a chat error rather than
+-- branching the pass.
+assertedBadgeBalance :: BadgeLedgerEntry -> CM BadgeBalance
+assertedBadgeBalance BadgeLedgerEntry {entryUuid, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince, serviceCreatedAt, entryType} = do
+  entryType' <- either (throwChatError . localBadgeError) pure $ wireEntryType entryType
+  pure . BadgeBalance $
+    StatementEntry
+      { entryId = entryUuid,
+        changeMonths,
+        balanceMonths,
+        balanceStartTs,
+        balanceBadgeType,
+        wasPausedSince,
+        -- the wire's createdAt is the SERVICE's clock, which is the column the replica keeps it
+        -- in; created_at is when this client replicated the row and is not the service's to read
+        createdAt = serviceCreatedAt,
+        entryType = entryType'
+      }
+
+-- | The inverse of 'Simplex.Chat.Store.Badges.storedEntryType', for the one entry the client
+-- asserts back to the service. @credit(payment)@ loses nothing on the way out: the stored
+-- @payment_id@ is a CLIENT payments id and the wire field is the SERVICE's @invoiceId@, which a
+-- replicated entry never carries.
+wireEntryType :: LedgerEntryType -> Either Text StatementEntryType
+wireEntryType = \case
+  LECredit creditType -> SECredit <$> case creditType of
+    CTPayment {} -> Right SCPayment {invoiceId = Nothing}
+    CTSupport -> Right SCSupport
+    CTOpening -> Right SCOpening
+    CTUnknown {tag, json} -> Right SCUnknown {tag, json}
+    CTCharge {} -> unsupported "credit(charge)"
+    CTTransferIn {} -> unsupported "credit(transferIn)"
+  LEDebit debitType -> SEDebit <$> case debitType of
+    DTRefund -> Right SDRefund
+    DTSupport -> Right SDSupport
+    DTBadge -> Right SDBadge
+    DTLapse -> Right SDLapse
+    DTUnknown {tag, json} -> Right SDUnknown {tag, json}
+    DTUpgrade {} -> unsupported "debit(upgrade)"
+    DTTransferOut {} -> unsupported "debit(transferOut)"
+  where
+    unsupported what = Left $ "cannot assert badge ledger " <> what <> " to the badge service"
+
+-- | The @issueBadge@ request for a purchase, signed by that purchase's key.
+--
+-- __The master key is the purchase row's, never a freshly generated one.__ The service does not
+-- check the master key of an @issueBadge@ against the one it recorded for the purchase, and a
+-- request that rotated it would take the service's cached-issuance path and be answered with a
+-- credential bound to the OLD key — unusable, with no error raised anywhere. Keeping it stable
+-- per purchase key closes that from this side.
+--
+-- 'badgeExpiry' is left absent and 'badgeExtra' empty: the service overrides the expiry with its
+-- own (the Sunday after the period it issues) and refuses a non-empty extra.
+badgeIssueRequest :: UserBadgePurchase -> BadgeBalance -> BadgeServiceRequest
+badgeIssueRequest UserBadgePurchase {purchaseKey, masterKey, currentBadgeType} balance =
+  BadgeServiceRequest
+    { version = currentBadgeVersion,
+      purchaseKey = Just purchaseKey,
+      request =
+        BSCIssueBadge
+          { badgeRequest = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = currentBadgeType, badgeExpiry = Nothing, badgeExtra = ""}},
+            balance
+          }
+    }
+
+-- | The single send path to the badge service, which C4 replaces with the lazy connection and
+-- the signing. Until then every badge request fails locally, which is what the two stub command
+-- handlers already report.
+sendBadgeRequest :: Maybe C.PrivateKeyEd25519 -> BadgeServiceRequest -> CM BadgeServiceResponse
+sendBadgeRequest _signKey _request = pure BSPError {code = BSEInternal, message = Just notImplementedMessage, retryAfter = Nothing}
+
+-- | What one applied badge response changed, which is what decides what happens once the badge
+-- lock is released.
+data BadgeChange
+  = -- | Nothing was written: no work, a service error, or a credential that failed verification.
+    BadgeUnchanged
+  | -- | Ledger rows were stored and the profile's own badge is untouched — the exhausted
+    -- balance, which is not an error.
+    BadgeLedgerChanged User
+  | -- | A new credential is on the profile, so it is presented to contacts as well as reported.
+    BadgeIssued User
+
+-- | Applies one @issueBadge@ response, in ONE transaction, and reports what it changed.
+--
+-- The caller must hold the per-user badge lock and must NOT hold it while passing the result to
+-- 'presentBadgeChange'.
+--
+-- A credential that fails verification is discarded and NOTHING is written, the statement
+-- included: a response whose credential is not ours is not a response to trust the rest of. An
+-- absent credential is the opposite — the exhausted balance the service defines, whose statement
+-- is stored like any other.
+storeBadgeIssueResponse :: UTCTime -> User -> UserBadgePurchase -> Maybe BadgeLedgerEntry -> BadgeServiceResponse -> CM BadgeChange
+storeBadgeIssueResponse now user UserBadgePurchase {badgePurchaseId = pId} heldEntry_ = \case
+  BSPBadgeCredential {credential = Nothing, statement} -> do
+    withStore $ \db -> insertLedgerEntries db pId statement now
+    ledgerChange
+  BSPBadgeCredential {credential = Just cred, statement} ->
+    verifyUserBadge cred >>= \case
+      Left e -> badgeFailed e
+      Right () -> case cred of
+        BadgeCredential {badgeInfo = info@BadgeInfo {badgeType, badgeExpiry = Just expiry}} -> do
+          user' <- withStore $ \db -> do
+            insertLedgerEntries db pId statement now
+            -- the issuance is written only for a statement that carries the period it issued;
+            -- ledgerEntryId stays absent (see 'issuedBadgePeriod' and plan §9)
+            forM_ (issuedBadgePeriod heldEntry_ statement) $ \(periodStart, periodEnd) ->
+              liftIO . void $
+                createIssuance db NewBadgeIssuance {badgePurchaseId = pId, badgeType, periodStart, periodEnd, expiry, ledgerEntryId = Nothing, credential = cred} now
+            liftIO $ setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+          asks currentUser >>= atomically . (`writeTVar` Just user')
+          pure $ BadgeIssued user'
+        -- 'issueSignedBadge' always sets the expiry, so this is a malformed response rather than
+        -- a lifetime credential, and a lifetime badge has no issuance row to write anyway
+        _ -> badgeFailed "issued badge credential carries no expiry"
+  BSPError {code, message, retryAfter} ->
+    BadgeUnchanged <$ eToView (ChatError CEBadgeServiceError {badgeError = code, badgeErrorMessage = message, retryAfter})
+  r -> badgeFailed $ "unexpected badge service response to issueBadge: " <> tshow r
+  where
+    badgeFailed e = BadgeUnchanged <$ eToView (ChatError $ localBadgeError e)
+    -- the ledger the statement left, against the one that was held: nothing else the badge state
+    -- reports comes from the ledger, so an unchanged last entry is an unchanged state
+    ledgerChange = do
+      lastEntry_ <- withFastStore $ \db -> getLastBadgeLedgerEntry db pId
+      pure $ if ledgerPosition lastEntry_ == ledgerPosition heldEntry_ then BadgeUnchanged else BadgeLedgerChanged user
+    ledgerPosition = fmap $ \BadgeLedgerEntry {entryUuid, balanceMonths, balanceStartTs} -> (entryUuid, balanceMonths, balanceStartTs)
+
+-- | The period a statement issued, when it carries one.
+--
+-- The service writes the @debit(badge)@ LAST, after any lapse and credit, and @issue@ sets
+-- 'balanceStartTs' to the period's END, so the last entry's 'balanceStartTs' is the period end
+-- and the one in force immediately before it is the period start. That predecessor is the entry
+-- before it in the statement, or, for a statement that appends, the last entry the client
+-- already held. A complete history that contains a @debit(badge)@ always contains it: a balance
+-- can only have become positive through a credit entry.
+--
+-- The period is NOT derived from the credential: its expiry is the Sunday after the period end,
+-- and that is not invertible.
+issuedBadgePeriod :: Maybe BadgeLedgerEntry -> BadgeStatement -> Maybe (UTCTime, UTCTime)
+issuedBadgePeriod heldEntry_ BadgeStatement {entries} = case reverse entries of
+  StatementEntry {entryType = SEDebit SDBadge, balanceStartTs = periodEnd} : earlier -> (,periodEnd) <$> periodStart earlier
+  _ -> Nothing
+  where
+    periodStart (StatementEntry {balanceStartTs} : _) = Just balanceStartTs
+    periodStart [] = (\BadgeLedgerEntry {balanceStartTs} -> balanceStartTs) <$> heldEntry_
+
+-- | The pass's unlocked half: a new credential is presented to contacts, and any change at all
+-- is reported to the app. It must be called with the per-user badge lock RELEASED, because
+-- 'presentUserBadgeToContacts' takes 'chatLock'.
+presentBadgeChange :: BadgeChange -> CM ()
+presentBadgeChange = \case
+  BadgeUnchanged -> pure ()
+  BadgeLedgerChanged user -> badgeChanged user
+  BadgeIssued user -> presentUserBadgeToContacts user >> badgeChanged user
+  where
+    badgeChanged user = toView . CEvtBadgeChanged user =<< getUserBadgeState user
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =

@@ -160,6 +160,10 @@ data ChatConfig = ChatConfig
     -- sleeping. Defaults to 'getCurrentTime'; nothing but a test ever replaces it. This is the
     -- client twin of @BadgeServiceOpts.serviceClock@.
     badgeCurrentTime :: IO UTCTime,
+    -- | How long a badge worker waits for a signal before running a pass anyway. A month
+    -- boundary is the only event the pass waits for, so a daily wake is frequent enough; a pass
+    -- with the current month already issued reads one ledger row and stops.
+    badgePassInterval :: NominalDiffTime,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -325,6 +329,10 @@ data ChatController = ChatController
     deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
+    -- | The 'BadgeManager': one worker per user, because badge state is per profile. The worker
+    -- holds no queue — a trigger only signals its @doWork@, and each pass derives its work from
+    -- the stored purchase and ledger, so lost and duplicated signals are harmless.
+    badgeWorkers :: TMap UserId Worker,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
     chatRelayTests :: TMap ConnId RelayTest,

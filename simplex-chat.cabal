@@ -714,6 +714,7 @@ test-suite simplex-chat-test
       BadgeService.Store.Migrate
       Bots.BadgeCodeTests
       Bots.BadgeLedgerTests
+      Bots.BadgeManagerTests
       Bots.BadgeServiceTests
       Bots.BadgeStoreTests
       Broadcast.Bot

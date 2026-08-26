@@ -82,6 +82,7 @@ defaultChatConfig =
       badgeServiceAddress = Nothing,
       badgeWebBaseUrl = "",
       badgeCurrentTime = getCurrentTime,
+      badgePassInterval = nominalDay,
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options
@@ -202,6 +203,7 @@ newChatController
         deliveryTaskWorkers <- TM.emptyIO
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
+        badgeWorkers <- TM.emptyIO
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
@@ -248,6 +250,7 @@ newChatController
               deliveryTaskWorkers,
               deliveryJobWorkers,
               relayRequestWorkers,
+              badgeWorkers,
               relayGroupLinkChecksAsync,
               webPreviewState,
               chatRelayTests,

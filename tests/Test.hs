@@ -5,6 +5,7 @@
 
 import Bots.BadgeCodeTests
 import Bots.BadgeLedgerTests
+import Bots.BadgeManagerTests
 import Bots.BadgeServiceTests
 import Bots.BadgeStoreTests
 import Bots.BroadcastTests
@@ -90,6 +91,7 @@ main = do
           describe "Mobile API Tests" mobileTests
 #endif
           describe "Supporter badges store" badgeStoreTests
+          describe "Supporter badges manager" badgeManagerTests
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
