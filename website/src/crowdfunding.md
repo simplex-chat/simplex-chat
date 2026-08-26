@@ -33,7 +33,7 @@ SimpleX Chat &mdash; the company that builds the first and the only messaging ne
 <a class="ls-banner" href="/livestream/">
 <span class="ls-banner-label">Live event</span>
 <span class="ls-banner-title">SimpleX Chat: Foundation for the Future</span>
-<span class="ls-banner-date">Livestream and Q&amp;A for SimpleX Chat crowdfunding investors. Tuesday, September 15, 2026 at 5:00 PM UTC.</span>
+<span class="ls-banner-date">Livestream and Q&amp;A about SimpleX Chat roadmap and crowdfunding. Tuesday, September 15, 2026 at 5:00 PM UTC.</span>
 <span class="ls-banner-cta">Open event page</span>
 </a>
 
