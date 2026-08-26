@@ -386,9 +386,7 @@ hasIssuanceForPeriod db badgePurchaseId periodStart =
   fromOnly . head
     <$> DB.query
       db
-      [sql|
-        SELECT EXISTS (SELECT 1 FROM badge_issuances WHERE badge_purchase_id = ? AND period_start = ?)
-      |]
+      "SELECT EXISTS (SELECT 1 FROM badge_issuances WHERE badge_purchase_id = ? AND period_start = ?)"
       (badgePurchaseId, periodStart)
 
 -- Ledger ----------------------------------------------------------------------

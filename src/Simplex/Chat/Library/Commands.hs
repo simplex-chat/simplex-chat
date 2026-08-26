@@ -5491,16 +5491,26 @@ sendBadgeRequest nm user signKey req =
     -- message (G2), and a bare 'Show' of a 'ChatError' is not something to put in front of a user
     --
     -- the agent's request timeout gets its own sentence, because it is the ONE outcome here that
-    -- may have been DELIVERED: the service can have received the request and consumed the code,
-    -- with only the reply lost. Saying "not delivered" would steer the user into re-entering the
-    -- same code, and 'redeemBadgeCode' mints a FRESH purchase key per call, so the retry reaches
-    -- the service as a different signer and is answered @code_used@ (plan §9) — burning a code
-    -- they paid for. Everything else this collapses is a genuine non-delivery: an unresolvable
-    -- target, a transport failure before the send, or an agent error other than the timeout.
+    -- may have been DELIVERED: the service can have received the request, with only the reply
+    -- lost. Saying "not delivered" would be a claim this cannot make.
+    --
+    -- and only a timed-out 'BSCPurchaseBadge' warns about the code. That is the one request
+    -- carrying something spendable, and re-entering the code cannot help: 'redeemBadgeCode' mints
+    -- a FRESH purchase key per call, so the retry reaches the service as a different signer and is
+    -- answered @code_used@ (plan §9) — burning a code they paid for. A timed-out catalog fetch or
+    -- worker re-issue spends nothing, and both are safe to repeat, so telling a user on the
+    -- catalog screen that their code may be gone would be false and alarming.
+    --
+    -- everything else collapses to non-delivery: an unresolvable target, a transport failure
+    -- before the send, or an agent error other than the timeout.
     requestFailed = \case
-      ChatErrorAgent {agentError = AGENT (A_SERVICE ASETimeout)} ->
-        "The badge service did not answer in time. The request may still have been delivered, so a code presented with it may already have been used, and entering it again will not help. Please contact support."
+      ChatErrorAgent {agentError = AGENT (A_SERVICE ASETimeout)}
+        | isPurchase -> "The badge service did not answer in time. The request may still have been delivered, so the code may already have been used, and entering it again will not help. Please contact support."
+        | otherwise -> "The badge service did not answer in time. Nothing was spent, so you can try again."
       e -> "The badge service could not be reached, and the request was not delivered. Details: " <> tshow e
+    isPurchase = case req of
+      BadgeServiceRequest {request = BSCPurchaseBadge {}} -> True
+      _ -> False
     responseFailed e = "The badge service answered with something this app version cannot read. Details: " <> T.pack e
     badgeRequestFailed e = BSPError {code = BSEInternal, message = Just e, retryAfter = Nothing}
 

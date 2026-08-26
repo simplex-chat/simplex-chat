@@ -2876,19 +2876,26 @@ testC5ServiceStoppedIsInternal ps =
     pk <- readTestIssuerPublicKey (tmpPath ps)
     let cfg = (badgeClientCfg sLink pk) {agentConfig = testAgentCfg {serviceRequestTimeout = 2}}
     withNewTestChatCfg ps cfg badgeClientDbPrefix aliceProfile $ \alice -> do
+      -- the catalog fetch spends nothing, so its timeout must NOT warn about a code
       alice ##> "/_badge catalog 1"
-      alice <## badgeTimeoutError
+      alice <## badgeRetryableTimeoutError
       alice ##> purchaseCodeCmd "C5-SERVICE-DOWN"
-      alice <## badgeTimeoutError
+      alice <## badgePurchaseTimeoutError
       noClientBadgeRows "with the service stopped" alice
 
--- | 'sendBadgeRequest''s timeout sentence, spelled out rather than derived from the function under
--- test: it carries no @Details:@ tail, so the whole line is compared.
-badgeTimeoutError :: String
-badgeTimeoutError =
+-- | 'sendBadgeRequest''s two timeout sentences, spelled out rather than derived from the function
+-- under test: neither carries a @Details:@ tail, so the whole line is compared. Only a timed-out
+-- @purchaseBadge@ warns that the code may be gone; every other command is safe to repeat.
+badgePurchaseTimeoutError :: String
+badgePurchaseTimeoutError =
   "badge service error: internal, The badge service did not answer in time."
-    <> " The request may still have been delivered, so a code presented with it may already have been used,"
+    <> " The request may still have been delivered, so the code may already have been used,"
     <> " and entering it again will not help. Please contact support."
+
+badgeRetryableTimeoutError :: String
+badgeRetryableTimeoutError =
+  "badge service error: internal, The badge service did not answer in time."
+    <> " Nothing was spent, so you can try again."
 
 -- Supersession and the slot -----------------------------------------------------
 
