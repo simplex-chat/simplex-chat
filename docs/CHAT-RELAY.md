@@ -188,6 +188,12 @@ docker compose run --rm --entrypoint sh relay -c \
 
 Relay metrics from the database are published by [sql_exporter](https://github.com/burningalchemist/sql_exporter) on `127.0.0.1:9399/metrics`, with the queries in `sql_exporter.yml`.
 
+Relay database live in PostgreSQL docker volume. To print the full path to PostgreSQL database, execute in the host:
+
+```sh
+docker volume inspect simplex-chat-relay_pgdata --format '{{.Mountpoint}}'
+```
+
 ## Channel web previews
 
 Chat relays can render recent messages of its public channels as JSON files, which can be served over HTTPS using a web server to create channel web previews. This is optional.
