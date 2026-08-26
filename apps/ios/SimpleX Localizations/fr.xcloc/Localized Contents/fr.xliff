@@ -505,11 +505,11 @@ channel relay bar</note>
         <target>\*gras*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
+      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve" approved="no">
         <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
 - delivery receipts (up to 20 members).
 - faster and more stable.</source>
-        <target>- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA) !
+        <target state="translated">- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BÊTA) !
 - les accusés de réception (jusqu'à 20 membres).
 - plus rapide et plus stable.</target>
         <note>No comment provided by engineer.</note>
@@ -1638,9 +1638,9 @@ au sein de votre réseau</target>
         <target>Entreprises</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target>Par profil de messagerie (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
+        <target state="translated">Par profil de messagerie (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÊTA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -3250,14 +3250,14 @@ alert button</note>
         <target>Appareil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve" approved="no">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target>L'authentification de l'appareil est désactivée. Désactivation de SimpleX Lock.</target>
+        <target state="translated">L'authentification de l'appareil est désactivée. Désactivation du Verrouillage SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve" approved="no">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target>L'authentification de l'appareil n'est pas activée. Vous pouvez activer SimpleX Lock via Paramètres, une fois que vous avez activé l'authentification de l'appareil.</target>
+        <target state="translated">L'authentification de l'appareil n'est pas activée. Vous pouvez activer le Verrouillage SimpleX dans les Paramètres une fois l'authentification de l'appareil activée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -3295,9 +3295,9 @@ alert button</note>
         <target>Désactiver (conserver les remplacements)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Disable SimpleX Lock</source>
-        <target>Désactiver SimpleX Lock</target>
+        <target state="translated">Désactiver le Verrouillage SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Disable automatic message deletion?" xml:space="preserve">
@@ -3556,14 +3556,14 @@ chat item action</note>
         <target>Activer (conserver les remplacements)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
-        <target>Activez Flux dans les paramètres du réseau et des serveurs pour une meilleure confidentialité des métadonnées.</target>
+        <target state="translated">Activez Flux dans les paramètres Réseau et serveurs pour une meilleure confidentialité des métadonnées.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Enable SimpleX Lock</source>
-        <target>Activer SimpleX Lock</target>
+        <target state="translated">Activer le Verrouillage SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
@@ -3571,9 +3571,9 @@ chat item action</note>
         <target>Activer le TCP keep-alive</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable at least one chat relay in Network &amp; Servers." xml:space="preserve">
+      <trans-unit id="Enable at least one chat relay in Network &amp; Servers." xml:space="preserve" approved="no">
         <source>Enable at least one chat relay in Network &amp; Servers.</source>
-        <target>Activez au moins un relais de messagerie dans Réseaux et serveurs.</target>
+        <target state="translated">Activez au moins un relais de messagerie dans Réseau et serveurs.</target>
         <note>channel creation warning</note>
       </trans-unit>
       <trans-unit id="Enable automatic message deletion?" xml:space="preserve">
@@ -3601,9 +3601,9 @@ chat item action</note>
         <target>Activer pour tous</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve" approved="no">
         <source>Enable in direct chats (BETA)!</source>
-        <target>Activer dans les conversations directes (BETA) !</target>
+        <target state="translated">Activer dans les conversations directes (BÊTA) !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -4705,9 +4705,9 @@ Erreur : %2$@</target>
         <target>GIFs et stickers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve">
+      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve" approved="no">
         <source>Get SimpleX name (BETA)</source>
-        <target>Obtenir un nom SimpleX (BETA)</target>
+        <target state="translated">Obtenir un nom SimpleX (BÊTA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get link" xml:space="preserve">
@@ -6451,9 +6451,9 @@ Le chiffrement le plus sûr.</target>
         <target>Aucun serveur de résolution de noms SimpleX n'est configuré. Configurez des serveurs ou utilisez un lien de connexion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
+      <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve" approved="no">
         <source>Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign.</source>
-        <target>Ce n’est pas une meilleure serrure sur la porte de quelqu’un d’autre. Ce n’est pas un propriétaire plus aimable qui respecte votre vie privée, mais qui tient tout de même un registre de tous les visiteurs. Vous n’êtes pas un·e invité·e, vous êtes chez vous. Aucun roi ne peut y entrer : c’est vous le souverain.</target>
+        <target state="translated">Ce n’est pas une meilleure serrure sur la porte de quelqu'un d'autre. Ni un propriétaire plus attentionné qui respecte votre vie privée, mais conserve toujours le registre de tous les visiteurs. Vous n'êtes pas un invité. Vous êtes chez vous. Aucun roi ne peut y entrer — vous êtes souverain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not all relays connected" xml:space="preserve">
@@ -7124,9 +7124,9 @@ Erreur : %@</target>
         <target>Serveurs précédemment connectés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy for your customers." xml:space="preserve">
+      <trans-unit id="Privacy for your customers." xml:space="preserve" approved="no">
         <source>Privacy for your customers.</source>
-        <target>Respect de la vie privée de vos clients.</target>
+        <target state="translated">Confidentialité pour vos clients.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
@@ -7864,9 +7864,9 @@ swipe action</note>
         <target>Contrôler les membres</target>
         <note>admission stage</note>
       </trans-unit>
-      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve">
+      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve" approved="no">
         <source>Review members before admitting ("knocking").</source>
-        <target>Contrôler les membres avant de les admettre (« toquer »).</target>
+        <target state="translated">Examiner les membres avant leur admission (« frapper à la porte »).</target>
         <note>admission stage description</note>
       </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
@@ -8858,24 +8858,24 @@ copied message info</note>
         <target>La sécurité de SimpleX Chat a été auditée par Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock" xml:space="preserve">
+      <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">
         <source>SimpleX Lock</source>
-        <target>SimpleX Lock</target>
+        <target state="translated">Verrouillage SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock mode" xml:space="preserve">
+      <trans-unit id="SimpleX Lock mode" xml:space="preserve" approved="no">
         <source>SimpleX Lock mode</source>
-        <target>Mode de SimpleX Lock</target>
+        <target state="translated">Mode de Verrouillage SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve">
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve" approved="no">
         <source>SimpleX Lock not enabled!</source>
-        <target>SimpleX Lock n'est pas activé !</target>
+        <target state="translated">Le Verrouillage SimpleX n'est pas activé !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve" approved="no">
         <source>SimpleX Lock turned on</source>
-        <target>SimpleX Lock activé</target>
+        <target state="translated">Verrouillage SimpleX activé</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX address" xml:space="preserve">
@@ -8958,9 +8958,9 @@ copied message info</note>
         <target>Protocoles SimpleX audité par Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve" approved="no">
         <source>SimpleX public names (BETA)</source>
-        <target>Noms publics SimpleX (BETA)</target>
+        <target state="translated">Noms publics SimpleX (BÊTA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">
@@ -9799,11 +9799,11 @@ alert subtitle</note>
         <target>Pour protéger votre adresse IP, le routage privé utilise vos serveurs SMP pour délivrer les messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target>Pour protéger vos informations, activez la fonction SimpleX Lock.
-Vous serez invité à confirmer l'authentification avant que cette fonction ne soit activée.</target>
+        <target state="translated">Pour protéger vos informations, activez le Verrouillage SimpleX.
+Une authentification vous sera demandée avant que cette fonctionnalité ne soit activée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve">
@@ -10754,9 +10754,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez l'activer ultérieurement via Paramètres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can enable them later via app Your privacy settings." xml:space="preserve">
+      <trans-unit id="You can enable them later via app Your privacy settings." xml:space="preserve" approved="no">
         <source>You can enable them later via app Your privacy settings.</source>
-        <target>Vous pourrez les activer plus tard dans les paramètres « Votre vie privée ».</target>
+        <target state="translated">Vous pouvez les activer plus tard dans les paramètres de confidentialité de l'application.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can give another try." xml:space="preserve">
@@ -10834,9 +10834,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez soutenir SimpleX à partir de la version 7 de l'application.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
         <source>You can turn on SimpleX Lock via Settings.</source>
-        <target>Vous pouvez activer SimpleX Lock dans les Paramètres.</target>
+        <target state="translated">Vous pouvez activer le Verrouillage SimpleX dans les Paramètres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -11139,9 +11139,9 @@ Si vous annulez, le canal sera supprimé : vous pourrez le recréer.</target>
         <target>Vos préférences</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your privacy" xml:space="preserve">
+      <trans-unit id="Your privacy" xml:space="preserve" approved="no">
         <source>Your privacy</source>
-        <target>Votre vie privée</target>
+        <target state="translated">Votre confidentialité</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile" xml:space="preserve">
@@ -12705,9 +12705,9 @@ dernier message reçu : %2$@</target>
         <target>Mauvaise phrase secrète pour la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can allow sharing in Your privacy / SimpleX Lock settings." xml:space="preserve">
+      <trans-unit id="You can allow sharing in Your privacy / SimpleX Lock settings." xml:space="preserve" approved="no">
         <source>You can allow sharing in Your privacy / SimpleX Lock settings.</source>
-        <target>Vous pouvez autoriser le partage dans Votre vie privée / Réglages de verrouillage SimpleX.</target>
+        <target state="translated">Vous pouvez autoriser le partage dans les paramètres Votre confidentialité / Verrouillage SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
