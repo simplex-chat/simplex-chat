@@ -1,0 +1,4 @@
+# The Dockerfile clones the source itself and only needs entrypoint.py from the
+# build context. Exclude everything else, especially .env (secrets) and out/.
+*
+!entrypoint.py

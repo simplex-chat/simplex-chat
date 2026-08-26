@@ -1,6 +1,6 @@
 ---
 title: Hosting your own Chat Relay
-revision: 16.07.2026
+revision: 28.07.2026
 ---
 
 # Hosting your own Chat Relay
@@ -20,6 +20,7 @@ This guide explains how to set up a chat relay on a Linux server, how to run it,
    - [Relay options](#relay-options)
    - [Get the relay address](#get-the-relay-address)
    - [Run relay commands](#run-relay-commands)
+- [Run with Docker](#run-with-docker)
 - [Channel web previews](#channel-web-previews)
    - [Relay web options](#relay-web-options)
    - [Serve the previews with Caddy](#serve-the-previews-with-caddy)
@@ -126,6 +127,73 @@ simplex-chat-relay -d /home/relay/relay -e "/set profile image file /home/relay/
 systemctl start simplex-relay
 ```
 
+## Run with Docker
+
+The relay can also be built and run with Docker Compose, using PostgreSQL for storage. The files are in [`scripts/relay`](https://github.com/simplex-chat/simplex-chat/tree/master/scripts/relay).
+
+1. Clone the repository and switch to the relay directory:
+
+   ```sh
+   git clone https://github.com/simplex-chat/simplex-chat
+   cd simplex-chat/scripts/relay
+   ```
+
+2. Copy the example environment file, then set `RELAY_NAME`, `RELAY_WEB_DOMAIN` and `POSTGRES_PASSWORD` in it:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+3. Create the directory for the previews and the CORS file, owned by the container's user (UID `1000`):
+
+   ```sh
+   mkdir -p /var/www/relay-web-channels/channel
+   chown -R 1000:1000 /var/www/relay-web-channels
+   chmod 0755 /var/www/relay-web-channels
+   ```
+
+4. Create the output directory for the relay address, then build and start:
+
+   ```sh
+   mkdir -p out && chown 1000:1000 out
+   docker compose build
+   docker compose up -d
+   ```
+
+   The first build compiles from source and takes a while.
+
+5. Read the relay address, written on the first start:
+
+   ```sh
+   cat out/relay-address.txt
+   ```
+
+To give the relay a picture, put a small `.png`/`.jpg`/`.jpeg` file (large images are rejected) next to the compose file and add a `docker-compose.override.yml`:
+
+```yaml
+services:
+  relay:
+    environment:
+      RELAY_IMAGE_FILE: /avatar.png
+    volumes:
+      - ./avatar.png:/avatar.png:ro
+```
+
+To run a one-off command against the relay's database, override the entrypoint:
+
+```sh
+docker compose run --rm --entrypoint sh relay -c \
+  'simplex-chat-relay -d "$DB_CONN" -e "/set profile image file /avatar.png"'
+```
+
+Relay metrics from the database are published by [sql_exporter](https://github.com/burningalchemist/sql_exporter) on `127.0.0.1:9399/metrics`, with the queries in `sql_exporter.yml`.
+
+Relay database live in PostgreSQL docker volume. To print the full path to PostgreSQL database, execute in the host:
+
+```sh
+docker volume inspect simplex-chat-relay_pgdata --format '{{.Mountpoint}}'
+```
+
 ## Channel web previews
 
 Chat relays can render recent messages of its public channels as JSON files, which can be served over HTTPS using a web server to create channel web previews. This is optional.
@@ -219,11 +287,9 @@ Create `/etc/systemd/system/simplex-cors-sync.service`:
 ```ini
 [Unit]
 Description=Sync SimpleX relay CORS config to Caddy
-StartLimitIntervalSec=30
-StartLimitBurst=10
+StartLimitIntervalSec=0
 [Service]
 Type=oneshot
-ExecStartPre=/bin/sleep 2
 ExecStart=/usr/local/bin/simplex-cors-sync.sh
 ```
 
@@ -236,6 +302,7 @@ After=caddy.service
 [Path]
 PathChanged=/var/www/relay-web-channels/cors.conf
 Unit=simplex-cors-sync.service
+TriggerLimitIntervalSec=0
 [Install]
 WantedBy=multi-user.target
 ```
