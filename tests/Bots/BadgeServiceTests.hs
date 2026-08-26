@@ -1798,10 +1798,21 @@ testBadgeServiceSecondCodeSamePurchaseKey ps = do
 -- carries is the CODE's, never the request's. A client cannot know a code's tier before it
 -- redeems it -- a code carries none (B3) and the response is what states it (core §5) -- so
 -- 'purchaseBadge{code}' signs the tier the funding bought and ignores the one the request names
--- ('withFundedBadgeType', plan §9). The property that replaced the old refusal is asserted
--- directly: a LEGEND request over a SUPPORTER code yields a SUPPORTER credential, a supporter
--- ledger and a supporter purchase row, so nothing a request says can buy a tier its funding did
--- not. Drop the override and this reads back 'legend' on all three.
+-- ('withFundedBadgeType', plan §9). A LEGEND request over a SUPPORTER code must therefore be
+-- answered with a SUPPORTER credential, on a supporter ledger and a supporter purchase row.
+--
+-- __Each of the four assertions catches a different mutation__, and only the first is the proof
+-- of the override:
+--
+-- * the CREDENTIAL tier is the one 'withFundedBadgeType' decides. Drop the override and this is
+--   the only assertion that fails, with 'legend' -- the service handing out a signed credential
+--   of a tier the code did not buy, which is the whole point of the test.
+-- * the LEDGER tiers and the PURCHASE tier come from @writeTxn@'s own @badgeType@, which is the
+--   code's on either side of that mutation. They pin 'planTxn'\/@writeTxn@ instead: that the
+--   rows a redemption writes are the funding's tier and not the request's, which no other test
+--   states.
+-- * the REPLAY returns the credential already issued, rather than refusing a request whose tier
+--   differs -- the guard C4 deleted with the refusal it belonged to.
 --
 -- 'issueBadge' is deliberately unchanged: there the tier is the purchase's own
 -- 'current_badge_type', which the client HOLDS and must state, so a mismatch is still
@@ -1820,8 +1831,8 @@ testBadgeServiceSignsFundedTier ps = do
     let BadgeCredential {badgeInfo = BadgeInfo {badgeType = credentialType}} = cred1
     ("credential tier" :: String, credentialType) `shouldBe` ("credential tier", BTSupporter)
     statementShape statement `shouldBe` [(3, 3, "credit payment (no invoiceId)"), (-1, 2, "debit badge")]
-    -- the ledger the same request wrote is supporter entry by entry (field 5 of StatementEntry,
-    -- constructed positionally as everywhere else in this file)
+    -- the rows the redemption wrote carry the code's tier as well -- this pins writeTxn, not the
+    -- override (field 5 of StatementEntry, constructed positionally as everywhere else here)
     let BadgeStatement {entries} = statement
         entryTypes = map (\(StatementEntry _ _ _ _ bt _ _ _) -> bt) entries
     ("ledger tiers" :: String, entryTypes) `shouldBe` ("ledger tiers", [BTSupporter, BTSupporter])
@@ -1834,6 +1845,7 @@ testBadgeServiceSignsFundedTier ps = do
   withServiceDB ps $ \db -> do
     -- exactly what the one redemption writes: the replay and the issueBadge refusal wrote nothing
     serviceRowCounts db `shouldReturn` (1, 1, 2, 1, 1)
+    -- likewise writeTxn's, not the override's
     [Only purchaseType] <- DB.query_ db "SELECT current_badge_type FROM sx_badge_service_badge_purchases"
     ("purchase tier" :: String, purchaseType :: BadgeType) `shouldBe` ("purchase tier", BTSupporter)
 
