@@ -2976,6 +2976,7 @@ testC5WorkerIssuesSecondPeriod :: HasCallStack => TestParams -> IO ()
 testC5WorkerIssuesSecondPeriod ps = do
   clock <- newTestClock testClockStart
   codeRef <- newIORef ""
+  ledgerRef <- newIORef []
   withBadgeClient ps clock (seedOneSupporterCode ps >>= writeIORef codeRef) $ \alice -> do
     code <- readIORef codeRef
     alice ##> purchaseCodeCmd code
@@ -3021,6 +3022,17 @@ testC5WorkerIssuesSecondPeriod ps = do
       [firstCred, secondCred] ->
         ("second period credential" :: String, secondCred == firstCred) `shouldBe` ("second period credential", False)
       _ -> pure ()
+    -- held for the parity check below: the service's database cannot be opened while the service
+    -- itself is running
+    clientLedgerRows alice >>= writeIORef ledgerRef
+  -- §10's parity check over the WORKER's append path, not just the redemption's:
+  -- 'testC5RedeemCodeShowsBadge' compares a two-row ledger written in one transaction, while the
+  -- row this pass adds is appended against a cursor the client asserted, which is the only place
+  -- the two codecs can drift on an entry neither database wrote at the same time.
+  clientRows <- readIORef ledgerRef
+  withServiceDB ps $ \db -> do
+    serviceRowCounts db `shouldReturn` (1, 1, 3, 2, 1)
+    serviceLedgerParityRows db >>= shouldMatchServiceLedger clientRows
 
 -- The active profile --------------------------------------------------------------
 
