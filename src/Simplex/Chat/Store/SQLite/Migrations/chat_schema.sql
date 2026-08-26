@@ -55,7 +55,8 @@ CREATE TABLE users(
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
   client_service INTEGER NOT NULL DEFAULT 0,
   wallet_seed_id INTEGER REFERENCES wallet_seeds ON DELETE RESTRICT,
-  wallet_account_index INTEGER, -- 1 for active user
+  wallet_account_index INTEGER,
+  wallet_next_name_index INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -856,6 +857,15 @@ CREATE TABLE wallet_seeds(
   -- profile would silently reuse a recovered account's keys.
 next_account_index INTEGER NOT NULL DEFAULT 0
 ) STRICT;
+CREATE TABLE wallet_name_keys(
+  wallet_name_key_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE RESTRICT,
+  derivation_path TEXT NOT NULL, -- "m/44'/60'/0'/0/1", or "m" for a root key
+name TEXT NOT NULL,
+created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  UNIQUE(wallet_seed_id, derivation_path),
+  UNIQUE(wallet_seed_id, name)
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1391,6 +1401,9 @@ CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
 );
 CREATE INDEX idx_users_wallet_seed_id ON users(wallet_seed_id);
+CREATE INDEX idx_wallet_name_keys_wallet_seed_id ON wallet_name_keys(
+  wallet_seed_id
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

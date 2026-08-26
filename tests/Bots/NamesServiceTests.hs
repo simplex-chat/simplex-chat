@@ -16,6 +16,8 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (parseAddress)
 import Simplex.Messaging.Eth.Keccak (keccak256)
 import Test.Hspec hiding (it)
+import qualified Simplex.Messaging.Crypto.BIP39 as B39
+import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey)
 import qualified Test.Hspec as Hspec
 
 namesServiceTests :: SpecWith TestParams
@@ -23,12 +25,27 @@ namesServiceTests = do
   it "registers a name via commit/reveal and rejects a taken name" testNamesRegister
   it "rejects a reveal with no matching commitment" testRevealWithoutCommit
   it "shows the owner address without creating one" testNameAddress
-  it "derives the same owner address after restart" testSeedPersists
+  it "gives each name its own key, still derivable after restart" testSeedPersists
 
 -- | Pins the wire format. The end-to-end test cannot catch a key renamed on
 -- both sides at once, so the encodings are asserted literally here.
 namesProtocolTests :: Spec
 namesProtocolTests = do
+  -- Name keys are plain BIP-44, so they line up with wallets users already have.
+  -- Pinned against the standard test mnemonic: profile 0's names are exactly
+  -- MetaMask's account list (m/44'/60'/0'/0/k), and each profile's first name is
+  -- the matching Ledger Live account (m/44'/60'/i'/0/0). That is what lets an
+  -- owner move a single name into another wallet, and a name bought in a dapp be
+  -- found here.
+  it "name keys line up with other wallets' derivation" $ \_ -> do
+    let mn = either error id $ B39.parseMnemonic "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+        sd = WalletSeed {wsId = SeedId 1, wsEntropy = B39.mnemonicToEntropy mn}
+        addrOf i k = either error (show . accountAddress) (deriveNameKey sd i k)
+    -- MetaMask account 1 and 2 for this phrase
+    addrOf 0 0 `shouldBe` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
+    addrOf 0 1 `shouldBe` "0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
+    -- Ledger Live account 2 for this phrase
+    addrOf 1 0 `shouldBe` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
   Hspec.it "encodes commit and reveal requests" $ do
     -- on-chain byte values are 0x-prefixed hex, as Ethereum writes them
     encodes (NamesRequest 1 (NRCommit $ Commitment "0123456789abcdef")) $
@@ -75,7 +92,9 @@ testNamesRegister ps =
     -- the final progress event and the command response arrive on separate channels
     client
       <### [ ConsoleString "name alice.simplex: registered",
-             StartsWith "name registered: alice.simplex -> 0x"
+             StartsWith "name registered: alice.simplex -> 0x",
+             -- one key per name: the profile's first name is address index 0
+             ConsoleString "  derivation path: m/44'/60'/0'/0/0"
            ]
     -- re-running the identical command is rejected too, not silently accepted:
     -- the owner is the same within a session, so this is the duplicate a user hits.
@@ -99,14 +118,15 @@ testNameAddress ps =
   withBadgeService ps $ \client bsLink -> do
     -- asked repeatedly before any registration: still no address, none created
     client ##> "/name address"
-    client <## "no name address yet - it is created when you register a name"
+    client <## "no name addresses yet - one is created for each name you register"
     client ##> "/name address"
-    client <## "no name address yet - it is created when you register a name"
+    client <## "no name addresses yet - one is created for each name you register"
     client ##> ("/name register " <> bsLink <> " carol.simplex simplex:/contact#/x")
     owner <- ownerOf client "carol.simplex"
-    -- now it exists, and reports the address the name was registered to
+    -- now it exists, and reports the address and path the name was registered to
     client ##> "/name address"
-    client <## ("name address: " <> owner)
+    client <## "name addresses:"
+    client <## ("  carol.simplex -> " <> owner <> "  m/44'/60'/0'/0/0")
 
 -- | The front-running defence: a reveal only registers a name if that exact
 -- commitment was published first. Sent as a raw service request, because the
@@ -124,6 +144,12 @@ testRevealWithoutCommit ps =
 -- | The seed is persisted, so a name registered in one session is still owned by
 -- an address the next session can derive. Without this the key is unrecoverable
 -- after restart and the name is orphaned.
+--
+-- It also pins the other half of one-key-per-name: the second registration must
+-- land on a /different/ address, at the next BIP-44 address index under the same
+-- profile account. Sharing one key across a profile's names is what this
+-- replaces — it would put every name behind one resolver nonce and make
+-- exporting one name's key hand over all of them.
 testSeedPersists :: HasCallStack => TestParams -> IO ()
 testSeedPersists ps = do
   let opts = mkBadgeServiceOpts ps
@@ -143,20 +169,29 @@ testSeedPersists ps = do
     owner2 <- withTestChat ps "client" $ \client -> do
       client ##> ("/name register " <> bsLink <> " second.simplex simplex:/contact#/y")
       ownerOf client "second.simplex"
-    owner2 `shouldBe` owner1
+    owner2 `shouldNotBe` owner1
+    -- and both are still derivable in a third session, each at its own path
+    withTestChat ps "client" $ \client -> do
+      client ##> "/name address"
+      client <## "name addresses:"
+      client <## ("  first.simplex -> " <> owner1 <> "  m/44'/60'/0'/0/0")
+      client <## ("  second.simplex -> " <> owner2 <> "  m/44'/60'/0'/0/1")
 
 -- | Reads past startup and progress lines to the registration result, returning
 -- the owner address. Keeps reading until the final progress event has arrived
 -- too — it races with the command response and would otherwise be left
 -- unconsumed, failing the next assertion or the session close.
 ownerOf :: HasCallStack => TestCC -> String -> IO String
-ownerOf client nm = go (40 :: Int) Nothing False
+ownerOf client nm = go (40 :: Int) Nothing False False
   where
     pfx = "name registered: " <> nm <> " -> "
+    pathLine = "  derivation path: "
     lastEvt = "name " <> nm <> ": registered"
-    go _ (Just a) True = pure a
-    go 0 _ _ = error $ "no registration line for " <> nm
-    go n addr seen = do
+    -- three lines must be consumed before the next assertion: the progress
+    -- event, the registration line, and the derivation path under it
+    go _ (Just a) True True = pure a
+    go 0 _ _ _ = error $ "no registration line for " <> nm
+    go n addr seen path = do
       l <- getTermLine client
       let addr' = if pfx `isPrefixOf` l then Just (takeWhile (/= ' ') $ drop (length pfx) l) else addr
-      go (n - 1) addr' (seen || l == lastEvt)
+      go (n - 1) addr' (seen || l == lastEvt) (path || pathLine `isPrefixOf` l)

@@ -842,8 +842,8 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
-  | CRNameRegistered {user :: User, regName :: Text, regOwner :: Text, regExpiry :: UTCTime, regTxHash :: TxHash}
-  | CRNameAddress {user :: User, nameAddress :: Maybe Text}
+  | CRNameRegistered {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, regExpiry :: UTCTime, regTxHash :: TxHash}
+  | CRNameAddress {user :: User, nameAddresses :: [(Text, Text, Text)]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
@@ -1475,7 +1475,7 @@ data ChatErrorType
   | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
   -- | the names service refused the registration; @nameRegCode@ is the protocol
   -- error code as sent on the wire, e.g. @name_taken@
-  | CENameRegistrationFailed {nameRegCode :: Text, nameRegMessage :: Maybe Text}
+  | CENameRegistrationFailed {nameRegCode :: Text, nameRegMessage :: Maybe Text, nameRegRetryAfter :: Maybe Word32}
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}

@@ -60,8 +60,8 @@ import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Names.Protocol
-import Simplex.Chat.Store.Wallets (boundAccount, getOrCreateAccountRef)
-import Simplex.Chat.Wallet (AccountRef (..), accountAddress, deriveAccount, newSeed)
+import Simplex.Chat.Store.Wallets (boundAccount, getNameKeys, getOrCreateAccountRef, recordNameKey, takeNameIndex)
+import Simplex.Chat.Wallet (AccountRef (..), WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, newSeed, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1465,7 +1465,7 @@ processChatCommand cxt nm = \case
     resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
     pure $ CRServiceResponse user resp
   APINameRegister sendTarget nm' sLink -> withUser $ \user -> do
-    owner <- deriveNameOwner user
+    (seedId, nameIx, acctIx, owner) <- deriveNameOwner user
     cReq <- resolveServiceTarget nm user sendTarget
     g <- asks random
     secret <- NameSecret <$> atomically (C.randomBytes 32 g)
@@ -1477,7 +1477,7 @@ processChatCommand cxt nm = \case
           let req = NamesRequest currentNamesVersion c
           respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq Nothing Nothing (LB.toStrict $ J.encode req)
           either (const $ throwCmdError "invalid names response") pure (J.eitherDecodeStrict' respData) >>= \case
-            NRPError {nrCode, nrMessage} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage
+            NRPError {nrCode, nrMessage, nrRetryAfter} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage nrRetryAfter
             r -> pure r
         progress phase waitMs = toView $ CEvtNameRegistrationProgress user nm' phase waitMs
     progress NRPhaseCommitting Nothing
@@ -1492,22 +1492,40 @@ processChatCommand cxt nm = \case
         NRPRegistered {nrExpiry, nrTxHash} -> pure (nrExpiry, nrTxHash)
         _ -> throwCmdError "unexpected reveal response"
     progress NRPhaseRegistered Nothing
-    pure $ CRNameRegistered user nm' (tshow owner) expiry' txHash'
+    -- Recorded only after the name is actually registered: an index consumed by
+    -- a failed attempt is simply skipped, which costs nothing, while recording
+    -- a name we do not own would make the list lie.
+    let path = renderNameKeyPath acctIx nameIx
+    withFastStore' $ \db -> recordNameKey db seedId path nm'
+    pure $ CRNameRegistered user nm' (tshow owner) path expiry' txHash'
     where
       -- The seed is created on first registration and persisted, so the owner
       -- address survives restart — a name whose key we cannot re-derive is lost.
+      --
+      -- One key per name: the index is taken here, so a second registration by
+      -- the same profile lands on a different address rather than sharing one.
       deriveNameOwner user = do
         g <- asks random
         (seed, AccountRef {arIndex}) <-
           withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
-        either (throwCmdError . ("wallet: " <>)) (pure . accountAddress) $ deriveAccount seed arIndex
+        nameIx <- withFastStore' $ \db -> takeNameIndex db user
+        acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed arIndex nameIx
+        pure (wsId seed, nameIx, arIndex, accountAddress acc)
   APINameAddress -> withUser $ \user -> do
     -- Read-only: never creates a seed. A key appears when you register a name,
     -- not when you ask which address you have.
+    --
+    -- There is no single "profile address" any more: each name has its own key,
+    -- so this answers with one row per name.
     acc_ <- withFastStore' $ \db -> boundAccount db user
-    addr <- forM acc_ $ \(seed, AccountRef {arIndex}) ->
-      either (throwCmdError . ("wallet: " <>)) (pure . tshow . accountAddress) $ deriveAccount seed arIndex
-    pure $ CRNameAddress user addr
+    addrs <- case acc_ of
+      Nothing -> pure []
+      Just (seed, AccountRef {arIndex}) -> do
+        named <- withFastStore' $ \db -> getNameKeys db (wsId seed)
+        forM named $ \(nm_, path) -> do
+          acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveAtPath seed arIndex path
+          pure (nm_, tshow (accountAddress acc), path)
+    pure $ CRNameAddress user addrs
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)

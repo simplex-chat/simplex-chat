@@ -13,15 +13,19 @@
 module Simplex.Chat.Store.Wallets
   ( getOrCreateAccountRef,
     boundAccount,
+    takeNameIndex,
+    recordNameKey,
+    getNameKeys,
   )
 where
 
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Maybe (listToMaybe)
+import Data.Text (Text)
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types (User (..))
-import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), SeedId (..), WalletSeed (..))
+import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), NameIndex, SeedId (..), WalletSeed (..))
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 
@@ -123,3 +127,37 @@ getNextAccountIndex db (SeedId sId) =
     <$> ( maybeFirstRow fromOnly $
             DB.query db "SELECT next_account_index FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
         )
+
+-- | Take the next name index for this profile and advance its high-water mark.
+--
+-- Names are BIP-44 address indices under the profile's account, so this counter
+-- is per profile, not per seed. Stored for the same reason as
+-- 'next_account_index': after recovery from the phrase alone nothing else knows
+-- which indices already own names on chain.
+takeNameIndex :: DB.Connection -> User -> IO NameIndex
+takeNameIndex db User {userId} = do
+  ix <-
+    maybe 0 (fromIntegral :: Int64 -> NameIndex)
+      <$> ( maybeFirstRow fromOnly $
+              DB.query db "SELECT wallet_next_name_index FROM users WHERE user_id = ?" (Only userId)
+          )
+  DB.execute db "UPDATE users SET wallet_next_name_index = ? WHERE user_id = ?" (fromIntegral ix + 1 :: Int64, userId)
+  pure ix
+
+-- | Record which key owns a name, once it is registered. Without this the
+-- client cannot tell which of a profile's keys owns which name: the binding is
+-- not on chain and is not derivable.
+recordNameKey :: DB.Connection -> SeedId -> Text -> Text -> IO ()
+recordNameKey db (SeedId sId) path name =
+  DB.execute
+    db
+    "INSERT INTO wallet_name_keys (wallet_seed_id, derivation_path, name) VALUES (?, ?, ?)"
+    (sId, path, name)
+
+-- | Every name this seed owns, with the path its key was derived at.
+getNameKeys :: DB.Connection -> SeedId -> IO [(Text, Text)]
+getNameKeys db (SeedId sId) =
+  DB.query
+    db
+    "SELECT name, derivation_path FROM wallet_name_keys WHERE wallet_seed_id = ? ORDER BY wallet_name_key_id"
+    (Only sId)

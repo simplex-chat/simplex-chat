@@ -190,10 +190,15 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
-  CRNameAddress u addr_ ->
-    ttyUser u [maybe "no name address yet - it is created when you register a name" (plain . ("name address: " <>)) addr_]
-  CRNameRegistered u nm owner expiry txHash ->
-    ttyUser u [plain $ "name registered: " <> nm <> " -> " <> owner <> " (expires " <> tshow expiry <> ", tx " <> safeDecodeUtf8 (strEncode txHash) <> ")"]
+  CRNameAddress u addrs ->
+    ttyUser u $ case addrs of
+      [] -> ["no name addresses yet - one is created for each name you register"]
+      as -> "name addresses:" : map (\(nm, addr, path) -> plain $ "  " <> nm <> " -> " <> addr <> "  " <> path) as
+  CRNameRegistered u nm owner path expiry txHash ->
+    ttyUser u
+      [ plain $ "name registered: " <> nm <> " -> " <> owner <> " (expires " <> tshow expiry <> ", tx " <> safeDecodeUtf8 (strEncode txHash) <> ")",
+        plain $ "  derivation path: " <> path
+      ]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -2808,7 +2813,12 @@ viewChatError isCmd logLevel testView = \case
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CEServerProtocol p -> [plain $ "Servers for protocol " <> strEncode p <> " cannot be configured by the users"]
     CECommandError e -> ["bad chat command: " <> plain e]
-    CENameRegistrationFailed code msg -> ["name registration failed: " <> plain code <> maybe "" ((": " <>) . plain) msg]
+    CENameRegistrationFailed code msg retryAfter ->
+      [ "name registration failed: "
+          <> plain code
+          <> maybe "" ((": " <>) . plain) msg
+          <> maybe "" (\s -> plain (" (retry after " <> tshow s <> "s)")) retryAfter
+      ]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
