@@ -1309,8 +1309,6 @@
     <string name="error_rejecting_contact_request">Chyba pri odmietaní žiadosti o kontakt</string>
     <string name="error_removing_member">Chyba pri odstraňovaní člena</string>
     <string name="servers_info_reset_stats_alert_error_title">Chyba pri resetovaní štatistík</string>
-    <string name="error_saving_database"></string>
-    <string name="error_saving_file"></string>
     <string name="error_sending_message_contact_invitation">Chyba pri odosielaní pozvánky</string>
     <string name="error_sending_message">Chyba pri odosielaní správy</string>
     <string name="error_setting_address">Chyba pri nastavovaní adresy</string>
