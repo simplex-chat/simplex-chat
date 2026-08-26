@@ -92,7 +92,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
-import Simplex.Chat.Store.Badges (NewBadgeIssuance (..), UserBadgePurchase (..), createIssuance, getLastBadgeLedgerEntry, getShownPurchase, insertLedgerEntries)
+import Simplex.Chat.Store.Badges (NewBadgeIssuance (..), UserBadgePurchase (..), createIssuance, getLastBadgeLedgerEntry, getShownPurchase, hasIssuanceForPeriod, insertLedgerEntries)
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
@@ -5291,6 +5291,7 @@ runBadgeWorker :: UserId -> Worker -> CM ()
 runBadgeWorker userId Worker {doWork} = do
   interval <- asks $ badgePassInterval . config
   forever $ do
+    lift waitChatStartedAndActivated
     liftIO $ race_ (atomically $ takeTMVar doWork) (threadDelay' $ diffToMicroseconds interval)
     badgeManagerPass userId `catchAllErrors` eToView
 
@@ -5320,7 +5321,13 @@ issueDueBadgePeriod user@User {userId} = do
           balance <- assertedBadgeBalance lastEntry
           resp <- sendBadgeRequest (Just purchasePrivKey) (badgeIssueRequest purchase balance)
           storeBadgeIssueResponse now user purchase (Just lastEntry) resp
-    _ -> pure BadgeUnchanged
+      | otherwise -> pure BadgeUnchanged
+    -- unreachable via C1's createPurchase, which always inserts an opening credit, but a shown
+    -- purchase stuck with no ledger row would otherwise stall forever with no signal at all
+    Just (UserBadgePurchase {badgePurchaseId}, Nothing) -> do
+      logWarn $ "badge worker: shown purchase " <> tshow badgePurchaseId <> " (user " <> tshow userId <> ") has no ledger entries; nothing to issue"
+      pure BadgeUnchanged
+    Nothing -> pure BadgeUnchanged
 
 -- | Whether the month the balance would fund is unissued: a positive balance whose coverage
 -- window has already started.
@@ -5432,7 +5439,7 @@ data BadgeChange
 -- absent credential is the opposite — the exhausted balance the service defines, whose statement
 -- is stored like any other.
 storeBadgeIssueResponse :: UTCTime -> User -> UserBadgePurchase -> Maybe BadgeLedgerEntry -> BadgeServiceResponse -> CM BadgeChange
-storeBadgeIssueResponse now user UserBadgePurchase {badgePurchaseId = pId} heldEntry_ = \case
+storeBadgeIssueResponse now user@User {userId} UserBadgePurchase {badgePurchaseId = pId} heldEntry_ = \case
   BSPBadgeCredential {credential = Nothing, statement} -> do
     withStore $ \db -> insertLedgerEntries db pId statement now
     ledgerChange
@@ -5444,12 +5451,20 @@ storeBadgeIssueResponse now user UserBadgePurchase {badgePurchaseId = pId} heldE
           user' <- withStore $ \db -> do
             insertLedgerEntries db pId statement now
             -- the issuance is written only for a statement that carries the period it issued;
-            -- ledgerEntryId stays absent (see 'issuedBadgePeriod' and plan §9)
+            -- ledgerEntryId stays absent (see 'issuedBadgePeriod' and plan §9). A healed ledger's
+            -- complete history can re-present a debit(badge) this purchase already has an
+            -- issuance for, and nothing dedupes badge_issuances on (purchase, period) the way
+            -- insertLedgerEntries dedupes the ledger itself, so check before writing a second one.
             forM_ (issuedBadgePeriod heldEntry_ statement) $ \(periodStart, periodEnd) ->
-              liftIO . void $
-                createIssuance db NewBadgeIssuance {badgePurchaseId = pId, badgeType, periodStart, periodEnd, expiry, ledgerEntryId = Nothing, credential = cred} now
+              liftIO (hasIssuanceForPeriod db pId periodStart) >>= \exists ->
+                unless exists . liftIO . void $
+                  createIssuance db NewBadgeIssuance {badgePurchaseId = pId, badgeType, periodStart, periodEnd, expiry, ledgerEntryId = Nothing, credential = cred} now
             liftIO $ setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
-          asks currentUser >>= atomically . (`writeTVar` Just user')
+          -- a pass runs for whichever user its worker was started for, which need not be the
+          -- ACTIVE one (every user gets a worker, C3 §9) — only overwrite currentUser when the
+          -- profile this pass just updated is the one currently active
+          activeUserId <- fmap (\User {userId = uId} -> uId) <$> chatReadVar currentUser
+          when (activeUserId == Just userId) $ chatWriteVar currentUser $ Just user'
           pure $ BadgeIssued user'
         -- 'issueSignedBadge' always sets the expiry, so this is a malformed response rather than
         -- a lifetime credential, and a lifetime badge has no issuance row to write anyway

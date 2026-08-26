@@ -17,8 +17,9 @@
 -- 'issueDueBadgePeriod' and 'badgeManagerPass' compose them.
 --
 -- __No test waits on 'badgePassInterval'.__ A pass is driven by @\/_badge state@ (which signals
--- the worker) and paced by the injected 'badgeCurrentTime', which every pass reads exactly once
--- before it reads any state — so the test can count passes and hold one open without sleeping.
+-- the worker) and paced by the injected 'badgeCurrentTime', which every pass reads exactly once,
+-- before it reads the purchase or ledger it would act on (though 'badgeManagerPass' has already
+-- read the user row by then) — so the test can count passes and hold one open without sleeping.
 module Bots.BadgeManagerTests (badgeManagerTests) where
 
 import ChatClient
@@ -70,8 +71,9 @@ badgeManagerTests = do
     it "stores the statement, writes the issuance, sets the profile badge and reports the change" testIssuedCredentialApplied
     it "discards a credential signed by another key and writes nothing at all" testForeignCredentialRejected
     it "an exhausted balance stores the statement, writes no issuance and keeps the badge" testExhaustedBalanceApplied
-  describe "the badge worker" $
+  describe "the badge worker" $ do
     it "collapses the signals that arrive during a pass into one more pass, never a concurrent one" testSignalsDuringPassRunOnePass
+    it "applies a pass for an inactive profile without switching which profile is active" testInactiveProfilePassDoesNotSwitchActiveUser
 
 -- Fixtures --------------------------------------------------------------------
 
@@ -116,11 +118,13 @@ fixtureEntry entryId changeMonths balanceMonths balanceStartTs entryType =
     }
 
 -- | Counts and paces the badge passes of a controller. Every pass reads 'badgeCurrentTime'
--- exactly once, before it reads any state, so 'passes' is the number of passes that have STARTED
--- and a pass gets no further until the test grants a permit.
+-- exactly once, before it reads the purchase or ledger, so 'passes' is the number of passes that
+-- have STARTED and a pass gets no further until the test grants a permit. (One store read —
+-- 'badgeManagerPass'\'s own @getUser@ — does happen before the gate; it is not one of the rows
+-- these tests seed or assert on, so it cannot race them.)
 --
 -- Tests that apply a response themselves grant none: that parks the pass chat start signals
--- before it can read the store, so it can never race their fixtures.
+-- before it can read the purchase or ledger, so it can never race their fixtures.
 data BadgeGate = BadgeGate {passes :: TVar Int, permits :: TVar Int}
 
 gatedClock :: BadgeGate -> IO UTCTime
@@ -182,10 +186,17 @@ runCM TestCC {chatController} action = runReaderT (runExceptT action) chatContro
 
 -- | The pass's second half, composed exactly as 'badgeManagerPass' composes it: the response is
 -- stored (in production under the per-user badge lock) and the change it made is then presented
--- and reported (in production with that lock released).
+-- and reported (in production with that lock released). Runs for the currently ACTIVE user.
 applyIssueResponse :: TestCC -> UserBadgePurchase -> Maybe BadgeLedgerEntry -> BadgeServiceResponse -> IO ()
-applyIssueResponse cc purchase heldEntry_ resp = do
-  user <- testUser cc
+applyIssueResponse cc purchase heldEntry_ resp = testUser cc >>= \user -> applyIssueResponseFor cc user purchase heldEntry_ resp
+
+-- | As 'applyIssueResponse', but for an explicit user rather than whichever one happens to be
+-- active. Production's 'badgeManagerPass' always fetches the WORKER's own user by id
+-- (@withFastStore (\`getUser\` userId)@) rather than reading 'currentUser', so a pass can run for
+-- a profile that is not the active one — this is what 'testInactiveProfilePassDoesNotSwitchActiveUser'
+-- exercises (plan §9, review round).
+applyIssueResponseFor :: TestCC -> User -> UserBadgePurchase -> Maybe BadgeLedgerEntry -> BadgeServiceResponse -> IO ()
+applyIssueResponseFor cc user purchase heldEntry_ resp =
   runCM cc $ storeBadgeIssueResponse passNow user purchase heldEntry_ resp >>= presentBadgeChange
 
 -- | A credential for the fixture's period, signed by the given issuer key. The master key is the
@@ -322,3 +333,34 @@ testSignalsDuringPassRunOnePass ps = do
     -- and that is the only pass the three signals bought, however many they were
     reportsNothing alice
     readTVarIO (passes gate) `shouldReturn` 2
+
+-- | Every user gets a badge worker (plan §9 review round), so a pass need not run for the
+-- ACTIVE profile. Proves the guard that keeps such a pass from switching which profile is
+-- active: without it, applying a credential response for alice's purchase below would leave
+-- 'currentUser' pointing at alice even though \"secret\" was made active in between — because
+-- production's 'badgeManagerPass' fetches its own user by id rather than through 'currentUser',
+-- exactly like 'applyIssueResponseFor' does here.
+testInactiveProfilePassDoesNotSwitchActiveUser :: HasCallStack => TestParams -> IO ()
+testInactiveProfilePassDoesNotSwitchActiveUser ps = do
+  Right (pk, sk) <- bbsKeyGen
+  withBadgeChat ps pk $ \_gate alice -> do
+    -- alice is active when her purchase is created, so it is created under HER userId
+    aliceUser@User {userId = aliceUserId} <- testUser alice
+    (purchase, heldEntry) <- setupShownPurchase alice
+    -- a second profile becomes active; alice's is now the inactive one
+    alice ##> "/create user secret"
+    alice <## "user profile: secret"
+    alice <## "use /p <name> [<bio>] to change it"
+    User {userId = secretUserId} <- testUser alice
+    cred <- issuedCredential sk purchase
+    let statement = BadgeStatement {entries = [issuedDebitEntry], previousEntryId = Just heldEntryUuid}
+    -- the pass runs for ALICE (explicit, as her worker's would), while "secret" stays active
+    applyIssueResponseFor alice aliceUser purchase (Just heldEntry) (badgeCredentialResponse (Just cred) statement)
+    -- the event still reports alice's own change, prefixed since she is not the active profile
+    alice <## "[user: alice] supporter badge 1 (shown): issued, 1 month(s) left, paid through 2026-05-01"
+    -- alice's own row was written despite her being inactive
+    storedCredential alice `shouldReturn` cred
+    -- but the active profile did not move: still "secret", never back to alice
+    User {userId = activeAfter} <- testUser alice
+    activeAfter `shouldBe` secretUserId
+    activeAfter `shouldNotBe` aliceUserId

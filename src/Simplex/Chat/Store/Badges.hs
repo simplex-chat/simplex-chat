@@ -43,6 +43,7 @@ module Simplex.Chat.Store.Badges
     -- * Issuances
     NewBadgeIssuance (..),
     createIssuance,
+    hasIssuanceForPeriod,
 
     -- * Ledger
     getLastBadgeLedgerEntry,
@@ -372,6 +373,17 @@ createIssuance db NewBadgeIssuance {badgePurchaseId, badgeType, periodStart, per
         credential,
         createdAt = now
       }
+
+-- | Whether an issuance already exists for this purchase and period start.
+--
+-- Nothing in the schema dedupes @badge_issuances@ on @(badge_purchase_id, period_start)@ the way
+-- 'insertLedgerEntries' dedupes the ledger on @entry_uuid@: a fresh @issuance_id@ is minted on
+-- every 'createIssuance' call. A healed ledger's complete history can re-present the same
+-- @debit(badge)@ the client already holds an issuance for, so the caller must check this first.
+hasIssuanceForPeriod :: DB.Connection -> Int64 -> UTCTime -> IO Bool
+hasIssuanceForPeriod db badgePurchaseId periodStart =
+  fromOnly . head
+    <$> DB.query db "SELECT EXISTS (SELECT 1 FROM badge_issuances WHERE badge_purchase_id = ? AND period_start = ?)" (badgePurchaseId, periodStart)
 
 -- Ledger ----------------------------------------------------------------------
 
