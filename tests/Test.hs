@@ -6,6 +6,7 @@
 import Bots.BadgeCodeTests
 import Bots.BadgeLedgerTests
 import Bots.BadgeServiceTests
+import Bots.BadgeStoreTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -88,6 +89,7 @@ main = do
 #if !defined(dbPostgres)
           describe "Mobile API Tests" mobileTests
 #endif
+          describe "Supporter badges store" badgeStoreTests
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests

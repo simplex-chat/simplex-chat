@@ -80,6 +80,7 @@ library
       Simplex.Chat.Stats
       Simplex.Chat.Store
       Simplex.Chat.Store.AppSettings
+      Simplex.Chat.Store.Badges
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.ContactRequest
       Simplex.Chat.Store.Delivery
@@ -714,6 +715,7 @@ test-suite simplex-chat-test
       Bots.BadgeCodeTests
       Bots.BadgeLedgerTests
       Bots.BadgeServiceTests
+      Bots.BadgeStoreTests
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
