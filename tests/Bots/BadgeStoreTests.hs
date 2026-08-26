@@ -76,6 +76,7 @@ badgeStoreTests = do
     it "preserves the statement's array order when every entry shares one createdAt" testEntryOrderFromArrayPosition
     it "re-delivering the same complete statement writes nothing and changes nothing" testStatementRedeliveryIsIdempotent
     it "a statement with no previousEntryId replaces the ledger, dropping entries the service no longer holds" testStatementWithoutCursorReplaces
+    it "a replacement that reorders the entries it re-sends drops the held rows rather than leaving them out of order" testReorderedReplacementDropsHeldRows
     it "appends after previousEntryId without touching the entries already held" testStatementWithCursorAppends
     it "stores an unrecognised entry tag verbatim and hands it back unchanged" testUnknownEntryTypeRoundTrip
     it "refuses a charge credit rather than coercing its id into the charge_id TEXT column" testChargeCreditRefused
@@ -83,6 +84,7 @@ badgeStoreTests = do
     it "createCodePayment and createPurchase leave one issued purchase paid for by a settled code payment" testCodePaymentAndPurchase
     it "supersedePurchases clears the paid slot only, and setShownPurchase points at the new purchase" testSupersedeAndShownBadge
     it "getShownPurchase returns the purchase with its private key intact" testGetShownPurchaseKeepsPrivateKey
+    it "neither shown-badge function will cross profiles, so one user cannot be handed another's private key" testShownPurchaseIsScopedToItsUser
   describe "client badge issuances" $
     it "createIssuance writes one row per period" testIssuancePerPeriod
 
@@ -164,10 +166,13 @@ newCodePurchase st User {userId} badgeType = do
 purchaseId :: UserBadgePurchase -> Int64
 purchaseId UserBadgePurchase {badgePurchaseId} = badgePurchaseId
 
-purchaseStatuses :: DBStore -> IO [(Int64, Text, Text)]
+-- | @(badge_purchase_id, initial_badge_type, current_badge_type, status)@, read from the table
+-- rather than from the record 'createPurchase' returns: both badge-type columns must be asserted
+-- against the DATABASE, or swapping the two arguments that write them would go unnoticed.
+purchaseStatuses :: DBStore -> IO [(Int64, Text, Text, Text)]
 purchaseStatuses st =
   storeIO st $ \db ->
-    DB.query_ db "SELECT badge_purchase_id, current_badge_type, status FROM badge_purchases ORDER BY badge_purchase_id ASC"
+    DB.query_ db "SELECT badge_purchase_id, initial_badge_type, current_badge_type, status FROM badge_purchases ORDER BY badge_purchase_id ASC"
 
 ledgerUuids :: DBStore -> Int64 -> IO [Text]
 ledgerUuids st pId =
@@ -281,6 +286,35 @@ testStatementWithoutCursorReplaces ps = withBadgeStore ps $ \st user -> do
   storeE st $ \db -> insertLedgerEntries db pId (fullStatement []) now
   ledgerUuids st pId `shouldReturn` ["rep-1", "rep-2"]
 
+-- | The REPLACE path keeps rows the statement re-sends, so they hold their local @entry_id@ and
+-- an issuance can reference them -- but that is only safe while the rows it keeps sit in the same
+-- order the statement puts them in. A service that REWROTE its ledger rather than extending it
+-- can re-send the same uuids in a different order, and then keeping them would leave the client
+-- reading a last entry that is not the statement's last entry. The held rows are dropped and
+-- re-inserted instead.
+--
+-- This is the branch behind everything else the step does, and no other example reaches it:
+-- every other REPLACE test starts from an empty ledger, or keeps a genuine prefix, or re-delivers
+-- an identical statement.
+testReorderedReplacementDropsHeldRows :: HasCallStack => TestParams -> IO ()
+testReorderedReplacementDropsHeldRows ps = withBadgeStore ps $ \st user -> do
+  pId <- purchaseId <$> newCodePurchase st user BTSupporter
+  now <- getCurrentTime
+  let entryA = entry "reo-a" 3 3 (SECredit SCPayment {invoiceId = Nothing})
+      entryB = entry "reo-b" (-1) 2 (SEDebit SDBadge)
+      -- same two uuids, opposite order, and the balances swapped with them
+      entryA' = entry "reo-a" (-1) 2 (SEDebit SDBadge)
+      entryB' = entry "reo-b" 3 3 (SECredit SCPayment {invoiceId = Nothing})
+  storeE st $ \db -> insertLedgerEntries db pId (fullStatement [entryA, entryB]) now
+  ledgerUuids st pId `shouldReturn` ["reo-a", "reo-b"]
+  storeE st $ \db -> insertLedgerEntries db pId (fullStatement [entryB', entryA']) now
+  ledgerUuids st pId `shouldReturn` ["reo-b", "reo-a"]
+  -- and the last entry is the statement's last entry, not whichever row happened to survive
+  Just BadgeLedgerEntry {entryUuid, balanceMonths, entryType} <- storeE st (`getLastBadgeLedgerEntry` pId)
+  entryUuid `shouldBe` "reo-a"
+  balanceMonths `shouldBe` 2
+  entryType `shouldBe` LEDebit DTBadge
+
 -- | A present @previousEntryId@ names an entry the client already holds: the entries attach
 -- after it and nothing is removed.
 testStatementWithCursorAppends :: HasCallStack => TestParams -> IO ()
@@ -340,7 +374,7 @@ testCodePaymentAndPurchase ps = withBadgeStore ps $ \st user -> do
   status `shouldBe` PSIssued
   initialBadgeType `shouldBe` BTLegend
   currentBadgeType `shouldBe` BTLegend
-  purchaseStatuses st `shouldReturn` [(pId, "legend", "issued")]
+  purchaseStatuses st `shouldReturn` [(pId, "legend", "legend", "issued")]
   Just pmtId <- pure paymentId
   payments <- storeIO st $ \db -> DB.query db "SELECT provider, status, invoice_id FROM payments WHERE payment_id = ?" (Only pmtId)
   (payments :: [(Text, Text, Maybe Text)]) `shouldBe` [("code", "settled", Nothing)]
@@ -360,21 +394,21 @@ testSupersedeAndShownBadge :: HasCallStack => TestParams -> IO ()
 testSupersedeAndShownBadge ps = withBadgeStore ps $ \st user@User {userId} -> do
   supporterId <- purchaseId <$> newCodePurchase st user BTSupporter
   investorId <- purchaseId <$> newCodePurchase st user BTInvestor
-  storeIO st $ \db -> setShownPurchase db userId supporterId
+  storeE st $ \db -> setShownPurchase db userId supporterId
   legendId <- purchaseId <$> newCodePurchase st user BTLegend
   now <- getCurrentTime
-  storeIO st $ \db -> do
-    supersedePurchases db userId legendId BTLegend now
+  storeE st $ \db -> do
+    supersedePurchases db userId legendId now
     setShownPurchase db userId legendId
   purchaseStatuses st
-    `shouldReturn` [ (supporterId, "supporter", "superseded"),
-                     (investorId, "investor", "issued"),
-                     (legendId, "legend", "issued")
+    `shouldReturn` [ (supporterId, "supporter", "supporter", "superseded"),
+                     (investorId, "investor", "investor", "issued"),
+                     (legendId, "legend", "legend", "issued")
                    ]
   shown <- storeIO st $ \db -> DB.query db "SELECT shown_badge_id FROM users WHERE user_id = ?" (Only userId)
   (shown :: [Only (Maybe Int64)]) `shouldBe` [Only (Just legendId)]
   -- exactly one issued purchase in the paid slot
-  issuedPaid <- filter (\(_, bt, s) -> s == "issued" && badgeSlot (readBadgeType bt) == BSPaid) <$> purchaseStatuses st
+  issuedPaid <- filter (\(_, _, bt, s) -> s == "issued" && badgeSlot (readBadgeType bt) == BSPaid) <$> purchaseStatuses st
   length issuedPaid `shouldBe` 1
   where
     readBadgeType = \case
@@ -388,7 +422,7 @@ testGetShownPurchaseKeepsPrivateKey ps = withBadgeStore ps $ \st user@User {user
   noBadge <- storeE st (`getShownPurchase` userId)
   noBadge `shouldSatisfy` isNothing
   UserBadgePurchase {badgePurchaseId = pId, purchaseKey, purchasePrivKey, masterKey} <- newCodePurchase st user BTSupporter
-  storeIO st $ \db -> setShownPurchase db userId pId
+  storeE st $ \db -> setShownPurchase db userId pId
   Just UserBadgePurchase {badgePurchaseId = shownId, userId = shownUserId, purchaseKey = shownPub, purchasePrivKey = shownPriv, masterKey = shownMk} <-
     storeE st (`getShownPurchase` userId)
   shownId `shouldBe` pId
@@ -396,6 +430,42 @@ testGetShownPurchaseKeepsPrivateKey ps = withBadgeStore ps $ \st user@User {user
   shownPub `shouldBe` purchaseKey
   shownPriv `shouldBe` purchasePrivKey
   shownMk `shouldBe` masterKey
+
+-- | @users.shown_badge_id@ is a bare foreign key to @badge_purchases@: nothing in the schema
+-- stops it pointing at a purchase that belongs to a different profile, and the row it reaches
+-- carries a PRIVATE KEY the worker signs @issueBadge@ with. Both ends refuse to cross profiles --
+-- the write outright, and the read even when the pointer is already wrong, which is simulated
+-- here with raw SQL because the writer will no longer produce it.
+testShownPurchaseIsScopedToItsUser :: HasCallStack => TestParams -> IO ()
+testShownPurchaseIsScopedToItsUser ps = withBadgeStore ps $ \st alice -> do
+  bob <- addSecondUser st
+  let User {userId = aliceId} = alice
+      User {userId = bobId} = bob
+  alicePurchase <- purchaseId <$> newCodePurchase st alice BTSupporter
+  bobPurchase <- purchaseId <$> newCodePurchase st bob BTLegend
+  -- bob cannot point his profile at alice's purchase
+  err <- storeErr st $ \db -> setShownPurchase db bobId alicePurchase
+  show err `shouldContain` "does not belong to user"
+  -- ... and his own purchase is fine
+  storeE st $ \db -> setShownPurchase db bobId bobPurchase
+  Just UserBadgePurchase {badgePurchaseId = shownForBob} <- storeE st (`getShownPurchase` bobId)
+  shownForBob `shouldBe` bobPurchase
+  -- a pointer that crossed profiles anyway resolves to nothing, rather than to alice's key
+  storeIO st $ \db -> DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (alicePurchase, bobId)
+  crossed <- storeE st (`getShownPurchase` bobId)
+  crossed `shouldSatisfy` isNothing
+  -- alice still reads her own
+  storeE st $ \db -> setShownPurchase db aliceId alicePurchase
+  Just UserBadgePurchase {badgePurchaseId = shownForAlice} <- storeE st (`getShownPurchase` aliceId)
+  shownForAlice `shouldBe` alicePurchase
+
+addSecondUser :: DBStore -> IO User
+addSecondUser st = do
+  ts <- getCurrentTime
+  Right user <-
+    withTransaction st $ \db ->
+      runExceptT $ createUserRecordAt db (AgentUserId 2) False False bobProfile {preferences = Nothing} False ts
+  pure user
 
 -- Issuances -------------------------------------------------------------------
 

@@ -50,8 +50,8 @@ module Simplex.Chat.Store.Badges
   )
 where
 
-import Control.Monad (forM_, unless)
-import Control.Monad.Except (ExceptT, liftEither)
+import Control.Monad (forM_, unless, when)
+import Control.Monad.Except (ExceptT, liftEither, throwError)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
@@ -202,31 +202,66 @@ createPurchase db userId purchaseKey purchasePrivKey masterKey@(BadgeMasterKey m
 -- the slot has exactly one issued purchase again. The superseded row keeps its unconsumed
 -- months: purchases are unlinkable, so the service cannot move a balance between them.
 --
+-- The slot comes from the KEPT ROW's own @current_badge_type@, read here, not from a badge type
+-- the caller states: a caller that paired a purchase id with the wrong badge type would
+-- otherwise clear the wrong slot and leave two issued purchases in the right one. That read also
+-- scopes the purchase to the user, so a purchase id belonging to another profile cannot decide
+-- which of this profile's badges is superseded.
+--
 -- The slot filter is applied in Haskell rather than as a SQL @IN@ over the slot's badge types:
 -- @IN ?@ with a list is postgresql-simple's 'Database.PostgreSQL.Simple.In', which
 -- sqlite-simple has no counterpart for, and a user holds at most a handful of purchases.
-supersedePurchases :: DB.Connection -> UserId -> Int64 -> BadgeType -> UTCTime -> IO ()
-supersedePurchases db userId keepPurchaseId badgeType now = do
+supersedePurchases :: DB.Connection -> UserId -> Int64 -> UTCTime -> ExceptT StoreError IO ()
+supersedePurchases db userId keepPurchaseId now = do
+  kept <-
+    liftIO $
+      DB.query
+        db
+        "SELECT current_badge_type FROM badge_purchases WHERE badge_purchase_id = ? AND user_id = ?"
+        (keepPurchaseId, userId)
+  slot <- case kept of
+    (Only badgeType : _) -> pure $ badgeSlot badgeType
+    [] -> throwError $ notThisUsersPurchase keepPurchaseId userId
   rows <-
-    DB.query
-      db
-      "SELECT badge_purchase_id, current_badge_type FROM badge_purchases WHERE user_id = ? AND status = ? AND badge_purchase_id <> ?"
-      (userId, PSIssued, keepPurchaseId)
-  let slot = badgeSlot badgeType
-      superseded = [pId | (pId :: Int64, bt) <- rows, badgeSlot bt == slot]
-  forM_ superseded $ \pId ->
+    liftIO $
+      DB.query
+        db
+        "SELECT badge_purchase_id, current_badge_type FROM badge_purchases WHERE user_id = ? AND status = ? AND badge_purchase_id <> ?"
+        (userId, PSIssued, keepPurchaseId)
+  liftIO $ forM_ [pId | (pId :: Int64, bt) <- rows, badgeSlot bt == slot] $ \pId ->
     DB.execute
       db
       "UPDATE badge_purchases SET status = ?, updated_at = ? WHERE badge_purchase_id = ?"
       (PSSuperseded, now, pId)
 
+notThisUsersPurchase :: Int64 -> UserId -> StoreError
+notThisUsersPurchase badgePurchaseId userId =
+  SEInternalError $ "badge purchase " <> show badgePurchaseId <> " does not belong to user " <> show userId
+
 -- | Points @users.shown_badge_id@ at a purchase. Separate from
 -- 'Simplex.Chat.Store.Profiles.setUserBadge', which writes the profile's badge columns: this
 -- one records WHICH purchase the profile's badge came from, which is what
 -- 'getShownPurchase' reads back to sign the next @issueBadge@.
-setShownPurchase :: DB.Connection -> UserId -> Int64 -> IO ()
-setShownPurchase db userId badgePurchaseId =
-  DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
+--
+-- The purchase must be this user's. The column is a bare foreign key to @badge_purchases@ with
+-- nothing scoping it to the row's owner, so without this guard one profile could be pointed at
+-- another profile's purchase — and 'getShownPurchase' would then hand back the OTHER profile's
+-- private key for the worker to sign @issueBadge@ with. The write is the cheapest place to
+-- enforce it; 'getShownPurchase' enforces it again on read.
+setShownPurchase :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO ()
+setShownPurchase db userId badgePurchaseId = do
+  updated <-
+    liftIO $
+      DB.query
+        db
+        [sql|
+          UPDATE users SET shown_badge_id = ?
+          WHERE user_id = ?
+            AND EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_purchase_id = ? AND p.user_id = ?)
+          RETURNING user_id
+        |]
+        (badgePurchaseId, userId, badgePurchaseId, userId)
+  when (null (updated :: [Only UserId])) $ throwError $ notThisUsersPurchase badgePurchaseId userId
 
 purchaseSelectColumns :: Query
 purchaseSelectColumns =
@@ -267,6 +302,13 @@ rowToPurchase ((badgePurchaseId, userId_, purchaseKey, purchasePrivKey_, Binary 
 -- | The purchase @users.shown_badge_id@ points at, with its keypair and badge master key —
 -- what the badge screen renders and what the worker signs @issueBadge@ with. 'Nothing' when the
 -- user has no badge, which is the ordinary case.
+--
+-- The join carries @AND p.user_id = u.user_id@: this row is read to obtain a PRIVATE KEY, and
+-- @shown_badge_id@ is a bare foreign key to @badge_purchases@ that the schema does not scope to
+-- the pointing user. A pointer that ever crossed profiles — through a restored database, a
+-- future writer, or a bug in one — would otherwise hand this profile another profile's key to
+-- sign with. It also makes 'rowToPurchase'\'s NULL @user_id@ check reachable rather than
+-- vestigial, since the join now depends on that column.
 getShownPurchase :: DB.Connection -> UserId -> ExceptT StoreError IO (Maybe UserBadgePurchase)
 getShownPurchase db userId = do
   rows <-
@@ -275,7 +317,7 @@ getShownPurchase db userId = do
         db
         ( "SELECT "
             <> purchaseSelectColumns
-            <> " FROM badge_purchases p JOIN users u ON u.shown_badge_id = p.badge_purchase_id WHERE u.user_id = ?"
+            <> " FROM badge_purchases p JOIN users u ON u.shown_badge_id = p.badge_purchase_id AND p.user_id = u.user_id WHERE u.user_id = ?"
         )
         (Only userId)
   liftEither $ mapM rowToPurchase (listToMaybe rows)
@@ -371,7 +413,7 @@ storedEntryType = \case
     SCSupport -> Right CTSupport
     SCOpening -> Right CTOpening
     SCUnknown {tag, json} -> Right CTUnknown {tag, json}
-    SCCharge {} -> unsupported "credit(charge)" "chargeId is Int64 against the charge_id TEXT column; subscriptions are out of scope"
+    SCCharge {} -> unsupported "credit(charge)" "the stored LedgerCreditType.CTCharge types chargeId as Int64 while the wire and the charge_id column are both TEXT; subscriptions are out of scope"
     SCTransferIn {} -> unsupported "credit(transferIn)" "carries a purchase key where from_purchase_id holds a purchase id; transfers are out of scope"
   SEDebit debitType -> LEDebit <$> case debitType of
     SDRefund -> Right DTRefund
