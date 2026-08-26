@@ -184,8 +184,17 @@ cc ##> cmd = do
 -- do with the failure (C5).
 --
 -- What is tolerated is narrow: a leading @\"> \"@ prompt prefix, and fragments that spell the
--- command out in order. Anything else — an event line, a response line, an unrelated command's
--- echo — is not a prefix of what was sent and is reported as the same mismatch as before.
+-- command out in order. A response line, an event line or an unrelated command's echo is not a
+-- prefix of what was sent and is reported as the same mismatch as before.
+--
+-- __It does eat blank lines, and that is a known limitation, not an oversight.__ @\"\"@ is a
+-- prefix of every command, so up to 8 blank rows arriving before the echo are consumed silently,
+-- and a blank line that some later assertion in the same example expected would then be missing —
+-- failing that assertion instead of this one. It is left this way deliberately: tightening the
+-- test to "the fragment must have added something" would reject a bare @\"> \"@ row, and a bare
+-- @\"> \"@ row is one of the two shapes the artifact this exists for might have (C5 could not
+-- reproduce it to find out which). A blank line before a command's own echo has never been
+-- observed; a lost echo has.
 drainEcho :: HasCallStack => TestCC -> String -> Expectation
 drainEcho cc cmd = drain (0 :: Int) ""
   where

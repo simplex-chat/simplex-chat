@@ -95,8 +95,8 @@ import Simplex.Chat.Badges.Service
     -- 'BadgeUpgrade' imports only its constructor: its 'receipt' and 'balance' fields collide
     -- with 'BSPBadgeCredential''s and 'BSCIssueBadge''s, both imported with '(..)' above.
     BadgeUpgrade (BadgeUpgrade),
-    StatementCreditType (SCCharge, SCOpening, SCPayment),
-    StatementDebitType (SDBadge, SDLapse),
+    StatementCreditType (SCCharge, SCOpening, SCPayment, SCTransferIn),
+    StatementDebitType (SDBadge, SDLapse, SDTransferOut, SDUpgrade),
     StatementEntry (StatementEntry),
     StatementEntryType (SECredit, SEDebit),
     pattern VersionBadgeService,
@@ -2670,8 +2670,11 @@ testC5RedeemCodeShowsBadge ps = do
     alice ##> "/_badge state 1"
     expectBadgeState alice threeMonthBadgeState
     reportsNoBadgeEvent alice
-    -- the credential verifies under the key the service actually loaded, so it went through
-    -- 'verifyUserBadge' rather than being stored on the service's word
+    -- the stored credential verifies under the key the service actually loaded -- which says the
+    -- credential is genuine, NOT that the client checked it: a client that stored blindly would
+    -- hold this same validly-signed credential, because the real service only signs valid ones.
+    -- What proves the check happens is 'testC5UnverifiableCredentialWritesNothing', where the
+    -- configured key is not the service's and nothing at all is written.
     issuerPub <- readTestIssuerPublicKey (tmpPath ps)
     cred <-
       clientIssuedCredentials alice >>= \case
@@ -2925,7 +2928,12 @@ testC5CatalogFromFreshProfile ps = do
   clock <- newTestClock testClockStart
   withBadgeClient ps clock (pure ()) $ \alice -> do
     alice ##> "/_badge catalog 1"
-    -- neither catalog query orders its rows, so the six lines are compared as a set
+    -- neither catalog query orders its rows, so the six lines are compared as a set.
+    --
+    -- This comparison is also what would catch 'catalogRequest' starting to sign: a signed
+    -- getBadgeCatalog from this never-purchased key is answered with unknown_purchase_key, so
+    -- there would be no six lines to compare -- the example would fail here, on a
+    -- "badge service error: unknown_purchase_key" line, rather than passing quietly.
     catalogLines <- replicateM 6 (getTermLine alice)
     sort catalogLines
       `shouldBe` sort
@@ -3217,10 +3225,12 @@ stubCredentialResponse credential statement =
 testC5UnrecordableResponsesWriteNothing :: HasCallStack => TestParams -> IO ()
 testC5UnrecordableResponsesWriteNothing ps =
   withBadgeStub ps $ \alice stub sk -> do
+    -- the whole line, not a prefix: every message below is complete, and a prefix assertion on
+    -- the unstorable cases would pass for a build that refused the WRONG entry type
     let redeemAnsweredWith label body message = do
           alice ##> purchaseCodeCmd "C5-STUB-CODE"
           answerStubRequest stub body
-          alice <##. message
+          alice <## message
           noClientBadgeRows label alice
     -- no credential at all: the exhausted balance of an issueBadge, which a redemption cannot be
     redeemAnsweredWith
@@ -3244,19 +3254,53 @@ testC5UnrecordableResponsesWriteNothing ps =
       "after a credential with no expiry"
       (stubCredentialResponse (Just noExpiryCred) stubRedeemStatement)
       "badge service error: internal, issued badge credential carries no expiry"
-    -- an entry type this build cannot store, refused BEFORE the transaction opens
-    let unstorable =
-          BadgeStatement
-            { entries =
-                [ stubEntry "c5-stub-charge" 3 3 testClockStart (SECredit (SCCharge "c5-charge")),
-                  stubEntry "c5-stub-debit" (-1) 2 firstPeriodEnd (SEDebit SDBadge)
-                ],
-              previousEntryId = Nothing
-            }
-    redeemAnsweredWith
-      "after an unstorable statement"
-      (stubCredentialResponse (Just cred) unstorable)
-      "badge service error: internal, badge service statement cannot be stored: "
+    -- EVERY entry type this build cannot store, each refused BEFORE the transaction opens and each
+    -- named in the message it is refused with. All four go through the same
+    -- 'storedEntryType'/'encodeLedgerEntryType' pair, so one of them would have exercised the
+    -- code path -- but only naming each in its own assertion catches a build that rejects the
+    -- wrong one, and only the debit(badge) after it keeps 'issuedBadgePeriod' satisfied so the
+    -- storability check is what the redemption fails on.
+    (otherKey, _otherPriv) <- mkTestKeyPair
+    forM_ (unstorableEntryCases otherKey) $ \(label, entryType, reason) -> do
+      let unstorable =
+            BadgeStatement
+              { entries =
+                  [ stubEntry "c5-stub-unstorable" 3 3 testClockStart entryType,
+                    stubEntry "c5-stub-debit" (-1) 2 firstPeriodEnd (SEDebit SDBadge)
+                  ],
+                previousEntryId = Nothing
+              }
+      redeemAnsweredWith
+        label
+        (stubCredentialResponse (Just cred) unstorable)
+        ("badge service error: internal, badge service statement cannot be stored: SEInternalError {message = \"" <> reason <> "\"}")
+
+-- | The four statement entry types this build cannot store, with the label of the case and the
+-- reason 'Simplex.Chat.Store.Badges.storedEntryType' refuses each with.
+--
+-- The reasons are spelled out rather than derived from that function: a test that asked production
+-- for the message it expects production to produce would pass whichever message production
+-- produced. They carry a purchase KEY where the stored columns hold a purchase id, or a TEXT
+-- charge id against an 'Int64' one, which is why none of them can be replicated today.
+unstorableEntryCases :: C.PublicKeyEd25519 -> [(String, StatementEntryType, String)]
+unstorableEntryCases otherKey =
+  [ ( "after a statement carrying credit(charge)",
+      SECredit (SCCharge "c5-charge"),
+      "cannot store badge ledger credit(charge): the stored LedgerCreditType.CTCharge types chargeId as Int64 while the wire and the charge_id column are both TEXT; subscriptions are out of scope"
+    ),
+    ( "after a statement carrying credit(transferIn)",
+      SECredit (SCTransferIn otherKey),
+      "cannot store badge ledger credit(transferIn): carries a purchase key where from_purchase_id holds a purchase id; transfers are out of scope"
+    ),
+    ( "after a statement carrying debit(upgrade)",
+      SEDebit (SDUpgrade otherKey),
+      "cannot store badge ledger debit(upgrade): carries a purchase key where to_purchase_id holds a purchase id; upgrades are out of scope"
+    ),
+    ( "after a statement carrying debit(transferOut)",
+      SEDebit (SDTransferOut otherKey),
+      "cannot store badge ledger debit(transferOut): carries a purchase key where to_purchase_id holds a purchase id; transfers are out of scope"
+    )
+  ]
 
 -- | A response of the wrong shape for the command it answers, and one that is not a
 -- 'BadgeServiceResponse' at all, on both commands that send one.
