@@ -3566,7 +3566,17 @@ processChatCommand cxt nm = \case
     ChatConfig {badgeWebBaseUrl} <- asks config
     -- the badge screen opening or regaining focus is one of the three triggers of a pass, so a
     -- profile that has just crossed a month boundary re-issues without waiting for the timer
-    lift $ void $ getBadgeWorker True userId
+    --
+    -- DETACHED, and that is the point: 'getAgentWorker' reads the map and takes the worker's
+    -- action TMVar in two separate transactions, and 'cancelWorker' empties that TMVar without
+    -- replacing it, so a signal that read the map just before 'stopChatController' swapped it
+    -- blocks FOREVER on a worker cancelled in between. Swapping the map first (see there) fixes
+    -- the next caller, not one already in flight. Every other 'getAgentWorker' caller runs from a
+    -- start or a background loop; this one runs on the thread of a user-facing command that G1
+    -- and G3 issue on every badge-screen open, where a hang is a hung @chatSendCmd@ on mobile.
+    -- Detaching turns that into a dropped signal, which costs nothing: the pass is idempotent and
+    -- the worker's own timer re-fires.
+    lift . void . forkIO . void $ getBadgeWorker True userId
     pure CRBadgeState {user, badgeState, badgeWebBaseUrl}
   -- unsigned and unlocked: it names no purchase, writes nothing and computes no price -- the
   -- offers' totals are the service's (decision 8)
