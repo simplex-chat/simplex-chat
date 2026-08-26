@@ -19,7 +19,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
-import Data.List (isPrefixOf, isSuffixOf)
+import Data.List (isPrefixOf, isSuffixOf, stripPrefix)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
@@ -169,7 +169,41 @@ cc1 <##> cc2 = do
 (##>) :: HasCallStack => TestCC -> String -> IO ()
 cc ##> cmd = do
   cc `send` cmd
-  cc <## cmd
+  drainEcho cc cmd
+
+-- | Consumes the echo of a typed command, tolerating how the virtual terminal delivers it.
+--
+-- 'Simplex.Chat.Terminal.Input.runInputLoop' echoes the command with @printToTerminal@ before it
+-- runs, so what has to be consumed here is exactly the string the test sent — it carries no
+-- information the test did not itself write, which is why this DRAINS the echo instead of
+-- asserting on it. 'readTerminalOutput' samples a 24-row window from another thread and reports
+-- the rows that scrolled off it, so under load one echoed line can reach the queue as several
+-- fragments, or behind the input prompt row (@\"> \"@) that the same render overwrites. Comparing
+-- the first queued line against the command therefore failed about one run in three of the badge
+-- service suite, whose commands are the longest in the test tree, in examples that had nothing to
+-- do with the failure (C5).
+--
+-- What is tolerated is narrow: a leading @\"> \"@ prompt prefix, and fragments that spell the
+-- command out in order. Anything else — an event line, a response line, an unrelated command's
+-- echo — is not a prefix of what was sent and is reported as the same mismatch as before.
+drainEcho :: HasCallStack => TestCC -> String -> Expectation
+drainEcho cc cmd = drain (0 :: Int) ""
+  where
+    drain n acc
+      | acc == cmd = pure ()
+      | otherwise = do
+          l <- getTermLine' (Just $ "echo of: " <> cmd) cc
+          let acc' = acc <> dropPromptPrefix l
+          -- 8 fragments is far more than the terminal has ever produced for one line, and stops
+          -- a genuinely lost echo from consuming the rest of the example's output
+          if acc' `isPrefixOf` cmd && n < 8
+            then drain (n + 1) acc'
+            else acc' `shouldBe` cmd
+    -- only when the command itself cannot start that way, so a command that does is compared
+    -- exactly as before
+    dropPromptPrefix l
+      | "> " `isPrefixOf` cmd = l
+      | otherwise = fromMaybe l (stripPrefix "> " l)
 
 (#>) :: HasCallStack => TestCC -> String -> IO ()
 cc #> cmd = do

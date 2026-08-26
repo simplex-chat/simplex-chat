@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -35,15 +37,19 @@ import BadgeService.Credentials (issueSignedBadge, loadIssuerKey)
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store
+import Bots.BadgeManagerTests (allowPass, gatedClockAt, newBadgeGate, waitPasses)
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Profiles (testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.STM (atomically, readTVarIO)
+import Control.Concurrent.Async (async, wait)
+import Control.Concurrent.STM (atomically, readTVarIO, writeTVar)
 import Control.Exception (SomeException, finally, try)
-import Control.Monad (forM_, replicateM, void)
+import Control.Monad (forM_, replicateM, unless, void)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (runReaderT)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -52,7 +58,8 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LBC
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
-import Data.List (find, isInfixOf, nub)
+import Data.Int (Int64)
+import Data.List (find, isInfixOf, isPrefixOf, nub, sort, stripPrefix)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, isJust, mapMaybe)
 import Data.String (fromString)
@@ -66,7 +73,7 @@ import Data.Word (Word8, Word32)
 import GHC.IO.Handle (hDuplicate, hDuplicateTo)
 -- qualified: 'defaultPrefs' collides with ChatTests.Utils' own (chat preferences, unrelated)
 import qualified Options.Applicative as O
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeRequest (..), BadgeType (..), verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeRequest (..), BadgeType (..), VerifiedBadgeRequest (..), generateMasterKey, issueBadge, verifyCredential)
 import Simplex.Chat.Badges.Months (addMonths)
 import Simplex.Chat.Badges.Service
   ( -- 'BadgeBalance', 'StatementEntry' and 'StatementEntryType' import only their
@@ -88,7 +95,7 @@ import Simplex.Chat.Badges.Service
     -- 'BadgeUpgrade' imports only its constructor: its 'receipt' and 'balance' fields collide
     -- with 'BSPBadgeCredential''s and 'BSCIssueBadge''s, both imported with '(..)' above.
     BadgeUpgrade (BadgeUpgrade),
-    StatementCreditType (SCOpening, SCPayment),
+    StatementCreditType (SCCharge, SCOpening, SCPayment),
     StatementDebitType (SDBadge, SDLapse),
     StatementEntry (StatementEntry),
     StatementEntryType (SECredit, SEDebit),
@@ -98,19 +105,24 @@ import Simplex.Chat.Badges.Types
   ( BadgeItemStatus (..),
     BadgeLedgerEntry (..),
     BadgeOfferId (..),
+    BadgePurchasePayment (BPPCode),
     BadgePurchaseStatus (..),
     LedgerCreditType (..),
     LedgerDebitType (..),
     LedgerEntryType (..),
     OfferDiscount (..),
   )
-import Simplex.Chat.Controller (ChatConfig, ChatController (chatStore))
+import Simplex.Chat.Controller (ChatCommand (APIPurchaseBadge), ChatConfig (..), ChatController (ChatController, chatStore, currentUser, processServiceRequests))
+import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
-import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
-import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection)
+import Simplex.Chat.Types (ChatPeerType (..), ConnectTarget (..), Profile (..), User (User, userId))
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (serviceRequestTimeout))
+import Simplex.Messaging.Agent.Protocol (ConnectionMode (CMContact))
+import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, createDBStore)
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
@@ -210,6 +222,23 @@ badgeServiceTests = do
   it "should fail fast on a missing issuer key file" testBadgeIssuerKeyMissingFile
   it "should fail fast on an issuer key file without a 'secret' line" testBadgeIssuerKeyMalformedFile
   it "should fail fast on a non-positive key_idx" testBadgeIssuerKeyNonPositiveIdx
+  -- C5: the client against the live service
+  it "should redeem a code from a profile with no prior connection and show the badge, with the client ledger matching the service's" testC5RedeemCodeShowsBadge
+  it "should present the redeemed badge to a contact connected before the redemption" testC5ContactSeesBadgeAfterRedeem
+  it "should write a legend badge for a legend code redeemed through the tier-less command" testC5RedeemLegendCodeGivesLegendBadge
+  it "should write nothing for an unknown, an already redeemed and an expired code" testC5RefusedCodesWriteNothing
+  it "should write nothing when the issued credential does not verify against the configured key" testC5UnverifiableCredentialWritesNothing
+  it "should answer internal and write nothing when no badge service address is configured" testC5NoServiceAddressConfigured
+  it "should answer internal and write nothing for apple and google payments" testC5StorePaymentsUnsupported
+  it "should answer internal and write nothing for both commands with the service stopped" testC5ServiceStoppedIsInternal
+  it "should supersede the first purchase on a second redemption, leaving its ledger and months alone" testC5SecondCodeSupersedesFirst
+  it "should return the four seeded offers and both prices to a profile with no prior connection, writing nothing" testC5CatalogFromFreshProfile
+  it "should issue the second period in one worker pass signalled by the badge state command, keeping the master key" testC5WorkerIssuesSecondPeriod
+  it "should not repoint the active profile from a redemption that finishes after a profile switch" testC5RedeemAfterProfileSwitchKeepsActiveUser
+  it "should answer code_used to the same code again, and redeem it into a new purchase once unredeemed" testC5SameCodeAgainThenUnredeemed
+  it "should redeem through a badge service address given as a full contact request URI" testC5FullContactUriRedeems
+  it "should write nothing for a redemption response it cannot record in full" testC5UnrecordableResponsesWriteNothing
+  it "should report a response of the wrong shape and one it cannot read, on both commands" testC5UnreadableResponsesAreReported
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -309,24 +338,41 @@ withBadgeServiceConfig ps = withBadgeServiceClock ps getCurrentTime
 -- continuous across the between-phases window. This is what lets B10 cross a month boundary or a
 -- throttle bucket's refill window without any test sleeping -- see 'newTestClock'.
 withBadgeServiceClock :: HasCallStack => TestParams -> IO UTCTime -> IO () -> IO () -> (TestCC -> String -> IO ()) -> IO ()
-withBadgeServiceClock ps clock writeConfig betweenPhases test = do
+withBadgeServiceClock ps clock writeConfig betweenPhases test =
+  withBadgeServiceAddress ps clock writeConfig betweenPhases $ \(sLink, _fullLink) withService ->
+    -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
+    withService $
+      withNewTestChatCfg ps testCfg "client" bobProfile $ \client ->
+        test client sLink
+
+-- | The same first phase, with the SECOND phase handed to the body as @withService@ instead of
+-- wrapped around it, and with the service's contact address in both published forms.
+--
+-- Two things C5 needs and 'withBadgeServiceClock' cannot give: a chat client that OUTLIVES a
+-- service restart (the code is redeemed, the service is stopped, its @codes@ row is unredeemed
+-- and the service is started again, all with one client running), and a client running with the
+-- service NOT started at all. A body that just wants the service up for its whole length calls
+-- @withService@ once, which is what 'withBadgeServiceClock' does above.
+--
+-- The full contact request URI is the second element: it is one of the four target forms
+-- 'Simplex.Chat.Library.Commands.resolveServiceTarget' accepts and, without it, only the short
+-- link would ever be exercised.
+withBadgeServiceAddress :: HasCallStack => TestParams -> IO UTCTime -> IO () -> IO () -> ((String, String) -> (IO () -> IO ()) -> IO ()) -> IO ()
+withBadgeServiceAddress ps clock writeConfig betweenPhases test = do
   let opts = (mkBadgeServiceOpts ps) {serviceClock = clock}
   writeConfig
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
   runBadgeService testCfg opts (pure ())
-  -- Reopen the DB to read the link the service created.
-  bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
+  -- Reopen the DB to read the links the service created.
+  links <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
-    (sLink, _) <- getContactLinks bs False
+    links <- getContactLinks bs False
     bs <## "auto_accept off"
-    pure sLink
+    pure links
   betweenPhases
-  -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
-  runBadgeService testCfg opts $
-    withNewTestChatCfg ps testCfg "client" bobProfile $ \client ->
-      test client bsLink
+  test links (runBadgeService testCfg opts)
 
 runBadgeService :: ChatConfig -> BadgeServiceOpts -> IO () -> IO ()
 runBadgeService cfg opts action = do
@@ -2416,3 +2462,828 @@ runMigrationsToRun st = Migrations.run st Nothing
 runMigrationsToRun :: DBStore -> MigrationsToRun -> IO ()
 runMigrationsToRun st = Migrations.run st Nothing True
 #endif
+
+-- C5 -- the client against the live badge service -----------------------------
+--
+-- C4's redeem path, C2's commands and C3's worker, driven through the app's own API against the
+-- REAL service rather than a stub. C4's Verify line is "covered by C5", so everything below is
+-- the only check that step has, and the rules B10 works to hold here too:
+--   * time is injected on BOTH sides -- the service's clock (A6, 'withBadgeServiceAddress') and
+--     the client's 'badgeCurrentTime' (C2) -- so no test sleeps and no test waits on
+--     'badgePassInterval';
+--   * expected values are literal (fixed dates, fixed row shapes), never recomputed the way
+--     production computes them;
+--   * "wrote nothing" is a row count on BOTH databases, never "the error read the same".
+
+badgeClientDbPrefix :: FilePath
+badgeClientDbPrefix = "badge_client"
+
+badgeSecondClientDbPrefix :: FilePath
+badgeSecondClientDbPrefix = "badge_client2"
+
+badgeStubDbPrefix :: FilePath
+badgeStubDbPrefix = "badge_stub"
+
+-- | The client config that reaches the badge service: the address it published and the issuer key
+-- it actually loaded, so a credential it signs verifies here and one signed by anything else does
+-- not.
+badgeClientCfg :: String -> BBSPublicKey -> ChatConfig
+badgeClientCfg address pk =
+  testCfg {badgeServiceAddress = Just (badgeServiceTarget address), badgePublicKeys = testBadgeKeys pk}
+
+-- | Parses a published address into the 'ConnectTarget' 'badgeServiceAddress' holds. Both forms
+-- the harness reads back decode through this: the short link and the full contact request URI.
+badgeServiceTarget :: HasCallStack => String -> ConnectTarget 'CMContact
+badgeServiceTarget address = case strDecode (BC.pack address) of
+  Right target -> target
+  Left e -> error $ "badge service address " <> address <> " is not a connect target: " <> e
+
+-- | The C5 harness: B10's badge service on the given clock, and the client that reaches it.
+--
+-- The client's config is the body's, because the cases differ in one field each: the issuer key
+-- (the unverifiable-credential case configures the WRONG one), the address (the resolution case
+-- uses the full URI), the badge clock (the worker case shares the service's, the profile-switch
+-- case gates it) and the agent's service request timeout (the stopped-service case has nothing
+-- listening). Both published forms of the address are handed to the config builder and to the
+-- body, which needs them to configure a SECOND client against the same service.
+withBadgeClientCfg :: HasCallStack => TestParams -> IO UTCTime -> IO () -> ((String, String) -> BBSPublicKey -> ChatConfig) -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withBadgeClientCfg ps serviceClock seedCodes mkCfg test =
+  withBadgeServiceAddress ps serviceClock (writeTestBadgeServiceConfig ps) seedCodes $ \links withService -> do
+    pk <- readTestIssuerPublicKey (tmpPath ps)
+    withService $
+      withNewTestChatCfg ps (mkCfg links pk) badgeClientDbPrefix aliceProfile $ \alice ->
+        test alice links
+
+-- | The common shape: ONE clock driving the service and the client's badge time alike, so every
+-- date below is a literal on both sides and a month is crossed by moving one 'IORef'.
+withBadgeClient :: HasCallStack => TestParams -> IORef UTCTime -> IO () -> (TestCC -> IO ()) -> IO ()
+withBadgeClient ps clock seedCodes test =
+  withBadgeClientCfg ps (readIORef clock) seedCodes (sharedClockCfg clock) (\alice _ -> test alice)
+
+sharedClockCfg :: IORef UTCTime -> (String, String) -> BBSPublicKey -> ChatConfig
+sharedClockCfg clock (sLink, _fullLink) pk = (badgeClientCfg sLink pk) {badgeCurrentTime = readIORef clock}
+
+-- | The same, on the REAL clock on both sides: for the example whose assertion depends on the
+-- credential still being unexpired when something OTHER than the badge clock reads it -- a
+-- CONTACT's copy of the profile, whose badge status is computed against wall-clock time
+-- ('Simplex.Chat.Types.toLocalProfile') and would read as expired for a period issued in a fixed
+-- past month.
+withBadgeClientNow :: HasCallStack => TestParams -> IO () -> (TestCC -> (String, String) -> IO ()) -> IO ()
+withBadgeClientNow ps seedCodes = withBadgeClientCfg ps getCurrentTime seedCodes (\(sLink, _) pk -> badgeClientCfg sLink pk)
+
+-- | Runs an action against the CLIENT's store, the way 'withServiceDB' runs one against the
+-- service's.
+withClientStore :: TestCC -> (DB.Connection -> IO a) -> IO a
+withClientStore TestCC {chatController = ChatController {chatStore}} = withTransaction chatStore
+
+clientUser :: HasCallStack => TestCC -> IO User
+clientUser TestCC {chatController = ChatController {currentUser}} =
+  readTVarIO currentUser >>= maybe (expectationFailure "no active user" >> error "unreachable") pure
+
+-- | The rows one redemption writes on the CLIENT, counted together: payments, purchases, ledger
+-- entries, issuances, and profiles pointing at a shown badge. Every "writes nothing" assertion
+-- below pins this tuple, because an unchanged error message is not evidence that nothing was
+-- written.
+clientBadgeRowCounts :: TestCC -> IO (Int, Int, Int, Int, Int)
+clientBadgeRowCounts cc =
+  withClientStore cc $ \db -> do
+    payments <- countRows db "payments"
+    purchases <- countRows db "badge_purchases"
+    entries <- countRows db "badge_ledger"
+    issuances <- countRows db "badge_issuances"
+    [Only shown] <- DB.query_ db "SELECT count(*) FROM users WHERE shown_badge_id IS NOT NULL"
+    pure (payments, purchases, entries, issuances, shown)
+  where
+    countRows db table = do
+      [Only n] <- DB.query_ db (fromString ("SELECT count(*) FROM " <> table))
+      pure n
+
+noClientBadgeRows :: HasCallStack => String -> TestCC -> Expectation
+noClientBadgeRows label cc = do
+  counts <- clientBadgeRowCounts cc
+  (label, counts) `shouldBe` (label, (0, 0, 0, 0, 0))
+
+-- | The client's ledger replica as the database holds it, in append order.
+type ClientLedgerRow = (Text, Int, Int, UTCTime, Text, Text, Maybe Text, Maybe Text, Maybe Text)
+
+clientLedgerRows :: TestCC -> IO [ClientLedgerRow]
+clientLedgerRows cc =
+  withClientStore cc $ \db ->
+    DB.query_ db "SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type, entry_type, entry_credit_type, entry_debit_type, payment_id FROM badge_ledger ORDER BY entry_id"
+
+-- | The same columns from the SERVICE's own ledger, which is what the replica is compared to.
+type ServiceLedgerParityRow = (Text, Int, Int, UTCTime, Text, Text, Maybe Text, Maybe Text)
+
+serviceLedgerParityRows :: DB.Connection -> IO [ServiceLedgerParityRow]
+serviceLedgerParityRows db =
+  DB.query_ db "SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type, entry_type, entry_credit_type, entry_debit_type FROM sx_badge_service_badge_ledger ORDER BY entry_id"
+
+-- | §10's row-for-row comparison of the two ledgers: @entry_uuid@, @change_months@,
+-- @balance_months@, @balance_start_ts@, @balance_badge_type@ and the entry type must agree
+-- exactly, and the client's @payment_id@ must be NULL -- the wire field is the SERVICE's invoice
+-- id and the client column holds a CLIENT payments id, so carrying it across would tie the two
+-- databases together (C1).
+--
+-- Compared entry by entry rather than list against list, so a failure names the entry.
+shouldMatchServiceLedger :: HasCallStack => [ClientLedgerRow] -> [ServiceLedgerParityRow] -> Expectation
+shouldMatchServiceLedger clientRows serviceRows = do
+  ("ledger entry count" :: String, length clientRows) `shouldBe` ("ledger entry count", length serviceRows)
+  forM_ (zip3 [1 :: Int ..] clientRows serviceRows) $ \(n, c, s) -> do
+    let (cUuid, cChange, cBalance, cTs, cBadgeType, cType, cCredit, cDebit, cPayment) = c
+        (sUuid, sChange, sBalance, sTs, sBadgeType, sType, sCredit, sDebit) = s
+        label = "ledger entry " <> show n
+    (label, (cUuid, cChange, cBalance, cBadgeType, cType, cCredit, cDebit))
+      `shouldBe` (label, (sUuid, sChange, sBalance, sBadgeType, sType, sCredit, sDebit))
+    cTs `shouldBeStoredAt` sTs
+    (label <> " client payment_id", cPayment) `shouldBe` (label <> " client payment_id", Nothing)
+
+-- | The two lines 'CRBadgeState' prints -- the badge and the web base url, which no test config
+-- sets.
+expectBadgeState :: HasCallStack => TestCC -> String -> Expectation
+expectBadgeState cc line = do
+  cc <## line
+  cc <## "badge site: not configured"
+
+-- | Nothing more is reported: no event followed the response.
+reportsNoBadgeEvent :: HasCallStack => TestCC -> Expectation
+reportsNoBadgeEvent cc = cc <// 500000
+
+purchaseCodeCmd :: Text -> String
+purchaseCodeCmd code = "/_badge purchase 1 {\"type\":\"code\",\"code\":\"" <> T.unpack code <> "\"}"
+
+-- The badge state a 3-month code redeemed at 'testClockStart' leaves, spelled out: the period is
+-- [2026-03-10, 2026-04-10) and the 2 months still funded run from its end, so the profile is paid
+-- through 2026-06-10.
+threeMonthBadgeState :: String
+threeMonthBadgeState = "supporter badge 1 (shown): issued, 2 month(s) left, paid through 2026-06-10"
+
+-- | The stored credential of every issuance the client holds, oldest period first.
+clientIssuedCredentials :: HasCallStack => TestCC -> IO [BadgeCredential]
+clientIssuedCredentials cc = do
+  rows <- withClientStore cc $ \db -> DB.query_ db "SELECT credential FROM badge_issuances ORDER BY period_start"
+  mapM decodeCredential rows
+  where
+    decodeCredential (Only (Binary bs)) =
+      maybe (expectationFailure "a stored badge credential does not decode" >> error "unreachable") pure $
+        J.decodeStrict (bs :: BC.ByteString)
+
+-- | The master key of the client's only purchase, as the row holds it.
+clientPurchaseMasterKey :: HasCallStack => TestCC -> IO BadgeMasterKey
+clientPurchaseMasterKey cc =
+  withClientStore cc (\db -> DB.query_ db "SELECT master_key FROM badge_purchases") >>= \case
+    [Only (Binary mk)] -> pure $ BadgeMasterKey mk
+    other -> expectationFailure ("expected exactly one client purchase, got " <> show (length other)) >> error "unreachable"
+
+credentialMasterKey :: BadgeCredential -> BadgeMasterKey
+credentialMasterKey BadgeCredential {masterKey} = masterKey
+
+credentialBadgeType :: BadgeCredential -> BadgeType
+credentialBadgeType BadgeCredential {badgeInfo = BadgeInfo {badgeType}} = badgeType
+
+-- The happy path ---------------------------------------------------------------
+
+-- | A profile with no prior connection to the service redeems a seeded code on the first attempt,
+-- and everything that redemption leaves behind is checked in one place: the reported state, the
+-- profile's own badge, the five client rows and their columns, the credential's verification under
+-- the key the service actually loaded, and the ledger replica against the service's own rows.
+--
+-- One 'IORef' is both clocks, so every date is a literal and the client's badge status is computed
+-- at the instant the service issued the period.
+testC5RedeemCodeShowsBadge :: HasCallStack => TestParams -> IO ()
+testC5RedeemCodeShowsBadge ps = do
+  clock <- newTestClock testClockStart
+  codeRef <- newIORef ""
+  ledgerRef <- newIORef []
+  withBadgeClient ps clock (seedOneSupporterCode ps >>= writeIORef codeRef) $ \alice -> do
+    code <- readIORef codeRef
+    alice ##> purchaseCodeCmd code
+    expectBadgeState alice threeMonthBadgeState
+    -- the response IS the state: a successful redemption emits no CEvtBadgeChanged, which would
+    -- print the badge line a second time
+    reportsNoBadgeEvent alice
+    -- the profile carries the badge
+    alice ##> "/p"
+    alice <## "user profile: alice (Alice, * supporter)"
+    alice <## "use /p <name> [<bio>] to change it"
+    -- and the state reads the same when asked again (which also signals the worker, and it finds
+    -- the month already issued and does nothing)
+    alice ##> "/_badge state 1"
+    expectBadgeState alice threeMonthBadgeState
+    reportsNoBadgeEvent alice
+    -- the credential verifies under the key the service actually loaded, so it went through
+    -- 'verifyUserBadge' rather than being stored on the service's word
+    issuerPub <- readTestIssuerPublicKey (tmpPath ps)
+    cred <-
+      clientIssuedCredentials alice >>= \case
+        [c] -> pure c
+        other -> expectationFailure ("expected exactly one issuance, got " <> show (length other)) >> error "unreachable"
+    verifyCredential issuerPub cred `shouldReturn` True
+    credentialBadgeType cred `shouldBe` BTSupporter
+    -- and it is bound to the master key the purchase row holds
+    clientPurchaseMasterKey alice `shouldReturn` credentialMasterKey cred
+    -- exactly one row of each kind, with the columns C1 specified
+    clientBadgeRowCounts alice `shouldReturn` (1, 1, 2, 1, 1)
+    User {userId = aliceUserId} <- clientUser alice
+    withClientStore alice $ \db -> do
+      [paymentRow] <- DB.query_ db "SELECT payment_id, provider, invoice_id, status FROM payments"
+      let (paymentRowId, provider, invoiceId, paymentStatus) = paymentRow :: (Text, Text, Maybe Text, Text)
+      ("payment" :: String, (provider, invoiceId, paymentStatus)) `shouldBe` ("payment", ("code", Nothing, "settled"))
+      [purchaseRow] <-
+        DB.query_ db "SELECT badge_purchase_id, user_id, initial_badge_type, current_badge_type, status, payment_id FROM badge_purchases"
+      let (purchaseId, purchaseUserId, initialType, currentType, purchaseStatus, purchasePayment) =
+            purchaseRow :: (Int64, Int64, Text, Text, Text, Maybe Text)
+      ("purchase" :: String, (purchaseUserId, initialType, currentType, purchaseStatus, purchasePayment))
+        `shouldBe` ("purchase", (aliceUserId, "supporter", "supporter", "issued", Just paymentRowId))
+      -- the private key column is the client-only one C1 added, and without it the purchase could
+      -- never sign an issueBadge again
+      [Only privKey] <- DB.query_ db "SELECT purchase_priv_key FROM badge_purchases"
+      ("purchase private key" :: String, isJust (privKey :: Maybe (Binary BC.ByteString)))
+        `shouldBe` ("purchase private key", True)
+      [Only shownBadgeId] <- DB.query db "SELECT shown_badge_id FROM users WHERE user_id = ?" (Only aliceUserId)
+      ("shown badge" :: String, shownBadgeId) `shouldBe` ("shown badge", Just purchaseId)
+      -- the issuance carries the period the statement implied, and the credential's own expiry
+      [issuanceRow] <-
+        DB.query_ db "SELECT badge_purchase_id, badge_type, period_start, period_end, expiry, entry_id FROM badge_issuances"
+      let (issuancePurchase, issuanceType, periodStart, periodEnd, expiry, entryId) =
+            issuanceRow :: (Int64, Text, UTCTime, UTCTime, UTCTime, Maybe Int64)
+      ("issuance" :: String, (issuancePurchase, issuanceType, entryId))
+        `shouldBe` ("issuance", (purchaseId, "supporter", Nothing))
+      periodStart `shouldBeStoredAt` testClockStart
+      periodEnd `shouldBeStoredAt` firstPeriodEnd
+      expiry `shouldBeStoredAt` firstCredentialExpiry
+    -- held for the parity check below: the service's database cannot be opened while the service
+    -- itself is running
+    clientLedgerRows alice >>= writeIORef ledgerRef
+  clientRows <- readIORef ledgerRef
+  withServiceDB ps $ \db -> do
+    serviceRowCounts db `shouldReturn` (1, 1, 2, 1, 1)
+    serviceLedgerParityRows db >>= shouldMatchServiceLedger clientRows
+
+-- | The only assertion that the post-lock broadcast actually happens: a contact connected BEFORE
+-- the redemption sees the badge on the profile afterwards, with no action of alice's beyond the
+-- redemption itself.
+--
+-- The star on @alice *>@ is the assertion: a contact prints it only for a badge it verified and
+-- found ACTIVE, and that status is computed against wall-clock time, hence the real clock here.
+testC5ContactSeesBadgeAfterRedeem :: HasCallStack => TestParams -> IO ()
+testC5ContactSeesBadgeAfterRedeem ps = do
+  codeRef <- newIORef ""
+  withBadgeClientNow ps (seedOneSupporterCode ps >>= writeIORef codeRef) $ \alice _links -> do
+    issuerPub <- readTestIssuerPublicKey (tmpPath ps)
+    withNewTestChatCfg ps (testCfg {badgePublicKeys = testBadgeKeys issuerPub}) badgeSecondClientDbPrefix bobProfile $ \bob -> do
+      connectUsers alice bob
+      -- before the redemption the profile bob holds carries no badge
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      code <- readIORef codeRef
+      alice ##> purchaseCodeCmd code
+      alice <##. "supporter badge 1 (shown): issued, 2 month(s) left, paid through "
+      alice <## "badge site: not configured"
+      -- the badge XInfo is delivered in order before this message, so bob has stored it
+      alice #> "@bob hi again"
+      bob <# "alice *> hi again"
+
+-- | The client half of the funded-tier ruling: a LEGEND code redeemed through the same tier-less
+-- command yields a LEGEND badge. The request names supporter ('badgeCodeRequest' hardcodes it,
+-- plan §9) and the service signs the tier the code funds, so the purchase row, the issuance and
+-- the profile must all take the tier the RESPONSE carries -- which fails the day 'createPurchase'
+-- is fed the request's tier instead of the credential's.
+testC5RedeemLegendCodeGivesLegendBadge :: HasCallStack => TestParams -> IO ()
+testC5RedeemLegendCodeGivesLegendBadge ps = do
+  clock <- newTestClock testClockStart
+  codeRef <- newIORef ""
+  let seedCode = seedTestCodes ps [(BTLegend, 3, testCodeExpiry)] >>= writeIORef codeRef . head
+  withBadgeClient ps clock seedCode $ \alice -> do
+    code <- readIORef codeRef
+    alice ##> purchaseCodeCmd code
+    expectBadgeState alice "legend badge 1 (shown): issued, 2 month(s) left, paid through 2026-06-10"
+    alice ##> "/p"
+    alice <## "user profile: alice (Alice, * legend)"
+    alice <## "use /p <name> [<bio>] to change it"
+    cred <-
+      clientIssuedCredentials alice >>= \case
+        [c] -> pure c
+        other -> expectationFailure ("expected exactly one issuance, got " <> show (length other)) >> error "unreachable"
+    credentialBadgeType cred `shouldBe` BTLegend
+    withClientStore alice $ \db -> do
+      [purchaseTypes] <- DB.query_ db "SELECT initial_badge_type, current_badge_type FROM badge_purchases"
+      ("purchase tier" :: String, purchaseTypes :: (Text, Text)) `shouldBe` ("purchase tier", ("legend", "legend"))
+      [Only issuanceType] <- DB.query_ db "SELECT badge_type FROM badge_issuances"
+      ("issuance tier" :: String, issuanceType :: Text) `shouldBe` ("issuance tier", "legend")
+
+-- The paths that must write nothing ---------------------------------------------
+
+-- | The three service refusals a code can earn, each surfaced with its own code and each leaving
+-- the client that asked with no row of any kind. The counts are the assertion: a client that wrote
+-- a purchase row and then raised would produce the same three lines.
+--
+-- The @code_used@ case needs a SECOND client, not a second command from the first: C4 mints a
+-- fresh purchase key per redemption, so the code is presented by a key the service has never seen
+-- either way, and a second profile of the same app would prove nothing the second client does not.
+testC5RefusedCodesWriteNothing :: HasCallStack => TestParams -> IO ()
+testC5RefusedCodesWriteNothing ps = do
+  clock <- newTestClock testClockStart
+  codesRef <- newIORef []
+  let seedCodes = seedTestCodes ps [(BTSupporter, 3, expiredCodeExpiry), (BTSupporter, 3, testCodeExpiry)] >>= writeIORef codesRef
+  withBadgeClientCfg ps (readIORef clock) seedCodes (sharedClockCfg clock) $ \alice links -> do
+    [expiredCode, usedCode] <- readIORef codesRef
+    -- a code the service has never seen
+    unknownCode <- mintUnknownCode
+    alice ##> purchaseCodeCmd unknownCode
+    alice <## "badge service error: code_invalid"
+    noClientBadgeRows "after an unknown code" alice
+    -- one that alice then redeems for herself
+    alice ##> purchaseCodeCmd usedCode
+    expectBadgeState alice threeMonthBadgeState
+    pk <- readTestIssuerPublicKey (tmpPath ps)
+    withNewTestChatCfg ps (sharedClockCfg clock links pk) badgeSecondClientDbPrefix bobProfile $ \bob -> do
+      bob ##> purchaseCodeCmd usedCode
+      bob <## "badge service error: code_used"
+      noClientBadgeRows "after a code redeemed by someone else" bob
+      bob ##> purchaseCodeCmd expiredCode
+      bob <## "badge service error: code_expired"
+      noClientBadgeRows "after an expired code" bob
+    -- and alice's single redemption is untouched by either refusal
+    clientBadgeRowCounts alice `shouldReturn` (1, 1, 2, 1, 1)
+
+-- | The credential is verified BEFORE the transaction opens, so a credential this client cannot
+-- verify leaves nothing behind -- even though the service redeemed the code and will never hand it
+-- back. The client is started with an issuer key that is not the service's, which is what a
+-- rotated or spoofed issuer looks like from here.
+testC5UnverifiableCredentialWritesNothing :: HasCallStack => TestParams -> IO ()
+testC5UnverifiableCredentialWritesNothing ps = do
+  clock <- newTestClock testClockStart
+  codeRef <- newIORef ""
+  Right (otherPk, _otherSk) <- bbsKeyGen
+  let seedCode = seedOneSupporterCode ps >>= writeIORef codeRef
+      cfg (sLink, _fullLink) _servicePk = (badgeClientCfg sLink otherPk) {badgeCurrentTime = readIORef clock}
+  withBadgeClientCfg ps (readIORef clock) seedCode cfg $ \alice _links -> do
+    code <- readIORef codeRef
+    alice ##> purchaseCodeCmd code
+    alice <## "badge service error: internal, badge credential does not verify against configured key"
+    noClientBadgeRows "after an unverifiable credential" alice
+  -- and the service DID redeem it: this is the operator-recoverable case C4's first concern names
+  code <- readIORef codeRef
+  codeIsRedeemed ps code `shouldReturn` True
+  withServiceDB ps $ \db -> serviceRowCounts db `shouldReturn` (1, 1, 2, 1, 1)
+
+-- | With no badge service address configured, both commands that need one fail locally, contact
+-- nothing and write nothing. This is the failure C3's worker already reports a pass with (see
+-- 'Bots.BadgeManagerTests'), reached here through the two user-facing commands.
+testC5NoServiceAddressConfigured :: HasCallStack => TestParams -> IO ()
+testC5NoServiceAddressConfigured ps =
+  withNewTestChatCfg ps testCfg badgeClientDbPrefix aliceProfile $ \alice -> do
+    alice ##> "/_badge catalog 1"
+    alice <## "badge service error: internal, badge service address is not configured"
+    alice ##> purchaseCodeCmd "C5-NO-ADDRESS"
+    alice <## "badge service error: internal, badge service address is not configured"
+    reportsNoBadgeEvent alice
+    noClientBadgeRows "with no service address" alice
+
+-- | Both store payment methods are reachable through the API today and are permanently refused
+-- (plan §6): they present the evidence of a @payments@ row an app purchase flow created, and
+-- neither that row nor its writer exists.
+testC5StorePaymentsUnsupported :: HasCallStack => TestParams -> IO ()
+testC5StorePaymentsUnsupported ps =
+  withNewTestChatCfg ps testCfg badgeClientDbPrefix aliceProfile $ \alice -> do
+    alice ##> "/_badge purchase 1 {\"type\":\"apple\",\"paymentId\":\"p\",\"jws\":\"j\"}"
+    alice <## "badge service error: internal, badge store payments are not supported"
+    alice ##> "/_badge purchase 1 {\"type\":\"google\",\"paymentId\":\"p\",\"token\":\"t\"}"
+    alice <## "badge service error: internal, badge store payments are not supported"
+    reportsNoBadgeEvent alice
+    noClientBadgeRows "after store payments" alice
+
+-- | With the service's address published but nothing listening on it, both commands report the
+-- transport failure as a badge service error and write nothing.
+--
+-- The agent's 'serviceRequestTimeout' is shortened to two seconds for this example only: its
+-- default is thirty, which is longer than any terminal assertion waits, and what is being pinned
+-- is what happens AFTER the timeout, not how long the default is.
+testC5ServiceStoppedIsInternal :: HasCallStack => TestParams -> IO ()
+testC5ServiceStoppedIsInternal ps =
+  -- the two startup phases publish the service's address and then it stays down: 'withService' is
+  -- never called
+  withBadgeServiceAddress ps getCurrentTime (writeTestBadgeServiceConfig ps) (pure ()) $ \(sLink, _fullLink) _withService -> do
+    pk <- readTestIssuerPublicKey (tmpPath ps)
+    let cfg = (badgeClientCfg sLink pk) {agentConfig = testAgentCfg {serviceRequestTimeout = 2}}
+    withNewTestChatCfg ps cfg badgeClientDbPrefix aliceProfile $ \alice -> do
+      alice ##> "/_badge catalog 1"
+      alice <##. "badge service error: internal, The badge service could not be reached, and the request was not delivered."
+      alice ##> purchaseCodeCmd "C5-SERVICE-DOWN"
+      alice <##. "badge service error: internal, The badge service could not be reached, and the request was not delivered."
+      noClientBadgeRows "with the service stopped" alice
+
+-- Supersession and the slot -----------------------------------------------------
+
+-- | A second code redeemed on the same profile takes the slot: the first purchase becomes
+-- @superseded@ and the second is @issued@ and shown. The first purchase keeps everything it had --
+-- its ledger rows, its issuance and, above all, its unconsumed months, which never move between
+-- purchases because purchases are unlinkable and the service cannot transfer a balance.
+testC5SecondCodeSupersedesFirst :: HasCallStack => TestParams -> IO ()
+testC5SecondCodeSupersedesFirst ps = do
+  clock <- newTestClock testClockStart
+  codesRef <- newIORef []
+  let seedCodes = seedTestCodes ps [(BTSupporter, 3, testCodeExpiry), (BTLegend, 3, testCodeExpiry)] >>= writeIORef codesRef
+  withBadgeClient ps clock seedCodes $ \alice -> do
+    [firstCode, secondCode] <- readIORef codesRef
+    alice ##> purchaseCodeCmd firstCode
+    expectBadgeState alice threeMonthBadgeState
+    firstLedger <- clientLedgerRows alice
+    alice ##> purchaseCodeCmd secondCode
+    expectBadgeState alice "legend badge 2 (shown): issued, 2 month(s) left, paid through 2026-06-10"
+    -- two of everything, and one shown badge
+    clientBadgeRowCounts alice `shouldReturn` (2, 2, 4, 2, 1)
+    User {userId = aliceUserId} <- clientUser alice
+    withClientStore alice $ \db -> do
+      statuses <- DB.query_ db "SELECT badge_purchase_id, current_badge_type, status FROM badge_purchases ORDER BY badge_purchase_id"
+      ("purchase statuses" :: String, statuses :: [(Int64, Text, Text)])
+        `shouldBe` ("purchase statuses", [(1, "supporter", "superseded"), (2, "legend", "issued")])
+      [Only shownBadgeId] <- DB.query db "SELECT shown_badge_id FROM users WHERE user_id = ?" (Only aliceUserId)
+      ("shown badge" :: String, shownBadgeId :: Maybe Int64) `shouldBe` ("shown badge", Just 2)
+      -- the superseded purchase still has its issuance
+      [Only firstIssuances] <- DB.query_ db "SELECT count(*) FROM badge_issuances WHERE badge_purchase_id = 1"
+      ("superseded purchase issuances" :: String, firstIssuances :: Int) `shouldBe` ("superseded purchase issuances", 1)
+      -- and the months it did not spend are still on it
+      [Only firstBalance] <- DB.query_ db "SELECT balance_months FROM badge_ledger WHERE badge_purchase_id = 1 ORDER BY entry_id DESC LIMIT 1"
+      ("superseded purchase months left" :: String, firstBalance :: Int) `shouldBe` ("superseded purchase months left", 2)
+    -- its ledger rows are the rows it had before the second redemption, unchanged and still first
+    afterLedger <- clientLedgerRows alice
+    ("superseded purchase ledger" :: String, take (length firstLedger) afterLedger)
+      `shouldBe` ("superseded purchase ledger", firstLedger)
+
+-- The catalog -------------------------------------------------------------------
+
+-- | The catalog from a profile with no prior connection: the four seeded offers with the service's
+-- own totals and both prices, written nowhere.
+--
+-- It is UNSIGNED, and this is what proves it: the service answers a SIGNED @getBadgeCatalog@ from
+-- a key it holds no purchase for with @unknown_purchase_key@
+-- ('testBadgeServiceGetCatalogUnknownSignerKey'), and this profile has never bought anything, so a
+-- signed request could not have returned a catalog at all.
+testC5CatalogFromFreshProfile :: HasCallStack => TestParams -> IO ()
+testC5CatalogFromFreshProfile ps = do
+  clock <- newTestClock testClockStart
+  withBadgeClient ps clock (pure ()) $ \alice -> do
+    alice ##> "/_badge catalog 1"
+    -- neither catalog query orders its rows, so the six lines are compared as a set
+    catalogLines <- replicateM 6 (getTermLine alice)
+    sort catalogLines
+      `shouldBe` sort
+        [ "price 2170da16-66e5-481f-9c75-6949e2dd14e1: supporter 700 usd per month, active",
+          "price 6a778279-753e-45db-8acc-0e382c1d054a: legend 7000 usd per month, active",
+          "offer 29e35444-2f85-43fb-8933-16875e6d3776: 3 month(s), {\"type\":\"freeMonths\",\"freeMonths\":1}, total 1400, active",
+          "offer 71bd8ad1-15c4-4735-b3d4-b12a670dfb7e: 12 month(s), {\"type\":\"freeMonths\",\"freeMonths\":6}, total 4200, active",
+          "offer 88885a0a-c407-4aaa-bf53-90f9de7bdfc0: 3 month(s), {\"type\":\"freeMonths\",\"freeMonths\":1}, total 14000, active",
+          "offer 35ca9daa-4dca-4cc1-af74-631674906cc9: 12 month(s), {\"type\":\"freeMonths\",\"freeMonths\":6}, total 42000, active"
+        ]
+    reportsNoBadgeEvent alice
+    noClientBadgeRows "after the catalog" alice
+
+-- The worker (C3) against the live service ---------------------------------------
+
+-- | A month on, @\/_badge state@ signals the worker and ONE pass issues the second period against
+-- the live service: a second issuance, one more @debit(badge)@ in the ledger, and a
+-- 'CEvtBadgeChanged' reporting the new state. No test waits on 'badgePassInterval' -- the shared
+-- clock is moved and the command is the trigger.
+--
+-- It also pins the master key across the two credentials. A pass that regenerated it would be
+-- answered with a credential bound to the OLD key on the service's cached-issuance path, which is
+-- unusable and raises no error anywhere ('badgeIssueRequest', plan §9); both credentials verify and
+-- both carry the key @badge_purchases.master_key@ holds.
+testC5WorkerIssuesSecondPeriod :: HasCallStack => TestParams -> IO ()
+testC5WorkerIssuesSecondPeriod ps = do
+  clock <- newTestClock testClockStart
+  codeRef <- newIORef ""
+  withBadgeClient ps clock (seedOneSupporterCode ps >>= writeIORef codeRef) $ \alice -> do
+    code <- readIORef codeRef
+    alice ##> purchaseCodeCmd code
+    expectBadgeState alice threeMonthBadgeState
+    -- both clocks move together: the month the first period covered has ended
+    advanceTestClockMonths clock 1
+    alice ##> "/_badge state 1"
+    -- the state as it is BEFORE the pass the same command signalled
+    expectBadgeState alice threeMonthBadgeState
+    -- the pass, issuing [2026-04-10, 2026-05-10): one month spent, still paid through 2026-06-10
+    alice <## "supporter badge 1 (shown): issued, 1 month(s) left, paid through 2026-06-10"
+    reportsNoBadgeEvent alice
+    -- one more issuance and one more ledger entry, and nothing else
+    clientBadgeRowCounts alice `shouldReturn` (1, 1, 3, 2, 1)
+    withClientStore alice $ \db -> do
+      entryTypes <- DB.query_ db "SELECT entry_type, entry_credit_type, entry_debit_type FROM badge_ledger ORDER BY entry_id"
+      ("ledger" :: String, entryTypes :: [(Text, Maybe Text, Maybe Text)])
+        `shouldBe` ( "ledger",
+                     [ ("credit", Just "payment", Nothing),
+                       ("debit", Nothing, Just "badge"),
+                       ("debit", Nothing, Just "badge")
+                     ]
+                   )
+      periods <- DB.query_ db "SELECT period_start, period_end FROM badge_issuances ORDER BY period_start"
+      case periods :: [(UTCTime, UTCTime)] of
+        [(firstStart, firstEnd), (secondStart, secondEnd)] -> do
+          firstStart `shouldBeStoredAt` testClockStart
+          firstEnd `shouldBeStoredAt` firstPeriodEnd
+          secondStart `shouldBeStoredAt` firstPeriodEnd
+          secondEnd `shouldBeStoredAt` UTCTime (fromGregorian 2026 5 10) noonUTC
+        other -> expectationFailure $ "expected two issuances, got: " <> show other
+    -- the master key is the purchase's on both credentials, and both verify
+    issuerPub <- readTestIssuerPublicKey (tmpPath ps)
+    purchaseMasterKey <- clientPurchaseMasterKey alice
+    creds <- clientIssuedCredentials alice
+    ("issued credentials" :: String, length creds) `shouldBe` ("issued credentials", 2)
+    forM_ (zip [1 :: Int ..] creds) $ \(n, cred) -> do
+      verifyCredential issuerPub cred `shouldReturn` True
+      ("credential " <> show n <> " master key", credentialMasterKey cred)
+        `shouldBe` ("credential " <> show n <> " master key", purchaseMasterKey)
+    -- and the second credential is not the first one served again
+    case creds of
+      [firstCred, secondCred] ->
+        ("second period credential" :: String, secondCred == firstCred) `shouldBe` ("second period credential", False)
+      _ -> pure ()
+
+-- The active profile --------------------------------------------------------------
+
+-- | A redemption that FINISHES after the active profile has been switched must not point the app
+-- back at the profile it was redeemed for.
+--
+-- 'withUserId' checks activeness at ENTRY and the round trip that follows is seconds long, so the
+-- guard in 'redeemBadgeCode' is load-bearing and needs the racing case, not the static one. The
+-- client's 'badgeCurrentTime' is read after the request has been answered and before the first row
+-- is written, which is exactly the window that guard covers, so gating that clock (C3's
+-- 'BadgeGate') parks the redemption there while the profile is switched.
+--
+-- The redemption runs off the terminal's input loop, which is single-threaded: a @\/create user@
+-- typed at it would queue BEHIND the parked redemption and could never race it.
+testC5RedeemAfterProfileSwitchKeepsActiveUser :: HasCallStack => TestParams -> IO ()
+testC5RedeemAfterProfileSwitchKeepsActiveUser ps = do
+  clock <- newTestClock testClockStart
+  gate <- newBadgeGate
+  codeRef <- newIORef ""
+  let seedCode = seedOneSupporterCode ps >>= writeIORef codeRef
+      cfg (sLink, _fullLink) pk = (badgeClientCfg sLink pk) {badgeCurrentTime = gatedClockAt testClockStart gate}
+  withBadgeClientCfg ps (readIORef clock) seedCode cfg $ \alice _links -> do
+    -- the chat-start pass reads the gated clock first; let it through so it cannot take the permit
+    -- the redemption needs. It finds no purchase and writes nothing.
+    allowPass gate
+    waitPasses gate 1
+    User {userId = aliceUserId} <- clientUser alice
+    code <- readIORef codeRef
+    redeeming <-
+      async $ runReaderT (execChatCommand' (APIPurchaseBadge aliceUserId (BPPCode code)) 0) (chatController alice)
+    -- the request has been sent and answered, and the redemption is parked on its clock read
+    waitPasses gate 2
+    alice ##> "/create user secret"
+    alice <## "user profile: secret"
+    alice <## "use /p <name> [<bio>] to change it"
+    User {userId = secretUserId} <- clientUser alice
+    ("switched profile" :: String, secretUserId == aliceUserId) `shouldBe` ("switched profile", False)
+    -- released, the redemption writes its rows and answers
+    allowPass gate
+    wait redeeming >>= \case
+      Right _ -> pure ()
+      Left e -> expectationFailure $ "the redemption failed: " <> show e
+    -- the badge landed on the redeeming profile ...
+    withClientStore alice $ \db -> do
+      [Only purchaseOwner] <- DB.query_ db "SELECT user_id FROM badge_purchases"
+      ("purchase owner" :: String, purchaseOwner :: Int64) `shouldBe` ("purchase owner", aliceUserId)
+      [Only shownBadgeId] <- DB.query db "SELECT shown_badge_id FROM users WHERE user_id = ?" (Only aliceUserId)
+      ("redeeming profile shown badge" :: String, shownBadgeId :: Maybe Int64)
+        `shouldBe` ("redeeming profile shown badge", Just 1)
+    -- ... and the active profile did not move back to it
+    User {userId = activeAfter} <- clientUser alice
+    ("active profile" :: String, activeAfter) `shouldBe` ("active profile", secretUserId)
+
+-- Idempotency and recovery ---------------------------------------------------------
+
+-- | The same code presented again from the same profile mints a FRESH purchase key, so the RPC's
+-- "repeat the identical request" idempotency is unreachable from the client by design: the service
+-- sees a second key and answers @code_used@. The client writes nothing and the first badge stays
+-- shown.
+--
+-- After the operator clears the redemption, the same code redeems again into a NEW purchase and
+-- supersedes the old one -- the recovery path C4's "a response lost in flight consumes the code"
+-- depends on. H2's @codes unredeem@ CLI does not exist yet (@BadgeService.Admin@ has issue, revoke
+-- and status only), so this drives B1's 'unredeemCode' directly, which is the function that CLI
+-- will call.
+testC5SameCodeAgainThenUnredeemed :: HasCallStack => TestParams -> IO ()
+testC5SameCodeAgainThenUnredeemed ps = do
+  clock <- newTestClock testClockStart
+  codeRef <- newIORef ""
+  withBadgeServiceAddress ps (readIORef clock) (writeTestBadgeServiceConfig ps) (seedOneSupporterCode ps >>= writeIORef codeRef) $
+    \links withService -> do
+      pk <- readTestIssuerPublicKey (tmpPath ps)
+      -- the client is started OUTSIDE the service phases, so it outlives the restart the unredeem
+      -- needs: the service's database cannot be opened while the service holds it
+      withNewTestChatCfg ps (sharedClockCfg clock links pk) badgeClientDbPrefix aliceProfile $ \alice -> do
+        code <- readIORef codeRef
+        withService $ do
+          alice ##> purchaseCodeCmd code
+          expectBadgeState alice threeMonthBadgeState
+          -- the same code, the same profile, a new key
+          alice ##> purchaseCodeCmd code
+          alice <## "badge service error: code_used"
+          clientBadgeRowCounts alice `shouldReturn` (1, 1, 2, 1, 1)
+          alice ##> "/_badge state 1"
+          expectBadgeState alice threeMonthBadgeState
+        -- the operator clears the redemption while the service is stopped
+        withServiceStore ps $ \db -> unredeemCode db (Codes.codeHash (Codes.normalizeCode code)) testClockStart
+        withService $ do
+          alice ##> purchaseCodeCmd code
+          expectBadgeState alice "supporter badge 2 (shown): issued, 2 month(s) left, paid through 2026-06-10"
+          clientBadgeRowCounts alice `shouldReturn` (2, 2, 4, 2, 1)
+          withClientStore alice $ \db -> do
+            statuses <- DB.query_ db "SELECT badge_purchase_id, status FROM badge_purchases ORDER BY badge_purchase_id"
+            ("purchase statuses" :: String, statuses :: [(Int64, Text)])
+              `shouldBe` ("purchase statuses", [(1, "superseded"), (2, "issued")])
+
+-- Address resolution -----------------------------------------------------------------
+
+-- | Whether a parsed badge service address is the FULL contact request URI form rather than the
+-- short link every other example configures. Top level, and not a @case@ in the example itself,
+-- because 'ConnectTarget' is a GADT and matching one in a local binding is what
+-- @-Wgadt-mono-local-binds@ warns about.
+isFullContactTarget :: ConnectTarget 'CMContact -> Bool
+isFullContactTarget target = case target of
+  CTFullContact _ -> True
+  _ -> False
+
+-- | The service's address given as a full contact request URI redeems exactly as the short link
+-- does. 'resolveServiceTarget' accepts four target forms and, without this, only the short link
+-- would ever be exercised. The 'CTName' and 'CTDomain' forms need a resolvable SimpleX name, which
+-- this harness cannot publish; they are recorded as untested in the plan's §9.
+testC5FullContactUriRedeems :: HasCallStack => TestParams -> IO ()
+testC5FullContactUriRedeems ps = do
+  clock <- newTestClock testClockStart
+  codeRef <- newIORef ""
+  let seedCode = seedOneSupporterCode ps >>= writeIORef codeRef
+      cfg (_sLink, fullLink) pk = (badgeClientCfg fullLink pk) {badgeCurrentTime = readIORef clock}
+  withBadgeClientCfg ps (readIORef clock) seedCode cfg $ \alice (_sLink, fullLink) -> do
+    -- the configured target really is the FULL form: a full URI that had silently decoded as a
+    -- short link would make this the short-link example over again
+    ("full contact URI target" :: String, isFullContactTarget (badgeServiceTarget fullLink))
+      `shouldBe` ("full contact URI target", True)
+    code <- readIORef codeRef
+    alice ##> purchaseCodeCmd code
+    expectBadgeState alice threeMonthBadgeState
+    clientBadgeRowCounts alice `shouldReturn` (1, 1, 2, 1, 1)
+
+-- The stub responder --------------------------------------------------------------------
+
+-- | A stub badge service: a chat client accepting service requests on a contact address of its
+-- own, which the test answers with a canned body.
+--
+-- Six of C5's cases need a response the real service cannot produce -- an absent credential, a
+-- statement carrying no issued period, a credential with no expiry, a statement carrying an entry
+-- type this build cannot store, a response of the wrong shape for the command, and a body that is
+-- not a 'BadgeServiceResponse' at all. Each is a branch of C4's 'redeemBadgeCode' whose whole
+-- purpose is to write nothing, and without a responder that can be made to lie all six would be
+-- untested.
+--
+-- The credential the stub signs is real -- 'bbsKeyGen' here and the public half in the client's
+-- 'badgePublicKeys' -- so 'verifyUserBadge' passes and the branch under test is the one that
+-- fails.
+withBadgeStub :: HasCallStack => TestParams -> (TestCC -> TestCC -> BBSSecretKey -> IO ()) -> IO ()
+withBadgeStub ps test = do
+  Right (pk, sk) <- bbsKeyGen
+  withNewTestChatCfgOpts_ ps testCfg testOpts badgeStubDbPrefix True badgeStubProfile $ \stub -> do
+    -- SREQ delivery gates on this flag, exactly as 'badgePostStartHook' sets it
+    atomically $ writeTVar (processServiceRequests (chatController stub)) True
+    -- a DR address: service RPC requires one, which is why the real service creates it with
+    -- pqRatchet 'Just True'
+    stub ##> "/ad pq_ratchet=on"
+    (sLink, _fullLink) <- getContactLinks stub True
+    withNewTestChatCfg ps (badgeClientCfg sLink pk) badgeClientDbPrefix aliceProfile $ \alice ->
+      test alice stub sk
+
+badgeStubProfile :: Profile
+badgeStubProfile = badgeProfile {displayName = "SimpleX Badge Stub"}
+
+-- | Answers the one service request the stub is holding with 'body'. What the request carried is
+-- B5's business, not C5's, so it is read and dropped.
+answerStubRequest :: HasCallStack => TestCC -> J.Value -> IO ()
+answerStubRequest stub body = do
+  reqLine <- getTermLine' (Just "service request") stub
+  reqId <- case stripPrefix "service request " reqLine of
+    Just i -> pure i
+    Nothing -> expectationFailure ("expected a service request line, got: " <> reqLine) >> error "unreachable"
+  -- 'signed by' precedes the request for a signed purchaseBadge and is absent for the unsigned
+  -- getBadgeCatalog
+  next <- getTermLine' (Just "signed by, or the request") stub
+  unless ("request: " `isPrefixOf` next) $ stub <##. "request: "
+  stub ##> ("/_service_response 1 " <> reqId <> " " <> LBC.unpack (J.encode body))
+  -- the command's own answer and the agent's SSENT event for the reply, in either order
+  forM_ [1 :: Int, 2] $ \_ -> do
+    l <- getTermLine' (Just "service reply") stub
+    unless ("service reply " `isPrefixOf` l) $
+      expectationFailure ("expected a service reply line, got: " <> l)
+
+-- 'StatementEntry' is constructed positionally, as everywhere else in this module (see the import
+-- list's Haddock): entryId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType,
+-- wasPausedSince, createdAt, entryType.
+stubEntry :: Text -> Int -> Int -> UTCTime -> StatementEntryType -> StatementEntry
+stubEntry entryId changeMonths balanceMonths balanceStartTs =
+  StatementEntry entryId changeMonths balanceMonths balanceStartTs BTSupporter Nothing testClockStart
+
+-- | The statement a three-month code redemption produces: the credit, then the @debit(badge)@ that
+-- carries the issued period.
+stubRedeemStatement :: BadgeStatement
+stubRedeemStatement =
+  BadgeStatement
+    { entries =
+        [ stubEntry "c5-stub-credit" 3 3 testClockStart (SECredit (SCPayment Nothing)),
+          stubEntry "c5-stub-debit" (-1) 2 firstPeriodEnd (SEDebit SDBadge)
+        ],
+      previousEntryId = Nothing
+    }
+
+stubCredential :: HasCallStack => BBSSecretKey -> Maybe UTCTime -> IO BadgeCredential
+stubCredential sk badgeExpiry = do
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  let req = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}}
+  issueBadge 1 sk (VerifiedBadgeRequest req)
+    >>= either (\e -> expectationFailure ("the stub could not sign a credential: " <> e) >> error "unreachable") pure
+
+stubCredentialResponse :: Maybe BadgeCredential -> BadgeStatement -> J.Value
+stubCredentialResponse credential statement =
+  J.toJSON BSPBadgeCredential {credential, receipt = Nothing, statement}
+
+-- | Every response a redemption can be refused for once it has arrived, each answered with the
+-- message C4 raises and each leaving the client with no row of any kind.
+--
+-- The order is the order 'redeemBadgeCode' checks them in, and the last is the reason
+-- 'checkStatementEntries' exists at all: an unstorable entry type reaching 'insertLedgerEntries'
+-- would COMMIT the payment and purchase rows written above it, because a 'Left' inside @withStore@
+-- does not roll the transaction back.
+testC5UnrecordableResponsesWriteNothing :: HasCallStack => TestParams -> IO ()
+testC5UnrecordableResponsesWriteNothing ps =
+  withBadgeStub ps $ \alice stub sk -> do
+    let redeemAnsweredWith label body message = do
+          alice ##> purchaseCodeCmd "C5-STUB-CODE"
+          answerStubRequest stub body
+          alice <##. message
+          noClientBadgeRows label alice
+    -- no credential at all: the exhausted balance of an issueBadge, which a redemption cannot be
+    redeemAnsweredWith
+      "after a redemption with no credential"
+      (stubCredentialResponse Nothing stubRedeemStatement)
+      "badge service error: internal, badge service redeemed the code without issuing a credential"
+    -- a statement that issued no period, so nothing says which month was bought
+    cred <- stubCredential sk (Just firstCredentialExpiry)
+    let creditOnly =
+          BadgeStatement
+            { entries = [stubEntry "c5-stub-credit-only" 3 3 testClockStart (SECredit (SCPayment Nothing))],
+              previousEntryId = Nothing
+            }
+    redeemAnsweredWith
+      "after a statement with no issued period"
+      (stubCredentialResponse (Just cred) creditOnly)
+      "badge service error: internal, badge service issued no period for the redeemed code"
+    -- a credential with no expiry, which 'issueSignedBadge' never signs
+    noExpiryCred <- stubCredential sk Nothing
+    redeemAnsweredWith
+      "after a credential with no expiry"
+      (stubCredentialResponse (Just noExpiryCred) stubRedeemStatement)
+      "badge service error: internal, issued badge credential carries no expiry"
+    -- an entry type this build cannot store, refused BEFORE the transaction opens
+    let unstorable =
+          BadgeStatement
+            { entries =
+                [ stubEntry "c5-stub-charge" 3 3 testClockStart (SECredit (SCCharge "c5-charge")),
+                  stubEntry "c5-stub-debit" (-1) 2 firstPeriodEnd (SEDebit SDBadge)
+                ],
+              previousEntryId = Nothing
+            }
+    redeemAnsweredWith
+      "after an unstorable statement"
+      (stubCredentialResponse (Just cred) unstorable)
+      "badge service error: internal, badge service statement cannot be stored: "
+
+-- | A response of the wrong shape for the command it answers, and one that is not a
+-- 'BadgeServiceResponse' at all, on both commands that send one.
+--
+-- Neither is a silent no-op: a service speaking a protocol this build does not know is reported,
+-- with the response in the message for the first and the app-version sentence for the second.
+testC5UnreadableResponsesAreReported :: HasCallStack => TestParams -> IO ()
+testC5UnreadableResponsesAreReported ps =
+  withBadgeStub ps $ \alice stub sk -> do
+    cred <- stubCredential sk (Just firstCredentialExpiry)
+    let emptyCatalog = J.toJSON BSPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Nothing}
+        credentialBody = stubCredentialResponse (Just cred) stubRedeemStatement
+        undecodable = J.object ["type" J..= ("badgeSomethingElse" :: Text)]
+    -- a catalog answering a purchase
+    alice ##> purchaseCodeCmd "C5-STUB-CODE"
+    answerStubRequest stub emptyCatalog
+    alice <##. "badge service error: internal, unexpected badge service response to purchaseBadge: "
+    noClientBadgeRows "after a catalog answering a purchase" alice
+    -- a credential answering a catalog
+    alice ##> "/_badge catalog 1"
+    answerStubRequest stub credentialBody
+    alice <##. "badge service error: internal, unexpected badge service response to getBadgeCatalog: "
+    -- a body that does not decode as a response at all, on both commands
+    alice ##> purchaseCodeCmd "C5-STUB-CODE"
+    answerStubRequest stub undecodable
+    alice <##. "badge service error: internal, The badge service answered with something this app version cannot read."
+    alice ##> "/_badge catalog 1"
+    answerStubRequest stub undecodable
+    alice <##. "badge service error: internal, The badge service answered with something this app version cannot read."
+    noClientBadgeRows "after unreadable responses" alice

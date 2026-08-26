@@ -21,7 +21,11 @@
 -- the worker) and paced by the injected 'badgeCurrentTime', which every pass reads exactly once,
 -- before it reads the purchase or ledger it would act on (though 'badgeManagerPass' has already
 -- read the user row by then) — so the test can count passes and hold one open without sleeping.
-module Bots.BadgeManagerTests (badgeManagerTests) where
+-- The gate ('BadgeGate' and friends) is exported because C5 drives a REDEMPTION with it — the
+-- redeem path reads 'badgeCurrentTime' at the same point a pass does, after the request is sent
+-- and before any row is written — and a second copy of it in another test module would be the
+-- same fixture with a second set of defects.
+module Bots.BadgeManagerTests (badgeManagerTests, BadgeGate (..), newBadgeGate, gatedClockAt, allowPass, waitPasses) where
 
 import ChatClient
 import ChatTests.DBUtils
@@ -128,11 +132,19 @@ fixtureEntry entryId changeMonths balanceMonths balanceStartTs entryType =
 -- before it can read the purchase or ledger, so it can never race their fixtures.
 data BadgeGate = BadgeGate {passes :: TVar Int, permits :: TVar Int}
 
-gatedClock :: BadgeGate -> IO UTCTime
-gatedClock BadgeGate {passes, permits} = do
+newBadgeGate :: IO BadgeGate
+newBadgeGate = BadgeGate <$> newTVarIO 0 <*> newTVarIO 0
+
+-- | The gated clock, reporting @now@ once a permit is granted. C5 needs a different instant from
+-- these tests, and nothing else about the gate differs, so the instant is the argument.
+gatedClockAt :: UTCTime -> BadgeGate -> IO UTCTime
+gatedClockAt now BadgeGate {passes, permits} = do
   atomically $ modifyTVar' passes (+ 1)
   atomically $ readTVar permits >>= \n -> if n > 0 then writeTVar permits (n - 1) else retry
-  pure passNow
+  pure now
+
+gatedClock :: BadgeGate -> IO UTCTime
+gatedClock = gatedClockAt passNow
 
 allowPass :: BadgeGate -> IO ()
 allowPass BadgeGate {permits} = atomically $ modifyTVar' permits (+ 1)
@@ -152,7 +164,7 @@ reportsNothing cc = cc <// 500000
 -- | A controller with the test issuer key at index 1 and a gated badge clock.
 withBadgeChat :: HasCallStack => TestParams -> BBSPublicKey -> (BadgeGate -> TestCC -> IO ()) -> IO ()
 withBadgeChat ps pk test = do
-  gate <- BadgeGate <$> newTVarIO 0 <*> newTVarIO 0
+  gate <- newBadgeGate
   let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, badgeCurrentTime = gatedClock gate}
   withNewTestChatCfg ps cfg "alice" aliceProfile $ test gate
 
