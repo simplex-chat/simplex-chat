@@ -19,6 +19,15 @@ function showLocalTime() {
     local.removeAttribute('hidden');
 }
 
+function setSignupSource() {
+    const field = document.querySelector('input[name="SOURCE"]');
+    if (!field) return;
+
+    const inHash = new URLSearchParams(location.hash.replace(/^#\??/, '')).get('utm_source');
+    const source = inHash ?? new URLSearchParams(location.search).get('utm_source');
+    if (source && /^[\w.-]{1,40}$/.test(source)) field.value = source;
+}
+
 function setupRegisterOverlay() {
     const overlay = document.getElementById('register');
     const openBtn = document.querySelector('.register-btn');
@@ -67,5 +76,6 @@ function trackNavColor() {
 }
 
 showLocalTime();
+setSignupSource();
 setupRegisterOverlay();
 trackNavColor();
