@@ -48,7 +48,7 @@ The code is the only thing crossing site → app. The site never sees a purchase
 `purchaseBadge {badgeRequest, payment:{type:"code"}}` asks the caller for a tier and expiry it cannot know and the service must override.
 
 - `redeemBadgeCode {masterKey, code}` → `badgeCredential {credential, receipt?, statement}`
-- `code` leaves the payment union; `purchaseBadge` keeps store evidence only, unimplemented
+- `code` leaves the payment union; `purchaseBadge` keeps the rest — `apple`, `google`, `invoice`, `receipt` — and stays unimplemented
 - the tier is stated by the credential, which the client verifies
 - client command `APIRedeemBadgeCode {userId, code}`
 
@@ -62,7 +62,7 @@ The tables, in layers:
 - **catalog** — `badge_prices` (tier → price per month), `badge_offers` (duration discounts).
 - **what an invoice bought** — `badge_invoices` for a purchase, `badge_code_invoices` for a voucher. Same shape, except the second names no purchase: at the time of sale none exists, and the buyer may never be the redeemer.
 - **the badge** — `badge_purchases` is the anchor: keys, tier, status, funded by either `payment_id` or `badge_code_id`. Its balance is `badge_ledger`, its credentials `badge_issuances`, and `users.shown_badge_id` names the one on show.
-- **the voucher** — `badge_codes`. Consumed into a purchase; never a badge itself.
+- **the voucher** — `badge_codes`. Consumed into a purchase; never a badge itself. The client has a copy for one reason: it holds the keys a redemption is signed with, so a retry can be the same signer (§4.3).
 
 The beta path: the site writes an invoice and what it bought, then a code. The app redeems that code, which creates the purchase and its first issuance — and, from milestone D, its ledger.
 

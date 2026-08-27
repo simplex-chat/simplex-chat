@@ -62,6 +62,10 @@ data BadgeServiceCommand
         paymentVia :: ServicePaymentMethod,
         upgrade :: Maybe BadgeUpgrade -- upgrade non-store badge
       }
+  | BSCRedeemBadgeCode
+      { masterKey :: BadgeMasterKey,
+        code :: Text -- no badgeRequest: a code carries no tier for the client to state
+      }
   | BSCPurchaseBadge
       { badgeRequest :: BadgeRequest,
         payment :: ServicePayment,
