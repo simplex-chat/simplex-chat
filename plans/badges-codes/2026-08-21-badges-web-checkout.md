@@ -1095,9 +1095,18 @@ BTCPay refunds are operator-initiated at the provider and have no webhook; the o
 
 ---
 
-### Phase G — Clients
+### Phase G — Clients — ⊘ OUT OF SCOPE (2026-08-27)
 
-Phase G ends with every platform pricing from `CRBadgeCatalog`, redeeming codes in the app, and desktop and Android `foss` handing off to the site; no store purchase action remains on any platform.
+**G1–G6 are not this plan's work.** The scope is the badge service process and the website it
+serves: money in, code out. The client apps belong to whoever owns code → badge (§6). **G0 is
+the exception and has already landed** — it removed a store button that charged users for a
+badge they would never receive, so it stays. The step texts below are kept as written for
+whoever picks them up; nothing in D5–D7, E, F or H depends on any of them (dependency check:
+no in-scope row names G1–G6).
+
+_Original intent, for that reader:_ Phase G ended with every platform pricing from
+`CRBadgeCatalog`, redeeming codes in the app, and desktop and Android `foss` handing off to the
+site; no store purchase action remaining on any platform.
 
 Kotlin lives in `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/` and Swift in `apps/ios/Shared/Views/Badges/`.
 
@@ -1606,29 +1615,25 @@ cabal run badge-payment-mock -- --port 9000 --service-url http://localhost:8080 
 # 4. the service. -d is a path prefix: this creates ./badge_chat.db and ./badge_agent.db
 simplex-badge-service -d ./badge --config ./badge_service.ini &   # or a second terminal
 
-# 5. run a chat client against the local service (C2's terminal overrides).
-# the issuer public key is the "public" line of issuer.keys: without it the client
-# cannot verify the credential it is about to be issued.
-simplex-chat --badge-service-address "$(cat ./badge-service.link)" \
-  --badge-web-url http://localhost:8080 \
-  --badge-issuer-key "1:$(awk '/^public/ {print $2}' issuer.keys)"
-
-# 6. the site, prefilled as the app wizard would open it
+# 5. the site, prefilled as an app wizard would open it
 open 'http://localhost:8080/?tier=legend&months=12&pay=xmr'
 
-# 7. settle at the mock, then copy the code from the result screen
+# 6. settle at the mock, then read the code off the result screen
 curl localhost:9000/_invoices                     # find the invoice id
 curl -X POST localhost:9000/_settle/<invoiceId>   # delivers a signed webhook
 
-# 8. redeem
-/_badge catalog 1        # four offers with totals
-/_badge purchase 1 {"type":"code","code":"SXB-…"}
-/_badge state 1        # legend badge shown, 11 months of balance left, and the local site URL
+# 7. the code is recoverable from the order URL until it is redeemed (E4)
+curl "http://localhost:8080/api/order/<orderId>"  # {"status":"paid","code":"SXB-…", ...}
 ```
+
+**The script ends at the code.** Redeeming it — `/_badge purchase`, the credential, the badge on a
+profile — is code → badge and belongs to whoever owns that half (§6). The service side of redemption
+is already built and tested (B7, B10) and its behaviour is pinned by the invariants below; what this
+plan no longer verifies end to end is a *client* consuming the code.
 
 Invariants that must hold:
 
-- for the same purchase, the client's and the service's `badge_ledger` rows agree on `entry_uuid`, `change_months`, `balance_months`, `balance_start_ts`, `balance_badge_type` and the entry type — **not** on every column: `entry_id` is a per-database IDENTITY that means nothing across databases, and `payment_id` is a service-minted UUID on the service side and NULL on the client's, which has no `@payments` row for a code redemption (B10, §9). Comparing whole rows will fail; compare those six columns.
+- for the same purchase, the service's `badge_ledger` rows are what a client will replicate; the client-side comparison is code → badge and is verified there (C5), not here
 - re-sending the same `purchaseBadge` writes nothing and returns the same credential — a **service-side** invariant that the shipped client cannot exercise, and so is **not** part of the script above: the replay path keys on the purchase key, and `redeemBadgeCode` mints a fresh one on every call (§9), so a client retry arrives as a different signer and is answered `code_used`. It is verified by driving the service directly: B10's `testBadgeServiceRedeemCodeIdempotent` repeats the identical signed request under one key and pins both halves, and `testBadgeServiceReplayAfterLapseHealsOnce` pins the one row the replay may append
 - the same code from a second purchase key returns `code_used`
 - a replayed webhook creates no second code, and an unprocessed one is reprocessed
