@@ -7,8 +7,8 @@
 // hash change originates here.
 //
 // Everything decidable without a browser lives in router.ts and view.ts.
-import { FIRST_SCREEN, hashForScreen, nextScreen, screenIdForHash } from "./router.js";
-import { questionOfScreen, screenView } from "./view.js";
+import { hashForScreen, nextScreen, screenIdForHash } from "./router.js";
+import { firstUnansweredScreen, questionOfScreen, screenView } from "./view.js";
 const CHOOSE_AN_OPTION = "Choose an option to continue.";
 // D7 replaces this branch with the POST to /api/checkout.
 const PAYMENT_UNAVAILABLE = "Payment is not available yet.";
@@ -24,11 +24,18 @@ export function toDom(el) {
 function childNode(child) {
     return typeof child === "string" ? child : toDom(child);
 }
-/** Render the screen the current hash names into `root`, and keep it in step with history. */
-export function startShell(root) {
+/**
+ * Render the screen the current hash names into `root`, and keep it in step
+ * with history.
+ *
+ * `initial` seeds the answers, which is how D5's prefill skips the screens a
+ * query parameter has already answered: a seeded question is not asked, and
+ * the visit starts at the first one that has no answer.
+ */
+export function startShell(root, initial = {}) {
     const banner = errorBanner();
-    const answers = {};
-    let current = FIRST_SCREEN;
+    const answers = { ...initial };
+    let current = firstUnansweredScreen(answers);
     const shell = {
         showError(message) {
             banner.textContent = message;
@@ -37,6 +44,9 @@ export function startShell(root) {
         go(id) {
             history.pushState(null, "", hashForScreen(id));
             render(id, true);
+        },
+        refresh() {
+            render(current, false);
         },
         answers() {
             return { ...answers };
@@ -60,13 +70,16 @@ export function startShell(root) {
                 heading.focus();
         }
     }
-    // An unknown hash renders the first screen rather than nothing, and the
-    // address bar is corrected in place so that back does not return to it.
+    // An unknown hash renders a real screen rather than nothing, and the address
+    // bar is corrected in place so that back does not return to it. The fallback
+    // is the first *unanswered* screen, not the first screen: with D5's prefill
+    // seeded, sending a visitor back to a question already answered by their URL
+    // would undo the whole point of the parameters.
     function screenFromLocation() {
         const id = screenIdForHash(location.hash);
         if (id !== null && location.hash === hashForScreen(id))
             return id;
-        const target = id ?? FIRST_SCREEN;
+        const target = id ?? firstUnansweredScreen(answers);
         history.replaceState(null, "", hashForScreen(target));
         return target;
     }

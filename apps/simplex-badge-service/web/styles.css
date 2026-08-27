@@ -61,14 +61,6 @@
     --error-text: #FFB3AD;
     --error-border: #7A2B2B;
   }
-
-  .logo--light {
-    display: none;
-  }
-
-  .logo--dark {
-    display: block;
-  }
 }
 
 *,
@@ -190,6 +182,10 @@ img {
 .option {
   display: block;
   cursor: pointer;
+  /* The containing block for the clipped radio below. Harmless while its
+     offsets are auto, and the difference between a 1px box inside this card
+     and one in the corner of the page the moment anyone sets top or left. */
+  position: relative;
 }
 
 .option + .option {
@@ -303,4 +299,36 @@ img {
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* Forced colours replace every author colour with a system one, so the accent
+   border stops distinguishing the selected card from the others. Border
+   *style* is not overridden, so selection is carried by it as well. Not an
+   outline: the focus ring is an outline on this same element, and one would
+   erase the other while a card is focused. */
+@media (forced-colors: active) {
+  .option__body {
+    border-style: dotted;
+  }
+
+  .option__input:checked + .option__body {
+    border-style: solid;
+    border-color: Highlight;
+  }
+}
+
+/* LAST IN THE FILE, DELIBERATELY, and everything below this line must stay
+   below the defaults it overrides. These four selectors are all specificity
+   (0,1,0); @media adds none and does not reorder its contents, so a rule here
+   wins only by appearing after `.logo` and `.logo--dark` above. Moved up, the
+   toggle silently stops working and dark mode shows the dark-blue logo on the
+   navy background — no error, nothing in the console. */
+@media (prefers-color-scheme: dark) {
+  .logo--light {
+    display: none;
+  }
+
+  .logo--dark {
+    display: block;
+  }
 }

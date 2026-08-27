@@ -5,22 +5,22 @@
 // ../test/router.test.mjs). ui.ts owns pushState, popstate and rendering.
 /** Every screen the site can show, in wizard order. */
 export const SCREEN_IDS = ["tier", "months", "pay", "checkout", "order", "code"];
-/** Where a visit with no usable hash starts. */
+/** The first question of the wizard. Where a visit with no answers starts. */
 export const FIRST_SCREEN = "tier";
 const SCREENS = new Set(SCREEN_IDS);
 /**
- * The screen a location hash names, or null when it names none.
+ * The screen a location hash names, or null when it names none — which
+ * includes an absent or empty hash, the ordinary first visit.
  *
  * Accepts `#/tier`, `#tier`, and either with a trailing slash, because a hash
- * is hand-editable and a URL may be pasted with the slash dropped. Returns
- * FIRST_SCREEN for an absent or empty hash. Null is a real answer, not an
- * error: the caller decides what an unknown hash does, and ui.ts sends it to
- * FIRST_SCREEN rather than leaving a blank page.
+ * is hand-editable and a URL may be pasted with the slash dropped. Null is a
+ * real answer, not an error, and deliberately not FIRST_SCREEN: *where to
+ * start* is not a property of the hash. The caller decides, and ui.ts starts
+ * at the first unanswered screen — which with D5's prefill is not necessarily
+ * the first one — rather than leaving a blank page.
  */
 export function screenIdForHash(hash) {
     const name = hash.replace(/^#/, "").replace(/^\//, "").replace(/\/$/, "");
-    if (name === "")
-        return FIRST_SCREEN;
     return SCREENS.has(name) ? name : null;
 }
 /** The canonical hash for a screen. The inverse of screenIdForHash. */

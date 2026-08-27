@@ -11,7 +11,7 @@
 // The options here are placeholders. D3 builds the first three screens from the
 // catalog payload and replaces them.
 
-import type {ScreenId} from "./router.js"
+import {FIRST_SCREEN, nextScreen, type ScreenId} from "./router.js"
 
 export type Child = El | string
 
@@ -89,6 +89,26 @@ export function questionOfScreen(id: ScreenId): Question | null {
 /** The placeholder options of a question screen. D3 replaces this with the catalog. */
 export function optionsOfQuestion(q: Question): readonly Option[] {
   return QUESTIONS[q].options
+}
+
+/**
+ * The earliest screen whose question has no answer, or `checkout` when every
+ * question is answered.
+ *
+ * This is where a visit starts. With no answers it is FIRST_SCREEN, which is
+ * the whole of today's behaviour; D5's prefill seeds answers and this then
+ * skips each screen it has already answered, which is what that step asks for.
+ * Pure, so the rule is testable without a browser.
+ */
+export function firstUnansweredScreen(answers: Answers): ScreenId {
+  let id: ScreenId = FIRST_SCREEN
+  for (;;) {
+    const q = questionOfScreen(id)
+    if (!q || answers[q] === undefined) return id
+    const next = nextScreen(id)
+    if (!next) return id
+    id = next
+  }
 }
 
 /**

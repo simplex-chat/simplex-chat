@@ -5,7 +5,7 @@
   "description": "Checkout site for SimpleX supporter badges, served by simplex-badge-service",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "devDependencies": {
     "typescript": "5.9.3"

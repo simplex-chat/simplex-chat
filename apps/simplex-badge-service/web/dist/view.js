@@ -10,6 +10,7 @@
 //
 // The options here are placeholders. D3 builds the first three screens from the
 // catalog payload and replaces them.
+import { FIRST_SCREEN, nextScreen } from "./router.js";
 /** An element node. An attribute present with an empty value is a boolean attribute. */
 export function h(tag, attrs = {}, children = []) {
     return { tag, attrs, children };
@@ -50,6 +51,27 @@ export function questionOfScreen(id) {
 /** The placeholder options of a question screen. D3 replaces this with the catalog. */
 export function optionsOfQuestion(q) {
     return QUESTIONS[q].options;
+}
+/**
+ * The earliest screen whose question has no answer, or `checkout` when every
+ * question is answered.
+ *
+ * This is where a visit starts. With no answers it is FIRST_SCREEN, which is
+ * the whole of today's behaviour; D5's prefill seeds answers and this then
+ * skips each screen it has already answered, which is what that step asks for.
+ * Pure, so the rule is testable without a browser.
+ */
+export function firstUnansweredScreen(answers) {
+    let id = FIRST_SCREEN;
+    for (;;) {
+        const q = questionOfScreen(id);
+        if (!q || answers[q] === undefined)
+            return id;
+        const next = nextScreen(id);
+        if (!next)
+            return id;
+        id = next;
+    }
 }
 /**
  * The whole screen, ready to be turned into elements. Exactly one <h1>.

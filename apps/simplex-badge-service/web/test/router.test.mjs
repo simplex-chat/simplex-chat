@@ -29,10 +29,13 @@ test("a hand-edited hash is tolerated: no slash, or a trailing one", () => {
   assert.equal(screenIdForHash("#checkout/"), "checkout")
 })
 
-test("an absent or empty hash starts the wizard", () => {
-  assert.equal(screenIdForHash(""), FIRST_SCREEN)
-  assert.equal(screenIdForHash("#"), FIRST_SCREEN)
-  assert.equal(screenIdForHash("#/"), FIRST_SCREEN)
+test("an absent or empty hash names no screen; where to start is not its business", () => {
+  // Deliberately null and not FIRST_SCREEN: with D5's prefill seeded, the
+  // first visit does not necessarily start at the first screen, and that
+  // decision belongs to the caller.
+  assert.equal(screenIdForHash(""), null)
+  assert.equal(screenIdForHash("#"), null)
+  assert.equal(screenIdForHash("#/"), null)
   assert.equal(FIRST_SCREEN, "tier")
 })
 

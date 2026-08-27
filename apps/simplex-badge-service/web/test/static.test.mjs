@@ -15,15 +15,14 @@ import {readFileSync, readdirSync} from "node:fs"
 import {fileURLToPath} from "node:url"
 
 import {SCREEN_IDS} from "../dist/router.js"
-import {optionsOfQuestion, questionOfScreen, screenView} from "../dist/view.js"
-import {atRule, customProperties, referencedProperties, rules, stripComments, withoutAtRules} from "./css.mjs"
+import {firstUnansweredScreen, optionsOfQuestion, questionOfScreen, screenView} from "../dist/view.js"
+import {allRules, customProperties, declaration, mediaRules, referencedProperties, rules, stripComments} from "./css.mjs"
 
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8")
 
 const cssSource = read("../styles.css")
 const css = stripComments(cssSource)
-const topLevel = withoutAtRules(css)
-const darkBlock = atRule(css, "prefers-color-scheme: dark")
+const DARK = "prefers-color-scheme: dark"
 const indexHtml = read("../index.html")
 const devHtml = read("../dist/dev.html")
 const uiJs = read("../dist/ui.js")
@@ -36,7 +35,7 @@ const LOGOS = ["logo-symbol-light.svg", "logo-symbol-dark.svg"]
 // -- colour tokens ----------------------------------------------------------
 
 test("every custom property the sheet uses is defined on bare :root", () => {
-  const rootBlocks = rules(topLevel, ":root")
+  const rootBlocks = rules(css, ":root")
   assert.equal(rootBlocks.length, 1, "expected exactly one top-level :root rule")
   const defined = customProperties(rootBlocks[0])
   assert.ok(defined.size > 0, "the :root rule declares no custom properties")
@@ -46,9 +45,9 @@ test("every custom property the sheet uses is defined on bare :root", () => {
 })
 
 test("the dark block only redefines tokens, and introduces none", () => {
-  const light = customProperties(rules(topLevel, ":root")[0])
-  const darkRoot = rules(darkBlock, ":root")
-  assert.equal(darkRoot.length, 1, "expected exactly one :root rule inside the dark media query")
+  const light = customProperties(rules(css, ":root")[0])
+  const darkRoot = mediaRules(css, DARK, ":root")
+  assert.equal(darkRoot.length, 1, "expected exactly one :root rule inside a dark media query")
   const dark = customProperties(darkRoot[0])
   assert.ok(dark.size > 0, "the dark :root rule declares no custom properties")
   for (const name of dark.keys()) {
@@ -59,34 +58,16 @@ test("the dark block only redefines tokens, and introduces none", () => {
 test("no custom property is declared outside a :root rule", () => {
   // A token declared on a selector would be scoped to it, and its light and
   // dark definitions could then disagree about which elements they reach.
-  for (const block of [topLevel, darkBlock]) {
-    let i = 0
-    while (i < block.length) {
-      const open = block.indexOf("{", i)
-      if (open < 0) break
-      const selector = block.slice(i, open).trim()
-      const close = matchingClose(block, open)
-      if (selector !== ":root") {
-        const stray = [...customProperties(block.slice(open + 1, close)).keys()]
-        assert.deepEqual(stray, [], `${selector} declares custom properties: ${stray.join(", ")}`)
-      }
-      i = close + 1
-    }
+  for (const rule of allRules(css)) {
+    if (rule.selector === ":root") continue
+    const stray = [...customProperties(rule.body).keys()]
+    assert.deepEqual(stray, [], `${rule.selector} declares custom properties: ${stray.join(", ")}`)
   }
 })
 
-function matchingClose(s, open) {
-  let depth = 0
-  for (let i = open; i < s.length; i++) {
-    if (s[i] === "{") depth++
-    else if (s[i] === "}" && --depth === 0) return i
-  }
-  throw new Error("unclosed block")
-}
-
 test("the accent is the website's primary colour in both schemes", () => {
-  const light = customProperties(rules(topLevel, ":root")[0])
-  const dark = customProperties(rules(darkBlock, ":root")[0])
+  const light = customProperties(rules(css, ":root")[0])
+  const dark = customProperties(mediaRules(css, DARK, ":root")[0])
   assert.equal(light.get("--accent"), "#0053D0", "light accent must be primary-light from website/tailwind.config.js")
   assert.equal(dark.get("--accent"), "#70F0F9", "dark accent must be primary-dark from website/tailwind.config.js")
 })
@@ -104,7 +85,7 @@ test("styles.css references no external origin: default-src 'self' would block i
 })
 
 test("the font stack is the system one", () => {
-  const body = rules(topLevel, "body")
+  const body = rules(css, "body")
   assert.equal(body.length, 1)
   assert.match(body[0], /font-family:\s*system-ui/)
 })
@@ -112,23 +93,22 @@ test("the font stack is the system one", () => {
 // -- layout, motion, focus --------------------------------------------------
 
 test("the column is capped at 560px", () => {
-  const column = rules(topLevel, ".column")
+  const column = rules(css, ".column")
   assert.equal(column.length, 1, "expected exactly one .column rule")
   assert.match(column[0], /max-width:\s*560px/)
 })
 
 test("the screen transition is 150ms and prefers-reduced-motion turns it off", () => {
-  const screen = rules(topLevel, ".screen")
+  const screen = rules(css, ".screen")
   assert.equal(screen.length, 1, "expected exactly one .screen rule")
   assert.match(screen[0], /animation:[^;]*\b150ms\b/, ".screen must carry the 150 ms fade")
-  const reduced = atRule(css, "prefers-reduced-motion: reduce")
-  const reducedScreen = rules(reduced, ".screen")
+  const reducedScreen = mediaRules(css, "prefers-reduced-motion: reduce", ".screen")
   assert.equal(reducedScreen.length, 1, "the reduced-motion block must address .screen")
   assert.match(reducedScreen[0], /animation:\s*none/)
 })
 
 test("a :focus-visible ring exists and nothing suppresses it", () => {
-  const ring = rules(topLevel, ":focus-visible")
+  const ring = rules(css, ":focus-visible")
   assert.equal(ring.length, 1, "expected a global :focus-visible rule")
   assert.match(ring[0], /outline:\s*\d+px\s+solid/)
   // Not "no blanket outline:none" but "no outline:none at all" — the weaker
@@ -137,21 +117,66 @@ test("a :focus-visible ring exists and nothing suppresses it", () => {
 })
 
 test("the selected card gets a 2px accent border, as PeriodCard does", () => {
-  const body = rules(topLevel, ".option__body")
+  const body = rules(css, ".option__body")
   assert.equal(body.length, 1)
   assert.match(body[0], /border:\s*2px\s+solid\s+var\(--border\)/)
-  const checked = rules(topLevel, ".option__input:checked + .option__body")
+  const checked = rules(css, ".option__input:checked + .option__body")
   assert.equal(checked.length, 1, "expected a rule for the checked card")
   assert.match(checked[0], /border-color:\s*var\(--accent\)/)
 })
 
 test("the focus ring reaches the card, since the radio itself is visually hidden", () => {
-  const hidden = rules(topLevel, ".option__input")
+  const hidden = rules(css, ".option__input")
   assert.equal(hidden.length, 1)
   assert.doesNotMatch(hidden[0], /display:\s*none/, "display: none would drop the radio out of the tab order")
-  const focused = rules(topLevel, ".option__input:focus-visible + .option__body")
+  const focused = rules(css, ".option__input:focus-visible + .option__body")
   assert.equal(focused.length, 1, "a hidden radio must show its focus on the card")
   assert.match(focused[0], /outline:\s*\d+px\s+solid/)
+})
+
+// -- the logo toggle, which is an ordering question, not a rendering one -----
+
+test("the dark-scheme logo rules are the last word on those selectors", () => {
+  // This is the check that was missing when the toggle shipped dead. All four
+  // selectors here are specificity (0,1,0) and @media adds none, so whichever
+  // declaration appears LAST in the file wins. Written first, the dark rules
+  // lose to the light-mode defaults and dark mode renders the dark-blue logo
+  // on the navy background — no error anywhere.
+  for (const [selector, expected] of [
+    [".logo--light", "none"],
+    [".logo--dark", "block"],
+  ]) {
+    const displays = allRules(css).filter((r) => r.selector === selector && declaration(r.body, "display") !== undefined)
+    assert.ok(displays.length > 0, `no rule sets display on ${selector}`)
+    const last = displays[displays.length - 1]
+    assert.ok(
+      last.at.some((a) => a.includes(DARK)),
+      `the last rule setting display on ${selector} is not the dark-scheme one, so the toggle is dead`
+    )
+    assert.equal(declaration(last.body, "display"), expected)
+  }
+})
+
+test("light mode shows exactly one logo, by default and without a media query", () => {
+  // The other half: with no media query matching, .logo is shown and the dark
+  // variant is hidden. Both must be plain top-level rules.
+  assert.equal(declaration(rules(css, ".logo")[0], "display"), "block")
+  const defaults = allRules(css).filter((r) => r.selector === ".logo--dark" && r.at.length === 0)
+  assert.equal(defaults.length, 1, "expected one unconditional .logo--dark rule")
+  assert.equal(declaration(defaults[0].body, "display"), "none")
+})
+
+test("forced colours carry the selected card by border style, not by colour alone", () => {
+  // Forced colours override the accent border, and the radio is clipped, so
+  // without this selected and unselected become indistinguishable.
+  const base = mediaRules(css, "forced-colors: active", ".option__body")
+  const checked = mediaRules(css, "forced-colors: active", ".option__input:checked + .option__body")
+  assert.equal(base.length, 1, "expected a forced-colors rule for the card")
+  assert.equal(checked.length, 1, "expected a forced-colors rule for the selected card")
+  const unselectedStyle = declaration(base[0], "border-style")
+  const selectedStyle = declaration(checked[0], "border-style")
+  assert.ok(unselectedStyle && selectedStyle, "both cards must declare a border-style under forced colours")
+  assert.notEqual(selectedStyle, unselectedStyle, "the two states must differ by something other than colour")
 })
 
 // -- the screens ------------------------------------------------------------
@@ -249,10 +274,35 @@ test("the checkout summary shows every answer, and says so when one is missing",
   assert.match(text(screenView("checkout", {})), /Not chosen/, "an unanswered question must not render as blank")
 })
 
+// -- where a visit starts (D5's prefill rests on this) -----------------------
+
+test("with no answers the visit starts at the first screen", () => {
+  assert.equal(firstUnansweredScreen({}), "tier")
+})
+
+test("a seeded answer skips its screen, and only up to the first gap", () => {
+  assert.equal(firstUnansweredScreen({tier: "legend"}), "months")
+  assert.equal(firstUnansweredScreen({tier: "legend", months: "12"}), "pay")
+  // months is seeded but tier is not: the gap is asked, not skipped past.
+  assert.equal(firstUnansweredScreen({months: "12"}), "tier")
+  assert.equal(firstUnansweredScreen({pay: "xmr"}), "tier")
+})
+
+test("every question answered lands on the summary, and never past it", () => {
+  assert.equal(firstUnansweredScreen({tier: "legend", months: "12", pay: "xmr"}), "checkout")
+})
+
 // -- routing and the shell --------------------------------------------------
 
 test("the shell registers a popstate listener, so back and forward work", () => {
   assert.match(uiJs, /addEventListener\(\s*["']popstate["']/, "no popstate listener in the built shell")
+})
+
+test("the shell can redraw in place, without a history entry", () => {
+  // D3's catalog arrives after the first render. Without refresh() its only
+  // way back onto the screen is go(), which pushes a duplicate entry and
+  // breaks the back button.
+  assert.match(uiJs, /refresh\(\)\s*\{/, "Shell must expose refresh()")
 })
 
 test("the shell navigates with pushState and never reloads the page", () => {

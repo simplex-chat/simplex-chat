@@ -8,8 +8,8 @@
 //
 // Everything decidable without a browser lives in router.ts and view.ts.
 
-import {FIRST_SCREEN, hashForScreen, nextScreen, screenIdForHash, type ScreenId} from "./router.js"
-import {questionOfScreen, screenView, type Answers, type Child, type El} from "./view.js"
+import {hashForScreen, nextScreen, screenIdForHash, type ScreenId} from "./router.js"
+import {firstUnansweredScreen, questionOfScreen, screenView, type Answers, type Child, type El} from "./view.js"
 
 /** The running shell. D3 fetches the catalog through it; D7 the checkout. */
 export interface Shell {
@@ -17,6 +17,13 @@ export interface Shell {
   showError(message: string): void
   /** Navigate to a screen, pushing a history entry. */
   go(id: ScreenId): void
+  /**
+   * Redraw the current screen in place, with no history entry and no focus
+   * move. D3's catalog arrives after the first render; `go` would push a
+   * duplicate entry and break back, and stealing focus mid-read is worse
+   * still.
+   */
+  refresh(): void
   /** The answers gathered so far. */
   answers(): Answers
 }
@@ -37,11 +44,18 @@ function childNode(child: Child): HTMLElement | string {
   return typeof child === "string" ? child : toDom(child)
 }
 
-/** Render the screen the current hash names into `root`, and keep it in step with history. */
-export function startShell(root: HTMLElement): Shell {
+/**
+ * Render the screen the current hash names into `root`, and keep it in step
+ * with history.
+ *
+ * `initial` seeds the answers, which is how D5's prefill skips the screens a
+ * query parameter has already answered: a seeded question is not asked, and
+ * the visit starts at the first one that has no answer.
+ */
+export function startShell(root: HTMLElement, initial: Answers = {}): Shell {
   const banner = errorBanner()
-  const answers: {tier?: string; months?: string; pay?: string} = {}
-  let current = FIRST_SCREEN
+  const answers: {tier?: string; months?: string; pay?: string} = {...initial}
+  let current = firstUnansweredScreen(answers)
 
   const shell: Shell = {
     showError(message: string): void {
@@ -51,6 +65,9 @@ export function startShell(root: HTMLElement): Shell {
     go(id: ScreenId): void {
       history.pushState(null, "", hashForScreen(id))
       render(id, true)
+    },
+    refresh(): void {
+      render(current, false)
     },
     answers(): Answers {
       return {...answers}
@@ -76,12 +93,15 @@ export function startShell(root: HTMLElement): Shell {
     }
   }
 
-  // An unknown hash renders the first screen rather than nothing, and the
-  // address bar is corrected in place so that back does not return to it.
+  // An unknown hash renders a real screen rather than nothing, and the address
+  // bar is corrected in place so that back does not return to it. The fallback
+  // is the first *unanswered* screen, not the first screen: with D5's prefill
+  // seeded, sending a visitor back to a question already answered by their URL
+  // would undo the whole point of the parameters.
   function screenFromLocation(): ScreenId {
     const id = screenIdForHash(location.hash)
     if (id !== null && location.hash === hashForScreen(id)) return id
-    const target = id ?? FIRST_SCREEN
+    const target = id ?? firstUnansweredScreen(answers)
     history.replaceState(null, "", hashForScreen(target))
     return target
   }
