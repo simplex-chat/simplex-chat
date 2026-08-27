@@ -56,7 +56,17 @@ One thing here fails quietly. The request envelope carries an optional `purchase
 
 ### 4.2 Schema
 
-Done, in the migration modules: `badge_codes` (shared) and `badge_code_invoices` (service only). Every schema change touches four files — the shared block and the service migrations each exist twice, SQLite and Postgres, unlinked by the build.
+The tables, in layers:
+
+- **money** — `invoices` (an amount owed), `payments` (an amount paid), `subscription_charges`. Generic: they carry no idea what was bought.
+- **catalog** — `badge_prices` (tier → price per month), `badge_offers` (duration discounts).
+- **what an invoice bought** — `badge_invoices` for a purchase, `badge_code_invoices` for a voucher. Same shape, except the second names no purchase: at the time of sale none exists, and the buyer may never be the redeemer.
+- **the badge** — `badge_purchases` is the anchor: keys, tier, status, funded by either `payment_id` or `badge_code_id`. Its balance is `badge_ledger`, its credentials `badge_issuances`, and `users.shown_badge_id` names the one on show.
+- **the voucher** — `badge_codes`. Consumed into a purchase; never a badge itself.
+
+The beta path: the site writes an invoice and what it bought, then a code. The app redeems that code, which creates the purchase and its first issuance — and, from milestone D, its ledger.
+
+New here are `badge_codes` (shared) and `badge_code_invoices` (service only); both are in the migration modules already. Every schema change touches four files — the shared block and the service migrations each exist twice, SQLite and Postgres, unlinked by the build.
 
 ### 4.3 Retry is safe
 
