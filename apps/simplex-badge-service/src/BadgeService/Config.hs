@@ -41,6 +41,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime)
 import Data.Word (Word32)
+import qualified Network.HTTP.Client as HTTP
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
@@ -208,6 +209,7 @@ parseWeb path ini
       checkKnownKeys path "web" webKeys ini
       port <- requiredInt path "web" "port" ini
       baseUrl <- requiredValue path "web" "base_url" ini
+      validateBaseUrl path baseUrl
       supportContact <- requiredValue path "web" "support_contact" ini
       let host = optionalValue "127.0.0.1" "web" "host" ini
           dir = T.unpack <$> optionalMaybeValue "web" "web_dir" ini
@@ -222,6 +224,22 @@ parseWeb path ini
               webBehindProxy = behindProxy,
               webDir = dir
             }
+
+-- | '[web] base_url' is the origin the site is reached at: it goes into a provider's return and
+-- webhook URLs (E2, F1) and into the app's browser hand-off (G1), so a relative or scheme-less
+-- value is not something to discover at the first payment. 'https' is required, because a card
+-- return URL over plaintext is a real downgrade, EXCEPT on the loopback hosts, where the local
+-- mock stack (plan \'10) runs everything over http.
+validateBaseUrl :: FilePath -> Text -> Either String ()
+validateBaseUrl path url = case HTTP.parseRequest (T.unpack url) :: Maybe HTTP.Request of
+  Nothing -> bad "must be an absolute http:// or https:// URL"
+  Just req
+    | HTTP.host req == "" -> bad "must name a host"
+    | HTTP.secure req -> Right ()
+    | HTTP.host req `elem` ["localhost", "127.0.0.1"] -> Right ()
+    | otherwise -> bad "must use https unless its host is localhost or 127.0.0.1"
+  where
+    bad why = configError path ("key 'base_url' in section [web] " <> why <> ", got: " <> T.unpack url)
 
 btcPayKeys :: [Text]
 btcPayKeys = ["url", "store_id", "api_key_file", "webhook_secret_file", "xmr_method_id", "btc_expiry_minutes", "xmr_expiry_minutes"]

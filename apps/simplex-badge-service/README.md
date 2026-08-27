@@ -11,6 +11,22 @@ At this stage the service:
 
 Business logic — command dispatch, ledger writes, credential signing, provider webhooks — is left for follow-up per the plans.
 
+## Site
+
+With a `[web]` section in `badge_service.ini` the same process runs the checkout site on `[web]
+port`, bound to `[web] host` (default `127.0.0.1`, so a default deployment is not exposed without
+a reverse proxy). It serves `/` (the page), `/assets/<buildHash>/<name>` and `/api/catalog`.
+
+The site is built by `web/` and its `dist/` is committed and embedded into the binary, so building
+the service never needs node. Change anything under `web/src` or `web/assets` and run `npm run
+build` in `web/`, committing the result — the running service serves the bytes that were embedded
+when it was compiled.
+
+`[web] web_dir` overrides that and serves the same URLs from a directory on disk (the `web/`
+directory itself: `dist/` under it, plus `index.html` and `styles.css` beside it), re-read on
+every request so an edit is visible on reload. **It is for front-end development only**: every
+response is `no-store`, and each request re-reads and re-hashes the whole directory.
+
 ## Build
 
 Build prerequisites and the general contribution flow are in [`docs/CONTRIBUTING.md`](../../docs/CONTRIBUTING.md).

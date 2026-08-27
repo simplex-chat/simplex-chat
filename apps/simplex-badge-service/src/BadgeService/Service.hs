@@ -53,6 +53,7 @@ import BadgeService.Store
     withServiceTransaction,
   )
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
+import BadgeService.Web.Server (WebServer, newWebServer, runWebServer)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Exception (IOException, SomeAsyncException (..), SomeException, catch, evaluate, fromException, throwIO)
@@ -121,6 +122,10 @@ import System.Exit (exitFailure)
 data ServiceState = ServiceState
   { serviceCC :: TMVar ChatController,
     serviceEnv :: TMVar BadgeServiceEnv,
+    -- | The site's listener (D4), or 'Nothing' when the ini has no @[web]@ section. Filled by
+    --   'badgePreStartHook' alongside 'serviceEnv', so that an unresolvable asset token fails the
+    --   service at startup rather than at the first page load.
+    serviceWeb :: TMVar (Maybe WebServer),
     serviceRequestQ :: TQueue (User, AgentInvId, Maybe C.PublicKeyEd25519, J.Object)
   }
 
@@ -128,8 +133,9 @@ newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
   serviceEnv <- newEmptyTMVarIO
+  serviceWeb <- newEmptyTMVarIO
   serviceRequestQ <- newTQueueIO
-  pure ServiceState {serviceCC, serviceEnv, serviceRequestQ}
+  pure ServiceState {serviceCC, serviceEnv, serviceWeb, serviceRequestQ}
 
 welcomeGetOpts :: IO BadgeServiceOpts
 welcomeGetOpts = do
@@ -150,7 +156,7 @@ badgeService opts cfg = do
             postStartHook = Just $ badgePostStartHook opts env
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc ->
-    raceAny_ [processServiceEvents env cc, sweepSignerBucketsLoop env]
+    raceAny_ [processServiceEvents env cc, sweepSignerBucketsLoop env, webListenerLoop env]
 
 processServiceEvents :: ServiceState -> ChatController -> IO ()
 processServiceEvents env cc = do
@@ -182,7 +188,8 @@ badgeServiceCLI opts = do
   raceAny_
     [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
       processQueuedRequests env,
-      sweepSignerBucketsLoop env
+      sweepSignerBucketsLoop env,
+      webListenerLoop env
     ]
 
 processQueuedRequests :: ServiceState -> IO ()
@@ -192,6 +199,24 @@ processQueuedRequests env = do
   forever $ do
     (u, reqId, sigKey_, reqData) <- atomically $ readTQueue $ serviceRequestQ env
     handleServiceRequest bsEnv cc u reqId sigKey_ reqData
+
+-- | The site's Warp listener (D4), as a third arm of both entry points' 'raceAny_' -- the default
+-- 'badgeService' as much as 'badgeServiceCLI', or the site would run only under @--run-cli@ and
+-- not in production. 'badgePreStartHook' has already built it (or decided there is none) by the
+-- time this read completes, the same way 'processServiceEvents' reads 'serviceEnv'.
+--
+-- With no @[web]@ section this arm has nothing to run and must nevertheless never return:
+-- 'raceAny_' is @waitAnyCancel@, so an arm that finishes cancels the bot with it.
+webListenerLoop :: ServiceState -> IO ()
+webListenerLoop ServiceState {serviceWeb} =
+  atomically (readTMVar serviceWeb) >>= \case
+    Just ws -> runWebServer ws
+    Nothing -> forever $ threadDelay idleWebListenerDelay
+
+-- | How long the web arm parks between wake-ups when there is no listener to run. Nothing happens
+-- on either side of the wait -- see 'webListenerLoop' for why it waits at all.
+idleWebListenerDelay :: Int
+idleWebListenerDelay = 3600 * 1000000
 
 -- | How often the per-signer failure-bucket map is swept. Ten minutes is short against the
 -- hour a default bucket takes to refill and long against how often a bucket is created (only a
@@ -242,14 +267,21 @@ logSweepFailure e = case fromException e of
 -- and validates badge_service.ini, exits on a bad config (naming the file and the offending
 -- key), and stores the built env for badgePostStartHook and the request handlers to reach.
 badgePreStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
-badgePreStartHook opts@BadgeServiceOpts {configFile, serviceClock} ServiceState {serviceEnv} ChatController {config, chatStore} = do
+badgePreStartHook opts@BadgeServiceOpts {configFile, serviceClock} ServiceState {serviceEnv, serviceWeb} ChatController {config, chatStore} = do
   runBadgeServiceMigrations opts config chatStore
   seedCatalog chatStore
   readBadgeServiceConfig configFile >>= \case
     Left e -> putStrLn e >> exitFailure
     Right bsConfig -> do
       bsEnv <- newBadgeServiceEnv bsConfig chatStore serviceClock
-      atomically $ putTMVar serviceEnv bsEnv
+      -- Built here, before the bot starts: the site's assets are resolved and index.html's tokens
+      -- are substituted once, so a token naming a file that is not served fails the service at
+      -- startup, naming the token, rather than serving a page with a dead link in it (D4).
+      newWebServer bsEnv >>= \case
+        Left e -> putStrLn e >> exitFailure
+        Right web -> atomically $ do
+          putTMVar serviceEnv bsEnv
+          putTMVar serviceWeb web
 
 badgePostStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
 badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do

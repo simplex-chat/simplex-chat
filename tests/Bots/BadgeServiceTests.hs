@@ -27,6 +27,7 @@ import BadgeService.Config
     IssuerConfig (IssuerConfig),
     SignerBucketFamily (..),
     ThrottleConfig (..),
+    WebConfig (..),
     checkFailureBuckets,
     debitFailureBuckets,
     newBadgeServiceEnv,
@@ -37,15 +38,16 @@ import BadgeService.Credentials (issueSignedBadge, loadIssuerKey)
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store
+import BadgeService.Web.Server (resolveWebPage)
 import Bots.BadgeManagerTests (allowPass, gatedClockAt, newBadgeGate, waitPasses)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Profiles (testBadgeKeys)
 import ChatTests.Utils
-import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.Async (async, wait)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (async, wait, withAsync)
 import Control.Concurrent.STM (atomically, readTVarIO, writeTVar)
-import Control.Exception (SomeException, finally, try)
+import Control.Exception (SomeException, bracket, finally, try)
 import Control.Monad (forM_, replicateM, unless, void)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.IO.Class (liftIO)
@@ -57,9 +59,10 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LBC
+import qualified Data.CaseInsensitive as CI
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int64)
-import Data.List (find, isInfixOf, isPrefixOf, nub, sort, stripPrefix)
+import Data.List (find, isInfixOf, isPrefixOf, isSuffixOf, nub, sort, stripPrefix)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, isJust, mapMaybe)
 import Data.String (fromString)
@@ -72,6 +75,10 @@ import Data.Time.Clock (DiffTime, NominalDiffTime, UTCTime (..), addUTCTime, dif
 import Data.Word (Word8, Word32)
 import GHC.IO.Handle (hDuplicate, hDuplicateTo)
 -- qualified: 'defaultPrefs' collides with ChatTests.Utils' own (chat preferences, unrelated)
+import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Types (Status (statusCode))
+import Network.Socket (close)
+import qualified Network.Wai.Handler.Warp as Warp
 import qualified Options.Applicative as O
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeRequest (..), BadgeType (..), VerifiedBadgeRequest (..), generateMasterKey, issueBadge, verifyCredential)
 import Simplex.Chat.Badges.Months (addMonths)
@@ -130,6 +137,7 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..), BBSSecretKey (..), bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
+import System.Directory (createDirectoryIfMissing)
 import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.IO (IOMode (..), hClose, hFlush, openFile, stdout)
@@ -189,6 +197,14 @@ badgeServiceTests = do
   it "should respond unknown_purchase_key to a signed getBadgeCatalog from an unknown key" testBadgeServiceGetCatalogUnknownSignerKey
   it "should heal the ledger on a signed getBadgeCatalog, appending exactly one debit(lapse), and heal nothing on a repeat" testBadgeServiceGetCatalogHealsLedger
   it "should rate_limit a third unsigned getBadgeCatalog once the catalog bucket is drained, without affecting a signed one" testBadgeServiceGetCatalogBucketThrottle
+  it "should serve the index with every token resolved and every asset it names fetchable under one prefix" testBadgeServiceWebIndexResolvesTokens
+  it "should serve every module a served module imports under that module's own prefix" testBadgeServiceWebModuleGraphUnderOnePrefix
+  it "should answer 404 for dev.html and for an asset under a stale build hash" testBadgeServiceWebDevHtmlAndStalePrefixAre404
+  it "should set the four security headers on every response, including a 404 and a rejected method" testBadgeServiceWebSecurityHeadersEverywhere
+  it "should serve the database catalog with computed totals from /api/catalog" testBadgeServiceWebCatalogEndpoint
+  it "should serve web_dir from disk with no-store, pick up an edit without a restart and refuse a path outside it" testBadgeServiceWebDirServesFromDisk
+  it "should fail before the service starts when a token names no served file, naming the token" testBadgeServiceWebUnresolvableTokenFails
+  it "should reject a non-loopback http base_url and accept https and loopback ones" testBadgeServiceConfigBaseUrlValidated
   it "should create a purchase and append ledger entries readable back in order" testBadgeStorePurchaseAndLedger
   it "should disable a price out of the active catalog while both stay reachable by id" testBadgeStoreSetPriceStatusDisabled
   it "should return the redeeming purchase key from getCodeByHash" testBadgeStoreGetCodeByHashRedeemer
@@ -309,22 +325,63 @@ issuerCodesIniLines issuerKeyFile codeSecretFile =
     "default_expiry_days = 365"
   ]
 
+-- The '[web]' section the harness writes into every ini it builds (D4), on the free port
+-- 'withBadgeServiceAddress' bound for this test. 'base_url' is http, which the config parser
+-- accepts only because the host is a loopback address.
+webIniLines :: Int -> [String]
+webIniLines port =
+  [ "[web]",
+    "port = " <> show port,
+    "base_url = " <> testWebBaseUrl port,
+    "support_contact = " <> testSupportContact
+  ]
+
+testWebBaseUrl :: Int -> String
+testWebBaseUrl port = "http://127.0.0.1:" <> show port
+
+-- Deliberately unlike anything the site, build.mjs or the plan carries, so that finding it in
+-- the served page proves the value came from THIS ini rather than from a default, a fallback or
+-- dev.html's placeholder.
+testSupportContact :: String
+testSupportContact = "https://example.invalid/support-from-ini"
+
+-- Binds port 0, reads back the port the OS chose and closes the socket again. Used where an ini
+-- needs a '[web] port' value that nothing will ever bind; the harness itself HOLDS the socket it
+-- reserves instead (see 'withBadgeServiceWebAddress').
+freeWebPort :: IO Int
+freeWebPort = do
+  (port, sock) <- Warp.openFreePort
+  close sock
+  pure port
+
 -- Writes a complete but minimal badge_service.ini (required sections only, no provider
 -- section) at the path mkBadgeServiceOpts points BadgeServiceOpts's configFile at. Provider
--- sections are omitted until E2 and F1 add them.
-writeTestBadgeServiceConfig :: TestParams -> IO ()
+-- sections are omitted until E2 and F1 add them, and '[web]' is written for them: A6 requires
+-- it whenever a provider is configured. The port is the caller's, because the site's base URL
+-- has to be known before the service starts (D4).
+writeTestBadgeServiceConfig :: TestParams -> Int -> IO ()
 writeTestBadgeServiceConfig ps = writeTestBadgeServiceConfigWith ps []
 
 -- The same file with extra ini lines appended -- so far only a '[throttle]' override (B5
 -- decision 5), which is how B10 drives the failure buckets to their limits in a handful of
 -- requests instead of hundreds.
-writeTestBadgeServiceConfigWith :: TestParams -> [String] -> IO ()
-writeTestBadgeServiceConfigWith TestParams {tmpPath} extraLines = do
+writeTestBadgeServiceConfigWith :: TestParams -> [String] -> Int -> IO ()
+writeTestBadgeServiceConfigWith TestParams {tmpPath} extraLines port = do
   (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
-  writeFile (badgeServiceConfigPath tmpPath) $ unlines (issuerCodesIniLines issuerKeyFile codeSecretFile ++ extraLines)
+  writeFile (badgeServiceConfigPath tmpPath) $
+    unlines (issuerCodesIniLines issuerKeyFile codeSecretFile ++ ("" : webIniLines port) ++ extraLines)
 
 withBadgeService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()) -> IO ()
 withBadgeService ps = withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps) (pure ())
+
+-- | 'withBadgeService' with the site's base URL handed to the body as a third argument (D4).
+-- It is a separate entry point rather than a third argument on every existing body, because
+-- forty-odd bodies that never make an HTTP request would gain an unused binder each.
+withBadgeServiceWeb :: HasCallStack => TestParams -> (TestCC -> String -> String -> IO ()) -> IO ()
+withBadgeServiceWeb ps = withBadgeServiceWebConfig ps (writeTestBadgeServiceConfig ps) (pure ())
+
+withBadgeServiceWebConfig :: HasCallStack => TestParams -> (Int -> IO ()) -> IO () -> (TestCC -> String -> String -> IO ()) -> IO ()
+withBadgeServiceWebConfig ps = withBadgeServiceWebClock ps getCurrentTime
 
 -- Shared by withBadgeService and testBadgeServiceCompleteConfigStarts: the two-phase startup
 -- dance (CreateMyAddress, then ShowMyAddress) is the same regardless of what the config looks
@@ -335,7 +392,7 @@ withBadgeService ps = withBadgeServiceConfig ps (writeTestBadgeServiceConfig ps)
 -- 'withFreshBadgeStore' -- opening a second connection to the SAME sqlite file WHILE the
 -- service's own phase is running deadlocks against its writer lock (verified: reliably fails
 -- 'createDBStore' with a pattern-match-on-Right, i.e. sqlite busy, when tried in that window).
-withBadgeServiceConfig :: HasCallStack => TestParams -> IO () -> IO () -> (TestCC -> String -> IO ()) -> IO ()
+withBadgeServiceConfig :: HasCallStack => TestParams -> (Int -> IO ()) -> IO () -> (TestCC -> String -> IO ()) -> IO ()
 withBadgeServiceConfig ps = withBadgeServiceClock ps getCurrentTime
 
 -- The same harness with the service's own clock replaced (A6: 'BadgeServiceEnv.now' is the only
@@ -343,13 +400,22 @@ withBadgeServiceConfig ps = withBadgeServiceClock ps getCurrentTime
 -- 'newBadgeServiceEnv' installs there). Both service starts get the same clock, so time is
 -- continuous across the between-phases window. This is what lets B10 cross a month boundary or a
 -- throttle bucket's refill window without any test sleeping -- see 'newTestClock'.
-withBadgeServiceClock :: HasCallStack => TestParams -> IO UTCTime -> IO () -> IO () -> (TestCC -> String -> IO ()) -> IO ()
+withBadgeServiceClock :: HasCallStack => TestParams -> IO UTCTime -> (Int -> IO ()) -> IO () -> (TestCC -> String -> IO ()) -> IO ()
 withBadgeServiceClock ps clock writeConfig betweenPhases test =
   withBadgeServiceAddress ps clock writeConfig betweenPhases $ \(sLink, _fullLink) withService ->
     -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
     withService $
       withNewTestChatCfg ps testCfg "client" bobProfile $ \client ->
         test client sLink
+
+-- | The same, with the site's base URL as a third argument to the body -- see
+-- 'withBadgeServiceWeb'.
+withBadgeServiceWebClock :: HasCallStack => TestParams -> IO UTCTime -> (Int -> IO ()) -> IO () -> (TestCC -> String -> String -> IO ()) -> IO ()
+withBadgeServiceWebClock ps clock writeConfig betweenPhases test =
+  withBadgeServiceWebAddress ps clock writeConfig betweenPhases $ \webUrl (sLink, _fullLink) withService ->
+    withService $
+      withNewTestChatCfg ps testCfg "client" bobProfile $ \client ->
+        test client sLink webUrl
 
 -- | The same first phase, with the SECOND phase handed to the body as @withService@ instead of
 -- wrapped around it, and with the service's contact address in both published forms.
@@ -363,13 +429,35 @@ withBadgeServiceClock ps clock writeConfig betweenPhases test =
 -- The full contact request URI is the second element: it is one of the four target forms
 -- 'Simplex.Chat.Library.Commands.resolveServiceTarget' accepts and, without it, only the short
 -- link would ever be exercised.
-withBadgeServiceAddress :: HasCallStack => TestParams -> IO UTCTime -> IO () -> IO () -> ((String, String) -> (IO () -> IO ()) -> IO ()) -> IO ()
-withBadgeServiceAddress ps clock writeConfig betweenPhases test = do
+withBadgeServiceAddress :: HasCallStack => TestParams -> IO UTCTime -> (Int -> IO ()) -> IO () -> ((String, String) -> (IO () -> IO ()) -> IO ()) -> IO ()
+withBadgeServiceAddress ps clock writeConfig betweenPhases test =
+  badgeServicePhases ps ephemeralWebPort (pure ()) clock writeConfig betweenPhases test
+
+-- | The same, with a web port the body can actually address, and its base URL as the FIRST
+-- argument to the body. The port is reserved -- bound and HELD -- until the moment the serving
+-- start begins, so that no other socket in this process, including the first phase's listener,
+-- can be handed it in the meantime.
+--
+-- Only this family gets an addressable port, and no body in it starts the service more than
+-- once: see 'ephemeralWebPort' for what goes wrong when two starts in one test process are given
+-- the same port.
+withBadgeServiceWebAddress :: HasCallStack => TestParams -> IO UTCTime -> (Int -> IO ()) -> IO () -> (String -> (String, String) -> (IO () -> IO ()) -> IO ()) -> IO ()
+withBadgeServiceWebAddress ps clock writeConfig betweenPhases test =
+  bracket Warp.openFreePort (close . snd) $ \(port, reservedSocket) ->
+    badgeServicePhases ps port (close reservedSocket) clock writeConfig betweenPhases (test (testWebBaseUrl port))
+
+-- The two-phase startup itself, shared by both: 'writeConfig' gets the port the SERVING start may
+-- bind, the address-creating start always runs on an ephemeral one, and 'releasePort' runs
+-- immediately before the serving start (the web variant hands back the port it reserved; the
+-- plain one has nothing to release).
+badgeServicePhases :: HasCallStack => TestParams -> Int -> IO () -> IO UTCTime -> (Int -> IO ()) -> IO () -> ((String, String) -> (IO () -> IO ()) -> IO ()) -> IO ()
+badgeServicePhases ps webPort releasePort clock writeConfig betweenPhases test = do
   let opts = (mkBadgeServiceOpts ps) {serviceClock = clock}
-  writeConfig
+  writeConfig webPort
+  phase1Config <- writeConfigOnEphemeralWebPort (badgeServiceConfigPath (tmpPath ps))
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
-  runBadgeService testCfg opts (pure ())
+  runBadgeService testCfg opts {configFile = phase1Config} (pure ())
   -- Reopen the DB to read the links the service created.
   links <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
@@ -378,13 +466,51 @@ withBadgeServiceAddress ps clock writeConfig betweenPhases test = do
     bs <## "auto_accept off"
     pure links
   betweenPhases
+  releasePort
   test links (runBadgeService testCfg opts)
 
+-- | Port 0 makes Warp bind an ephemeral port: the listener runs exactly as it does in production,
+-- but nothing in the test can address it -- and nothing else in the process can collide with it.
+-- Every service start uses this except the single serving start of a web test, because two starts
+-- in one test process cannot share a port:
+--
+--   * 'runSimplexChat' starts the service's own callback with 'async' and never cancels it
+--     ('Simplex.Chat.Core'), so killing a badge service leaves its 'raceAny_' -- and the web
+--     listener's socket with it -- running until the test process exits. Production starts the
+--     service once per process, so nothing there depends on that thread being reclaimed.
+--   * a failed bind takes the whole service down, since the listener is an arm of that 'raceAny_'.
+--     A second start on a port the first still holds leaves the test with no bot at all, not
+--     merely without a site.
+ephemeralWebPort :: Int
+ephemeralWebPort = 0
+
+-- The ini the address-creating start reads: the same file with '[web] port' rewritten to
+-- 'ephemeralWebPort'. The section is rewritten rather than dropped, because A6 refuses to start a
+-- config that has a provider section and no '[web]', which is what
+-- 'testBadgeServiceCompleteConfigStarts' writes.
+writeConfigOnEphemeralWebPort :: FilePath -> IO FilePath
+writeConfigOnEphemeralWebPort path = do
+  ls <- T.lines <$> TIO.readFile path
+  let dest = path <> ".phase1"
+  TIO.writeFile dest $ T.unlines (rewrite "" ls)
+  pure dest
+  where
+    rewrite _ [] = []
+    rewrite section (l : ls)
+      | "[" `T.isPrefixOf` T.strip l = l : rewrite (T.strip l) ls
+      | section == "[web]" && "port" `T.isPrefixOf` T.strip l = T.pack ("port = " <> show ephemeralWebPort) : rewrite section ls
+      | otherwise = l : rewrite section ls
+
+-- 'withAsync' rather than 'forkIO'/'killThread': its cleanup WAITS for the service thread to finish
+-- unwinding instead of returning as soon as the exception is delivered, so what a start holds --
+-- the web listener's socket above all (D4) -- is released before the next start of the same test.
+-- It is not sufficient on its own: the thread it cancels is not the one that owns the listener,
+-- because 'runSimplexChat' orphans that one. See 'ephemeralWebPort'.
 runBadgeService :: ChatConfig -> BadgeServiceOpts -> IO () -> IO ()
-runBadgeService cfg opts action = do
-  t <- forkIO $ badgeService opts cfg
-  threadDelay 500000
-  action `finally` killThread t
+runBadgeService cfg opts action =
+  withAsync (badgeService opts cfg) $ \_ -> do
+    threadDelay 500000
+    action
 
 -- B5 RPC dispatcher -----------------------------------------------------------
 
@@ -547,7 +673,9 @@ testBadgeServicePurchaseBadgeAppleBadRequest ps =
 testBadgeServicePurchaseCodeThrottlePreCheck :: HasCallStack => TestParams -> IO ()
 testBadgeServicePurchaseCodeThrottlePreCheck ps = do
   (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets (tmpPath ps)
-  let writeConfig =
+  -- no [web] section: this ini also covers the case where the service runs with no listener at
+  -- all, which must leave the bot answering exactly as it does with one (D4)
+  let writeConfig _port =
         writeFile (badgeServiceConfigPath (tmpPath ps)) $
           unlines $
             issuerCodesIniLines issuerKeyFile codeSecretFile
@@ -967,7 +1095,7 @@ testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
     client ##> ("/_service_request 1 " <> bsLink <> " " <> redeemReq)
     client <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
   where
-    writeCompleteConfig = do
+    writeCompleteConfig port = do
       (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
       let apiKeyFile = tmpPath </> "btcpay-api.key"
           btcWebhookFile = tmpPath </> "btcpay-webhook.secret"
@@ -982,7 +1110,7 @@ testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
           issuerCodesIniLines issuerKeyFile codeSecretFile
             ++ [ "",
                  "[web]",
-                 "port = 0",
+                 "port = " <> show port,
                  "base_url = https://badges.example.org",
                  "support_contact = https://simplex.chat/contact",
                  "",
@@ -1014,7 +1142,7 @@ testBadgeServiceCompleteConfigStarts ps@TestParams {tmpPath} =
 testBadgeServicePublishesAddressFile :: HasCallStack => TestParams -> IO ()
 testBadgeServicePublishesAddressFile ps@TestParams {tmpPath} = do
   let addressFile = tmpPath </> "bot_address.txt"
-      writeConfig = do
+      writeConfig _port = do
         (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
         writeFile (badgeServiceConfigPath tmpPath) $
           unlines $
@@ -1171,7 +1299,7 @@ testBadgeServiceGetCatalogBucketThrottle ps = do
   (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets (tmpPath ps)
   (pub, priv) <- mkTestKeyPair
   masterKey <- BadgeMasterKey <$> getRandomBytes 32
-  let writeConfig =
+  let writeConfig _port =
         writeFile (badgeServiceConfigPath (tmpPath ps)) $
           unlines $
             issuerCodesIniLines issuerKeyFile codeSecretFile
@@ -2119,7 +2247,8 @@ testBadgeServiceNoTableLinksOrdersToPurchases ps =
 -- nowhere else.
 testBadgeServiceCodesIssueRevokeStatus :: HasCallStack => TestParams -> IO ()
 testBadgeServiceCodesIssueRevokeStatus ps@TestParams {tmpPath} = do
-  writeTestBadgeServiceConfig ps
+  -- the admin subcommand never starts a listener, so this port is only ever written to the ini
+  freeWebPort >>= writeTestBadgeServiceConfig ps
   let adminOpts cmd =
         AdminOpts
           { adminCoreOptions = coreOptions (mkBadgeServiceOpts ps),
@@ -3645,3 +3774,324 @@ testC5UnreadableResponsesAreReported ps =
     answerStubRequest stub undecodable
     alice <##. "badge service error: internal, The badge service answered with something this app version cannot read."
     noClientBadgeRows "after unreadable responses" alice
+
+-- D4 web listener -------------------------------------------------------------
+
+-- One HTTP response, reduced to what the assertions below need. The body is a String because
+-- everything asserted about it is a substring or an exact small file, and 'isInfixOf' is already
+-- how this module reads text.
+data WebResponse = WebResponse
+  { wrStatus :: Int,
+    wrHeaders :: [(CI.CI BC.ByteString, BC.ByteString)],
+    wrBody :: String
+  }
+
+-- One manager per test rather than one per request: a request-per-manager leaves a connection
+-- pool behind for each call, and these tests make dozens.
+newWebManager :: IO HTTP.Manager
+newWebManager = HTTP.newManager HTTP.defaultManagerSettings
+
+-- 'HTTP.parseRequest' (unlike 'parseUrlThrow') installs no status check, so a 404 comes back as
+-- a response to assert on rather than as an exception. The path is sent as written, which is what
+-- lets the traversal cases below reach the server percent-encoded.
+webGet :: HTTP.Manager -> String -> IO WebResponse
+webGet mgr url = do
+  req <- HTTP.parseRequest url
+  r <- HTTP.httpLbs req mgr
+  pure
+    WebResponse
+      { wrStatus = statusCode (HTTP.responseStatus r),
+        wrHeaders = HTTP.responseHeaders r,
+        wrBody = LBC.unpack (HTTP.responseBody r)
+      }
+
+webHeader :: WebResponse -> BC.ByteString -> String
+webHeader r name = maybe "" BC.unpack $ lookup (CI.mk name) (wrHeaders r)
+
+-- The four headers D4 requires on EVERY response, checked as a client sees them. Called on a
+-- 200, on a 404 and on the JSON endpoint, since "every response" is the actual requirement.
+assertSecurityHeaders :: HasCallStack => String -> WebResponse -> IO ()
+assertSecurityHeaders what r = do
+  (what, webHeader r "content-security-policy") `shouldBe` (what, "default-src 'self'")
+  (what, webHeader r "x-content-type-options") `shouldBe` (what, "nosniff")
+  (what, webHeader r "referrer-policy") `shouldBe` (what, "no-referrer")
+  (what, webHeader r "x-frame-options") `shouldBe` (what, "DENY")
+
+-- Every asset URL the served page references, in document order: the tokens resolve into quoted
+-- attributes and an asset URL contains no quote, so this reads what the browser would follow.
+webAssetUrls :: String -> [String]
+webAssetUrls body = map (T.unpack . ("/assets/" <>) . T.takeWhile (/= '"')) . drop 1 $ T.splitOn "/assets/" (T.pack body)
+
+-- "/assets/<buildHash>/main.js" -> "<buildHash>"
+webAssetHash :: HasCallStack => String -> String
+webAssetHash url = case T.splitOn "/" (T.pack url) of
+  ("" : "assets" : h : _ : _) -> T.unpack h
+  _ -> error $ "not an asset URL: " <> url
+
+-- The relative specifiers in an emitted module, as `import ... from "./ui.js"` leaves them: tsc
+-- does not rewrite them (decision 7), so the browser resolves them against the module's own URL.
+relativeImports :: String -> [String]
+relativeImports js = nub [t | (i, t) <- zip [0 :: Int ..] (map T.unpack (T.splitOn "\"" (T.pack js))), odd i, "./" `isPrefixOf` t]
+
+-- GET / must return the page with every token resolved -- not one @@name@@ left, the non-file
+-- token carrying the value from THIS ini, and every URL it names actually fetchable, which is the
+-- outcome the tokens exist for. All of them sit under ONE prefix: see
+-- testBadgeServiceWebModuleGraphUnderOnePrefix for why that is load-bearing.
+testBadgeServiceWebIndexResolvesTokens :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebIndexResolvesTokens ps =
+  withBadgeServiceWeb ps $ \_client _bsLink webUrl -> do
+    mgr <- newWebManager
+    index <- webGet mgr webUrl
+    wrStatus index `shouldBe` 200
+    webHeader index "content-type" `shouldBe` "text/html; charset=utf-8"
+    -- the page itself is never cached: its asset URLs and its support link both change without
+    -- the page's own URL changing
+    webHeader index "cache-control" `shouldBe` "no-cache"
+    wrBody index `shouldSatisfy` (not . isInfixOf "@@")
+    wrBody index `shouldSatisfy` isInfixOf testSupportContact
+    let urls = webAssetUrls (wrBody index)
+        names = sort $ map (T.unpack . last . T.splitOn "/" . T.pack) urls
+    -- D2's index.html names four files; a later step that adds one adds a token and nothing else
+    names `shouldBe` ["logo-symbol-dark.svg", "logo-symbol-light.svg", "main.js", "styles.css"]
+    nub (map webAssetHash urls) `shouldSatisfy` ((== 1) . length)
+    forM_ urls $ \u -> do
+      r <- webGet mgr (webUrl <> u)
+      (u, wrStatus r) `shouldBe` (u, 200)
+      (u, webHeader r "cache-control") `shouldBe` (u, "public, max-age=31536000, immutable")
+      assertSecurityHeaders u r
+    -- and the two files that are not in dist/ are served with their own content types
+    css <- webGet mgr (webUrl <> head (filter ("/styles.css" `isSuffixOf`) urls))
+    webHeader css "content-type" `shouldBe` "text/css; charset=utf-8"
+    logo <- webGet mgr (webUrl <> head (filter ("-light.svg" `isSuffixOf`) urls))
+    webHeader logo "content-type" `shouldBe` "image/svg+xml"
+
+-- The reason the build hash is one hash for the whole set and not one per file: tsc leaves
+-- `from "./ui.js"` alone, so the browser resolves it against main.js's own directory. Every
+-- sibling main.js imports must therefore answer under main.js's OWN prefix -- with a per-file
+-- hash each would sit at a different one and the module graph would 404 after the entry point.
+-- Asserted by following the specifiers out of the served bytes, not by reading the source.
+testBadgeServiceWebModuleGraphUnderOnePrefix :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebModuleGraphUnderOnePrefix ps =
+  withBadgeServiceWeb ps $ \_client _bsLink webUrl -> do
+    mgr <- newWebManager
+    index <- webGet mgr webUrl
+    let mainUrl = head $ filter ("/main.js" `isSuffixOf`) (webAssetUrls (wrBody index))
+        prefix = "/assets/" <> webAssetHash mainUrl
+    mainJs <- webGet mgr (webUrl <> mainUrl)
+    wrStatus mainJs `shouldBe` 200
+    webHeader mainJs "content-type" `shouldBe` "text/javascript; charset=utf-8"
+    let specifiers = relativeImports (wrBody mainJs)
+    specifiers `shouldSatisfy` (not . null)
+    forM_ specifiers $ \specifier -> do
+      let url = prefix <> "/" <> drop 2 specifier
+      r <- webGet mgr (webUrl <> url)
+      (specifier, wrStatus r) `shouldBe` (specifier, 200)
+      -- the imported module's own imports must resolve at the same prefix, one level deeper
+      forM_ (relativeImports (wrBody r)) $ \nested -> do
+        nestedR <- webGet mgr (webUrl <> prefix <> "/" <> drop 2 nested)
+        (specifier, nested, wrStatus nestedR) `shouldBe` (specifier, nested, 200)
+
+-- dev.html is in the binary (embedDir takes no predicate) and must never be routed, under the
+-- asset prefix or at the root; and an asset named under any other prefix is 404, which is what
+-- makes the immutable long-cache above safe. The same name under the RIGHT prefix is fetched in
+-- the same test, so neither 404 can be passing for the wrong reason.
+testBadgeServiceWebDevHtmlAndStalePrefixAre404 :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebDevHtmlAndStalePrefixAre404 ps =
+  withBadgeServiceWeb ps $ \_client _bsLink webUrl -> do
+    mgr <- newWebManager
+    index <- webGet mgr webUrl
+    let mainUrl = head $ filter ("/main.js" `isSuffixOf`) (webAssetUrls (wrBody index))
+        buildHash = webAssetHash mainUrl
+        staleHash = map (\c -> if c == 'a' then 'b' else 'a') buildHash
+    served <- webGet mgr (webUrl <> mainUrl)
+    wrStatus served `shouldBe` 200
+    stale <- webGet mgr (webUrl <> "/assets/" <> staleHash <> "/main.js")
+    wrStatus stale `shouldBe` 404
+    forM_ ["/dev.html", "/assets/" <> buildHash <> "/dev.html"] $ \path -> do
+      r <- webGet mgr (webUrl <> path)
+      (path, wrStatus r) `shouldBe` (path, 404)
+      -- the banner npm run build writes into dev.html: not merely a 404 status, but none of the
+      -- file's bytes in the response
+      (path, "Generated from index.html" `isInfixOf` wrBody r) `shouldBe` (path, False)
+      assertSecurityHeaders path r
+
+-- "Every response" includes the ones no route produced: a 404 and a rejected method carry the
+-- same four headers as the page. A framing or CSP header present only on the happy path is the
+-- one a browser needs on the response an attacker can reach.
+testBadgeServiceWebSecurityHeadersEverywhere :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebSecurityHeadersEverywhere ps =
+  withBadgeServiceWeb ps $ \_client _bsLink webUrl -> do
+    mgr <- newWebManager
+    forM_ ["", "/api/catalog", "/no-such-path", "/assets", "/assets/deadbeef/main.js"] $ \path -> do
+      r <- webGet mgr (webUrl <> path)
+      assertSecurityHeaders path r
+    postReq <- HTTP.parseRequest (webUrl <> "/api/catalog")
+    postResp <- HTTP.httpLbs postReq {HTTP.method = "POST"} mgr
+    let post = WebResponse {wrStatus = statusCode (HTTP.responseStatus postResp), wrHeaders = HTTP.responseHeaders postResp, wrBody = LBC.unpack (HTTP.responseBody postResp)}
+    wrStatus post `shouldBe` 405
+    assertSecurityHeaders "POST /api/catalog" post
+
+-- /api/catalog answers from the DATABASE through catalogTotals, never from Catalog.hs's
+-- defaults: the fixture disables one seeded price and deprecates the other, so the default
+-- catalog (two prices, four offers) is the WRONG answer and an endpoint that served it would
+-- fail here. The payload is decoded as the RPC 'BadgeCatalog' the app parses (A2), so the shape
+-- is asserted by the decode and the totals by the values.
+testBadgeServiceWebCatalogEndpoint :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebCatalogEndpoint ps = do
+  priceIdsRef <- newIORef Nothing
+  let seedStatuses =
+        withTestChat ps serviceDbPrefix $ \bs -> do
+          bs <## "subscribed 1 connections on server localhost"
+          priceIds <- expectRight $ withServiceTransaction (chatStore (chatController bs)) $ \db -> do
+            BadgeCatalog {prices} <- getActiveCatalog db
+            case prices of
+              [BadgePrice {priceId = pid1}, BadgePrice {priceId = pid2}] -> do
+                setPriceStatus db pid1 BISDisabled
+                setPriceStatus db pid2 BISDeprecated
+                pure (pid1, pid2)
+              _ -> error "expected exactly the two default seeded prices"
+          writeIORef priceIdsRef (Just priceIds)
+  withBadgeServiceWebConfig ps (writeTestBadgeServiceConfig ps) seedStatuses $ \_client _bsLink webUrl -> do
+    Just (disabledId, deprecatedId) <- readIORef priceIdsRef
+    mgr <- newWebManager
+    r <- webGet mgr (webUrl <> "/api/catalog")
+    wrStatus r `shouldBe` 200
+    webHeader r "content-type" `shouldBe` "application/json"
+    case J.decode (LBC.pack (wrBody r)) :: Maybe BadgeCatalog of
+      Nothing -> expectationFailure $ "/api/catalog did not decode as BadgeCatalog: " <> wrBody r
+      Just BadgeCatalog {prices, offers} -> do
+        map (\BadgePrice {priceId} -> priceId) prices `shouldBe` [deprecatedId]
+        map (\BadgePrice {status} -> status) prices `shouldBe` [BISDeprecated]
+        any (\BadgeOffer {priceId} -> priceId == Just disabledId) offers `shouldBe` False
+        sort (map (\BadgeOffer {months} -> months) offers) `shouldBe` [3, 12]
+        -- the legend price is 7000/month: 3 months with one free is 14000 and 12 with six free
+        -- is 42000. Without catalogTotals every total here would be null.
+        sort (map (\BadgeOffer {total} -> fmap (\(CurrencyAmount n) -> n) total) offers) `shouldBe` [Just 14000, Just 42000]
+
+-- A minimal site on disk for web_dir mode, in the same shape the embedded set has: dist/ beside
+-- index.html and styles.css. Small enough that every byte the assertions compare is written here.
+writeTestWebDir :: FilePath -> IO ()
+writeTestWebDir dir = do
+  createDirectoryIfMissing True (dir </> "dist")
+  writeFile (dir </> "index.html") $
+    "<!doctype html><html><head><link rel=\"stylesheet\" href=\"@@styles.css@@\" /></head>"
+      <> "<body><a href=\"@@support_contact@@\">support</a>"
+      <> "<script type=\"module\" src=\"@@main.js@@\"></script></body></html>\n"
+  writeFile (dir </> "styles.css") webDirCssBefore
+  writeFile (dir </> "dist" </> "main.js") "export const site = \"web_dir\";\n"
+  writeFile (dir </> "dist" </> "dev.html") "<!-- dev.html must never be served -->\n"
+
+webDirCssBefore :: String
+webDirCssBefore = "body { color: rgb(1, 2, 3); }\n"
+
+webDirCssAfter :: String
+webDirCssAfter = "body { color: rgb(4, 5, 6); }\n"
+
+-- What a traversal must not reach: a real, readable file one level above the served directory.
+webDirSecret :: String
+webDirSecret = "OUTSIDE-WEB-DIR-SECRET\n"
+
+-- [web] web_dir (decision 2) serves the same URLs from disk, so an edit is visible on reload:
+-- the assertions are the outcome of an edit (new bytes, new prefix, old prefix gone) rather than
+-- the mechanism that produces it. Every response is no-store, because with the immutable
+-- long-cache of the embedded mode a browser would not re-fetch the edited file at all.
+--
+-- The traversal cases are the one security-relevant route in this step. The percent-encoded one
+-- is the case that matters: WAI decodes it into a SINGLE path segment "../../<file>", which a
+-- server that joined the request path onto the directory would happily read.
+testBadgeServiceWebDirServesFromDisk :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebDirServesFromDisk ps@TestParams {tmpPath} = do
+  let dir = tmpPath </> "web_dir_site"
+      secretFile = tmpPath </> "outside-web-dir.txt"
+      writeConfig port = do
+        (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+        writeFile (badgeServiceConfigPath tmpPath) $
+          unlines $
+            issuerCodesIniLines issuerKeyFile codeSecretFile
+              ++ ("" : webIniLines port)
+              ++ ["web_dir = " <> dir]
+  writeTestWebDir dir
+  writeFile secretFile webDirSecret
+  withBadgeServiceWebConfig ps writeConfig (pure ()) $ \_client _bsLink webUrl -> do
+    mgr <- newWebManager
+    index <- webGet mgr webUrl
+    wrStatus index `shouldBe` 200
+    wrBody index `shouldSatisfy` (not . isInfixOf "@@")
+    wrBody index `shouldSatisfy` isInfixOf testSupportContact
+    let cssUrl = head $ filter ("/styles.css" `isSuffixOf`) (webAssetUrls (wrBody index))
+    css <- webGet mgr (webUrl <> cssUrl)
+    wrStatus css `shouldBe` 200
+    wrBody css `shouldBe` webDirCssBefore
+    webHeader css "cache-control" `shouldBe` "no-store"
+    -- the edit: no restart, no rebuild
+    writeFile (dir </> "styles.css") webDirCssAfter
+    index' <- webGet mgr webUrl
+    let cssUrl' = head $ filter ("/styles.css" `isSuffixOf`) (webAssetUrls (wrBody index'))
+    cssUrl' `shouldSatisfy` (/= cssUrl)
+    css' <- webGet mgr (webUrl <> cssUrl')
+    wrBody css' `shouldBe` webDirCssAfter
+    -- the pre-edit URL is gone with the old build hash, which is the cache-busting property
+    stale <- webGet mgr (webUrl <> cssUrl)
+    wrStatus stale `shouldBe` 404
+    let buildHash = webAssetHash cssUrl'
+    dev <- webGet mgr (webUrl <> "/assets/" <> buildHash <> "/dev.html")
+    wrStatus dev `shouldBe` 404
+    -- nothing outside the directory, however the path is spelled
+    forM_ ["..%2F..%2Foutside-web-dir.txt", "../../outside-web-dir.txt", "%2E%2E%2F%2E%2E%2Foutside-web-dir.txt", ".%2E/..%2Foutside-web-dir.txt"] $ \path -> do
+      r <- webGet mgr (webUrl <> "/assets/" <> buildHash <> "/" <> path)
+      (path, wrStatus r) `shouldBe` (path, 404)
+      (path, webDirSecret `isInfixOf` wrBody r) `shouldBe` (path, False)
+  -- the file the traversals aimed at exists and is readable: the 404s above are the server
+  -- refusing, not a missing target
+  readFile secretFile `shouldReturn` webDirSecret
+
+-- A token naming a file that is not served must fail at STARTUP, naming the token, rather than
+-- serving a page with a dead link in it. 'resolveWebPage' is what 'newWebServer' calls from
+-- 'badgePreStartHook', before the bot starts. The same directory without the bad token resolves,
+-- so the failure is the token and not the fixture.
+testBadgeServiceWebUnresolvableTokenFails :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebUnresolvableTokenFails TestParams {tmpPath} = do
+  let dir = tmpPath </> "web_dir_bad_token"
+      cfg =
+        WebConfig
+          { webPort = 0,
+            webHost = "127.0.0.1",
+            webBaseUrl = "http://127.0.0.1",
+            webSupportContact = T.pack testSupportContact,
+            webBehindProxy = False,
+            webDir = Just dir
+          }
+  writeTestWebDir dir
+  resolveWebPage cfg >>= \case
+    Left e -> expectationFailure $ "expected the fixture to resolve, got: " <> e
+    Right _ -> pure ()
+  appendFile (dir </> "index.html") "<img src=\"@@logo-symbol-light.svg@@\" alt=\"\" />\n"
+  resolveWebPage cfg >>= \case
+    Right _ -> expectationFailure "expected a token naming no served file to fail"
+    Left e -> do
+      ("logo-symbol-light.svg" `isInfixOf` e) `shouldBe` True
+      -- and it says what is in the set, since that is the only way to see the misspelling
+      ("main.js" `isInfixOf` e) `shouldBe` True
+
+-- [web] base_url is validated at startup as an absolute URL, https unless the host is a loopback
+-- one -- the exception the local mock stack (plan §10) runs on. It ends up in provider return and
+-- webhook URLs (E2, F1), which is not where a scheme-less value should first be noticed.
+testBadgeServiceConfigBaseUrlValidated :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigBaseUrlValidated TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "base-url.ini"
+      writeBaseUrl baseUrl =
+        writeFile path $
+          unlines $
+            issuerCodesIniLines issuerKeyFile codeSecretFile
+              ++ ["", "[web]", "port = 8080", "base_url = " <> baseUrl, "support_contact = " <> testSupportContact]
+  forM_ ["http://badges.example.org", "http://badges.example.org:8080", "badges.example.org", "/checkout", "ftp://badges.example.org"] $ \baseUrl -> do
+    writeBaseUrl baseUrl
+    readBadgeServiceConfig path >>= \case
+      Right _ -> expectationFailure $ "expected " <> baseUrl <> " to be rejected"
+      Left err -> (baseUrl, "base_url" `isInfixOf` err) `shouldBe` (baseUrl, True)
+  forM_ ["https://badges.example.org", "http://localhost:8080", "http://127.0.0.1:8080"] $ \baseUrl -> do
+    writeBaseUrl baseUrl
+    readBadgeServiceConfig path >>= \case
+      Left err -> expectationFailure $ "expected " <> baseUrl <> " to be accepted, got: " <> err
+      Right BadgeServiceConfig {web} -> (baseUrl, fmap webBaseUrl web) `shouldBe` (baseUrl, Just (T.pack baseUrl))
