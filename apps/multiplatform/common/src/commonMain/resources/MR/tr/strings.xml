@@ -842,6 +842,13 @@
     <string name="group_preview_you_are_invited">Gruba davetlisiniz</string>
     <string name="you_have_no_chats">Hiç sohbetiniz yok</string>
     <string name="you_are_observer">Gözlemcisiniz</string>
+    <string name="connect_plan_you_are_observer">Gözlemcisiniz</string>
+    <string name="connect_plan_you_are_member">Üyesiniz</string>
+    <string name="connect_plan_you_are_moderator">Yöneticisiniz</string>
+    <string name="connect_plan_you_are_admin">Yöneticisiniz</string>
+    <string name="connect_plan_you_are_owner">Sahipsiniz</string>
+    <string name="connect_plan_you_are_subscriber">Abonesiniz</string>
+    <string name="connect_plan_you_are_contributor">Katkıda bulunansınız</string>
     <string name="observer_cant_send_message_title">sen gözlemcisin</string>
     <string name="view_security_code">Güvenlik kodunu görüntüle</string>
     <string name="you_need_to_allow_to_send_voice">Sesli mesaj gönderebilmeniz için kişinizin de sesli mesaj göndermesine izin vermeniz gerekir.</string>
@@ -1204,7 +1211,7 @@
     <string name="lock_not_enabled">SimpleX Kilit aktif değil!</string>
     <string name="chat_lock">SimpleX Kilit</string>
     <string name="connect_via_member_address_alert_title">Doğrudan bağlanılsın mı?</string>
-    <string name="receipts_section_description">Bu ayarlar mevcut profiliniz içindir</string>
+    <string name="these_settings_are_for_your_current_profile">Bu ayarlar mevcut profiliniz içindir</string>
     <string name="smp_servers_test_failed">Sunucu testi başarısız!</string>
     <string name="verify_connection">Bağlantıyı onayla</string>
     <string name="add_contact_or_create_group">Yeni sohbet başlat</string>
@@ -1720,7 +1727,7 @@
     <string name="v5_7_new_interface_languages">Litvanya Kullanıcı Arayüzü</string>
     <string name="network_type_other">Diğer</string>
     <string name="saved_description">kaydedildi</string>
-    <string name="saved_from_description">%s tarafından kaydedildi</string>
+    <string name="saved_from">kaydedildi:</string>
     <string name="forwarded_chat_item_info_tab">İletildi</string>
     <string name="saved_chat_item_info_tab">Kaydedildi</string>
     <string name="download_file">İndir</string>

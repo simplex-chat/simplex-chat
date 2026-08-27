@@ -378,19 +378,24 @@ useServers as opDomains uss =
       xftp' = useServerCfgs SPXFTP as opDomains $ concatMap (servers' SPXFTP) uss
    in (smp', xftp')
 
-execChatCommand :: Maybe RemoteHostId -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
-execChatCommand rh s retryNum =
+execChatCommand :: CommandSource -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
+execChatCommand src s retryNum =
   case parseChatCommand s of
     Left e -> pure $ chatCmdError e
-    Right cmd -> case rh of
-      Just rhId
+    Right cmd -> case src of
+      CSRemoteHost rhId
         | allowRemoteCommand cmd -> execRemoteCommand rhId cmd s retryNum
         | otherwise -> pure $ Left $ ChatErrorRemoteHost (RHId rhId) $ RHELocalCommand
-      _ -> do
-        cc@ChatController {config = ChatConfig {chatHooks}} <- ask
-        case preCmdHook chatHooks of
-          Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
-          Nothing -> execChatCommand' cmd retryNum
+      CSRemoteCtrl
+        | allowRemoteCommand cmd -> execLocal cmd
+        | otherwise -> pure $ Left $ ChatErrorRemoteCtrl $ RCEProtocolError $ RPEInvalidBody "prohibited command"
+      CSLocal -> execLocal cmd
+  where
+    execLocal cmd = do
+      cc@ChatController {config = ChatConfig {chatHooks}} <- ask
+      case preCmdHook chatHooks of
+        Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
+        Nothing -> execChatCommand' cmd retryNum
 
 execChatCommand' :: ChatCommand -> Int -> CM' (Either ChatError ChatResponse)
 execChatCommand' cmd retryNum = handleCommandError $ do
@@ -501,6 +506,12 @@ processChatCommand cxt nm = \case
     withFastStore' $ \db -> updateUserAutoAcceptMemberContacts db user' onOff
     ok user
   SetUserAutoAcceptMemberContacts onOff -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserAutoAcceptMemberContacts userId onOff
+  APISetUserAutoAcceptGroupInvitations userId' onOff -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withFastStore' $ \db -> updateUserAutoAcceptGroupInvitations db user' onOff
+    ok user
+  SetUserAutoAcceptGroupInvitations onOff -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserAutoAcceptGroupInvitations userId onOff
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -700,7 +711,7 @@ processChatCommand cxt nm = \case
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
         Just (CIFFContact _ _ (Just ctId) (Just fwdItemId)) ->
           Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTDirect ctId Nothing) fwdItemId)
-        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
+        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId) _ _ _) ->
           -- TODO [knocking] getAChatItem doesn't differentiate how to read based on scope - it should, instead of using group filter
           Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTGroup gId Nothing) fwdItemId)
         _ -> pure Nothing
@@ -1085,9 +1096,11 @@ processChatCommand cxt nm = \case
           catMaybes <$> mapM (\ci -> ciComposeMsgReq gInfo ci <$$> prepareMsgReq ci) items
           where
             ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
-            ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText}) (mc, file) = do
+            ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText, meta = CIMeta {itemSharedMsgId}}) (mc, file) = do
               let itemId = chatItemId' ci
-                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId))
+                  fwdMemberId = memberId' <$> chatItemMember gInfo ci
+                  fwdGroupType = itemSharedMsgId *> sourceGroupType gInfo
+                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) fwdMemberId itemSharedMsgId fwdGroupType)
                   -- updates text to reflect current mentioned member names
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   -- only includes mentions when forwarding to the same group
@@ -1097,6 +1110,8 @@ processChatCommand cxt nm = \case
               where
                 forwardName :: GroupInfo -> ContactName
                 forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
+                sourceGroupType :: GroupInfo -> Maybe GroupType
+                sourceGroupType GroupInfo {groupProfile = GroupProfile {publicGroup}} = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
         CTLocal -> do
           (_, items) <- getCommandLocalChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq ci <$$> prepareMsgReq ci) items
@@ -1701,7 +1716,7 @@ processChatCommand cxt nm = \case
           Just RelayAddressLinkData {relayProfile} -> do
             let failWithProfile step e =
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
-            lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+            lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
               Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
               Just _ -> do
                 let chatV = initialChatVersion
@@ -3382,7 +3397,7 @@ processChatCommand cxt nm = \case
               _ -> throwChatError $ CEException "connection already started (past prepared status)"
         where
           joinNewConn subMode = do
-            -- possible improvement: use agent connRequestPQSupport to determine pqSupport here;
+            -- possible improvement: use agent connRequestAgentVersion to determine pqSupport here;
             -- for joinPreparedConn below - same + encodeConnInfoPQ;
             -- same for auto-accept on xGrpDirectInv
             acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
@@ -3612,7 +3627,7 @@ processChatCommand cxt nm = \case
   ConfirmRemoteCtrl rcId -> withUser_ $ do
     (rc, ctrlAppInfo) <- confirmRemoteCtrl rcId
     pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion}
-  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId
+  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand CSRemoteCtrl) sessId
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -3770,10 +3785,10 @@ processChatCommand cxt nm = \case
     connectViaInvitation user@User {userId} incognito (CCLink cReq@(CRInvitationUri crData e2e) sLnk_) contactId_ =
       withInvitationLock "connect" (strEncode cReq) $ do
         subMode <- chatReadVar subscriptionMode
-        lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
+        lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
           Nothing -> throwChatError CEInvalidConnReq
           -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
-          Just (_, pqSup') -> do
+          Just _ -> do
             let chatV = initialChatVersion
             withFastStore' (\db -> getConnectionEntityByConnReq db cxt user cReqs) >>= \case
               Nothing -> joinNewConn chatV
@@ -3784,6 +3799,8 @@ processChatCommand cxt nm = \case
                     joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile)
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
+              -- all supported versions support PQ encryption
+              pqSup' = PQSupportOn
               joinNewConn chatV = do
                 -- [incognito] generate profile to send
                 incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -3930,10 +3947,7 @@ processChatCommand cxt nm = \case
           _ -> pure ()
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
-      -- 0) toggle disabled - PQSupportOff
-      -- 1) toggle enabled, address supports PQ (connRequestPQSupport returns Just True) - PQSupportOn, enable support with compression
-      -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
-      lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+      lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
         Just _ -> do
           let chatV = initialChatVersion
@@ -4263,7 +4277,7 @@ processChatCommand cxt nm = \case
         addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
         addRelay relay@UserChatRelay {address} = fmap (relay,) . tryAllErrors $ do
           (_, _, cReq) <- getShortLinkConnReq nm user address
-          lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+          lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
             Just _ -> do
               let chatV = initialChatVersion
@@ -4768,7 +4782,9 @@ processChatCommand cxt nm = \case
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, _), fInv_) -> do
                 (mc', quotedItem_) <- case (quotedItemId, itemForwarded) of
                   (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
-                  (Nothing, Just _) -> pure (mcForward mc, Nothing)
+                  (Nothing, Just ciff) -> do
+                    fl_ <- liftIO $ ciffForwardLink db ciff
+                    pure (mcForward fl_ mc, Nothing)
                   (Just qiId, Nothing) -> do
                     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
                       getDirectChatItem db user contactId qiId
@@ -5438,6 +5454,8 @@ chatCommandP =
       "/set receipts groups " *> (SetUserGroupReceipts <$> receiptSettings),
       "/_set accept member contacts " *> (APISetUserAutoAcceptMemberContacts <$> A.decimal <* A.space <*> onOffP),
       "/set accept member contacts " *> (SetUserAutoAcceptMemberContacts <$> onOffP),
+      "/_set accept group invitations " *> (APISetUserAutoAcceptGroupInvitations <$> A.decimal <* A.space <*> onOffP),
+      "/set accept group invitations " *> (SetUserAutoAcceptGroupInvitations <$> onOffP),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),

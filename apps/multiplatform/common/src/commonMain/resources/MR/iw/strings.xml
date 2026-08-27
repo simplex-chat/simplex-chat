@@ -1128,6 +1128,10 @@
     <string name="integrity_msg_skipped">%1$d הודעות שדולגו</string>
     <string name="custom_time_unit_weeks">שבועות</string>
     <string name="you_are_observer">הינך צופה</string>
+    <string name="connect_plan_you_are_observer">הינך צופה</string>
+    <string name="connect_plan_you_are_member">הינך חבר קבוצה</string>
+    <string name="connect_plan_you_are_admin">הינך מנהל</string>
+    <string name="connect_plan_you_are_owner">הינך בעלים</string>
     <string name="observer_cant_send_message_title">אין באפשרותך לשלוח הודעות!</string>
     <string name="icon_descr_video_snd_complete">סרטון נשלח</string>
     <string name="voice_message">הודעה קולית</string>
@@ -1291,7 +1295,7 @@
 \n- קבוצות קצת יותר טובות.
 \n- ועוד!</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר בכל פרופילי הצ\'אט הגלויים.</string>
-    <string name="receipts_section_description">הגדרות אלו מיועדות לפרופיל הנוכחי שלך</string>
+    <string name="these_settings_are_for_your_current_profile">הגדרות אלו מיועדות לפרופיל הנוכחי שלך</string>
     <string name="receipts_section_description_1">ניתן לעקוף אותם בהגדרות אנשי קשר וקבוצות.</string>
     <string name="receipts_contacts_override_disabled">שליחת קבלות מושבתת עבור %d אנשי קשר</string>
     <string name="receipts_contacts_override_enabled">שליחת קבלות מאופשרת עבור %d אנשי קשר</string>
@@ -1767,7 +1771,7 @@
     <string name="network_type_ethernet">חיבור קווי</string>
     <string name="network_type_cellular">סלולרי</string>
     <string name="saved_description">נשמר</string>
-    <string name="saved_from_description">נשמר מ%s</string>
+    <string name="saved_from">נשמר מ</string>
     <string name="forwarded_chat_item_info_tab">הועבר</string>
     <string name="forwarded_description">הועבר</string>
     <string name="settings_section_title_network_connection">מחובר לרשת</string>

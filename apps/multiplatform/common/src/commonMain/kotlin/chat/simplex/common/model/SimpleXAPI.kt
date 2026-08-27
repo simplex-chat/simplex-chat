@@ -941,6 +941,12 @@ object ChatController {
     throw Exception("failed to set auto-accept ${r.responseType} ${r.details}")
   }
 
+  suspend fun apiSetUserAutoAcceptGroupInvitations(u: User, enable: Boolean) {
+    val r = sendCmd(u.remoteHostId, CC.ApiSetUserAutoAcceptGroupInvitations(u.userId, enable))
+    if (r.result is CR.CmdOk) return
+    throw Exception("failed to set auto-accept group invitations ${r.responseType} ${r.details}")
+  }
+
   suspend fun apiHideUser(u: User, viewPwd: String): User =
     setUserPrivacy(u.remoteHostId, CC.ApiHideUser(u.userId, viewPwd))
 
@@ -3786,6 +3792,7 @@ sealed class CC {
   class ApiSetUserContactReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiSetUserGroupReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiSetUserAutoAcceptMemberContacts(val userId: Long, val enable: Boolean): CC()
+  class ApiSetUserAutoAcceptGroupInvitations(val userId: Long, val enable: Boolean): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
   class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
   class ApiMuteUser(val userId: Long): CC()
@@ -3977,6 +3984,7 @@ sealed class CC {
       "/_set receipts groups $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
     }
     is ApiSetUserAutoAcceptMemberContacts -> "/_set accept member contacts $userId ${onOff(enable)}"
+    is ApiSetUserAutoAcceptGroupInvitations -> "/_set accept group invitations $userId ${onOff(enable)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
     is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
     is ApiMuteUser -> "/_mute user $userId"
@@ -4192,6 +4200,7 @@ sealed class CC {
     is ApiSetUserContactReceipts -> "apiSetUserContactReceipts"
     is ApiSetUserGroupReceipts -> "apiSetUserGroupReceipts"
     is ApiSetUserAutoAcceptMemberContacts -> "apiSetUserAutoAcceptMemberContacts"
+    is ApiSetUserAutoAcceptGroupInvitations -> "apiSetUserAutoAcceptGroupInvitations"
     is ApiHideUser -> "apiHideUser"
     is ApiUnhideUser -> "apiUnhideUser"
     is ApiMuteUser -> "apiMuteUser"

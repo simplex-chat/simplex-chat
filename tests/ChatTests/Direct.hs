@@ -2927,7 +2927,7 @@ testSwitchContact =
 
 testAbortSwitchContact :: HasCallStack => TestParams -> IO ()
 testAbortSwitchContact ps = do
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  withNewTestChatCfg ps testCfgVPrev "alice" aliceProfile $ \alice -> do
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       connectUsers alice bob
     alice #$> ("/switch bob", id, "switch started")
@@ -2974,7 +2974,7 @@ testSwitchGroupMember =
 
 testAbortSwitchGroupMember :: HasCallStack => TestParams -> IO ()
 testAbortSwitchGroupMember ps = do
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  withNewTestChatCfg ps testCfgVPrev "alice" aliceProfile $ \alice -> do
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
     alice #$> ("/switch #team bob", id, "switch started")

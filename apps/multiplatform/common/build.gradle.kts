@@ -72,7 +72,6 @@ kotlin {
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
         implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
-        implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
         api("org.boofcv:boofcv-core:1.1.3")
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
@@ -148,8 +147,7 @@ kotlin {
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("net.java.dev.jna:jna:5.14.0")
-        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf")
-        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf")
+        implementation(project(":external:nanohttpd"))
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
       }
     }
@@ -189,7 +187,6 @@ buildConfig {
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
     buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
-    buildConfigField("Boolean", "ANDROID_BUNDLE", "${extra["android.bundle"]}")
     buildConfigField("Boolean", "SIMPLEX_ASSETS", "$hasSimplexAssets")
   }
 }

@@ -803,10 +803,14 @@ export namespace CIFileStatus {
   }
 }
 
-export type CIForwardedFrom = CIForwardedFrom.Unknown | CIForwardedFrom.Contact | CIForwardedFrom.Group
+export type CIForwardedFrom = 
+  | CIForwardedFrom.Unknown
+  | CIForwardedFrom.Contact
+  | CIForwardedFrom.Group
+  | CIForwardedFrom.GroupLink
 
 export namespace CIForwardedFrom {
-  export type Tag = "unknown" | "contact" | "group"
+  export type Tag = "unknown" | "contact" | "group" | "groupLink"
 
   interface Interface {
     type: Tag
@@ -830,6 +834,20 @@ export namespace CIForwardedFrom {
     msgDir: MsgDirection
     groupId?: number // int64
     chatItemId?: number // int64
+    memberId?: string
+    sharedMsgId_?: string
+    groupType?: GroupType
+  }
+
+  export interface GroupLink extends Interface {
+    type: "groupLink"
+    chatName: string
+    msgDir: MsgDirection
+    groupLink: string
+    publicGroupId: string
+    memberId?: string
+    sharedMsgId: string
+    groupType?: GroupType
   }
 }
 
@@ -3984,6 +4002,7 @@ export namespace SMPAgentError {
 
   export interface A_MESSAGE extends Interface {
     type: "A_MESSAGE"
+    messageErr: string
   }
 
   export interface A_PROHIBITED extends Interface {
@@ -5042,6 +5061,7 @@ export interface User {
   sendRcptsContacts: boolean
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
+  autoAcceptGroupInvitations: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
   userChatRelay: boolean
   clientService: boolean

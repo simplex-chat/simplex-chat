@@ -3054,6 +3054,18 @@ server test failure */
 /* No comment provided by engineer. */
 "you are observer" = "คุณเป็นผู้สังเกตการณ์";
 
+/* new chat alert */
+"You are an observer" = "คุณเป็นผู้สังเกตการณ์";
+
+/* new chat alert */
+"You are a member" = "คุณเป็นสมาชิก";
+
+/* new chat alert */
+"You are an admin" = "คุณเป็นผู้ดูแลระบบ";
+
+/* new chat alert */
+"You are an owner" = "คุณเป็นเจ้าของ";
+
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "คุณสามารถรับสายจากหน้าจอล็อกโดยไม่ต้องมีการตรวจสอบสิทธิ์อุปกรณ์และแอป";
 

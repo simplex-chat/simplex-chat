@@ -97,7 +97,7 @@ runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatR
       waitEither_ a1 a2
 
 sendChatCmdStr :: ChatController -> String -> IO (Either ChatError ChatResponse)
-sendChatCmdStr cc s = runReaderT (execChatCommand Nothing (encodeUtf8 $ T.pack s) 0) cc
+sendChatCmdStr cc s = runReaderT (execChatCommand CSLocal (encodeUtf8 $ T.pack s) 0) cc
 
 sendChatCmd :: ChatController -> ChatCommand -> IO (Either ChatError ChatResponse)
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd 0) cc

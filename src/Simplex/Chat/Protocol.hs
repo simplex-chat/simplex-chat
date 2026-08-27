@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -687,7 +688,17 @@ data MsgContainer = MsgContainer
     asGroup :: Maybe Bool,
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
-    forward :: Maybe Bool
+    forward :: Maybe Bool,
+    forwardLink :: Maybe ForwardLink
+  }
+  deriving (Eq, Show)
+
+data ForwardLink = ForwardLink
+  { displayName :: Text,
+    groupLink :: ShortLinkContact,
+    publicGroupId :: B64UrlByteString,
+    memberId :: Maybe MemberId,
+    msgId :: SharedMsgId
   }
   deriving (Eq, Show)
 
@@ -703,7 +714,8 @@ mcSimple content =
       asGroup = Nothing,
       quote = Nothing,
       parent = Nothing,
-      forward = Nothing
+      forward = Nothing,
+      forwardLink = Nothing
     }
 
 mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
@@ -712,8 +724,8 @@ mcQuote q c = (mcSimple c) {quote = Just q}
 mcComment :: MsgRef -> MsgContent -> MsgContainer
 mcComment p c = (mcSimple c) {parent = Just p}
 
-mcForward :: MsgContent -> MsgContainer
-mcForward c = (mcSimple c) {forward = Just True}
+mcForward :: Maybe ForwardLink -> MsgContent -> MsgContainer
+mcForward fl c = (mcSimple c) {forward = Just True, forwardLink = fl}
 
 data MsgContent
   = MCText {text :: Text}
@@ -895,6 +907,8 @@ instance ToJSON MsgContent where
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
     MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
 
+$(JQ.deriveJSON defaultJSON ''ForwardLink)
+
 $(JQ.deriveJSON defaultJSON ''MsgContainer)
 
 -- this limit reserves space for metadata in forwarded messages
@@ -908,6 +922,10 @@ maxCompressedMsgLength = 13380
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
+
+-- Applies to all batch formats; 255 is the maximum for the 1-byte count in the binary batch format.
+maxBatchElementCount :: Int
+maxBatchElementCount = 255
 
 -- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
 -- promotion cap over the promoted (member/moderator/admin) set.
@@ -953,10 +971,17 @@ encodeChatMessage maxSize msg = do
 
 parseChatMessages :: ByteString -> [Either String AParsedMsg]
 parseChatMessages "" = [Left "empty string"]
-parseChatMessages msg = case B.head msg of
+parseChatMessages msg = checkBatchLimit $ case B.head msg of
   'X' -> decodeCompressed (B.tail msg)
   c -> parseUncompressed c msg
   where
+    checkBatchLimit ms
+      | ms `lengthLE` maxBatchElementCount = ms
+      | otherwise = [Left "too many messages in batch"]
+    -- defined prefix: GHC 8.10 does not parse a bang operand in an infix definition
+    lengthLE :: [a] -> Int -> Bool
+    lengthLE [] !n = n >= 0
+    lengthLE (_ : xs) !n = n > 0 && lengthLE xs (n - 1)
     parseUncompressed c s = case c of
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map (fmap plainMsg . parseItem) v

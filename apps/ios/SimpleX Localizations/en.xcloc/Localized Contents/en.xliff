@@ -2525,9 +2525,9 @@ This is your own one-time link!</target>
         <target>Contact preferences</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact requests from groups" xml:space="preserve">
-        <source>Contact requests from groups</source>
-        <target>Contact requests from groups</target>
+      <trans-unit id="Contact requests in groups" xml:space="preserve">
+        <source>Contact requests in groups</source>
+        <target>Contact requests in groups</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -2713,6 +2713,16 @@ This is your own one-time link!</target>
       <trans-unit id="Creating link…" xml:space="preserve">
         <source>Creating link…</source>
         <target>Creating link…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
+        <source>Crowdfunding on Wefunder</source>
+        <target>Crowdfunding on Wefunder</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
+        <source>Crowdfunding on Wefunder.</source>
+        <target>Crowdfunding on Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -4768,6 +4778,11 @@ Error: %2$@</target>
       <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve">
         <source>Group invitation is no longer valid, it was removed by sender.</source>
         <target>Group invitation is no longer valid, it was removed by sender.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group invitations" xml:space="preserve">
+        <source>Group invitations</source>
+        <target>Group invitations</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -9734,11 +9749,6 @@ alert subtitle</note>
         <target>This setting applies to messages in your current chat profile **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
-        <source>This setting is for your current profile **%@**.</source>
-        <target>This setting is for your current profile **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
         <source>Time to disappear is set only for new contacts.</source>
         <target>Time to disappear is set only for new contacts.</target>
@@ -10768,6 +10778,16 @@ Repeat join request?</target>
         <source>You can now chat with %@</source>
         <target>You can now chat with %@</target>
         <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
+        <source>You can now invest in SimpleX Chat</source>
+        <target>You can now invest in SimpleX Chat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
+        <source>You can now invest in SimpleX Chat! 🚀</source>
+        <target>You can now invest in SimpleX Chat! 🚀</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
         <source>You can send messages to %@ from Archived contacts.</source>

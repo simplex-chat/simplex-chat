@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright_cache/
+
+.venv/
+.venv-*/
+venv/
+
+config.toml
+.env
+*.db
+*.db-*
+
+# Tracked as an empty directory: Docker creates a missing bind-mount source as
+# root, which the unprivileged bot user cannot write to.
+state/*
+!state/.gitkeep
+
+bot-config/*.png
+bot-config/*.jpg
+bot-config/*.jpeg

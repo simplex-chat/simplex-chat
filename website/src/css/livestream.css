@@ -1,0 +1,294 @@
+.footer.page {
+    scroll-snap-align: end;
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+}
+
+.livestream {
+    --art-edge: 62.5;
+    --split: 56;
+    --gutter: 4;
+    background-image: url("/img/design_3/section-4-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: calc(50% - var(--sec-vwu) * (var(--art-edge) - var(--split))) center;
+    background-repeat: no-repeat;
+}
+
+.dark .livestream {
+    background-image: url("/img/design_3/section-4-desktop.webp");
+}
+
+.livestream .text-container {
+    --text-col: calc(var(--sec-vwu) * (92.5 - var(--split) - var(--gutter)));
+    --block-gap: calc(var(--sec-vhu) * 4);
+    margin-left: auto;
+    gap: var(--block-gap);
+}
+
+.livestream .text-container .event-time {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--block-gap) * 0.3);
+}
+
+.livestream .text-container h1 {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 400;
+    font-size: calc(var(--sec-vwu) * 3.6);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    max-width: var(--text-col);
+    color: #023789;
+}
+
+.dark .livestream .text-container h1 {
+    color: #ffffff;
+}
+
+.livestream .text-container .subtitle {
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    font-size: calc(var(--sec-vwu) * 1.6);
+    line-height: 1.4;
+    max-width: var(--text-col);
+    color: #000000;
+}
+
+.dark .livestream .text-container .subtitle {
+    color: #ffffff;
+}
+
+.livestream .text-container .event-utc,
+.livestream .text-container .event-local {
+    font-family: "Manrope", sans-serif;
+    font-weight: 300;
+    font-size: calc(var(--sec-vwu) * 1.4);
+    line-height: 1.3;
+    max-width: var(--text-col);
+    color: #000000;
+}
+
+.dark .livestream .text-container .event-utc {
+    color: #ffffff;
+}
+
+.livestream .text-container .event-local {
+    font-size: calc(var(--sec-vwu) * 1.3);
+    color: #009df7;
+}
+
+.dark .livestream .text-container .event-local {
+    color: #64fdff;
+}
+
+.livestream .text-container .actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(var(--block-gap) * 0.4);
+    margin-top: calc(var(--block-gap) * 0.5);
+}
+
+.livestream .text-container .invest-link {
+    max-width: none;
+    font-size: calc(var(--sec-vwu) * 1.35);
+}
+
+.livestream .text-container .register-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: none;
+    padding: calc(var(--sec-vhu) * 1.3) calc(var(--sec-vwu) * 2.4);
+    border-radius: 9999px;
+    background: #0053d0;
+    color: #ffffff;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    font-size: calc(var(--sec-vwu) * 1.35);
+    text-decoration: none;
+}
+
+.dark .livestream .text-container .register-btn {
+    background: #70f0f9;
+    color: #000000;
+}
+
+@media screen and (max-width: 959px) {
+    .livestream {
+        background-image: url("/img/design_3/section-4-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.78);
+        background-position: 50% calc(50% - calc(var(--sec-vhu) * 16)) !important;
+    }
+
+    .chrome-ios .livestream,
+    .safari-ios .livestream {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 16) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .livestream {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 16) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .livestream {
+        background-image: url("/img/design_3/section-4-mobile.webp");
+    }
+
+    .livestream .text-container {
+        --block-gap: calc(var(--sec-vhu) * 3.4);
+        padding-bottom: calc(var(--sec-vwu) * 16);
+    }
+
+    .livestream .text-container h1 {
+        font-size: calc(var(--sec-vwu) * 8.2);
+        max-width: calc(var(--sec-vwu) * 80);
+    }
+
+    .livestream .text-container .subtitle {
+        font-weight: 400;
+        font-size: calc(var(--sec-vwu) * 4.2);
+        max-width: calc(var(--sec-vwu) * 80);
+    }
+
+    .livestream .text-container .event-utc,
+    .livestream .text-container .event-local {
+        font-size: calc(var(--sec-vwu) * 3.9);
+        max-width: calc(var(--sec-vwu) * 80);
+    }
+
+    .livestream .text-container .event-local {
+        font-size: calc(var(--sec-vwu) * 3.3);
+    }
+
+    .livestream .text-container .register-btn {
+        padding: calc(var(--sec-vhu) * 1.4) calc(var(--sec-vwu) * 5);
+        font-size: calc(var(--sec-vwu) * 3.7);
+    }
+
+    .livestream .text-container .invest-link {
+        font-size: calc(var(--sec-vwu) * 3.4);
+    }
+}
+
+.register-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(3, 12, 40, 0.6);
+}
+
+.register-overlay.open {
+    display: flex;
+}
+
+.register-card {
+    position: relative;
+    width: 100%;
+    max-width: 580px;
+    padding: 48px 44px 44px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dark .register-card {
+    background: #071c46;
+}
+
+.register-card h2 {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 500;
+    font-size: 28px;
+    line-height: 1.2;
+    color: #023789;
+}
+
+.dark .register-card h2 {
+    color: #ffffff;
+}
+
+.register-card p {
+    margin-top: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #3f484b;
+}
+
+.dark .register-card p {
+    color: #ffffff;
+}
+
+.register-card form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.register-card input[type="email"] {
+    flex: 1;
+    min-width: 260px;
+    height: 52px;
+    padding: 0 22px;
+    border: 1px solid #0053d0;
+    border-radius: 9999px;
+    background: transparent;
+    font-family: "Manrope", sans-serif;
+    font-size: 16px;
+    color: #0d0e12;
+}
+
+.dark .register-card input[type="email"] {
+    border-color: #70f0f9;
+    color: #ffffff;
+}
+
+.register-card .bot-field {
+    position: absolute;
+    left: -5000px;
+}
+
+.register-card input[type="submit"] {
+    height: 52px;
+    padding: 0 34px;
+    border: none;
+    border-radius: 9999px;
+    background: #0053d0;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.dark .register-card input[type="submit"] {
+    background: #70f0f9;
+    color: #000000;
+}
+
+.register-card .close-register {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    line-height: 0;
+}
+
+.register-card .close-register svg {
+    width: 13px;
+    height: auto;
+    fill: #023789;
+}
+
+.dark .register-card .close-register svg {
+    fill: #ffffff;
+}

@@ -4411,7 +4411,7 @@ chat item action */
 "Saved from" = "Opgeslagen van";
 
 /* No comment provided by engineer. */
-"saved from %@" = "opgeslagen van %@";
+"saved from" = "opgeslagen van";
 
 /* message info title */
 "Saved message" = "Opgeslagen bericht";
@@ -5738,6 +5738,21 @@ server test failure */
 
 /* No comment provided by engineer. */
 "you are observer" = "je bent waarnemer";
+
+/* new chat alert */
+"You are an observer" = "Je bent waarnemer";
+
+/* new chat alert */
+"You are a member" = "Je bent lid";
+
+/* new chat alert */
+"You are a moderator" = "Je bent moderator";
+
+/* new chat alert */
+"You are an admin" = "Je bent beheerder";
+
+/* new chat alert */
+"You are an owner" = "Je bent eigenaar";
 
 /* snd group event chat item */
 "you blocked %@" = "je hebt %@ geblokkeerd";

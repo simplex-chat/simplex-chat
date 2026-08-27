@@ -208,7 +208,9 @@ prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowG
 prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
   (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of
     (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
-    (Nothing, Just _) -> pure (mcForward mc, Nothing)
+    (Nothing, Just ciff) -> do
+      fl_ <- liftIO $ ciffForwardLink db ciff
+      pure (mcForward fl_ mc, Nothing)
     (Just quotedItemId, Nothing) -> do
       CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
         getGroupCIWithReactions db user g quotedItemId
@@ -230,6 +232,56 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
     quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, Just m)
     quoteData ChatItem {chatDir = CIChannelRcv, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv Nothing, False, Nothing)
     quoteData _ _ = throwError SEInvalidQuote
+
+-- re-forwarded message is attributed to the original source
+ciffForwardLink :: DB.Connection -> CIForwardedFrom -> IO (Maybe ForwardLink)
+ciffForwardLink db = \case
+  CIFFGroup {groupId = Just gId, memberId, sharedMsgId_ = Just msgId} ->
+    getGroupProfileById db gId >>= \case
+      Just GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink, publicGroupId}} ->
+        pure $ Just ForwardLink {displayName, groupLink, publicGroupId, memberId, msgId}
+      _ -> pure Nothing
+  CIFFGroupLink {chatName, groupLink, publicGroupId, memberId, sharedMsgId} ->
+    pure $ Just ForwardLink {displayName = chatName, groupLink, publicGroupId, memberId, msgId = sharedMsgId}
+  _ -> pure Nothing
+
+rcvForwardedFrom :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> IO (Maybe CIForwardedFrom)
+rcvForwardedFrom db user chatDirection RcvMessage {chatMsgEvent} = case chatMsgEvent of
+  ACME _ (XMsgNew MsgContainer {forward = Just True, forwardLink}) -> case forwardLink of
+    Nothing -> pure $ Just CIFFUnknown
+    Just fl@ForwardLink {displayName}
+      | linkAllowed -> Just <$> forwardLinkCIFF db user fl
+      | otherwise -> pure $ Just $ CIFFGroup displayName MDRcv Nothing Nothing Nothing Nothing Nothing
+  _ -> pure Nothing
+  where
+    linkAllowed = case chatDirection of
+      CDGroupRcv gInfo _ GroupMember {memberRole} -> allowed memberRole gInfo
+      CDChannelRcv gInfo _ -> allowed GROwner gInfo
+      _ -> True
+      where
+        allowed role = groupFeatureMemberAllowed' SGFSimplexLinks role . fullGroupPreferences
+
+forwardLinkCIFF :: DB.Connection -> User -> ForwardLink -> IO CIForwardedFrom
+forwardLinkCIFF db user ForwardLink {displayName, groupLink, publicGroupId, memberId, msgId} =
+  getGroupViaPublicGroupId db user publicGroupId >>= \case
+    Just (gId, Just storedLink)
+      | sameShortLinkContact groupLink storedLink -> do
+          ciId_ <- itemId_ gId
+          pure $ CIFFGroup displayName MDRcv (Just gId) ciId_ memberId (Just msgId) linkGroupType
+    _ -> pure $ CIFFGroupLink displayName MDRcv groupLink publicGroupId memberId msgId linkGroupType
+  where
+    linkGroupType = case groupLink of
+      CSLContact _ CCTChannel _ _ -> Just GTChannel
+      CSLContact _ CCTGroup _ _ -> Just GTGroup
+      _ -> Nothing
+    itemId_ gId = case memberId of
+      Nothing -> getGroupChatItemBySharedMsgId_ db user gId Nothing msgId
+      Just mId ->
+        getGroupMemberViaMemberId_ db user gId mId >>= \case
+          Just (gmId, category) ->
+            let scope = if category == GCUserMember then Nothing else Just gmId
+             in getGroupChatItemBySharedMsgId_ db user gId scope msgId
+          Nothing -> pure Nothing
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
 updatedMentionNames mc ft_ mentions = case ft_ of
@@ -2767,7 +2819,8 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
         else pure $ toChatInfo cd
     let showAsGroup = case cd of CDChannelRcv {} -> True; _ -> False
         hasLink_ = ciContentHasLink content ft_
-    (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention hasLink_ brokerTs createdAt
+    itemForwarded <- rcvForwardedFrom db user cd msg
+    (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemForwarded itemTimed live userMention hasLink_ brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     let ci = mkChatItem_ cd showAsGroup ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention hasLink_ brokerTs forwardedByMember (toMsgVerified (signMessagesRequired cd) msgSigned) createdAt
     ci' <- case toChatInfo cd of
@@ -2940,8 +2993,7 @@ connRequestPQEncryption = \case
   CRContactUri _ rks -> pqEnc . snd <$> rks
   CRInvitationUri _ e2e -> Just $ pqEnc e2e
   where
-    pqEnc (CR.E2ERatchetParamsUri vr' _ _ pq) =
-      PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
+    pqEnc (CR.E2ERatchetParamsUri _ _ _ pq) = PQEncryption $ isJust pq
 
 createRcvFeatureItems :: User -> Contact -> Contact -> CM' ()
 createRcvFeatureItems user ct ct' =

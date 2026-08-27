@@ -353,7 +353,7 @@ chatSendCmd cc cmd = chatSendRemoteCmdRetry cc Nothing cmd 0
 {-# INLINE chatSendCmd #-}
 
 chatSendRemoteCmdRetry :: ChatController -> Maybe RemoteHostId -> B.ByteString -> Int -> IO JSONByteString
-chatSendRemoteCmdRetry cc rh s retryNum = J.encode . eitherToResult rh <$> runReaderT (execChatCommand rh s retryNum) cc
+chatSendRemoteCmdRetry cc rh s retryNum = J.encode . eitherToResult rh <$> runReaderT (execChatCommand (maybe CSLocal CSRemoteHost rh) s retryNum) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = J.encode . uncurry eitherToResult <$> readChatResponse

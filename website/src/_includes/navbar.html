@@ -110,11 +110,11 @@
 
             <hr>
 
-            <!-- <li class="nav-link {% if active_links %}active{% endif %}">
+            <li class="nav-link {% if active_links %}active{% endif %}">
                 <a href="/links">
                     <span class="nav-link-text">{{ "links" | i18n({}, lang ) | safe }}</span>
                 </a>
-            </li> -->
+            </li>
 
             <li class="nav-link {% if active_blog %}active{% endif %}">
                 <a href="/blog">
@@ -125,9 +125,9 @@
     </nav>
 
     <div class="right-links">
-        {% if ('donate' not in page.url) %}
-            <a class="box-btn token md:hidden" href="/donate">
-                {{ 'donate' | i18n({}, lang) }}
+        {% if ('/crowdfunding/' not in page.url) %}
+            <a class="box-btn token md:hidden" href="/crowdfunding/">
+                {{ 'invest' | i18n({}, lang) }}
             </a>
         {% endif %}
         <button href="#" class="theme-switch-btn">
@@ -148,7 +148,7 @@
             </svg>
         </button>
 
-        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('credits' not in page.url) and ('file' not in page.url) and ('links' not in page.url) and ('news' not in page.url) %}
+        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('credits' not in page.url) and ('file' not in page.url) and ('links' not in page.url) and ('news' not in page.url) and ('crowdfunding' not in page.url) and ('livestream' not in page.url) %}
         <div class="nav-link flag-container">
             <a href="javascript:void(0);">
                 {% for language in languages.languages %}

@@ -302,6 +302,10 @@ func apiSetUserAutoAcceptMemberContacts(_ userId: Int64, enable: Bool) async thr
     try await sendCommandOkResp(.apiSetUserAutoAcceptMemberContacts(userId: userId, enable: enable))
 }
 
+func apiSetUserAutoAcceptGroupInvitations(_ userId: Int64, enable: Bool) async throws {
+    try await sendCommandOkResp(.apiSetUserAutoAcceptGroupInvitations(userId: userId, enable: enable))
+}
+
 func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }

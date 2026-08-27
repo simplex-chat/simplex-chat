@@ -23,7 +23,8 @@
     "smp-protocol": "SMP protocol",
     "chat-protocol": "Chat protocol",
     "donate": "Donate",
-    "copyright-label": "© 2020-2025 SimpleX Chat | Open-Source Project",
+    "invest": "Invest",
+    "copyright-label": "© 2020-2026 SimpleX Chat | Open-Source Project",
     "simplex-chat-protocol": "SimpleX Chat protocol",
     "terminal-cli": "Terminal CLI",
     "about-and-contact-us": "About & Contact us",
@@ -289,6 +290,8 @@
     "index-token-p1": "To stay independent, large channels and communities will pay for their servers.",
     "index-token-p2": "This will cover infrastructure, software development and network governance.",
     "index-token-cta": "Learn more about Community Credits",
+    "index-token-p2-cf": "And the users can now invest in SimpleX Chat &mdash; the equity crowdfunding is live!",
+    "index-token-cta-cf": "Get a stake in SimpleX Chat",
     "index-roadmap-h2": "SimpleX Roadmap to Free Internet",
     "index-roadmap-now": "Now",
     "index-roadmap-1": "2026",
@@ -372,7 +375,7 @@
     "file-proto-h-4": "Independent data routers",
     "file-proto-p-4": "When file is split to fragments, it is sent via network routers operated by independent parties. No operator can see the actual file size or name. Even if a router is compromised, it can only see encrypted fragments of fixed size. File fragments are cached by network routers for approximately 48 hours.",
     "file-proto-spec": "Read the XFTP protocol specification →",
-    "links": "Links",
+    "links": "Community",
     "links-title": "Community Links",
     "links-all-languages": "All languages"
 }

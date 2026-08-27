@@ -1573,7 +1573,7 @@
     <string name="note_folder_local_display_name">Notes privades</string>
     <string name="receiving_files_not_yet_supported">la recepció de fitxers encara no està suportada</string>
     <string name="display_name_requested_to_connect">sol·licitada connexió</string>
-    <string name="saved_from_description">desat des de %s</string>
+    <string name="saved_from">desat des de</string>
     <string name="simplex_link_contact">Adreça de contacte SimpleX</string>
     <string name="simplex_link_group">Enllaç de grup SimpleX</string>
     <string name="simplex_link_mode">Enllaços SimpleX</string>
@@ -1715,6 +1715,11 @@
     <string name="image_decoding_exception_desc">La imatge no es pot descodificar. Si us plau, proveu amb una imatge diferent o contacteu amb els desenvolupadors.</string>
     <string name="video_decoding_exception_desc">El vídeo no es pot descodificar. Si us plau, prova amb un vídeo diferent o contacta amb els desenvolupadors.</string>
     <string name="you_are_observer">ets observador</string>
+    <string name="connect_plan_you_are_observer">Ets observador</string>
+    <string name="connect_plan_you_are_member">Ets membre</string>
+    <string name="connect_plan_you_are_moderator">Ets moderador</string>
+    <string name="connect_plan_you_are_admin">Ets administrador</string>
+    <string name="connect_plan_you_are_owner">Ets propietari</string>
     <string name="observer_cant_send_message_title">ets observador(a)</string>
     <string name="observer_cant_send_message_desc">Poseu-vos en contacte amb l\'administrador del grup.</string>
     <string name="only_owners_can_enable_files_and_media">Només els propietaris del grup poden activar fitxers i mitjans.</string>
@@ -1946,7 +1951,7 @@
     <string name="if_you_enter_passcode_data_removed">Si introduïu aquesta contrasenya en obrir l\'aplicació, totes les dades de l\'aplicació s\'eliminaran de manera irreversible.</string>
     <string name="if_you_enter_self_destruct_code">Si introduïu el vostre codi d\'autodestrucció mentre obriu l\'aplicació:</string>
     <string name="set_passcode">Estableix codi</string>
-    <string name="receipts_section_description">Aquesta configuració és per al vostre perfil actual</string>
+    <string name="these_settings_are_for_your_current_profile">Aquesta configuració és per al vostre perfil actual</string>
     <string name="receipts_section_description_1">Es pot canviar a la configuració de contacte i grup.</string>
     <string name="privacy_media_blur_radius_off">No</string>
     <string name="settings_section_title_settings">Configuració</string>

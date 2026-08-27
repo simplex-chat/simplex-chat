@@ -210,7 +210,7 @@ fun CIImageView(
     val loaded = res.value
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
     } else {
       imageView(previewBitmap, onClick = {
         if (file != null) {
@@ -281,5 +281,6 @@ expect fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  blurred: State<Boolean>,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 )

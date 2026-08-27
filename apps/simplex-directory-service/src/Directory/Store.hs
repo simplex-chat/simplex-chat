@@ -33,12 +33,11 @@ module Directory.Store
     getAllGroupRegs_,
     getDuplicateGroupRegs,
     getGroupReg,
-    getGroupAndReg,
+    getGroupAndRegLink,
     listLastGroups,
     listPendingGroups,
     getAllListedGroups,
     getAllListedGroups_,
-    getGroupLinks,
     searchListedGroups,
     verifiedGroupDomain,
     groupRegStatusText,
@@ -77,7 +76,8 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (SimplexDomain)
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SimplexDomain)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
@@ -309,11 +309,11 @@ getGroupReg_ db gId =
       |]
       (Only gId)
 
-getGroupAndReg :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupReg))
-getGroupAndReg cc user@User {userId, userContactId} gId =
-  withDB "getGroupAndReg" cc $ \db -> do
+getGroupAndRegLink :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupReg, Maybe GroupLink))
+getGroupAndRegLink cc user@User {userId, userContactId} gId =
+  withDB "getGroupAndRegLink" cc $ \db -> do
     currentTs <- liftIO getCurrentTime
-    ExceptT $ firstRow (toGroupInfoReg currentTs (storeCxt cc) user) ("group " ++ show gId ++ " not found") $
+    ExceptT $ firstRow (toGroupInfoRegLink currentTs (storeCxt cc) user) ("group " ++ show gId ++ " not found") $
       DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
 
 getUserGroupReg :: ChatController -> User -> ContactId -> UserGroupRegId -> IO (Either String (GroupInfo, GroupReg))
@@ -336,18 +336,10 @@ getAllListedGroups cc user = withDB' "getAllListedGroups" cc $ \db -> getAllList
 getAllListedGroups_ :: DB.Connection -> StoreCxt -> User -> IO [(GroupInfo, GroupReg, Maybe GroupLink)]
 getAllListedGroups_ db cxt user@User {userId, userContactId} = do
   currentTs <- getCurrentTime
-  DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
-    >>= mapM (withGroupLink . toGroupInfoReg currentTs cxt user)
-  where
-    withGroupLink (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
+  map (toGroupInfoRegLink currentTs cxt user)
+    <$> DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
 
--- only the RPC search needs links, so they are read for the returned page rather than in the search query
-getGroupLinks :: ChatController -> User -> [GroupInfo] -> IO (Either String [Maybe GroupLink])
-getGroupLinks cc user gs =
-  withDB' "getGroupLinks" cc $ \db ->
-    mapM (\g -> eitherToMaybe <$> runExceptT (getGroupLink db user g)) gs
-
-searchListedGroups :: ChatController -> User -> SearchType -> Maybe SearchCursor -> Int -> IO (Either String ([(GroupInfo, GroupReg)], Int))
+searchListedGroups :: ChatController -> User -> SearchType -> Maybe SearchCursor -> Int -> IO (Either String ([(GroupInfo, GroupReg, Maybe GroupLink)], Int))
 searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageSize =
   withDB' "searchListedGroups" cc $ \db -> do
     currentTs <- getCurrentTime
@@ -391,7 +383,7 @@ searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageS
             _ -> s
           countQuery' = countQuery <> " JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE r.group_reg_status = ? "
   where
-    groups currentTs = (map (toGroupInfoReg currentTs (storeCxt cc) user) <$>)
+    groups currentTs = (map (toGroupInfoRegLink currentTs (storeCxt cc) user) <$>)
     count = maybeFirstRow' 0 fromOnly
     listedGroupQuery = groupReqQuery <> " AND r.group_reg_status = ? "
     countQuery = "SELECT COUNT(1) FROM groups g JOIN sx_directory_group_regs r ON g.group_id = r.group_id "
@@ -444,9 +436,12 @@ listPendingGroups cc user@User {userId, userContactId} count =
     n <- maybeFirstRow' 0 fromOnly $ DB.query_ db "SELECT COUNT(1) FROM sx_directory_group_regs WHERE group_reg_status LIKE 'pending_approval%'"
     pure (gs, n)
 
-toGroupInfoReg :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow) -> (GroupInfo, GroupReg)
-toGroupInfoReg currentTs cxt User {userContactId} (groupRow :. grRow) =
-  (toGroupInfo currentTs cxt userContactId [] groupRow, rowToGroupReg grRow)
+toGroupInfoReg :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupReg)
+toGroupInfoReg currentTs cxt user row = let (g, gr, _) = toGroupInfoRegLink currentTs cxt user row in (g, gr)
+
+toGroupInfoRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupReg, Maybe GroupLink)
+toGroupInfoRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
+  (toGroupInfo currentTs cxt userContactId [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
 
 type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, UTCTime)
 
@@ -454,10 +449,30 @@ rowToGroupReg :: GroupRegRow -> GroupReg
 rowToGroupReg (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, BI promoted, createdAt) =
   GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt}
 
+type GroupLinkRow = (Maybe Int64, Maybe ConnReqContact, Maybe ShortLinkContact, Maybe BoolInt, Maybe BoolInt, Maybe GroupLinkId, Maybe GroupMemberRole)
+
+toMaybeGroupLink :: GroupLinkRow -> Maybe GroupLink
+toMaybeGroupLink (Just userContactLinkId, Just cReq, shortLink, slDataSet, slLarge, Just groupLinkId, mRole_) =
+  Just
+    GroupLink
+      { userContactLinkId,
+        connLinkContact = CCLink cReq shortLink,
+        shortLinkDataSet = boolInt slDataSet,
+        shortLinkLargeDataSet = BoolDef $ boolInt slLarge,
+        groupLinkId,
+        acceptMemberRole = fromMaybe GRMember mRole_
+      }
+  where
+    boolInt = maybe False (\(BI b) -> b)
+toMaybeGroupLink _ = Nothing
+
+-- group with its registration and its join link (user_contact_links) in one query
 groupReqQuery :: Query
-groupReqQuery = groupInfoQueryFields <> groupRegFields <> groupInfoQueryFrom <> groupRegFromCond
+groupReqQuery = groupInfoQueryFields <> groupRegFields <> groupLinkFields <> groupInfoQueryFrom <> groupLinkJoin <> groupRegFromCond
   where
     groupRegFields = ", r.group_id, r.user_group_reg_id, r.contact_id, r.owner_member_id, r.group_reg_status, r.group_promoted, r.created_at "
+    groupLinkFields = ", uc.user_contact_link_id, uc.conn_req_contact, uc.short_link_contact, uc.short_link_data_set, uc.short_link_large_data_set, uc.group_link_id, uc.group_link_member_role "
+    groupLinkJoin = " LEFT JOIN user_contact_links uc ON uc.group_id = g.group_id AND uc.user_id = g.user_id "
     groupRegFromCond = " JOIN sx_directory_group_regs r ON r.group_id = g.group_id WHERE g.user_id = ? AND mu.contact_id = ? "
 
 instance StrEncoding GroupRegStatus where
