@@ -2,7 +2,7 @@
 // with `npm test` (node's built-in runner — no dependency, decision 7).
 //
 // These run against dist/, not src/, so they test what a browser is served.
-// Run `npm run build` first; `npm test` does not compile.
+// `npm test` compiles first, so the suite can never pass against a stale build.
 
 import test from "node:test"
 import assert from "node:assert/strict"

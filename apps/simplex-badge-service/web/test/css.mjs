@@ -31,12 +31,13 @@ export function stripComments(css) {
 }
 
 /**
- * Every style rule in the sheet, in document order, as
- * `{selector, body, start, at}` — `at` being the preludes of the at-rules
- * enclosing it, outermost first, and `start` the offset of its selector in the
- * sheet as a whole. Keyframe blocks are skipped: `from`/`to` are not selectors.
+ * Every style rule in the sheet, in document order, as `{selector, body, at}`
+ * — `at` being the preludes of the at-rules enclosing it, outermost first.
+ * Position in the returned array *is* document order, which is what the
+ * cascade needs; no offset is carried, because nothing would read it.
+ * Keyframe blocks are skipped: `from`/`to` are not selectors.
  */
-export function allRules(css, at = [], base = 0) {
+export function allRules(css, at = []) {
   const found = []
   let i = 0
   while (i < css.length) {
@@ -51,11 +52,9 @@ export function allRules(css, at = [], base = 0) {
         i = semi + 1
         continue
       }
-      if (!head.startsWith("@keyframes")) found.push(...allRules(block.body, [...at, head], base + open + 1))
+      if (!head.startsWith("@keyframes")) found.push(...allRules(block.body, [...at, head]))
     } else {
-      const raw = css.slice(i, open)
-      const indent = raw.length - raw.trimStart().length
-      found.push({selector: head, body: block.body, start: base + i + indent, at})
+      found.push({selector: head, body: block.body, at})
     }
     i = block.end
   }
@@ -92,4 +91,70 @@ export function referencedProperties(css) {
 export function declaration(body, property) {
   const m = body.match(new RegExp(`(?:^|;)\\s*${property}\\s*:\\s*([^;}]+)`))
   return m ? m[1].trim() : undefined
+}
+
+// -- resolving the cascade --------------------------------------------------
+//
+// Enough of it for the questions this stylesheet raises, and no more. Asking
+// "which rule is last" only answers the cascade when you already know which
+// rules match and that they are equally specific; asking for the *effective*
+// value of a property on an element does not require knowing that in advance,
+// which is why the logo check is written the second way.
+
+/** True when a media prelude holds in `env`. Any condition not modelled is false. */
+function mediaMatches(prelude, env) {
+  if (prelude.includes("prefers-color-scheme: dark")) return env.scheme === "dark"
+  if (prelude.includes("prefers-color-scheme: light")) return env.scheme === "light"
+  // Everything else — reduced motion, forced colours — is off in the plain
+  // environment these questions are asked in. Modelling one as "always true"
+  // would silently answer for a browser nobody was asking about.
+  return false
+}
+
+/** Specificity of a simple selector, as [ids, classes, types]. Null if not simple. */
+function specificity(selector) {
+  const s = selector.trim()
+  if (s === "*") return [0, 0, 0]
+  if (!/^(?:[a-z][\w-]*)?(?:\.[\w-]+)*$/i.test(s) || s === "") return null
+  const type = /^[a-z][\w-]*/i.exec(s)
+  const classes = [...s.matchAll(/\.([\w-]+)/g)]
+  return [0, classes.length, type ? 1 : 0]
+}
+
+/**
+ * True when a selector list matches `element` — `{tag, classes}`.
+ *
+ * Only class, type and universal selectors are understood. Anything else
+ * (combinators, pseudo-classes) is treated as not matching, which is safe
+ * here: no such rule in this sheet targets a logo.
+ */
+function selectorMatches(selectorList, element) {
+  return selectorList.split(",").some((part) => {
+    const s = part.trim()
+    if (s === "*") return true
+    if (specificity(s) === null) return false
+    const type = /^[a-z][\w-]*/i.exec(s)
+    if (type && type[0] !== element.tag) return false
+    return [...s.matchAll(/\.([\w-]+)/g)].every((m) => element.classes.includes(m[1]))
+  })
+}
+
+/**
+ * The value `property` actually takes on `element` in `env`, or undefined when
+ * no matching rule declares it. Applicable rules are ordered by specificity
+ * and then by document position, which is the cascade for a sheet with no
+ * `!important`, no inline styles and no layers — this one.
+ */
+export function effectiveValue(css, element, property, env) {
+  const winners = allRules(css)
+    .map((rule, order) => ({...rule, order}))
+    .filter((r) => r.at.every((a) => mediaMatches(a, env)))
+    .filter((r) => selectorMatches(r.selector, element))
+    .filter((r) => declaration(r.body, property) !== undefined)
+    .sort((a, b) => {
+      const [sa, sb] = [specificity(a.selector.split(",")[0]), specificity(b.selector.split(",")[0])]
+      for (let i = 0; i < 3; i++) if (sa[i] !== sb[i]) return sa[i] - sb[i]
+      return a.order - b.order
+    })
+  return winners.length ? declaration(winners[winners.length - 1].body, property) : undefined
 }

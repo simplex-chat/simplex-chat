@@ -4,7 +4,7 @@
 // claims that anything *renders*. What it does assert is every property of the
 // built output that a browser would otherwise be the only witness to, and each
 // assertion was checked to fail when the thing it names is broken (see the
-// D2 report). Run with `npm test` after `npm run build`.
+// D2 report). Run with `npm test`, which compiles before it asserts.
 //
 // Assertions are against dist/ and against the two files served from web/,
 // never against src/: the served bytes are what a browser gets.
@@ -16,7 +16,7 @@ import {fileURLToPath} from "node:url"
 
 import {SCREEN_IDS} from "../dist/router.js"
 import {firstUnansweredScreen, optionsOfQuestion, questionOfScreen, screenView} from "../dist/view.js"
-import {allRules, customProperties, declaration, mediaRules, referencedProperties, rules, stripComments} from "./css.mjs"
+import {allRules, customProperties, declaration, effectiveValue, mediaRules, referencedProperties, rules, stripComments} from "./css.mjs"
 
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8")
 
@@ -157,13 +157,26 @@ test("the dark-scheme logo rules are the last word on those selectors", () => {
   }
 })
 
-test("light mode shows exactly one logo, by default and without a media query", () => {
-  // The other half: with no media query matching, .logo is shown and the dark
-  // variant is hidden. Both must be plain top-level rules.
-  assert.equal(declaration(rules(css, ".logo")[0], "display"), "block")
-  const defaults = allRules(css).filter((r) => r.selector === ".logo--dark" && r.at.length === 0)
-  assert.equal(defaults.length, 1, "expected one unconditional .logo--dark rule")
-  assert.equal(declaration(defaults[0].body, "display"), "none")
+test("exactly one logo is visible in each scheme, resolved through the cascade", () => {
+  // Spot-checking one side of this is not enough, and that is not a
+  // hypothetical: the first version of this test asserted `.logo` is block and
+  // that `.logo--dark` is hidden by default, and an added
+  // `.logo--light { display: none }` — which shows *zero* logos in light mode —
+  // passed it. So resolve what `display` each <img> actually gets in each
+  // scheme, and assert on the outcome rather than on one rule.
+  const logos = {
+    "logo--light": {tag: "img", classes: ["logo", "logo--light"]},
+    "logo--dark": {tag: "img", classes: ["logo", "logo--dark"]},
+  }
+  for (const scheme of ["light", "dark"]) {
+    const visible = []
+    for (const [name, element] of Object.entries(logos)) {
+      const display = effectiveValue(css, element, "display", {scheme})
+      assert.notEqual(display, undefined, `no rule sets display on .${name} in ${scheme} mode`)
+      if (display !== "none") visible.push(name)
+    }
+    assert.deepEqual(visible, [scheme === "dark" ? "logo--dark" : "logo--light"], `wrong logos visible in ${scheme} mode`)
+  }
 })
 
 test("forced colours carry the selected card by border style, not by colour alone", () => {
@@ -296,6 +309,22 @@ test("every question answered lands on the summary, and never past it", () => {
 
 test("the shell registers a popstate listener, so back and forward work", () => {
   assert.match(uiJs, /addEventListener\(\s*["']popstate["']/, "no popstate listener in the built shell")
+})
+
+test("nothing can raise a native validation bubble", () => {
+  // The browser list holds "an unanswered question shows the banner rather
+  // than a native bubble". Whether the banner is *visible* needs a browser;
+  // whether a bubble is possible does not. It takes a constraint to fail and
+  // a submit that reaches the browser's default: neither exists.
+  for (const id of SCREEN_IDS) {
+    for (const {node} of findAll(screenView(id, {}), "input")) {
+      for (const attr of ["required", "pattern", "min", "max", "minlength", "maxlength"]) {
+        assert.ok(!(attr in node.attrs), `an input on screen ${id} carries ${attr}, which can raise a native bubble`)
+      }
+    }
+  }
+  assert.match(uiJs, /addEventListener\(\s*["']submit["']/, "no submit listener in the built shell")
+  assert.match(uiJs, /\.preventDefault\(\)/, "the submit handler must stop the browser's own handling")
 })
 
 test("the shell can redraw in place, without a history entry", () => {
