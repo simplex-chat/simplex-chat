@@ -349,7 +349,12 @@ CREATE TABLE test_chat_schema.chat_items (
     item_msg_body bytea,
     item_chat_binding text,
     item_signatures bytea,
-    item_signed_by_group_member_id bigint
+    item_signed_by_group_member_id bigint,
+    fwd_from_group_type text,
+    fwd_from_group_link bytea,
+    fwd_from_public_group_id bytea,
+    fwd_from_member_id bytea,
+    fwd_from_shared_msg_id bytea
 );
 
 
@@ -1510,7 +1515,8 @@ CREATE TABLE test_chat_schema.users (
     active_order bigint DEFAULT 0 NOT NULL,
     auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
     is_user_chat_relay smallint DEFAULT 0 NOT NULL,
-    client_service smallint DEFAULT 0 NOT NULL
+    client_service smallint DEFAULT 0 NOT NULL,
+    auto_accept_group_invitations smallint DEFAULT 0 NOT NULL
 );
 
 

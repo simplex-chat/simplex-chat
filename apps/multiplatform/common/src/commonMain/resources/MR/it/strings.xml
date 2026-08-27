@@ -934,6 +934,13 @@
     <string name="moderate_message_will_be_deleted_warning">Il messaggio verrà eliminato per tutti i membri.</string>
     <string name="moderate_message_will_be_marked_warning">Il messaggio sarà segnato come moderato per tutti i membri.</string>
     <string name="you_are_observer">sei un osservatore</string>
+    <string name="connect_plan_you_are_observer">Sei un osservatore</string>
+    <string name="connect_plan_you_are_member">Sei un membro</string>
+    <string name="connect_plan_you_are_moderator">Sei un moderatore</string>
+    <string name="connect_plan_you_are_admin">Sei un amministratore</string>
+    <string name="connect_plan_you_are_owner">Sei un proprietario</string>
+    <string name="connect_plan_you_are_subscriber">Sei iscritto/a</string>
+    <string name="connect_plan_you_are_contributor">Sei un collaboratore</string>
     <string name="initial_member_role">Ruolo iniziale</string>
     <string name="error_updating_link_for_group">Errore nell\'aggiornamento del link del gruppo</string>
     <string name="group_member_role_observer">osservatore</string>
@@ -1290,7 +1297,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">L\'invio delle ricevute di consegna sarà attivo per tutti i contatti in tutti i profili di chat visibili.</string>
     <string name="receipts_contacts_override_disabled">L\'invio di ricevute è disattivato per %d contatti</string>
     <string name="sync_connection_force_desc">La crittografia funziona e il nuovo accordo sulla crittografia non è richiesto. Potrebbero verificarsi errori di connessione!</string>
-    <string name="receipts_section_description">Queste impostazioni sono per il tuo profilo attuale</string>
+    <string name="these_settings_are_for_your_current_profile">Queste impostazioni sono per il tuo profilo attuale</string>
     <string name="receipts_section_description_1">Possono essere sovrascritte nelle impostazioni dei contatti e dei gruppi.</string>
     <string name="receipts_contacts_enable_for_all">Attiva per tutti</string>
     <string name="receipts_contacts_enable_keep_overrides">Attiva (mantieni sostituzioni)</string>
@@ -1732,7 +1739,7 @@
     <string name="forward_chat_item">Inoltra</string>
     <string name="recipients_can_not_see_who_message_from">I destinatari non possono vedere da chi proviene questo messaggio.</string>
     <string name="saved_chat_item_info_tab">Salvato</string>
-    <string name="saved_from_description">salvato da %s</string>
+    <string name="saved_from">salvato da</string>
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="audio_device_earpiece">Auricolari</string>
     <string name="audio_device_wired_headphones">Cuffie</string>
@@ -2916,7 +2923,7 @@
     <string name="signature_missing_alert_desc">Il canale ha richiesto di firmare questo messaggio, ma la firma non è presente.</string>
     <string name="channel_simplex_name">Nome SimpleX per il canale</string>
     <string name="get_simplex_name_beta">Ottieni nome SimpleX (BETA)</string>
-    <string name="register_test_name">Registra un nome di prova</string>
+    <string name="register_test_name">Come registrare un nome di prova</string>
     <string name="remove_name">Rimuovi nome</string>
     <string name="save_simplex_name_question">Salvare il nome SimpleX?</string>
     <string name="to_verify_channel_member_key">Per verificare le chiavi con questo iscritto, confrontate (o scansionate) il codice sui vostri dispositivi.</string>

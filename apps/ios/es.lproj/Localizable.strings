@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Preferencias de contacto";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Solicitudes de contacto en grupo";
+"Contact requests in groups" = "Solicitudes de contacto en grupo";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "el contacto debe aceptarte…";
@@ -5346,7 +5346,7 @@ chat item action */
 "Saved from" = "Guardado desde";
 
 /* No comment provided by engineer. */
-"saved from %@" = "Guardado desde %@";
+"saved from" = "Guardado desde";
 
 /* message info title */
 "Saved message" = "Mensaje guardado";
@@ -6389,9 +6389,6 @@ alert subtitle */
 "This setting applies to messages in your current chat profile **%@**." = "Esta configuración se aplica a los mensajes del perfil actual **%@**.";
 
 /* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Esta configuración se aplica al perfil actual **%@**.";
-
-/* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "El nombre SimpleX no está registrado. Por favor, comprueba el nombre.";
 
 /* No comment provided by engineer. */
@@ -7054,6 +7051,27 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are observer" = "Tu rol es observador";
+
+/* new chat alert */
+"You are an observer" = "Eres observador";
+
+/* new chat alert */
+"You are a member" = "Eres miembro";
+
+/* new chat alert */
+"You are a moderator" = "Eres moderador";
+
+/* new chat alert */
+"You are an admin" = "Eres administrador";
+
+/* new chat alert */
+"You are an owner" = "Eres propietario";
+
+/* new chat alert */
+"You are a subscriber" = "Eres suscriptor";
+
+/* new chat alert */
+"You are a contributor" = "Eres colaborador";
 
 /* No comment provided by engineer. */
 "you are subscriber" = "eres suscriptor";

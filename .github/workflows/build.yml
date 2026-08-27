@@ -154,6 +154,8 @@ jobs:
       - name: Checkout Code
         if: matrix.should_run == true
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Setup swap
         if: matrix.ghc == '8.10.7' && matrix.should_run == true
@@ -499,6 +501,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Prepare build
         uses: ./.github/actions/prepare-build
@@ -608,6 +612,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Prepare build
         uses: ./.github/actions/prepare-build

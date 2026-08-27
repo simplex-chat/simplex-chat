@@ -53,7 +53,8 @@ CREATE TABLE users(
   active_order INTEGER NOT NULL DEFAULT 0,
   auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
-  client_service INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  client_service INTEGER NOT NULL DEFAULT 0,
+  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -513,7 +514,12 @@ CREATE TABLE chat_items(
   item_msg_body BLOB,
   item_chat_binding TEXT,
   item_signatures BLOB,
-  item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  fwd_from_group_type TEXT,
+  fwd_from_group_link BLOB,
+  fwd_from_public_group_id BLOB,
+  fwd_from_member_id BLOB,
+  fwd_from_shared_msg_id BLOB
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(

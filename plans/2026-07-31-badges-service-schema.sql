@@ -81,7 +81,7 @@ CREATE TABLE charges(
   UNIQUE(payment_id, provider_charge_ref)
 );
 
--- badgeLedgerTable constant (M20260731_user_badges), re-used literally
+-- badgeLedgerTable constant (M20261001_user_badges), re-used literally
 CREATE TABLE badge_ledger(
   entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
   entry_uuid TEXT NOT NULL,

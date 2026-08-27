@@ -8,7 +8,7 @@ import Data.List (sortOn)
 import Data.Text (Text)
 import Database.SQLite.Simple (Query (..))
 import Database.SQLite.Simple.QQ (sql)
-import Simplex.Chat.Store.SQLite.Migrations.M20260731_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
+import Simplex.Chat.Store.SQLite.Migrations.M20261001_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 badgeServiceSchemaMigrations :: [Migration]

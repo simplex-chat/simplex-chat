@@ -6,7 +6,7 @@ module BadgeService.Store.Postgres.Migrations (badgeServiceSchemaMigrations) whe
 
 import Data.List (sortOn)
 import Data.Text (Text)
-import Simplex.Chat.Store.Postgres.Migrations.M20260731_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
+import Simplex.Chat.Store.Postgres.Migrations.M20261001_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 import Text.RawString.QQ (r)
 

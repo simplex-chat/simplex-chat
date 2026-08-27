@@ -1416,7 +1416,7 @@ server test step */
 "Contact preferences" = "Preferencje kontaktu";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Prośby o kontakt od grup";
+"Contact requests in groups" = "Prośby o kontakt od grup";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "kontakt powinien zaakceptować…";
@@ -4646,7 +4646,7 @@ chat item action */
 "Saved from" = "Zapisane od";
 
 /* No comment provided by engineer. */
-"saved from %@" = "zapisane od %@";
+"saved from" = "zapisane od";
 
 /* message info title */
 "Saved message" = "Zachowano wiadomość";
@@ -5507,9 +5507,6 @@ server test failure */
 "This setting applies to messages in your current chat profile **%@**." = "To ustawienie dotyczy wiadomości Twojego bieżącego profilu czatu **%@**.";
 
 /* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "To ustawienie jest dla Twojego obecnego profilu **%@**.";
-
-/* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Czas zniknięcia jest ustawiony tylko dla nowych kontaktów.";
 
 /* No comment provided by engineer. */
@@ -6097,6 +6094,21 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are observer" = "jesteś obserwatorem";
+
+/* new chat alert */
+"You are an observer" = "Jesteś obserwatorem";
+
+/* new chat alert */
+"You are a member" = "Jesteś członkiem";
+
+/* new chat alert */
+"You are a moderator" = "Jesteś moderatorem";
+
+/* new chat alert */
+"You are an admin" = "Jesteś administratorem";
+
+/* new chat alert */
+"You are an owner" = "Jesteś właścicielem";
 
 /* snd group event chat item */
 "you blocked %@" = "zablokowałeś %@";

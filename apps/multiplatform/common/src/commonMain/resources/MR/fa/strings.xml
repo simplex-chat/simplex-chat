@@ -156,7 +156,7 @@
     <string name="turn_off_battery_optimization"><![CDATA[در دیالوگ بعدی <b>اجازه دهید</b> تا اعلان‌ها را فوری دریافت کنید.]]></string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[برای بهبود حریم خصوصی، <b>SimpleX در پس‌زمینه اجرا می‌شود</b> و به جای استفاده از پوش نوتیفیکیشن، کار می‌کند.]]></string>
     <string name="saved_description">ذخیره شده</string>
-    <string name="saved_from_description">ذخیره شده از %s</string>
+    <string name="saved_from">ذخیره شده از</string>
     <string name="saved_from_chat_item_info_title">ذخیره شده از</string>
     <string name="forwarded_description">فرستاده شده</string>
     <string name="e2ee_info_no_pq"><![CDATA[پیام‌ها، فایل‌ها و تماس‌ها به وسیله <b>رمزنگاری انتها به انتها</b> با محرمانگی پیشرو، مردودسازی و بازیابی ورود غیرمجاز محافظت شده‌اند.]]></string>
@@ -437,6 +437,11 @@
     <string name="la_could_not_be_verified">تایید شما ممکن نیست؛ لطفا دوباره امتحان کنید.</string>
     <string name="choose_file">فایل</string>
     <string name="you_are_observer">شما ناظر هستید</string>
+    <string name="connect_plan_you_are_observer">شما ناظر هستید</string>
+    <string name="connect_plan_you_are_member">شما عضو هستید</string>
+    <string name="connect_plan_you_are_moderator">شما مدیر هستید</string>
+    <string name="connect_plan_you_are_admin">شما مدیر هستید</string>
+    <string name="connect_plan_you_are_owner">شما صاحب هستید</string>
     <string name="clear_chat_question">چت پاک شود؟</string>
     <string name="clear_note_folder_warning">تمام پیام‌ها حذف خواهند شد - این عمل قابل برگشت نیست!</string>
     <string name="delete_contact_menu_action">حذف</string>
@@ -756,7 +761,7 @@
     <string name="self_destruct_new_display_name">نام نمایشی جدید:</string>
     <string name="if_you_enter_self_destruct_code">اگر کد عبور خودتخریبی خود را زمان باز کردن برنامه وارد کنید:</string>
     <string name="all_app_data_will_be_cleared">تمام اطلاعات برنامه حذف می‌شود.</string>
-    <string name="receipts_section_description">این تنظیمات برای پروفایل فعلی شما هستند</string>
+    <string name="these_settings_are_for_your_current_profile">این تنظیمات برای پروفایل فعلی شما هستند</string>
     <string name="receipts_contacts_override_enabled">ارسال رسید برای %d مخاطب فعال است</string>
     <string name="receipts_contacts_disable_for_all">غیرفعال برای همه</string>
     <string name="receipts_groups_enable_for_all">فعال برای همه گروه‌ها</string>

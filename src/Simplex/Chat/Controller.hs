@@ -174,6 +174,7 @@ data ChatConfig = ChatConfig
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
+    updateGroupLinksFromApp :: Bool,
     chatHooks :: ChatHooks
   }
 
@@ -339,6 +340,8 @@ data ChatCommand
   | SetUserGroupReceipts UserMsgReceiptSettings
   | APISetUserAutoAcceptMemberContacts {userId :: UserId, onOff :: Bool}
   | SetUserAutoAcceptMemberContacts Bool
+  | APISetUserAutoAcceptGroupInvitations {userId :: UserId, onOff :: Bool}
+  | SetUserAutoAcceptGroupInvitations Bool
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId

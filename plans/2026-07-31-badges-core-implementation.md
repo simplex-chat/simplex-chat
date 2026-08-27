@@ -7,7 +7,7 @@
 
 ## 1. Client schema
 
-`src/Simplex/Chat/Store/SQLite/Migrations/M20260731_user_badges.hs` — SQLite only; the Postgres variant is written when the schema is final; registered in the migrations list and cabal at delivery step 2.
+`src/Simplex/Chat/Store/SQLite/Migrations/M20261001_user_badges.hs` — SQLite only; the Postgres variant is written when the schema is final; registered in the migrations list and cabal at delivery step 2.
 
 - Table mapping to UX §3:
   - `badges` → `badge_purchases`
@@ -401,7 +401,7 @@ Each UX plan point and its implementation home:
 ## Delivery order
 
 1. `mkBadgeStatus`: the +7-day recipient display grace and the shifted `BSExpiredOld` boundary (UX 2.11) — released before purchases (UX §7).
-2. Register migration `M20260731_user_badges` (migrations list + cabal + regenerated `chat_schema.sql` / `chat_lint.sql`); the Postgres variant of the migration; the catalog seed from app config (UX §3 prices); store functions (`Store/Badges.hs`): get-or-create with lock; last-ledger-row reads; verbatim replica inserts.
+2. Register migration `M20261001_user_badges` (migrations list + cabal + regenerated `chat_schema.sql` / `chat_lint.sql`); the Postgres variant of the migration; the catalog seed from app config (UX §3 prices); store functions (`Store/Badges.hs`): get-or-create with lock; last-ledger-row reads; verbatim replica inserts.
 3. Instances for the types in `Badges.hs` and `Badges/Service.hs` (§3) + roundtrip tests.
 4. RPC codec: `docs/protocol/badges-rpc.schema.json` packets ↔ `Badges/Service.hs` types; catalog reconciliation on every `badgeCatalog` response.
 5. BadgeManager §6: worker, locks, timer; reconcile/apply/presentation/alert steps; events.

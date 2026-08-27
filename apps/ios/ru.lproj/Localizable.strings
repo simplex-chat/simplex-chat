@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Предпочтения контакта";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Запросы на соединение из групп";
+"Contact requests in groups" = "Запросы на соединение из групп";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "контакт должен принять…";
@@ -5346,7 +5346,7 @@ chat item action */
 "Saved from" = "Сохранено из";
 
 /* No comment provided by engineer. */
-"saved from %@" = "сохранено из %@";
+"saved from" = "сохранено из";
 
 /* message info title */
 "Saved message" = "Сохранённое сообщение";
@@ -6389,9 +6389,6 @@ alert subtitle */
 "This setting applies to messages in your current chat profile **%@**." = "Эта настройка применяется к сообщениям в Вашем текущем профиле чата **%@**.";
 
 /* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Эта настройка применяется к Вашему текущему профилю чата **%@**.";
-
-/* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "Это SimpleX имя не зарегистрировано. Пожалуйста, проверьте имя.";
 
 /* No comment provided by engineer. */
@@ -7057,6 +7054,27 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are subscriber" = "Вы подписчик";
+
+/* new chat alert */
+"You are an observer" = "Вы читатель";
+
+/* new chat alert */
+"You are a member" = "Вы член группы";
+
+/* new chat alert */
+"You are a moderator" = "Вы модератор";
+
+/* new chat alert */
+"You are an admin" = "Вы админ";
+
+/* new chat alert */
+"You are an owner" = "Вы владелец";
+
+/* new chat alert */
+"You are a subscriber" = "Вы подписчик";
+
+/* new chat alert */
+"You are a contributor" = "Вы соавтор";
 
 /* snd group event chat item */
 "you blocked %@" = "Вы заблокировали %@";

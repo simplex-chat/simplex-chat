@@ -10,7 +10,8 @@
     "simplex-explained-tab-3-p-1": "I server hanno credenziali anonime separate per ogni coda e non sanno a quali utenti appartengano.",
     "chat-protocol": "Protocollo di chat",
     "donate": "Dona",
-    "copyright-label": "© 2020-2025 SimpleX Chat | Progetto Open-Source",
+    "invest": "Investi",
+    "copyright-label": "© 2020-2026 SimpleX Chat | Progetto Open-Source",
     "simplex-chat-protocol": "Protocollo di SimpleX Chat",
     "terminal-cli": "Terminale CLI",
     "terms-and-privacy-policy": "Informativa sulla privacy",
@@ -282,6 +283,8 @@
     "index-nextweb-p2": "Non c'è una singola entità che controlla la rete: chiunque può gestire i server.",
     "index-token-h2": "Finanziato dai suoi utenti",
     "index-token-p1": "Per restare indipendenti, i grandi canali e le comunità pagheranno per i propri server.",
+    "index-token-p2-cf": "E ora gli utenti possono investire in SimpleX Chat &mdash; il crowdfunding è attivo!",
+    "index-token-cta-cf": "Investi in SimpleX Chat",
     "index-token-p2": "Ciò coprirà infrastruttura, sviluppo software e gestione della rete.",
     "index-token-cta": "Scopri di più sui Crediti Comunitari",
     "index-roadmap-h2": "Tabella di marcia per un internet libero",
@@ -370,8 +373,10 @@
     "file-proto-p-4": "Quando il file è diviso in frammenti, viene inviato tramite instradatori di rete operati da parti indipendenti. Nessun operatore può vedere la vera dimensione o il nome del file. Anche se un instradatore venisse compromesso, potrà vedere solo frammenti cifrati di dimensione fissa. I frammenti di file restano in cache dagli instradatori di rete per circa 48 ore.",
     "file-proto-spec": "Leggi le specifiche del protocollo XFTP →",
     "send-file": "Invia file",
-    "links": "Collegamenti",
+    "links": "Comunità",
     "links-title": "Link della comunità",
     "links-all-languages": "Tutte le lingue",
-    "docs-dropdown-16": "Ospita un relay di chat"
+    "docs-dropdown-16": "Ospita un relay di chat",
+    "index-hero-invest": "Investi in SimpleX Chat.",
+    "index-hero-invest-cta": "Scopri di più su Wefunder."
 }
