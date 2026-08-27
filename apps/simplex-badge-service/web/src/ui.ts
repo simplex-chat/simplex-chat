@@ -8,8 +8,9 @@
 //
 // Everything decidable without a browser lives in router.ts and view.ts.
 
+import {type Catalog} from "./catalog.js"
 import {hashForScreen, nextScreen, screenIdForHash, type ScreenId} from "./router.js"
-import {firstUnansweredScreen, questionOfScreen, screenView, type Answers, type Child, type El} from "./view.js"
+import {firstUnansweredScreen, nothingChosenMessage, questionOfScreen, screenView, type Answers, type Child, type El} from "./view.js"
 
 /** The running shell. D3 fetches the catalog through it; D7 the checkout. */
 export interface Shell {
@@ -19,16 +20,17 @@ export interface Shell {
   go(id: ScreenId): void
   /**
    * Redraw the current screen in place, with no history entry and no focus
-   * move. D3's catalog arrives after the first render; `go` would push a
+   * move. The catalog arrives after the first render; `go` would push a
    * duplicate entry and break back, and stealing focus mid-read is worse
    * still.
    */
   refresh(): void
+  /** Price every screen from this catalog, and redraw the one on show. */
+  setCatalog(catalog: Catalog): void
   /** The answers gathered so far. */
   answers(): Answers
 }
 
-const CHOOSE_AN_OPTION = "Choose an option to continue."
 // D7 replaces this branch with the POST to /api/checkout.
 const PAYMENT_UNAVAILABLE = "Payment is not available yet."
 
@@ -56,6 +58,9 @@ export function startShell(root: HTMLElement, initial: Answers = {}): Shell {
   const banner = errorBanner()
   const answers: {tier?: string; months?: string; pay?: string} = {...initial}
   let current = firstUnansweredScreen(answers)
+  // No catalog yet: every screen renders, priced or not (view.ts), and this is
+  // filled in by the fetch main.ts starts.
+  let catalog: Catalog | null = null
 
   const shell: Shell = {
     showError(message: string): void {
@@ -68,6 +73,10 @@ export function startShell(root: HTMLElement, initial: Answers = {}): Shell {
     },
     refresh(): void {
       render(current, false)
+    },
+    setCatalog(loaded: Catalog): void {
+      catalog = loaded
+      shell.refresh()
     },
     answers(): Answers {
       return {...answers}
@@ -82,7 +91,7 @@ export function startShell(root: HTMLElement, initial: Answers = {}): Shell {
   function render(id: ScreenId, moveFocus: boolean): void {
     current = id
     clearError()
-    const screen = toDom(screenView(id, answers))
+    const screen = toDom(screenView(id, answers, catalog))
     root.replaceChildren(banner, screen)
     // The heading is the start of the new screen for a keyboard or screen
     // reader user, who would otherwise stay on a button that no longer exists.
@@ -118,7 +127,7 @@ export function startShell(root: HTMLElement, initial: Answers = {}): Shell {
     if (!(form instanceof HTMLFormElement)) return
     const chosen = form.querySelector<HTMLInputElement>("input[type=radio]:checked")
     if (!chosen) {
-      shell.showError(CHOOSE_AN_OPTION)
+      shell.showError(nothingChosenMessage(catalog))
       return
     }
     answers[question] = chosen.value

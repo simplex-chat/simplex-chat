@@ -14,9 +14,12 @@ import assert from "node:assert/strict"
 import {readFileSync, readdirSync} from "node:fs"
 import {fileURLToPath} from "node:url"
 
+import {parseCatalog} from "../dist/catalog.js"
 import {SCREEN_IDS} from "../dist/router.js"
-import {firstUnansweredScreen, optionsOfQuestion, questionOfScreen, screenView} from "../dist/view.js"
+import {firstUnansweredScreen, nothingChosenMessage, optionsOfQuestion, questionOfScreen, screenView} from "../dist/view.js"
 import {allRules, customProperties, declaration, effectiveValue, mediaRules, referencedProperties, rules, stripComments} from "./css.mjs"
+import {findAll, text} from "./el.mjs"
+import {catalogPayload} from "./fixture.mjs"
 
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8")
 
@@ -194,40 +197,28 @@ test("forced colours carry the selected card by border style, not by colour alon
 
 // -- the screens ------------------------------------------------------------
 
-function walk(node, visit, parents = []) {
-  visit(node, parents)
-  const chain = [...parents, node]
-  for (const child of node.children) if (typeof child !== "string") walk(child, visit, chain)
-}
-
-function findAll(root, tag) {
-  const found = []
-  walk(root, (node, parents) => {
-    if (node.tag === tag) found.push({node, parents})
-  })
-  return found
-}
-
-function text(node) {
-  let out = ""
-  walk(node, (n) => {
-    for (const child of n.children) if (typeof child === "string") out += child
-  })
-  return out
-}
+// Both states every screen has to survive: before the catalog arrives, and
+// after. D3's prices are asserted in prices.test.mjs; the structure below has
+// to hold in either state, and a screen that rendered nothing until the fetch
+// landed would be a blank page for as long as the fetch takes.
+const CATALOGS = [null, parseCatalog(catalogPayload())]
 
 test("every screen has exactly one <h1>, and it says something", () => {
-  for (const id of SCREEN_IDS) {
-    const headings = findAll(screenView(id, {}), "h1")
-    assert.equal(headings.length, 1, `screen ${id} must have exactly one <h1>, found ${headings.length}`)
-    assert.notEqual(text(headings[0].node).trim(), "", `the <h1> of screen ${id} is empty`)
+  for (const catalog of CATALOGS) {
+    for (const id of SCREEN_IDS) {
+      const headings = findAll(screenView(id, {}, catalog), "h1")
+      assert.equal(headings.length, 1, `screen ${id} must have exactly one <h1>, found ${headings.length}`)
+      assert.notEqual(text(headings[0].node).trim(), "", `the <h1> of screen ${id} is empty`)
+    }
   }
 })
 
 test("every screen renders something under its heading", () => {
-  for (const id of SCREEN_IDS) {
-    const view = screenView(id, {})
-    assert.ok(view.children.length > 1, `screen ${id} is a bare heading`)
+  for (const catalog of CATALOGS) {
+    for (const id of SCREEN_IDS) {
+      const view = screenView(id, {}, catalog)
+      assert.ok(view.children.length > 1, `screen ${id} is a bare heading`)
+    }
   }
 })
 
@@ -237,54 +228,64 @@ test("the three question screens are the ones the plan names", () => {
 })
 
 test("each question is a real fieldset with a real legend", () => {
-  for (const id of QUESTIONS) {
-    const view = screenView(id, {})
-    const fieldsets = findAll(view, "fieldset")
-    assert.equal(fieldsets.length, 1, `screen ${id} must group its radios in one <fieldset>`)
-    const legends = findAll(fieldsets[0].node, "legend")
-    assert.equal(legends.length, 1, `the <fieldset> of screen ${id} must have exactly one <legend>`)
-    assert.notEqual(text(legends[0].node).trim(), "", `the <legend> of screen ${id} is empty`)
+  for (const catalog of CATALOGS) {
+    for (const id of QUESTIONS) {
+      const view = screenView(id, {}, catalog)
+      const fieldsets = findAll(view, "fieldset")
+      assert.equal(fieldsets.length, 1, `screen ${id} must group its radios in one <fieldset>`)
+      const legends = findAll(fieldsets[0].node, "legend")
+      assert.equal(legends.length, 1, `the <fieldset> of screen ${id} must have exactly one <legend>`)
+      assert.notEqual(text(legends[0].node).trim(), "", `the <legend> of screen ${id} is empty`)
+    }
   }
 })
 
 test("every option is a radio inside a label, and every option is offered", () => {
-  for (const id of QUESTIONS) {
-    const view = screenView(id, {})
-    const radios = findAll(view, "input").filter(({node}) => node.attrs.type === "radio")
-    const options = optionsOfQuestion(questionOfScreen(id))
-    assert.equal(radios.length, options.length, `screen ${id} offers ${options.length} options but renders ${radios.length} radios`)
-    for (const {node, parents} of radios) {
-      assert.ok(
-        parents.some((p) => p.tag === "label"),
-        `a radio on screen ${id} is not inside a <label>, so its card is not clickable and it has no accessible name`
+  for (const catalog of CATALOGS) {
+    for (const id of QUESTIONS) {
+      const view = screenView(id, {}, catalog)
+      const radios = findAll(view, "input").filter(({node}) => node.attrs.type === "radio")
+      const options = optionsOfQuestion(questionOfScreen(id), {}, catalog)
+      assert.equal(radios.length, options.length, `screen ${id} offers ${options.length} options but renders ${radios.length} radios`)
+      assert.ok(options.length > 1, `screen ${id} offers ${options.length} option(s), so the comparison above is vacuous`)
+      for (const {node, parents} of radios) {
+        assert.ok(
+          parents.some((p) => p.tag === "label"),
+          `a radio on screen ${id} is not inside a <label>, so its card is not clickable and it has no accessible name`
+        )
+        assert.equal(node.attrs.name, id, `a radio on screen ${id} is in the wrong group`)
+      }
+      assert.deepEqual(
+        radios.map(({node}) => node.attrs.value),
+        options.map((o) => o.value)
       )
-      assert.equal(node.attrs.name, id, `a radio on screen ${id} is in the wrong group`)
     }
-    assert.deepEqual(
-      radios.map(({node}) => node.attrs.value),
-      options.map((o) => o.value)
-    )
   }
 })
 
 test("the chosen option is the checked one, and only that one", () => {
+  const catalog = CATALOGS[1]
   for (const id of QUESTIONS) {
-    const options = optionsOfQuestion(questionOfScreen(id))
+    const options = optionsOfQuestion(questionOfScreen(id), {}, catalog)
     const chosen = options[options.length - 1].value
-    const radios = findAll(screenView(id, {[id]: chosen}), "input")
+    // tier answers months's own options, which is why the whole answer set is
+    // passed rather than only this screen's.
+    const answers = {tier: "supporter", [id]: chosen}
+    const radios = findAll(screenView(id, answers, catalog), "input")
     const checked = radios.filter(({node}) => "checked" in node.attrs).map(({node}) => node.attrs.value)
     assert.deepEqual(checked, [chosen], `screen ${id} must check exactly the chosen option`)
   }
 })
 
 test("the checkout summary shows every answer, and says so when one is missing", () => {
-  const answered = screenView("checkout", {tier: "legend", months: "12", pay: "xmr"})
+  const catalog = CATALOGS[1]
+  const answered = screenView("checkout", {tier: "legend", months: "12", pay: "xmr"}, catalog)
   const summary = text(answered)
   assert.match(summary, /Legend/)
   assert.match(summary, /12 months/)
   assert.match(summary, /Monero/)
   assert.doesNotMatch(summary, /Not chosen/)
-  assert.match(text(screenView("checkout", {})), /Not chosen/, "an unanswered question must not render as blank")
+  assert.match(text(screenView("checkout", {}, catalog)), /Not chosen/, "an unanswered question must not render as blank")
 })
 
 // -- where a visit starts (D5's prefill rests on this) -----------------------
@@ -317,7 +318,7 @@ test("nothing can raise a native validation bubble", () => {
   // whether a bubble is possible does not. It takes a constraint to fail and
   // a submit that reaches the browser's default: neither exists.
   for (const id of SCREEN_IDS) {
-    for (const {node} of findAll(screenView(id, {}), "input")) {
+    for (const {node} of findAll(screenView(id, {}, CATALOGS[1]), "input")) {
       for (const attr of ["required", "pattern", "min", "max", "minlength", "maxlength"]) {
         assert.ok(!(attr in node.attrs), `an input on screen ${id} carries ${attr}, which can raise a native bubble`)
       }
@@ -328,10 +329,26 @@ test("nothing can raise a native validation bubble", () => {
 })
 
 test("the shell can redraw in place, without a history entry", () => {
-  // D3's catalog arrives after the first render. Without refresh() its only
+  // The catalog arrives after the first render. Without refresh() its only
   // way back onto the screen is go(), which pushes a duplicate entry and
   // breaks the back button.
   assert.match(uiJs, /refresh\(\)\s*\{/, "Shell must expose refresh()")
+})
+
+test("the catalog reaches the screens through the shell, and redraws them", () => {
+  // The shell is the one module a test cannot execute here (it needs a DOM),
+  // so these two are read out of the built file. What they check is on the
+  // browser list as well: that the prices actually appear when the fetch lands.
+  assert.match(uiJs, /screenView\(\w+,\s*\w+,\s*catalog\)/, "the shell must render the screens from the catalog it holds")
+  assert.match(uiJs, /setCatalog\([^)]*\)\s*\{[^}]*refresh\(\)/, "setCatalog must redraw, or the prices land in a variable and nowhere else")
+})
+
+test("the message for an unanswered question depends on whether prices have arrived", () => {
+  // Every option is disabled until the catalog lands, so "choose an option"
+  // would blame the visitor for the fetch.
+  assert.match(nothingChosenMessage(null), /Prices are still loading/)
+  assert.match(nothingChosenMessage(CATALOGS[1]), /Choose an option/)
+  assert.match(uiJs, /nothingChosenMessage\(catalog\)/, "the shell must use it, not a message of its own")
 })
 
 test("the shell navigates with pushState and never reloads the page", () => {

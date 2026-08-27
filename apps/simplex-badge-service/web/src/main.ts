@@ -3,6 +3,7 @@
 // they keep their ".js" extension and why the whole graph is served under one
 // prefix (decision 7, D4).
 
+import {loadCatalog} from "./catalog.js"
 import {startShell} from "./ui.js"
 
 const FAILED = "This page failed to load. Please reload, or contact support using the link below."
@@ -10,7 +11,11 @@ const FAILED = "This page failed to load. Please reload, or contact support usin
 const app = document.getElementById("app")
 if (app) {
   try {
-    startShell(app)
+    const shell = startShell(app)
+    // Started, not awaited: the wizard is on screen while the prices are on
+    // their way, and every option is disabled until they arrive. `fetch` is
+    // wrapped rather than passed, because passing it unbound loses `this`.
+    void loadCatalog((path) => fetch(path), shell)
   } catch (err) {
     // A shell that fails to start must still say so: the alternative is an
     // empty page with the reason only in the console (D2).

@@ -8,8 +8,7 @@
 //
 // Everything decidable without a browser lives in router.ts and view.ts.
 import { hashForScreen, nextScreen, screenIdForHash } from "./router.js";
-import { firstUnansweredScreen, questionOfScreen, screenView } from "./view.js";
-const CHOOSE_AN_OPTION = "Choose an option to continue.";
+import { firstUnansweredScreen, nothingChosenMessage, questionOfScreen, screenView } from "./view.js";
 // D7 replaces this branch with the POST to /api/checkout.
 const PAYMENT_UNAVAILABLE = "Payment is not available yet.";
 /** Build elements from a view tree. No innerHTML: text is always a text node. */
@@ -36,6 +35,9 @@ export function startShell(root, initial = {}) {
     const banner = errorBanner();
     const answers = { ...initial };
     let current = firstUnansweredScreen(answers);
+    // No catalog yet: every screen renders, priced or not (view.ts), and this is
+    // filled in by the fetch main.ts starts.
+    let catalog = null;
     const shell = {
         showError(message) {
             banner.textContent = message;
@@ -48,6 +50,10 @@ export function startShell(root, initial = {}) {
         refresh() {
             render(current, false);
         },
+        setCatalog(loaded) {
+            catalog = loaded;
+            shell.refresh();
+        },
         answers() {
             return { ...answers };
         },
@@ -59,7 +65,7 @@ export function startShell(root, initial = {}) {
     function render(id, moveFocus) {
         current = id;
         clearError();
-        const screen = toDom(screenView(id, answers));
+        const screen = toDom(screenView(id, answers, catalog));
         root.replaceChildren(banner, screen);
         // The heading is the start of the new screen for a keyboard or screen
         // reader user, who would otherwise stay on a button that no longer exists.
@@ -96,7 +102,7 @@ export function startShell(root, initial = {}) {
             return;
         const chosen = form.querySelector("input[type=radio]:checked");
         if (!chosen) {
-            shell.showError(CHOOSE_AN_OPTION);
+            shell.showError(nothingChosenMessage(catalog));
             return;
         }
         answers[question] = chosen.value;
