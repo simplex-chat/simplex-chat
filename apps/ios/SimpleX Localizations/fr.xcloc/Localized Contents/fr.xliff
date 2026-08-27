@@ -325,9 +325,9 @@ channel relay bar</note>
         <target>%lld contact·s sélectionné·s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
+      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
         <source>%lld file(s) with total size of %@</source>
-        <target>%lld fichier·s pour une taille totale de %@</target>
+        <target state="translated">%lld fichier(s) pour une taille totale de %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld group events" xml:space="preserve">
@@ -3235,9 +3235,9 @@ alert button</note>
         <target>Détails</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer" xml:space="preserve">
+      <trans-unit id="Developer" xml:space="preserve" approved="no">
         <source>Developer</source>
-        <target>Outils du développeur</target>
+        <target state="translated">Outils développeur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Developer options" xml:space="preserve">
