@@ -103,6 +103,45 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+# ==================================
+#    Badge service web build check
+# ==================================
+
+# apps/simplex-badge-service/web/dist/ is committed and embedded into the
+# service binary at compile time, so a change under web/src or web/assets
+# without a rebuild ships stale JavaScript or a stale asset with a green build
+# and green tests. Rebuild it here and fail when the result is not what is
+# committed. Runs on every trigger of this workflow: it costs seconds, and its
+# pull_request paths already cover apps/simplex-badge-service/**.
+
+  badge-web:
+    name: "badge service web build matches its sources"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v6
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Build the checkout site
+        working-directory: apps/simplex-badge-service/web
+        run: npm ci && npm run build
+
+      - name: Check the committed build against the rebuilt one
+        run: |
+          # --porcelain, not `git diff --exit-code`: a file the build emits that
+          # was never `git add`ed is untracked, and `git diff` ignores it.
+          changed=$(git status --porcelain -- apps/simplex-badge-service/web/dist)
+          if [ -n "$changed" ]; then
+            echo "$changed"
+            echo "apps/simplex-badge-service/web/dist does not match its sources."
+            echo "Run 'npm ci && npm run build' in apps/simplex-badge-service/web and commit dist/."
+            exit 1
+          fi
+
 # =========================
 #        Linux Build
 # =========================
