@@ -6,8 +6,9 @@ In-app name purchase (in development, CLI only). Names themselves already ship -
 this is about acquiring and managing one without leaving the app, which today
 needs a wallet, ETH and a browser:
 - Buy a name with a redemption code: `/name verify-code`, `/name quote`,
-  `/name buy`. Codes are unguessable random values issued ahead of time, which
-  the registrar looks up in a table it holds.
+  `/name buy`. Codes are RSA blind signatures (RFC 9474) verified on the device
+  against a pinned key, so a code cannot be linked back to whoever was issued it,
+  and the service is never asked whether one is valid.
 - Point a name at an address with `/name link contact|channel`, a signed EIP-712
   intent the service relays. Each name gets 10 relayed edits, counted by the
   service - metering is off chain.
@@ -18,8 +19,9 @@ needs a wallet, ETH and a browser:
 - Wallet: one key per name at `m/44'/60'/<profile>'/0/<name>` - ordinary BIP-44,
   so importing the phrase into another wallet reaches the same addresses.
 - The badge service gains the registrar commands, a readable chain mock with real
-  minimum commitment age, the code table and signature/nonce checks. There is
-  still no deployed contract and no store payment.
+  minimum commitment age, a spent-code ledger keyed on the code's own nullifier,
+  and signature/nonce checks. There is still no deployed contract and no store
+  payment.
 - Transfers, subnames and renewal are not implemented.
 - Design: docs/rfcs/2026-08-18-in-app-name-purchase-mvp.md
 

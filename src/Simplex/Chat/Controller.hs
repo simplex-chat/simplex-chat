@@ -416,7 +416,7 @@ data ChatCommand
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APINameRegister {sendTarget :: ConnectTarget 'CMContact, regName :: Text, registerLink :: Text}
   | APINameQuote {sendTarget :: ConnectTarget 'CMContact, nameLabel :: Text, nameYears :: Word32}
-  | APINameVerifyCode {sendTarget :: ConnectTarget 'CMContact, nameCode :: Text}
+  | APINameVerifyCode {nameCode :: Text}
   | APINameBuy {sendTarget :: ConnectTarget 'CMContact, nameLabel :: Text, nameCode :: Text, nameLink_ :: Maybe Text}
   | APINameList {sendTarget :: ConnectTarget 'CMContact}
   | APINameInfo {sendTarget :: ConnectTarget 'CMContact, regName :: Text}

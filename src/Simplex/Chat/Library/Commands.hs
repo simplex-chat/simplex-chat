@@ -62,6 +62,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import qualified Simplex.Chat.Names.Codes as Codes
 import Simplex.Chat.Names.Protocol
 import Simplex.Chat.Names.Snrc (Intent (..), SnrcDeployment (..), intent712, parseRecordKey)
 import Simplex.Messaging.Eth.Address (Address, mkAddress)
@@ -1475,18 +1476,25 @@ processChatCommand cxt nm = \case
       NRPQuote {nrLabel, nrAvailable, nrReserved, nrPriceUsdCents, nrYears} ->
         pure $ CRNameQuote user nrLabel nrAvailable nrReserved nrPriceUsdCents nrYears
       _ -> throwCmdError "unexpected quote response"
-  -- Asks the registrar, which holds the table. Safe to expose because codes are
-  -- unguessable random values, so this cannot be used to probe for one.
-  APINameVerifyCode sendTarget code -> withUser $ \user -> do
-    cReq <- resolveServiceTarget nm user sendTarget
-    namesRPC user cReq (NRVerifyCode (RedemptionCode code)) >>= \case
-      NRPCode {nrMinLength, nrYears, nrExpires} ->
-        pure $ CRNameCode user (fromIntegral nrMinLength) nrYears nrExpires
-      _ -> throwCmdError "unexpected verify-code response"
+  -- Verified on the device against a key compiled into this build. There is now
+  -- no "check this code" RPC, and that is the point: asking the service would
+  -- hand it an oracle for probing codes, and a blind-signed code needs no one's
+  -- permission to be checked.
+  APINameVerifyCode code -> withUser $ \user ->
+    case Codes.verifyCode code of
+      Left e -> throwChatError $ CENameRegistrationFailed "payment_rejected" (Just $ Codes.codeErrorText e) Nothing
+      Right vc -> pure $ CRNameCode user (Codes.vcMinLength vc) (Codes.vcYears vc) (Codes.vcExpires vc)
   APINameBuy sendTarget label code link_ -> withUser $ \user -> do
-    -- The registrar owns the code table, so it decides: spent, expired, or too
-    -- short for the tier. The client does not second-guess it.
+    -- Refuse before spending anything if the code is not real. The service
+    -- re-checks everything; doing it here saves a round trip and, more usefully,
+    -- names the reason.
+    vc <- either (\e -> throwChatError $ CENameRegistrationFailed "payment_rejected" (Just $ Codes.codeErrorText e) Nothing) pure $ Codes.verifyCode code
     let nm' = label <> ".simplex"
+    now0 <- liftIO getCurrentTime
+    when (Codes.vcExpires vc < now0) $
+      throwChatError $ CENameRegistrationFailed "code_expired" (Just $ "this code expired on " <> tshow (Codes.vcExpires vc)) Nothing
+    when (T.length label < Codes.vcMinLength vc) $
+      throwChatError $ CENameRegistrationFailed "name_too_short" (Just $ "this code covers names of " <> tshow (Codes.vcMinLength vc) <> " letters or more") Nothing
     (seedId, nameIx, acctIx, owner) <- deriveNameOwner user
     cReq <- resolveServiceTarget nm user sendTarget
     g <- asks random
@@ -5797,7 +5805,7 @@ chatCommandP =
       -- (/users vs /user, /db export)
       "/names " *> (APINameList <$> strP),
       "/name quote " *> (APINameQuote <$> strP <* A.space <*> displayNameP <*> (A.space *> A.decimal <|> pure 2)),
-      "/name verify-code " *> (APINameVerifyCode <$> strP <* A.space <*> textP),
+      "/name verify-code " *> (APINameVerifyCode <$> textP),
       "/name buy " *> (APINameBuy <$> strP <* A.space <*> displayNameP <* A.space <*> nonSpaceTextP <*> optional (A.space *> textP)),
       "/name info " *> (APINameInfo <$> strP <* A.space <*> displayNameP),
       -- syntax is "/name link <record> <name> <link>", but the constructor

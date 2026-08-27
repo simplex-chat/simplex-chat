@@ -26,13 +26,14 @@ inclusion verification, anti-grief deposits.
 one, so the CLI is not bound to a single service.
 
 ```
-/name verify-code <svc> SMPX-4K2P-7TQW-9XRM
+/name verify-code SMPX1-nyxxqAPV...xcym
                                 code verified: names of 6 letters or more, 2 years
+                                use before 2027-07-01 - a code cannot be replaced
                                 use before 2027-07-01 - a code cannot be replaced
 
 /name quote <svc> alice         alice.simplex - available ($20.00 for 2y)
 
-/name buy <svc> alice SMPX-4K2P-7TQW-9XRM simplex:/contact#/abc
+/name buy <svc> alice SMPX1-nyxxqAPV...xcym simplex:/contact#/abc
                                 revealing -> registered
                                 owner  0x9858EfFD232B4033E47d90003D41EC34EcaEda94
                                 path   m/44'/60'/0'/0/0
@@ -114,7 +115,7 @@ channel, never a prompt — a blocking read would hang every non-terminal client
 ```
 APINameQuote      {target, label, years}   -> CRNameQuote {label, available, reserved,
                                                            priceUsdCents, years}
-APINameVerifyCode {code}                   -> CRNameCode {minLength, years, expires, label}
+APINameVerifyCode {code}                   -> CRNameCode {minLength, years, expires}
 APINameBuy        {target, label, code, link_}
                                            -> CRNameRegistered {name, owner, path, expiry, txHash}
 APINameList       {target}                 -> CRNames [{name, points, expiry, editsLeft}]
@@ -367,7 +368,7 @@ retries arrive.
 |---|---|---|
 | **Wallet** | `newSeed`, `deriveNameKey` / `deriveAtPath`, `accountAddress`, `signIntent`, recovery-phrase import and export. No digest signing is exported. | stealth keys hang off the same profile account; the wallet already holds the one-time-address table's shape. |
 | **Wallet storage** | `wallet_seeds` (several per device, `backed_up`), `wallet_name_keys` (name → path, provenance), a `k` high-water mark per profile. | raw-key import writes `provenance = 'imported'`; the column exists, the path does not. |
-| **Codes** | a table of pre-issued random values held by the registrar, looked up on `verify-code` and `buy`. | blind-signed codes, so the issuer cannot join a buyer to a name — its own branch. |
+| **Codes** | `Names.Codes`: pinned-key verification on the device, `SMPX1-` format, dev issuer behind the `dev_codes` flag. | the production key schedule, and the blinding protocol itself, which lives in the web store. |
 | **Intents** | `Names.Snrc`: namehash, `SetText` type string, `intentDigest`, `signSnrcIntent`. | `TransferName` when transfers land — the type string already changed for stealth. |
 | **RPC transport** | badges' `APISendServiceRequest` / `APISendServiceResponse`, unchanged. | shared. |
 | **Service** | registrar dispatch for all nine commands, readable chain, spent-code ledger, signature and nonce checks, edit accounting, real minimum commitment age. | swap the mock for a relayer to a deployed SNRC. |
@@ -376,32 +377,157 @@ retries arrive.
 
 ## Redemption codes
 
+### The pitch
+
+Two groups are promised a name of their choosing, above some minimum length. Both
+have a reason not to want that name traced back to how they got it.
+
+**Investors** taking a name as a perk may not want SimpleX to know which name is
+theirs: the perk should not double as a register of who invested. (An investor who
+registers before the public sale reveals it anyway — their choice to make.)
+**Web-store buyers** do not want the name linked to how they paid. Monero protects
+that end well, Bitcoin less so, a card not at all — and none of it helps if the
+shop simply records "this card bought that name". (IAP buyers accept that
+linkability and obtain no codes.)
+
+A redemption code carries the entitlement from paying to registering. The usual
+way to keep those apart is a promise: issue a code, note who got it, undertake not
+to look. Here there is nothing to look at.
+
+**The buyer's story**
+
+1. Sign in to the web store — with a Wefunder email for a perk, or by paying in
+   card, BTC or XMR. *The store learns who is asking and what they are owed, which
+   is what it already knew.*
+2. The browser generates a random 32-byte nonce and blinds it.
+3. The store signs the blinded value under the key for that tier and expiry cohort
+   — RFC 9474 blind RSA, the same construction Apple ships on every iPhone since
+   iOS 16 as Private Access Tokens (Privacy Pass token type 0x0002), where it
+   replaces CAPTCHAs by proving a device passed a check without identifying it.
+   *It can count requests per account; it cannot tell two apart by content.*
+4. The browser unblinds, leaving a valid signature over a number the store has
+   never seen. *A bearer token: no account, no identity, nothing tying it to
+   step 1.*
+5. Minutes or months later the code is pasted into the app and a name is
+   registered. *The registrar checks the signature against a pinned key, reads the
+   tier and expiry from whichever key matched, and files the nonce so it cannot be
+   spent twice.*
+
+Nothing at step 5 can be joined to step 1 — not by us, not by an investor's
+employer, not by anyone who later obtains both sets of records, because one of
+those sets was never written.
+
+**The key schedule.** Cohorts are yearly: the first runs to the end of 2027 and
+expires at the end of 2028, so even the last buyer gets a clear year. Tiers grow as
+registration opens for shorter names, so plan on **six tiers across three years —
+about 18 public keys, under 5 KB** compiled into the app and the registrar. They
+are generated ahead of time because a cohort opened after an app shipped could not
+otherwise be verified by it.
+
+**What it does not claim.** A code is anonymous *within the set sharing its issuer
+key*, so the tier count and cohort length are the privacy parameters, not
+administrative details. And it unlinks paying from registering, not registering
+from SimpleX: the relayer still submits the transaction.
+
+### What a code is
+
 A code authorises registering **one name of at least N characters for M years**,
 and stops working after a fixed date. It names no particular name, and it is
 bearer: whoever holds it can spend it.
 
-A code is an **unguessable random value issued ahead of time**. Holding one *is*
-the entitlement, so there is nothing to verify — the registrar looks it up in a
-table it issued:
-
 ```
-SMPX-4K2P-7TQW-9XRM
+SMPX1-<base64url(payload)>            no padding
+payload = nonce(32) ‖ RSA-PSS signature(256)
 ```
 
-What a code is worth lives in its row, not in the code, so tiers and expiry dates
-change by reissuing the table rather than by shipping anything to clients. The
-registrar marks a row spent on redemption, which is what stops a second use.
+390 characters in full — pasted or scanned, never typed:
 
-`/name verify-code` asks the registrar what a code is worth before a name is
-chosen. That is safe to expose precisely because codes are unguessable: it cannot
-be used to hunt for one.
+```
+SMPX1-nyxxqAPVThi7YA834pFKxl2IAnsU-TptwEXoG5pzL1CK4b0cVuzmvL-jlPwVA58FzX5aZaCc
+k-dBxQ4yxJ_0JpKLdagQwpTBOFz6pSh49IMAIK51LUnGfJJN61bkNZW-8iUPISYYC7fXPIWtJ_2GiT
+yJm3gPb29pfEoBmN4BPK6JBdzzWBvYmBaFmlbPuMkR65Yh95U4rhXzACgmHZOUyhBsvnqxPLXBujGL
+qHJaJxJthWQiF-YGLPVgvl7Uk448YJuaDFHL8edMW0cWyPO90GejQ8v2aSWmo9LRvkAfWIBOeCYOI9
+b4PqCbBPWfM1Z58RRAtMXiN_nubjYmPIIw0rjPZ-Ex__Y4P5IMK-6tRe8GREtovnczgs1yXEY9xcym
+```
 
-**What this does not do: unlink the purchase from the name.** The issuer holds the
-table, so it can join "who was given this code" to "which name it registered".
-That is a deliberate simplification for the first release. Removing the link needs
-blind signatures — the code becomes a token the issuer signs without seeing, so
-there is no table to join against — which is a separate change on its own branch,
-not a variation on this one.
+(line-wrapped here for the page; the code itself is one unbroken string)
+
+### Why the message is only a nonce
+
+A blind issuer signs a value it cannot read, so it cannot check the content.
+Anything carried inside the message would therefore be whatever the holder chose
+to put there — a holder could grant themselves a ten-year term or an expiry in
+the next century.
+
+So the message carries no claims at all, and **everything the issuer attests is a
+property of the key**: minimum name length, term, and expiry. A key exists per
+**(tier, expiry cohort)**, and "which key verified this" is the entire meaning of
+a code.
+
+This is also why expiry is a cohort rather than per-buyer: a distinct expiry date
+would identify its holder as precisely as a serial number.
+
+### Does the key set grow without bound?
+
+No — the **live** set is bounded, because a key retires when its cohort expires.
+
+```
+live keys  =  tiers  ×  ceil(code validity / cohort length)  +  1
+```
+
+Keys past their cohort's expiry (plus a grace window) are dropped from the client,
+and R14's spent-code set retires with them, so that is bounded too.
+
+What grows is the *cumulative* set over the product's life, and it matters for one
+reason: **the client verifies against keys compiled into the build**, so a cohort
+opened after an app shipped cannot be verified by it. Hence pinning a schedule
+rather than a key (see the pitch for the numbers).
+
+Two consequences worth building deliberately. A build whose schedule has run out
+must say **"this code is newer than this build, update the app"** rather than
+"invalid code" — indistinguishable to the maths, completely different to the user.
+And if the schedule ever proves too rigid, the escape hatch is one long-lived root
+key signing cohort keys, with the certificate carried inside the code: exactly one
+pinned key forever, at roughly 500 extra bytes per code. Not needed at these
+numbers, and noted so it is not rediscovered under pressure.
+
+### How a code is checked
+
+**On the device, before anything is sent.** There is deliberately no "is this
+code valid" RPC: that would hand the service an oracle for probing codes. The
+client tries each pinned key, and the tier comes from whichever one verifies — so
+the tier cannot be forged by editing the code.
+
+The service re-verifies, and separately keeps the **spent-code set**. Two details
+there are load-bearing and are pinned by tests:
+
+- **base64url, not base64.** `+` and `/` do not survive a URL, a path, or form
+  encoding, and a code that arrives silently wrong is worse than one that fails.
+- **The ledger keys on the decoded nonce, never the code string.** base64's final
+  character carries unused bits, so one code can be written more than one way and
+  a text-keyed ledger could be bypassed by changing a character. The nonce is also
+  safer than the signature, since PSS is randomised and one message can yield more
+  than one valid signature.
+
+*(Why blind RSA rather than an anonymous credential, and what that would change:
+Appendix A.)*
+
+### Development codes
+
+Production issuer keys are **deliberately not defined yet**. The format is fixed
+so adding them is data rather than code, and a build with none says so plainly.
+
+A fixed development key lives behind the `dev_codes` cabal flag — a compile-time
+flag and not configuration, because a dev verification key in a release build
+would be a forgery key for real codes, and no runtime setting should be able to
+switch that on. The service mints and prints codes under it at startup so the
+whole flow is runnable locally, and the nonces are fixed so the codes are
+identical on every run and tests can hardcode them.
+
+That signer works **unblinded**: it picks the nonce and sees the code, because
+issuer and verifier are the same process. It exercises verification exactly, and
+it is *not* the issuance model — a production issuer needs the blinding protocol
+above.
 
 ## Editing records
 
@@ -473,6 +599,93 @@ Each of these is a test, not a claim.
 - Raw-key import: `provenance` exists in the schema, nothing writes `'imported'`.
 - The recovery scan walks a fixed set of layouts but has not been tested against a
   name planted at a foreign one.
-- Redemption codes are a lookup table the issuer holds, so a code links the buyer
-  to the name it bought. Unlinkable blind-signed codes are deferred to their own
-  branch.
+- Production issuer keys are undefined by design; a build with none refuses every
+  code and must say so rather than reporting one invalid.
+- The blinding protocol itself is the web store's, and is not built here. The dev
+  signer mints unblinded, which exercises verification but is not issuance.
+
+## Appendix A — Signature schemes considered
+
+Recorded so the choice is not re-litigated from memory. Facts here were checked
+against sources and the vendored code on **2026-08-27**; the draft status in
+particular has a shelf life.
+
+### Why a blind signature at all
+
+A code must be **one-time**, so the registrar records something unique to stop it
+being spent twice. It must also be **publicly verifiable**, because the client
+checks it against a pinned key with no issuer secret involved.
+
+A blind signature satisfies both at once: the issuer never sees the finished
+token, so **the token is its own nullifier** — recording it prevents reuse and
+reveals nothing about who was issued what. Any non-blind scheme would need a
+separate nullifier that the issuer *had* seen, which is precisely the link the
+design exists to break.
+
+### RSA blind signatures — chosen
+
+RFC 9474 (2023). Publicly verifiable, no concurrency weakness, and the same
+construction Apple ships as Private Access Tokens — Privacy Pass token type
+0x0002, publicly verifiable RSA blind signatures, in iOS 16 and macOS Ventura,
+where it replaces CAPTCHAs by proving a device passed a check without identifying
+it. Apple deployed against the draft in 2022; RFC 9474 followed in 2023.
+
+RFC 9578 (Privacy Pass, 2024) offers exactly two token types, and the other one —
+VOPRF, P-384 — is only *privately* verifiable, which fails the pinned-key
+requirement. The standard facing this same choice picked RSA.
+
+Cost: a 256-byte signature, hence a 390-character code, and one keypair per
+(tier, expiry cohort).
+
+### BBS+ with blind issuance and per-verifier pseudonyms — the strongest alternative
+
+Would give **one issuer key forever**: tier and expiry become signed attributes
+rather than key identity, so a cohort invented years later works with an app built
+today. That is the real prize — not fewer keys, but no schedule to outrun. Under
+blind BBS the holder commits only a secret and the **issuer supplies the visible
+attributes**, which lifts the constraint that forces our message to be a bare
+nonce. A per-verifier pseudonym gives a nullifier that is stable at one verifier
+and unlinkable to issuance. And the code shrinks to roughly 160 characters: an
+80-byte signature plus about 38 bytes of attributes.
+
+**It does not improve anonymity.** The tier must still be disclosed to be
+enforced, so the set remains everyone sharing that tier and cohort. One key does
+not widen it. A range proof over the attribute — "this credential permits a name
+this short", without naming the tier — would, and is another layer again.
+
+Why not yet:
+
+- Both pieces are **IRTF drafts, not RFCs**:
+  `draft-irtf-cfrg-bbs-blind-signatures` and
+  `draft-irtf-cfrg-bbs-per-verifier-linkability`, each at **-02, September 2025**.
+- **The vendored libbbs has neither.** `cbits/libbbs` exports exactly
+  `bbs_keygen`, `bbs_keygen_full`, `bbs_sk_to_pk`, `bbs_sign`, `bbs_verify`,
+  `bbs_proof_gen`, `bbs_proof_verify`; nothing matching *blind* or *pseudonym*
+  appears anywhere in that tree. This is new C, not new Haskell — a different
+  piece of work from "we already ship BBS+" (which we do, for badges).
+- Redemption becomes proof *generation* rather than pasting a signature, and the
+  proof on the wire is ~300 bytes even when the stored credential is smaller.
+
+Revisit if tiers proliferate beyond what a schedule can pin, or if codes must fit
+a smaller QR.
+
+### Blind Schnorr — rejected
+
+64-byte signatures, but broken by the ROS attack under concurrent issuance, and a
+batch on the order of a thousand codes is squarely in that regime. **Clause Blind
+Schnorr** repairs it and is provably secure, but is unstandardised and
+unimplemented here.
+
+### Blind BLS — rejected
+
+48-byte signatures, and `blst` is already vendored. But there is no RFC and no
+blind-signing binding, and rolling our own blind signature scheme is the one thing
+to avoid.
+
+### The trade nobody can engineer away
+
+**Blindness is what costs the length.** Drop the requirement that a purchase be
+unlinkable from a registration, and a plain Ed25519 signature over
+`(tier, expiry, nonce)` is 64 bytes — a ~120-character code, short enough to type.
+That is a product decision, not a cryptographic one, and the launch requirements
+currently answer it no.
