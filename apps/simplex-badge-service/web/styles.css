@@ -1,12 +1,306 @@
-/* Placeholder stylesheet; the design system replaces it.
+/* Design system for the supporter-badge checkout site.
+
    Served from web/ rather than from dist/, so that an edit is picked up
-   without a rebuild when the service runs with [web] web_dir set. */
+   without a rebuild when the service runs with [web] web_dir set.
+
+   Two rules bind every edit to this file:
+
+   1. No double-at token belongs here — the syntax index.html names its assets
+      with. Only index.html is substituted, so such a token in a CSS rule would
+      reach the browser as literal text. The two logos are <img> elements in
+      index.html; this file only chooses which of them is shown.
+   2. No cross-origin URL belongs here either. The service sends
+      Content-Security-Policy: default-src 'self' (D4), so a webfont or a
+      remote image would be blocked at runtime with nothing to see. The font
+      stack below is the system one for that reason.
+
+   Every colour is defined on bare :root. The dark block only *redefines*
+   tokens that already exist: a colour introduced there alone would be
+   undefined in light mode, which is where most of this site is read, and the
+   browser would fall back to nothing rather than to an error. */
 
 :root {
   color-scheme: light dark;
+
+  /* Accent: primary-light and primary-dark from website/tailwind.config.js. */
+  --accent: #0053D0;
+  --accent-hover: #1661D1;
+  --on-accent: #FFFFFF;
+
+  --bg: #FFFFFF;
+  --card-bg: #FFFFFF;
+  --text: #0D0E12;
+  --text-secondary: #3F484B;
+  --border: #DFE4EA;
+  --focus-ring: #0053D0;
+
+  --error-bg: #FDECEC;
+  --error-text: #8C1C13;
+  --error-border: #E0A5A0;
+
+  --gutter: 20px;
+  --radius: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #70F0F9;
+    --accent-hover: #66D9E2;
+    --on-accent: #000832;
+
+    --bg: #000832;
+    /* The app's PeriodCard tints its card in dark mode and leaves it flush
+       with the page in light mode; these two match that. */
+    --card-bg: #071C46;
+    --text: #FFFFFF;
+    --text-secondary: #A9BAD4;
+    --border: #0B2A59;
+    --focus-ring: #70F0F9;
+
+    --error-bg: #3A1113;
+    --error-text: #FFB3AD;
+    --error-border: #7A2B2B;
+  }
+
+  .logo--light {
+    display: none;
+  }
+
+  .logo--dark {
+    display: block;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  /* A long code or address must wrap rather than widen the page: the narrow
+     layout this site is read on has no horizontal room to give. */
+  overflow-wrap: break-word;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* One centred column, the whole site. */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: 560px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 40px var(--gutter) 56px;
+}
+
+.masthead {
+  display: flex;
+  justify-content: center;
+}
+
+.logo {
+  display: block;
+  width: auto;
+  height: 34px;
+}
+
+.logo--dark {
+  display: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: screen-fade-in 150ms ease-out;
+}
+
+@keyframes screen-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    animation: none;
+  }
+}
+
+.screen__heading {
+  margin: 0;
+  font-size: 1.625rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.prose {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0;
+}
+
+/* A plain block fieldset: a flex or grid fieldset moves its rendered legend
+   out of normal flow in some engines, and the legend is a real one here. */
+.options {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.options__legend {
+  margin: 0 0 12px;
+  padding: 0;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+/* The radio card, following PeriodCard in BadgesPayView.kt: a 2px border that
+   turns accent when selected. The input stays in the accessibility tree and
+   in the tab order; only its own rendering is hidden. */
+.option {
+  display: block;
+  cursor: pointer;
+}
+
+.option + .option {
+  margin-top: 12px;
+}
+
+.option__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.option__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+}
+
+.option__input:checked + .option__body {
+  border-color: var(--accent);
+}
+
+.option__input:focus-visible + .option__body {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.option__input:disabled + .option__body {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.option__label {
+  font-weight: 600;
+}
+
+.option__detail {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.option__input:checked + .option__body .option__detail {
+  color: var(--accent);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.summary__term {
+  color: var(--text-secondary);
+}
+
+.summary__value {
+  margin: 0;
+  text-align: right;
+}
+
+.button {
+  width: 100%;
+  padding: 14px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--accent-hover);
+}
+
+/* Nothing here fails to a blank screen: a failed fetch or an unanswered
+   question says so in this banner. */
+.banner {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--error-border);
+  border-radius: 12px;
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.footer {
+  margin-top: auto;
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+.footer a {
+  color: var(--accent);
+}
+
+/* The only focus styling in this file, and nothing suppresses it: there is no
+   `outline: none` anywhere here. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

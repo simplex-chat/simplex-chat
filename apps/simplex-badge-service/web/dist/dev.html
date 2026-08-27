@@ -23,8 +23,17 @@
     <link rel="stylesheet" href="../styles.css" />
   </head>
   <body>
-    <main id="app"></main>
-    <footer><a href="https://example.invalid/dev-support-contact">Contact support</a></footer>
+    <div class="column">
+      <!-- The site's only image. styles.css shows one and hides the other by
+           colour scheme; both cannot be referenced from CSS, because CSS is
+           served verbatim and a token in it would not be substituted. -->
+      <header class="masthead">
+        <img class="logo logo--light" src="./logo-symbol-light.svg" alt="SimpleX" width="34" height="34" />
+        <img class="logo logo--dark" src="./logo-symbol-dark.svg" alt="SimpleX" width="34" height="35" />
+      </header>
+      <main id="app"></main>
+      <footer class="footer"><a href="https://example.invalid/dev-support-contact">Contact support</a></footer>
+    </div>
     <script type="module" src="./main.js"></script>
   </body>
 </html>
