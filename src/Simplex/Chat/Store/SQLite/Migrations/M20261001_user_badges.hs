@@ -90,6 +90,16 @@ CREATE TABLE @badge_offers(
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE @badge_codes(
+  badge_code_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code_hash BLOB NOT NULL,
+  badge_type TEXT,
+  months INTEGER,
+  redeemed_at TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(code_hash)
+);
+
 CREATE TABLE @badge_purchases(
   badge_purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
   purchase_key BLOB NOT NULL,
@@ -97,11 +107,13 @@ CREATE TABLE @badge_purchases(
   initial_badge_type TEXT NOT NULL,
   current_badge_type TEXT NOT NULL,
   payment_id TEXT REFERENCES @payments,
+  badge_code_id INTEGER REFERENCES @badge_codes,
   status TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   UNIQUE(purchase_key),
-  UNIQUE(payment_id)
+  UNIQUE(payment_id),
+  UNIQUE(badge_code_id)
 );
 
 CREATE TABLE @badge_invoices(
@@ -186,6 +198,7 @@ DROP TABLE @badge_ledger;
 DROP TABLE @badge_subscription_changes;
 DROP TABLE @badge_invoices;
 DROP TABLE @badge_purchases;
+DROP TABLE @badge_codes;
 DROP TABLE @subscription_charges;
 DROP TABLE @payments;
 DROP TABLE @invoices;
@@ -218,6 +231,16 @@ ALTER TABLE badge_ledger ADD COLUMN entry_type_value TEXT;
 CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 
 ALTER TABLE users ADD COLUMN shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL;
+
+ALTER TABLE badge_codes ADD COLUMN user_id INTEGER REFERENCES users ON DELETE CASCADE;
+
+ALTER TABLE badge_codes ADD COLUMN purchase_key BLOB;
+
+ALTER TABLE badge_codes ADD COLUMN purchase_priv_key BLOB;
+
+ALTER TABLE badge_codes ADD COLUMN master_key BLOB;
+
+CREATE INDEX idx_badge_codes_user ON badge_codes(user_id);
 |]
 
 down_m20261001_user_badges :: Query

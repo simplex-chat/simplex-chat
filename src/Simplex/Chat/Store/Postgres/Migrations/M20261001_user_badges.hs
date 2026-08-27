@@ -89,6 +89,16 @@ CREATE TABLE @badge_offers(
   created_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE @badge_codes(
+  badge_code_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code_hash BYTEA NOT NULL,
+  badge_type TEXT,
+  months SMALLINT,
+  redeemed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(code_hash)
+);
+
 CREATE TABLE @badge_purchases(
   badge_purchase_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   purchase_key BYTEA NOT NULL,
@@ -96,11 +106,13 @@ CREATE TABLE @badge_purchases(
   initial_badge_type TEXT NOT NULL,
   current_badge_type TEXT NOT NULL,
   payment_id TEXT REFERENCES @payments,
+  badge_code_id BIGINT REFERENCES @badge_codes,
   status TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   UNIQUE(purchase_key),
-  UNIQUE(payment_id)
+  UNIQUE(payment_id),
+  UNIQUE(badge_code_id)
 );
 
 CREATE TABLE @badge_invoices(
@@ -185,6 +197,7 @@ DROP TABLE @badge_ledger;
 DROP TABLE @badge_subscription_changes;
 DROP TABLE @badge_invoices;
 DROP TABLE @badge_purchases;
+DROP TABLE @badge_codes;
 DROP TABLE @subscription_charges;
 DROP TABLE @payments;
 DROP TABLE @invoices;
@@ -217,6 +230,16 @@ ALTER TABLE badge_ledger ADD COLUMN entry_type_value TEXT;
 CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 
 ALTER TABLE users ADD COLUMN shown_badge_id BIGINT REFERENCES badge_purchases ON DELETE SET NULL;
+
+ALTER TABLE badge_codes ADD COLUMN user_id BIGINT REFERENCES users ON DELETE CASCADE;
+
+ALTER TABLE badge_codes ADD COLUMN purchase_key BYTEA;
+
+ALTER TABLE badge_codes ADD COLUMN purchase_priv_key BYTEA;
+
+ALTER TABLE badge_codes ADD COLUMN master_key BYTEA;
+
+CREATE INDEX idx_badge_codes_user ON badge_codes(user_id);
 |]
 
 down_m20261001_user_badges :: Text

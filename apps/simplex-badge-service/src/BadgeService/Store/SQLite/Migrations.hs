@@ -32,7 +32,21 @@ m20260806_badge_service_schema =
       servicePrefix
       [sql|
 ALTER TABLE @payments ADD COLUMN receipt_hash BLOB;
+
+CREATE TABLE @badge_code_invoices(
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
+  price_id TEXT NOT NULL REFERENCES @badge_prices,
+  offer_id TEXT REFERENCES @badge_offers,
+  months INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
 |]
 
 down_m20260806_badge_service_schema :: Query
-down_m20260806_badge_service_schema = badgeSchemaDown servicePrefix
+down_m20260806_badge_service_schema =
+  withPrefix
+    servicePrefix
+    [sql|
+DROP TABLE @badge_code_invoices;
+|]
+    <> badgeSchemaDown servicePrefix
