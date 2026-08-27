@@ -931,6 +931,11 @@
     <string name="moderate_verb">Moderovat</string>
     <string name="observer_cant_send_message_desc">Kontaktujte prosím správce skupiny.</string>
     <string name="you_are_observer">jste pozorovatel</string>
+    <string name="connect_plan_you_are_observer">Jste pozorovatel</string>
+    <string name="connect_plan_you_are_member">Jste člen</string>
+    <string name="connect_plan_you_are_moderator">Jste moderátor</string>
+    <string name="connect_plan_you_are_admin">Jste správce</string>
+    <string name="connect_plan_you_are_owner">Jste vlastník</string>
     <string name="group_member_role_observer">pozorovatel</string>
     <string name="moderate_message_will_be_deleted_warning">Zpráva bude smazána pro všechny členy.</string>
     <string name="moderate_message_will_be_marked_warning">Zpráva bude pro všechny členy označena jako moderovaná.</string>
@@ -1246,7 +1251,7 @@
     <string name="snd_conn_event_ratchet_sync_required">vyžadováno opětovné vyjednávání šifrování pro %s</string>
     <string name="receipts_contacts_override_disabled">Odesílání potvrzení o doručení je vypnuto pro %d kontakty.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Odesílání potvrzení o doručení bude povoleno pro všechny kontakty ve všech viditelných profilech chatu.</string>
-    <string name="receipts_section_description">Toto nastavení je pro váš aktuální profil</string>
+    <string name="these_settings_are_for_your_current_profile">Toto nastavení je pro váš aktuální profil</string>
     <string name="conn_event_ratchet_sync_allowed">opětovné vyjednávání šifrování povoleno</string>
     <string name="snd_conn_event_ratchet_sync_allowed">opětovné vyjednávání šifrování povoleno pro %s</string>
     <string name="conn_event_ratchet_sync_required">vyžadováno opětovné vyjednávání šifrování</string>
@@ -1693,7 +1698,7 @@
     <string name="v5_7_network_descr">Spolehlivější síťové připojení.</string>
     <string name="allow_to_send_simplex_links">Povolit odesílat SimpleX odkazy.</string>
     <string name="saved_description">uloženo</string>
-    <string name="saved_from_description">Uloženo z %s</string>
+    <string name="saved_from">Uloženo z</string>
     <string name="saved_chat_item_info_tab">Uloženo</string>
     <string name="forwarded_chat_item_info_tab">Přeposláno</string>
     <string name="saved_from_chat_item_info_title">Uloženo z</string>

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20260731_user_badges where
+module Simplex.Chat.Store.Postgres.Migrations.M20261001_user_badges where
 
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -192,8 +192,8 @@ DROP TABLE @badge_offers;
 DROP TABLE @badge_prices;
 |]
 
-m20260731_user_badges :: Text
-m20260731_user_badges =
+m20261001_user_badges :: Text
+m20261001_user_badges =
   badgeSchema ""
     <> [r|
 ALTER TABLE badge_purchases ADD COLUMN user_id BIGINT REFERENCES users ON DELETE CASCADE;
@@ -219,8 +219,8 @@ CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 ALTER TABLE users ADD COLUMN shown_badge_id BIGINT REFERENCES badge_purchases ON DELETE SET NULL;
 |]
 
-down_m20260731_user_badges :: Text
-down_m20260731_user_badges =
+down_m20261001_user_badges :: Text
+down_m20261001_user_badges =
   [r|
 ALTER TABLE users DROP COLUMN shown_badge_id;
 |]

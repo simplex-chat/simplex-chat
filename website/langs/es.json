@@ -10,7 +10,8 @@
     "simplex-explained-tab-3-p-2": "El usuario puede mejorar aún más la privacidad de sus metadatos, haciendo uso de la red Tor para acceder a los servidores, evitando así la correlación por dirección IP.",
     "smp-protocol": "Protocolo SMP",
     "donate": "Donación",
-    "copyright-label": "© 2020-2025 SimpleX Chat | Proyecto de Código Abierto",
+    "invest": "Invertir",
+    "copyright-label": "© 2020-2026 SimpleX Chat | Proyecto de Código Abierto",
     "simplex-chat-protocol": "Protocolo SimpleX Chat",
     "terms-and-privacy-policy": "Política de Privacidad",
     "hero-header": "Privacidad redefinida",
@@ -282,6 +283,8 @@
     "index-nextweb-p2": "Ninguna entidad controla la red – cualquiera puede ejecutar servidores.",
     "index-token-h2": "Financiada por Sus Usuarios",
     "index-token-p1": "Para mantenerse independientes, los canales y comunidades grandes pagarán por sus servidores.",
+    "index-token-p2-cf": "Y los usuarios ya pueden invertir en SimpleX Chat &mdash; ¡el crowdfunding está activo!",
+    "index-token-cta-cf": "Invertir en SimpleX Chat",
     "index-token-p2": "Esto cubrirá infraestructura, desarrollo de software y gobernanza de la red.",
     "index-token-cta": "Descubre más sobre los Créditos Comunitarios",
     "index-roadmap-h2": "Ruta SimpleX hacía el Internet Libre",
@@ -372,5 +375,6 @@
     "send-file": "Enviar archivo",
     "links": "Enlaces",
     "links-title": "Enlaces de la comunidad",
-    "links-all-languages": "Todos los idiomas"
+    "links-all-languages": "Todos los idiomas",
+    "docs-dropdown-16": "Alojar un servidor de chat"
 }

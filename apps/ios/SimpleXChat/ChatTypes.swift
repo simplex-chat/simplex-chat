@@ -42,6 +42,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
     public var autoAcceptMemberContacts: Bool
+    public var autoAcceptGroupInvitations: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
     public var userChatRelay: Bool
@@ -71,6 +72,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false,
         autoAcceptMemberContacts: false,
+        autoAcceptGroupInvitations: false,
         userChatRelay: false
     )
 }
@@ -4337,13 +4339,15 @@ public enum MsgDirection: String, Decodable, Hashable {
 public enum CIForwardedFrom: Decodable, Hashable {
     case unknown
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
-    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
+    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?, memberId: String?, sharedMsgId_: String?, groupType: GroupType?)
+    case groupLink(chatName: String, msgDir: MsgDirection, groupLink: String, publicGroupId: String, memberId: String?, sharedMsgId: String, groupType: GroupType?)
 
-    var chatName: String {
+    public var chatName: String {
         switch self {
         case .unknown: ""
         case let .contact(chatName, _, _, _): chatName
-        case let .group(chatName, _, _, _): chatName
+        case let .group(chatName, _, _, _, _, _, _): chatName
+        case let .groupLink(chatName, _, _, _, _, _, _): chatName
         }
     }
 
@@ -4354,17 +4358,23 @@ public enum CIForwardedFrom: Decodable, Hashable {
             if let contactId {
                 (ChatType.direct, contactId, msgId)
             } else { nil }
-        case let .group(_, _, groupId, msgId):
+        case let .group(_, _, groupId, msgId, _, _, _):
             if let groupId {
                 (ChatType.group, groupId, msgId)
             } else { nil }
+        case .groupLink: nil
+        }
+    }
+
+    public var sourceGroupLink: String? {
+        switch self {
+        case let .groupLink(_, _, groupLink, _, _, _, _): groupLink
+        default: nil
         }
     }
 
     public func text(_ chatType: ChatType) -> LocalizedStringKey {
-        chatType == .local
-        ? (chatName == "" ? "saved" : "saved from \(chatName)")
-        : "forwarded"
+        chatType == .local ? "saved" : "forwarded"
     }
 }
 

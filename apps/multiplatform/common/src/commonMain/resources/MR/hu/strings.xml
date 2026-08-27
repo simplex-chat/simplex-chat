@@ -1127,6 +1127,13 @@
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
     <string name="rcv_group_event_2_members_connected">%s és %s kapcsolódott</string>
     <string name="you_are_observer">Ön megfigyelő</string>
+    <string name="connect_plan_you_are_observer">Ön megfigyelő</string>
+    <string name="connect_plan_you_are_member">Ön tag</string>
+    <string name="connect_plan_you_are_moderator">Ön moderátor</string>
+    <string name="connect_plan_you_are_admin">Ön adminisztrátor</string>
+    <string name="connect_plan_you_are_owner">Ön tulajdonos</string>
+    <string name="connect_plan_you_are_subscriber">Ön feliratkozó</string>
+    <string name="connect_plan_you_are_contributor">Ön közreműködő</string>
     <string name="port_verb">Port</string>
     <string name="set_passcode">Jelkód beállítása</string>
     <string name="whats_new">Újdonságok</string>
@@ -1475,7 +1482,7 @@
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet kivonata különbözik.</string>
-    <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
+    <string name="these_settings_are_for_your_current_profile">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információkat a <font color="#0088ff">GitHub-tárolónkban</font> talál.]]></string>
     <string name="error_showing_content">Hiba történt a tartalom megjelenítésekor</string>
@@ -1694,7 +1701,7 @@
     <string name="allow_to_send_simplex_links">A SimpleX-hivatkozások küldése engedélyezve van.</string>
     <string name="feature_enabled_for">Számukra engedélyezve</string>
     <string name="saved_description">mentett</string>
-    <string name="saved_from_description">mentve innen: %s</string>
+    <string name="saved_from">mentve innen:</string>
     <string name="forwarded_from_chat_item_info_title">Továbbítva innen</string>
     <string name="recipients_can_not_see_who_message_from">A címzett(ek) nem látja(k), hogy kitől származik ez az üzenet.</string>
     <string name="saved_chat_item_info_tab">Mentett</string>
@@ -2881,7 +2888,7 @@
     <string name="signature_missing_alert_desc">A csatorna megköveteli az üzenet aláírását, de az hiányzik.</string>
     <string name="channel_simplex_name">Csatorna SimpleX-neve</string>
     <string name="get_simplex_name_beta">SimpleX-név beszerzése (béta)</string>
-    <string name="register_test_name">Egy név regisztrálása tesztelési céllal</string>
+    <string name="register_test_name">Útmutató egy név regisztrálásához tesztelési céllal</string>
     <string name="remove_name">Név eltávolítása</string>
     <string name="save_simplex_name_question">Menti a SimpleX-nevet?</string>
     <string name="to_verify_channel_member_key">A kulcsok ellenőrzéséhez ezzel a feliratkozóval hasonlítsa össze (vagy olvassa be) az eszközökön található kódot.</string>

@@ -1,0 +1,3 @@
+[submodule "apps/multiplatform/external/nanohttpd/upstream"]
+	path = apps/multiplatform/external/nanohttpd/upstream
+	url = https://github.com/NanoHttpd/nanohttpd

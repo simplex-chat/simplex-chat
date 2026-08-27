@@ -1198,7 +1198,7 @@
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Tai yra jūsų nuoroda grupei <b>%1$s</b>!]]></string>
     <string name="to_connect_via_link_title">Kad prisijungti su nuoroda</string>
     <string name="this_link_is_not_a_valid_connection_link">Ši nuoroda nėra tinkama prisijungimo nuoroda!</string>
-    <string name="receipts_section_description">Šie nustatymai yra jūsų dabartiniam profiliui</string>
+    <string name="these_settings_are_for_your_current_profile">Šie nustatymai yra jūsų dabartiniam profiliui</string>
     <string name="settings_is_storing_in_clear_text">Slaptafrazė saugoma nustatymuose kaip paprastas tekstas.</string>
     <string name="group_invitation_tap_to_join_incognito">Bakstelėkite, kad prisijungti kaip inkognito</string>
     <string name="send_receipts_disabled_alert_msg">Ši grupė turi daugiau nei %1$d narių, pristatymo kvitai nėra siunčiami.</string>
@@ -1547,6 +1547,10 @@
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Jums reikės autentifikuotis kai paleidžiate programėlę arba pratęsiate jos naudojimą po 30 sekundžių fone.</string>
     <string name="no_history">Nėra istorijos</string>
     <string name="you_are_observer">esate stebėtojas</string>
+    <string name="connect_plan_you_are_observer">Esate stebėtojas</string>
+    <string name="connect_plan_you_are_member">Esate narys</string>
+    <string name="connect_plan_you_are_admin">Esate administratorius</string>
+    <string name="connect_plan_you_are_owner">Esate savininkas</string>
     <string name="only_stored_on_members_devices">(saugo tik grupės nariai)</string>
     <string name="your_simplex_contact_address">Jūsų SimpleX adresas</string>
     <string name="smp_servers_scan_qr">Nuskanuoti serverio QR kodą</string>
@@ -1729,7 +1733,7 @@
     <string name="audio_device_speaker">Garsiakalbis</string>
     <string name="v5_7_network">Tinklo valdymas</string>
     <string name="saved_description">išsaugota</string>
-    <string name="saved_from_description">išsaugota iš %s</string>
+    <string name="saved_from">išsaugota iš</string>
     <string name="saved_chat_item_info_tab">Išsaugota</string>
     <string name="voice_messages_not_allowed">Balso žinutės neleidžiamos</string>
     <string name="network_type_network_wifi">WiFi</string>

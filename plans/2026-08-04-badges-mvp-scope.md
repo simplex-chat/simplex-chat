@@ -28,7 +28,7 @@ Order: one path end to end first, then the paths that need external systems. Eac
 - Store functions (`Store/Badges.hs`): get-or-create under the user lock, last-entry reads, verbatim replica writes.
 - `BadgeManager`: worker, locks, reconcile, apply, presentation. The timer and `CEvtBadgeAlert` follow later.
 - JSON instances for `Badges/Service.hs` and `Badges/Store.hs` — `taggedObjectJSON`, with roundtrip tests.
-- Register `M20260731_user_badges` in the migrations list and cabal; regenerate `chat_schema.sql` and `chat_lint.sql`.
+- Register `M20261001_user_badges` in the migrations list and cabal; regenerate `chat_schema.sql` and `chat_lint.sql`.
 
 ## 3. Store integration — iOS, Android
 

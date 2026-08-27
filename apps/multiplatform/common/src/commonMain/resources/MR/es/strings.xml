@@ -1283,7 +1283,7 @@
     <string name="receipts_contacts_override_disabled">El envío de confirmaciones está desactivado para %d contactos</string>
     <string name="receipts_contacts_override_enabled">El envío de confirmaciones está activado para %d contactos</string>
     <string name="send_receipts">Enviar confirmaciones</string>
-    <string name="receipts_section_description">Esta configuración afecta a tu perfil actual</string>
+    <string name="these_settings_are_for_your_current_profile">Esta configuración afecta a tu perfil actual</string>
     <string name="enable_receipts_all">Activar</string>
     <string name="receipts_contacts_title_disable">¿Desactivar confirmaciones\?</string>
     <string name="receipts_contacts_title_enable">¿Activar confirmaciones\?</string>
@@ -1724,7 +1724,7 @@
     <string name="feature_roles_all_members">todos los miembros</string>
     <string name="allow_to_send_simplex_links">Se permite enviar enlaces SimpleX.</string>
     <string name="saved_description">guardado</string>
-    <string name="saved_from_description">guardado desde %s</string>
+    <string name="saved_from">guardado desde</string>
     <string name="saved_chat_item_info_tab">Guardado</string>
     <string name="saved_from_chat_item_info_title">Guardado desde</string>
     <string name="forwarded_from_chat_item_info_title">Reenviado por</string>
@@ -2665,6 +2665,13 @@
     <string name="relay_test_step_wait_response">Espera respuesta</string>
     <string name="channel_member_you">tú</string>
     <string name="you_are_subscriber">eres suscriptor</string>
+    <string name="connect_plan_you_are_observer">Eres observador</string>
+    <string name="connect_plan_you_are_member">Eres miembro</string>
+    <string name="connect_plan_you_are_moderator">Eres moderador</string>
+    <string name="connect_plan_you_are_admin">Eres administrador</string>
+    <string name="connect_plan_you_are_owner">Eres propietario</string>
+    <string name="connect_plan_you_are_subscriber">Eres suscriptor</string>
+    <string name="connect_plan_you_are_contributor">Eres colaborador</string>
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Puedes compartir el enlace o código QR. Cualquiera podrá unirse al canal.</string>
     <string name="relay_section_footer_subscriber">Te conectaste al canal mediante este enlace de servidor.</string>
     <string name="chat_banner_your_channel">Tu canal</string>

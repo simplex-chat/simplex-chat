@@ -31,7 +31,8 @@ fun AppBarTitle(
   val connection = if (enableAlphaChanges) handler?.connection else null
   LaunchedEffect(title) {
     if (enableAlphaChanges) {
-      handler?.title?.value = title
+      // the app bar shows a single line, so the line breaks of the large title are replaced with spaces
+      handler?.title?.value = title.replace("\n", " ")
     } else {
       handler?.connection?.scrollTrackingEnabled = false
     }

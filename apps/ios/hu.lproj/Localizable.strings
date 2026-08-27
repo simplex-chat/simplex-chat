@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Partnerbeállítások";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "Partneri kapcsolatkérések a csoportokból";
+"Contact requests in groups" = "Partneri kapcsolatkérések a csoportokból";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "a partnernek el kell fogadnia…";
@@ -5346,7 +5346,7 @@ chat item action */
 "Saved from" = "Mentve innen";
 
 /* No comment provided by engineer. */
-"saved from %@" = "mentve innen: %@";
+"saved from" = "mentve innen:";
 
 /* message info title */
 "Saved message" = "Mentett üzenet";
@@ -6389,9 +6389,6 @@ alert subtitle */
 "This setting applies to messages in your current chat profile **%@**." = "Ez a beállítás csak az Ön jelenlegi **%@** nevű csevegési profiljában lévő üzenetekre vonatkozik.";
 
 /* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Ez a beállítás csak a jelenlegi **%@** nevű csevegési profiljára vonatkozik.";
-
-/* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "Ez a SimpleX-név nincs regisztrálva. Ellenőrizze a nevet.";
 
 /* No comment provided by engineer. */
@@ -7054,6 +7051,27 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are observer" = "Ön megfigyelő";
+
+/* new chat alert */
+"You are an observer" = "Ön megfigyelő";
+
+/* new chat alert */
+"You are a member" = "Ön tag";
+
+/* new chat alert */
+"You are a moderator" = "Ön moderátor";
+
+/* new chat alert */
+"You are an admin" = "Ön adminisztrátor";
+
+/* new chat alert */
+"You are an owner" = "Ön tulajdonos";
+
+/* new chat alert */
+"You are a subscriber" = "Ön feliratkozó";
+
+/* new chat alert */
+"You are a contributor" = "Ön közreműködő";
 
 /* No comment provided by engineer. */
 "you are subscriber" = "Ön feliratkozó";

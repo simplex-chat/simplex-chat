@@ -990,6 +990,12 @@
     <string name="video_descr">ビデオ</string>
     <string name="alert_title_msg_bad_hash">メッセージのハッシュ値問題</string>
     <string name="you_are_observer">あなたはオブザーバーです</string>
+    <string name="connect_plan_you_are_observer">あなたはオブザーバーです</string>
+    <string name="connect_plan_you_are_member">あなたはメンバーです</string>
+    <string name="connect_plan_you_are_moderator">あなたはモデレーターです</string>
+    <string name="connect_plan_you_are_admin">あなたは管理者です</string>
+    <string name="connect_plan_you_are_owner">あなたはオーナーです</string>
+    <string name="connect_plan_you_are_subscriber">あなたは購読者です</string>
     <string name="observer_cant_send_message_desc">グループの管理者に連絡してください。</string>
     <string name="video_will_be_received_when_contact_completes_uploading">動画は相手がアップロードを完了した時点で受信するができます。</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[SOCKSプロキシがサポートしていない場合、<i>.onion hostを使用する</i>、は「いいえ」に設定します。]]></string>
@@ -1278,7 +1284,7 @@
     <string name="fix_connection_not_supported_by_group_member">グループメンバーによる修正はサポートされていません</string>
     <string name="receipts_section_contacts">連絡先</string>
     <string name="receipts_section_description_1">これらは連絡先とグループの設定が優先されます。</string>
-    <string name="receipts_section_description">これらの設定は現在のプロファイル用です</string>
+    <string name="these_settings_are_for_your_current_profile">これらの設定は現在のプロファイル用です</string>
     <string name="receipts_contacts_title_enable">配信通知を有効？</string>
     <string name="sender_at_ts">%s : %s</string>
     <string name="fix_connection">接続を修正</string>
@@ -1733,7 +1739,7 @@
     <string name="v5_7_network_descr">より信頼性の高いネットワーク接続</string>
     <string name="v5_7_network">ネットワーク管理</string>
     <string name="saved_description">保存済</string>
-    <string name="saved_from_description">%sから保存</string>
+    <string name="saved_from">から保存</string>
     <string name="forwarded_chat_item_info_tab">転送済</string>
     <string name="forwarded_from_chat_item_info_title">転送元</string>
     <string name="saved_from_chat_item_info_title">保存元</string>
