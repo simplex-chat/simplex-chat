@@ -15,7 +15,7 @@ module BadgeService.Service
   )
 where
 
-import BadgeService.Catalog (catalogTotals, seedCatalog)
+import BadgeService.Catalog (catalogTotals, logUnpricedOffers, seedCatalog)
 import BadgeService.Codes (RedeemOutcome (..), classifyRedemption, codeHash, normalizeCode)
 import BadgeService.Config
   ( BadgeServiceConfig (issuer, service),
@@ -76,9 +76,6 @@ import Data.Word (Word32)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeRequest (..), BadgeType)
 import Simplex.Chat.Badges.Service
   ( BadgeBalance (..),
-    BadgeCatalog (..),
-    BadgeOffer (..),
-    BadgePrice (..),
     BadgeServiceCommand (..),
     BadgeServiceErrorCode (..),
     BadgeServiceRequest (..),
@@ -97,7 +94,6 @@ import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types
   ( BadgeIssuance (..),
     BadgeLedgerEntry (..),
-    BadgeOfferId (..),
     LedgerCreditType (..),
     LedgerDebitType (..),
     LedgerEntryType (LECredit, LEDebit),
@@ -531,20 +527,6 @@ handleGetBadgeCatalog bsEnv@BadgeServiceEnv {store, now} purchaseRow = case purc
       -- getBadgeCatalog carries no cursor, so this is always the full ledger (Nothing).
       statement <- mapM (\BadgePurchaseRow {badgePurchaseId} -> purchaseStatement now' db Nothing badgePurchaseId) row
       pure (catalog, statement)
-
--- | An offer that is pinned to a price the catalog also returned, yet still has no total,
--- is a malformed offer (@freeMonths >= months@): the client will render it as unavailable,
--- and nothing else in the system would ever say why. 'chargeableMonths' stopped saying so
--- with 'error' precisely so a request thread survives it (§9), so this is the only place it
--- gets named.
-logUnpricedOffers :: BadgeCatalog -> IO ()
-logUnpricedOffers BadgeCatalog {prices, offers} =
-  forM_ offers $ \BadgeOffer {offerId = BadgeOfferId oid, priceId, total} ->
-    case (priceId, total) of
-      (Just pid, Nothing)
-        | any (\BadgePrice {priceId = pid'} -> pid' == pid) prices ->
-            logWarn $ "catalog offer " <> oid <> " has a pinned price but no chargeable total"
-      _ -> pure ()
 
 -- | A resolved statement cursor: the wire @entryId@ the client asserted, and the local
 -- @entry_id@ it resolved to. The two travel together so 'previousEntryId' always echoes the

@@ -46,7 +46,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import System.Directory (doesFileExist)
 import Text.Read (readMaybe)
 
@@ -211,6 +211,7 @@ parseWeb path ini
       baseUrl <- requiredValue path "web" "base_url" ini
       validateBaseUrl path baseUrl
       supportContact <- requiredValue path "web" "support_contact" ini
+      validateSupportContact path supportContact
       let host = optionalValue "127.0.0.1" "web" "host" ini
           dir = T.unpack <$> optionalMaybeValue "web" "web_dir" ini
       behindProxy <- optionalBool path "web" "behind_proxy" False ini
@@ -225,21 +226,48 @@ parseWeb path ini
               webDir = dir
             }
 
+-- | The hosts '[web] base_url' may be reached at over plaintext http: the local mock stack (plan
+-- \'10) runs everything on one of these. Compared case-insensitively, and with the brackets an
+-- IPv6 literal carries in a URL stripped, because @[::1]@, @[::1]:8080@ and @LOCALHOST@ are the
+-- same three hosts written differently and an operator should not have to guess the spelling.
+loopbackHosts :: [Text]
+loopbackHosts = ["localhost", "127.0.0.1", "::1"]
+
+isLoopbackHost :: ByteString -> Bool
+isLoopbackHost h = T.dropAround (\c -> c == '[' || c == ']') (T.toLower (safeDecodeUtf8 h)) `elem` loopbackHosts
+
 -- | '[web] base_url' is the origin the site is reached at: it goes into a provider's return and
 -- webhook URLs (E2, F1) and into the app's browser hand-off (G1), so a relative or scheme-less
 -- value is not something to discover at the first payment. 'https' is required, because a card
--- return URL over plaintext is a real downgrade, EXCEPT on the loopback hosts, where the local
--- mock stack (plan \'10) runs everything over http.
+-- return URL over plaintext is a real downgrade, EXCEPT on the loopback hosts.
 validateBaseUrl :: FilePath -> Text -> Either String ()
 validateBaseUrl path url = case HTTP.parseRequest (T.unpack url) :: Maybe HTTP.Request of
   Nothing -> bad "must be an absolute http:// or https:// URL"
   Just req
     | HTTP.host req == "" -> bad "must name a host"
     | HTTP.secure req -> Right ()
-    | HTTP.host req `elem` ["localhost", "127.0.0.1"] -> Right ()
-    | otherwise -> bad "must use https unless its host is localhost or 127.0.0.1"
+    | isLoopbackHost (HTTP.host req) -> Right ()
+    | otherwise -> bad ("must use https unless its host is one of " <> T.unpack (T.intercalate ", " loopbackHosts))
   where
     bad why = configError path ("key 'base_url' in section [web] " <> why <> ", got: " <> T.unpack url)
+
+-- | '[web] support_contact' is substituted into the page's one outbound link (D4). It is escaped
+-- on the way in, which stops an operator's typo from breaking out of the @href@ attribute, but
+-- escaping says nothing about the SCHEME: @javascript:@ survives it intact and becomes a live
+-- link. The operator's own ini is inside the trust boundary, so this is a typo guard rather than
+-- a defence -- but 'base_url' in this same section is validated and leaving its neighbour
+-- unchecked is an arbitrary asymmetry. Allowed: an absolute @https@\/@http@ URL with a host, or a
+-- @mailto:@ address, which is the one non-web way an operator plausibly publishes support.
+validateSupportContact :: FilePath -> Text -> Either String ()
+validateSupportContact path url
+  | "mailto:" `T.isPrefixOf` T.toLower url = if T.length url > 7 then Right () else bad "names no address after mailto:"
+  | otherwise = case HTTP.parseRequest (T.unpack url) :: Maybe HTTP.Request of
+      Nothing -> bad "must be an absolute https:// or http:// URL, or a mailto: address"
+      Just req
+        | HTTP.host req == "" -> bad "must name a host"
+        | otherwise -> Right ()
+  where
+    bad why = configError path ("key 'support_contact' in section [web] " <> why <> ", got: " <> T.unpack url)
 
 btcPayKeys :: [Text]
 btcPayKeys = ["url", "store_id", "api_key_file", "webhook_secret_file", "xmr_method_id", "btc_expiry_minutes", "xmr_expiry_minutes"]

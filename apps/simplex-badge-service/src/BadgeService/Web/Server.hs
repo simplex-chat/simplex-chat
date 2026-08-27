@@ -18,14 +18,16 @@ module BadgeService.Web.Server
   )
 where
 
-import BadgeService.Catalog (catalogTotals)
+import BadgeService.Catalog (catalogTotals, logUnpricedOffers)
 import BadgeService.Config (BadgeServiceConfig (web), BadgeServiceEnv (..), WebConfig (..))
 import BadgeService.Store (getActiveCatalog, withServiceTransaction)
 import BadgeService.Web.Assets
 import Control.Logger.Simple
+import Control.Monad (when)
 import qualified Data.Aeson as J
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust)
@@ -90,25 +92,47 @@ runWebServer :: WebServer -> IO ()
 runWebServer ws@WebServer {wsConfig = WebConfig {webPort, webHost, webDir}} = do
   logInfo $ "badge service web listener on " <> webHost <> ":" <> tshow webPort <> maybe "" (\d -> " serving " <> T.pack d <> " (web_dir, development only)") webDir
   -- Warp.run takes a port alone and cannot bind a configured host, so runSettings is used.
-  Warp.runSettings (Warp.setPort webPort $ Warp.setHost (fromString $ T.unpack webHost) Warp.defaultSettings) (webApp ws)
-
-webApp :: WebServer -> Application
-webApp ws req respond
-  | requestMethod req `notElem` ["GET", "HEAD"] =
-      respond $ textResponse methodNotAllowed405 [("Allow", "GET, HEAD")] "method not allowed"
-  | otherwise = case pathInfo req of
-      [] -> withPage serveIndex
-      [""] -> withPage serveIndex
-      ["api", "catalog"] -> respond =<< serveCatalog ws
-      ("assets" : buildHash : name : names) -> withPage $ \page -> serveAsset ws page buildHash (T.intercalate "/" (name : names))
-      _ -> respond notFoundResponse
+  Warp.runSettings settings (webApp ws)
   where
+    settings =
+      Warp.setPort webPort
+        . Warp.setHost (fromString $ T.unpack webHost)
+        -- Warp's default 500 is its own bare page, with none of the security headers on it, and
+        -- an uncaught exception is exactly the response an attacker can most easily provoke.
+        -- Every exception surface later steps add -- D6's request decoding, E3's and F2's
+        -- webhooks -- lands on this same listener, and 'withServiceTransaction' already lets a
+        -- database exception through ('serveCatalog'), so this is not hypothetical.
+        . Warp.setOnExceptionResponse (const internalErrorResponse)
+        -- ... and replacing the response would otherwise also silence Warp's own default
+        -- logging of it. 'defaultShouldDisplayException' keeps client disconnects quiet, which
+        -- is the reason Warp's default is not simply "log everything".
+        . Warp.setOnException (\_ e -> when (Warp.defaultShouldDisplayException e) $ logError $ "badge service web request failed: " <> tshow e)
+        -- no "Server: Warp/x.y.z": the version of the server is nobody's business but ours
+        . Warp.setServerName ""
+        $ Warp.defaultSettings
+
+-- | The method is checked PER ROUTE, not once for the whole listener: @POST \/api\/checkout@
+-- (D6) and the provider webhooks (E3, F2) join this table, and a server-wide "GET and HEAD only"
+-- would have to be undone by each of them. It also keeps 405 for a route that exists and 404 for
+-- one that does not, rather than telling an unauthenticated caller which paths are real.
+webApp :: WebServer -> Application
+webApp ws req respond = case pathInfo req of
+  [] -> readOnly $ withPage serveIndex
+  [""] -> readOnly $ withPage serveIndex
+  ["api", "catalog"] -> readOnly $ respond =<< serveCatalog ws
+  ("assets" : buildHash : name : names) -> readOnly $ withPage $ \page -> serveAsset ws page buildHash (T.intercalate "/" (name : names))
+  _ -> respond notFoundResponse
+  where
+    readOnly = withMethods ["GET", "HEAD"]
+    withMethods allowed serve
+      | requestMethod req `elem` allowed = serve
+      | otherwise = respond $ textResponse methodNotAllowed405 [("Allow", B.intercalate ", " allowed)] "method not allowed"
     withPage serve =
       currentPage ws >>= \case
         Right page -> respond $ serve page
         Left e -> do
           logError $ "badge service web assets are unreadable: " <> T.pack e
-          respond $ textResponse internalServerError500 [] "internal error"
+          respond internalErrorResponse
 
 -- | In @web_dir@ mode the whole set, its hash and the substituted index are recomputed per
 -- request, so an edited file is visible on reload; every response in that mode is @no-store@, or
@@ -152,7 +176,10 @@ assetCacheControl WebServer {wsConfig = WebConfig {webDir}}
 serveCatalog :: WebServer -> IO Response
 serveCatalog WebServer {wsService = BadgeServiceEnv {store}} =
   withServiceTransaction store (fmap catalogTotals . getActiveCatalog) >>= \case
-    Right catalog -> pure $ jsonResponse ok200 (J.encode catalog)
+    Right catalog -> do
+      -- the same call the RPC handler makes, for the same reason, on the path most buyers take
+      logUnpricedOffers catalog
+      pure $ jsonResponse ok200 (J.encode catalog)
     Left e -> do
       logError $ "badge service /api/catalog failed: " <> tshow e
       pure $ jsonResponse internalServerError500 "{\"error\":\"internal\"}"
@@ -169,6 +196,11 @@ securityHeaders =
 
 notFoundResponse :: Response
 notFoundResponse = textResponse notFound404 [] "not found"
+
+-- | Every 500 this listener sends, whether it is one a route decided on or one Warp caught: same
+-- status, same headers, and nothing about what went wrong (the log has that).
+internalErrorResponse :: Response
+internalErrorResponse = textResponse internalServerError500 [] "internal error"
 
 textResponse :: Status -> [Header] -> LBS.ByteString -> Response
 textResponse status headers =

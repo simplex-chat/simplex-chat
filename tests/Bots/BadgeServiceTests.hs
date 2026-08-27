@@ -137,7 +137,7 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..), BBSSecretKey (..), bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
-import System.Directory (createDirectoryIfMissing)
+import System.Directory (Permissions, createDirectoryIfMissing, createFileLink, emptyPermissions, removeDirectoryRecursive, removeFile, setOwnerReadable, setOwnerSearchable, setOwnerWritable, setPermissions)
 import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.IO (IOMode (..), hClose, hFlush, openFile, stdout)
@@ -203,8 +203,10 @@ badgeServiceTests = do
   it "should set the four security headers on every response, including a 404 and a rejected method" testBadgeServiceWebSecurityHeadersEverywhere
   it "should serve the database catalog with computed totals from /api/catalog" testBadgeServiceWebCatalogEndpoint
   it "should serve web_dir from disk with no-store, pick up an edit without a restart and refuse a path outside it" testBadgeServiceWebDirServesFromDisk
+  it "should answer 500 with the security headers for a web_dir file it cannot read and for an uncaught exception" testBadgeServiceWebInternalErrorsCarryHeaders
   it "should fail before the service starts when a token names no served file, naming the token" testBadgeServiceWebUnresolvableTokenFails
   it "should reject a non-loopback http base_url and accept https and loopback ones" testBadgeServiceConfigBaseUrlValidated
+  it "should reject a support_contact that is not an http(s) or mailto URL" testBadgeServiceConfigSupportContactValidated
   it "should create a purchase and append ledger entries readable back in order" testBadgeStorePurchaseAndLedger
   it "should disable a price out of the active catalog while both stay reachable by id" testBadgeStoreSetPriceStatusDisabled
   it "should return the redeeming purchase key from getCodeByHash" testBadgeStoreGetCodeByHashRedeemer
@@ -3805,6 +3807,18 @@ webGet mgr url = do
         wrBody = LBC.unpack (HTTP.responseBody r)
       }
 
+-- The same with a method of the caller's choosing, for the per-route method assertions.
+webRequest :: BC.ByteString -> HTTP.Manager -> String -> IO WebResponse
+webRequest method mgr url = do
+  req <- HTTP.parseRequest url
+  r <- HTTP.httpLbs req {HTTP.method = method} mgr
+  pure
+    WebResponse
+      { wrStatus = statusCode (HTTP.responseStatus r),
+        wrHeaders = HTTP.responseHeaders r,
+        wrBody = LBC.unpack (HTTP.responseBody r)
+      }
+
 webHeader :: WebResponse -> BC.ByteString -> String
 webHeader r name = maybe "" BC.unpack $ lookup (CI.mk name) (wrHeaders r)
 
@@ -3817,10 +3831,11 @@ assertSecurityHeaders what r = do
   (what, webHeader r "referrer-policy") `shouldBe` (what, "no-referrer")
   (what, webHeader r "x-frame-options") `shouldBe` (what, "DENY")
 
--- Every asset URL the served page references, in document order: the tokens resolve into quoted
--- attributes and an asset URL contains no quote, so this reads what the browser would follow.
+-- Every asset URL the served page references, in document order: a resolved token ends at the
+-- quote closing its attribute (or at the next tag, for one substituted into text), and an asset
+-- URL contains neither character, so this reads what the browser would follow.
 webAssetUrls :: String -> [String]
-webAssetUrls body = map (T.unpack . ("/assets/" <>) . T.takeWhile (/= '"')) . drop 1 $ T.splitOn "/assets/" (T.pack body)
+webAssetUrls body = map (T.unpack . ("/assets/" <>) . T.takeWhile (\c -> c /= '"' && c /= '<')) . drop 1 $ T.splitOn "/assets/" (T.pack body)
 
 -- "/assets/<buildHash>/main.js" -> "<buildHash>"
 webAssetHash :: HasCallStack => String -> String
@@ -3925,11 +3940,21 @@ testBadgeServiceWebSecurityHeadersEverywhere ps =
     forM_ ["", "/api/catalog", "/no-such-path", "/assets", "/assets/deadbeef/main.js"] $ \path -> do
       r <- webGet mgr (webUrl <> path)
       assertSecurityHeaders path r
-    postReq <- HTTP.parseRequest (webUrl <> "/api/catalog")
-    postResp <- HTTP.httpLbs postReq {HTTP.method = "POST"} mgr
-    let post = WebResponse {wrStatus = statusCode (HTTP.responseStatus postResp), wrHeaders = HTTP.responseHeaders postResp, wrBody = LBC.unpack (HTTP.responseBody postResp)}
+      -- and nothing tells the caller which server, or which version of it, is answering
+      (path, webHeader r "server") `shouldBe` (path, "")
+    -- The method is rejected PER ROUTE: a route that exists answers 405 and says what it takes,
+    -- a path that does not exist answers 404 whatever the method. A server-wide method guard
+    -- gets this second one wrong, and D6's POST /api/checkout would have to undo it.
+    post <- webRequest "POST" mgr (webUrl <> "/api/catalog")
     wrStatus post `shouldBe` 405
+    webHeader post "allow" `shouldBe` "GET, HEAD"
     assertSecurityHeaders "POST /api/catalog" post
+    postUnknown <- webRequest "POST" mgr (webUrl <> "/no-such-path")
+    wrStatus postUnknown `shouldBe` 404
+    assertSecurityHeaders "POST /no-such-path" postUnknown
+    -- HEAD is allowed on every route GET is
+    headIndex <- webRequest "HEAD" mgr webUrl
+    wrStatus headIndex `shouldBe` 200
 
 -- /api/catalog answers from the DATABASE through catalogTotals, never from Catalog.hs's
 -- defaults: the fixture disables one seeded price and deprecates the other, so the default
@@ -3976,6 +4001,10 @@ writeTestWebDir dir = do
   writeFile (dir </> "index.html") $
     "<!doctype html><html><head><link rel=\"stylesheet\" href=\"@@styles.css@@\" /></head>"
       <> "<body><a href=\"@@support_contact@@\">support</a>"
+      -- one literal @ in front of a token: build.mjs's regex fails at the first index, retries at
+      -- the NEXT one and resolves the token, so the service must too (§9). A scanner that skipped
+      -- both @s would leave this in the page as text, with no startup error to say so.
+      <> "<p>@@@styles.css@@</p>"
       <> "<script type=\"module\" src=\"@@main.js@@\"></script></body></html>\n"
   writeFile (dir </> "styles.css") webDirCssBefore
   writeFile (dir </> "dist" </> "main.js") "export const site = \"web_dir\";\n"
@@ -4019,6 +4048,8 @@ testBadgeServiceWebDirServesFromDisk ps@TestParams {tmpPath} = do
     wrBody index `shouldSatisfy` (not . isInfixOf "@@")
     wrBody index `shouldSatisfy` isInfixOf testSupportContact
     let cssUrl = head $ filter ("/styles.css" `isSuffixOf`) (webAssetUrls (wrBody index))
+    -- the "@@@styles.css@@" above resolved, leaving exactly the one literal @ in front of it
+    wrBody index `shouldSatisfy` isInfixOf ("<p>@" <> cssUrl <> "</p>")
     css <- webGet mgr (webUrl <> cssUrl)
     wrStatus css `shouldBe` 200
     wrBody css `shouldBe` webDirCssBefore
@@ -4044,6 +4075,59 @@ testBadgeServiceWebDirServesFromDisk ps@TestParams {tmpPath} = do
   -- the file the traversals aimed at exists and is readable: the 404s above are the server
   -- refusing, not a missing target
   readFile secretFile `shouldReturn` webDirSecret
+
+-- Every 500 this listener can be made to send must carry the four security headers, and there are
+-- two ways to reach one -- which is the point of the example, since only one of them is the
+-- application's own code:
+--
+--   * a dangling symlink: the walk lists it, the read fails, and 'readServedAssets' turns that
+--     into the Left the route answers with;
+--   * a directory inside dist/ with no permissions: the walk itself throws, and nothing in the
+--     application catches it, so the response is the one Warp's 'setOnExceptionResponse' returns.
+--     Warp's DEFAULT for that case is its own bare "Something went wrong" page with none of these
+--     headers on it -- and it is not a web_dir curiosity: 'withServiceTransaction' catches only
+--     ServiceRollback, so a database exception in /api/catalog leaves the same way, as will D6's
+--     request decoding and E3's and F2's webhooks.
+--
+-- The fixture is asserted to serve a 200 both before the damage and after it is undone, so
+-- neither 500 can be a service that was never working.
+testBadgeServiceWebInternalErrorsCarryHeaders :: HasCallStack => TestParams -> IO ()
+testBadgeServiceWebInternalErrorsCarryHeaders ps@TestParams {tmpPath} = do
+  let dir = tmpPath </> "web_dir_broken"
+      danglingLink = dir </> "dist" </> "dangling.js"
+      unreadableDir = dir </> "dist" </> "unreadable"
+      writeConfig port = do
+        (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+        writeFile (badgeServiceConfigPath tmpPath) $
+          unlines $
+            issuerCodesIniLines issuerKeyFile codeSecretFile
+              ++ ("" : webIniLines port)
+              ++ ["web_dir = " <> dir]
+  writeTestWebDir dir
+  withBadgeServiceWebConfig ps writeConfig (pure ()) $ \_client _bsLink webUrl -> do
+    mgr <- newWebManager
+    healthy <- webGet mgr webUrl
+    wrStatus healthy `shouldBe` 200
+    -- 1. a file the walk finds and the read cannot open
+    createFileLink "no-such-target.js" danglingLink
+    broken <- webGet mgr webUrl
+    wrStatus broken `shouldBe` 500
+    assertSecurityHeaders "dangling symlink" broken
+    webHeader broken "server" `shouldBe` ""
+    removeFile danglingLink
+    -- 2. an exception the application does not catch at all
+    createDirectoryIfMissing True unreadableDir
+    thrown <- (setPermissions unreadableDir emptyPermissions >> webGet mgr webUrl) `finally` setPermissions unreadableDir searchablePermissions
+    wrStatus thrown `shouldBe` 500
+    assertSecurityHeaders "unreadable directory" thrown
+    webHeader thrown "server" `shouldBe` ""
+    removeDirectoryRecursive unreadableDir
+    recovered <- webGet mgr webUrl
+    wrStatus recovered `shouldBe` 200
+
+-- Owner-only rwx, which is what a directory needs to be walked again after 'emptyPermissions'.
+searchablePermissions :: Permissions
+searchablePermissions = setOwnerReadable True $ setOwnerWritable True $ setOwnerSearchable True emptyPermissions
 
 -- A token naming a file that is not served must fail at STARTUP, naming the token, rather than
 -- serving a page with a dead link in it. 'resolveWebPage' is what 'newWebServer' calls from
@@ -4090,8 +4174,32 @@ testBadgeServiceConfigBaseUrlValidated TestParams {tmpPath} = do
     readBadgeServiceConfig path >>= \case
       Right _ -> expectationFailure $ "expected " <> baseUrl <> " to be rejected"
       Left err -> (baseUrl, "base_url" `isInfixOf` err) `shouldBe` (baseUrl, True)
-  forM_ ["https://badges.example.org", "http://localhost:8080", "http://127.0.0.1:8080"] $ \baseUrl -> do
+  forM_ ["https://badges.example.org", "http://localhost:8080", "http://127.0.0.1:8080", "http://[::1]:8080", "http://LOCALHOST:8080"] $ \baseUrl -> do
     writeBaseUrl baseUrl
     readBadgeServiceConfig path >>= \case
       Left err -> expectationFailure $ "expected " <> baseUrl <> " to be accepted, got: " <> err
       Right BadgeServiceConfig {web} -> (baseUrl, fmap webBaseUrl web) `shouldBe` (baseUrl, Just (T.pack baseUrl))
+
+-- '[web] support_contact' goes into the page's one outbound link. Escaping it (D4) stops a quote
+-- from breaking out of the href; it does nothing about the scheme, and 'javascript:' survives
+-- escaping intact. The operator's ini is inside the trust boundary, so this is a typo guard --
+-- but 'base_url' in the same section is validated and an unchecked neighbour is arbitrary.
+testBadgeServiceConfigSupportContactValidated :: HasCallStack => TestParams -> IO ()
+testBadgeServiceConfigSupportContactValidated TestParams {tmpPath} = do
+  (issuerKeyFile, codeSecretFile) <- writeTestBadgeServiceSecrets tmpPath
+  let path = tmpPath </> "support-contact.ini"
+      writeSupportContact supportContact =
+        writeFile path $
+          unlines $
+            issuerCodesIniLines issuerKeyFile codeSecretFile
+              ++ ["", "[web]", "port = 8080", "base_url = https://badges.example.org", "support_contact = " <> supportContact]
+  forM_ ["javascript:alert(1)", "JavaScript:alert(1)", "data:text/html,<h1>hi", "/contact", "simplex.chat/contact", "mailto:"] $ \value -> do
+    writeSupportContact value
+    readBadgeServiceConfig path >>= \case
+      Right _ -> expectationFailure $ "expected support_contact " <> value <> " to be rejected"
+      Left err -> (value, "support_contact" `isInfixOf` err) `shouldBe` (value, True)
+  forM_ ["https://simplex.chat/contact", "http://localhost:8080/support", "mailto:support@example.org"] $ \value -> do
+    writeSupportContact value
+    readBadgeServiceConfig path >>= \case
+      Left err -> expectationFailure $ "expected support_contact " <> value <> " to be accepted, got: " <> err
+      Right BadgeServiceConfig {web} -> (value, fmap webSupportContact web) `shouldBe` (value, Just (T.pack value))

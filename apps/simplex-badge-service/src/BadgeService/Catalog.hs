@@ -11,10 +11,13 @@ module BadgeService.Catalog
   ( defaultCatalog,
     offerTotal,
     catalogTotals,
+    logUnpricedOffers,
     seedCatalog,
   )
 where
 
+import Control.Logger.Simple (logWarn)
+import Control.Monad (forM_)
 import Data.List (find)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -119,6 +122,25 @@ defaultCatalog createdAt =
           createdAt,
           total = Nothing
         }
+
+-- | An offer that is pinned to a price the catalog also returned, yet still has no total, is a
+-- malformed offer (@freeMonths >= months@, or a discount over 100): the client renders it as
+-- unavailable, and nothing else in the system would ever say why. 'chargeableMonths' stopped
+-- saying so with 'error' precisely so that a request thread survives it (\'9), so this is the
+-- only place it gets named.
+--
+-- It lives here, beside the function that produces the 'Nothing', rather than in one caller:
+-- BOTH readers of a database catalog must log it -- 'BadgeService.Service''s RPC handler and
+-- 'BadgeService.Web.Server''s @\/api\/catalog@ -- and the site is the path most buyers take, so
+-- a version that logged only over RPC would stay silent for exactly the users who hit it.
+logUnpricedOffers :: BadgeCatalog -> IO ()
+logUnpricedOffers BadgeCatalog {prices, offers} =
+  forM_ offers $ \BadgeOffer {offerId = BadgeOfferId oid, priceId, total} ->
+    case (priceId, total) of
+      (Just pid, Nothing)
+        | any (\BadgePrice {priceId = pid'} -> pid' == pid) prices ->
+            logWarn $ "catalog offer " <> oid <> " has a pinned price but no chargeable total"
+      _ -> pure ()
 
 -- | The only place a total is computed. 'CurrencyAmount' has no 'Num' instance, so every step
 -- unwraps to 'Word32', computes in 'Word64' and re-wraps through 'minorUnits', which refuses a

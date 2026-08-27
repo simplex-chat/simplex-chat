@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -14,9 +15,12 @@
 -- * a file is named by its path relative to the root of the built output -- @main.js@, and
 --   @img\/x.svg@ if an asset is ever nested -- and the two files that stay at @web\/@
 --   (@index.html@ and @styles.css@) by their bare name;
--- * a token name is @[A-Za-z0-9_.-]+@, JavaScript's @[\\w.-]+@. That charset cannot contain a
---   @\/@, so no token can name a nested asset at all. Harmless while every asset is flat, and
---   deliberately identical to @build.mjs@'s pattern rather than quietly wider here.
+-- * a token name is @[A-Za-z0-9_.-]+@, JavaScript's @[\\w.-]+@ (written out because Haskell's
+--   'Data.Char.isAlphaNum' is Unicode-wide and JavaScript's @\\w@ is not). That charset cannot
+--   contain a @\/@, so no token can name a nested asset at all. Harmless while every asset is
+--   flat, and deliberately identical to @build.mjs@'s pattern rather than quietly wider here.
+--   Scanning agrees too, down to where it resumes after a @\@\@@ that begins no token -- see
+--   'substituteTokens'.
 --
 -- The build hash is ONE SHA-256 over the whole set, not one per file, and every file is served
 -- under that single prefix. @tsc@ does not rewrite import specifiers (decision 7), so @main.js@
@@ -33,6 +37,7 @@ module BadgeService.Web.Assets
   )
 where
 
+import qualified Control.Exception as E
 import Control.Monad (foldM, forM)
 import qualified Data.ByteArray.Encoding as BA
 import Data.ByteString (ByteString)
@@ -162,10 +167,21 @@ readServedAssets dir = do
       roots <- forM [indexHtmlName, stylesheetName] $ \name -> do
         let path = dir </> T.unpack name
         exists <- doesFileExist path
-        if exists then Right . (name,) <$> BS.readFile path else pure . Left $ "[web] web_dir " <> dir <> ": no " <> path
+        if exists then readAsset name path else pure . Left $ "[web] web_dir " <> dir <> ": no " <> path
       names <- listAssetNames distDir
-      dist <- forM (filter (/= devHtmlName) names) $ \name -> (name,) <$> BS.readFile (distDir </> T.unpack name)
-      pure $ (\rs -> mkServedAssets (rs <> dist)) =<< sequence roots
+      dist <- forM (filter (/= devHtmlName) names) $ \name -> readAsset name (distDir </> T.unpack name)
+      pure $ mkServedAssets =<< sequence (roots <> dist)
+
+-- | A file the directory listing (or 'doesFileExist') just said was there can still fail to open:
+-- a dangling symlink, a permission bit, a file deleted between the walk and the read. In a mode
+-- whose whole point is that the directory changes under a running service, that is ordinary rather
+-- than exceptional, so it becomes the same 'Left' every other web_dir problem is -- a 500 naming
+-- the file in the log -- instead of an exception escaping into Warp.
+readAsset :: Text -> FilePath -> IO (Either String (Text, ByteString))
+readAsset name path =
+  E.try (BS.readFile path) >>= \case
+    Right bs -> pure $ Right (name, bs)
+    Left (e :: E.IOException) -> pure . Left $ "[web] web_dir: cannot read " <> path <> ": " <> show e
 
 -- | Every file under @dir@, as a name relative to it. Hidden files are skipped, matching both
 -- 'embedDir' (which skips them too) and @build.mjs@, so @.gitkeep@ and an editor's swap file are
@@ -208,10 +224,13 @@ substituteTokens supportContact assets = go
                     after <- go (T.drop 2 rest')
                     pure $ before <> value <> after
                   else do
-                    -- not a token: emit the "@@" and keep scanning from just after it, which is
-                    -- how build.mjs's regex behaves on the same input
-                    after <- go body
-                    pure $ before <> "@@" <> after
+                    -- Not a token. Resume ONE character on, not two: a JavaScript global regex
+                    -- that fails at an index retries at the next index, so in "@@@x@@"
+                    -- build.mjs matches the "@@x@@" starting at index 1. Skipping both @s here
+                    -- would leave that literal in the page with no startup error, and the two
+                    -- resolvers would disagree on an input build.mjs accepts.
+                    after <- go (T.drop 1 rest)
+                    pure $ before <> "@" <> after
     resolve name
       | name == supportContactToken = Right $ escapeHtml supportContact
       | M.member name (assetFiles assets) = Right $ assetUrlPath assets name
