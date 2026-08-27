@@ -1,0 +1,12 @@
+/* Placeholder stylesheet; the design system replaces it.
+   Served from web/ rather than from dist/, so that an edit is picked up
+   without a rebuild when the service runs with [web] web_dir set. */
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

@@ -1,0 +1,4 @@
+node_modules/
+# dist/ is committed: the service embeds it, so the Haskell build never needs
+# node. This overrides the repository-wide `dist` rule.
+!dist/

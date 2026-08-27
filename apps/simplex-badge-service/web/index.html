@@ -1,0 +1,29 @@
+<!doctype html>
+<!--
+  Checkout site for SimpleX supporter badges, served by simplex-badge-service.
+
+  dist/ IS COMMITTED: the service embeds it, so the Haskell build never needs
+  node. Run `npm run build` and commit dist/ with any change under src/ or
+  assets/.
+
+  Assets are named by the double-at tokens below, not by path. The service and
+  `npm run build` both resolve any token naming a file in the served set, and
+  both reject one that names nothing, this comment included, so keep the token
+  syntax out of prose. Only this file is substituted: styles.css is served
+  verbatim, so a token in a CSS rule would reach the browser as literal text.
+
+  Keep the charset declaration below within the first 1024 bytes (HTML5).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SimpleX supporter badges</title>
+    <link rel="stylesheet" href="@@styles.css@@" />
+  </head>
+  <body>
+    <main id="app"></main>
+    <footer><a href="@@support_contact@@">Contact support</a></footer>
+    <script type="module" src="@@main.js@@"></script>
+  </body>
+</html>

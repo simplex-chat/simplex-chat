@@ -1,0 +1,14 @@
+{
+  "name": "simplex-badge-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Checkout site for SimpleX supporter badges, served by simplex-badge-service",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0"
+}
