@@ -40,12 +40,7 @@ Do not re-litigate these. If one proves wrong, record why in §9 and raise it.
 3. **One subcommand only: `codes`.** Minting promo and compensation codes is a privileged offline database write. An admin HTTP endpoint would add authenticated attack surface to the public listener; a separate binary would duplicate the database options, migrations, and store layer. The service run stays the default with no subcommand, which requires wrapping the subparser in `optional`: `hsubparser` alone makes a subcommand mandatory, as it is in `Badges/CLI.hs:45`.
 4. **Deployment configuration is an `ini` file, not CLI flags** (A6). Web, issuer, code-secret and provider settings live in `badge_service.ini`, following the simplexmq server pattern (`Data.Ini`, used by the SMP, XFTP and NTF servers). Database and run-mode options stay on the command line via `coreChatOptsP`, as for the other bots. Secrets are always file paths named from the ini, never inline values, so the ini can go into configuration management while the secrets do not.
 5. **`getBadgeInvoice` stays defined but unimplemented**, returning `bad_request`. Non-store payment is web-only. Do not delete it from the schema or the Haskell types; it is the re-add path if in-app payment is ever wanted.
-6. **Entry-point gating.** The tier and duration screens are shared on every platform. The payment-method screen exists only where more than one method is available, which is desktop and Android `foss`.
-   - Desktop and Android `foss`: "Continue in browser", opening the prefilled site URL.
-   - iOS and Android `google`: **the store purchase action is removed for the duration of this plan** (G0). Store evidence is not verified and a store purchase yields no badge (§6), so the button is removed rather than left to charge users for nothing. Those app wizards end at "Redeem code", and the tier and duration screens are informational until store-evidence verification ships, which is a later plan (§6).
-   - **The redemption-code entry point is on every platform**, and already exists (§1).
-
-   The store builds get the tier and duration screens but never link out, because Apple and Google reject apps that steer to external purchase for digital goods. Desktop and Android `foss` do link out. Those screens keep pricing from the store products until G4 and G5 make every platform price from `CRBadgeCatalog`.
+6. **No store purchase action.** Store evidence is not verified and a store purchase yields no badge (§6), so the purchase button was removed rather than left to charge users for nothing (G0). It stays removed until store-evidence verification ships, which is a later plan (§6). The rest of this decision governed the app wizards' entry points, their browser hand-off and their pricing; it went out of scope with the client apps (§6). The redemption-code entry point exists on every platform already (§1).
 7. **Front-end.** TypeScript compiled by `tsc` to ES modules, served as-is. No framework, no bundler. `tsc` cannot concatenate ES modules, so the output is one `.js` per source module and the browser resolves the imports. `web/dist/` is committed so the Haskell build never needs node; D8 fails CI when `dist/` does not match `src/`.
 8. **Pricing has one source**, `BadgeService/Catalog.hs`, seeded into `badge_prices` and `badge_offers` at startup, with one total function used by every server-side caller. The site, the RPC catalog, and the app all read it from there.
 9. **Codes are derived, not stored.** `code = crockford32(HMAC-SHA256(codeSecret, orderId))` truncated to 95 bits plus a check character (§3, B3), so `GET /api/order/:orderId` recomputes the code on a page reload while only `SHA256(code)` is ever at rest. Operator batch codes, which have no order, use random bytes with the same hash-only storage. See B3 and B8.
@@ -79,13 +74,13 @@ Stripe / BTCPay ─POST─▶│           │         web_orders ◀───�
 - **Checkout** — the browser flow from the `#/checkout` summary screen through `POST /api/checkout` to the result screen. A single `POST /api/checkout` call is a *checkout request*. Stripe's `Checkout Session` is that provider's own object, written out in full on first use in a step and "the session" thereafter.
 - **Wizard** — a one-question-per-screen flow, always qualified: the *app wizard* (tier, duration, method, in the client) or the *site wizard* (D2's shell).
 - **Flavor** — an Android build flavor, `google` or `foss`, spelled as Gradle spells it.
-- `BadgePrice` always names the protocol catalog row (`Badges/Service.hs`); the clients' fetch-state wrapper is `BadgePriceState` (G4, G5).
+- `BadgePrice` always names the protocol catalog row (`Badges/Service.hs`). The clients carry a fetch-state wrapper of the same name in their own store modules; it is never what this plan means.
 
 **Linkage between an order and a purchase.** They are joined only through the code, `code = crockford32(HMAC-SHA256(codeSecret, orderId))` truncated to 95 bits plus a check character (decision 9, B3), and `@codes` is keyed by `SHA256(code)`. No row stores both an `orderId` and a `purchaseKey`, so no *stored reference* links a browser session to a SimpleX profile. That is weaker than unlinkability: a settlement-time correlation between `codes.created_at` and `web_orders.settled_at`, helped by the literal `batch = 'web'` label, links the two without `codeSecret` at all (§9, B10). The cryptographic claim — an `orderId` cannot be turned into a code without the secret — is unaffected. A holder of `codeSecret` can derive the link at will, which puts the operator inside the trust boundary for this property; unlinkability from the operator is not claimed, and `codeSecret` is guarded accordingly (§7, H5).
 
 **End to end:**
 
-1. The app wizard collects tier, months and method, then opens `{badgeWebBaseUrl}/?tier=legend&months=12&pay=xmr` on desktop and Android `foss`. A user may also open the site directly.
+1. An app wizard collects tier, months and method, then opens `{badgeWebBaseUrl}/?tier=legend&months=12&pay=xmr` on desktop and Android `foss` — client work, out of scope here (§6). A user opening the site directly is the path this plan builds; D5's parameter grammar is what a hand-off would use.
 2. The site loads `GET /api/catalog`, renders the remaining questions, then calls `POST /api/checkout {priceId, offerId?, method}`. Badge type and months are derived server-side from the ids; the browser never states them.
 3. The service creates the provider invoice, writes an `@invoices` row and a `web_orders` row, and returns the order, its price, and either a `payUrl` or a crypto address. D6 is the normative response shape.
 4. The browser redirects for card, or shows address, QR and countdown for crypto, polling `GET /api/order/:orderId`.
@@ -102,7 +97,7 @@ The code is the only data crossing from the site to the app.
 Each step below is one reviewable commit.
 
 1. Read §2 and the progress tracker.
-2. **Take G0 first, before A1.** It has no dependencies, touches only client files, and until it lands the store builds charge users for a badge they will not receive (§7). It is listed under Phase G because its siblings are, not because it is scheduled there.
+2. **G0 is already done and is the only client-app step this plan has.** It was taken before A1, because until it landed the store builds charged users for a badge they would not receive (§7). Everything else about the client apps is out of scope (§6), so no step below asks for one.
 3. Then take the first step whose dependencies are all ticked. Do not skip ahead; later steps assume earlier files exist.
 4. Run the step's **Verify** line before ticking it. A step that builds but whose verification was not run is not done.
 5. Tick the tracker row in this file and commit it with the step's work. Follow the repository's own commit style, which `git log` shows: a subject line alone, `<area>: <subject>`, lowercase, no body. `core:` for the library and the service, `ui:` for Kotlin and Swift, `plan:` for this file, comma-separated when a step spans several.
@@ -171,12 +166,6 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | F4 | Refunds and disputes | B7, F2 | ☐ |
 | F5 | Stripe scenario tests | F2, F4 | ☐ |
 | G0 | Remove the store purchase action | — | ☑ |
-| G1 | Kotlin: payment-method screen and browser hand-off | — | ⊘ out of scope |
-| G2 | Kotlin: redeem view | — | ⊘ out of scope |
-| G3 | Swift: redeem view | — | ⊘ out of scope |
-| G4 | Kotlin: catalog pricing and badge-state refresh | — | ⊘ out of scope |
-| G5 | Swift: catalog pricing and badge-state refresh | — | ⊘ out of scope |
-| G6 | Strings and stub cleanup | — | ⊘ out of scope |
 | H1 | Rate limiting and request caps | D7, E4, F2 | ☐ |
 | H2 | Code lifecycle tooling | B7, B8, E4 | ☐ |
 | H3 | Stuck-order reconciliation | E3, F2 | ☐ |
@@ -631,6 +620,8 @@ The operator publishes this address; it reaches clients through `ChatConfig.badg
 
 Phase C ends with a chat client that can redeem a code minted by B8 and show the resulting badge, with the worker re-issuing each month. Nothing in it touches a payment provider or the site.
 
+**C1–C5 are complete, committed and tested; the step texts below are the record of what shipped.** Code → badge is not this plan's work going forward — further work on it belongs to whoever owns that half (§6) — and nothing in Phase D onwards may change Phase C's behaviour.
+
 #### C1 — `Store/Badges.hs`: client badge store
 
 **Files:** `src/Simplex/Chat/Store/Badges.hs`, `simplex-chat.cabal` (add `Simplex.Chat.Store.Badges` to the library `exposed-modules` and `Bots.BadgeStoreTests` to the test stanza's `other-modules`), `tests/Bots/BadgeStoreTests.hs`, `tests/Test.hs`
@@ -665,15 +656,15 @@ Phase C ends with a chat client that can redeem a code minted by B8 and show the
   ```
 
 - Responses `CRBadgeState` and `CRBadgeCatalog`; event `CEvtBadgeChanged`; error `CEBadgeServiceError {badgeError, badgeErrorMessage, retryAfter}` for the inline redeem errors (UX §2.8). `retryAfter` is `Maybe Word32`, populated by B5's `rate_limited`. The message field is NOT `message`: a record field has one type across a whole data type and `ChatErrorType.message` is already `String` in 15 constructors (§9).
-- `CRBadgeState` carries the shown badge's paid-through date, `addMonths balanceMonths balanceStartTs` over the last ledger entry, using B2's `Simplex.Chat.Badges.Months`; the clamping rule has one implementation and the client does not restate it. G6 renders it in place of `stubBillingDate()` and its Swift equivalent. UX §2.11 requires the paid-through date and forbids the phrase "badge valid until", so the credential expiry is never shown.
+- `CRBadgeState` carries the shown badge's paid-through date, `addMonths balanceMonths balanceStartTs` over the last ledger entry, using B2's `Simplex.Chat.Badges.Months`; the clamping rule has one implementation and the client does not restate it. It is what a client renders in place of the `stubBillingDate()` placeholder and its Swift equivalent. UX §2.11 requires the paid-through date and forbids the phrase "badge valid until", so the credential expiry is never shown.
 - `CRBadgeState` also carries `badgeWebBaseUrl`, filled by this step's `APIGetBadgeState` handler from `ChatConfig`. `ChatConfig` is not readable from Kotlin or Swift, so the site URL travels in a response rather than through the FFI, and it rides on the badge-state response, which is a local read, so the browser hand-off does not depend on the service being reachable.
 - Parsers in `chatCommandP`, rendering in `View.hs`.
 - `APIGetBadgeState` is handled in this step. `APIPurchaseBadge` and `APIGetBadgeCatalog` get handlers that `throwChatError $ CEBadgeServiceError {badgeError = BSEInternal, badgeErrorMessage = Just "not implemented", retryAfter = Nothing}`, following the raise convention of every other handler (`Library/Commands.hs:512`), which C4 replaces. This step therefore compiles and its unfiltered `cabal test` passes with no command unhandled. It is the same stub discipline C3 uses for `sendBadgeRequest`.
 - Credential verification needs no new key plumbing: `ChatConfig.badgePublicKeys :: Map Int BBSPublicKey` (`Controller.hs:145`) already holds the issuer keys by index, and `addUserBadge` (`Library/Commands.hs:5127-5145`) already looks the credential's index up there, calls `verifyCredential` (`:5131`), calls `setUserBadge` (`:5134`) and re-presents the profile to every contact (`:5138-5145`). Tests override the map the way the profile tests do, `testCfg {badgePublicKeys = testBadgeKeys pk}` (`tests/ChatTests/Profiles.hs:295`).
 - `addUserBadge` cannot be called as it stands from C3 or C4. It takes the global `chatLock` (`:5138`) and broadcasts `XInfo` to every contact, and its only current call site is unlocked and top level (`:3544`); C3 and C4 hold a per-user badge lock that already waits on `chatLock`, so calling it there inverts the lock order. It also fails with `throwCmdError` (`:5132`), which is a `CECommandError` (`Controller.hs:1688-1689`), not the `CEBadgeServiceError` C4 must surface. **Split it in this step** into three parts. `verifyUserBadge :: BadgeCredential -> CM (Either Text ()) ` (`:5129-5132`) looks up the key and verifies, and is callable under a lock. It **returns** its failures rather than throwing, because its three callers need three different outcomes: `addUserBadge` maps them back to `throwCmdError`, keeping `AddBadge` unchanged; C4 maps them to `CEBadgeServiceError`; C3 discards the credential and writes nothing. Both current failures, the unknown key index at `:5130` and the failed verification at `:5132`, become `Left`. The middle part, `setUserBadge` and the `currentUser` TVar write (`:5133-5135`), stays inline; it returns the updated `User`. `presentUserBadgeToContacts :: User -> CM ()` (`:5136-5145`) takes that `User`, acquires `chatLock` and broadcasts. `addUserBadge` becomes the three in sequence, so `AddBadge` (`:3544`) is unchanged.
 - Three `ChatConfig` fields, all overridable in tests:
-  - `badgeServiceAddress :: Maybe (ConnectTarget 'CMContact)`, the service's contact address, published by B9, matching `APISendServiceRequest.sendTarget` (`Controller.hs:414`). It defaults to `Nothing` in `defaultChatConfig`, which means the feature is unconfigured: C4 fails with `CEBadgeServiceError` and G1 hides the browser hand-off. Release builds set it; this plan does not carry an address literal, because the address is produced by the operator's own service run (B9, §6).
-  - `badgeWebBaseUrl :: Text`, the checkout site, used by G1 to build the hand-off URL. A service ini setting cannot reach the app, so the site URL must live here. It defaults to `""` in `defaultChatConfig`, empty meaning unconfigured on the same terms as `badgeServiceAddress`. Release builds set it, and it must then equal the service's `[web] base_url` (A6), because Stripe's `success_url` derives from that side and the hand-off URL from this one; H5 documents keeping the two in step.
+  - `badgeServiceAddress :: Maybe (ConnectTarget 'CMContact)`, the service's contact address, published by B9, matching `APISendServiceRequest.sendTarget` (`Controller.hs:414`). It defaults to `Nothing` in `defaultChatConfig`, which means the feature is unconfigured: C4 fails with `CEBadgeServiceError`, and a client with no address has nothing to offer the user. Release builds set it; this plan does not carry an address literal, because the address is produced by the operator's own service run (B9, §6).
+  - `badgeWebBaseUrl :: Text`, the checkout site, which a client uses to build the browser hand-off URL. A service ini setting cannot reach the app, so the site URL must live here. It defaults to `""` in `defaultChatConfig`, empty meaning unconfigured on the same terms as `badgeServiceAddress`. Release builds set it, and it must then equal the service's `[web] base_url` (A6), because Stripe's `success_url` derives from that side and the hand-off URL from this one; H5 documents keeping the two in step.
   - `badgeCurrentTime :: IO UTCTime`, defaulting to `getCurrentTime`. C3's worker and C4 read the clock through it, so C5 can advance client time without sleeping.
 
   All three are given their defaults in `defaultChatConfig` (`src/Simplex/Chat.hs:60-62`), the record's only full construction site; `Mobile.hs` and `Terminal.hs` use record update and are unaffected. `--badge-service-address LINK`, `--badge-web-url URL` and `--badge-issuer-key IDX:BASE64URL` are added to `ChatOpts` as `optBadgeServiceAddress`, `optBadgeWebUrl` and `optBadgeIssuerKeys` — named apart from the `ChatConfig` fields they override, following the existing `optFilesFolder`/`optTempDirectory` convention, so the record update in `Terminal/Main.hs` is not ambiguous — and are parsed in `chatOptsP` (`src/Simplex/Chat/Options.hs:40-57,365`); all three override `cfg` by record update in `simplexChatCLI` (`Terminal/Main.hs:24-28`), which is how §10 and H5 point a client at a locally run service. `--badge-issuer-key` is repeatable and its entries **replace** `badgePublicKeys` outright when any is given, rather than merging: the field already ships eight production keys (`src/Simplex/Chat.hs:69-79`), index 1 among them, so a merge that kept the presets would leave a locally issued credential failing to verify against the production key at the same index. `BBSPublicKey` is 96 bytes and `strEncode`s as unpadded base64url, which is the form `badge keygen` prints. Unlike `ChatConfig`, `ChatOpts` has **six** full construction sites, and every one of them must set the new fields: `chatOptsP` (`Options.hs:485`) from the new parsers, and the other five to their empty values, `mobileChatOpts` (`Mobile.hs:249`), the three bots' `mkChatOpts` (`Directory/Options.hs:217`, `Broadcast/Options.hs:84`, `BadgeService/Options.hs:76`) and `testOpts` (`tests/ChatClient.hs:115`). A missed site is only a `-Wmissing-fields` warning, not a build error, so it fails at runtime in the binary that missed it.
@@ -702,7 +693,7 @@ badgeWorkers :: TMap UserId Worker    -- a ChatController field: agent Worker, d
 - Three things trigger a pass, and nothing else does:
   - the chat controller start signals every user's worker, beside the other worker starts in `startChatController`'s `start` block (`Library/Commands.hs:250-252`, `startDeliveryWorkers`, `startRelayRequestWorker_`, `startCleanupManager`), which has `users` in hand and so suits a per-user worker. `src/Simplex/Chat.hs:196-198,242-244` is `newChatController` and only initialises the maps;
   - a timer of `ChatConfig.badgePassInterval` re-signals it, a field this step adds with a default of 24 hours. A month boundary is the only event the worker waits for, so a daily wake is frequent enough, and a pass with the month already issued reads the last ledger entry and stops;
-  - `APIGetBadgeState` signals it as core §5 specifies. That command fires whenever a badge screen opens or regains focus, so a user who has just crossed a month boundary sees the new credential without waiting for the timer, and G4's and G5's manual checks have a trigger they can drive.
+  - `APIGetBadgeState` signals it as core §5 specifies. That command fires whenever a badge screen opens or regains focus, so a user who has just crossed a month boundary sees the new credential without waiting for the timer, and a manual check on a badge screen has a trigger it can drive.
 - `hasWorkToDo'` signals the `doWork` TMVar in all three cases, and the timer is the badge worker's own loop rather than a shared scheduler. Tests drive a pass with `APIGetBadgeState` rather than the timer, so no test waits on wall-clock time.
 - Out of scope here: invoice reconciliation, store evidence, the alert timer, `CEvtBadgeAlert`, and Monday presentation. Those stay deferred in §6.
 
@@ -721,7 +712,7 @@ badgeWorkers :: TMap UserId Worker    -- a ChatController field: agent Worker, d
 - Do not signal the worker: C4 has already presented the badge, and the current month is issued, so a pass would find nothing to do. The next pass comes from C3's timer or the next `APIGetBadgeState`.
 - On timeout, surface the error to the user. A code consumed by a lost response is recovered with H2's `codes unredeem`.
 - `APIPurchaseBadge` answers `CRBadgeState` for the profile it has just changed and emits no event (§9); its store payment cases are refused (§9).
-- `APIGetBadgeCatalog` calls `sendBadgeRequest` unsigned and returns `CRBadgeCatalog`, offers included with their server-computed totals (A2, B6). It takes no user lock, stores nothing and computes nothing. A failure surfaces as `CEBadgeServiceError`, which G4 and G5 render as an unavailable price.
+- `APIGetBadgeCatalog` calls `sendBadgeRequest` unsigned and returns `CRBadgeCatalog`, offers included with their server-computed totals (A2, B6). It takes no user lock, stores nothing and computes nothing. A failure surfaces as `CEBadgeServiceError`, which a client renders as an unavailable price.
 
 **Verify:** covered by C5.
 
@@ -1095,116 +1086,24 @@ BTCPay refunds are operator-initiated at the provider and have no webhook; the o
 
 ---
 
-### Phase G — Clients — ⊘ OUT OF SCOPE (2026-08-27)
+### G0 — Remove the store purchase action — ☑ landed (`9c794e5e9`)
 
-**G1–G6 are not this plan's work.** The scope is the badge service process and the website it
-serves: money in, code out. The client apps belong to whoever owns code → badge (§6). **G0 is
-the exception and has already landed** — it removed a store button that charged users for a
-badge they would never receive, so it stays. The step texts below are kept as written for
-whoever picks them up; nothing in D5–D7, E, F or H depends on any of them (dependency check:
-no in-scope row names G1–G6).
-
-_Original intent, for that reader:_ Phase G ended with every platform pricing from
-`CRBadgeCatalog`, redeeming codes in the app, and desktop and Android `foss` handing off to the
-site; no store purchase action remaining on any platform.
-
-Kotlin lives in `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/` and Swift in `apps/ios/Shared/Views/Badges/`.
-
-G0 has no dependencies and is taken before A1 (§4 rule 2): until it lands, the store builds still charge users for a badge they will not receive. It also points every platform's app wizard at the redemption entry point, which G2 and G3 then fill in. G1 needs only C2's badge-state response, which carries the site URL, plus D5, which defines the parameter grammar of the URL G1 opens. G2 and G3 start once C4 and B8 are done: B8 mints the code their manual checks redeem. G4 and G5 additionally need D3, whose site their Verify lines compare against, and the `APIGetBadgeState` wrappers added by G1 and G3, which their open-and-focus calls use. G4 also needs G2, and G5 needs G3's redeem view, because their month-boundary check needs a badge already redeemed on that platform. G1's hand-off is verified at the URL it opens. The checkout behind that URL completes for BTC and XMR once Phase E is done and for card once Phase F is done, and §10 exercises the whole chain after F5.
-
-The "Redeem code" entry point already exists on both platforms (`BadgesSupportSimplexView.kt:77-82`, `BadgesSupportSimplexView.swift:108-126`); no step adds a second one.
-
-#### G0 — Remove the store purchase action
+The one client-app change this plan made, and the only one it keeps. Everything else about the
+apps — the browser hand-off, the redeem views, catalog pricing in the app — is out of scope
+(§6): this plan is money → code, and code → badge belongs to whoever owns that half.
 
 **Files:** `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/{BadgesPayView.kt,BadgeStore.kt}`, `apps/ios/Shared/Views/Badges/{BadgesPayView.swift,BadgeStore.swift}`
 
-**Do:** Decision 6. Store evidence is not verified and a store purchase yields no badge (§6).
+**Done:** Decision 6. Store evidence is not verified and a store purchase yields no badge (§6), so the button that charged for one was removed rather than left to take money for nothing.
 
-- Kotlin: remove the `purchase(...)` call (`BadgesPayView.kt:188,192-217`) and `showPurchasedAlert` (`:220-247`), which surfaces raw Play receipt fields and copies the purchase token to the clipboard.
-- Swift: remove the StoreKit `purchase()` call site (`BadgesPayView.swift:174,182-218`) and `showPurchasedAlert` (`:221-249`).
-- **Replace the Pay button in this step** with "Redeem code", routing to the existing entry point, on both platforms and every flavor. The duration screen then ends at the redemption entry point rather than at a charge that yields nothing. That view is a title-only stub until G2 and G3, so between this step and those the app wizard ends on an empty screen. No build from that window is released: the tree is releasable again once both redeem views exist. If a release is needed sooner, revert this step's button change alone; the removals of `purchase(...)` and `showPurchasedAlert` stay. G1 replaces the button with "Continue in browser" on desktop and `foss` only.
-- `BadgeStore.kt` and `BadgeStore.swift` stay in place. After this step they are still referenced, for the price and savings text on the tier and duration screens (`BadgesPayView.kt:76,160,174`, `BadgesYourLevelView.kt:60,138`, `BadgesSupportSimplexView.kt:37`, and the Swift equivalents `BadgesPayView.swift:65,126,144,167`, `BadgesYourLevelView.swift:50,101,121`, `BadgesSupportSimplexView.swift:66`); only their purchase and receipt paths lose a caller, and those are kept because store-evidence verification will reuse them (§6). Each gains a header comment naming this plan as the reason its purchase and receipt paths are kept without a caller. G4 and G5 remove the last price callers.
+- Kotlin: removed the `purchase(...)` call (`BadgesPayView.kt:188,192-217`) and `showPurchasedAlert` (`:220-247`), which surfaced raw Play receipt fields and copied the purchase token to the clipboard.
+- Swift: removed the StoreKit `purchase()` call site (`BadgesPayView.swift:174,182-218`) and `showPurchasedAlert` (`:221-249`).
+- Replaced the Pay button with "Redeem code" on both platforms and every flavor, routing to the entry point that already existed (`BadgesSupportSimplexView.kt:77-82`, `BadgesSupportSimplexView.swift:108-126`); no second entry point was added. That view is a title-only stub, so the app wizard ends on an empty screen until whoever owns code → badge fills it in (§6), and no build from that window is released. If a release is needed sooner, revert the button change alone: the removals of `purchase(...)` and `showPurchasedAlert` stay.
+- `BadgeStore.kt` and `BadgeStore.swift` stay in place, still referenced for the price and savings text on the tier and duration screens; only their purchase and receipt paths lost a caller, and those are kept because store-evidence verification will reuse them (§6). Each carries a header comment naming this plan as the reason.
 
-**Verify:** Manual on desktop, the `google` flavor and iOS, since the change is in `commonMain` and affects every flavor: no store charge can be initiated, no raw store tokens are reachable in the UI, and the duration screen offers "Redeem code".
+**Verified:** Manual on desktop, the `google` flavor and iOS, since the change is in `commonMain` and affects every flavor: no store charge can be initiated, no raw store tokens are reachable in the UI, and the duration screen offers "Redeem code".
 
-#### G1 — Kotlin: payment-method screen and browser hand-off
-
-**Files:** `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/{BadgesPayView.kt,BadgeWebCheckout.kt}`, `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/{platform/Platform.kt,model/SimpleXAPI.kt}`, `apps/multiplatform/android/src/foss/java/chat/simplex/app/PlayStore.kt`
-
-**Do:**
-
-- Add a payment-method screen for desktop and the `foss` flavor, reusing `BadgePeriod` and `PeriodCard` (`BadgesPayView.kt:29-171`) rather than writing new card components.
-- Add the Kotlin wrapper for `APIGetBadgeState` in `SimpleXAPI.kt` and call it when the app wizard opens, caching the `CRBadgeState`. Nothing in the client calls that command today, so without this step's wrapper there is no `badgeWebBaseUrl` to open, and G4 and G6 have no cached state to read. G3 adds the Swift wrapper.
-- Terminal action there: "Continue in browser" via `LocalUriHandler`, opening `{badgeWebBaseUrl}/?tier=…&months=…&pay=…` from that `CRBadgeState` (C2) and matching D5's parameter grammar.
-- The `google` flavor keeps G0's "Redeem code" terminal action and gains no payment-method screen.
-- Route the platform difference through the existing `androidIsPlayStoreBuild` hook (`Platform.kt:48`), which is overridden once in `android/src/main/java/chat/simplex/app/SimplexApp.kt:383` from the per-flavor `BuildConfig.PLAY_STORE` field (`android/build.gradle.kts:44,49`). The split therefore stays in Gradle's flavor configuration and `commonMain` needs no flavor-specific code. The `TODO [badges]` marker this resolves sits at `Platform.kt:39`.
-- Replace the `TODO [badges]` Stripe/crypto markers this resolves.
-
-**Verify:** Manual: on desktop the app wizard opens the browser with the right parameters; on the `google` flavor the duration screen still offers "Redeem code".
-
-#### G2 — Kotlin: redeem view
-
-**Files:** `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesRedeemCodeView.kt`, `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`
-
-**Do:** Replace the title-only stub (`BadgesRedeemCodeView.kt:17`). The entry point already exists (`BadgesSupportSimplexView.kt:77-82`); do not add another.
-
-- A code field that formats as the user types: uppercase, insert the `-` separators, and fold Crockford ambiguities to match B3's `normalizeCode`.
-- A paste button.
-- Submit calls `APIPurchaseBadge`.
-- Inline errors mapped from `CEBadgeServiceError`: `code_invalid` to "This code isn't valid", `code_used` to "This code has already been used", `code_expired` to "This code has expired", `rate_limited` to a wait message using `retryAfter`. Any other code, `internal` included, renders the response's `message` with the support hint, so a locally failed credential verification (C4) is never a blank screen.
-- Disable submit while in flight and show progress: the RPC has a per-call timeout. **On a timeout, do not offer a retry of the same code.** `redeemBadgeCode` mints a fresh purchase key on every call and persists nothing before the send (C1, C4), so a retry reaches the service as a *different signer*; the service's replay path keys on the purchase key, so it answers `code_used` on a code the user paid for. The timeout is the one outcome that may have been delivered, and `sendBadgeRequest` says so in its own sentence (C4, §9) — render that message and direct the user to the support contact. The recovery is the operator's `codes unredeem` (H2), not another attempt in the app.
-- Success routes to the badge screen.
-
-**Verify:** Manual on desktop against a locally run service: a good code issues a badge, and each error renders inline.
-
-#### G3 — Swift: redeem view
-
-**Files:** `apps/ios/Shared/Views/Badges/BadgesRedeemCodeView.swift`, `apps/ios/Shared/Model/{SimpleXAPI.swift,AppAPITypes.swift}`, `apps/ios/SimpleXChat/APITypes.swift`
-
-The iOS command, response and event unions live in `AppAPITypes.swift` (`:15`, `:691,819,962`, `:1127`) and `ChatErrorType` in `SimpleXChat/APITypes.swift`, not in `SimpleXAPI.swift`, which holds only the API functions and the event dispatcher. Kotlin keeps all three in `SimpleXAPI.kt`, hence the asymmetry with G2.
-
-**Do:** Mirror G2, including its default case for an unmapped error code, and add the Swift wrapper for `APIGetBadgeState` in `AppAPITypes.swift` and `SimpleXAPI.swift`, the counterpart of G1's Kotlin wrapper, which G5 calls from the badge screens. The entry point already exists (`BadgesSupportSimplexView.swift:108-126`) and the "Redeem code" terminal action on the duration screen landed in G0, so this step adds only that view and that wrapper.
-
-Stated here rather than left to "mirror G2", because it is the one rule whose cost is a code the user paid for: **on a timeout, do not offer a retry of the same code.** The client mints a fresh purchase key per call, so a retry is a different signer and the service answers `code_used`; render `sendBadgeRequest`'s timeout message, point at the support contact, and leave the recovery to `codes unredeem` (H2).
-
-**Verify:** Manual on iOS against a locally run service: a good code issues a badge, and each error renders inline.
-
-#### G4 — Kotlin: catalog pricing and badge-state refresh
-
-**Files:** `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/{BadgesPayView.kt,BadgesYourLevelView.kt,BadgesSupportSimplexView.kt,BadgeStore.kt}`, `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`
-
-**Do:** Nothing else calls `APIGetBadgeCatalog`, so without this step desktop and `foss` render "—" for every price on the two screens that lead to the browser hand-off, and the `google` flavor shows Play Store prices for a store purchase G0 removed.
-
-- Call `APIGetBadgeCatalog` (C4) when the app wizard opens; render prices, savings and totals from `CRBadgeCatalog`, using each offer's `total` (A2, A4) as the chargeable price and computing only the undiscounted comparison figure locally. Replace the store-derived Kotlin pricing, so desktop, `foss` and `google` all price from one source (decision 8, §7); G5 does the same for iOS. The 1-month option has no offer row (A4): its price is the tier's `monthPrice` read verbatim.
-- Amounts arrive in minor units. Format them with one private formatter in `BadgeStore.kt`, following D3's rule: divide by 100, pad the remainder to two digits, prefix the symbol for `currency` (`usd` → `$`), and render an unknown currency as its ISO code before the digits. Never divide a total by a month count.
-- Rename the fetch-state wrapper to `BadgePriceState` so it no longer collides with the protocol type `BadgePrice` (§3). `BadgePriceState.Loading` covers the fetch; `BadgePriceState.Unavailable` covers a failed fetch, a missing `active` price, or an offer whose `total` is `Nothing`, which no service implementing this plan sends (A2), and that tier or duration renders disabled rather than hidden (UX §2.1), matching D3.
-- Call `APIGetBadgeState` (G1's wrapper) when a badge screen opens and when it regains focus, caching the `CRBadgeState` for G1's hand-off URL and G6's paid-through date. That call is also the client-side trigger C3's worker relies on for the month boundary, so without these call sites a crossed month is invisible until the daily timer fires.
-- **`UserBadge.monthsLeft` excludes the month currently issued**, so a freshly redeemed 3-month code reads as `monthsLeft = 2` with `paidThrough` three months out (C2, §9; the haddock on `UserBadge` states the arithmetic). Both figures are right, but "2 months left" shown on its own straight after a purchase reads as if the user was shortchanged. Make `paidThrough` the primary figure on any surface that shows one number.
-- Handle `CEvtBadgeChanged` in the event dispatcher: refresh the cached badge state and recompose the badge screens. G2's redeem success path reads state directly and does not need this handler; only the worker's month-boundary re-issue (C3) does, and without it that re-issue is invisible until the app restarts.
-- `BadgeStore`'s `load()`, `price()` and `annualSavings()` lose their last Kotlin callers, and the three `load()` call sites go with them (`BadgesPayView.kt:76`, `BadgesYourLevelView.kt:60`, `BadgesSupportSimplexView.kt:37`). The `BadgePriceState` type stays in `BadgeStore.kt`, so the module remains compiled with only its store-facing surface unused, kept for store-evidence verification (§6, G0).
-- Resolves the `TODO [badges]` markers at `BadgesPayView.kt:28,176`, `BadgesYourLevelView.kt:26` and `BadgeStore.kt:130`.
-
-**Verify:** Manual on desktop and the `google` flavor against a locally run service: all six tier and duration combinations show the same totals the site shows for the same catalog; with the service unreachable every option renders disabled and nothing crashes; with the host clock advanced a month, which both the app and the locally run service read, reopening the badge screen updates it without a restart, because opening it calls `APIGetBadgeState`, which signals the worker (C3).
-
-#### G5 — Swift: catalog pricing and badge-state refresh
-
-**Files:** `apps/ios/Shared/Views/Badges/{BadgesPayView.swift,BadgesYourLevelView.swift,BadgesSupportSimplexView.swift,BadgeStore.swift}`, `apps/ios/Shared/Model/{SimpleXAPI.swift,AppAPITypes.swift}`
-
-**Do:** Mirror G4, including the open-and-focus `APIGetBadgeState` calls on G3's Swift wrapper, the rename of the Swift fetch-state wrapper to `BadgePriceState` in `BadgeStore.swift` (§3), its own private minor-unit formatter following D3's rule, the `CEvtBadgeChanged` handling, and G4's `monthsLeft` rule — the month currently issued is not counted, so a 3-month code reads as "2 month(s) left" the moment it is redeemed and `paidThrough` is the figure to lead with. The Swift `load()` call sites are `BadgesPayView.swift:126`, `BadgesYourLevelView.swift:101` and `BadgesSupportSimplexView.swift:66`; the price and savings calls are `BadgesPayView.swift:144,167` and `BadgesYourLevelView.swift:121`. Resolves the `TODO [badges]` markers at `BadgesPayView.swift:12` and `BadgesYourLevelView.swift:12`; `BadgesPayView.kt:176` and `BadgeStore.kt:130` are desktop and `foss` only and have no Swift counterpart.
-
-**Verify:** Manual on iOS against a locally run service, as for G4; run the app in the simulator so the badge-state refresh sees the same advanced host clock as the service.
-
-#### G6 — Strings and stub cleanup
-
-**Files:** `apps/multiplatform/common/src/commonMain/resources/MR/base/strings.xml`, `apps/ios/en.lproj/Localizable.strings`, `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesPayView.kt`, `apps/ios/Shared/Views/Badges/BadgesPayView.swift`
-
-**Do:**
-
-- All new copy as string resources, base locale only. No translations until the copy is frozen.
-- Remove `stubBillingDate()` (`BadgesPayView.kt:255`, a hardcoded 2026-07-22) and the equivalent inline stub date in Swift's `billingFooter` (`BadgesPayView.swift:251-260`; Swift has no `stubBillingDate()` function). Prepaid months have no billing date, so the footer reads "Ends {paidThrough}" from `CRBadgeState` (C2) rather than a renewal date (§6, and the UX §2.11 rule C2 records).
-- Clear the `TODO [badges]` markers this plan resolves.
-
-**Verify:** Manual: `grep -rn "TODO \[badges\]"` contains none of the markers this plan resolves: `Platform.kt:39`, `foss/PlayStore.kt:13`, `BadgeStore.kt:130`, `BadgesPayView.kt:28,176,219,254`, `BadgesYourLevelView.kt:26`, `BadgesPayView.swift:12,220,252`, `BadgesYourLevelView.swift:12`, and the two `BadgesRedeemCodeView` stubs. Every remaining marker is a §6 deferral, unrelated copy work, or work outside this plan's scope, such as the management-screen gate at `BadgesSupportSimplexView.kt:35` and `.swift:22` and the handshake binding at `Library/Commands.hs:2102`. List the remainder in the commit message.
+**It stays.** Reverting it would restore a button that takes money for a badge the user cannot receive (§7).
 
 ---
 
@@ -1311,13 +1210,13 @@ Deferred. All remain defined in the protocol and either return `bad_request` or 
 - **The client apps, and code redemption itself (scope reduction, 2026-08-27).** This plan's
   remaining work is **money → code** only: the site, the two payment providers, and the operator
   tooling around orders and codes. **Code → badge is another person's responsibility** and no step
-  here advances it. Concretely: G1–G6 are dropped (no iOS or Android change), and Phase C, B7's
+  here advances it. Concretely: the iOS and Android work is dropped, and Phase C, B7's
   `purchaseBadge{code}` and B8's minting stay exactly as they shipped — they are complete and
   tested, and nothing in D5–D7, E, F or H may alter their behaviour. Two consequences to hold onto:
   **G0 already landed** and stays, because it removed a store button that charged users for a badge
   they would never receive, and reverting it would restore that; and the redeem views on both
   platforms remain title-only stubs, so a code bought on the site cannot be redeemed from a shipped
-  app until whoever owns that half builds G2/G3. §10's end-to-end script therefore stops at a code
+  app until whoever owns that half builds them. §10's end-to-end script therefore stops at a code
   on the result screen — the `/_badge purchase` steps in it are that other person's verification,
   not this plan's.
 
@@ -1345,8 +1244,7 @@ Deferred. All remain defined in the protocol and either return `bad_request` or 
 | The operator can link a card payment to a SimpleX profile | Only with `codeSecret`, which derives the code from any `orderId` and joins it to `redeemed_purchase_id`. No row stores both identifiers (A3, §3), and B10 asserts the two-hop `web_orders → invoices → payments → badge_purchases` join is empty. But a database copy alone still correlates an order to a purchase by settlement timestamp and the `batch = 'web'` label, with no `codeSecret` — so what holds is "no stored reference", not unlinkability. E3/H5 own the mitigation (§9, B10). Unlinkability from the operator is not claimed |
 | A user is charged in a store and receives nothing | The store purchase action is removed until store evidence is verified (G0, decision 6, §6); iOS and Play users reach a badge only through a redemption code |
 | A webhook is missed | Every settlement path is idempotent and monotonic toward `paid` (E3); an unprocessed event is reprocessed on retry (D0, E3); H3 reconciles from provider state |
-| Apple or Google reject the linked-out purchase | Decision 6: the redirect ships only on desktop and Android `foss` |
-| Site and app prices drift | One source and one total function (A4). The service computes every total and both catalogs carry it (A2); the service serves it (D4), the site renders it (D3), and the apps render it from `CRBadgeCatalog` (G4, G5). No second implementation exists |
+| Site and app prices drift | One source and one total function (A4). The service computes every total and both catalogs carry it (A2); the service serves it (D4) and the site renders it (D3), so anything pricing from `CRBadgeCatalog` reads the same figure. No second implementation exists |
 | Committed `web/dist/` goes stale | D8 fails CI when `dist/` does not match `src/` |
 | A Haskell rebuild is needed for a CSS tweak | `[web] web_dir` (D4) during development; embedded assets in production |
 
@@ -1359,7 +1257,7 @@ No step in this plan waits on an answer. This section lists only the values an o
 | BTCPay Monero method id | `XMR-CHAIN` | `[btcpay] xmr_method_id` | E2 logs the store's reported method ids at startup, so a mismatch shows in the log |
 | Bitcoin invoice window | 15 minutes | `[btcpay] btc_expiry_minutes` | BTCPay's own default |
 | Monero invoice window | 60 minutes | `[btcpay] xmr_expiry_minutes` | Longer than Bitcoin's; E5's countdown reads the value, so widening it needs no copy change |
-| Checkout site hostname | `http://localhost:8080` in development; `ChatConfig.badgeWebBaseUrl` defaults to empty, meaning the feature is off | `[web] base_url` and `ChatConfig.badgeWebBaseUrl` | The two must match; H5 documents keeping them in step. §10 runs on the development value |
+| Checkout site hostname | `http://localhost:8080` in development | `[web] base_url` | A client build's own site URL must match it; H5 documents keeping the two in step. §10 runs on the development value |
 | Web listener port | required; `8080` in §10 | `[web] port` | Bound to `[web] host`, which does default, to `127.0.0.1` |
 | Support contact | required; `https://simplex.chat/contact` in §10 | `[web] support_contact` | D2's footer, the site's only contact channel, which has no fallback |
 | Reconciliation interval | 600 seconds | `[reconcile] interval_seconds` | H3 |
@@ -1497,7 +1395,7 @@ Append here when a step contradicts this plan: the step id, what was wrong, and 
 - **Test harness — two Postgres harness flakes come from the pre-existing 5s `getTermLine` timeout, now hit about 15 times per run. Deferred, and the cause is named here so it is not re-diagnosed.** `getTermLine'` (`tests/ChatClient.hs`) waits a hardcoded `5000000` microseconds for a line from the virtual terminal. Under the `client_postgres` flag the badge suites are slow enough to exceed it on examples that pass on rerun. It is not a badge defect and not the echo artefact C5's `drainEcho` addresses — that one is about *which* line arrives, this one about *when*. Whoever raises it should raise the constant or make it configurable, not chase the examples.
 - **Phase C review — the C5 integration suite is skipped in CI, so no CI run exercises the client↔service chain.** `tests/Test.hs` registers it as `xdescribe'' "SimpleX Badge service bot"`, and `xdescribe''` skips when `CI=true`. That follows the precedent of the broadcast bot and the directory service beside it, both registered the same way, and the suite genuinely needs a local SMP server and a real service process. The cost is specific: **every** end-to-end assertion in it is skipped in CI, the ledger parity check above included, so a codec divergence introduced by a later step is not caught until someone runs the suite locally with `CI` unset. Run it that way before offering any badge step for merge; `cabal test --test-options='-m "Supporter badges" -m "Badge service"'` with `CI` unset is the command, and a run reporting far fewer than ~148 examples means `CI` was set.
 - **Phase C review — the generated clients carry no badge types, and §9's "belongs with C4" was not honoured.** `APIGetBadgeCatalog`, `APIGetBadgeState` and `APIPurchaseBadge` are in `undocumentedCommands`, `CRBadgeState` and `CRBadgeCatalog` in `undocumentedResponses`, and `CEvtBadgeChanged` in `undocumentedEvents` (`bots/src/API/Docs/{Commands,Responses,Events}.hs`) — all exemptions from `tests/APIDocs.hs`'s completeness check. So `bots/api/TYPES.md`, `types.ts` and `_types.py` carry only `BadgeServiceErrorCode` and `CEBadgeServiceError`, and `UserBadge`, `UserBadgeState`, `CRBadgeState`, `CRBadgeCatalog` and `CEvtBadgeChanged` reach no generated client. The C2 entry above said documenting the three commands "belongs with C4, when they do something"; C4 made them do something and did not document them. **Assigned to a G step** — G4 is the natural one, since it is the first step that reads `CRBadgeCatalog` and `CRBadgeState` field by field and would notice a wrong shape. Moving a constructor out of an `undocumented*` list regenerates `COMMANDS.md`, `EVENTS.md`, `TYPES.md`, `types.ts` and `_types.py`, and `describe "Bot API docs"` must pass afterwards.
-- **Phase C review — mobile cannot configure the badge service at all, which makes G2's and G3's Verify lines impossible as written. Assigned to G0.** `defaultChatConfig` sets `badgeServiceAddress = Nothing` and `badgeWebBaseUrl = ""`; `defaultMobileConfig` (`Mobile.hs`) overrides three unrelated fields and none of these; and `mobileChatOpts` hardcodes `optBadgeServiceAddress = Nothing`, `optBadgeWebUrl = Nothing` and `optBadgeIssuerKeys = []`. The three overrides exist only on the terminal CLI (`--badge-service-address`, `--badge-web-url`, `--badge-issuer-key`), so "verify manually against a locally run service" cannot be done on iOS or Android by any means the client offers. G0 is the assignment: it is the first mobile step, it lands before G2 and G3 need it, and until it does every mobile Verify line in Phase G is unrunnable. Whatever shape it takes — build-time constants, a debug-only setting, `mobileChatOpts` parameters — the three values must be reachable from a mobile build.
+- **Phase C review — mobile cannot configure the badge service at all, which makes G2's and G3's Verify lines impossible as written. Assigned to G0.** `defaultChatConfig` sets `badgeServiceAddress = Nothing` and `badgeWebBaseUrl = ""`; `defaultMobileConfig` (`Mobile.hs`) overrides three unrelated fields and none of these; and `mobileChatOpts` hardcodes `optBadgeServiceAddress = Nothing`, `optBadgeWebUrl = Nothing` and `optBadgeIssuerKeys = []`. The three overrides exist only on the terminal CLI (`--badge-service-address`, `--badge-web-url`, `--badge-issuer-key`), so "verify manually against a locally run service" cannot be done on iOS or Android by any means the client offers. G0 is the assignment: it is the first mobile step, it lands before G2 and G3 need it, and until it does every mobile Verify line in Phase G is unrunnable. Whatever shape it takes — build-time constants, a debug-only setting, `mobileChatOpts` parameters — the three values must be reachable from a mobile build. *(Later: the client apps went out of scope (§6) and G0 landed without this. It is unbuilt, and it belongs to whoever owns code → badge — no mobile redemption can be verified against a locally run service until it exists.)*
 - **Phase C review — `redeemBadgeCode` reads the reported badge state outside the badge lock. Accepted, not fixed.** The lock is released after `storeRedeemedBadge` and before `presentUserBadgeToContacts` (it must be: `presentUserBadgeToContacts` takes `chatLock`), and `getUserBadgeState` for the response runs after that. A concurrent redemption on the same profile could supersede this one in between, so the response would name the *other* purchase as shown. Cosmetic: both purchases are stored correctly, the rows are right, and the next `APIGetBadgeState` reports the truth. Fixing it would mean either computing the response inside the lock — which is a different value from the one the app will read next — or widening the lock over `chatLock`, which is the inversion C3 exists to avoid.
 - **Phase C review — a haddock gap fixed, and a style "fix" reverted as wrong.** The review reported `hasIssuanceForPeriod` (`Store/Badges.hs`) as the module's only query not using `[sql| |]`, and it was reformatted to match. That premise was false and the re-review caught it: the module carries bare-string queries at four other sites against six `[sql| |]` blocks, and the convention is by query length — `[sql| |]` for multi-line or multi-column statements, a plain string for a one-liner. Under the real convention the original was already consistent, and the reformat made a one-line `SELECT EXISTS` span five lines, so it was reverted. Recorded because two successive reviews asserted the convention without reading the module for it. And `runBadgeWorker`'s haddock did not mention the `waitChatStartedAndActivated` gate the C3 review round added to the top of its loop, which is the one thing about that loop a reader most needs to know after a suspend; it now names it and the three sibling loops that gate the same way.
 - **D0 — `PaymentProvider` now has a column codec, and both `codePaymentProviderText = "code"` literals are gone.** B1's and C1's entries above deferred a real `TextEncoding PaymentProvider` until "a second provider needs writing from the service side"; D0's `createOrder` is that step, since `@invoices.provider` is written per order. The instance lives with the type (`PaymentService/Types.hs`), with `ToField`/`FromField` derived from it under the same CPP pattern `Badges/Types.hs` uses, and no JSON: `PaymentProvider` does not cross the wire, so this spelling is only ever read back from a column it was written to. The service's and the client's `createCodePayment` both now write `PPCode`, so the two databases cannot drift. **`@invoices.provider` is derived from `@web_orders.method`, not passed in** — `card → stripe`, `btc | xmr → crypto`, both crypto methods being the one BTCPay instance — so a caller cannot get the pair wrong. E2 and F1 inherit this rather than inventing their own literals; note that `crypto` is the spelling, not `btcpay` (which appears only in B10's hand-written test fixture).
