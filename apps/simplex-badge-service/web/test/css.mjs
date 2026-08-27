@@ -4,7 +4,10 @@
 // blocks and custom properties — because the alternative is a parser
 // dependency and this project is capped at one (decision 7). Anything it
 // cannot answer, it answers by throwing rather than by returning nothing: a
-// check that silently finds no rules is a check that cannot fail.
+// check that silently finds no rules is a check that cannot fail, and a
+// cascade resolver that silently ignores what it cannot read is worse still,
+// because it returns a confident wrong answer. That guarantee is enforced,
+// not documented: see `effectiveValue`.
 //
 // Rules come back in document order with the at-rules enclosing them, because
 // two of the questions asked here are ordering questions. A conditional group
@@ -100,15 +103,33 @@ export function declaration(body, property) {
 // rules match and that they are equally specific; asking for the *effective*
 // value of a property on an element does not require knowing that in advance,
 // which is why the logo check is written the second way.
+//
+// Every construct below that this resolver does not model makes it THROW. That
+// is the whole point of the section: a partial cascade that quietly drops what
+// it cannot read returns a confident wrong answer, which is worse than the
+// narrow check it replaced. `!important` is the case that proved it — an early
+// `.logo--dark { display: block !important }` outranks every later plain
+// declaration in a browser, and an order-and-specificity resolver reports the
+// opposite while every test stays green.
 
-/** True when a media prelude holds in `env`. Any condition not modelled is false. */
-function mediaMatches(prelude, env) {
-  if (prelude.includes("prefers-color-scheme: dark")) return env.scheme === "dark"
-  if (prelude.includes("prefers-color-scheme: light")) return env.scheme === "light"
-  // Everything else — reduced motion, forced colours — is off in the plain
-  // environment these questions are asked in. Modelling one as "always true"
-  // would silently answer for a browser nobody was asking about.
-  return false
+/** The conditions this resolver knows how to evaluate. Anything else throws. */
+const MODELLED_MEDIA = [
+  {condition: "prefers-color-scheme: dark", holds: (env) => env.scheme === "dark"},
+  {condition: "prefers-color-scheme: light", holds: (env) => env.scheme === "light"},
+  // Off in the plain environment these questions are asked in. Modelling one as
+  // always true would silently answer for a browser nobody was asking about.
+  {condition: "prefers-reduced-motion: reduce", holds: () => false},
+  {condition: "forced-colors: active", holds: () => false},
+]
+
+/** True when an at-rule prelude holds in `env`. Throws on anything unmodelled. */
+function atRuleHolds(prelude, env) {
+  if (!prelude.startsWith("@media")) {
+    throw new Error(`${prelude.split("{")[0].trim()} is not modelled by effectiveValue; it would change which rule wins. Teach it or remove the rule.`)
+  }
+  const known = MODELLED_MEDIA.find((m) => prelude.includes(m.condition))
+  if (!known) throw new Error(`media condition not modelled by effectiveValue: ${prelude.trim()}`)
+  return known.holds(env)
 }
 
 /** Specificity of a simple selector, as [ids, classes, types]. Null if not simple. */
@@ -121,13 +142,7 @@ function specificity(selector) {
   return [0, classes.length, type ? 1 : 0]
 }
 
-/**
- * True when a selector list matches `element` — `{tag, classes}`.
- *
- * Only class, type and universal selectors are understood. Anything else
- * (combinators, pseudo-classes) is treated as not matching, which is safe
- * here: no such rule in this sheet targets a logo.
- */
+/** True when a simple selector list matches `element` — `{tag, classes}`. */
 function selectorMatches(selectorList, element) {
   return selectorList.split(",").some((part) => {
     const s = part.trim()
@@ -140,17 +155,56 @@ function selectorMatches(selectorList, element) {
 }
 
 /**
+ * True when a selector list contains a part this resolver cannot read that
+ * could nonetheless match `element`.
+ *
+ * Combinators and pseudo-classes are not understood, and treating them as
+ * "does not match" is only safe when they demonstrably cannot match: a part
+ * naming none of the element's classes, not its tag and not `*` cannot. A
+ * `::pseudo-element` part styles something that is not the element at all.
+ */
+function unreadableAndCouldMatch(selectorList, element) {
+  return selectorList.split(",").some((part) => {
+    const s = part.trim()
+    if (s === "*" || specificity(s) !== null || s.includes("::")) return false
+    if (s.includes("*")) return true
+    if (new RegExp(`(^|[^\\w.-])${element.tag}([^\\w-]|$)`).test(s)) return true
+    return element.classes.some((c) => s.includes(`.${c}`))
+  })
+}
+
+/**
  * The value `property` actually takes on `element` in `env`, or undefined when
- * no matching rule declares it. Applicable rules are ordered by specificity
- * and then by document position, which is the cascade for a sheet with no
- * `!important`, no inline styles and no layers — this one.
+ * no matching rule declares it.
+ *
+ * Applicable rules are ordered by specificity and then by document position,
+ * which is the whole cascade for a sheet with no `!important` and no `@layer`.
+ * Both are refused rather than assumed: see the checks below. (Inline styles
+ * and the style attribute cannot occur in a stylesheet, so they need no
+ * clause — the earlier docstring naming them was noise.)
  */
 export function effectiveValue(css, element, property, env) {
-  const winners = allRules(css)
+  // Layer order is sheet-wide and reorders the cascade regardless of where the
+  // rules sit, so this one is global rather than per-candidate.
+  if (/@layer\b/.test(css)) {
+    throw new Error("effectiveValue does not model @layer, which reorders the cascade sheet-wide. Teach it or drop the layer.")
+  }
+  const candidates = allRules(css)
     .map((rule, order) => ({...rule, order}))
-    .filter((r) => r.at.every((a) => mediaMatches(a, env)))
-    .filter((r) => selectorMatches(r.selector, element))
+    .filter((r) => {
+      if (unreadableAndCouldMatch(r.selector, element)) {
+        throw new Error(`effectiveValue cannot read the selector "${r.selector}", which may match ${element.tag}.${element.classes.join(".")}`)
+      }
+      return selectorMatches(r.selector, element)
+    })
     .filter((r) => declaration(r.body, property) !== undefined)
+  for (const r of candidates) {
+    if (/!\s*important/.test(declaration(r.body, property))) {
+      throw new Error(`"${r.selector} { ${property}: ${declaration(r.body, property)} }" is !important, which outranks every plain declaration whatever the order. effectiveValue does not model it.`)
+    }
+  }
+  const winners = candidates
+    .filter((r) => r.at.every((a) => atRuleHolds(a, env)))
     .sort((a, b) => {
       const [sa, sb] = [specificity(a.selector.split(",")[0]), specificity(b.selector.split(",")[0])]
       for (let i = 0; i < 3; i++) if (sa[i] !== sb[i]) return sa[i] - sb[i]
