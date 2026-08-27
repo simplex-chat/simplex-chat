@@ -171,12 +171,12 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | F4 | Refunds and disputes | B7, F2 | ☐ |
 | F5 | Stripe scenario tests | F2, F4 | ☐ |
 | G0 | Remove the store purchase action | — | ☑ |
-| G1 | Kotlin: payment-method screen and browser hand-off | C2, D5, G0 | ☐ |
-| G2 | Kotlin: redeem view | B8, C4, G0 | ☐ |
-| G3 | Swift: redeem view | B8, C4, G0 | ☐ |
-| G4 | Kotlin: catalog pricing and badge-state refresh | C4, D3, G0, G1, G2 | ☐ |
-| G5 | Swift: catalog pricing and badge-state refresh | C4, D3, G0, G3 | ☐ |
-| G6 | Strings and stub cleanup | G0, G1, G2, G3, G4, G5 | ☐ |
+| G1 | Kotlin: payment-method screen and browser hand-off | — | ⊘ out of scope |
+| G2 | Kotlin: redeem view | — | ⊘ out of scope |
+| G3 | Swift: redeem view | — | ⊘ out of scope |
+| G4 | Kotlin: catalog pricing and badge-state refresh | — | ⊘ out of scope |
+| G5 | Swift: catalog pricing and badge-state refresh | — | ⊘ out of scope |
+| G6 | Strings and stub cleanup | — | ⊘ out of scope |
 | H1 | Rate limiting and request caps | D7, E4, F2 | ☐ |
 | H2 | Code lifecycle tooling | B7, B8, E4 | ☐ |
 | H3 | Stuck-order reconciliation | E3, F2 | ☐ |
@@ -1298,6 +1298,19 @@ Document the backup procedure for both secrets, and state that `[web] web_dir` i
 ## 6. Explicitly out of scope
 
 Deferred. All remain defined in the protocol and either return `bad_request` or are unused.
+
+- **The client apps, and code redemption itself (scope reduction, 2026-08-27).** This plan's
+  remaining work is **money → code** only: the site, the two payment providers, and the operator
+  tooling around orders and codes. **Code → badge is another person's responsibility** and no step
+  here advances it. Concretely: G1–G6 are dropped (no iOS or Android change), and Phase C, B7's
+  `purchaseBadge{code}` and B8's minting stay exactly as they shipped — they are complete and
+  tested, and nothing in D5–D7, E, F or H may alter their behaviour. Two consequences to hold onto:
+  **G0 already landed** and stays, because it removed a store button that charged users for a badge
+  they would never receive, and reverting it would restore that; and the redeem views on both
+  platforms remain title-only stubs, so a code bought on the site cannot be redeemed from a shipped
+  app until whoever owns that half builds G2/G3. §10's end-to-end script therefore stops at a code
+  on the result screen — the `/_badge purchase` steps in it are that other person's verification,
+  not this plan's.
 
 - Subscriptions and renewals for non-store payments. Web purchases are prepaid months only.
 - `getBadgeInvoice` (in-app invoices), `upgradeBadgeSubscription`, `pauseBadge`.
