@@ -105,6 +105,7 @@ import Simplex.Chat.Badges.Types
   ( BadgeItemStatus (..),
     BadgeLedgerEntry (..),
     BadgeOfferId (..),
+    BadgePriceId (..),
     BadgePurchasePayment (BPPCode),
     BadgePurchaseStatus (..),
     LedgerCreditType (..),
@@ -117,7 +118,7 @@ import Simplex.Chat.Library.Commands (execChatCommand')
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..))
-import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), PaymentProvider (..))
 import Simplex.Chat.Types (ChatPeerType (..), ConnectTarget (..), Profile (..), User (User, userId))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (serviceRequestTimeout))
 import Simplex.Messaging.Agent.Protocol (ConnectionMode (CMContact))
@@ -193,6 +194,11 @@ badgeServiceTests = do
   it "should return the redeeming purchase key from getCodeByHash" testBadgeStoreGetCodeByHashRedeemer
   it "should refuse to redeem a revoked code, leaving the row untouched" testBadgeStoreMarkCodeRedeemedRefusesRevoked
   it "should clear both redemption columns and set unredeemed_at" testBadgeStoreUnredeemCode
+  it "should write an order and its invoice in one call and read them back joined" testBadgeStoreCreateOrderAndGet
+  it "should resolve an order by its provider ref, its replacement and its short ref" testBadgeStoreOrderRefLookups
+  it "should return expired invoiced and pending orders oldest first, omitting paid and unexpired ones" testBadgeStoreStuckOrders
+  it "should record a partial payment without settling, then settle status, amount and time together" testBadgeStoreOrderStatusAndSettlement
+  it "should reprocess an unprocessed provider event and refuse a processed replay" testBadgeStoreProviderEventReplay
   it "should redeem a valid code into a verifiable credential, with a credit(payment) then debit(badge) ledger" testBadgeServiceRedeemCodeIssuesCredential
   it "should return the same credential and write no new row when the identical request is repeated" testBadgeServiceRedeemCodeIdempotent
   it "should append exactly one debit(lapse) when the identical request is repeated after months lapsed" testBadgeServiceReplayAfterLapseHealsOnce
@@ -2360,6 +2366,238 @@ testBadgeStoreUnredeemCode ps =
       Just storedUnredeemedAt -> abs (diffUTCTime storedUnredeemedAt unredeemAt) < 1 `shouldBe` True
       Nothing -> expectationFailure "unredeemed_at should be set after unredeemCode"
     redeemer `shouldBe` Nothing
+
+-- D0 store layer: orders, invoices, provider events ---------------------------
+
+-- | A crypto order as D6 will write one: a supporter badge, 3 months, $14.00, with the address
+-- and crypto amount E2's @getPaymentMethods@ returns. The catalog ids are passed in rather than
+-- filled by a record update, which -XDuplicateRecordFields warns on, and only the first test
+-- below seeds a catalog to pin them to.
+testNewOrder :: Text -> Text -> UTCTime -> Maybe BadgePriceId -> Maybe BadgeOfferId -> NewWebOrder
+testNewOrder orderId shortRef expiresAt priceId offerId =
+  NewWebOrder
+    { orderId,
+      invoiceId = orderId <> "-invoice",
+      providerRef = Just (orderId <> "-btcpay"),
+      method = OMBtc,
+      shortRef,
+      badgeType = BTSupporter,
+      priceId,
+      offerId,
+      months = 3,
+      amount = CurrencyAmount 1400,
+      currency = "usd",
+      payUrl = Nothing,
+      paymentAddress = Just "bc1qd0teststoreaddress",
+      cryptoAmount = Just "0.00042",
+      expiresAt
+    }
+
+-- | The order's id, for asserting WHICH order a lookup resolved to: 'WebOrder''s field selectors
+-- are ambiguous under -XDuplicateRecordFields, so every read below goes through a pattern match.
+orderIdOf :: WebOrder -> Text
+orderIdOf WebOrder {orderId} = orderId
+
+-- | 'serviceRowCount' against a 'DBStore' rather than an open connection, which is what the
+-- store tests hold.
+serviceRowCount' :: DBStore -> String -> IO Int
+serviceRowCount' st table = withConnection st (`serviceRowCount` table)
+
+-- | The @invoices row as the database holds it: @(provider, price, amount, currency, status,
+-- payment_crypto_currency)@. Read as raw columns rather than through 'getOrder', so the
+-- assertions pin what was written rather than what the join makes of it -- and because
+-- @invoices.status@ and @provider@ are read by nothing in production (A3), these are the only
+-- reads of them that will ever exist.
+serviceInvoiceRow :: HasCallStack => DBStore -> Text -> IO (Text, Int64, Int64, Text, Text, Maybe Text)
+serviceInvoiceRow st invoiceId = do
+  rows <-
+    withConnection st $ \db ->
+      DB.query db "SELECT provider, price, amount, currency, status, payment_crypto_currency FROM sx_badge_service_invoices WHERE invoice_id = ?" (Only invoiceId)
+  case rows of
+    [row] -> pure row
+    _ -> expectationFailure ("expected exactly one invoice row for " <> show invoiceId <> ", got " <> show (length rows)) >> error "unreachable"
+
+-- createOrder writes BOTH rows -- the @invoices row and the @web_orders row that references it --
+-- and getOrder returns them joined, so one call yields the amount, currency, address, crypto
+-- amount, payment URL and expiry E4 serves. The catalog is seeded first and the order pinned to a
+-- real price and offer, so price_id/offer_id are exercised as the foreign keys they are rather
+-- than as NULLs.
+testBadgeStoreCreateOrderAndGet :: HasCallStack => TestParams -> IO ()
+testBadgeStoreCreateOrderAndGet ps =
+  withFreshBadgeStore ps $ \st -> do
+    seedCatalog st
+    BadgeCatalog {prices, offers} <- expectRight $ withServiceTransaction st getActiveCatalog
+    Just BadgePrice {priceId = supporterPriceId} <- pure $ find (\BadgePrice {badgeType} -> badgeType == BTSupporter) prices
+    Just BadgeOffer {offerId = threeMonths} <- pure $ find (\BadgeOffer {priceId, months} -> priceId == Just supporterPriceId && months == 3) offers
+    now <- getCurrentTime
+    let expiry = addUTCTime (30 * 60) now
+        newOrder = testNewOrder "d0-order-1" "K3M7Q" expiry (Just supporterPriceId) (Just threeMonths)
+    _ <- expectRight $ withServiceTransaction st $ \db -> createOrder db newOrder now
+    -- both rows, and exactly one of each
+    serviceRowCount' st "web_orders" `shouldReturn` 1
+    serviceRowCount' st "invoices" `shouldReturn` 1
+    Just order <- expectRight $ withServiceTransaction st $ \db -> getOrder db "d0-order-1"
+    let WebOrder {orderId, invoiceId, providerRef, method, shortRef, badgeType, priceId, offerId, months, status} = order
+        WebOrder {amountPaid, settledAt, amount, currency, payUrl, paymentAddress, cryptoAmount, expiresAt, createdAt} = order
+    (orderId, invoiceId, shortRef) `shouldBe` ("d0-order-1", "d0-order-1-invoice", "K3M7Q")
+    (providerRef, method, badgeType, months) `shouldBe` (Just "d0-order-1-btcpay", OMBtc, BTSupporter, 3)
+    (priceId, offerId) `shouldBe` (Just supporterPriceId, Just threeMonths)
+    -- a new order is invoiced and unpaid: neither column a settlement writes is set
+    (status, amountPaid, settledAt) `shouldBe` (WOSInvoiced, Nothing, Nothing)
+    -- the invoice half of the join, which is the whole point of getOrder returning one record
+    (amount, currency) `shouldBe` (CurrencyAmount 1400, "usd")
+    (payUrl, paymentAddress, cryptoAmount) `shouldBe` (Nothing, Just "bc1qd0teststoreaddress", Just "0.00042")
+    expiresAt `shouldBeStoredAt` expiry
+    createdAt `shouldBeStoredAt` now
+    -- and the invoice columns nothing in this plan reads: provider is derived from the method
+    -- (btc -> crypto), price and amount both carry the charged total, the status is the order's
+    -- projected through orderInvoiceStatus (invoiced -> open), and payment_crypto_currency is
+    -- deliberately left NULL (A3)
+    serviceInvoiceRow st "d0-order-1-invoice" `shouldReturn` ("crypto", 1400, 1400, "usd", "open", Nothing)
+    unknown <- expectRight $ withServiceTransaction st $ \db -> getOrder db "d0-order-nonexistent"
+    (orderIdOf <$> unknown) `shouldBe` Nothing
+
+-- getOrderByProviderRef and getOrderByShortRef each resolve exactly one order, and setOrderProviderRef
+-- REPLACES the reference an order was created with -- which F3 needs, because a Stripe payment intent
+-- is only known once the checkout session completes. Two orders exist throughout, so a lookup that
+-- ignored its argument and returned the only row would fail.
+testBadgeStoreOrderRefLookups :: HasCallStack => TestParams -> IO ()
+testBadgeStoreOrderRefLookups ps =
+  withFreshBadgeStore ps $ \st -> do
+    now <- getCurrentTime
+    let expiry = addUTCTime (30 * 60) now
+    _ <- expectRight $ withServiceTransaction st $ \db -> createOrder db (testNewOrder "d0-order-1" "K3M7Q" expiry Nothing Nothing) now
+    _ <- expectRight $ withServiceTransaction st $ \db -> createOrder db (testNewOrder "d0-order-2" "T9WZ4" expiry Nothing Nothing) now
+    let byProviderRef ref = fmap orderIdOf <$> expectRight (withServiceTransaction st $ \db -> getOrderByProviderRef db ref)
+        byShortRef ref = fmap orderIdOf <$> expectRight (withServiceTransaction st $ \db -> getOrderByShortRef db ref)
+    byProviderRef "d0-order-1-btcpay" `shouldReturn` Just "d0-order-1"
+    byProviderRef "d0-order-2-btcpay" `shouldReturn` Just "d0-order-2"
+    -- the replacement: the old reference resolves to nothing, the new one to the same order
+    _ <- expectRight $ withServiceTransaction st $ \db -> setOrderProviderRef db "d0-order-1" "pi_d0_stripe_intent" now
+    byProviderRef "d0-order-1-btcpay" `shouldReturn` Nothing
+    byProviderRef "pi_d0_stripe_intent" `shouldReturn` Just "d0-order-1"
+    byProviderRef "d0-order-2-btcpay" `shouldReturn` Just "d0-order-2"
+    -- the bank-statement reference support resolves by (H2), and only that order
+    byShortRef "K3M7Q" `shouldReturn` Just "d0-order-1"
+    byShortRef "T9WZ4" `shouldReturn` Just "d0-order-2"
+    byShortRef "QQQQQ" `shouldReturn` Nothing
+    -- and every mutation names an order that must exist
+    refused <- withServiceTransaction st $ \db -> setOrderProviderRef db "d0-order-nonexistent" "pi_nothing" now
+    refused `shouldBe` Left SEOrderNotFound
+
+-- getStuckOrders returns the orders H3's pass must re-read from the provider: still open
+-- (invoiced or pending) and past their invoice expiry, oldest expiry first. A paid order is never
+-- stuck however long ago its invoice expired -- late on-chain settlement is routine (E3) -- and an
+-- unexpired order is not stuck yet.
+testBadgeStoreStuckOrders :: HasCallStack => TestParams -> IO ()
+testBadgeStoreStuckOrders ps =
+  withFreshBadgeStore ps $ \st -> do
+    now <- getCurrentTime
+    let daysAgo d = addUTCTime (negate d * nominalDay) now
+        create orderId shortRef expiry = expectRight $ withServiceTransaction st $ \db -> createOrder db (testNewOrder orderId shortRef expiry Nothing Nothing) now
+    create "d0-stuck-oldest" "AAAAA" (daysAgo 3)
+    create "d0-stuck-newer" "BBBBB" (daysAgo 1)
+    create "d0-settled" "CCCCC" (daysAgo 2)
+    create "d0-open" "DDDDD" (addUTCTime nominalDay now)
+    _ <- expectRight $ withServiceTransaction st $ \db -> updateOrderStatus db "d0-stuck-newer" WOSPending (Just (CurrencyAmount 700)) now
+    _ <- expectRight $ withServiceTransaction st $ \db -> setOrderSettled db "d0-settled" (CurrencyAmount 1400) now
+    stuck <- expectRight $ withServiceTransaction st $ \db -> getStuckOrders db now
+    -- oldest expiry first, the paid one omitted, the unexpired one omitted
+    map orderIdOf stuck `shouldBe` ["d0-stuck-oldest", "d0-stuck-newer"]
+    map (\WebOrder {status} -> status) stuck `shouldBe` [WOSInvoiced, WOSPending]
+    -- the cutoff is the instant passed in, not the current time: two days back, only the oldest
+    -- has expired
+    earlier <- expectRight $ withServiceTransaction st $ \db -> getStuckOrders db (daysAgo 2)
+    map orderIdOf earlier `shouldBe` ["d0-stuck-oldest"]
+
+-- updateOrderStatus records what arrived without settling: a partial payment moves the order to
+-- pending and writes amount_paid, leaving settled_at NULL, and a later status change with no
+-- amount keeps the amount already recorded (E5 renders it for an underpaid expiry). setOrderSettled
+-- then writes settled_at, amount_paid and status = 'paid' together. Both move @invoices.status in
+-- step, which is A3's invariant and is asserted from the column itself.
+testBadgeStoreOrderStatusAndSettlement :: HasCallStack => TestParams -> IO ()
+testBadgeStoreOrderStatusAndSettlement ps =
+  withFreshBadgeStore ps $ \st -> do
+    now <- getCurrentTime
+    let expiry = addUTCTime (30 * 60) now
+        invoiceStatus = do
+          (_, _, _, _, status, _) <- serviceInvoiceRow st "d0-order-1-invoice"
+          pure status
+        orderState = do
+          Just WebOrder {status, amountPaid, settledAt} <- expectRight $ withServiceTransaction st $ \db -> getOrder db "d0-order-1"
+          pure (status, amountPaid, settledAt)
+    _ <- expectRight $ withServiceTransaction st $ \db -> createOrder db (testNewOrder "d0-order-1" "K3M7Q" expiry Nothing Nothing) now
+    invoiceStatus `shouldReturn` "open"
+    -- a partial payment: recorded, not settled. The order moves invoiced -> pending; the invoice
+    -- does not move at all, because orderInvoiceStatus maps both onto ISOpen
+    _ <- expectRight $ withServiceTransaction st $ \db -> updateOrderStatus db "d0-order-1" WOSPending (Just (CurrencyAmount 700)) now
+    orderState `shouldReturn` (WOSPending, Just (CurrencyAmount 700), Nothing)
+    invoiceStatus `shouldReturn` "open"
+    -- an underpaid expiry: no new amount, and the one already recorded is kept rather than cleared
+    _ <- expectRight $ withServiceTransaction st $ \db -> updateOrderStatus db "d0-order-1" WOSExpired Nothing now
+    orderState `shouldReturn` (WOSExpired, Just (CurrencyAmount 700), Nothing)
+    invoiceStatus `shouldReturn` "expired"
+    -- late settlement after expiry, which is routine on-chain: all three columns at once
+    let settledAt = addUTCTime (2 * 3600) now
+    _ <- expectRight $ withServiceTransaction st $ \db -> setOrderSettled db "d0-order-1" (CurrencyAmount 1400) settledAt
+    (status, amountPaid, storedSettledAt) <- orderState
+    (status, amountPaid) `shouldBe` (WOSPaid, Just (CurrencyAmount 1400))
+    case storedSettledAt of
+      Just at -> at `shouldBeStoredAt` settledAt
+      Nothing -> expectationFailure "settled_at should be set by setOrderSettled"
+    -- the invoice leaves 'expired' for 'paid' with the order: the projection is applied on every
+    -- write, not only on the way out of 'open'
+    invoiceStatus `shouldReturn` "paid"
+    -- neither writer invents an order
+    missingUpdate <- withServiceTransaction st $ \db -> updateOrderStatus db "d0-order-nonexistent" WOSPending Nothing now
+    missingUpdate `shouldBe` Left SEOrderNotFound
+    missingSettle <- withServiceTransaction st $ \db -> setOrderSettled db "d0-order-nonexistent" (CurrencyAmount 1400) now
+    missingSettle `shouldBe` Left SEOrderNotFound
+
+-- recordProviderEvent returns False ONLY for an event that has already been PROCESSED. A row whose
+-- processed_at is NULL is one whose previous attempt died mid-settlement, so it comes back as True
+-- and is processed again (E3, E7); treating it as a duplicate would strand a paid order forever.
+-- markProviderEventProcessed is what flips that row, inside the settlement transaction.
+testBadgeStoreProviderEventReplay :: HasCallStack => TestParams -> IO ()
+testBadgeStoreProviderEventReplay ps =
+  withFreshBadgeStore ps $ \st -> do
+    now <- getCurrentTime
+    let record provider eventId at = expectRight $ withServiceTransaction st $ \db -> recordProviderEvent db provider eventId at
+        eventRow :: Text -> IO (UTCTime, Maybe UTCTime)
+        eventRow eventId = do
+          rows <-
+            withConnection st $ \db ->
+              DB.query db "SELECT received_at, processed_at FROM sx_badge_service_provider_events WHERE provider = 'crypto' AND event_id = ?" (Only eventId)
+          case rows of
+            [row] -> pure (row :: (UTCTime, Maybe UTCTime))
+            _ -> expectationFailure ("expected exactly one event row, got " <> show (length rows)) >> error "unreachable"
+    -- first delivery
+    record PPCrypto "d0-invoice-1-InvoiceSettled" now `shouldReturn` True
+    -- redelivered before the first attempt completed: reprocess, and the row is not duplicated
+    let redeliveredAt = addUTCTime 60 now
+    record PPCrypto "d0-invoice-1-InvoiceSettled" redeliveredAt `shouldReturn` True
+    serviceRowCount' st "provider_events" `shouldReturn` 1
+    -- the row still carries the FIRST delivery's time, and is still unprocessed
+    (receivedAt, unprocessed) <- eventRow "d0-invoice-1-InvoiceSettled"
+    receivedAt `shouldBeStoredAt` now
+    unprocessed `shouldBe` Nothing
+    -- the settlement transaction completes
+    let processedAt = addUTCTime 120 now
+    _ <- expectRight $ withServiceTransaction st $ \db -> markProviderEventProcessed db PPCrypto "d0-invoice-1-InvoiceSettled" processedAt
+    (_, storedProcessedAt) <- eventRow "d0-invoice-1-InvoiceSettled"
+    case storedProcessedAt of
+      Just at -> at `shouldBeStoredAt` processedAt
+      Nothing -> expectationFailure "processed_at should be set by markProviderEventProcessed"
+    -- and now the same event is a replay
+    record PPCrypto "d0-invoice-1-InvoiceSettled" (addUTCTime 180 now) `shouldReturn` False
+    -- dedup is keyed on (provider, event_id): the same id from another provider is a new event
+    record PPStripe "d0-invoice-1-InvoiceSettled" now `shouldReturn` True
+    -- as is a different event from the same provider
+    record PPCrypto "d0-invoice-1-InvoiceProcessing" now `shouldReturn` True
+    serviceRowCount' st "provider_events" `shouldReturn` 3
+    -- closing out an event that was never recorded is a mismatch between the two calls, not a no-op
+    missing <- withServiceTransaction st $ \db -> markProviderEventProcessed db PPCrypto "d0-invoice-1-never-recorded" now
+    missing `shouldBe` Left SEProviderEventNotFound
 
 -- B4 issuer key + credential signing -----------------------------------------
 

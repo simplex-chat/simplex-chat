@@ -6,22 +6,39 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | Queries over the badge service's own tables: purchases, payments, the ledger, issuances,
--- redemption codes and the price catalog. Structured after
--- "Directory.Store"\/"Directory.Store.Migrate": every function here takes a 'DB.Connection'
--- and opens no transaction of its own; 'withServiceTransaction' is the only place a
--- transaction is opened, which is what lets a later step compose a purchase row, a payment
--- row, several ledger entries, an issuance and a code redemption into one atomic transaction.
+-- | Queries over the badge service's own tables: web orders, invoices, provider events,
+-- purchases and payments, the ledger, issuances, redemption codes and the price catalog.
+-- Structured after "Directory.Store"\/"Directory.Store.Migrate": every function here takes a
+-- 'DB.Connection' and opens no transaction of its own; 'withServiceTransaction' is the only
+-- place a transaction is opened, which is what lets a caller compose a purchase row, a payment
+-- row, several ledger entries, an issuance and a code redemption into one atomic transaction --
+-- or, on the web side, an order, its invoice, a provider event and a code row.
 --
--- The order, invoice and provider-event functions belong to D0. This module owns everything
--- the RPC path needs on top of that: purchases and payments, the ledger, issuances, codes
--- and the catalog. There is no store function that resolves an order to a code or a purchase
--- -- that join does not exist in the schema (docs/protocol/badges-web.md §3 Linkage); a
--- caller that needs it derives the code from the order id and looks it up by hash with
--- 'getCodeByHash'.
+-- The RPC path (B1) and the web-checkout path (D0) share this module and share nothing else:
+-- there is no store function that resolves an order to a code or a purchase -- that join does
+-- not exist in the schema (docs\/protocol\/badges-web.md §3 Linkage); a caller that needs it
+-- derives the code from the order id and looks it up by hash with 'getCodeByHash'.
 module BadgeService.Store
   ( ServiceError (..),
     withServiceTransaction,
+
+    -- * Web orders and their invoices
+    OrderMethod (..),
+    WebOrderStatus (..),
+    NewWebOrder (..),
+    WebOrder (..),
+    createOrder,
+    getOrder,
+    getOrderByProviderRef,
+    getOrderByShortRef,
+    getStuckOrders,
+    updateOrderStatus,
+    setOrderProviderRef,
+    setOrderSettled,
+
+    -- * Provider events
+    recordProviderEvent,
+    markProviderEventProcessed,
 
     -- * Purchases and payments
     BadgePurchaseRow (..),
@@ -88,18 +105,23 @@ import Simplex.Chat.Badges.Types
     LedgerEntryType (..),
     OfferDiscount (..),
   )
-import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), PaymentStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
-import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (tshow)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
+import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Database.PostgreSQL.Simple.ToField (ToField (..))
 #else
-import Database.SQLite.Simple (Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
+import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.QQ (sql)
+import Database.SQLite.Simple.ToField (ToField (..))
 #endif
 
 -- | The error type of every store function: not-found (a lookup targeted by a mutation
@@ -110,6 +132,12 @@ data ServiceError
   | SECodeNotFound
   | SEPriceNotFound
   | SEOfferNotFound
+  | SEOrderNotFound
+  | -- | 'markProviderEventProcessed' only: no @provider_events@ row for that
+    -- @(provider, event_id)@. Its caller reaches it through a 'recordProviderEvent' that
+    -- returned 'True' in the same transaction, so the row is always there; a 'Left' here means
+    -- the two calls disagreed about the key, which must not pass silently.
+    SEProviderEventNotFound
   | -- | 'attachPurchasePayment' only: the purchase already has a payment attached.
     SEPaymentConflict
   | -- | 'markCodeRedeemed' only: the code was already claimed by another redemption, so this one
@@ -140,6 +168,418 @@ withServiceTransaction st action =
       runExceptT (action db) >>= \case
         Left e -> E.throwIO (ServiceRollback e)
         Right a -> pure a
+
+-- Web orders and their invoices ----------------------------------------------
+
+-- | @web_orders.method@ (A3: @CHECK (method IN ('card','btc','xmr'))@). It is the single source
+-- for everything the payment method decides: the invoice's provider below, and E4's
+-- @cryptoCurrency@, which is derived from it rather than read from
+-- @invoices.payment_crypto_currency@ -- that column exists and is deliberately left NULL (A3).
+--
+-- It lives here rather than in D6's @Orders.hs@, which the plan first named as its home, only
+-- because D0 has to persist a method before that module exists; D6 imports it (plan §9).
+data OrderMethod = OMCard | OMBtc | OMXmr
+  deriving (Eq, Show)
+
+instance TextEncoding OrderMethod where
+  textEncode = \case
+    OMCard -> "card"
+    OMBtc -> "btc"
+    OMXmr -> "xmr"
+  textDecode = \case
+    "card" -> Just OMCard
+    "btc" -> Just OMBtc
+    "xmr" -> Just OMXmr
+    _ -> Nothing
+
+instance ToField OrderMethod where toField = toField . textEncode
+
+instance FromField OrderMethod where fromField = fromTextField_ textDecode
+
+-- | @web_orders.status@ (A3: @CHECK (status IN ('invoiced','pending','paid','expired','failed'))@),
+-- authoritative for the order lifecycle and what E3, E4 and H3 read. @invoices.status@ is
+-- maintained in step with it, in the same transaction, by 'updateOrderStatus' and
+-- 'setOrderSettled', and is read by nothing in this plan.
+--
+-- Distinct from 'InvoiceStatus', the shared @invoices@ vocabulary: an order tracks five states
+-- because E3 and E5 have to tell an underpaid expiry from a provider failure, where an invoice
+-- has only the three the payment model defines. 'orderInvoiceStatus' is the one place the two
+-- meet, and it projects the five onto the three.
+data WebOrderStatus = WOSInvoiced | WOSPending | WOSPaid | WOSExpired | WOSFailed
+  deriving (Eq, Show)
+
+instance TextEncoding WebOrderStatus where
+  textEncode = \case
+    WOSInvoiced -> "invoiced"
+    WOSPending -> "pending"
+    WOSPaid -> "paid"
+    WOSExpired -> "expired"
+    WOSFailed -> "failed"
+  textDecode = \case
+    "invoiced" -> Just WOSInvoiced
+    "pending" -> Just WOSPending
+    "paid" -> Just WOSPaid
+    "expired" -> Just WOSExpired
+    "failed" -> Just WOSFailed
+    _ -> Nothing
+
+instance ToField WebOrderStatus where toField = toField . textEncode
+
+instance FromField WebOrderStatus where fromField = fromTextField_ textDecode
+
+-- | The @invoices.status@ that goes with each order status, so the two columns cannot drift
+-- (A3's invariant). A projection, not a bijection: an invoice is 'ISOpen' while the order is
+-- either invoiced or partly paid, and 'ISExpired' whether the order ran out of time or the
+-- provider failed it. Nothing reads it back (A3), and @web_orders.status@ keeps the distinctions
+-- this drops.
+orderInvoiceStatus :: WebOrderStatus -> InvoiceStatus
+orderInvoiceStatus = \case
+  WOSInvoiced -> ISOpen
+  WOSPending -> ISOpen
+  WOSPaid -> ISPaid
+  WOSExpired -> ISExpired
+  WOSFailed -> ISExpired
+
+-- | The @invoices.provider@ of an order, derived from its method rather than passed in: the
+-- card methods go to Stripe (F1) and both crypto methods to the same BTCPay instance (E2), so
+-- a caller could only ever get this wrong.
+orderInvoiceProvider :: OrderMethod -> PaymentProvider
+orderInvoiceProvider = \case
+  OMCard -> PPStripe
+  OMBtc -> PPCrypto
+  OMXmr -> PPCrypto
+
+-- | Both rows 'createOrder' writes, as one record: D6 fills a named structure rather than a
+-- fifteen-argument call, and the field names read as the columns do. The order's own columns
+-- come first, then the @invoices@ ones.
+--
+-- @status@ is not a field: a new order is always @invoiced@ and its invoice always @invoiced@
+-- with it, so there is no representable state where a row is created already paid or expired.
+-- Nor are @amount_paid@ and @settled_at@, which only 'updateOrderStatus' and 'setOrderSettled'
+-- ever write.
+data NewWebOrder = NewWebOrder
+  { -- | 128 random bits, base64url (D6). A bearer capability for the code (§3 Linkage,
+    -- decision 9), so it must not be sequential or derived from anything guessable.
+    orderId :: Text,
+    -- | The @invoices@ row this call writes; minted by D6, not here, because the store opens no
+    -- transaction and mints no identifiers.
+    invoiceId :: Text,
+    -- | The provider's invoice \/ session \/ payment-intent id. 'Nothing' only for a caller that
+    -- has not made the provider call yet; D6 always has it by the time it writes, and
+    -- 'setOrderProviderRef' can replace it later.
+    providerRef :: Maybe Text,
+    method :: OrderMethod,
+    -- | 5 Crockford characters (D6), unique per order: the reference support resolves by (H2),
+    -- shown on card statements (F1) and on the crypto payment and result screens (E5, E6).
+    shortRef :: Text,
+    badgeType :: BadgeType,
+    priceId :: Maybe BadgePriceId,
+    offerId :: Maybe BadgeOfferId,
+    months :: Word8,
+    -- | The charged total from A4's 'BadgeService.Catalog.offerTotal', in minor units of
+    -- @currency@. Written to @invoices.price@ and @invoices.amount@ alike, with
+    -- @discount_amount@ and @credit_amount@ left NULL: an offer's discount is expressed as free
+    -- months, so the total IS the price, and a web order has no credit to apply.
+    amount :: CurrencyAmount,
+    currency :: Text,
+    -- | Card only: the provider's hosted checkout URL (F1).
+    payUrl :: Maybe Text,
+    -- | Crypto only: the address and the amount in the crypto currency, both from E2's
+    -- @getPaymentMethods@, so E4 serves them from the database and never re-reads the provider.
+    paymentAddress :: Maybe Text,
+    cryptoAmount :: Maybe Text,
+    expiresAt :: UTCTime
+  }
+
+-- | An order joined to its @invoices@ row, which is how every read here returns one: a single
+-- call yields the amount, the currency, the address, the crypto amount, the payment URL and the
+-- expiry that E4's response needs. E4's @code@ and @disclosureExpiresAt@ do NOT come from here
+-- -- they come from 'getCodeByHash' on the code derived from 'orderId' (§3 Linkage).
+data WebOrder = WebOrder
+  { orderId :: Text,
+    invoiceId :: Text,
+    providerRef :: Maybe Text,
+    method :: OrderMethod,
+    shortRef :: Text,
+    badgeType :: BadgeType,
+    priceId :: Maybe BadgePriceId,
+    offerId :: Maybe BadgeOfferId,
+    months :: Word8,
+    status :: WebOrderStatus,
+    -- | Amount received so far, in minor units of the invoice currency at the rate the provider
+    -- locked -- never in crypto. A partial payment records it while the order stays @pending@.
+    amountPaid :: Maybe CurrencyAmount,
+    settledAt :: Maybe UTCTime,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    -- from the @invoices@ row
+    amount :: CurrencyAmount,
+    currency :: Text,
+    payUrl :: Maybe Text,
+    paymentAddress :: Maybe Text,
+    cryptoAmount :: Maybe Text,
+    expiresAt :: UTCTime
+  }
+  deriving (Show)
+
+type OrderRow = (Text, Text, Maybe Text, OrderMethod, Text, BadgeType, Maybe Text, Maybe Text, Int, WebOrderStatus)
+
+type OrderInvoiceRow = (Maybe Int64, Maybe UTCTime, UTCTime, UTCTime, Int64, Text, Maybe Text, Maybe Text, Maybe Text, UTCTime)
+
+-- | @months@ and both amounts are read as signed integers and converted: see 'word8FromInt' and
+-- 'word32FromInt64'.
+rowToOrder :: (OrderRow :. OrderInvoiceRow) -> Either ServiceError WebOrder
+rowToOrder
+  ( (orderId, invoiceId, providerRef, method, shortRef, badgeType, priceId, offerId, monthsInt, status)
+      :. (amountPaidInt, settledAt, createdAt, updatedAt, amountInt, currency, payUrl, paymentAddress, cryptoAmount, expiresAt)
+    ) = do
+    months <- word8FromInt ("order " <> orderId <> " months") monthsInt
+    amount <- CurrencyAmount <$> word32FromInt64 ("order " <> orderId <> " amount") amountInt
+    amountPaid <- mapM (fmap CurrencyAmount . word32FromInt64 ("order " <> orderId <> " amount_paid")) amountPaidInt
+    Right
+      WebOrder
+        { orderId,
+          invoiceId,
+          providerRef,
+          method,
+          shortRef,
+          badgeType,
+          priceId = BadgePriceId <$> priceId,
+          offerId = BadgeOfferId <$> offerId,
+          months,
+          status,
+          amountPaid,
+          settledAt,
+          createdAt,
+          updatedAt,
+          amount,
+          currency,
+          payUrl,
+          paymentAddress,
+          cryptoAmount,
+          expiresAt
+        }
+
+-- | The join every order read uses. It is an INNER join: 'createOrder' is the only writer of a
+-- @web_orders@ row and always writes the invoice with it, so an order without one does not
+-- exist, and 'WebOrder' can hold the invoice's NOT NULL columns unwrapped.
+orderSelect :: Query
+orderSelect =
+  [sql|
+    SELECT o.order_id, o.invoice_id, o.provider_ref, o.method, o.short_ref, o.badge_type, o.price_id, o.offer_id, o.months, o.status,
+           o.amount_paid, o.settled_at, o.created_at, o.updated_at,
+           i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_amount, i.expires_at
+    FROM sx_badge_service_web_orders o
+    JOIN sx_badge_service_invoices i ON i.invoice_id = o.invoice_id
+  |]
+
+-- | Writes the @invoices@ row and the @web_orders@ row that references it, in that order (the
+-- foreign key points that way). Both start @invoiced@. The caller supplies the transaction, as
+-- everywhere else here, so a failed provider call after a partial write leaves neither row.
+--
+-- @invoices.payment_crypto_currency@ is deliberately not written: 'method' is the single source
+-- and E4 derives the currency from it (A3).
+createOrder :: DB.Connection -> NewWebOrder -> UTCTime -> ExceptT ServiceError IO ()
+createOrder db newOrder now = do
+  let NewWebOrder {orderId, invoiceId, providerRef, method, shortRef, badgeType, priceId, offerId, months} = newOrder
+      NewWebOrder {amount = CurrencyAmount amount, currency, payUrl, paymentAddress, cryptoAmount, expiresAt} = newOrder
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        INSERT INTO sx_badge_service_invoices
+          (invoice_id, provider, price, amount, currency, payment_url, payment_address, payment_crypto_amount, expires_at, status, created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      |]
+      ( (invoiceId, orderInvoiceProvider method, amount, amount, currency, payUrl)
+          :. (paymentAddress, cryptoAmount, expiresAt, orderInvoiceStatus WOSInvoiced, now, now)
+      )
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        INSERT INTO sx_badge_service_web_orders
+          (order_id, invoice_id, provider_ref, method, short_ref, badge_type, price_id, offer_id, months, status, created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      |]
+      ( (orderId, invoiceId, providerRef, method, shortRef, badgeType)
+          :. (unPriceId <$> priceId, unOfferId <$> offerId, months, WOSInvoiced, now, now)
+      )
+  where
+    unPriceId (BadgePriceId pid) = pid
+    unOfferId (BadgeOfferId oid) = oid
+
+getOrder :: DB.Connection -> Text -> ExceptT ServiceError IO (Maybe WebOrder)
+getOrder db orderId = queryOneOrder db (orderSelect <> " WHERE o.order_id = ?") (Only orderId)
+
+-- | At most one row: A3's @idx_web_orders_provider_ref@ is UNIQUE, so a provider reference that
+-- resolved to two orders could not have been stored. F2 resolves a Stripe charge this way, and
+-- H3 re-reads provider state through it.
+getOrderByProviderRef :: DB.Connection -> Text -> ExceptT ServiceError IO (Maybe WebOrder)
+getOrderByProviderRef db providerRef = queryOneOrder db (orderSelect <> " WHERE o.provider_ref = ?") (Only providerRef)
+
+-- | At most one row, on A3's UNIQUE @idx_web_orders_short_ref@. This is what support resolves a
+-- bank-statement reference with (H2's @--ref@ subcommands).
+getOrderByShortRef :: DB.Connection -> Text -> ExceptT ServiceError IO (Maybe WebOrder)
+getOrderByShortRef db shortRef = queryOneOrder db (orderSelect <> " WHERE o.short_ref = ?") (Only shortRef)
+
+queryOneOrder :: ToRow q => DB.Connection -> Query -> q -> ExceptT ServiceError IO (Maybe WebOrder)
+queryOneOrder db q params = do
+  rows <- liftIO $ DB.query db q params
+  case rows of
+    [] -> pure Nothing
+    (row : _) -> Just <$> liftEither (rowToOrder row)
+
+-- | Orders still open (@invoiced@ or @pending@) whose invoice expiry has passed, oldest expiry
+-- first. H3's reconciliation pass reads it and re-reads each one's provider state: a missed
+-- webhook is normal, so a stuck order is a routine outcome rather than an error.
+--
+-- The status filter is exactly the plan's two: a @paid@ order is never stuck however long ago
+-- its invoice expired, and @expired@ and @failed@ are left out too, even though E3 can still
+-- move either to @paid@ on a late webhook. So an order that a webhook already marked @expired@
+-- and that then settles on chain with THAT webhook missed is not recovered by H3's pass; it is
+-- recovered by support (H2). Widening the filter to all four is a change to H3's contract, not
+-- to this query.
+getStuckOrders :: DB.Connection -> UTCTime -> ExceptT ServiceError IO [WebOrder]
+getStuckOrders db now = do
+  rows <-
+    liftIO $
+      DB.query
+        db
+        (orderSelect <> " WHERE o.status IN (?,?) AND i.expires_at < ? ORDER BY i.expires_at ASC, o.order_id ASC")
+        (WOSInvoiced, WOSPending, now)
+  liftEither $ mapM rowToOrder rows
+
+-- | The new order status and, optionally, the amount received so far -- so a partial payment or
+-- an underpaid expiry records what arrived without settling the order (E3). @settled_at@ is not
+-- touched: only 'setOrderSettled' writes it, and only together with @paid@.
+--
+-- @Nothing@ leaves a previously recorded @amount_paid@ alone rather than clearing it: an order
+-- moving from @pending@ to @expired@ underpaid must keep the amount E5 renders. The matching
+-- @invoices.status@ is written in the same statement pair, keeping A3's invariant.
+updateOrderStatus :: DB.Connection -> Text -> WebOrderStatus -> Maybe CurrencyAmount -> UTCTime -> ExceptT ServiceError IO ()
+updateOrderStatus db orderId status amountPaid now = do
+  updated <- case amountPaid of
+    Nothing ->
+      liftIO $
+        DB.query
+          db
+          "UPDATE sx_badge_service_web_orders SET status = ?, updated_at = ? WHERE order_id = ? RETURNING order_id"
+          (status, now, orderId)
+    Just (CurrencyAmount paid) ->
+      liftIO $
+        DB.query
+          db
+          "UPDATE sx_badge_service_web_orders SET status = ?, amount_paid = ?, updated_at = ? WHERE order_id = ? RETURNING order_id"
+          (status, paid, now, orderId)
+  when (null (updated :: [Only Text])) $ throwError SEOrderNotFound
+  setOrderInvoiceStatus db orderId status now
+
+-- | Points the order at a provider invoice \/ session \/ payment-intent id, replacing whatever
+-- was there: F3 learns a Stripe payment intent only after the checkout session completes, so
+-- the reference an order was created with is not always its final one. A3's UNIQUE index makes
+-- a value that already belongs to another order fail loudly rather than resolve a charge to the
+-- wrong order.
+setOrderProviderRef :: DB.Connection -> Text -> Text -> UTCTime -> ExceptT ServiceError IO ()
+setOrderProviderRef db orderId providerRef now = do
+  updated <-
+    liftIO $
+      DB.query
+        db
+        "UPDATE sx_badge_service_web_orders SET provider_ref = ?, updated_at = ? WHERE order_id = ? RETURNING order_id"
+        (providerRef, now, orderId)
+  when (null (updated :: [Only Text])) $ throwError SEOrderNotFound
+
+-- | Settlement's single writer: @settled_at@, @amount_paid@ and @status = 'paid'@ go in one
+-- statement, so no reader can ever see a paid order without its amount or its time, and
+-- @invoices.status@ moves to @settled@ with them. E3, H3 and F2 all settle through it.
+--
+-- It does not guard on the current status. Settlement is idempotent and monotonic toward @paid@
+-- (E3), but that is the caller's rule to apply -- it decides whether a second @InvoiceSettled@
+-- is a replay before it gets here, because it must also decide whether to write a code row.
+setOrderSettled :: DB.Connection -> Text -> CurrencyAmount -> UTCTime -> ExceptT ServiceError IO ()
+setOrderSettled db orderId (CurrencyAmount amountPaid) settledAt = do
+  updated <-
+    liftIO $
+      DB.query
+        db
+        [sql|
+          UPDATE sx_badge_service_web_orders
+          SET status = ?, amount_paid = ?, settled_at = ?, updated_at = ?
+          WHERE order_id = ?
+          RETURNING order_id
+        |]
+        (WOSPaid, amountPaid, settledAt, settledAt, orderId)
+  when (null (updated :: [Only Text])) $ throwError SEOrderNotFound
+  setOrderInvoiceStatus db orderId WOSPaid settledAt
+
+-- | The @invoices.status@ half of A3's invariant, written through the order's own @invoice_id@
+-- so no caller has to carry it.
+setOrderInvoiceStatus :: DB.Connection -> Text -> WebOrderStatus -> UTCTime -> ExceptT ServiceError IO ()
+setOrderInvoiceStatus db orderId status now =
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE sx_badge_service_invoices
+        SET status = ?, updated_at = ?
+        WHERE invoice_id IN (SELECT invoice_id FROM sx_badge_service_web_orders WHERE order_id = ?)
+      |]
+      (orderInvoiceStatus status, now, orderId)
+
+-- Provider events ---------------------------------------------------------------
+
+-- | Records the arrival of a provider webhook event and answers whether it should be processed.
+--
+-- 'False' means, and only means, that this event has already been processed: a row exists AND
+-- its @processed_at@ is set. A row whose @processed_at@ is NULL is one whose previous attempt
+-- did not complete -- the process died between recording the event and finishing the settlement
+-- transaction -- so this returns 'True' and the event is processed again (E3). Treating that row
+-- as a duplicate would strand a paid order forever, which is the failure this whole table
+-- exists to prevent.
+--
+-- The insert is @ON CONFLICT DO NOTHING@ against A3's @(provider, event_id)@ primary key rather
+-- than a read followed by a write, so two deliveries of the same event racing in separate
+-- transactions cannot both insert.
+recordProviderEvent :: DB.Connection -> PaymentProvider -> Text -> UTCTime -> ExceptT ServiceError IO Bool
+recordProviderEvent db provider eventId now = do
+  inserted <-
+    liftIO $
+      DB.query
+        db
+        [sql|
+          INSERT INTO sx_badge_service_provider_events (provider, event_id, received_at)
+          VALUES (?,?,?)
+          ON CONFLICT (provider, event_id) DO NOTHING
+          RETURNING event_id
+        |]
+        (provider, eventId, now)
+  case (inserted :: [Only Text]) of
+    (_ : _) -> pure True -- first delivery
+    [] -> do
+      -- the row was already there; @received_at@ keeps the first delivery's time
+      rows <-
+        liftIO $
+          DB.query
+            db
+            "SELECT processed_at FROM sx_badge_service_provider_events WHERE provider = ? AND event_id = ?"
+            (provider, eventId)
+      pure $ case rows :: [Only (Maybe UTCTime)] of
+        (Only (Just _) : _) -> False -- processed already: a replay
+        _ -> True -- recorded but never processed: the previous attempt did not complete
+
+-- | Closes the event out, inside the settlement transaction that processed it -- so a crash
+-- anywhere before the commit leaves @processed_at@ NULL and 'recordProviderEvent' hands the
+-- event back on the provider's next delivery.
+markProviderEventProcessed :: DB.Connection -> PaymentProvider -> Text -> UTCTime -> ExceptT ServiceError IO ()
+markProviderEventProcessed db provider eventId now = do
+  updated <-
+    liftIO $
+      DB.query
+        db
+        "UPDATE sx_badge_service_provider_events SET processed_at = ? WHERE provider = ? AND event_id = ? RETURNING event_id"
+        (now, provider, eventId)
+  when (null (updated :: [Only Text])) $ throwError SEProviderEventNotFound
 
 -- Purchases and payments -----------------------------------------------------
 
@@ -212,12 +652,6 @@ createPurchase db purchaseKey masterKey@(BadgeMasterKey mk) badgeType now = do
         updatedAt = now
       }
 
--- | The service's DB has no 'Simplex.Chat.PaymentService.Types.PaymentProvider' column codec
--- yet (no step has needed to persist more than this one literal); D0\/E2\/F1 should add a
--- proper 'TextEncoding' instance once a second provider needs writing from the service side.
-codePaymentProviderText :: Text
-codePaymentProviderText = "code"
-
 -- | Writes the @payments@ row alone (caller-minted UUID as @payment_id@, @provider = 'code'@,
 -- @invoice_id@ NULL, @status = 'settled'@ via 'PSSettled'\'s 'ToField'). Attaching it
 -- to the purchase is 'attachPurchasePayment', a separate call because the two are not always
@@ -233,7 +667,7 @@ createCodePayment db paymentId now =
         INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at)
         VALUES (?,?,?,?,?,?)
       |]
-      (paymentId, Nothing :: Maybe Text, codePaymentProviderText, PSSettled, now, now)
+      (paymentId, Nothing :: Maybe Text, PPCode, PSSettled, now, now)
 
 -- | Points the purchase's @payment_id@ at an existing payment. Guarded by @payment_id IS NULL@
 -- so a purchase that already has a payment is never silently repointed; on no rows affected, a

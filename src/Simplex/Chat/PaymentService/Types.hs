@@ -198,6 +198,35 @@ instance ToField PaymentStatus where toField = toField . textEncode
 -- that a compile error instead of a silent loss. 'InvoiceStatus' keeps its 'FromField' because
 -- its three constructors are nullary and its decode is lossless.
 
+-- | DB column spelling for @invoices.provider@, @payments.provider@ and
+-- @provider_events.provider@. 'PaymentProvider' does not cross the wire (the RPC names a
+-- provider through 'ServicePaymentMethod'), so this spelling is only ever read back from a
+-- column it was written to -- the same arrangement 'InvoiceStatus' and 'PaymentStatus' document
+-- above. It replaces the two @codePaymentProviderText = "code"@ literals that the client and
+-- the service each carried while no codec existed (plan §9, B1\/C1): the badge service now writes
+-- a second provider ('PPStripe' and 'PPCrypto', from D0's 'BadgeService.Store.createOrder'), which
+-- is the condition both notes named for adding this.
+instance TextEncoding PaymentProvider where
+  textEncode = \case
+    PPApple -> "apple"
+    PPGoogle -> "google"
+    PPStripe -> "stripe"
+    PPCrypto -> "crypto"
+    PPCode -> "code"
+    PPReceipt -> "receipt"
+  textDecode = \case
+    "apple" -> Just PPApple
+    "google" -> Just PPGoogle
+    "stripe" -> Just PPStripe
+    "crypto" -> Just PPCrypto
+    "code" -> Just PPCode
+    "receipt" -> Just PPReceipt
+    _ -> Nothing
+
+instance ToField PaymentProvider where toField = toField . textEncode
+
+instance FromField PaymentProvider where fromField = fromTextField_ textDecode
+
 -- JSON
 
 -- CardProvider has a single nullary constructor; tagSingleConstructors is needed so it still

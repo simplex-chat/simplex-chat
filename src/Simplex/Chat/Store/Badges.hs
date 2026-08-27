@@ -83,7 +83,7 @@ import Simplex.Chat.Badges.Types
     LedgerDebitType (..),
     LedgerEntryType (..),
   )
-import Simplex.Chat.PaymentService.Types (PaymentStatus (..))
+import Simplex.Chat.PaymentService.Types (PaymentProvider (..), PaymentStatus (..))
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -142,13 +142,6 @@ badgeSlot = \case
   BTInvestor -> BSInvestor
   BTUnknown tag -> BSOther tag
 
--- | @payments.provider@ has no column codec yet: 'Simplex.Chat.PaymentService.Types.PaymentProvider'
--- has no 'TextEncoding' instance, and adding one is D0\/E2\/F1's, once a second provider needs
--- writing. Until then this literal is the client twin of
--- 'BadgeService.Store.codePaymentProviderText' and must keep the same spelling.
-codePaymentProviderText :: Text
-codePaymentProviderText = "code"
-
 -- | The @payments@ row of a code redemption: a caller-minted UUID (the column is
 -- @TEXT NOT NULL PRIMARY KEY@ with no default), @provider = 'code'@, no invoice — a code
 -- payment never has one — and @settled@, because a redeemed code is paid for by definition.
@@ -166,7 +159,7 @@ createCodePayment db now = do
       INSERT INTO payments (payment_id, invoice_id, provider, status, created_at, updated_at)
       VALUES (?,?,?,?,?,?)
     |]
-    (paymentId, Nothing :: Maybe Text, codePaymentProviderText, PSSettled, now, now)
+    (paymentId, Nothing :: Maybe Text, PPCode, PSSettled, now, now)
   pure paymentId
 
 -- | The purchase row of a code redemption, written on success only: a code redemption does not
