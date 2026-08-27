@@ -144,8 +144,8 @@ instance ToJSON RequestId where
 instance FromJSON RequestId where
   parseJSON = strParseJSON "RequestId"
 
--- | A redemption code as it travels: the full @SMPX1-...@ string. Opaque here;
--- "Simplex.Chat.Names.Codes" is what verifies it.
+-- | A redemption code: an unguessable random value issued ahead of time and
+-- looked up by the registrar. Opaque to the client, which does not verify it.
 newtype RedemptionCode = RedemptionCode {unRedemptionCode :: Text}
   deriving (Eq, Show)
   deriving newtype (ToJSON, FromJSON)
@@ -188,6 +188,9 @@ data NamesCommand
         nrCode :: RedemptionCode,
         nrLink :: Text
       }
+  | -- | Ask the registrar what a code is worth. Safe to expose: codes are
+    -- unguessable random values, so this is not a probing oracle.
+    NRVerifyCode {nrCode :: RedemptionCode}
   | NRResolve {nrName :: Text}
   | NROwnedBy {nrAddress :: Address}
   | NRNonce {nrAddress :: Address}
@@ -222,6 +225,7 @@ data NamesResponse
         nrExpiry :: UTCTime,
         nrEditsLeft :: Word32
       }
+  | NRPCode {nrMinLength :: Word32, nrYears :: Word32, nrExpires :: UTCTime}
   | NRPNames {nrNames :: [Text]}
   | NRPNonce {nrNonce :: Integer}
   | NRPRelayed {nrTxHash :: TxHash}

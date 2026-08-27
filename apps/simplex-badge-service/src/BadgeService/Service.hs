@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -35,7 +34,6 @@ import Simplex.Chat.Badges.Service (BadgeServiceErrorCode (..))
 import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
-import qualified Simplex.Chat.Names.Codes as Codes
 import Simplex.Chat.Names.Protocol
 import Simplex.Chat.Names.Snrc (Intent (..), RecordKey (..), SnrcDeployment (..), intentDigest, parseRecordKey)
 import Simplex.Chat.Wallet (parseEthSignature, recoverSigner)
@@ -60,7 +58,8 @@ newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
   serviceRequestQ <- newTQueueIO
-  serviceNamesChain <- newTVarIO emptyNamesChain
+  now <- getCurrentTime
+  serviceNamesChain <- newTVarIO emptyNamesChain {chainCodes = devCodeTable now}
   pure ServiceState {serviceCC, serviceRequestQ, serviceNamesChain}
 
 -- | In-memory mock of the name registry chain: committed hashes and registered
@@ -69,9 +68,10 @@ data NamesChain = NamesChain
   { -- | commitment -> when it was published, so minimum commitment age is real
     chainCommitments :: Map ByteString UTCTime,
     chainNames :: Map Text NameEntry,
-    -- | Spent redemption codes. A blind-signed code is its own nullifier: the
-    -- issuer never saw it, so recording it stops reuse and reveals nothing.
-    chainSpentCodes :: Set ByteString,
+    -- | Redemption codes issued ahead of time, by code. Unguessable random
+    -- values, so holding one is the entitlement — there is nothing to verify,
+    -- only to look up.
+    chainCodes :: Map Text CodeEntry,
     -- | Answered requests, so a resent request is not executed twice.
     chainRequests :: Map ByteString NamesResponse,
     -- | Per-signer nonce, mirroring SimplexResolver: one counter per address,
@@ -105,8 +105,15 @@ minNameLength = 6
 reservedLabels :: Set Text
 reservedLabels = S.fromList ["simplex", "support", "admin", "acme"]
 
+data CodeEntry = CodeEntry
+  { ceMinLength :: Int,
+    ceYears :: Word32,
+    ceExpires :: UTCTime,
+    ceSpent :: Bool
+  }
+
 emptyNamesChain :: NamesChain
-emptyNamesChain = NamesChain M.empty M.empty S.empty M.empty M.empty
+emptyNamesChain = NamesChain M.empty M.empty M.empty M.empty M.empty
 
 welcomeGetOpts :: IO BadgeServiceOpts
 welcomeGetOpts = do
@@ -118,33 +125,45 @@ welcomeGetOpts = do
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
--- | Mint a handful of development codes and print them, so the whole purchase
--- flow is runnable locally without an issuer.
+-- | The pre-issued code table.
 --
--- The key is fixed, so these are byte-identical on every run and tests can
--- hardcode them. They span the refusal paths rather than repeating one valid
--- code: ten valid codes test one case ten times.
-printDevCodes :: IO ()
-printDevCodes = do
-#if defined(dev_codes)
+-- A code is simply an unguessable random value: holding one /is/ the
+-- entitlement, so there is nothing to verify, only to look up. What a code is
+-- worth — minimum name length, term, expiry — is a property of its row, not of
+-- the code itself, so tiers and expiry dates can be changed by reissuing the
+-- table rather than by shipping anything to clients.
+--
+-- Codes are fixed here so a local run always prints the same ones and tests can
+-- hardcode them. A real deployment loads a table it issued out of band.
+--
+-- This is deliberately the simple scheme. It links a code to whoever it was
+-- issued to, because the issuer holds the table — see the blind-signature work
+-- for the unlinkable version.
+devCodeTable :: UTCTime -> Map Text CodeEntry
+devCodeTable now =
+  M.fromList
+    [ (c, CodeEntry {ceMinLength = 6, ceYears = 2, ceExpires = addUTCTime (365 * 86400) now, ceSpent = False})
+      | c <- devCodes
+    ]
+
+devCodes :: [Text]
+devCodes =
+  [ "SMPX-4K2P-7TQW-9XRM",
+    "SMPX-8H3N-2VBD-6JYK",
+    "SMPX-5L9C-4WFT-1ZQA",
+    "SMPX-7R6M-8PGX-3NHV"
+  ]
+
+printCodes :: IO ()
+printCodes = do
   putStrLn ""
-  putStrLn "  !! DEVELOPMENT redemption codes - this build trusts a published key !!"
+  putStrLn "  Pre-issued redemption codes (development table):"
+  mapM_ (\c -> putStrLn $ "    " <> T.unpack c) devCodes
   putStrLn ""
-  forM_ [1 :: Int .. 4] $ \i -> do
-    r <- Codes.signDevCode ("dev-" <> encodeUtf8 (tshow i))
-    case r of
-      Left e -> putStrLn $ "  code " <> show i <> ": FAILED " <> show e
-      Right c -> putStrLn $ "  " <> T.unpack c
-  putStrLn ""
-  where
-    _ = ()
-#else
-  pure ()
-#endif
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> IO ()
 badgeService opts cfg = do
-  printDevCodes
+  printCodes
   env <- newServiceState
   let chatHooks =
         defaultChatHooks
@@ -274,26 +293,32 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
             c <- readTVar chain
             let code = unRedemptionCode nrCode
                 label = T.takeWhile (/= '.') nrName
-            case Codes.verifyCode code of
-              Left e -> pure $ NRPError NECPaymentRejected (Just (Codes.codeErrorText e)) Nothing
-              Right vc
-                -- keyed on the decoded nonce, never the code string: base64's
-                -- last character is malleable, so the same code can be written
-                -- more than one way
-                | S.member (Codes.vcNonce vc) (chainSpentCodes c) -> pure $ NRPError NECCodeSpent Nothing Nothing
-                | Codes.vcExpires vc < now -> pure $ NRPError NECCodeExpired Nothing Nothing
-                | T.length label < Codes.vcMinLength vc ->
-                    pure $ NRPError NECNameTooShort (Just $ "this code covers names of " <> tshow (Codes.vcMinLength vc) <> " letters or more") Nothing
+            case M.lookup code (chainCodes c) of
+              Nothing -> pure $ NRPError NECPaymentRejected (Just "no such code") Nothing
+              Just e
+                | ceSpent e -> pure $ NRPError NECCodeSpent Nothing Nothing
+                | ceExpires e < now -> pure $ NRPError NECCodeExpired Nothing Nothing
+                | T.length label < ceMinLength e ->
+                    pure $ NRPError NECNameTooShort (Just $ "this code covers names of " <> tshow (ceMinLength e) <> " letters or more") Nothing
                 | otherwise -> case checkGates nrName of
-                    Just e -> pure e
+                    Just err -> pure err
                     Nothing -> do
-                      let expiry = addUTCTime (fromIntegral (Codes.vcYears vc) * 31536000) now
+                      let expiry = addUTCTime (fromIntegral (ceYears e) * 31536000) now
                       r <- register c now nrName nrOwner nrLink expiry (encodeUtf8 code)
                       case r of
                         NRPRegistered {} -> do
-                          modifyTVar' chain $ \c' -> c' {chainSpentCodes = S.insert (Codes.vcNonce vc) (chainSpentCodes c')}
+                          modifyTVar' chain $ \c' ->
+                            c' {chainCodes = M.insert code e {ceSpent = True} (chainCodes c')}
                           pure r
                         _ -> pure r
+        NRVerifyCode {nrCode} -> atomically $ do
+          c <- readTVar chain
+          pure $ case M.lookup (unRedemptionCode nrCode) (chainCodes c) of
+            Nothing -> NRPError NECPaymentRejected (Just "no such code") Nothing
+            Just e
+              | ceSpent e -> NRPError NECCodeSpent Nothing Nothing
+              | ceExpires e < now -> NRPError NECCodeExpired Nothing Nothing
+              | otherwise -> NRPCode (fromIntegral (ceMinLength e)) (ceYears e) (ceExpires e)
         NRResolve {nrName} -> atomically $ do
           c <- readTVar chain
           pure $ case M.lookup nrName (chainNames c) of

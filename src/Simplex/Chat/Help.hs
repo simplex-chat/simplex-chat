@@ -224,6 +224,7 @@ namesHelpInfo =
   map
     styleMarkdown
     [ green "Buying a name:",
+      indent <> highlight "/name register <service> <name> <link>" <> " - register with no payment (mock only)",
       indent <> highlight "/name verify-code <code>" <> " - check a redemption code before using it",
       indent <> highlight "/name quote <service> <label>" <> " - is it available, and what does it cost",
       indent <> highlight "/name buy <service> <label> <code> [link]" <> " - register it",

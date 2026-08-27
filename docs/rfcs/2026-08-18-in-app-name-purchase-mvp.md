@@ -16,15 +16,200 @@ all from the TUI, against the badge service acting as registrar. Seeds and the
 name → key map are persisted in the chat database, so a registered name stays
 owned by an address the client can still derive after restart.
 
-The CLI surface: `/name register`, `/name quote`, `/name verify-code`,
-`/name buy`, `/names`, `/name info`, `/name link contact|channel`,
-`/name rescan`, `/name address`, and `/name keys` with `export`, `import`, `init`
-and `use`. Bare plural lists, the singular takes verbs — the convention `/users`
-and `/db export` already set.
-
 **Out (later):** transfers and stealth/gifting, subnames, renewal and expiry
 reminders, in-app purchase, a real relayer and a deployed chain, GUIs, tx-hash
 inclusion verification, anti-grief deposits.
+
+## The happy path
+
+`<svc>` is the registrar's SimpleX address. Every command that talks to it takes
+one, so the CLI is not bound to a single service.
+
+```
+/name verify-code <svc> SMPX-4K2P-7TQW-9XRM
+                                code verified: names of 6 letters or more, 2 years
+                                use before 2027-07-01 - a code cannot be replaced
+
+/name quote <svc> alice         alice.simplex - available ($20.00 for 2y)
+
+/name buy <svc> alice SMPX-4K2P-7TQW-9XRM simplex:/contact#/abc
+                                revealing -> registered
+                                owner  0x9858EfFD232B4033E47d90003D41EC34EcaEda94
+                                path   m/44'/60'/0'/0/0
+
+/name link contact <svc> alice.simplex simplex:/contact#/xyz
+                                alice.simplex: contact updated (tx 0x…)
+                                9 of 10 relayed edits left
+```
+
+A second name on the same profile takes the next index — `m/44'/60'/0'/0/1`, a
+different address — so the two are not publicly linked and their signing nonces
+are independent.
+
+No setup step: the seed is created by the first purchase that needs one.
+`/name keys export` shows the phrases whenever the user asks.
+
+Three things here are easy to conflate. The **code** is verified on the device
+before anything is sent. **Buying** registers and writes the first link. **Link**
+is the only step that spends a signature — and it is what makes a name
+recoverable, because after a phrase-only restore it is how a name is re-pointed
+at a new profile.
+
+## The rest of the commands
+
+Seeing what you own:
+
+```
+/names <svc>                    alice.simplex   -> simplex:/contact#/xyz
+                                                   expires 2028-08-27, 9 edits left
+
+/name info <svc> alice.simplex  owner   0x9858EfFD232B4033E47d90003D41EC34EcaEda94
+                                path    m/44'/60'/0'/0/0
+                                contact simplex:/contact#/xyz
+                                expires 2028-08-27
+                                9 of 10 relayed edits left
+```
+
+Recovery keys:
+
+```
+/name keys                      1: alice.simplex  (in use)
+                                2: lucy.simplex   (not written down)
+
+/name keys export               every key's phrase, each labelled with the names
+                                it controls - never just the one in use
+
+/name keys import <phrase>      adds a key; never replaces one
+/name keys init                 optional - create one before buying
+/name keys use 2                which key the next purchase goes under
+```
+
+A new device, with nothing but the phrase:
+
+```
+/name keys import <phrase>
+/name rescan <svc>              walks the known layouts and the bare root
+                                found alice.simplex
+
+/name link contact <svc> alice.simplex simplex:/contact#/new
+                                point it at this device's address
+```
+
+**Link before claiming, and only when the chat database is gone.** Attaching a
+name to a profile resolves it and refuses unless it *already* carries that
+profile's address. With only the phrase the profile is new and its address is
+different, so the record has to be rewritten first. If the chat database was
+restored too, the name already points at the restored profile and nothing extra is
+needed.
+
+That last block is the feature's whole argument: the chat database is gone, every
+contact is unreachable, and the name is what lets people find the right person to
+reconnect to.
+
+## Core API
+
+What a GUI client gets. **One command, one response**, progress on the event
+channel, never a prompt — a blocking read would hang every non-terminal client.
+
+```
+APINameQuote      {target, label, years}   -> CRNameQuote {label, available, reserved,
+                                                           priceUsdCents, years}
+APINameVerifyCode {code}                   -> CRNameCode {minLength, years, expires, label}
+APINameBuy        {target, label, code, link_}
+                                           -> CRNameRegistered {name, owner, path, expiry, txHash}
+APINameList       {target}                 -> CRNames [{name, points, expiry, editsLeft}]
+APINameInfo       {target, name}           -> CRNameInfo {name, owner, path, contact,
+                                                          channel, expiry, editsLeft}
+APINameSetLink    {target, name, record, link}
+                                           -> CRNameLinkSet {name, record, txHash}
+APINameRescan     {target, more}           -> CRNameRescan [{name, path}]
+APINameKeys       {}                       -> CRNameKeys [{n, names, current, backedUp}]
+APINameKeysExport {}                       -> CRNameKeyPhrases [{n, phrase, names}]
+APINameKeysImport {phrase}                 -> CRNameKeys …
+APINameKeysInit   {}                       -> CRNameKeys …
+APINameKeysUse    {n}                      -> CRNameKeys …
+APINameRegister   {target, name, link}     -> CRNameRegistered …
+```
+
+`APINameRegister` is the original code-less path from the first revision:
+commit/reveal with no payment. It stays for the mock and for tests; a real
+registrar would not expose it.
+
+Carried over: `CEvtNameRegistrationProgress {name, phase, waitMs}` and
+`CENameRegistrationFailed {code, message, retryAfter}`. `APINameBuy` reuses both —
+it is registration with a payment, not a new state machine.
+
+`record` on `APINameSetLink` is `contact | channel`, not a free-form key: the CLI
+splits it into two verbs for readability, but the API keeps one call so a GUI does
+not grow a second code path for the same write.
+
+**`priceUsdCents` is for mobile, not the CLI.** A terminal never needs it — a code
+carries its own entitlement — but an IAP flow must show a price and pick a store
+product before anything is bought, so the field is in the API from the start. Two
+prices exist and should not be conflated: this is the name's list price by length
+and term; what a user is *charged* under IAP is the store's own localised price
+for the matching product.
+
+## Service RPC
+
+What the registrar answers, over the badge service-RPC transport.
+
+Request travels in `APISendServiceRequest.request`, response in
+`CRServiceResponse.responseData`; one response per request, per-call timeout. The
+service's existing `handleServiceRequest` already decodes a `type`-discriminated
+envelope and replies via `APISendServiceResponse` — names commands are added to
+that dispatch.
+
+Envelope: `version` and `request`, discriminated on `type`.
+
+There is deliberately **no `ownerKey`** field, though the badge envelope has the
+analogous `purchaseKey`. The service-RPC signing key is Ed25519, while a name
+owner is a secp256k1 Ethereum address — two different keys — so an `ownerKey`
+here would be a second public key that nothing verifies. The owner address
+travels in the request instead. Where a request *does* need to prove ownership —
+`NRRelayIntent` — it carries an EIP-712 signature the service verifies by
+recovering the signer, which is stronger than a bare key field.
+
+```
+NamesRequest  = { version, request }
+
+NamesCommand
+  | NRCommit      { commitment }                     -- H(name, owner, secret, ttl)
+  | NRReveal      { name, owner, secret, ttl, simplex_link }
+  | NRQuote       { label, years }
+  | NRBuy         { requestId, name, owner, code, simplex_link }
+  | NRResolve     { name }
+  | NROwnedBy     { address }
+  | NRNonce       { address }
+  | NRRelayIntent { requestId, name, recordKey, value, nonce, deadline, sig }
+
+NamesResponse
+  | NRPCommitted  { txHash }
+  | NRPRegistered { name, expiry, txHash }
+  | NRPQuote      { label, available, takenUntil?, reserved, priceUsdCents, years }
+  | NRPRecord     { name, owner, contact[], channel[], expiry, editsLeft }
+  | NRPNames      { names[] }
+  | NRPNonce      { nonce }
+  | NRPRelayed    { txHash }
+  | NRPError      { code, message?, retryAfter? }
+```
+
+Error codes: `name_taken`, `bad_request`, `unsupported_version`, `internal`,
+`name_reserved`, `name_too_short`, `payment_rejected`, `code_spent`,
+`code_expired`, `bad_signature`, `bad_nonce`, `expired_intent`, `not_owner`,
+`not_found`, `no_edit_credits`.
+
+`simplex_link` is written as the name's resolver **text record** — the SMP contact
+or channel a resolver reads back to turn `example.simplex` into a live address.
+Registration therefore does two writes: the registration itself and this record.
+
+Each response carries the transaction's **`txHash`**. Using it to verify block
+inclusion is out of scope here; the field is returned now so that path needs no
+protocol change later.
+
+**Versioning.** The envelope's `version` stays 1: every addition above is a new
+command, and an older service answers an unknown one with `unsupported_version`
+rather than mis-handling it. Bump only when an existing command's shape changes.
 
 ## One key per name
 
@@ -146,65 +331,6 @@ sequenceDiagram
     Note over Core,Svc: a second reveal of a live name fails with name_taken
 ```
 
-## Protocol (same service-RPC transport as badges)
-
-Request travels in `APISendServiceRequest.request`, response in
-`CRServiceResponse.responseData`; one response per request, per-call timeout. The
-service's existing `handleServiceRequest` already decodes a `type`-discriminated
-envelope and replies via `APISendServiceResponse` — names commands are added to
-that dispatch.
-
-Envelope: `version` and `request`, discriminated on `type`.
-
-There is deliberately **no `ownerKey`** field, though the badge envelope has the
-analogous `purchaseKey`. The service-RPC signing key is Ed25519, while a name
-owner is a secp256k1 Ethereum address — two different keys — so an `ownerKey`
-here would be a second public key that nothing verifies. The owner address
-travels in the request instead. Where a request *does* need to prove ownership —
-`NRRelayIntent` — it carries an EIP-712 signature the service verifies by
-recovering the signer, which is stronger than a bare key field.
-
-```
-NamesRequest  = { version, request }
-
-NamesCommand
-  | NRCommit      { commitment }                     -- H(name, owner, secret, ttl)
-  | NRReveal      { name, owner, secret, ttl, simplex_link }
-  | NRQuote       { label, years }
-  | NRBuy         { requestId, name, owner, code, simplex_link }
-  | NRResolve     { name }
-  | NROwnedBy     { address }
-  | NRNonce       { address }
-  | NRRelayIntent { requestId, name, recordKey, value, nonce, deadline, sig }
-
-NamesResponse
-  | NRPCommitted  { txHash }
-  | NRPRegistered { name, expiry, txHash }
-  | NRPQuote      { label, available, takenUntil?, reserved, priceUsdCents, years }
-  | NRPRecord     { name, owner, contact[], channel[], expiry, editsLeft }
-  | NRPNames      { names[] }
-  | NRPNonce      { nonce }
-  | NRPRelayed    { txHash }
-  | NRPError      { code, message?, retryAfter? }
-```
-
-Error codes: `name_taken`, `bad_request`, `unsupported_version`, `internal`,
-`name_reserved`, `name_too_short`, `payment_rejected`, `code_spent`,
-`code_expired`, `bad_signature`, `bad_nonce`, `expired_intent`, `not_owner`,
-`not_found`, `no_edit_credits`.
-
-`simplex_link` is written as the name's resolver **text record** — the SMP contact
-or channel a resolver reads back to turn `example.simplex` into a live address.
-Registration therefore does two writes: the registration itself and this record.
-
-Each response carries the transaction's **`txHash`**. Using it to verify block
-inclusion is out of scope here; the field is returned now so that path needs no
-protocol change later.
-
-**Versioning.** The envelope's `version` stays 1: every addition above is a new
-command, and an older service answers an unknown one with `unsupported_version`
-rather than mis-handling it. Bump only when an existing command's shape changes.
-
 ## Progress events
 
 Registration stays one command but streams `CEvt` progress to the UI as it
@@ -241,7 +367,7 @@ retries arrive.
 |---|---|---|
 | **Wallet** | `newSeed`, `deriveNameKey` / `deriveAtPath`, `accountAddress`, `signIntent`, recovery-phrase import and export. No digest signing is exported. | stealth keys hang off the same profile account; the wallet already holds the one-time-address table's shape. |
 | **Wallet storage** | `wallet_seeds` (several per device, `backed_up`), `wallet_name_keys` (name → path, provenance), a `k` high-water mark per profile. | raw-key import writes `provenance = 'imported'`; the column exists, the path does not. |
-| **Codes** | `Names.Codes`: pinned-key verification, `SMPX1-` format, dev issuer behind the `dev_codes` flag. | production key schedule; the real blinding protocol lives in the web store, not here. |
+| **Codes** | a table of pre-issued random values held by the registrar, looked up on `verify-code` and `buy`. | blind-signed codes, so the issuer cannot join a buyer to a name — its own branch. |
 | **Intents** | `Names.Snrc`: namehash, `SetText` type string, `intentDigest`, `signSnrcIntent`. | `TransferName` when transfers land — the type string already changed for stealth. |
 | **RPC transport** | badges' `APISendServiceRequest` / `APISendServiceResponse`, unchanged. | shared. |
 | **Service** | registrar dispatch for all nine commands, readable chain, spent-code ledger, signature and nonce checks, edit accounting, real minimum commitment age. | swap the mock for a relayer to a deployed SNRC. |
@@ -250,157 +376,32 @@ retries arrive.
 
 ## Redemption codes
 
-### The pitch
-
-Two groups are promised a name of their choosing, above some minimum length. Both
-have a reason not to want that name traced back to how they got it.
-
-**Investors** taking a name as a perk may not want SimpleX to know which name is
-theirs: the perk should not double as a register of who invested. (An investor who
-registers before the public sale reveals it anyway — their choice to make.)
-**Web-store buyers** do not want the name linked to how they paid. Monero protects
-that end well, Bitcoin less so, a card not at all — and none of it helps if the
-shop simply records "this card bought that name". (IAP buyers accept that
-linkability and obtain no codes.)
-
-A redemption code carries the entitlement from paying to registering. The usual
-way to keep those apart is a promise: issue a code, note who got it, undertake not
-to look. Here there is nothing to look at.
-
-**The buyer's story**
-
-1. Sign in to the web store — with a Wefunder email for a perk, or by paying in
-   card, BTC or XMR. *The store learns who is asking and what they are owed, which
-   is what it already knew.*
-2. The browser generates a random 32-byte nonce and blinds it.
-3. The store signs the blinded value under the key for that tier and expiry cohort
-   — RFC 9474 blind RSA, the same construction Apple ships on every iPhone since
-   iOS 16 as Private Access Tokens (Privacy Pass token type 0x0002), where it
-   replaces CAPTCHAs by proving a device passed a check without identifying it.
-   *It can count requests per account; it cannot tell two apart by content.*
-4. The browser unblinds, leaving a valid signature over a number the store has
-   never seen. *A bearer token: no account, no identity, nothing tying it to
-   step 1.*
-5. Minutes or months later the code is pasted into the app and a name is
-   registered. *The registrar checks the signature against a pinned key, reads the
-   tier and expiry from whichever key matched, and files the nonce so it cannot be
-   spent twice.*
-
-Nothing at step 5 can be joined to step 1 — not by us, not by an investor's
-employer, not by anyone who later obtains both sets of records, because one of
-those sets was never written.
-
-**The key schedule.** Cohorts are yearly: the first runs to the end of 2027 and
-expires at the end of 2028, so even the last buyer gets a clear year. Tiers grow as
-registration opens for shorter names, so plan on **six tiers across three years —
-about 18 public keys, under 5 KB** compiled into the app and the registrar. They
-are generated ahead of time because a cohort opened after an app shipped could not
-otherwise be verified by it.
-
-**What it does not claim.** A code is anonymous *within the set sharing its issuer
-key*, so the tier count and cohort length are the privacy parameters, not
-administrative details. And it unlinks paying from registering, not registering
-from SimpleX: the relayer still submits the transaction.
-
-### What a code is
-
 A code authorises registering **one name of at least N characters for M years**,
 and stops working after a fixed date. It names no particular name, and it is
 bearer: whoever holds it can spend it.
 
-```
-SMPX1-<base64url(payload)>            no padding
-payload = nonce(32) ‖ RSA-PSS signature(256)
-```
-
-390 characters in full — pasted or scanned, never typed:
+A code is an **unguessable random value issued ahead of time**. Holding one *is*
+the entitlement, so there is nothing to verify — the registrar looks it up in a
+table it issued:
 
 ```
-SMPX1-nyxxqAPVThi7YA834pFKxl2IAnsU-TptwEXoG5pzL1CK4b0cVuzmvL-jlPwVA58FzX5aZaCc
-k-dBxQ4yxJ_0JpKLdagQwpTBOFz6pSh49IMAIK51LUnGfJJN61bkNZW-8iUPISYYC7fXPIWtJ_2GiT
-yJm3gPb29pfEoBmN4BPK6JBdzzWBvYmBaFmlbPuMkR65Yh95U4rhXzACgmHZOUyhBsvnqxPLXBujGL
-qHJaJxJthWQiF-YGLPVgvl7Uk448YJuaDFHL8edMW0cWyPO90GejQ8v2aSWmo9LRvkAfWIBOeCYOI9
-b4PqCbBPWfM1Z58RRAtMXiN_nubjYmPIIw0rjPZ-Ex__Y4P5IMK-6tRe8GREtovnczgs1yXEY9xcym
+SMPX-4K2P-7TQW-9XRM
 ```
 
-(line-wrapped here for the page; the code itself is one unbroken string)
+What a code is worth lives in its row, not in the code, so tiers and expiry dates
+change by reissuing the table rather than by shipping anything to clients. The
+registrar marks a row spent on redemption, which is what stops a second use.
 
-### Why the message is only a nonce
+`/name verify-code` asks the registrar what a code is worth before a name is
+chosen. That is safe to expose precisely because codes are unguessable: it cannot
+be used to hunt for one.
 
-A blind issuer signs a value it cannot read, so it cannot check the content.
-Anything carried inside the message would therefore be whatever the holder chose
-to put there — a holder could grant themselves a ten-year term or an expiry in
-the next century.
-
-So the message carries no claims at all, and **everything the issuer attests is a
-property of the key**: minimum name length, term, and expiry. A key exists per
-**(tier, expiry cohort)**, and "which key verified this" is the entire meaning of
-a code.
-
-This is also why expiry is a cohort rather than per-buyer: a distinct expiry date
-would identify its holder as precisely as a serial number.
-
-### Does the key set grow without bound?
-
-No — the **live** set is bounded, because a key retires when its cohort expires.
-
-```
-live keys  =  tiers  ×  ceil(code validity / cohort length)  +  1
-```
-
-Keys past their cohort's expiry (plus a grace window) are dropped from the client,
-and R14's spent-code set retires with them, so that is bounded too.
-
-What grows is the *cumulative* set over the product's life, and it matters for one
-reason: **the client verifies against keys compiled into the build**, so a cohort
-opened after an app shipped cannot be verified by it. Hence pinning a schedule
-rather than a key (see the pitch for the numbers).
-
-Two consequences worth building deliberately. A build whose schedule has run out
-must say **"this code is newer than this build, update the app"** rather than
-"invalid code" — indistinguishable to the maths, completely different to the user.
-And if the schedule ever proves too rigid, the escape hatch is one long-lived root
-key signing cohort keys, with the certificate carried inside the code: exactly one
-pinned key forever, at roughly 500 extra bytes per code. Not needed at these
-numbers, and noted so it is not rediscovered under pressure.
-
-### How a code is checked
-
-**On the device, before anything is sent.** There is deliberately no "is this
-code valid" RPC: that would hand the service an oracle for probing codes. The
-client tries each pinned key, and the tier comes from whichever one verifies — so
-the tier cannot be forged by editing the code.
-
-The service re-verifies, and separately keeps the **spent-code set**. Two details
-there are load-bearing and are pinned by tests:
-
-- **base64url, not base64.** `+` and `/` do not survive a URL, a path, or form
-  encoding, and a code that arrives silently wrong is worse than one that fails.
-- **The ledger keys on the decoded nonce, never the code string.** base64's final
-  character carries unused bits, so one code can be written more than one way and
-  a text-keyed ledger could be bypassed by changing a character. The nonce is also
-  safer than the signature, since PSS is randomised and one message can yield more
-  than one valid signature.
-
-*(Why blind RSA rather than an anonymous credential, and what that would change:
-Appendix A.)*
-
-### Development codes
-
-Production issuer keys are **deliberately not defined yet**. The format is fixed
-so adding them is data rather than code, and a build with none says so plainly.
-
-A fixed development key lives behind the `dev_codes` cabal flag — a compile-time
-flag and not configuration, because a dev verification key in a release build
-would be a forgery key for real codes, and no runtime setting should be able to
-switch that on. The service mints and prints codes under it at startup so the
-whole flow is runnable locally, and the nonces are fixed so the codes are
-identical on every run and tests can hardcode them.
-
-That signer works **unblinded**: it picks the nonce and sees the code, because
-issuer and verifier are the same process. It exercises verification exactly, and
-it is *not* the issuance model — a production issuer needs the blinding protocol
-above.
+**What this does not do: unlink the purchase from the name.** The issuer holds the
+table, so it can join "who was given this code" to "which name it registered".
+That is a deliberate simplification for the first release. Removing the link needs
+blind signatures — the code becomes a token the issuer signs without seeing, so
+there is no table to join against — which is a separate change on its own branch,
+not a variation on this one.
 
 ## Editing records
 
@@ -472,91 +473,6 @@ Each of these is a test, not a claim.
 - Raw-key import: `provenance` exists in the schema, nothing writes `'imported'`.
 - The recovery scan walks a fixed set of layouts but has not been tested against a
   name planted at a foreign one.
-- Production issuer keys are undefined by design; a build with none refuses every
-  code and must say so rather than reporting one invalid.
-
-## Appendix A — Signature schemes considered
-
-Recorded so the choice is not re-litigated from memory. Facts here were checked
-against sources and the vendored code on **2026-08-27**; the draft status in
-particular has a shelf life.
-
-### Why a blind signature at all
-
-A code must be **one-time**, so the registrar records something unique to stop it
-being spent twice. It must also be **publicly verifiable**, because the client
-checks it against a pinned key with no issuer secret involved.
-
-A blind signature satisfies both at once: the issuer never sees the finished
-token, so **the token is its own nullifier** — recording it prevents reuse and
-reveals nothing about who was issued what. Any non-blind scheme would need a
-separate nullifier that the issuer *had* seen, which is precisely the link the
-design exists to break.
-
-### RSA blind signatures — chosen
-
-RFC 9474 (2023). Publicly verifiable, no concurrency weakness, and the same
-construction Apple ships as Private Access Tokens — Privacy Pass token type
-0x0002, publicly verifiable RSA blind signatures, in iOS 16 and macOS Ventura,
-where it replaces CAPTCHAs by proving a device passed a check without identifying
-it. Apple deployed against the draft in 2022; RFC 9474 followed in 2023.
-
-RFC 9578 (Privacy Pass, 2024) offers exactly two token types, and the other one —
-VOPRF, P-384 — is only *privately* verifiable, which fails the pinned-key
-requirement. The standard facing this same choice picked RSA.
-
-Cost: a 256-byte signature, hence a 390-character code, and one keypair per
-(tier, expiry cohort).
-
-### BBS+ with blind issuance and per-verifier pseudonyms — the strongest alternative
-
-Would give **one issuer key forever**: tier and expiry become signed attributes
-rather than key identity, so a cohort invented years later works with an app built
-today. That is the real prize — not fewer keys, but no schedule to outrun. Under
-blind BBS the holder commits only a secret and the **issuer supplies the visible
-attributes**, which lifts the constraint that forces our message to be a bare
-nonce. A per-verifier pseudonym gives a nullifier that is stable at one verifier
-and unlinkable to issuance. And the code shrinks to roughly 160 characters: an
-80-byte signature plus about 38 bytes of attributes.
-
-**It does not improve anonymity.** The tier must still be disclosed to be
-enforced, so the set remains everyone sharing that tier and cohort. One key does
-not widen it. A range proof over the attribute — "this credential permits a name
-this short", without naming the tier — would, and is another layer again.
-
-Why not yet:
-
-- Both pieces are **IRTF drafts, not RFCs**:
-  `draft-irtf-cfrg-bbs-blind-signatures` and
-  `draft-irtf-cfrg-bbs-per-verifier-linkability`, each at **-02, September 2025**.
-- **The vendored libbbs has neither.** `cbits/libbbs` exports exactly
-  `bbs_keygen`, `bbs_keygen_full`, `bbs_sk_to_pk`, `bbs_sign`, `bbs_verify`,
-  `bbs_proof_gen`, `bbs_proof_verify`; nothing matching *blind* or *pseudonym*
-  appears anywhere in that tree. This is new C, not new Haskell — a different
-  piece of work from "we already ship BBS+" (which we do, for badges).
-- Redemption becomes proof *generation* rather than pasting a signature, and the
-  proof on the wire is ~300 bytes even when the stored credential is smaller.
-
-Revisit if tiers proliferate beyond what a schedule can pin, or if codes must fit
-a smaller QR.
-
-### Blind Schnorr — rejected
-
-64-byte signatures, but broken by the ROS attack under concurrent issuance, and a
-batch on the order of a thousand codes is squarely in that regime. **Clause Blind
-Schnorr** repairs it and is provably secure, but is unstandardised and
-unimplemented here.
-
-### Blind BLS — rejected
-
-48-byte signatures, and `blst` is already vendored. But there is no RFC and no
-blind-signing binding, and rolling our own blind signature scheme is the one thing
-to avoid.
-
-### The trade nobody can engineer away
-
-**Blindness is what costs the length.** Drop the requirement that a purchase be
-unlinkable from a registration, and a plain Ed25519 signature over
-`(tier, expiry, nonce)` is 64 bytes — a ~120-character code, short enough to type.
-That is a product decision, not a cryptographic one, and the launch requirements
-currently answer it no.
+- Redemption codes are a lookup table the issuer holds, so a code links the buyer
+  to the name it bought. Unlinkable blind-signed codes are deferred to their own
+  branch.

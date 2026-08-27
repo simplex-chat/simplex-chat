@@ -415,9 +415,8 @@ data ChatCommand
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APINameRegister {sendTarget :: ConnectTarget 'CMContact, regName :: Text, registerLink :: Text}
-  | APINameAddress
   | APINameQuote {sendTarget :: ConnectTarget 'CMContact, nameLabel :: Text, nameYears :: Word32}
-  | APINameVerifyCode {nameCode :: Text}
+  | APINameVerifyCode {sendTarget :: ConnectTarget 'CMContact, nameCode :: Text}
   | APINameBuy {sendTarget :: ConnectTarget 'CMContact, nameLabel :: Text, nameCode :: Text, nameLink_ :: Maybe Text}
   | APINameList {sendTarget :: ConnectTarget 'CMContact}
   | APINameInfo {sendTarget :: ConnectTarget 'CMContact, regName :: Text}
@@ -855,9 +854,8 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRNameRegistered {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, regExpiry :: UTCTime, regTxHash :: TxHash}
-  | CRNameAddress {user :: User, nameAddresses :: [(Text, Text, Text)]}
   | CRNameQuote {user :: User, nameLabel :: Text, nameAvailable :: Bool, nameReserved :: Bool, namePriceUsdCents :: Word32, nameYears :: Word32}
-  | CRNameCode {user :: User, codeMinLength :: Int, nameYears :: Word32, codeExpires :: UTCTime, codeLabel :: Text}
+  | CRNameCode {user :: User, codeMinLength :: Int, nameYears :: Word32, codeExpires :: UTCTime}
   | CRNames {user :: User, namesOwned :: [(Text, Text, UTCTime, Word32)]}
   | CRNameInfo {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, nameContact :: [Text], nameChannel :: [Text], regExpiry :: UTCTime, nameEditsLeft :: Word32}
   | CRNameLinkSet {user :: User, regName :: Text, nameRecord :: Text, regTxHash :: TxHash}

@@ -191,10 +191,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
-  CRNameAddress u addrs ->
-    ttyUser u $ case addrs of
-      [] -> ["no name addresses yet - one is created for each name you register"]
-      as -> "name addresses:" : map (\(nm, addr, path) -> plain $ "  " <> nm <> " -> " <> addr <> "  " <> path) as
   CRNameQuote u label avail reserved cents years ->
     ttyUser u
       [ plain $
@@ -206,10 +202,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
                   then "available (" <> usd cents <> " for " <> tshow years <> "y)"
                   else "taken"
       ]
-  CRNameCode u minLen years expires label ->
+  CRNameCode u minLen years expires ->
     ttyUser u
-      [ plain $ "code verified: " <> label,
-        plain $ "  names of " <> tshow minLen <> " letters or more, " <> tshow years <> " years",
+      [ plain $ "code verified: names of " <> tshow minLen <> " letters or more, " <> tshow years <> " years",
         plain $ "  use before " <> tshow expires <> " - a code cannot be replaced"
       ]
   CRNames u rows ->

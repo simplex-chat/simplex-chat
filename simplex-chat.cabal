@@ -34,15 +34,6 @@ flag client_postgres
   manual: True
   default: False
 
-flag dev_codes
-  description:
-    Compile in a fixed development issuer key for redemption codes, and let the
-    names service mint codes under it. NEVER enable for a release build: a dev
-    verification key shipped to users is a forgery key for real codes. This is a
-    compile-time flag and not configuration precisely so that no runtime setting
-    can switch it on.
-  manual: True
-  default: False
 
 library
   exposed-modules:
@@ -54,7 +45,6 @@ library
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Names.Protocol
-      Simplex.Chat.Names.Codes
       Simplex.Chat.Names.Snrc
       Simplex.Chat.Store.Wallets
       Simplex.Chat.Wallet
@@ -400,8 +390,6 @@ library
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
-  if flag(dev_codes)
-    cpp-options: -Ddev_codes
   if flag(client_postgres)
     build-depends:
         postgresql-libpq >=0.10.0.0
@@ -452,8 +440,6 @@ executable simplex-badge-service
     , stm ==2.5.*
     , time ==1.12.*
   default-language: Haskell2010
-  if flag(dev_codes)
-    cpp-options: -Ddev_codes
   if flag(client_postgres)
     other-modules:
         BadgeService.Store.Postgres.Migrations
@@ -491,8 +477,6 @@ executable simplex-bot
     , directory ==1.3.*
     , simplex-chat
   default-language: Haskell2010
-  if flag(dev_codes)
-    cpp-options: -Ddev_codes
   if flag(client_postgres)
     cpp-options: -DdbPostgres
 
@@ -515,8 +499,6 @@ executable simplex-bot-advanced
     , simplexmq >=6.3
     , stm ==2.5.*
   default-language: Haskell2010
-  if flag(dev_codes)
-    cpp-options: -Ddev_codes
   if flag(client_postgres)
     cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
@@ -549,8 +531,6 @@ executable simplex-broadcast-bot
     , simplexmq >=6.3
     , stm ==2.5.*
   default-language: Haskell2010
-  if flag(dev_codes)
-    cpp-options: -Ddev_codes
   if flag(client_postgres)
     cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
@@ -584,8 +564,6 @@ executable simplex-chat
     , unliftio ==0.2.*
     , websockets ==0.12.*
   default-language: Haskell2010
-  if flag(dev_codes)
-    cpp-options: -Ddev_codes
   if flag(client_postgres)
     cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
@@ -726,8 +704,6 @@ test-suite simplex-chat-test
       Directory.Store.Migrate
       Directory.Util
       Paths_simplex_chat
-  if flag(dev_codes)
-    cpp-options: -Ddev_codes
   if flag(client_postgres)
       other-modules:
           ChatTests.DBUtils.Postgres

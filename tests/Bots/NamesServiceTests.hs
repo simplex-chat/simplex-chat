@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.NamesServiceTests where
@@ -22,7 +21,6 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import Simplex.Messaging.Util (tshow)
-import qualified Simplex.Chat.Names.Codes as Codes
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey)
 import qualified Test.Hspec as Hspec
@@ -31,43 +29,15 @@ namesServiceTests :: SpecWith TestParams
 namesServiceTests = do
   it "registers a name via commit/reveal and rejects a taken name" testNamesRegister
   it "rejects a reveal with no matching commitment" testRevealWithoutCommit
-  it "shows the owner address without creating one" testNameAddress
+  it "reads the wallet without creating one" testNameAddress
   it "gives each name its own key, still derivable after restart" testSeedPersists
-#if defined(dev_codes)
   it "buys with a code, then re-points the link with a signature" testBuyAndLink
   it "refuses a spent code, a reserved name and a short name" testBuyRefusals
-#endif
 
 -- | Pins the wire format. The end-to-end test cannot catch a key renamed on
 -- both sides at once, so the encodings are asserted literally here.
 namesProtocolTests :: Spec
 namesProtocolTests = do
-#if defined(dev_codes)
-  -- The dev issuer signs unblinded, which is indistinguishable to the verifier:
-  -- an RFC 9474 blind-signed token verifies as an ordinary RSA-PSS signature.
-  -- So this exercises the production verification path end to end.
-  it "verifies a dev redemption code, and rejects tampering" $ \_ -> do
-    code <- either (error . show) id <$> Codes.signDevCode "test-nonce"
-    case Codes.verifyCode code of
-      Left e -> expectationFailure $ "did not verify: " <> show e
-      Right vc -> do
-        -- tier and expiry come from the key, never from the code: a blind
-        -- issuer cannot check what it signs, so anything inside the message
-        -- would be whatever the holder put there
-        Codes.vcMinLength vc `shouldBe` 6
-        Codes.vcYears vc `shouldBe` 2
-        Codes.vcExpires vc `shouldBe` Codes.pikExpires Codes.devIssuerKey
-    -- a flipped character mid-payload must not verify. Not the last character:
-    -- base64's final character carries unused bits, so changing it can decode to
-    -- the same bytes - which is also why the spent-code ledger keys on the
-    -- decoded nonce and not on the code string.
-    let (a, b) = T.splitAt 40 code
-        bad = a <> (if T.head b == 'A' then "B" else "A") <> T.tail b
-    Codes.verifyCode bad `shouldBe` Left Codes.CENotVerified
-    -- and something that is not a code at all fails on the prefix, not the maths
-    Codes.verifyCode "hello" `shouldBe` Left Codes.CEBadPrefix
-#endif
-
   -- Name keys are plain BIP-44, so they line up with wallets users already have.
   -- Pinned against the standard test mnemonic: profile 0's names are exactly
   -- MetaMask's account list (m/44'/60'/0'/0/k), and each profile's first name is
@@ -148,22 +118,23 @@ testNamesRegister ps =
       client <## "name alicename.simplex: committed. waiting 1s before revealing"
       client <## "name alicename.simplex: revealing"
 
--- | @\/name address@ reports the owner address but never creates a seed: asking
--- which address you have must not be what gives you one. Only registering does.
+-- | Asking about your wallet must not be what gives you one: only registering
+-- creates a seed. @\/name keys@ is the read-only view now that @\/name address@
+-- is retired in favour of @\/name info@.
 testNameAddress :: HasCallStack => TestParams -> IO ()
 testNameAddress ps =
   withBadgeService ps $ \client bsLink -> do
     -- asked repeatedly before any registration: still no address, none created
-    client ##> "/name address"
-    client <## "no name addresses yet - one is created for each name you register"
-    client ##> "/name address"
-    client <## "no name addresses yet - one is created for each name you register"
+    client ##> "/name keys"
+    client <## "no recovery keys yet - one is created when you buy a name"
+    client ##> "/name keys"
+    client <## "no recovery keys yet - one is created when you buy a name"
     client ##> ("/name register " <> bsLink <> " carolname.simplex simplex:/contact#/x")
     owner <- ownerOf client "carolname.simplex"
     -- now it exists, and reports the address and path the name was registered to
-    client ##> "/name address"
-    client <## "name addresses:"
-    client <## ("  carolname.simplex -> " <> owner <> "  m/44'/60'/0'/0/0")
+    -- and now exactly one key exists, controlling the name just bought
+    client ##> "/name keys"
+    client <## "1: carolname.simplex  (in use)  (not written down)"
 
 -- | The front-running defence: a reveal only registers a name if that exact
 -- commitment was published first. Sent as a raw service request, because the
@@ -209,10 +180,8 @@ testSeedPersists ps = do
     owner2 `shouldNotBe` owner1
     -- and both are still derivable in a third session, each at its own path
     withTestChat ps "client" $ \client -> do
-      client ##> "/name address"
-      client <## "name addresses:"
-      client <## ("  firstname.simplex -> " <> owner1 <> "  m/44'/60'/0'/0/0")
-      client <## ("  secondname.simplex -> " <> owner2 <> "  m/44'/60'/0'/0/1")
+      client ##> "/name keys"
+      client <## "1: firstname.simplex, secondname.simplex  (in use)  (not written down)"
 
 -- | Reads past startup and progress lines to the registration result, returning
 -- the owner address. Keeps reading until the final progress event has arrived
@@ -233,16 +202,14 @@ ownerOf client nm = go (40 :: Int) Nothing False False
       let addr' = if pfx `isPrefixOf` l then Just (takeWhile (/= ' ') $ drop (length pfx) l) else addr
       go (n - 1) addr' (seen || l == lastEvt) (path || pathLine `isPrefixOf` l)
 
-#if defined(dev_codes)
 -- | The whole purchase path: verify a code on the device, buy, then change the
 -- link with a signed intent the service verifies by recovering the signer.
 testBuyAndLink :: HasCallStack => TestParams -> IO ()
 testBuyAndLink ps =
   withBadgeService ps $ \client bsLink -> do
-    code <- devCode 1
-    client ##> ("/name verify-code " <> T.unpack code)
-    client <## "code verified: dev: 6+ letters, 2 years"
-    client <## "  names of 6 letters or more, 2 years"
+    let code = devCode 1
+    client ##> ("/name verify-code " <> bsLink <> " " <> T.unpack code)
+    client <## "code verified: names of 6 letters or more, 2 years"
     client <##. "  use before "
     client ##> ("/name buy " <> bsLink <> " purchased " <> T.unpack code <> " simplex:/contact#/first")
     client <## "name purchased.simplex: revealing"
@@ -274,10 +241,11 @@ testBuyAndLink ps =
 testBuyRefusals :: HasCallStack => TestParams -> IO ()
 testBuyRefusals ps =
   withBadgeService ps $ \client bsLink -> do
-    code1 <- devCode 1
-    code2 <- devCode 2
-    -- shorter than the code's minimum, refused on the device before any RPC
+    let code1 = devCode 1
+        code2 = devCode 2
+    -- the registrar owns the code table, so every refusal now comes from it
     client ##> ("/name buy " <> bsLink <> " abc " <> T.unpack code1 <> " simplex:/contact#/x")
+    client <## "name abc.simplex: revealing"
     client <##. "name registration failed: name_too_short"
     -- reserved
     -- long enough for the code, so this one reaches the service before failing
@@ -305,8 +273,7 @@ testBuyRefusals ps =
     -- cohort key cannot mint an expired code. Expiry refusal is covered by the
     -- unit test over verifyCode instead.
 
--- Deterministic: the same nonce always yields the same code, which is why the
--- nonce is an argument rather than random.
-devCode :: Int -> IO Text
-devCode i = either (error . show) id <$> Codes.signDevCode ("dev-" <> encodeUtf8 (tshow i))
-#endif
+
+-- | The service's pre-issued table, mirrored so tests can name a code.
+devCode :: Int -> Text
+devCode i = ["SMPX-4K2P-7TQW-9XRM", "SMPX-8H3N-2VBD-6JYK", "SMPX-5L9C-4WFT-1ZQA", "SMPX-7R6M-8PGX-3NHV"] !! (i - 1)

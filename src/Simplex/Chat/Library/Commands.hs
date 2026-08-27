@@ -62,7 +62,6 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import qualified Simplex.Chat.Names.Codes as Codes
 import Simplex.Chat.Names.Protocol
 import Simplex.Chat.Names.Snrc (Intent (..), SnrcDeployment (..), intent712, parseRecordKey)
 import Simplex.Messaging.Eth.Address (Address, mkAddress)
@@ -1476,26 +1475,18 @@ processChatCommand cxt nm = \case
       NRPQuote {nrLabel, nrAvailable, nrReserved, nrPriceUsdCents, nrYears} ->
         pure $ CRNameQuote user nrLabel nrAvailable nrReserved nrPriceUsdCents nrYears
       _ -> throwCmdError "unexpected quote response"
-  -- Verified on the device, against a key compiled into this build. There is no
-  -- "check this code" RPC on purpose: it would hand the service an oracle for
-  -- probing codes.
-  APINameVerifyCode code -> withUser $ \user ->
-    case Codes.verifyCode code of
-      Left e -> throwChatError $ CENameRegistrationFailed "payment_rejected" (Just $ Codes.codeErrorText e) Nothing
-      Right vc ->
-        pure $ CRNameCode user (Codes.vcMinLength vc) (Codes.vcYears vc) (Codes.vcExpires vc) (Codes.vcLabel vc)
+  -- Asks the registrar, which holds the table. Safe to expose because codes are
+  -- unguessable random values, so this cannot be used to probe for one.
+  APINameVerifyCode sendTarget code -> withUser $ \user -> do
+    cReq <- resolveServiceTarget nm user sendTarget
+    namesRPC user cReq (NRVerifyCode (RedemptionCode code)) >>= \case
+      NRPCode {nrMinLength, nrYears, nrExpires} ->
+        pure $ CRNameCode user (fromIntegral nrMinLength) nrYears nrExpires
+      _ -> throwCmdError "unexpected verify-code response"
   APINameBuy sendTarget label code link_ -> withUser $ \user -> do
-    -- Refuse before spending anything if the code is not real.
-    vc <- either (\e -> throwChatError $ CENameRegistrationFailed "payment_rejected" (Just $ Codes.codeErrorText e) Nothing) pure $ Codes.verifyCode code
+    -- The registrar owns the code table, so it decides: spent, expired, or too
+    -- short for the tier. The client does not second-guess it.
     let nm' = label <> ".simplex"
-    -- Both checks are the service's job too; doing them here as well saves a
-    -- round trip and, more usefully, names the reason. R15: the expiry is shown
-    -- at redemption, because a lost code is not replaced.
-    now0 <- liftIO getCurrentTime
-    when (Codes.vcExpires vc < now0) $
-      throwChatError $ CENameRegistrationFailed "code_expired" (Just $ "this code expired on " <> tshow (Codes.vcExpires vc)) Nothing
-    when (T.length label < Codes.vcMinLength vc) $
-      throwChatError $ CENameRegistrationFailed "name_too_short" (Just $ "this code covers names of " <> tshow (Codes.vcMinLength vc) <> " letters or more") Nothing
     (seedId, nameIx, acctIx, owner) <- deriveNameOwner user
     cReq <- resolveServiceTarget nm user sendTarget
     g <- asks random
@@ -1625,21 +1616,6 @@ processChatCommand cxt nm = \case
     withFastStore' $ \db -> recordNameKey db seedId path nm'
     pure $ CRNameRegistered user nm' (tshow owner) path expiry' txHash'
 
-  APINameAddress -> withUser $ \user -> do
-    -- Read-only: never creates a seed. A key appears when you register a name,
-    -- not when you ask which address you have.
-    --
-    -- There is no single "profile address" any more: each name has its own key,
-    -- so this answers with one row per name.
-    acc_ <- withFastStore' $ \db -> boundAccount db user
-    addrs <- case acc_ of
-      Nothing -> pure []
-      Just (seed, AccountRef {arIndex}) -> do
-        named <- withFastStore' $ \db -> getNameKeys db (wsId seed)
-        forM named $ \(nm_, path) -> do
-          acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveAtPath seed arIndex path
-          pure (nm_, tshow (accountAddress acc), path)
-    pure $ CRNameAddress user addrs
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
@@ -5817,12 +5793,11 @@ chatCommandP =
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/name register " *> (APINameRegister <$> strP <* A.space <*> displayNameP <* A.space <*> textP),
-      "/name address" $> APINameAddress,
       -- bare plural lists, the singular takes verbs - the house convention
       -- (/users vs /user, /db export)
       "/names " *> (APINameList <$> strP),
       "/name quote " *> (APINameQuote <$> strP <* A.space <*> displayNameP <*> (A.space *> A.decimal <|> pure 2)),
-      "/name verify-code " *> (APINameVerifyCode <$> textP),
+      "/name verify-code " *> (APINameVerifyCode <$> strP <* A.space <*> textP),
       "/name buy " *> (APINameBuy <$> strP <* A.space <*> displayNameP <* A.space <*> nonSpaceTextP <*> optional (A.space *> textP)),
       "/name info " *> (APINameInfo <$> strP <* A.space <*> displayNameP),
       -- syntax is "/name link <record> <name> <link>", but the constructor
