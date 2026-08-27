@@ -8,7 +8,7 @@
 // Node's own modules only: this project is capped at one devDependency, tsc.
 
 import {execFileSync} from "node:child_process"
-import {cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync} from "node:fs"
+import {cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync} from "node:fs"
 import {dirname, join, posix, relative, resolve, sep} from "node:path"
 import {fileURLToPath} from "node:url"
 
@@ -26,6 +26,10 @@ const DEV_HTML = "dev.html"
 // The only token that names something other than a file. The service reads the
 // real value from [web] support_contact; dev.html has no configuration to read.
 const NON_FILE_TOKENS = new Map([["support_contact", "https://example.invalid/dev-support-contact"]])
+// A token names a served file by its path relative to dist/, which for a
+// nested asset is `img/x.svg` — a `/` this pattern does not accept, so nothing
+// can name one. Harmless while every asset is flat; D4's server-side resolver
+// must keep the same key and the same charset or the two will disagree.
 const TOKEN_RE = /@@([\w.-]+)@@/g
 // Relative import specifiers in the emitted modules: `from "./x.js"`,
 // `import "./x.js"` and `import("./x.js")`. Textual, so a specifier-shaped
@@ -33,29 +37,56 @@ const TOKEN_RE = /@@([\w.-]+)@@/g
 // reports a path that does not exist, which is worth knowing either way.
 const IMPORT_RES = [/\bfrom\s*["'](\.[^"']*)["']/g, /^\s*import\s*["'](\.[^"']*)["']/gm, /\bimport\s*\(\s*["'](\.[^"']*)["']\s*\)/g]
 
-// Rebuild from empty, so that a deleted module or asset also leaves dist/ and
-// the committed build stays a function of the sources alone.
-rmSync(distDir, {recursive: true, force: true})
-
-compile()
-copyAssets()
-const built = listFiles(distDir)
-checkImportsResolve(built)
-writeDevHtml(built)
-console.log(`built ${built.length} asset(s) and ${DEV_HTML} into ${relative(webDir, distDir)}/`)
-
-function compile() {
-  // Spawned through node rather than through the PATH shim, so that the script
-  // also works when run as `node build.mjs`.
-  execFileSync(process.execPath, [tscBin, "--project", webDir], {stdio: "inherit"})
+// Every failure here is a message that says what to do; a stack trace over it
+// only buries it, and tsc has already printed its own diagnostics by then.
+try {
+  main()
+} catch (err) {
+  console.error(err instanceof Error ? err.message : String(err))
+  process.exit(1)
 }
 
+function main() {
+  // Rebuild from empty, so that a deleted module or asset also leaves dist/ and
+  // the committed build stays a function of the sources alone.
+  rmSync(distDir, {recursive: true, force: true})
+  compile()
+  copyAssets()
+  const built = listFiles(distDir)
+  checkImportsResolve(built)
+  writeDevHtml(built)
+  console.log(`built ${built.length} file(s) and ${DEV_HTML} into ${relative(webDir, distDir)}/`)
+}
+
+function compile() {
+  try {
+    // Spawned through node rather than through the PATH shim, so that the
+    // script also works when run as `node build.mjs`.
+    execFileSync(process.execPath, [tscBin, "--project", webDir], {stdio: "inherit"})
+  } catch {
+    throw new Error("tsc failed; its diagnostics are above.")
+  }
+}
+
+// Copied file by file rather than by directory, so that a collision with a
+// compiled module is caught at any depth. tsc emits into the same flat dist/,
+// so assets/main.js would otherwise replace the compiled main.js: both checks
+// below would still pass, the build would report success, and the page would be
+// dead in a browser. Assets and modules share one namespace here.
 function copyAssets() {
   mkdirSync(distDir, {recursive: true})
-  for (const entry of readdirSync(assetsDir)) {
-    // .gitkeep and friends: they keep the directory in git, they are not assets.
-    if (entry.startsWith(".")) continue
-    cpSync(join(assetsDir, entry), join(distDir, entry), {recursive: true})
+  for (const name of listFiles(assetsDir)) {
+    // .gitkeep and friends keep the directory in git, they are not assets.
+    if (name.split(posix.sep).some((part) => part.startsWith("."))) continue
+    const dest = join(distDir, name)
+    if (existsSync(dest)) {
+      throw new Error(
+        `assets/${name} would overwrite ${relative(webDir, dest)}, which the compiler just emitted. ` +
+          `Compiled modules and assets share one flat namespace in dist/; rename one of them.`
+      )
+    }
+    mkdirSync(dirname(dest), {recursive: true})
+    cpSync(join(assetsDir, name), dest)
   }
 }
 

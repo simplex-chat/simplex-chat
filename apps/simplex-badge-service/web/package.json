@@ -7,7 +7,7 @@
     "build": "node build.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "5.9.3"
   },
   "author": "SimpleX Chat",
   "license": "AGPL-3.0"
