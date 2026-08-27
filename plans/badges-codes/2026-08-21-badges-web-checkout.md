@@ -165,7 +165,7 @@ The two `-m` filters are needed because the badge tests live under two hspec pat
 | F3 | Card return-URL resume | E5, F2 | ☐ |
 | F4 | Refunds and disputes | B7, F2 | ☐ |
 | F5 | Stripe scenario tests | F2, F4 | ☐ |
-| G0 | Remove the store purchase action | — | ☑ |
+| G0 | Remove the store purchase action | — | ⊘ not in this branch |
 | H1 | Rate limiting and request caps | D7, E4, F2 | ☐ |
 | H2 | Code lifecycle tooling | B7, B8, E4 | ☐ |
 | H3 | Stuck-order reconciliation | E3, F2 | ☐ |
@@ -1086,24 +1086,33 @@ BTCPay refunds are operator-initiated at the provider and have no webhook; the o
 
 ---
 
-### G0 — Remove the store purchase action — ☑ landed (`9c794e5e9`)
+### G0 — Remove the store purchase action — ⊘ REMOVED FROM THIS BRANCH
 
-The one client-app change this plan made, and the only one it keeps. Everything else about the
-apps — the browser hand-off, the redeem views, catalog pricing in the app — is out of scope
-(§6): this plan is money → code, and code → badge belongs to whoever owns that half.
+**This change is no longer carried here.** It was implemented on this branch and then stripped
+out of every commit, so the branch touches no Kotlin or Swift at all and its diff is confined to
+the badge service, the website and the core client. Everything else about the apps — the browser
+hand-off, the redeem views, catalog pricing in the app — was already out of scope (§6): this plan
+is money → code, and code → badge belongs to whoever owns that half.
+
+**The work below is still needed and is now nobody's, which is the risk this entry exists to
+record.** Until it lands somewhere, iOS and Play builds keep a Pay button that charges for a badge
+the service will not issue, because store-evidence verification does not exist (§6, §7). It is
+small, self-contained and independent of everything else here, so it should go in as its own
+change rather than waiting on this one. The description is kept in full so whoever takes it does
+not have to rediscover it.
 
 **Files:** `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/badges/{BadgesPayView.kt,BadgeStore.kt}`, `apps/ios/Shared/Views/Badges/{BadgesPayView.swift,BadgeStore.swift}`
 
-**Done:** Decision 6. Store evidence is not verified and a store purchase yields no badge (§6), so the button that charged for one was removed rather than left to take money for nothing.
+**What it did:** Decision 6. Store evidence is not verified and a store purchase yields no badge (§6), so the button that charged for one was removed rather than left to take money for nothing.
 
 - Kotlin: removed the `purchase(...)` call (`BadgesPayView.kt:188,192-217`) and `showPurchasedAlert` (`:220-247`), which surfaced raw Play receipt fields and copied the purchase token to the clipboard.
 - Swift: removed the StoreKit `purchase()` call site (`BadgesPayView.swift:174,182-218`) and `showPurchasedAlert` (`:221-249`).
 - Replaced the Pay button with "Redeem code" on both platforms and every flavor, routing to the entry point that already existed (`BadgesSupportSimplexView.kt:77-82`, `BadgesSupportSimplexView.swift:108-126`); no second entry point was added. That view is a title-only stub, so the app wizard ends on an empty screen until whoever owns code → badge fills it in (§6), and no build from that window is released. If a release is needed sooner, revert the button change alone: the removals of `purchase(...)` and `showPurchasedAlert` stay.
 - `BadgeStore.kt` and `BadgeStore.swift` stay in place, still referenced for the price and savings text on the tier and duration screens; only their purchase and receipt paths lost a caller, and those are kept because store-evidence verification will reuse them (§6). Each carries a header comment naming this plan as the reason.
 
-**Verified:** Manual on desktop, the `google` flavor and iOS, since the change is in `commonMain` and affects every flavor: no store charge can be initiated, no raw store tokens are reachable in the UI, and the duration screen offers "Redeem code".
+**Was verified:** Manual on desktop, the `google` flavor and iOS, since the change is in `commonMain` and affects every flavor: no store charge can be initiated, no raw store tokens are reachable in the UI, and the duration screen offers "Redeem code".
 
-**It stays.** Reverting it would restore a button that takes money for a badge the user cannot receive (§7).
+**Why it mattered:** the button takes money for a badge the user cannot receive (§7). Removing it from this branch does not make that untrue — it defers it.
 
 ---
 
