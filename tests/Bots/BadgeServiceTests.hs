@@ -2090,7 +2090,7 @@ testBadgeServiceNoTableLinksOrdersToPurchases ps =
     -- enforces that, so it is asserted here, over rows shaped exactly as a settled web order and
     -- a code redemption leave them.
     withConnection st $ \db -> do
-      DB.execute_ db "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES ('b10-invoice','btcpay',1000,1000,'USD','2026-03-10','paid','2026-03-10','2026-03-10')"
+      DB.execute_ db "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES ('b10-invoice','crypto',1000,1000,'USD','2026-03-10','paid','2026-03-10','2026-03-10')"
       DB.execute_ db "INSERT INTO sx_badge_service_web_orders (order_id, invoice_id, method, short_ref, badge_type, months, status, created_at, updated_at) VALUES ('b10-order','b10-invoice','btc','B10RF','supporter',3,'paid','2026-03-10','2026-03-10')"
       DB.execute_ db "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at) VALUES ('b10-payment', NULL, 'code', 'settled', '2026-03-10', '2026-03-10')"
       DB.execute_ db "INSERT INTO sx_badge_service_badge_purchases (purchase_key, master_key, initial_badge_type, current_badge_type, payment_id, status, created_at, updated_at) VALUES (x'0102', x'0304', 'supporter', 'supporter', 'b10-payment', 'issued', '2026-03-10', '2026-03-10')"
@@ -2403,6 +2403,16 @@ orderIdOf WebOrder {orderId} = orderId
 serviceRowCount' :: DBStore -> String -> IO Int
 serviceRowCount' st table = withConnection st (`serviceRowCount` table)
 
+-- | @web_orders.updated_at@, which no store function returns: 'WebOrder' carries it, but the
+-- point of reading it raw here is to pin the column 'setOrderSettled' writes separately from
+-- @settled_at@.
+updatedAtOf :: HasCallStack => DBStore -> Text -> IO UTCTime
+updatedAtOf st orderId = do
+  rows <- withConnection st $ \db -> DB.query db "SELECT updated_at FROM sx_badge_service_web_orders WHERE order_id = ?" (Only orderId)
+  case rows of
+    [Only at] -> pure at
+    _ -> expectationFailure ("expected exactly one order row for " <> show orderId) >> error "unreachable"
+
 -- | The @invoices row as the database holds it: @(provider, price, amount, currency, status,
 -- payment_crypto_currency)@. Read as raw columns rather than through 'getOrder', so the
 -- assertions pin what was written rather than what the join makes of it -- and because
@@ -2495,12 +2505,18 @@ testBadgeStoreStuckOrders ps =
     now <- getCurrentTime
     let daysAgo d = addUTCTime (negate d * nominalDay) now
         create orderId shortRef expiry = expectRight $ withServiceTransaction st $ \db -> createOrder db (testNewOrder orderId shortRef expiry Nothing Nothing) now
-    create "d0-stuck-oldest" "AAAAA" (daysAgo 3)
+    -- Insertion order is the REVERSE of expiry order, and the ids sort the same wrong way
+    -- ("d0-stuck-newer" < "d0-stuck-oldest"), so the expected list is neither the natural scan
+    -- order nor an order-by-id: dropping the ORDER BY clause altogether fails this, not only
+    -- inverting it. Unordered is the realistic regression -- a WHERE-clause edit that changes
+    -- the plan, or Postgres reusing heap space after an update -- and a fixture whose insertion
+    -- order happens to match the expectation cannot see it.
     create "d0-stuck-newer" "BBBBB" (daysAgo 1)
+    create "d0-stuck-oldest" "AAAAA" (daysAgo 3)
     create "d0-settled" "CCCCC" (daysAgo 2)
     create "d0-open" "DDDDD" (addUTCTime nominalDay now)
     _ <- expectRight $ withServiceTransaction st $ \db -> updateOrderStatus db "d0-stuck-newer" WOSPending (Just (CurrencyAmount 700)) now
-    _ <- expectRight $ withServiceTransaction st $ \db -> setOrderSettled db "d0-settled" (CurrencyAmount 1400) now
+    _ <- expectRight $ withServiceTransaction st $ \db -> setOrderSettled db "d0-settled" (CurrencyAmount 1400) now now
     stuck <- expectRight $ withServiceTransaction st $ \db -> getStuckOrders db now
     -- oldest expiry first, the paid one omitted, the unexpired one omitted
     map orderIdOf stuck `shouldBe` ["d0-stuck-oldest", "d0-stuck-newer"]
@@ -2520,26 +2536,37 @@ testBadgeStoreOrderStatusAndSettlement ps =
   withFreshBadgeStore ps $ \st -> do
     now <- getCurrentTime
     let expiry = addUTCTime (30 * 60) now
-        invoiceStatus = do
-          (_, _, _, _, status, _) <- serviceInvoiceRow st "d0-order-1-invoice"
+        invoiceStatusOf invoiceId = do
+          (_, _, _, _, status, _) <- serviceInvoiceRow st invoiceId
           pure status
+        invoiceStatus = invoiceStatusOf "d0-order-1-invoice"
+        -- a second order nothing below touches: every assertion on it is what proves
+        -- setOrderInvoiceStatus resolves the invoice THROUGH the order it was given, rather
+        -- than updating whatever invoice rows exist
+        untouchedInvoiceStatus = invoiceStatusOf "d0-order-2-invoice"
         orderState = do
           Just WebOrder {status, amountPaid, settledAt} <- expectRight $ withServiceTransaction st $ \db -> getOrder db "d0-order-1"
           pure (status, amountPaid, settledAt)
     _ <- expectRight $ withServiceTransaction st $ \db -> createOrder db (testNewOrder "d0-order-1" "K3M7Q" expiry Nothing Nothing) now
+    _ <- expectRight $ withServiceTransaction st $ \db -> createOrder db (testNewOrder "d0-order-2" "T9WZ4" expiry Nothing Nothing) now
     invoiceStatus `shouldReturn` "open"
+    untouchedInvoiceStatus `shouldReturn` "open"
     -- a partial payment: recorded, not settled. The order moves invoiced -> pending; the invoice
     -- does not move at all, because orderInvoiceStatus maps both onto ISOpen
     _ <- expectRight $ withServiceTransaction st $ \db -> updateOrderStatus db "d0-order-1" WOSPending (Just (CurrencyAmount 700)) now
     orderState `shouldReturn` (WOSPending, Just (CurrencyAmount 700), Nothing)
     invoiceStatus `shouldReturn` "open"
+    untouchedInvoiceStatus `shouldReturn` "open"
     -- an underpaid expiry: no new amount, and the one already recorded is kept rather than cleared
     _ <- expectRight $ withServiceTransaction st $ \db -> updateOrderStatus db "d0-order-1" WOSExpired Nothing now
     orderState `shouldReturn` (WOSExpired, Just (CurrencyAmount 700), Nothing)
     invoiceStatus `shouldReturn` "expired"
-    -- late settlement after expiry, which is routine on-chain: all three columns at once
-    let settledAt = addUTCTime (2 * 3600) now
-    _ <- expectRight $ withServiceTransaction st $ \db -> setOrderSettled db "d0-order-1" (CurrencyAmount 1400) settledAt
+    -- late settlement after expiry, which is routine on-chain: all three columns at once. The
+    -- settlement instant is BEFORE `now` here, as an on-chain confirmation read after the fact
+    -- is, so it must not be written to updated_at -- hence the separate argument.
+    let settledAt = addUTCTime (negate (2 * 3600)) now
+        settledNow = addUTCTime 60 now
+    _ <- expectRight $ withServiceTransaction st $ \db -> setOrderSettled db "d0-order-1" (CurrencyAmount 1400) settledAt settledNow
     (status, amountPaid, storedSettledAt) <- orderState
     (status, amountPaid) `shouldBe` (WOSPaid, Just (CurrencyAmount 1400))
     case storedSettledAt of
@@ -2548,11 +2575,27 @@ testBadgeStoreOrderStatusAndSettlement ps =
     -- the invoice leaves 'expired' for 'paid' with the order: the projection is applied on every
     -- write, not only on the way out of 'open'
     invoiceStatus `shouldReturn` "paid"
+    untouchedInvoiceStatus `shouldReturn` "open"
+    -- settled_at is the payment's instant, updated_at the row's: the settlement did not drag
+    -- updated_at back before the status change that preceded it
+    updatedAtOf st "d0-order-1" >>= (`shouldBeStoredAt` settledNow)
     -- neither writer invents an order
     missingUpdate <- withServiceTransaction st $ \db -> updateOrderStatus db "d0-order-nonexistent" WOSPending Nothing now
     missingUpdate `shouldBe` Left SEOrderNotFound
-    missingSettle <- withServiceTransaction st $ \db -> setOrderSettled db "d0-order-nonexistent" (CurrencyAmount 1400) now
+    missingSettle <- withServiceTransaction st $ \db -> setOrderSettled db "d0-order-nonexistent" (CurrencyAmount 1400) now now
     missingSettle `shouldBe` Left SEOrderNotFound
+    -- A3's invariant is enforced, not merely upheld: an order that resolves to no invoice --
+    -- which createOrder cannot produce, but a future writer of this table could -- fails rather
+    -- than moving the order's status while leaving the invoice's behind. Planted with raw SQL
+    -- because no store function can reach that state.
+    withConnection st $ \db ->
+      DB.execute_ db "INSERT INTO sx_badge_service_web_orders (order_id, invoice_id, method, short_ref, badge_type, months, status, created_at, updated_at) VALUES ('d0-order-no-invoice',NULL,'btc','ZZZZZ','supporter',3,'invoiced','2026-03-10','2026-03-10')"
+    orphaned <- withServiceTransaction st $ \db -> updateOrderStatus db "d0-order-no-invoice" WOSPending Nothing now
+    orphaned `shouldBe` Left SEInvoiceNotFound
+    -- and the order's own UPDATE, which succeeded before the invoice write failed, was rolled
+    -- back with it -- the reason withServiceTransaction throws rather than returning Left
+    orphanStatus <- withConnection st $ \db -> DB.query db "SELECT status FROM sx_badge_service_web_orders WHERE order_id = ?" (Only ("d0-order-no-invoice" :: Text))
+    orphanStatus `shouldBe` [Only ("invoiced" :: Text)]
 
 -- recordProviderEvent returns False ONLY for an event that has already been PROCESSED. A row whose
 -- processed_at is NULL is one whose previous attempt died mid-settlement, so it comes back as True

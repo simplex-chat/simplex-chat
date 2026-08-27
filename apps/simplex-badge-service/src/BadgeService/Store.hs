@@ -113,12 +113,12 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (tshow)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.ToField (ToField (..))
 #else
-import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.QQ (sql)
 import Database.SQLite.Simple.ToField (ToField (..))
@@ -133,6 +133,11 @@ data ServiceError
   | SEPriceNotFound
   | SEOfferNotFound
   | SEOrderNotFound
+  | -- | 'setOrderInvoiceStatus' only: the order exists (its own UPDATE returned a row) but
+    -- resolves to no @invoices@ row, so A3's "@invoices.status@ in step" invariant could not be
+    -- maintained. Unreachable through 'createOrder', which writes the invoice first and the
+    -- order's reference to it second, in one transaction.
+    SEInvoiceNotFound
   | -- | 'markProviderEventProcessed' only: no @provider_events@ row for that
     -- @(provider, event_id)@. Its caller reaches it through a 'recordProviderEvent' that
     -- returned 'True' in the same transaction, so the row is always there; a 'Left' here means
@@ -374,8 +379,11 @@ orderSelect =
   |]
 
 -- | Writes the @invoices@ row and the @web_orders@ row that references it, in that order (the
--- foreign key points that way). Both start @invoiced@. The caller supplies the transaction, as
--- everywhere else here, so a failed provider call after a partial write leaves neither row.
+-- foreign key points that way). Both start @invoiced@. The two inserts are never split: the
+-- caller supplies the transaction, as everywhere else here, so if the second fails -- a
+-- @short_ref@ or @provider_ref@ collision against A3's UNIQUE indexes is the realistic way --
+-- the invoice row goes with it rather than being left orphaned. D6 makes its provider call
+-- BEFORE this, so what is being made atomic is the pair of rows, not the provider call.
 --
 -- @invoices.payment_crypto_currency@ is deliberately not written: 'method' is the single source
 -- and E4 derives the currency from it (A3).
@@ -410,22 +418,24 @@ createOrder db newOrder now = do
     unOfferId (BadgeOfferId oid) = oid
 
 getOrder :: DB.Connection -> Text -> ExceptT ServiceError IO (Maybe WebOrder)
-getOrder db orderId = queryOneOrder db (orderSelect <> " WHERE o.order_id = ?") (Only orderId)
+getOrder db orderId = queryOneOrder db (orderSelect <> " WHERE o.order_id = ?") orderId
 
 -- | At most one row: A3's @idx_web_orders_provider_ref@ is UNIQUE, so a provider reference that
 -- resolved to two orders could not have been stored. F2 resolves a Stripe charge this way, and
 -- H3 re-reads provider state through it.
 getOrderByProviderRef :: DB.Connection -> Text -> ExceptT ServiceError IO (Maybe WebOrder)
-getOrderByProviderRef db providerRef = queryOneOrder db (orderSelect <> " WHERE o.provider_ref = ?") (Only providerRef)
+getOrderByProviderRef db providerRef = queryOneOrder db (orderSelect <> " WHERE o.provider_ref = ?") providerRef
 
 -- | At most one row, on A3's UNIQUE @idx_web_orders_short_ref@. This is what support resolves a
 -- bank-statement reference with (H2's @--ref@ subcommands).
 getOrderByShortRef :: DB.Connection -> Text -> ExceptT ServiceError IO (Maybe WebOrder)
-getOrderByShortRef db shortRef = queryOneOrder db (orderSelect <> " WHERE o.short_ref = ?") (Only shortRef)
+getOrderByShortRef db shortRef = queryOneOrder db (orderSelect <> " WHERE o.short_ref = ?") shortRef
 
-queryOneOrder :: ToRow q => DB.Connection -> Query -> q -> ExceptT ServiceError IO (Maybe WebOrder)
-queryOneOrder db q params = do
-  rows <- liftIO $ DB.query db q params
+-- | Every single-order read: one 'Text' key, matched by whichever WHERE clause is appended to
+-- 'orderSelect'.
+queryOneOrder :: DB.Connection -> Query -> Text -> ExceptT ServiceError IO (Maybe WebOrder)
+queryOneOrder db q key = do
+  rows <- liftIO $ DB.query db q (Only key)
   case rows of
     [] -> pure Nothing
     (row : _) -> Just <$> liftEither (rowToOrder row)
@@ -494,11 +504,18 @@ setOrderProviderRef db orderId providerRef now = do
 -- statement, so no reader can ever see a paid order without its amount or its time, and
 -- @invoices.status@ moves to @settled@ with them. E3, H3 and F2 all settle through it.
 --
+-- __@settledAt@ and @now@ are separate on purpose.__ @settledAt@ is the provider's reported
+-- settlement time, which for an on-chain confirmation is routinely in the past -- H3 may read it
+-- from an invoice that settled while the service was down. Writing it to @updated_at@ as well
+-- would move that column BACKWARDS past what an earlier 'updateOrderStatus' wrote, and
+-- @updated_at@ is the row's own bookkeeping, not the payment's. Every other writer here takes a
+-- @now@; so does this one.
+--
 -- It does not guard on the current status. Settlement is idempotent and monotonic toward @paid@
 -- (E3), but that is the caller's rule to apply -- it decides whether a second @InvoiceSettled@
 -- is a replay before it gets here, because it must also decide whether to write a code row.
-setOrderSettled :: DB.Connection -> Text -> CurrencyAmount -> UTCTime -> ExceptT ServiceError IO ()
-setOrderSettled db orderId (CurrencyAmount amountPaid) settledAt = do
+setOrderSettled :: DB.Connection -> Text -> CurrencyAmount -> UTCTime -> UTCTime -> ExceptT ServiceError IO ()
+setOrderSettled db orderId (CurrencyAmount amountPaid) settledAt now = do
   updated <-
     liftIO $
       DB.query
@@ -509,23 +526,30 @@ setOrderSettled db orderId (CurrencyAmount amountPaid) settledAt = do
           WHERE order_id = ?
           RETURNING order_id
         |]
-        (WOSPaid, amountPaid, settledAt, settledAt, orderId)
+        (WOSPaid, amountPaid, settledAt, now, orderId)
   when (null (updated :: [Only Text])) $ throwError SEOrderNotFound
-  setOrderInvoiceStatus db orderId WOSPaid settledAt
+  setOrderInvoiceStatus db orderId WOSPaid now
 
 -- | The @invoices.status@ half of A3's invariant, written through the order's own @invoice_id@
--- so no caller has to carry it.
+-- so no caller has to carry it. Reached only after the caller's own @UPDATE ... RETURNING@ has
+-- confirmed the order exists, so 'SEInvoiceNotFound' means the order has no resolvable invoice
+-- -- which makes the invariant self-enforcing rather than merely true today: a future writer
+-- that creates a @web_orders@ row with a NULL @invoice_id@ fails here instead of silently
+-- leaving the two columns disagreeing.
 setOrderInvoiceStatus :: DB.Connection -> Text -> WebOrderStatus -> UTCTime -> ExceptT ServiceError IO ()
-setOrderInvoiceStatus db orderId status now =
-  liftIO $
-    DB.execute
-      db
-      [sql|
-        UPDATE sx_badge_service_invoices
-        SET status = ?, updated_at = ?
-        WHERE invoice_id IN (SELECT invoice_id FROM sx_badge_service_web_orders WHERE order_id = ?)
-      |]
-      (orderInvoiceStatus status, now, orderId)
+setOrderInvoiceStatus db orderId status now = do
+  updated <-
+    liftIO $
+      DB.query
+        db
+        [sql|
+          UPDATE sx_badge_service_invoices
+          SET status = ?, updated_at = ?
+          WHERE invoice_id IN (SELECT invoice_id FROM sx_badge_service_web_orders WHERE order_id = ?)
+          RETURNING invoice_id
+        |]
+        (orderInvoiceStatus status, now, orderId)
+  when (null (updated :: [Only Text])) $ throwError SEInvoiceNotFound
 
 -- Provider events ---------------------------------------------------------------
 
