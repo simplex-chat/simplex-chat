@@ -274,7 +274,9 @@ to look. Here there is nothing to look at.
    is what it already knew.*
 2. The browser generates a random 32-byte nonce and blinds it.
 3. The store signs the blinded value under the key for that tier and expiry cohort
-   (RFC 9474 blind RSA, as in Privacy Pass and Apple's Private Access Tokens).
+   — RFC 9474 blind RSA, the same construction Apple ships on every iPhone since
+   iOS 16 as Private Access Tokens (Privacy Pass token type 0x0002), where it
+   replaces CAPTCHAs by proving a device passed a check without identifying it.
    *It can count requests per account; it cannot tell two apart by content.*
 4. The browser unblinds, leaving a valid signature over a number the store has
    never seen. *A bearer token: no account, no identity, nothing tying it to
@@ -380,6 +382,9 @@ there are load-bearing and are pinned by tests:
   safer than the signature, since PSS is randomised and one message can yield more
   than one valid signature.
 
+*(Why blind RSA rather than an anonymous credential, and what that would change:
+Appendix A.)*
+
 ### Development codes
 
 Production issuer keys are **deliberately not defined yet**. The format is fixed
@@ -469,3 +474,89 @@ Each of these is a test, not a claim.
   name planted at a foreign one.
 - Production issuer keys are undefined by design; a build with none refuses every
   code and must say so rather than reporting one invalid.
+
+## Appendix A — Signature schemes considered
+
+Recorded so the choice is not re-litigated from memory. Facts here were checked
+against sources and the vendored code on **2026-08-27**; the draft status in
+particular has a shelf life.
+
+### Why a blind signature at all
+
+A code must be **one-time**, so the registrar records something unique to stop it
+being spent twice. It must also be **publicly verifiable**, because the client
+checks it against a pinned key with no issuer secret involved.
+
+A blind signature satisfies both at once: the issuer never sees the finished
+token, so **the token is its own nullifier** — recording it prevents reuse and
+reveals nothing about who was issued what. Any non-blind scheme would need a
+separate nullifier that the issuer *had* seen, which is precisely the link the
+design exists to break.
+
+### RSA blind signatures — chosen
+
+RFC 9474 (2023). Publicly verifiable, no concurrency weakness, and the same
+construction Apple ships as Private Access Tokens — Privacy Pass token type
+0x0002, publicly verifiable RSA blind signatures, in iOS 16 and macOS Ventura,
+where it replaces CAPTCHAs by proving a device passed a check without identifying
+it. Apple deployed against the draft in 2022; RFC 9474 followed in 2023.
+
+RFC 9578 (Privacy Pass, 2024) offers exactly two token types, and the other one —
+VOPRF, P-384 — is only *privately* verifiable, which fails the pinned-key
+requirement. The standard facing this same choice picked RSA.
+
+Cost: a 256-byte signature, hence a 390-character code, and one keypair per
+(tier, expiry cohort).
+
+### BBS+ with blind issuance and per-verifier pseudonyms — the strongest alternative
+
+Would give **one issuer key forever**: tier and expiry become signed attributes
+rather than key identity, so a cohort invented years later works with an app built
+today. That is the real prize — not fewer keys, but no schedule to outrun. Under
+blind BBS the holder commits only a secret and the **issuer supplies the visible
+attributes**, which lifts the constraint that forces our message to be a bare
+nonce. A per-verifier pseudonym gives a nullifier that is stable at one verifier
+and unlinkable to issuance. And the code shrinks to roughly 160 characters: an
+80-byte signature plus about 38 bytes of attributes.
+
+**It does not improve anonymity.** The tier must still be disclosed to be
+enforced, so the set remains everyone sharing that tier and cohort. One key does
+not widen it. A range proof over the attribute — "this credential permits a name
+this short", without naming the tier — would, and is another layer again.
+
+Why not yet:
+
+- Both pieces are **IRTF drafts, not RFCs**:
+  `draft-irtf-cfrg-bbs-blind-signatures` and
+  `draft-irtf-cfrg-bbs-per-verifier-linkability`, each at **-02, September 2025**.
+- **The vendored libbbs has neither.** `cbits/libbbs` exports exactly
+  `bbs_keygen`, `bbs_keygen_full`, `bbs_sk_to_pk`, `bbs_sign`, `bbs_verify`,
+  `bbs_proof_gen`, `bbs_proof_verify`; nothing matching *blind* or *pseudonym*
+  appears anywhere in that tree. This is new C, not new Haskell — a different
+  piece of work from "we already ship BBS+" (which we do, for badges).
+- Redemption becomes proof *generation* rather than pasting a signature, and the
+  proof on the wire is ~300 bytes even when the stored credential is smaller.
+
+Revisit if tiers proliferate beyond what a schedule can pin, or if codes must fit
+a smaller QR.
+
+### Blind Schnorr — rejected
+
+64-byte signatures, but broken by the ROS attack under concurrent issuance, and a
+batch on the order of a thousand codes is squarely in that regime. **Clause Blind
+Schnorr** repairs it and is provably secure, but is unstandardised and
+unimplemented here.
+
+### Blind BLS — rejected
+
+48-byte signatures, and `blst` is already vendored. But there is no RFC and no
+blind-signing binding, and rolling our own blind signature scheme is the one thing
+to avoid.
+
+### The trade nobody can engineer away
+
+**Blindness is what costs the length.** Drop the requirement that a purchase be
+unlinkable from a registration, and a plain Ed25519 signature over
+`(tier, expiry, nonce)` is 64 bytes — a ~120-character code, short enough to type.
+That is a product decision, not a cryptographic one, and the launch requirements
+currently answer it no.
