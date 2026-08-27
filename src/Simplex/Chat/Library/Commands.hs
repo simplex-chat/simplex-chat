@@ -29,11 +29,14 @@ import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Attoparsec.Combinator as A
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Word (Word32)
+import Data.List (nub)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Word (Word32, Word8)
 import Data.Char
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, partitionEithers, rights)
@@ -59,9 +62,12 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import qualified Simplex.Chat.Names.Codes as Codes
 import Simplex.Chat.Names.Protocol
-import Simplex.Chat.Store.Wallets (boundAccount, getNameKeys, getOrCreateAccountRef, recordNameKey, takeNameIndex)
-import Simplex.Chat.Wallet (AccountRef (..), WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, newSeed, renderNameKeyPath)
+import Simplex.Chat.Names.Snrc (Intent (..), SnrcDeployment (..), intent712, parseRecordKey)
+import Simplex.Messaging.Eth.Address (Address, mkAddress)
+import Simplex.Chat.Store.Wallets (boundAccount, createSeed, currentSeed, getNameKeys, getOrCreateAccountRef, listSeeds, markBackedUp, recordNameKey, seedOfName, setCurrentSeed, takeNameIndex)
+import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), NameIndex, SeedId, WalletAccount, WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, ethSignatureBytes, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath, signIntent)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1464,6 +1470,126 @@ processChatCommand cxt nm = \case
     respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) (LB.toStrict $ J.encode request)
     resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
     pure $ CRServiceResponse user resp
+  APINameQuote sendTarget label years -> withUser $ \user -> do
+    cReq <- resolveServiceTarget nm user sendTarget
+    namesRPC user cReq (NRQuote label years) >>= \case
+      NRPQuote {nrLabel, nrAvailable, nrReserved, nrPriceUsdCents, nrYears} ->
+        pure $ CRNameQuote user nrLabel nrAvailable nrReserved nrPriceUsdCents nrYears
+      _ -> throwCmdError "unexpected quote response"
+  -- Verified on the device, against a key compiled into this build. There is no
+  -- "check this code" RPC on purpose: it would hand the service an oracle for
+  -- probing codes.
+  APINameVerifyCode code -> withUser $ \user ->
+    case Codes.verifyCode code of
+      Left e -> throwChatError $ CENameRegistrationFailed "payment_rejected" (Just $ Codes.codeErrorText e) Nothing
+      Right vc ->
+        pure $ CRNameCode user (Codes.vcMinLength vc) (Codes.vcYears vc) (Codes.vcExpires vc) (Codes.vcLabel vc)
+  APINameBuy sendTarget label code link_ -> withUser $ \user -> do
+    -- Refuse before spending anything if the code is not real.
+    vc <- either (\e -> throwChatError $ CENameRegistrationFailed "payment_rejected" (Just $ Codes.codeErrorText e) Nothing) pure $ Codes.verifyCode code
+    let nm' = label <> ".simplex"
+    -- Both checks are the service's job too; doing them here as well saves a
+    -- round trip and, more usefully, names the reason. R15: the expiry is shown
+    -- at redemption, because a lost code is not replaced.
+    now0 <- liftIO getCurrentTime
+    when (Codes.vcExpires vc < now0) $
+      throwChatError $ CENameRegistrationFailed "code_expired" (Just $ "this code expired on " <> tshow (Codes.vcExpires vc)) Nothing
+    when (T.length label < Codes.vcMinLength vc) $
+      throwChatError $ CENameRegistrationFailed "name_too_short" (Just $ "this code covers names of " <> tshow (Codes.vcMinLength vc) <> " letters or more") Nothing
+    (seedId, nameIx, acctIx, owner) <- deriveNameOwner user
+    cReq <- resolveServiceTarget nm user sendTarget
+    g <- asks random
+    rid <- RequestId <$> atomically (C.randomBytes 16 g)
+    let progress phase waitMs = toView $ CEvtNameRegistrationProgress user nm' phase waitMs
+    progress NRPhaseRevealing Nothing
+    (expiry', txHash') <-
+      namesRPC user cReq (NRBuy rid nm' owner (RedemptionCode code) (fromMaybe "" link_)) >>= \case
+        NRPRegistered {nrExpiry, nrTxHash} -> pure (nrExpiry, nrTxHash)
+        _ -> throwCmdError "unexpected buy response"
+    progress NRPhaseRegistered Nothing
+    let path = renderNameKeyPath acctIx nameIx
+    withFastStore' $ \db -> recordNameKey db seedId path nm'
+    pure $ CRNameRegistered user nm' (tshow owner) path expiry' txHash'
+  APINameList sendTarget -> withUser $ \user -> do
+    cReq <- resolveServiceTarget nm user sendTarget
+    named <- ownedNames user
+    rows <- forM named $ \(nm_, _) ->
+      namesRPC user cReq (NRResolve nm_) >>= \case
+        NRPRecord {nrName, nrContact, nrExpiry, nrEditsLeft} ->
+          pure (nrName, maybe "no profile" id (listToMaybe nrContact), nrExpiry, nrEditsLeft)
+        _ -> pure (nm_, "unresolved", posixSecondsToUTCTime 0, 0)
+    pure $ CRNames user rows
+  APINameInfo sendTarget nm' -> withUser $ \user -> do
+    cReq <- resolveServiceTarget nm user sendTarget
+    (_, path, _) <- nameKeyOf user nm'
+    namesRPC user cReq (NRResolve nm') >>= \case
+      NRPRecord {nrName, nrOwner, nrContact, nrChannel, nrExpiry, nrEditsLeft} ->
+        pure $ CRNameInfo user nrName (tshow nrOwner) path nrContact nrChannel nrExpiry nrEditsLeft
+      _ -> throwCmdError "unexpected resolve response"
+  APINameSetLink sendTarget nm' record lnk -> withUser $ \user -> do
+    cReq <- resolveServiceTarget nm user sendTarget
+    rk <- either throwCmdError pure $ parseRecordKey record
+    (_, _, acc) <- nameKeyOf user nm'
+    nonce <-
+      namesRPC user cReq (NRNonce (accountAddress acc)) >>= \case
+        NRPNonce {nrNonce} -> pure nrNonce
+        _ -> throwCmdError "unexpected nonce response"
+    now <- liftIO getCurrentTime
+    -- Short deadline on purpose: a long-lived signed intent outlives a name
+    -- changing hands and could then be replayed against the new owner's name.
+    let deadline = floor (utcTimeToPOSIXSeconds now) + intentTtlSeconds
+        it = SetTextRecord nm' rk lnk nonce deadline
+    sig <- either (throwCmdError . ("wallet: " <>)) pure $ signIntent acc (intent712 clientDeployment it)
+    g <- asks random
+    rid <- RequestId <$> atomically (C.randomBytes 16 g)
+    namesRPC user cReq (NRRelayIntent rid nm' record lnk nonce deadline (IntentSig $ ethSignatureBytes sig)) >>= \case
+      NRPRelayed {nrTxHash} -> pure $ CRNameLinkSet user nm' record nrTxHash
+      _ -> throwCmdError "unexpected relay response"
+  APINameRescan sendTarget more -> withUser $ \user -> do
+    cReq <- resolveServiceTarget nm user sendTarget
+    seeds <- withFastStore' $ \db -> map fst <$> listSeeds db
+    let gap = if more then 20 else 10
+    found <- fmap concat $ forM seeds $ \seed -> scanSeed user cReq seed gap
+    forM_ found $ \(nm_, path, sId) -> withFastStore' $ \db -> recordNameKey db sId path nm_
+    pure $ CRNameRescan user [(a, b) | (a, b, _) <- found]
+  APINameKeys -> withUser $ \user -> do
+    seeds <- withFastStore' $ \db -> listSeeds db
+    cur <- withFastStore' $ \db -> currentSeed db user
+    rows <- forM (zip [1 ..] seeds) $ \(i, (seed, backed)) -> do
+      ns <- withFastStore' $ \db -> map fst <$> getNameKeys db (wsId seed)
+      pure (i, ns, Just (wsId seed) == fmap wsId cur, backed)
+    pure $ CRNameKeys user rows
+  -- Every key, never just the one in use: a user with two keys who writes down
+  -- "the phrase" and stops has not backed up the other, and finds out after
+  -- losing the device.
+  APINameKeysExport -> withUser $ \user -> do
+    seeds <- withFastStore' $ \db -> listSeeds db
+    rows <- forM (zip [1 ..] seeds) $ \(i, (seed, _)) -> do
+      phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
+      ns <- withFastStore' $ \db -> map fst <$> getNameKeys db (wsId seed)
+      withFastStore' $ \db -> markBackedUp db (wsId seed)
+      pure (i, safeDecodeUtf8 phrase, ns)
+    pure $ CRNameKeyPhrases user rows
+  -- Adds a key; never replaces one, or the names the existing key owns stop
+  -- being derivable.
+  APINameKeysImport phrase -> withUser $ \user -> do
+    entropy <- either (throwCmdError . ("wallet: " <>)) pure $ importRecoveryKey (encodeUtf8 phrase)
+    void $ withFastStore' $ \db -> createSeed db entropy
+    processChatCommand cxt nm APINameKeys
+  APINameKeysInit -> withUser $ \user -> do
+    g <- asks random
+    seeds <- withFastStore' $ \db -> listSeeds db
+    when (null seeds) $ do
+      entropy <- atomically $ newSeed MS256 g
+      void $ withFastStore' $ \db -> createSeed db entropy
+    processChatCommand cxt nm APINameKeys
+  APINameKeysUse n -> withUser $ \user -> do
+    seeds <- withFastStore' $ \db -> listSeeds db
+    case drop (n - 1) seeds of
+      ((seed, _) : _) | n >= 1 -> do
+        withFastStore' $ \db -> setCurrentSeed db user (wsId seed)
+        processChatCommand cxt nm APINameKeys
+      _ -> throwCmdError $ "no key " <> show n
   APINameRegister sendTarget nm' sLink -> withUser $ \user -> do
     (seedId, nameIx, acctIx, owner) <- deriveNameOwner user
     cReq <- resolveServiceTarget nm user sendTarget
@@ -1498,19 +1624,7 @@ processChatCommand cxt nm = \case
     let path = renderNameKeyPath acctIx nameIx
     withFastStore' $ \db -> recordNameKey db seedId path nm'
     pure $ CRNameRegistered user nm' (tshow owner) path expiry' txHash'
-    where
-      -- The seed is created on first registration and persisted, so the owner
-      -- address survives restart — a name whose key we cannot re-derive is lost.
-      --
-      -- One key per name: the index is taken here, so a second registration by
-      -- the same profile lands on a different address rather than sharing one.
-      deriveNameOwner user = do
-        g <- asks random
-        (seed, AccountRef {arIndex}) <-
-          withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
-        nameIx <- withFastStore' $ \db -> takeNameIndex db user
-        acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed arIndex nameIx
-        pure (wsId seed, nameIx, arIndex, accountAddress acc)
+
   APINameAddress -> withUser $ \user -> do
     -- Read-only: never creates a seed. A key appears when you register a name,
     -- not when you ask which address you have.
@@ -5092,6 +5206,103 @@ resolveServiceTarget nm user = \case
     resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
 
 -- | Default name lifetime (365 days). Real min-commitment-age enforcement deferred.
+-- | Signed intents expire in minutes, not days: a long-lived one survives a
+-- name changing hands and could then be replayed against the new owner's name.
+intentTtlSeconds :: Integer
+intentTtlSeconds = 600
+
+-- | The deployment the client signs against. Must match the service.
+clientDeployment :: SnrcDeployment
+clientDeployment =
+  SnrcDeployment
+    { sdTld = "simplex",
+      sdChainId = 1,
+      sdRegistrar = mockClientAddr 1,
+      sdResolver = mockClientAddr 2
+    }
+
+mockClientAddr :: Word8 -> Address
+mockClientAddr n = either error id $ mkAddress (BS.replicate 19 0 <> BS.singleton n)
+
+-- | One request, one response, one error convention. Every names command goes
+-- through here so a service error ends the command rather than being handled
+-- three different ways.
+-- | The seed is created on first registration and persisted, so the owner
+-- address survives restart — a name whose key we cannot re-derive is lost.
+--
+-- One key per name: the index is taken here, so a second purchase by the same
+-- profile lands on a different address rather than sharing one.
+deriveNameOwner :: User -> CM (SeedId, NameIndex, AccountIndex, Address)
+deriveNameOwner user = do
+  g <- asks random
+  seeds <- withFastStore' $ \db -> listSeeds db
+  when (length seeds > 1) $ do
+    cur <- withFastStore' $ \db -> currentSeed db user
+    when (isNothing cur) $
+      throwCmdError "several recovery keys on this device - choose one with /name keys use <n>"
+  (seed, AccountRef {arIndex}) <-
+    withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
+  nameIx <- withFastStore' $ \db -> takeNameIndex db user
+  acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed arIndex nameIx
+  pure (wsId seed, nameIx, arIndex, accountAddress acc)
+
+-- | Names this device holds a key for, with the path each key sits at.
+ownedNames :: User -> CM [(Text, Text)]
+ownedNames _ = do
+  seeds <- withFastStore' $ \db -> map fst <$> listSeeds db
+  concat <$> mapM (\seed -> withFastStore' $ \db -> getNameKeys db (wsId seed)) seeds
+
+-- | The key that owns a name. Re-derived from the stored path, so a name found
+-- on a layout that is not ours still works.
+nameKeyOf :: User -> Text -> CM (SeedId, Text, WalletAccount)
+nameKeyOf user nm' = do
+  r <- withFastStore' $ \db -> seedOfName db nm'
+  case r of
+    Nothing -> throwCmdError $ "no key for " <> T.unpack nm' <> " on this device"
+    Just (seed, path) -> do
+      acctIx <- maybe 0 (arIndex . snd) <$> withFastStore' (\db -> boundAccount db user)
+      acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveAtPath seed acctIx path
+      pure (wsId seed, path, acc)
+
+-- | Probe a seed for names it owns, across the layouts a name may have been
+-- registered under: ours, the two common wallet defaults, and the bare master
+-- key. The set can only grow — adding a layout finds more and invalidates
+-- nothing.
+scanSeed :: User -> ConnReqContact -> WalletSeed -> Int -> CM [(Text, Text, SeedId)]
+scanSeed user cReq seed gap = do
+  let paths =
+        "m"
+          : concat
+            [ [ "m/44'/60'/" <> tshow i <> "'/0/" <> tshow k,
+                "m/44'/60'/0'/0/" <> tshow k,
+                "m/44'/60'/0'/" <> tshow k
+              ]
+            | i <- [0 .. 2 :: Int],
+              k <- [0 .. gap - 1]
+            ]
+  fmap concat $ forM (nub paths) $ \path ->
+    case deriveAtPath seed 0 path of
+      Left _ -> pure []
+      Right acc ->
+        namesRPC user cReq (NROwnedBy (accountAddress acc)) >>= \case
+          NRPNames {nrNames} -> pure [(n, path, wsId seed) | n <- nrNames]
+          _ -> pure []
+
+namesRPC :: User -> ConnReqContact -> NamesCommand -> CM NamesResponse
+namesRPC user cReq c = do
+  let req = NamesRequest currentNamesVersion c
+  respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq Nothing Nothing (LB.toStrict $ J.encode req)
+  either (const $ throwCmdError "invalid names response") pure (J.eitherDecodeStrict' respData) >>= \case
+    NRPError {nrCode, nrMessage, nrRetryAfter} -> throwChatError $ CENameRegistrationFailed (textEncode nrCode) nrMessage nrRetryAfter
+    r -> pure r
+
+-- | A token with no spaces: a record name, or a redemption code.
+nameSetLinkP :: ConnectTarget 'CMContact -> Text -> Text -> Text -> ChatCommand
+nameSetLinkP target record nm' lnk = APINameSetLink target nm' record lnk
+
+nonSpaceTextP :: Parser Text
+nonSpaceTextP = safeDecodeUtf8 <$> A.takeTill (== ' ')
+
 defaultNameTtl :: NameTtl
 defaultNameTtl = 31536000
 
@@ -5607,6 +5818,23 @@ chatCommandP =
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/name register " *> (APINameRegister <$> strP <* A.space <*> displayNameP <* A.space <*> textP),
       "/name address" $> APINameAddress,
+      -- bare plural lists, the singular takes verbs - the house convention
+      -- (/users vs /user, /db export)
+      "/names " *> (APINameList <$> strP),
+      "/name quote " *> (APINameQuote <$> strP <* A.space <*> displayNameP <*> (A.space *> A.decimal <|> pure 2)),
+      "/name verify-code " *> (APINameVerifyCode <$> textP),
+      "/name buy " *> (APINameBuy <$> strP <* A.space <*> displayNameP <* A.space <*> nonSpaceTextP <*> optional (A.space *> textP)),
+      "/name info " *> (APINameInfo <$> strP <* A.space <*> displayNameP),
+      -- syntax is "/name link <record> <name> <link>", but the constructor
+      -- takes the name first, so bind rather than rely on argument order
+      "/name link " *> (nameSetLinkP <$> strP <* A.space <*> nonSpaceTextP <* A.space <*> displayNameP <* A.space <*> textP),
+      "/name rescan more " *> (APINameRescan <$> strP <*> pure True),
+      "/name rescan " *> (APINameRescan <$> strP <*> pure False),
+      "/name keys export" $> APINameKeysExport,
+      "/name keys import " *> (APINameKeysImport <$> textP),
+      "/name keys init" $> APINameKeysInit,
+      "/name keys use " *> (APINameKeysUse <$> A.decimal),
+      "/name keys" $> APINameKeys,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),

@@ -48,6 +48,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
 import Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
 import Simplex.Chat.Store.Postgres.Migrations.M20260818_wallet_seeds
 import Simplex.Chat.Store.Postgres.Migrations.M20260826_wallet_name_keys
+import Simplex.Chat.Store.Postgres.Migrations.M20260827_wallet_multi_key
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -95,7 +96,8 @@ schemaMigrations =
     ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles),
     ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection),
     ("20260818_wallet_seeds", m20260818_wallet_seeds, Just down_m20260818_wallet_seeds),
-    ("20260826_wallet_name_keys", m20260826_wallet_name_keys, Just down_m20260826_wallet_name_keys)
+    ("20260826_wallet_name_keys", m20260826_wallet_name_keys, Just down_m20260826_wallet_name_keys),
+    ("20260827_wallet_multi_key", m20260827_wallet_multi_key, Just down_m20260827_wallet_multi_key)
   ]
 
 -- | The list of migrations in ascending order by date

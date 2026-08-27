@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.NamesServiceTests where
@@ -16,6 +17,12 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (parseAddress)
 import Simplex.Messaging.Eth.Keccak (keccak256)
 import Test.Hspec hiding (it)
+import qualified Data.Text as T
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
+import Data.Word (Word32)
+import Simplex.Messaging.Util (tshow)
+import qualified Simplex.Chat.Names.Codes as Codes
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey)
 import qualified Test.Hspec as Hspec
@@ -26,11 +33,41 @@ namesServiceTests = do
   it "rejects a reveal with no matching commitment" testRevealWithoutCommit
   it "shows the owner address without creating one" testNameAddress
   it "gives each name its own key, still derivable after restart" testSeedPersists
+#if defined(dev_codes)
+  it "buys with a code, then re-points the link with a signature" testBuyAndLink
+  it "refuses a spent code, a reserved name and a short name" testBuyRefusals
+#endif
 
 -- | Pins the wire format. The end-to-end test cannot catch a key renamed on
 -- both sides at once, so the encodings are asserted literally here.
 namesProtocolTests :: Spec
 namesProtocolTests = do
+#if defined(dev_codes)
+  -- The dev issuer signs unblinded, which is indistinguishable to the verifier:
+  -- an RFC 9474 blind-signed token verifies as an ordinary RSA-PSS signature.
+  -- So this exercises the production verification path end to end.
+  it "verifies a dev redemption code, and rejects tampering" $ \_ -> do
+    code <- either (error . show) id <$> Codes.signDevCode "test-nonce"
+    case Codes.verifyCode code of
+      Left e -> expectationFailure $ "did not verify: " <> show e
+      Right vc -> do
+        -- tier and expiry come from the key, never from the code: a blind
+        -- issuer cannot check what it signs, so anything inside the message
+        -- would be whatever the holder put there
+        Codes.vcMinLength vc `shouldBe` 6
+        Codes.vcYears vc `shouldBe` 2
+        Codes.vcExpires vc `shouldBe` Codes.pikExpires Codes.devIssuerKey
+    -- a flipped character mid-payload must not verify. Not the last character:
+    -- base64's final character carries unused bits, so changing it can decode to
+    -- the same bytes - which is also why the spent-code ledger keys on the
+    -- decoded nonce and not on the code string.
+    let (a, b) = T.splitAt 40 code
+        bad = a <> (if T.head b == 'A' then "B" else "A") <> T.tail b
+    Codes.verifyCode bad `shouldBe` Left Codes.CENotVerified
+    -- and something that is not a code at all fails on the prefix, not the maths
+    Codes.verifyCode "hello" `shouldBe` Left Codes.CEBadPrefix
+#endif
+
   -- Name keys are plain BIP-44, so they line up with wallets users already have.
   -- Pinned against the standard test mnemonic: profile 0's names are exactly
   -- MetaMask's account list (m/44'/60'/0'/0/k), and each profile's first name is
@@ -50,14 +87,14 @@ namesProtocolTests = do
     -- on-chain byte values are 0x-prefixed hex, as Ethereum writes them
     encodes (NamesRequest 1 (NRCommit $ Commitment "0123456789abcdef")) $
       "{\"version\":1,\"request\":{\"type\":\"commit\",\"commitment\":\"0x30313233343536373839616263646566\"}}"
-    encodes (NamesRequest 1 (NRReveal "alice.simplex" testOwner (NameSecret "s") 3600 "simplex:/contact#/x")) $
-      "{\"version\":1,\"request\":{\"type\":\"reveal\",\"name\":\"alice.simplex\""
+    encodes (NamesRequest 1 (NRReveal "alicename.simplex" testOwner (NameSecret "s") 3600 "simplex:/contact#/x")) $
+      "{\"version\":1,\"request\":{\"type\":\"reveal\",\"name\":\"alicename.simplex\""
         <> ",\"owner\":\"0x520110C7b1CE17f8C0a2778B41AB2F23D10B70B0\",\"secret\":\"0x73\""
         <> ",\"ttl\":3600,\"simplex_link\":\"simplex:/contact#/x\"}}"
     encodes (NRPError NECNameTaken Nothing Nothing) "{\"type\":\"error\",\"code\":\"name_taken\"}"
   Hspec.it "roundtrips requests and responses" $ do
     roundtrips $ NamesRequest 1 (NRCommit $ Commitment "0123456789abcdef")
-    roundtrips $ NamesRequest 1 (NRReveal "alice.simplex" testOwner (NameSecret "s") 3600 "simplex:/contact#/x")
+    roundtrips $ NamesRequest 1 (NRReveal "alicename.simplex" testOwner (NameSecret "s") 3600 "simplex:/contact#/x")
     roundtrips $ NRPCommitted (TxHash "tx")
     roundtrips $ NRPError NECNameTaken Nothing Nothing
     roundtrips $ NRPError (NECUnknown "future_code") (Just "why") (Just 30)
@@ -67,12 +104,12 @@ namesProtocolTests = do
     B.take 2 h `shouldBe` "0x"
     B.all (\c -> isHexDigit (toEnum $ fromIntegral c)) (B.drop 2 h) `shouldBe` True
   Hspec.it "binds the commitment to every field" $ do
-    let c = mkCommitment "alice.simplex" testOwner (NameSecret "s") 3600
+    let c = mkCommitment "alicename.simplex" testOwner (NameSecret "s") 3600
     -- the service recomputes it at reveal, so it must be deterministic
-    c `shouldBe` mkCommitment "alice.simplex" testOwner (NameSecret "s") 3600
+    c `shouldBe` mkCommitment "alicename.simplex" testOwner (NameSecret "s") 3600
     c `shouldNotBe` mkCommitment "bob.simplex" testOwner (NameSecret "s") 3600
-    c `shouldNotBe` mkCommitment "alice.simplex" testOwner (NameSecret "s2") 3600
-    c `shouldNotBe` mkCommitment "alice.simplex" testOwner (NameSecret "s") 7200
+    c `shouldNotBe` mkCommitment "alicename.simplex" testOwner (NameSecret "s2") 3600
+    c `shouldNotBe` mkCommitment "alicename.simplex" testOwner (NameSecret "s") 7200
   where
     testOwner = either error id $ parseAddress "0x520110C7b1CE17f8C0a2778B41AB2F23D10B70B0"
     -- compares parsed values, so the assertion does not depend on key order
@@ -87,29 +124,29 @@ namesProtocolTests = do
 testNamesRegister :: HasCallStack => TestParams -> IO ()
 testNamesRegister ps =
   withBadgeService ps $ \client bsLink -> do
-    client ##> ("/name register " <> bsLink <> " alice.simplex simplex:/contact#/first")
+    client ##> ("/name register " <> bsLink <> " alicename.simplex simplex:/contact#/first")
     commitPhases client
     -- the final progress event and the command response arrive on separate channels
     client
-      <### [ ConsoleString "name alice.simplex: registered",
-             StartsWith "name registered: alice.simplex -> 0x",
+      <### [ ConsoleString "name alicename.simplex: registered",
+             StartsWith "name registered: alicename.simplex -> 0x",
              -- one key per name: the profile's first name is address index 0
              ConsoleString "  derivation path: m/44'/60'/0'/0/0"
            ]
     -- re-running the identical command is rejected too, not silently accepted:
     -- the owner is the same within a session, so this is the duplicate a user hits.
-    client ##> ("/name register " <> bsLink <> " alice.simplex simplex:/contact#/first")
+    client ##> ("/name register " <> bsLink <> " alicename.simplex simplex:/contact#/first")
     commitPhases client
     client <## "name registration failed: name_taken"
     -- and the same name pointed at a different link is equally rejected
-    client ##> ("/name register " <> bsLink <> " alice.simplex simplex:/contact#/second")
+    client ##> ("/name register " <> bsLink <> " alicename.simplex simplex:/contact#/second")
     commitPhases client
     client <## "name registration failed: name_taken"
   where
     commitPhases client = do
-      client <## "name alice.simplex: committing"
-      client <## "name alice.simplex: committed. waiting 1s before revealing"
-      client <## "name alice.simplex: revealing"
+      client <## "name alicename.simplex: committing"
+      client <## "name alicename.simplex: committed. waiting 1s before revealing"
+      client <## "name alicename.simplex: revealing"
 
 -- | @\/name address@ reports the owner address but never creates a seed: asking
 -- which address you have must not be what gives you one. Only registering does.
@@ -121,12 +158,12 @@ testNameAddress ps =
     client <## "no name addresses yet - one is created for each name you register"
     client ##> "/name address"
     client <## "no name addresses yet - one is created for each name you register"
-    client ##> ("/name register " <> bsLink <> " carol.simplex simplex:/contact#/x")
-    owner <- ownerOf client "carol.simplex"
+    client ##> ("/name register " <> bsLink <> " carolname.simplex simplex:/contact#/x")
+    owner <- ownerOf client "carolname.simplex"
     -- now it exists, and reports the address and path the name was registered to
     client ##> "/name address"
     client <## "name addresses:"
-    client <## ("  carol.simplex -> " <> owner <> "  m/44'/60'/0'/0/0")
+    client <## ("  carolname.simplex -> " <> owner <> "  m/44'/60'/0'/0/0")
 
 -- | The front-running defence: a reveal only registers a name if that exact
 -- commitment was published first. Sent as a raw service request, because the
@@ -163,19 +200,19 @@ testSeedPersists ps = do
     pure sLink
   runBadgeService testCfg opts $ do
     owner1 <- withNewTestChatCfg ps testCfg "client" bobProfile $ \client -> do
-      client ##> ("/name register " <> bsLink <> " first.simplex simplex:/contact#/x")
-      ownerOf client "first.simplex"
+      client ##> ("/name register " <> bsLink <> " firstname.simplex simplex:/contact#/x")
+      ownerOf client "firstname.simplex"
     -- same database, new session: the seed has to come back from the DB
     owner2 <- withTestChat ps "client" $ \client -> do
-      client ##> ("/name register " <> bsLink <> " second.simplex simplex:/contact#/y")
-      ownerOf client "second.simplex"
+      client ##> ("/name register " <> bsLink <> " secondname.simplex simplex:/contact#/y")
+      ownerOf client "secondname.simplex"
     owner2 `shouldNotBe` owner1
     -- and both are still derivable in a third session, each at its own path
     withTestChat ps "client" $ \client -> do
       client ##> "/name address"
       client <## "name addresses:"
-      client <## ("  first.simplex -> " <> owner1 <> "  m/44'/60'/0'/0/0")
-      client <## ("  second.simplex -> " <> owner2 <> "  m/44'/60'/0'/0/1")
+      client <## ("  firstname.simplex -> " <> owner1 <> "  m/44'/60'/0'/0/0")
+      client <## ("  secondname.simplex -> " <> owner2 <> "  m/44'/60'/0'/0/1")
 
 -- | Reads past startup and progress lines to the registration result, returning
 -- the owner address. Keeps reading until the final progress event has arrived
@@ -195,3 +232,81 @@ ownerOf client nm = go (40 :: Int) Nothing False False
       l <- getTermLine client
       let addr' = if pfx `isPrefixOf` l then Just (takeWhile (/= ' ') $ drop (length pfx) l) else addr
       go (n - 1) addr' (seen || l == lastEvt) (path || pathLine `isPrefixOf` l)
+
+#if defined(dev_codes)
+-- | The whole purchase path: verify a code on the device, buy, then change the
+-- link with a signed intent the service verifies by recovering the signer.
+testBuyAndLink :: HasCallStack => TestParams -> IO ()
+testBuyAndLink ps =
+  withBadgeService ps $ \client bsLink -> do
+    code <- devCode 1
+    client ##> ("/name verify-code " <> T.unpack code)
+    client <## "code verified: dev: 6+ letters, 2 years"
+    client <## "  names of 6 letters or more, 2 years"
+    client <##. "  use before "
+    client ##> ("/name buy " <> bsLink <> " purchased " <> T.unpack code <> " simplex:/contact#/first")
+    client <## "name purchased.simplex: revealing"
+    client <## "name purchased.simplex: registered"
+    client <##. "name registered: purchased.simplex -> 0x"
+    client <## "  derivation path: m/44'/60'/0'/0/0"
+    -- the record the purchase wrote
+    client ##> ("/name info " <> bsLink <> " purchased.simplex")
+    client <## "purchased.simplex"
+    client <##. "  owner   0x"
+    client <## "  path    m/44'/60'/0'/0/0"
+    client <## "  contact simplex:/contact#/first"
+    client <##. "  expires "
+    client <## "  10 of 10 relayed edits left"
+    -- a signed edit: the service recovers the signer and refuses anyone else
+    client ##> ("/name link " <> bsLink <> " contact purchased.simplex simplex:/contact#/second")
+    client <##. "purchased.simplex: contact updated (tx 0x"
+    client ##> ("/name info " <> bsLink <> " purchased.simplex")
+    client <## "purchased.simplex"
+    client <##. "  owner   0x"
+    client <## "  path    m/44'/60'/0'/0/0"
+    client <## "  contact simplex:/contact#/second"
+    client <##. "  expires "
+    -- one edit spent, and only one
+    client <## "  9 of 10 relayed edits left"
+
+-- | Every refusal has its own message. A user who types a reserved name must be
+-- told that, not "bad request".
+testBuyRefusals :: HasCallStack => TestParams -> IO ()
+testBuyRefusals ps =
+  withBadgeService ps $ \client bsLink -> do
+    code1 <- devCode 1
+    code2 <- devCode 2
+    -- shorter than the code's minimum, refused on the device before any RPC
+    client ##> ("/name buy " <> bsLink <> " abc " <> T.unpack code1 <> " simplex:/contact#/x")
+    client <##. "name registration failed: name_too_short"
+    -- reserved
+    -- long enough for the code, so this one reaches the service before failing
+    client ##> ("/name buy " <> bsLink <> " support " <> T.unpack code1 <> " simplex:/contact#/x")
+    client <## "name support.simplex: revealing"
+    client <## "name registration failed: name_reserved"
+    -- a real purchase, then the same code again
+    client ##> ("/name buy " <> bsLink <> " spender " <> T.unpack code1 <> " simplex:/contact#/x")
+    client <## "name spender.simplex: revealing"
+    client <## "name spender.simplex: registered"
+    client <##. "name registered: spender.simplex -> 0x"
+    -- a refused purchase has already taken an index, so the path here is not 0.
+    -- That is the documented cost of allocating before the service answers.
+    client <##. "  derivation path: m/44'/60'/0'/0/"
+    client ##> ("/name buy " <> bsLink <> " another " <> T.unpack code1 <> " simplex:/contact#/x")
+    client <## "name another.simplex: revealing"
+    client <## "name registration failed: code_spent"
+    -- a different code works, and takes the next key
+    client ##> ("/name buy " <> bsLink <> " another " <> T.unpack code2 <> " simplex:/contact#/x")
+    client <## "name another.simplex: revealing"
+    client <## "name another.simplex: registered"
+    client <##. "name registered: another.simplex -> 0x"
+    client <##. "  derivation path: m/44'/60'/0'/0/"
+    -- Expiry is a property of the key, not of the code, so a build with one
+    -- cohort key cannot mint an expired code. Expiry refusal is covered by the
+    -- unit test over verifyCode instead.
+
+-- Deterministic: the same nonce always yields the same code, which is why the
+-- nonce is an argument rather than random.
+devCode :: Int -> IO Text
+devCode i = either (error . show) id <$> Codes.signDevCode ("dev-" <> encodeUtf8 (tshow i))
+#endif

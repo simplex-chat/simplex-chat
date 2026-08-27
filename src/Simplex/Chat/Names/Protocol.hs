@@ -1,3 +1,5 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -27,6 +29,9 @@ module Simplex.Chat.Names.Protocol
     Commitment (..),
     NameSecret (..),
     TxHash (..),
+    RequestId (..),
+    RedemptionCode (..),
+    IntentSig (..),
     NameRegPhase (..),
     mkCommitment,
   )
@@ -123,6 +128,43 @@ data NamesRequest = NamesRequest
   }
   deriving (Eq, Show)
 
+-- | Idempotency key on every mutating call. Matching fields cannot distinguish a
+-- resent request from a user genuinely doing the same thing twice.
+newtype RequestId = RequestId {unRequestId :: ByteString}
+  deriving (Eq, Show)
+
+instance StrEncoding RequestId where
+  strEncode = strEncode . unRequestId
+  strP = RequestId <$> strP
+
+instance ToJSON RequestId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromJSON RequestId where
+  parseJSON = strParseJSON "RequestId"
+
+-- | A redemption code as it travels: the full @SMPX1-...@ string. Opaque here;
+-- "Simplex.Chat.Names.Codes" is what verifies it.
+newtype RedemptionCode = RedemptionCode {unRedemptionCode :: Text}
+  deriving (Eq, Show)
+  deriving newtype (ToJSON, FromJSON)
+
+-- | A 65-byte @r || s || v@ Ethereum signature over a relayed intent.
+newtype IntentSig = IntentSig {unIntentSig :: ByteString}
+  deriving (Eq, Show)
+
+instance StrEncoding IntentSig where
+  strEncode = strEncode . unIntentSig
+  strP = IntentSig <$> strP
+
+instance ToJSON IntentSig where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromJSON IntentSig where
+  parseJSON = strParseJSON "IntentSig"
+
 data NamesCommand
   = NRCommit {nrCommitment :: Commitment}
   | NRReveal
@@ -132,11 +174,57 @@ data NamesCommand
         nrTtl :: NameTtl,
         nrLink :: Text
       }
+  | -- | Availability and price. @years@ is an input because a price without a
+    -- term is meaningless; the CLI ignores the price, mobile IAP needs it.
+    NRQuote {nrLabel :: Text, nrYears :: Word32}
+  | -- | Register against a redemption code. The term is /not/ a field: it comes
+    -- from the code's tier, so client and service cannot disagree about what was
+    -- paid for. @requestId@ makes a resent request distinguishable from a
+    -- genuine second attempt.
+    NRBuy
+      { nrRequestId :: RequestId,
+        nrName :: Text,
+        nrOwner :: Address,
+        nrCode :: RedemptionCode,
+        nrLink :: Text
+      }
+  | NRResolve {nrName :: Text}
+  | NROwnedBy {nrAddress :: Address}
+  | NRNonce {nrAddress :: Address}
+  | -- | Hand a user-signed record edit to the relayer, which pays the gas.
+    NRRelayIntent
+      { nrRequestId :: RequestId,
+        nrName :: Text,
+        nrRecordKey :: Text,
+        nrValue :: Text,
+        nrNonce :: Integer,
+        nrDeadline :: Integer,
+        nrSig :: IntentSig
+      }
   deriving (Eq, Show)
 
 data NamesResponse
   = NRPCommitted {nrTxHash :: TxHash}
   | NRPRegistered {nrName :: Text, nrExpiry :: UTCTime, nrTxHash :: TxHash}
+  | NRPQuote
+      { nrLabel :: Text,
+        nrAvailable :: Bool,
+        nrTakenUntil :: Maybe UTCTime,
+        nrReserved :: Bool,
+        nrPriceUsdCents :: Word32,
+        nrYears :: Word32
+      }
+  | NRPRecord
+      { nrName :: Text,
+        nrOwner :: Address,
+        nrContact :: [Text],
+        nrChannel :: [Text],
+        nrExpiry :: UTCTime,
+        nrEditsLeft :: Word32
+      }
+  | NRPNames {nrNames :: [Text]}
+  | NRPNonce {nrNonce :: Integer}
+  | NRPRelayed {nrTxHash :: TxHash}
   | NRPError {nrCode :: NamesErrorCode, nrMessage :: Maybe Text, nrRetryAfter :: Maybe Word32}
   deriving (Eq, Show)
 
@@ -145,6 +233,17 @@ data NamesErrorCode
   | NECBadRequest
   | NECUnsupportedVersion
   | NECInternal
+  | NECNameReserved
+  | NECNameTooShort
+  | NECPaymentRejected
+  | NECCodeSpent
+  | NECCodeExpired
+  | NECBadSignature
+  | NECBadNonce
+  | NECExpiredIntent
+  | NECNotOwner
+  | NECNotFound
+  | NECNoEditCredits
   | NECUnknown Text -- forwards-compatible: service may be ahead of clients
   deriving (Eq, Show)
 
@@ -154,12 +253,34 @@ instance TextEncoding NamesErrorCode where
     NECBadRequest -> "bad_request"
     NECUnsupportedVersion -> "unsupported_version"
     NECInternal -> "internal"
+    NECNameReserved -> "name_reserved"
+    NECNameTooShort -> "name_too_short"
+    NECPaymentRejected -> "payment_rejected"
+    NECCodeSpent -> "code_spent"
+    NECCodeExpired -> "code_expired"
+    NECBadSignature -> "bad_signature"
+    NECBadNonce -> "bad_nonce"
+    NECExpiredIntent -> "expired_intent"
+    NECNotOwner -> "not_owner"
+    NECNotFound -> "not_found"
+    NECNoEditCredits -> "no_edit_credits"
     NECUnknown t -> t
   textDecode = Just . \case
     "name_taken" -> NECNameTaken
     "bad_request" -> NECBadRequest
     "unsupported_version" -> NECUnsupportedVersion
     "internal" -> NECInternal
+    "name_reserved" -> NECNameReserved
+    "name_too_short" -> NECNameTooShort
+    "payment_rejected" -> NECPaymentRejected
+    "code_spent" -> NECCodeSpent
+    "code_expired" -> NECCodeExpired
+    "bad_signature" -> NECBadSignature
+    "bad_nonce" -> NECBadNonce
+    "expired_intent" -> NECExpiredIntent
+    "not_owner" -> NECNotOwner
+    "not_found" -> NECNotFound
+    "no_edit_credits" -> NECNoEditCredits
     t -> NECUnknown t
 
 instance ToJSON NamesErrorCode where

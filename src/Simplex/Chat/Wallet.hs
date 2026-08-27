@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | The wallet: BIP-39 seeds, and the keys derived from them.
@@ -33,26 +34,36 @@ module Simplex.Chat.Wallet
     NameIndex,
     AccountRef (..),
     WalletAccount (..),
+    EthSignature (..),
+    Eip712Intent (..),
     newSeed,
+    importRecoveryKey,
+    recoveryKeyPhrase,
     deriveNameKey,
     deriveAtPath,
     nameKeyPath,
     renderNameKeyPath,
     accountAddress,
+    signIntent,
+    ethSignatureBytes,
+    parseEthSignature,
+    recoverSigner,
   )
 where
 
 import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import qualified Simplex.Messaging.Crypto.BIP32 as B32
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
-import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
+import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey, addressFromPublicKey)
+import Simplex.Messaging.Eth.EIP712 (Eip712Domain, Value, hashTypedData)
 
 newtype SeedId = SeedId Int64
   deriving (Eq, Ord, Show)
@@ -146,3 +157,66 @@ accountAddress = addressFromPrivateKey . waKey
 -- the sender's ephemeral public key @R@ rather than from an index. So the
 -- wallet must be able to hold a key that is "spend key plus a scalar", which is
 -- why one meta-address per profile is enough for any number of received names.
+
+
+-- | Import from a recovery phrase, validating the wordlist and the BIP-39
+-- checksum. Returns the entropy; the caller persists it.
+importRecoveryKey :: ByteString -> Either String ByteString
+importRecoveryKey phrase = B39.mnemonicToEntropy <$> B39.parseMnemonic phrase
+
+-- | The phrase to show under "recovery key". Anyone who knows these words
+-- controls every name this seed owns, so the risk to state is theft, not loss.
+recoveryKeyPhrase :: WalletSeed -> Either String ByteString
+recoveryKeyPhrase s = B39.mnemonicPhrase <$> B39.entropyToMnemonic (wsEntropy s)
+
+-- | An Ethereum signature: @r || s || v@, 65 bytes, with @v = recId + 27@.
+data EthSignature = EthSignature
+  { esR :: ByteString,
+    esS :: ByteString,
+    esV :: Word8
+  }
+  deriving (Eq, Show)
+
+ethSignatureBytes :: EthSignature -> ByteString
+ethSignatureBytes s = esR s <> esS s <> B.singleton (esV s)
+
+-- | An EIP-712 typed-data intent: a domain, a canonical type string, and the
+-- member values in the order that string declares.
+--
+-- This is the /only/ thing the wallet will sign, and it is why there is no
+-- exported digest-signing function. A service-supplied 32 bytes cannot be
+-- coerced into this shape, so "the app never signs an opaque payload" is a
+-- property of the type rather than a rule someone has to remember.
+data Eip712Intent = Eip712Intent
+  { eiDomain :: Eip712Domain,
+    eiTypeString :: ByteString,
+    eiValues :: [Value]
+  }
+
+-- | Sign a typed-data intent with a name's key.
+signIntent :: WalletAccount -> Eip712Intent -> Either String EthSignature
+signIntent a Eip712Intent {eiDomain, eiTypeString, eiValues} = do
+  digest <- hashTypedData eiDomain eiTypeString eiValues
+  sig <- S.signRecoverable (waKey a) digest
+  let compact = S.rsCompact sig
+  pure
+    EthSignature
+      { esR = B.take 32 compact,
+        esS = B.drop 32 compact,
+        esV = fromIntegral (S.rsRecId sig) + 27
+      }
+
+-- | Parse @r || s || v@ as it arrives from a client.
+parseEthSignature :: ByteString -> Either String EthSignature
+parseEthSignature bs
+  | B.length bs /= 65 = Left "signature: expected 65 bytes"
+  | otherwise = Right EthSignature {esR = B.take 32 bs, esS = B.take 32 (B.drop 32 bs), esV = B.last bs}
+
+-- | Recover the address that produced a signature over a digest — what the
+-- relayer and the contracts do.
+recoverSigner :: EthSignature -> ByteString -> Either String Address
+recoverSigner s digest
+  | esV s < 27 || esV s > 30 = Left "signature: v out of range"
+  | otherwise = do
+      let sig = S.RecoverableSignature {S.rsCompact = esR s <> esS s, S.rsRecId = fromIntegral (esV s) - 27}
+      addressFromPublicKey <$> S.recoverPublicKey sig digest

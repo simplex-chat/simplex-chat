@@ -416,6 +416,18 @@ data ChatCommand
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APINameRegister {sendTarget :: ConnectTarget 'CMContact, regName :: Text, registerLink :: Text}
   | APINameAddress
+  | APINameQuote {sendTarget :: ConnectTarget 'CMContact, nameLabel :: Text, nameYears :: Word32}
+  | APINameVerifyCode {nameCode :: Text}
+  | APINameBuy {sendTarget :: ConnectTarget 'CMContact, nameLabel :: Text, nameCode :: Text, nameLink_ :: Maybe Text}
+  | APINameList {sendTarget :: ConnectTarget 'CMContact}
+  | APINameInfo {sendTarget :: ConnectTarget 'CMContact, regName :: Text}
+  | APINameSetLink {sendTarget :: ConnectTarget 'CMContact, regName :: Text, nameRecord :: Text, registerLink :: Text}
+  | APINameRescan {sendTarget :: ConnectTarget 'CMContact, rescanMore :: Bool}
+  | APINameKeys
+  | APINameKeysExport
+  | APINameKeysImport {recoveryPhrase :: Text}
+  | APINameKeysInit
+  | APINameKeysUse {keyNo :: Int}
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -844,6 +856,14 @@ data ChatResponse
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRNameRegistered {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, regExpiry :: UTCTime, regTxHash :: TxHash}
   | CRNameAddress {user :: User, nameAddresses :: [(Text, Text, Text)]}
+  | CRNameQuote {user :: User, nameLabel :: Text, nameAvailable :: Bool, nameReserved :: Bool, namePriceUsdCents :: Word32, nameYears :: Word32}
+  | CRNameCode {user :: User, codeMinLength :: Int, nameYears :: Word32, codeExpires :: UTCTime, codeLabel :: Text}
+  | CRNames {user :: User, namesOwned :: [(Text, Text, UTCTime, Word32)]}
+  | CRNameInfo {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, nameContact :: [Text], nameChannel :: [Text], regExpiry :: UTCTime, nameEditsLeft :: Word32}
+  | CRNameLinkSet {user :: User, regName :: Text, nameRecord :: Text, regTxHash :: TxHash}
+  | CRNameRescan {user :: User, namesFound :: [(Text, Text)]}
+  | CRNameKeys {user :: User, walletKeys :: [(Int, [Text], Bool, Bool)]}
+  | CRNameKeyPhrases {user :: User, walletPhrases :: [(Int, Text, [Text])]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}

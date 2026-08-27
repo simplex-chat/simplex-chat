@@ -56,7 +56,8 @@ CREATE TABLE users(
   client_service INTEGER NOT NULL DEFAULT 0,
   wallet_seed_id INTEGER REFERENCES wallet_seeds ON DELETE RESTRICT,
   wallet_account_index INTEGER,
-  wallet_next_name_index INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  wallet_next_name_index INTEGER NOT NULL DEFAULT 0,
+  wallet_current_seed_id INTEGER REFERENCES wallet_seeds ON DELETE RESTRICT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -856,6 +857,7 @@ CREATE TABLE wallet_seeds(
   -- table is empty while accounts 0..N already hold names on chain, so a new
   -- profile would silently reuse a recovered account's keys.
 next_account_index INTEGER NOT NULL DEFAULT 0
+, backed_up INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE wallet_name_keys(
   wallet_name_key_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -863,6 +865,8 @@ CREATE TABLE wallet_name_keys(
   derivation_path TEXT NOT NULL, -- "m/44'/60'/0'/0/1", or "m" for a root key
 name TEXT NOT NULL,
 created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  provenance TEXT NOT NULL DEFAULT 'derived',
+  priv_key BLOB,
   UNIQUE(wallet_seed_id, derivation_path),
   UNIQUE(wallet_seed_id, name)
 ) STRICT;
@@ -1404,6 +1408,7 @@ CREATE INDEX idx_users_wallet_seed_id ON users(wallet_seed_id);
 CREATE INDEX idx_wallet_name_keys_wallet_seed_id ON wallet_name_keys(
   wallet_seed_id
 );
+CREATE INDEX idx_users_wallet_current_seed_id ON users(wallet_current_seed_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

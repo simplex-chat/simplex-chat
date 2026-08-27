@@ -2,18 +2,25 @@
 
 ## Unreleased
 
-In-app name purchase MVP (in development, CLI only). Names themselves already
-ship - this is about acquiring one without leaving the app, which today needs a
-wallet, ETH and a browser:
-- Register a name for a contact address or channel from the terminal with
-  `/name register <service> <name> <simplex_link>`, via commit/reveal against the
-  badge service so the registrar cannot front-run the name.
-- The badge service gains the names commands and an in-memory chain mock; there
-  is no deployed contract and no payment.
-- Wallet: a BIP-39 seed is created on first registration and persisted, with one
-  BIP-44 account per chat profile, so a registered name stays owned by an address
-  the client can still derive after restart. No signing, so edits, transfers and
-  renewal are not possible yet.
+In-app name purchase (in development, CLI only). Names themselves already ship -
+this is about acquiring and managing one without leaving the app, which today
+needs a wallet, ETH and a browser:
+- Buy a name with a redemption code: `/name verify-code`, `/name quote`,
+  `/name buy`. Codes are RSA blind signatures (RFC 9474) verified on the device
+  against a pinned key, so the service is never asked whether a code is valid.
+- Point a name at an address with `/name link contact|channel`, a signed EIP-712
+  intent the service relays. Each name gets 10 relayed edits, counted by the
+  service - metering is off chain.
+- See what you own with `/names` and `/name info`, and find names your keys
+  already hold with `/name rescan`.
+- Recovery keys: `/name keys`, `keys export` (every key, not just the one in
+  use), `keys import` (adds, never replaces), `keys init`, `keys use <n>`.
+- Wallet: one key per name at `m/44'/60'/<profile>'/0/<name>` - ordinary BIP-44,
+  so importing the phrase into another wallet reaches the same addresses.
+- The badge service gains the registrar commands, a readable chain mock with real
+  minimum commitment age, a spent-code ledger and signature/nonce checks. There
+  is still no deployed contract and no store payment.
+- Transfers, subnames and renewal are not implemented.
 - Design: docs/rfcs/2026-08-18-in-app-name-purchase-mvp.md
 
 ## v6.5

@@ -31,6 +31,7 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
+import Data.Word (Word32)
 import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
@@ -194,6 +195,67 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     ttyUser u $ case addrs of
       [] -> ["no name addresses yet - one is created for each name you register"]
       as -> "name addresses:" : map (\(nm, addr, path) -> plain $ "  " <> nm <> " -> " <> addr <> "  " <> path) as
+  CRNameQuote u label avail reserved cents years ->
+    ttyUser u
+      [ plain $
+          label <> ".simplex - "
+            <> if reserved
+              then "reserved - held for its trademark owner. Contact us if that is you."
+              else
+                if avail
+                  then "available (" <> usd cents <> " for " <> tshow years <> "y)"
+                  else "taken"
+      ]
+  CRNameCode u minLen years expires label ->
+    ttyUser u
+      [ plain $ "code verified: " <> label,
+        plain $ "  names of " <> tshow minLen <> " letters or more, " <> tshow years <> " years",
+        plain $ "  use before " <> tshow expires <> " - a code cannot be replaced"
+      ]
+  CRNames u rows ->
+    ttyUser u $ case rows of
+      [] -> ["no names yet - buy one with /name buy <label> <code>"]
+      _ -> map (\(n, points, expiry, edits) -> plain $ "  " <> n <> " -> " <> points <> "  expires " <> tshow expiry <> ", " <> tshow edits <> " edits left") rows
+  CRNameInfo u n owner path contact channel expiry edits ->
+    ttyUser u $
+      [ plain $ n,
+        plain $ "  owner   " <> owner,
+        plain $ "  path    " <> path
+      ]
+        <> map (\c -> plain $ "  contact " <> c) contact
+        <> map (\c -> plain $ "  channel " <> c) channel
+        <> [ plain $ "  expires " <> tshow expiry,
+             plain $ "  " <> tshow edits <> " of 10 relayed edits left"
+           ]
+  CRNameLinkSet u n record txHash ->
+    ttyUser u [plain $ n <> ": " <> record <> " updated (tx " <> safeDecodeUtf8 (strEncode txHash) <> ")"]
+  CRNameRescan u found ->
+    ttyUser u $ case found of
+      [] -> ["no names found for the keys on this device"]
+      _ -> "found:" : map (\(n, path) -> plain $ "  " <> n <> "  " <> path) found
+  CRNameKeys u rows ->
+    ttyUser u $ case rows of
+      [] -> ["no recovery keys yet - one is created when you buy a name"]
+      _ ->
+        map
+          ( \(i, ns, cur, backed) ->
+              plain $
+                tshow i <> ": " <> (if null ns then "no names yet" else T.intercalate ", " ns)
+                  <> (if cur then "  (in use)" else "")
+                  <> (if backed then "" else "  (not written down)")
+          )
+          rows
+  -- Every key, so that "I wrote down the phrase" cannot mean only one of them.
+  CRNameKeyPhrases u rows ->
+    ttyUser u $
+      "write these down - anyone who knows them can take the names they control:"
+        : concatMap
+          ( \(i, phrase, ns) ->
+              [ plain $ tshow i <> ": " <> (if null ns then "no names yet" else T.intercalate ", " ns),
+                plain $ "   " <> phrase
+              ]
+          )
+          rows
   CRNameRegistered u nm owner path expiry txHash ->
     ttyUser u
       [ plain $ "name registered: " <> nm <> " -> " <> owner <> " (expires " <> tshow expiry <> ", tx " <> safeDecodeUtf8 (strEncode txHash) <> ")",
@@ -2918,6 +2980,10 @@ viewConnectionEntityInactive :: ConnectionEntity -> Bool -> [StyledString]
 viewConnectionEntityInactive entity inactive
   | inactive = ["[" <> connEntityLabel entity <> "] connection is marked as inactive"]
   | otherwise = ["[" <> connEntityLabel entity <> "] inactive connection is marked as active"]
+
+-- | Cents as dollars, for a price the CLI shows but does not charge.
+usd :: Word32 -> Text
+usd c = "$" <> tshow (c `div` 100) <> "." <> T.justifyRight 2 '0' (tshow (c `mod` 100))
 
 viewJSON :: J.ToJSON a => a -> StyledString
 viewJSON = plain . LB.toStrict . J.encode

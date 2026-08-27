@@ -16,6 +16,12 @@ module Simplex.Chat.Store.Wallets
     takeNameIndex,
     recordNameKey,
     getNameKeys,
+    listSeeds,
+    createSeed,
+    setCurrentSeed,
+    currentSeed,
+    markBackedUp,
+    seedOfName,
   )
 where
 
@@ -161,3 +167,52 @@ getNameKeys db (SeedId sId) =
     db
     "SELECT name, derivation_path FROM wallet_name_keys WHERE wallet_seed_id = ? ORDER BY wallet_name_key_id"
     (Only sId)
+
+
+-- | Every seed on this device, oldest first. The UI numbers them from 1.
+listSeeds :: DB.Connection -> IO [(WalletSeed, Bool)]
+listSeeds db =
+  map (\(sId, seed, b) -> (toSeed (sId, seed), (b :: Int64) /= 0))
+    <$> DB.query_ db "SELECT wallet_seed_id, seed, backed_up FROM wallet_seeds ORDER BY wallet_seed_id"
+
+-- | Add a seed. Importing never replaces: a device that already holds one and
+-- imports a recovery key ends up with both, or the imported names become
+-- underivable.
+createSeed :: DB.Connection -> ByteString -> IO WalletSeed
+createSeed = createWalletSeed
+
+markBackedUp :: DB.Connection -> SeedId -> IO ()
+markBackedUp db (SeedId sId) =
+  DB.execute db "UPDATE wallet_seeds SET backed_up = 1 WHERE wallet_seed_id = ?" (Only sId)
+
+setCurrentSeed :: DB.Connection -> User -> SeedId -> IO ()
+setCurrentSeed db User {userId} (SeedId sId) =
+  DB.execute db "UPDATE users SET wallet_current_seed_id = ? WHERE user_id = ?" (sId, userId)
+
+-- | Which seed a purchase goes under.
+--
+-- With one seed there is nothing to choose and it is used. With several and
+-- none selected this returns Nothing, and the caller refuses with the list
+-- rather than guessing — selection is a stored pointer, like the active user,
+-- never a prompt.
+currentSeed :: DB.Connection -> User -> IO (Maybe WalletSeed)
+currentSeed db User {userId} = do
+  sel <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT wallet_current_seed_id FROM users WHERE user_id = ?" (Only userId)
+  case sel of
+    Just (Just sId) -> getWalletSeed db (SeedId (sId :: Int64))
+    _ ->
+      listSeeds db >>= \case
+        [(s, _)] -> pure (Just s)
+        _ -> pure Nothing
+
+-- | The seed that owns a name, and the path its key sits at.
+seedOfName :: DB.Connection -> Text -> IO (Maybe (WalletSeed, Text))
+seedOfName db name = do
+  r <-
+    maybeFirstRow id $
+      DB.query db "SELECT wallet_seed_id, derivation_path FROM wallet_name_keys WHERE name = ?" (Only name)
+  case r of
+    Nothing -> pure Nothing
+    Just (sId, path) -> fmap (\s -> (s, path)) <$> getWalletSeed db (SeedId (sId :: Int64))

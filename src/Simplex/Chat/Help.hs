@@ -223,21 +223,35 @@ namesHelpInfo :: [StyledString]
 namesHelpInfo =
   map
     styleMarkdown
-    [ green "SimpleX name commands:",
-      indent <> highlight "/name register <service> <name> <simplex_link>",
-      indent <> indent <> " - register a name for your address or channel",
-      indent <> highlight "/name address" <> " - show the address that owns the names you register",
+    [ green "Buying a name:",
+      indent <> highlight "/name verify-code <code>" <> " - check a redemption code before using it",
+      indent <> highlight "/name quote <service> <label>" <> " - is it available, and what does it cost",
+      indent <> highlight "/name buy <service> <label> <code> [link]" <> " - register it",
       "",
-      green "Arguments:",
-      indent <> highlight "<service>     " <> " - address of the names service to register with",
-      indent <> highlight "<name>        " <> " - the name to register, e.g. " <> highlight "alice.simplex",
-      indent <> highlight "<simplex_link>" <> " - the contact address or channel the name should resolve to",
+      green "Using what you own:",
+      indent <> highlight "/names <service>" <> " - the names you own",
+      indent <> highlight "/name info <service> <name>" <> " - owner, key path, links, edits left",
+      indent <> highlight "/name link contact <service> <name> <link>",
+      indent <> highlight "/name link channel <service> <name> <link>",
+      indent <> indent <> " - point a name at an address; each is a separate record",
       "",
-      "Registration takes a few seconds: the name is committed first, and revealed",
-      "after a short wait, so the service cannot register it before you do.",
+      green "Your recovery keys:",
+      indent <> highlight "/name keys" <> " - the keys on this device, by the names they control",
+      indent <> highlight "/name keys export" <> " - every key's phrase, not just the one in use",
+      indent <> highlight "/name keys import <phrase>" <> " - add a key; never replaces one",
+      indent <> highlight "/name keys init" <> " - optional: create one before buying",
+      indent <> highlight "/name keys use <n>" <> " - which key the next purchase goes under",
+      indent <> highlight "/name rescan <service> [more]" <> " - find names your keys already own",
       "",
-      "Please note: this is in development. The name is registered against a mock,",
-      "not a blockchain, and it cannot yet be edited, transferred or renewed."
+      "A name has its own key, at " <> highlight "m/44'/60'/<profile>'/0/<name>" <> ". That is",
+      "ordinary BIP-44, so importing the phrase into another wallet reaches the",
+      "same addresses, and exporting one name never exposes the others.",
+      "",
+      "Anyone who knows a recovery phrase can point the names it owns at their own",
+      "address and be found under them. The risk is theft, not loss.",
+      "",
+      "Please note: this is in development. Names are registered against a mock,",
+      "not a blockchain, and transfers, subnames and renewal are not implemented."
     ]
 
 incognitoHelpInfo :: [StyledString]
