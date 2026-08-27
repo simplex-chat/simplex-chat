@@ -128,7 +128,13 @@ A badge that never expires is a separate question, and deferred — the ledger h
 
 **First, independent:** divert the apps' purchase path (§1).
 
-**A — core.** Migration registered with `STRICT` and both dumps regenerated; code format in the shared library; `redeemBadgeCode` types, JSON, schema, docs and client command; service store, signing, dispatcher and redeem handler; a minimal mint command. *Done when* a minted code redeemed from the terminal puts a badge on the profile and contacts see it.
+**A — core, redeemable from the CLI.** Migration registered with `STRICT` and both dumps regenerated; code format in the shared library; `redeemBadgeCode` types, JSON, schema and docs; service store, signing, dispatcher and redeem handler; a minimal mint command.
+
+`APIRedeemBadgeCode` lands here **with its `chatCommandP` parser and `View.hs` rendering**, so a code can be redeemed from the terminal with no app involved. That is what proves the round trip — RPC delivery, signing, credential verification, the profile update — before any UI exists to confuse the picture, and it stays the fastest way to reproduce a redemption afterwards.
+
+Tests land here too, not later: `tests/Bots/BadgeServiceTests.hs` already starts the service in-process and hands a chat client its address, so a mint-then-redeem case is an extension of the existing harness rather than new scaffolding. Cover the code redeeming into a badge, and an unknown code answering `code_invalid`. That spec sits under `xdescribe''`, which skips when `CI` is set — so it must be run locally; CI green is not evidence for it.
+
+*Done when* a code minted by that command and redeemed from the terminal puts a badge on the profile and contacts see it, and those tests pass locally.
 
 **B — apps.** Support screen with its two actions, redeem screen, badge-state screen, copy. Both platforms in step. *Done when* the same works by pasting a code into the app.
 
