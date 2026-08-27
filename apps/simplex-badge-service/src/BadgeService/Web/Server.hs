@@ -36,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Network.HTTP.Types (Header, ResponseHeaders, Status, hCacheControl, hContentType, internalServerError500, methodNotAllowed405, notFound404, ok200)
-import Network.Wai (Application, Response, pathInfo, requestMethod, responseLBS)
+import Network.Wai (Application, Response, mapResponseHeaders, pathInfo, requestMethod, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Util (tshow)
 
@@ -97,12 +97,19 @@ runWebServer ws@WebServer {wsConfig = WebConfig {webPort, webHost, webDir}} = do
     settings =
       Warp.setPort webPort
         . Warp.setHost (fromString $ T.unpack webHost)
-        -- Warp's default 500 is its own bare page, with none of the security headers on it, and
-        -- an uncaught exception is exactly the response an attacker can most easily provoke.
-        -- Every exception surface later steps add -- D6's request decoding, E3's and F2's
-        -- webhooks -- lands on this same listener, and 'withServiceTransaction' already lets a
-        -- database exception through ('serveCatalog'), so this is not hypothetical.
-        . Warp.setOnExceptionResponse (const internalErrorResponse)
+        -- Warp's default exception response is its own bare page, with none of the security
+        -- headers on it, and an uncaught exception is exactly the response an attacker can most
+        -- easily provoke. Every exception surface later steps add -- D6's request decoding, E3's
+        -- and F2's webhooks -- lands on this same listener, and 'withServiceTransaction' already
+        -- lets a database exception through ('serveCatalog'), so this is not hypothetical.
+        --
+        -- The headers are added TO Warp's own response rather than replacing it: this handler
+        -- also answers requests that never reached the application, and
+        -- 'defaultOnExceptionResponse' is what decides that an unparsable request is 400 and an
+        -- oversized header block is 431, not 500. Collapsing those to 500 would answer a
+        -- malformed request with "try again" -- and a provider retries a 5xx webhook, so a
+        -- malformed E3/F2 callback would be retried for ever instead of rejected once.
+        . Warp.setOnExceptionResponse (mapResponseHeaders (securityHeaders <>) . Warp.defaultOnExceptionResponse)
         -- ... and replacing the response would otherwise also silence Warp's own default
         -- logging of it. 'defaultShouldDisplayException' keeps client disconnects quiet, which
         -- is the reason Warp's default is not simply "log everything".

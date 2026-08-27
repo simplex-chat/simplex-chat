@@ -3794,12 +3794,14 @@ newWebManager :: IO HTTP.Manager
 newWebManager = HTTP.newManager HTTP.defaultManagerSettings
 
 -- 'HTTP.parseRequest' (unlike 'parseUrlThrow') installs no status check, so a 404 comes back as
--- a response to assert on rather than as an exception. The path is sent as written, which is what
--- lets the traversal cases below reach the server percent-encoded.
-webGet :: HTTP.Manager -> String -> IO WebResponse
-webGet mgr url = do
+-- a response to assert on rather than as an exception. The request is sent as written -- the path
+-- is not re-encoded, which is what lets the traversal cases below reach the server
+-- percent-encoded, and the headers are not policed, which is what lets the malformed-request case
+-- reach it at all.
+webRequestWith :: (HTTP.Request -> HTTP.Request) -> HTTP.Manager -> String -> IO WebResponse
+webRequestWith f mgr url = do
   req <- HTTP.parseRequest url
-  r <- HTTP.httpLbs req mgr
+  r <- HTTP.httpLbs (f req) mgr
   pure
     WebResponse
       { wrStatus = statusCode (HTTP.responseStatus r),
@@ -3807,17 +3809,12 @@ webGet mgr url = do
         wrBody = LBC.unpack (HTTP.responseBody r)
       }
 
--- The same with a method of the caller's choosing, for the per-route method assertions.
+webGet :: HTTP.Manager -> String -> IO WebResponse
+webGet = webRequestWith id
+
+-- With a method of the caller's choosing, for the per-route method assertions.
 webRequest :: BC.ByteString -> HTTP.Manager -> String -> IO WebResponse
-webRequest method mgr url = do
-  req <- HTTP.parseRequest url
-  r <- HTTP.httpLbs req {HTTP.method = method} mgr
-  pure
-    WebResponse
-      { wrStatus = statusCode (HTTP.responseStatus r),
-        wrHeaders = HTTP.responseHeaders r,
-        wrBody = LBC.unpack (HTTP.responseBody r)
-      }
+webRequest method = webRequestWith $ \req -> req {HTTP.method = method}
 
 webHeader :: WebResponse -> BC.ByteString -> String
 webHeader r name = maybe "" BC.unpack $ lookup (CI.mk name) (wrHeaders r)
@@ -3955,6 +3952,14 @@ testBadgeServiceWebSecurityHeadersEverywhere ps =
     -- HEAD is allowed on every route GET is
     headIndex <- webRequest "HEAD" mgr webUrl
     wrStatus headIndex `shouldBe` 200
+    -- A request Warp rejects before the application ever sees it: an oversized header block. Both
+    -- halves are asserted, and the headers first, because they can regress independently --
+    -- hardening this response by REPLACING Warp's own throws away the status it chose, and a
+    -- listener that answers 500 to a malformed request tells every client, and every provider
+    -- retrying a 5xx webhook (E3, F2), to send it again.
+    malformed <- webRequestWith (\req -> req {HTTP.requestHeaders = [("X-Overlong", BC.replicate 80000 'a')]}) mgr webUrl
+    assertSecurityHeaders "malformed request" malformed
+    wrStatus malformed `shouldBe` 400
 
 -- /api/catalog answers from the DATABASE through catalogTotals, never from Catalog.hs's
 -- defaults: the fixture disables one seeded price and deprecates the other, so the default
