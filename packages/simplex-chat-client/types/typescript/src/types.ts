@@ -692,6 +692,7 @@ export interface CIFile {
   fileSource?: CryptoFile
   fileStatus: CIFileStatus
   fileProtocol: FileProtocol
+  fileExpires?: string // ISO-8601 timestamp
 }
 
 export type CIFileStatus = 
