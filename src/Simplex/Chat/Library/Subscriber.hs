@@ -41,7 +41,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
@@ -207,7 +207,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
             lookupChatItemByFileId db cxt user fileId
           toView $ CEvtSndFileProgressXFTP user ci ft sndProgress sndTotal
         SFDONE sndDescr rfds granted -> do
-          let fileExpires = (\GSTExpires {epochSeconds} -> posixSecondsToUTCTime $ fromIntegral epochSeconds) <$> granted
+          let fileExpires = (\GSTExpires {epochSeconds} -> systemToUTCTime $ MkSystemTime epochSeconds 0) <$> granted
           withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr) fileExpires
           ci <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
           case ci of
