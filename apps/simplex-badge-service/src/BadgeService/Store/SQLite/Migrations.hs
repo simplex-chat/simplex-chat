@@ -42,7 +42,7 @@ CREATE TABLE @badge_codes(
   redeemed_at TEXT,
   created_at TEXT NOT NULL,
   UNIQUE(code_hash)
-);
+) STRICT;
 
 ALTER TABLE @badge_purchases ADD COLUMN badge_code_id INTEGER REFERENCES @badge_codes;
 
@@ -54,7 +54,11 @@ CREATE TABLE @badge_code_invoices(
   offer_id TEXT REFERENCES @badge_offers,
   months INTEGER NOT NULL,
   created_at TEXT NOT NULL
-);
+) STRICT;
+
+CREATE INDEX @idx_badge_code_invoices_offer ON @badge_code_invoices(offer_id);
+
+CREATE INDEX @idx_badge_code_invoices_price ON @badge_code_invoices(price_id);
 |]
 
 down_m20260806_badge_service_schema :: Query
@@ -62,6 +66,8 @@ down_m20260806_badge_service_schema =
   withPrefix
     servicePrefix
     [sql|
+DROP INDEX @idx_badge_code_invoices_offer;
+DROP INDEX @idx_badge_code_invoices_price;
 DROP TABLE @badge_code_invoices;
 
 DROP INDEX @idx_badge_purchases_code;

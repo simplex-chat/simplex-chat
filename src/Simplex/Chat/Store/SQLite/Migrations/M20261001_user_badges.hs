@@ -37,7 +37,7 @@ CREATE TABLE @invoices(
   status TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
-);
+) STRICT;
 
 CREATE TABLE @payments(
   payment_id TEXT NOT NULL PRIMARY KEY,
@@ -53,7 +53,7 @@ CREATE TABLE @payments(
   cancelled INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
-);
+) STRICT;
 
 CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
 
@@ -69,7 +69,7 @@ CREATE TABLE @subscription_charges(
   currency TEXT NOT NULL,
   charged_at TEXT NOT NULL,
   UNIQUE(payment_id, provider_charge_ref)
-);
+) STRICT;
 
 CREATE TABLE @badge_prices(
   price_id TEXT NOT NULL PRIMARY KEY,
@@ -78,7 +78,7 @@ CREATE TABLE @badge_prices(
   currency TEXT NOT NULL,
   status TEXT NOT NULL,
   created_at TEXT NOT NULL
-);
+) STRICT;
 
 CREATE TABLE @badge_offers(
   offer_id TEXT NOT NULL PRIMARY KEY,
@@ -88,7 +88,9 @@ CREATE TABLE @badge_offers(
   discount INTEGER,
   status TEXT NOT NULL,
   created_at TEXT NOT NULL
-);
+) STRICT;
+
+CREATE INDEX @idx_badge_offers_price ON @badge_offers(price_id);
 
 CREATE TABLE @badge_purchases(
   badge_purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,7 +104,7 @@ CREATE TABLE @badge_purchases(
   updated_at TEXT NOT NULL,
   UNIQUE(purchase_key),
   UNIQUE(payment_id)
-);
+) STRICT;
 
 CREATE TABLE @badge_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
@@ -111,9 +113,13 @@ CREATE TABLE @badge_invoices(
   offer_id TEXT REFERENCES @badge_offers,
   months INTEGER NOT NULL,
   created_at TEXT NOT NULL
-);
+) STRICT;
 
 CREATE INDEX @idx_badge_invoices_purchase ON @badge_invoices(badge_purchase_id);
+
+CREATE INDEX @idx_badge_invoices_offer ON @badge_invoices(offer_id);
+
+CREATE INDEX @idx_badge_invoices_price ON @badge_invoices(price_id);
 
 CREATE TABLE @badge_subscription_changes(
   change_id TEXT NOT NULL PRIMARY KEY,
@@ -127,7 +133,7 @@ CREATE TABLE @badge_subscription_changes(
   effective_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
-);
+) STRICT;
 
 CREATE INDEX @idx_badge_subscription_changes_purchase ON @badge_subscription_changes(badge_purchase_id);
 
@@ -149,7 +155,7 @@ CREATE TABLE @badge_ledger(
   charge_id TEXT REFERENCES @subscription_charges,
   from_purchase_id INTEGER REFERENCES @badge_purchases,
   to_purchase_id INTEGER REFERENCES @badge_purchases
-);
+) STRICT;
 
 CREATE UNIQUE INDEX @idx_badge_ledger_uuid ON @badge_ledger(entry_uuid);
 
@@ -173,15 +179,18 @@ CREATE TABLE @badge_issuances(
   expiry TEXT NOT NULL,
   credential BLOB NOT NULL,
   created_at TEXT NOT NULL
-);
+) STRICT;
 
 CREATE INDEX @idx_badge_issuances_purchase ON @badge_issuances(badge_purchase_id, issuance_id);
+
+CREATE INDEX @idx_badge_issuances_entry ON @badge_issuances(entry_id);
 |]
 
 badgeSchemaTablesDown :: Query
 badgeSchemaTablesDown =
   [sql|
 DROP INDEX @idx_badge_issuances_purchase;
+DROP INDEX @idx_badge_issuances_entry;
 DROP TABLE @badge_issuances;
 DROP INDEX @idx_badge_ledger_uuid;
 DROP INDEX @idx_badge_ledger_purchase;
@@ -193,6 +202,8 @@ DROP TABLE @badge_ledger;
 DROP INDEX @idx_badge_subscription_changes_purchase;
 DROP TABLE @badge_subscription_changes;
 DROP INDEX @idx_badge_invoices_purchase;
+DROP INDEX @idx_badge_invoices_offer;
+DROP INDEX @idx_badge_invoices_price;
 DROP TABLE @badge_invoices;
 DROP TABLE @badge_purchases;
 DROP TABLE @subscription_charges;
@@ -200,6 +211,7 @@ DROP INDEX @idx_payments_provider_ref;
 DROP INDEX @idx_payments_invoice;
 DROP TABLE @payments;
 DROP TABLE @invoices;
+DROP INDEX @idx_badge_offers_price;
 DROP TABLE @badge_offers;
 DROP TABLE @badge_prices;
 |]
@@ -230,6 +242,8 @@ CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 
 ALTER TABLE users ADD COLUMN shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL;
 
+CREATE INDEX idx_users_shown_badge ON users(shown_badge_id);
+
 CREATE TABLE badge_code_redemptions(
   badge_code_redemption_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -239,7 +253,7 @@ CREATE TABLE badge_code_redemptions(
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
   UNIQUE(code)
-);
+) STRICT;
 
 CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(user_id);
 
@@ -253,6 +267,7 @@ down_m20261001_user_badges =
   [sql|
 DROP INDEX idx_badge_purchases_code_redemption;
 DROP INDEX idx_badge_purchases_user;
+DROP INDEX idx_users_shown_badge;
 ALTER TABLE users DROP COLUMN shown_badge_id;
 |]
     <> badgeSchemaDown ""
