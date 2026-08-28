@@ -43,7 +43,32 @@ In `Simplex.Chat.Library.Subscriber`, `XMsgFileDescr` handling (direct and group
 
 ## Apps
 
-- show "File can be received until …" from `fileExpires`, for the sender and the recipients
-- past `fileExpires`, keep the plain X; a tap still attempts the download
-- a download that finds no file shows an "expired" alert, not "no such file", for XFTP files
-- prompt a badge for longer storage where it fits: the short default window, and failed downloads
+Received files show the expiry; sent files are unchanged, they keep the checkmark. A tap still attempts the download: the receive actions, the download overlays, and the "Download file" menu item stay as they are.
+
+Model:
+
+- `CIFile` gets `fileExpires` — `Date?` in `SimpleXChat/ChatTypes.swift`, `Instant?` in `model/ChatModel.kt`
+- `CIFile` gets `expired`, beside `loaded`: `fileExpires` is set and has passed
+
+Message information, in `ChatItemInfoView`, a row after "Disappears at":
+
+- "File can be received until <time>", or "File was available until <time>" when expired
+
+File indicator, the `rcvInvitation` icon in each view — `CIFileView`, `CIImageView`, `CIVideoView`, `CIVoiceView` on both platforms:
+
+- when expired, show the X that view already uses for `rcvError`, in place of the download arrow (`play.fill` for voice)
+- `showStatusIconInSmallView` returns `expired` for `rcvInvitation`, so a small view shows the X too
+
+Alert, in `showFileErrorAlert`:
+
+- the function takes the expiry
+- when the file expired and the error is `auth` or `noFile`, the alert reads "File expired" / "File was available until <time>", in place of "Wrong key or unknown file chunk address…" and "File not found…"
+
+Strings:
+
+- `strings.xml`: `info_row_file_expires`, `info_row_file_expired`, `file_expired`, `file_error_expired`
+- iOS takes the literals in the source, `en.lproj/Localizable.strings` holds overrides only
+
+Left out: promotion of badges for longer storage, and for the file size limit in the two "Large file!" alerts. The apps have no badge screen; the only badge link is "Learn more" in `showBadgeInfoAlert`.
+
+An expired file that also exceeds the size limit for the sender's badge keeps the size behaviour: the icon stays the size warning, and the tap reports the size limit. The expiry applies only to files within the limit.

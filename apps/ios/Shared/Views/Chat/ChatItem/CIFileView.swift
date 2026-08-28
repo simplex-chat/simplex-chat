@@ -126,7 +126,7 @@ struct CIFileView: View {
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
-                showFileErrorAlert(rcvFileError)
+                showFileErrorAlert(rcvFileError, file)
             case let .rcvWarning(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvWarning")
                 showFileErrorAlert(rcvFileError, temporary: true)
@@ -171,10 +171,12 @@ struct CIFileView: View {
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .sndWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .rcvInvitation:
-                if fileSizeValid(file, senderProfile) {
-                    fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
-                } else {
+                if !fileSizeValid(file, senderProfile) {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
+                } else if file.expired {
+                    fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
+                } else {
+                    fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
                 }
             case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
             case let .rcvTransfer(rcvProgress, rcvTotal):
@@ -264,7 +266,14 @@ func saveCryptoFile(_ fileSource: CryptoFile) {
     }
 }
 
-func showFileErrorAlert(_ err: FileError, temporary: Bool = false) {
+func showFileErrorAlert(_ err: FileError, _ file: CIFile? = nil, temporary: Bool = false) {
+    if let file, file.expired, let fileExpires = file.fileExpires, err == .auth || err == .noFile {
+        showAlert(
+            NSLocalizedString("File expired", comment: "file error alert title"),
+            message: String.localizedStringWithFormat(NSLocalizedString("File was available until %@.", comment: "file error text"), localTimestamp(fileExpires))
+        )
+        return
+    }
     let title: String = if temporary {
         NSLocalizedString("Temporary file error", comment: "file error alert title")
     } else {
