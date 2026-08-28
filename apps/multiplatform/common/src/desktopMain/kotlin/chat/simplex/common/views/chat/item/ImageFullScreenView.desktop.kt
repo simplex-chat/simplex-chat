@@ -43,7 +43,7 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
 }
 
 @Composable
-fun BoxScope.SurfaceFromPlayer(player: VideoPlayer, modifier: Modifier) {
+fun BoxScope.SurfaceFromPlayer(player: VideoPlayer, modifier: Modifier, contentScale: ContentScale = ContentScale.Fit) {
   val surface = remember {
     SkiaBitmapVideoSurface().also {
       player.player.videoSurface().set(it)
@@ -54,7 +54,7 @@ fun BoxScope.SurfaceFromPlayer(player: VideoPlayer, modifier: Modifier) {
       bitmap,
       modifier = modifier.align(Alignment.Center),
       contentDescription = null,
-      contentScale = ContentScale.Fit,
+      contentScale = contentScale,
       alignment = Alignment.Center,
     )
   }
