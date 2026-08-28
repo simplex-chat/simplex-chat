@@ -23,7 +23,6 @@ module Simplex.Chat.Badges.Types
   ) where
 
 import qualified Data.Aeson as J
-import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
