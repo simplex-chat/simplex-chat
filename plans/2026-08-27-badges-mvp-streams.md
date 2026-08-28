@@ -61,12 +61,13 @@ The tables, in layers:
 - **money** — `invoices` (an amount owed), `payments` (an amount paid), `subscription_charges`. Generic: they carry no idea what was bought.
 - **catalog** — `badge_prices` (tier → price per month), `badge_offers` (duration discounts).
 - **what an invoice bought** — `badge_invoices` for a purchase, `badge_code_invoices` for a voucher. Same shape, except the second names no purchase: at the time of sale none exists, and the buyer may never be the redeemer.
-- **the badge** — `badge_purchases` is the anchor: keys, tier, status, funded by either `payment_id` or `badge_code_id`. Its balance is `badge_ledger`, its credentials `badge_issuances`, and `users.shown_badge_id` names the one on show.
-- **the voucher** — `badge_codes`. Consumed into a purchase; never a badge itself. The client has a copy for one reason: it holds the keys a redemption is signed with, so a retry can be the same signer (§4.3).
+- **the badge** — `badge_purchases` is the anchor: keys, tier, status, and what funded it — `payment_id` for an in-app purchase, or a code. The code column is added separately on each side, each pointing at its own code table. Its balance is `badge_ledger`, its credentials `badge_issuances`, and `users.shown_badge_id` names the one on show.
+- **the voucher** — `badge_codes`, service only: the hash, the tier and months it is worth, and `code_payment_status` — paid, unpaid or free — so a minted code is told from a sold one without joining invoices. Never a badge itself.
+- **the attempt** — `badge_code_redemptions`, client only. It holds the code in plaintext, because the client sends the code and not its hash, and the keys the redemption is signed with, so a retry can be the same signer (§4.3).
 
 The beta path: the site writes an invoice and what it bought, then a code. The app redeems that code, which creates the purchase and its first issuance — and, from milestone D, its ledger.
 
-New here are `badge_codes` (shared) and `badge_code_invoices` (service only); both are in the migration modules already. Every schema change touches four files — the shared block and the service migrations each exist twice, SQLite and Postgres, unlinked by the build.
+New here are `badge_code_redemptions` (client) and `badge_codes`, `badge_code_invoices` (service); all are in the migration modules already. Every schema change touches four files — the shared block, the client-only section and the service migrations each exist twice, SQLite and Postgres, unlinked by the build.
 
 ### 4.3 Retry is safe
 
@@ -75,17 +76,17 @@ A redemption is signed with a key the client generates for it. If that key is ge
 The fix is for a retry to be the **same** signer:
 
 - the service's replay keys on **(code hash, verified signer)**: the same code from the same key returns the credential it already issued and writes nothing
-- so the client writes the signing keys into its `badge_codes` row **before** sending, found by the code hash, and a retry reads them back
+- so the client writes the signing keys into a `badge_code_redemptions` row **before** sending, found by the code, and a retry reads them back
 
 That row is a stash for the in-flight attempt. Its fate depends on the outcome:
 
 | outcome | the row |
 |---|---|
-| success | kept, completed with the tier and months, and pointed at by the new purchase |
+| success | kept, and pointed at by the new purchase |
 | terminal error — `code_invalid`, `code_used`, `code_expired` | deleted: the code will never work, so the keys are dead |
 | timeout | **kept** — this is the case it exists for |
 
-The keys go on the code row because **code redemption cannot create its `badge_purchases` row up front.** That row's badge-type columns are `NOT NULL` and a code carries no tier, so there is nowhere to put them until the service answers. An in-app purchase has no such problem — the tier was picked on screen, so it creates its purchase in `acquiring` immediately.
+The keys need a row of their own because **code redemption cannot create its `badge_purchases` row up front.** That row's badge-type columns are `NOT NULL` and a code carries no tier, so there is nowhere to put them until the service answers. An in-app purchase has no such problem — the tier was picked on screen, so it creates its purchase in `acquiring` immediately.
 
 ### 4.4 Service
 
@@ -118,7 +119,7 @@ A profile shows one badge at a time and holds at most two: a paid one and an inv
 
 Compensation codes need no new mechanism: minted by the operator, random rather than derived, printed once, stored as hashes.
 
-Investor badges are not a special case: an operator mints a code of that tier and it is redeemed by the same path as any other. Nothing in the schema or the redemption flow distinguishes them.
+Investor badges are not a special case: an operator mints a code of that tier and it is redeemed by the same path as any other. `code_payment_status` records that it was minted rather than sold; the redemption path never reads it.
 
 A badge that never expires is a separate question, and deferred — the ledger holds a month count, so "forever" has no representation. Until it does, a long finite term serves: the count is a byte, so twenty years is expressible.
 

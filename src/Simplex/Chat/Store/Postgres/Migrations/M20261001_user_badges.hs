@@ -89,16 +89,6 @@ CREATE TABLE @badge_offers(
   created_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE @badge_codes(
-  badge_code_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  code_hash BYTEA NOT NULL,
-  badge_type TEXT,
-  months SMALLINT,
-  redeemed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL,
-  UNIQUE(code_hash)
-);
-
 CREATE TABLE @badge_purchases(
   badge_purchase_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   purchase_key BYTEA NOT NULL,
@@ -106,13 +96,11 @@ CREATE TABLE @badge_purchases(
   initial_badge_type TEXT NOT NULL,
   current_badge_type TEXT NOT NULL,
   payment_id TEXT REFERENCES @payments,
-  badge_code_id BIGINT REFERENCES @badge_codes,
   status TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   UNIQUE(purchase_key),
-  UNIQUE(payment_id),
-  UNIQUE(badge_code_id)
+  UNIQUE(payment_id)
 );
 
 CREATE TABLE @badge_invoices(
@@ -197,7 +185,6 @@ DROP TABLE @badge_ledger;
 DROP TABLE @badge_subscription_changes;
 DROP TABLE @badge_invoices;
 DROP TABLE @badge_purchases;
-DROP TABLE @badge_codes;
 DROP TABLE @subscription_charges;
 DROP TABLE @payments;
 DROP TABLE @invoices;
@@ -231,15 +218,22 @@ CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 
 ALTER TABLE users ADD COLUMN shown_badge_id BIGINT REFERENCES badge_purchases ON DELETE SET NULL;
 
-ALTER TABLE badge_codes ADD COLUMN user_id BIGINT REFERENCES users ON DELETE CASCADE;
+CREATE TABLE badge_code_redemptions(
+  badge_code_redemption_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  purchase_key BYTEA NOT NULL,
+  purchase_priv_key BYTEA NOT NULL,
+  master_key BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(code)
+);
 
-ALTER TABLE badge_codes ADD COLUMN purchase_key BYTEA;
+CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(user_id);
 
-ALTER TABLE badge_codes ADD COLUMN purchase_priv_key BYTEA;
+ALTER TABLE badge_purchases ADD COLUMN badge_code_redemption_id BIGINT REFERENCES badge_code_redemptions;
 
-ALTER TABLE badge_codes ADD COLUMN master_key BYTEA;
-
-CREATE INDEX idx_badge_codes_user ON badge_codes(user_id);
+CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(badge_code_redemption_id);
 |]
 
 down_m20261001_user_badges :: Text
@@ -248,3 +242,6 @@ down_m20261001_user_badges =
 ALTER TABLE users DROP COLUMN shown_badge_id;
 |]
     <> badgeSchemaDown ""
+    <> [r|
+DROP TABLE badge_code_redemptions;
+|]

@@ -9,6 +9,7 @@ module Simplex.Chat.Badges.Types
     BadgeItemStatus (..),
     OfferDiscount (..),
     BadgePurchaseStatus (..),
+    BadgeCodePaymentStatus (..),
     LedgerEntryType (..),
     LedgerCreditType (..),
     LedgerDebitType (..),
@@ -56,6 +57,10 @@ data OfferDiscount
 
 -- unconfirmed draft
 data BadgePurchaseStatus = PSAcquiring | PSIssued | PSSuperseded | PSFailed
+  deriving (Eq, Show)
+
+-- unconfirmed draft
+data BadgeCodePaymentStatus = CPSPaid | CPSUnpaid | CPSFree
   deriving (Eq, Show)
 
 -- confirmed

@@ -32,6 +32,21 @@ m20260806_badge_service_schema =
       [r|
 ALTER TABLE @payments ADD COLUMN receipt_hash BYTEA;
 
+CREATE TABLE @badge_codes(
+  badge_code_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code_hash BYTEA NOT NULL,
+  badge_type TEXT NOT NULL,
+  months SMALLINT NOT NULL,
+  code_payment_status TEXT NOT NULL,
+  redeemed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(code_hash)
+);
+
+ALTER TABLE @badge_purchases ADD COLUMN badge_code_id BIGINT REFERENCES @badge_codes;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_code ON @badge_purchases(badge_code_id);
+
 CREATE TABLE @badge_code_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
   price_id TEXT NOT NULL REFERENCES @badge_prices,
@@ -49,3 +64,8 @@ down_m20260806_badge_service_schema =
 DROP TABLE @badge_code_invoices;
 |]
     <> badgeSchemaDown servicePrefix
+    <> withPrefix
+      servicePrefix
+      [r|
+DROP TABLE @badge_codes;
+|]
