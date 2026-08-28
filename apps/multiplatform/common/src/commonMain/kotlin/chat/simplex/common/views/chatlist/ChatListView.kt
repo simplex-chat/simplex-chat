@@ -1037,15 +1037,13 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   } else {
     NavigationBarBackground(oneHandUI.value, true)
   }
-  // TEMP-DISABLED-FOR-BADGES-QA: auto-hide of ToggleChatListCard at 3+ chats blocks visual QA of
-  // the SupportSimpleXBanner alongside it. Restore before merging.
-  // if (!oneHandUICardShown.value) {
-  //   LaunchedEffect(chats.size) {
-  //     if (chats.size >= 3) {
-  //       appPrefs.oneHandUICardShown.set(true)
-  //     }
-  //   }
-  // }
+  if (!oneHandUICardShown.value) {
+    LaunchedEffect(chats.size) {
+      if (chats.size >= 3) {
+        appPrefs.oneHandUICardShown.set(true)
+      }
+    }
+  }
 
   LaunchedEffect(activeFilter.value) {
     searchText.value = TextFieldValue("")

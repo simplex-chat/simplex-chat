@@ -26,6 +26,5 @@ data ServicePayment
   = SPApple {jws :: Text}
   | SPGoogle {token :: Text}
   | SPInvoice {invoiceId :: InvoiceId}
-  | SPCode {code :: Text}
   | SPReceipt {receipt :: Text} -- transfer of unissued months
   deriving (Show)

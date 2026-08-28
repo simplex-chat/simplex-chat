@@ -9,6 +9,7 @@ module Simplex.Chat.Badges.Types
     BadgeItemStatus (..),
     OfferDiscount (..),
     BadgePurchaseStatus (..),
+    BadgeCodePaymentStatus (..),
     LedgerEntryType (..),
     LedgerCreditType (..),
     LedgerDebitType (..),
@@ -22,7 +23,6 @@ module Simplex.Chat.Badges.Types
   ) where
 
 import qualified Data.Aeson as J
-import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
@@ -56,6 +56,10 @@ data OfferDiscount
 
 -- unconfirmed draft
 data BadgePurchaseStatus = PSAcquiring | PSIssued | PSSuperseded | PSFailed
+  deriving (Eq, Show)
+
+-- unconfirmed draft
+data BadgeCodePaymentStatus = CPSPaid | CPSUnpaid | CPSFree
   deriving (Eq, Show)
 
 -- confirmed

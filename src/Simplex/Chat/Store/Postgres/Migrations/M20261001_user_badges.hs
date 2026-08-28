@@ -180,12 +180,23 @@ CREATE INDEX @idx_badge_issuances_purchase ON @badge_issuances(badge_purchase_id
 badgeSchemaTablesDown :: Text
 badgeSchemaTablesDown =
   [r|
+DROP INDEX @idx_badge_issuances_purchase;
 DROP TABLE @badge_issuances;
+DROP INDEX @idx_badge_ledger_uuid;
+DROP INDEX @idx_badge_ledger_purchase;
+DROP INDEX @idx_badge_ledger_payment;
+DROP INDEX @idx_badge_ledger_charge;
+DROP INDEX @idx_badge_ledger_from_purchase;
+DROP INDEX @idx_badge_ledger_to_purchase;
 DROP TABLE @badge_ledger;
+DROP INDEX @idx_badge_subscription_changes_purchase;
 DROP TABLE @badge_subscription_changes;
+DROP INDEX @idx_badge_invoices_purchase;
 DROP TABLE @badge_invoices;
 DROP TABLE @badge_purchases;
 DROP TABLE @subscription_charges;
+DROP INDEX @idx_payments_provider_ref;
+DROP INDEX @idx_payments_invoice;
 DROP TABLE @payments;
 DROP TABLE @invoices;
 DROP TABLE @badge_offers;
@@ -217,11 +228,34 @@ ALTER TABLE badge_ledger ADD COLUMN entry_type_value TEXT;
 CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 
 ALTER TABLE users ADD COLUMN shown_badge_id BIGINT REFERENCES badge_purchases ON DELETE SET NULL;
+
+CREATE TABLE badge_code_redemptions(
+  badge_code_redemption_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  purchase_key BYTEA NOT NULL,
+  purchase_priv_key BYTEA NOT NULL,
+  master_key BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(code)
+);
+
+CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(user_id);
+
+ALTER TABLE badge_purchases ADD COLUMN badge_code_redemption_id BIGINT REFERENCES badge_code_redemptions;
+
+CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(badge_code_redemption_id);
 |]
 
 down_m20261001_user_badges :: Text
 down_m20261001_user_badges =
   [r|
+DROP INDEX idx_badge_purchases_code_redemption;
+DROP INDEX idx_badge_purchases_user;
 ALTER TABLE users DROP COLUMN shown_badge_id;
 |]
     <> badgeSchemaDown ""
+    <> [r|
+DROP INDEX idx_badge_code_redemptions_user;
+DROP TABLE badge_code_redemptions;
+|]

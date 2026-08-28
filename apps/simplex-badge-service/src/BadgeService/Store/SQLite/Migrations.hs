@@ -32,7 +32,43 @@ m20260806_badge_service_schema =
       servicePrefix
       [sql|
 ALTER TABLE @payments ADD COLUMN receipt_hash BLOB;
+
+CREATE TABLE @badge_codes(
+  badge_code_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code_hash BLOB NOT NULL,
+  badge_type TEXT NOT NULL,
+  months INTEGER NOT NULL,
+  code_payment_status TEXT NOT NULL,
+  redeemed_at TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(code_hash)
+);
+
+ALTER TABLE @badge_purchases ADD COLUMN badge_code_id INTEGER REFERENCES @badge_codes;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_code ON @badge_purchases(badge_code_id);
+
+CREATE TABLE @badge_code_invoices(
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
+  price_id TEXT NOT NULL REFERENCES @badge_prices,
+  offer_id TEXT REFERENCES @badge_offers,
+  months INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
 |]
 
 down_m20260806_badge_service_schema :: Query
-down_m20260806_badge_service_schema = badgeSchemaDown servicePrefix
+down_m20260806_badge_service_schema =
+  withPrefix
+    servicePrefix
+    [sql|
+DROP TABLE @badge_code_invoices;
+
+DROP INDEX @idx_badge_purchases_code;
+|]
+    <> badgeSchemaDown servicePrefix
+    <> withPrefix
+      servicePrefix
+      [sql|
+DROP TABLE @badge_codes;
+|]

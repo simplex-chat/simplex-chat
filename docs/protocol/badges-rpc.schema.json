@@ -102,9 +102,6 @@
         "invoice": {
           "properties": {"invoiceId": {"type": "string"}}
         },
-        "code": {
-          "properties": {"code": {"type": "string"}}
-        },
         "receipt": {
           "properties": {
             "receipt": {
@@ -296,6 +293,12 @@
               "ref": "upgrade",
               "metadata": {"comment": "upgrade non-store badge"}
             }
+          }
+        },
+        "redeemBadgeCode": {
+          "properties": {
+            "masterKey": {"ref": "base64url"},
+            "code": {"type": "string"}
           }
         },
         "purchaseBadge": {
