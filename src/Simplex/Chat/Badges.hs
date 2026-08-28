@@ -26,8 +26,7 @@ module Simplex.Chat.Badges
     localBadgeInfo,
     localBadgeStatus,
     maxXFTPFileSize,
-    badgeEntitlementCredential,
-    localBadgeEntitlement,
+    badgeServerCredential,
     maxFileSizeSupporter,
     maxFileSizeLegend,
     ProofPresHeaderTag (..),
@@ -190,13 +189,10 @@ maxFileSizeSupporter = gb 2
 maxFileSizeLegend :: Int64
 maxFileSizeLegend = gb 5
 
-badgeEntitlementCredential :: BadgeCredential -> Maybe EntitlementCredential
-badgeEntitlementCredential (BadgeCredential idx (BadgeMasterKey mk) sig BadgeInfo {badgeType, badgeExpiry, badgeExtra}) =
-  (\e -> EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement (textEncode badgeType) e badgeExtra) sig) <$> badgeExpiry
-
-localBadgeEntitlement :: Maybe LocalBadge -> Maybe EntitlementCredential
-localBadgeEntitlement = \case
-  Just (OwnBadge cred _) -> badgeEntitlementCredential cred
+badgeServerCredential :: Maybe LocalBadge -> Maybe EntitlementCredential
+badgeServerCredential = \case
+  Just (OwnBadge (BadgeCredential idx (BadgeMasterKey mk) sig BadgeInfo {badgeType, badgeExpiry, badgeExtra}) _) ->
+    (\e -> EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement (textEncode badgeType) e badgeExtra) sig) <$> badgeExpiry
   _ -> Nothing
 
 maxXFTPFileSize :: Maybe LocalBadge -> Int64

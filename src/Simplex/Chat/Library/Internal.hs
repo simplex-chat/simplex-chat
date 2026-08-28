@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, localBadgeEntitlement, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, badgeServerCredential, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -441,7 +441,7 @@ xftpSndFileTransfer_ user@User {profile = LocalProfile {localBadge}} file@(Crypt
       fInv = xftpFileInvitation fileName fileSize dummyFileDescr
   fsFilePath <- lift $ toFSFilePath filePath
   let srcFile = CryptoFile fsFilePath cfArgs
-      credential = localBadgeEntitlement localBadge
+      credential = badgeServerCredential localBadge
   aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n) credential Nothing
   -- TODO CRSndFileStart event for XFTP
   chSize <- asks $ fileChunkSize . config

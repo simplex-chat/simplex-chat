@@ -20,7 +20,7 @@ module Simplex.Chat.Store.Files
     createSndFileTransferXFTP,
     createSndFTDescrXFTP,
     setSndFTPrivateSndDescr,
-    setFileExpires,
+    setFileExpiration,
     getSndFTPrivateSndDescr,
     updateSndFTDescrXFTP,
     createExtraSndFTDescrs,
@@ -204,21 +204,21 @@ createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fi
     "INSERT INTO snd_files (file_id, file_status, file_descr_id, group_member_id, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (fileId, fileStatus, fileDescrId, groupMemberId' <$> m, connId, currentTs, currentTs)
 
-setSndFTPrivateSndDescr :: DB.Connection -> User -> FileTransferId -> Text -> IO ()
-setSndFTPrivateSndDescr db User {userId} fileId sfdText = do
+setSndFTPrivateSndDescr :: DB.Connection -> User -> FileTransferId -> Text -> Maybe UTCTime -> IO ()
+setSndFTPrivateSndDescr db User {userId} fileId sfdText fileExpires = do
   currentTs <- getCurrentTime
   DB.execute
     db
-    "UPDATE files SET private_snd_file_descr = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-    (sfdText, currentTs, userId, fileId)
+    "UPDATE files SET private_snd_file_descr = ?, file_expires_at = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (sfdText, fileExpires, currentTs, userId, fileId)
 
-setFileExpires :: DB.Connection -> User -> FileTransferId -> UTCTime -> IO ()
-setFileExpires db User {userId} fileId expiresAt = do
+setFileExpiration :: DB.Connection -> User -> FileTransferId -> UTCTime -> IO ()
+setFileExpiration db User {userId} fileId fileExpires = do
   currentTs <- getCurrentTime
   DB.execute
     db
     "UPDATE files SET file_expires_at = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-    (expiresAt, currentTs, userId, fileId)
+    (fileExpires, currentTs, userId, fileId)
 
 getSndFTPrivateSndDescr :: DB.Connection -> User -> FileTransferId -> IO (Maybe Text)
 getSndFTPrivateSndDescr db User {userId} fileId =

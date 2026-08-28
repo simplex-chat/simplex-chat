@@ -206,11 +206,9 @@ processAgentMsgSndFile _corrId aFileId msg = do
             liftIO $ updateCIFileStatus db user fileId status
             lookupChatItemByFileId db cxt user fileId
           toView $ CEvtSndFileProgressXFTP user ci ft sndProgress sndTotal
-        SFDONE sndDescr rfds gExpires -> do
-          let fileExpires = grantedFileExpires <$> gExpires
-          withStore' $ \db -> do
-            setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
-            forM_ fileExpires $ setFileExpires db user fileId
+        SFDONE sndDescr rfds granted -> do
+          let fileExpires = (\GSTExpires {epochSeconds} -> posixSecondsToUTCTime $ fromIntegral epochSeconds) <$> granted
+          withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr) fileExpires
           ci <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
           case ci of
             Nothing -> do
@@ -280,8 +278,6 @@ processAgentMsgSndFile _corrId aFileId msg = do
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
-        grantedFileExpires :: GrantedStorageTime -> UTCTime
-        grantedFileExpires GSTExpires {epochSeconds} = posixSecondsToUTCTime (fromIntegral epochSeconds)
         sendFileDescriptions :: ConnOrGroupId -> NonEmpty (Connection, SndFileTransfer, RcvFileDescrText) -> SharedMsgId -> Maybe UTCTime -> CM (Maybe (NonEmpty (Either ChatError ([Int64], PQEncryption))))
         sendFileDescriptions connOrGroupId connsTransfersDescrs sharedMsgId fileExpires = do
           lift . void . withStoreBatch' $ \db -> L.map (\(_, sft, rfdText) -> updateSndFTDescrXFTP db user sft rfdText) connsTransfersDescrs
@@ -1917,8 +1913,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         fileId <- getFileIdBySharedMsgId db userId contactId sharedMsgId
         aci <- getChatItemByFileId db cxt user fileId
         pure (fileId, aci)
-      forM_ fileExpires $ \e -> withStore' $ \db -> setFileExpires db user fileId e
-      processFDMessage fileId aci fileDescr
+      processFDMessage fileId aci fileDescr fileExpires
 
     groupMessageFileDescription :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> FileDescr -> Maybe UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageFileDescription g@GroupInfo {groupId} m_ sharedMsgId fileDescr fileExpires = do
@@ -1926,24 +1921,24 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         aci <- getChatItemByFileId db cxt user fileId
         pure (fileId, aci)
-      forM_ fileExpires $ \e -> withStore' $ \db -> setFileExpires db user fileId e
       case aci of
         AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir}
           | validSender m_ chatDir -> do
               -- in processFDMessage some paths are programmed as errors,
               -- for example failure on not approved relays (CEFileNotApproved).
               -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-              processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
+              processFDMessage fileId aci fileDescr fileExpires `catchAllErrors` \_ -> pure ()
               pure $ Just $ infoToDeliveryContext g scopeInfo (isChannelDir chatDir)
           | otherwise -> messageError "x.msg.file.descr: file/sender mismatch" $> Nothing
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
 
-    processFDMessage :: FileTransferId -> AChatItem -> FileDescr -> CM ()
-    processFDMessage fileId aci fileDescr = do
+    processFDMessage :: FileTransferId -> AChatItem -> FileDescr -> Maybe UTCTime -> CM ()
+    processFDMessage fileId aci fileDescr fileExpires = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
         (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileInvitation = FileInvitation {fileSize}}) <- withStore $ \db -> do
           rfd <- appendRcvFD db userId fileId fileDescr
+          forM_ fileExpires $ liftIO . setFileExpiration db user fileId
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
           ft' <- getRcvFileTransfer db user fileId
