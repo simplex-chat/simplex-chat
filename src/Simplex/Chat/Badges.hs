@@ -26,6 +26,8 @@ module Simplex.Chat.Badges
     localBadgeInfo,
     localBadgeStatus,
     maxXFTPFileSize,
+    badgeEntitlementCredential,
+    localBadgeEntitlement,
     maxFileSizeSupporter,
     maxFileSizeLegend,
     ProofPresHeaderTag (..),
@@ -69,6 +71,7 @@ import Simplex.FileTransfer.Description (gb, maxFileSize)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
+import Simplex.Messaging.Crypto.Entitlement (Entitlement (Entitlement), EntitlementCredential (EntitlementCredential), MasterKey (MasterKey))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 #if defined(dbPostgres)
@@ -186,6 +189,15 @@ maxFileSizeSupporter = gb 2
 
 maxFileSizeLegend :: Int64
 maxFileSizeLegend = gb 5
+
+badgeEntitlementCredential :: BadgeCredential -> Maybe EntitlementCredential
+badgeEntitlementCredential (BadgeCredential idx (BadgeMasterKey mk) sig BadgeInfo {badgeType, badgeExpiry, badgeExtra}) =
+  (\e -> EntitlementCredential idx (MasterKey mk) sig (Entitlement (textEncode badgeType) e badgeExtra)) <$> badgeExpiry
+
+localBadgeEntitlement :: Maybe LocalBadge -> Maybe EntitlementCredential
+localBadgeEntitlement = \case
+  Just (OwnBadge cred _) -> badgeEntitlementCredential cred
+  _ -> Nothing
 
 maxXFTPFileSize :: Maybe LocalBadge -> Int64
 maxXFTPFileSize = \case

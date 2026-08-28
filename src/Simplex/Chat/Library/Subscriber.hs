@@ -205,7 +205,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
             liftIO $ updateCIFileStatus db user fileId status
             lookupChatItemByFileId db cxt user fileId
           toView $ CEvtSndFileProgressXFTP user ci ft sndProgress sndTotal
-        SFDONE sndDescr rfds -> do
+        SFDONE sndDescr rfds _ -> do
           withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
           ci <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
           case ci of
