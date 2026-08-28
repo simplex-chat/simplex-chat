@@ -20,6 +20,7 @@ module Simplex.Chat.Store.Files
     createSndFileTransferXFTP,
     createSndFTDescrXFTP,
     setSndFTPrivateSndDescr,
+    setFileExpires,
     getSndFTPrivateSndDescr,
     updateSndFTDescrXFTP,
     createExtraSndFTDescrs,
@@ -210,6 +211,14 @@ setSndFTPrivateSndDescr db User {userId} fileId sfdText = do
     db
     "UPDATE files SET private_snd_file_descr = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (sfdText, currentTs, userId, fileId)
+
+setFileExpires :: DB.Connection -> User -> FileTransferId -> UTCTime -> IO ()
+setFileExpires db User {userId} fileId expiresAt = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET file_expires_at = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (expiresAt, currentTs, userId, fileId)
 
 getSndFTPrivateSndDescr :: DB.Connection -> User -> FileTransferId -> IO (Maybe Text)
 getSndFTPrivateSndDescr db User {userId} fileId =

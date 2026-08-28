@@ -5000,7 +5000,7 @@ processChatCommand cxt nm = \case
               chunkSize <- asks $ fileChunkSize . config
               withFastStore' $ \db -> do
                 fileId <- createLocalFile CIFSSndStored db user nf createdAt cf fileSize chunkSize
-                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
+                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal, fileExpires = Nothing}
         prepareLocalItemsData ::
           NonEmpty ComposedMessageReq ->
           NonEmpty (Maybe (CIFile 'MDSnd)) ->
