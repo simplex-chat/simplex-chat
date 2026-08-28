@@ -54,6 +54,10 @@ CREATE TABLE @badge_code_invoices(
   months SMALLINT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE INDEX @idx_badge_code_invoices_offer ON @badge_code_invoices(offer_id);
+
+CREATE INDEX @idx_badge_code_invoices_price ON @badge_code_invoices(price_id);
 |]
 
 down_m20260806_badge_service_schema :: Text
@@ -61,6 +65,8 @@ down_m20260806_badge_service_schema =
   withPrefix
     servicePrefix
     [r|
+DROP INDEX @idx_badge_code_invoices_offer;
+DROP INDEX @idx_badge_code_invoices_price;
 DROP TABLE @badge_code_invoices;
 
 DROP INDEX @idx_badge_purchases_code;

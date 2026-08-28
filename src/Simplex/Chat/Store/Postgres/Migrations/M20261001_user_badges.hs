@@ -89,6 +89,8 @@ CREATE TABLE @badge_offers(
   created_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE INDEX @idx_badge_offers_price ON @badge_offers(price_id);
+
 CREATE TABLE @badge_purchases(
   badge_purchase_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   purchase_key BYTEA NOT NULL,
@@ -113,6 +115,10 @@ CREATE TABLE @badge_invoices(
 );
 
 CREATE INDEX @idx_badge_invoices_purchase ON @badge_invoices(badge_purchase_id);
+
+CREATE INDEX @idx_badge_invoices_offer ON @badge_invoices(offer_id);
+
+CREATE INDEX @idx_badge_invoices_price ON @badge_invoices(price_id);
 
 CREATE TABLE @badge_subscription_changes(
   change_id TEXT NOT NULL PRIMARY KEY,
@@ -175,12 +181,15 @@ CREATE TABLE @badge_issuances(
 );
 
 CREATE INDEX @idx_badge_issuances_purchase ON @badge_issuances(badge_purchase_id, issuance_id);
+
+CREATE INDEX @idx_badge_issuances_entry ON @badge_issuances(entry_id);
 |]
 
 badgeSchemaTablesDown :: Text
 badgeSchemaTablesDown =
   [r|
 DROP INDEX @idx_badge_issuances_purchase;
+DROP INDEX @idx_badge_issuances_entry;
 DROP TABLE @badge_issuances;
 DROP INDEX @idx_badge_ledger_uuid;
 DROP INDEX @idx_badge_ledger_purchase;
@@ -192,6 +201,8 @@ DROP TABLE @badge_ledger;
 DROP INDEX @idx_badge_subscription_changes_purchase;
 DROP TABLE @badge_subscription_changes;
 DROP INDEX @idx_badge_invoices_purchase;
+DROP INDEX @idx_badge_invoices_offer;
+DROP INDEX @idx_badge_invoices_price;
 DROP TABLE @badge_invoices;
 DROP TABLE @badge_purchases;
 DROP TABLE @subscription_charges;
@@ -199,6 +210,7 @@ DROP INDEX @idx_payments_provider_ref;
 DROP INDEX @idx_payments_invoice;
 DROP TABLE @payments;
 DROP TABLE @invoices;
+DROP INDEX @idx_badge_offers_price;
 DROP TABLE @badge_offers;
 DROP TABLE @badge_prices;
 |]
@@ -229,6 +241,8 @@ CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 
 ALTER TABLE users ADD COLUMN shown_badge_id BIGINT REFERENCES badge_purchases ON DELETE SET NULL;
 
+CREATE INDEX idx_users_shown_badge ON users(shown_badge_id);
+
 CREATE TABLE badge_code_redemptions(
   badge_code_redemption_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -252,6 +266,7 @@ down_m20261001_user_badges =
   [r|
 DROP INDEX idx_badge_purchases_code_redemption;
 DROP INDEX idx_badge_purchases_user;
+DROP INDEX idx_users_shown_badge;
 ALTER TABLE users DROP COLUMN shown_badge_id;
 |]
     <> badgeSchemaDown ""
