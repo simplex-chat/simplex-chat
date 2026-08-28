@@ -50,8 +50,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
-import Simplex.Messaging.Crypto.Entitlement (entitlementIssuerKeys)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Entitlement (entitlementIssuerKeys)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
