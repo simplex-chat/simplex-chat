@@ -71,7 +71,7 @@ import Simplex.FileTransfer.Description (gb, maxFileSize)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
-import Simplex.Messaging.Crypto.Entitlement (Entitlement (Entitlement), EntitlementCredential (EntitlementCredential), MasterKey (MasterKey))
+import Simplex.Messaging.Crypto.Entitlement (Entitlement (Entitlement), EntitlementCredential (EntitlementCredential), MasterKey (MasterKey), entitlementBBSHeader)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 #if defined(dbPostgres)
@@ -192,7 +192,7 @@ maxFileSizeLegend = gb 5
 
 badgeEntitlementCredential :: BadgeCredential -> Maybe EntitlementCredential
 badgeEntitlementCredential (BadgeCredential idx (BadgeMasterKey mk) sig BadgeInfo {badgeType, badgeExpiry, badgeExtra}) =
-  (\e -> EntitlementCredential idx (MasterKey mk) sig (Entitlement (textEncode badgeType) e badgeExtra)) <$> badgeExpiry
+  (\e -> EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement (textEncode badgeType) e badgeExtra) sig) <$> badgeExpiry
 
 localBadgeEntitlement :: Maybe LocalBadge -> Maybe EntitlementCredential
 localBadgeEntitlement = \case
@@ -281,7 +281,7 @@ newtype VerifiedBadgeRequest = VerifiedBadgeRequest BadgeRequest
 -- Constants
 
 bbsBadgeHeader :: BBSHeader
-bbsBadgeHeader = BBSHeader "SimpleX badges v1"
+bbsBadgeHeader = entitlementBBSHeader
 
 bbsBadgeMessageCount :: Int
 bbsBadgeMessageCount = 4
