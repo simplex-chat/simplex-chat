@@ -62,6 +62,8 @@ down_m20260806_badge_service_schema =
     servicePrefix
     [r|
 DROP TABLE @badge_code_invoices;
+
+DROP INDEX @idx_badge_purchases_code;
 |]
     <> badgeSchemaDown servicePrefix
     <> withPrefix
