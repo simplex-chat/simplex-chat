@@ -1350,7 +1350,6 @@
     <string name="receipts_contacts_enable_for_all">Povoliť pre všetkých</string>
     <string name="receipts_groups_enable_for_all">Povoliť pre všetky skupiny</string>
     <string name="link_previews_alert_title">Povoliť náhľady odkazov?</string>
-    <string name="auth_enable_simplex_lock"></string>
     <string name="settings_experimental_features">Experimentálne funkcie</string>
     <string name="invalid_chat">neplatný chat</string>
     <string name="invalid_data">neplatné dáta</string>
@@ -1383,9 +1382,6 @@
     <string name="relay_bar_no_relays">Žiadne relé</string>
     <string name="notifications">Notifikácie</string>
     <string name="onboarding_notifications_mode_battery">Notifikácie a batéria</string>
-    <string name="chat_preferences_off"></string>`
-  <string name="feature_off"></string>
-    <string name="member_criteria_off"></string>
     <string name="old_database_archive">Archív starej databázy</string>
     <string name="add_contact">Jednorazová pozvánka</string>
     <string name="one_time_link">Jednorazová pozvánka</string>
