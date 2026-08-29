@@ -3242,6 +3242,7 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
                 let wasFavorite = chat.chatInfo.chatSettings?.favorite ?? false
                 ChatTagsModel.shared.updateChatFavorite(favorite: chatSettings.favorite, wasFavorite: wasFavorite)
                 let wasUnread = chat.unreadTag
+                let userUnreadBefore = chat.userUnreadCount
                 switch chat.chatInfo {
                 case var .direct(contact):
                     contact.chatSettings = chatSettings
@@ -3252,6 +3253,7 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
                 default: ()
                 }
                 ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
+                ChatModel.shared.changeUserUnreadCounter(before: userUnreadBefore, after: chat.userUnreadCount)
             }
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")
