@@ -3680,11 +3680,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
       gInfo'' <- updatePublicGroupData user gInfo'
-      unless (muteEventInChannel gInfo'' m) $ do
-        (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m
+      -- support chat was deleted with the member record above, so the item has to be created in the group scope
+      let mLeft = m {memberStatus = GSMemLeft, supportChat = Nothing}
+      unless (muteEventInChannel gInfo'' mLeft) $ do
+        (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' mLeft
         (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo''' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci
-        toView $ CEvtLeftMember user gInfo''' m' {memberStatus = GSMemLeft} msgSigned
+        toView $ CEvtLeftMember user gInfo''' m' msgSigned
       pure $ memberEventDeliveryScope m
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
