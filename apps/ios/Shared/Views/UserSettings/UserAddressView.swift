@@ -919,6 +919,7 @@ struct SetSimplexDomainView: View {
                     .foregroundColor(theme.colors.secondary)
             }
         }
+        .modifier(ThemedBackground(grouped: true))
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
