@@ -185,8 +185,9 @@ struct ActiveCallView: View {
                         CallSoundsPlayer.shared.vibrate(long: false)
                         wasConnected = true
                     }
-                } else if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
-                          case .reconnecting = callStatus {
+                } else if state.connectionState == "reconnecting" {
+                    // call is restored and not sent to the core, this is shown only to the ui
+                    // make sure core records correct duration despite reconnection state
                     call.callState = .reconnecting
                 }
                 if state.connectionState == "closed" {
@@ -197,11 +198,13 @@ struct ActiveCallView: View {
                     m.activeCall = nil
                     m.activeCallViewIsCollapsed = false
                 }
-                Task {
-                    do {
-                        try await apiCallStatus(call.contact, state.connectionState)
-                    } catch {
-                        logger.error("apiCallStatus \(responseError(error))")
+                if state.connectionState != "reconnecting" {
+                    Task {
+                        do {
+                            try await apiCallStatus(call.contact, state.connectionState)
+                        } catch {
+                            logger.error("apiCallStatus \(responseError(error))")
+                        }
                     }
                 }
             case let .connected(connectionInfo):
