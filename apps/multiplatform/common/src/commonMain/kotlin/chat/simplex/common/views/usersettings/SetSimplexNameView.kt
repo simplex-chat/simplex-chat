@@ -15,6 +15,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
@@ -24,13 +25,13 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import kotlinx.datetime.Instant
+import kotlinx.datetime.*
 
 // Each dot-separated label is ASCII letters/digits with single internal hyphens (mirrors simplexmq SimplexName.hs nameLabelP).
 private val simplexNameLabelRegex = Regex("[A-Za-z0-9]+(-[A-Za-z0-9]+)*")
 
-private val simplexNameSaleStart = Instant.parse("2026-12-01T00:00:00Z")
-private const val SIMPLEX_DOMAINS_URL = "https://simplex.domains"
+private val simplexNameSaleStart = LocalDateTime(2026, 12, 12, 18, 0).toInstant(TimeZone.UTC)
+private const val SIMPLEX_DOMAINS_URL = "https://simplex.domains/"
 
 // Set the user's own (prefix "@") or a channel's (prefix "#") SimpleX name.
 // The field is prefilled with the full prefixed name; `save` receives the encoded name (or null to
@@ -174,7 +175,7 @@ fun SetSimplexDomainView(
           SettingsActionItem(
             painterResource(MR.images.ic_open_in_new),
             stringResource(MR.strings.register_test_name),
-            { openBrowserAlert("https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md", uriHandler) },
+            { openBrowserAlert("https://simplex.domains/#testing", uriHandler) },
             textColor = MaterialTheme.colors.primary,
             iconColor = MaterialTheme.colors.primary
           )
@@ -204,7 +205,8 @@ fun SetSimplexDomainView(
             Text(saleCountdown(msToSaleStart.value))
             Text(
               stringResource(if (msToSaleStart.value > 0) MR.strings.until_register_simplex_domain else MR.strings.update_app_register_simplex_domain),
-              color = MaterialTheme.colors.secondary
+              color = MaterialTheme.colors.secondary,
+              fontSize = 12.sp
             )
           }
         }
@@ -214,7 +216,7 @@ fun SetSimplexDomainView(
         append(" ")
         withLink(LinkAnnotation.Url(SIMPLEX_DOMAINS_URL) { uriHandler.openUriCatching(SIMPLEX_DOMAINS_URL) }) {
           withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-            append(SIMPLEX_DOMAINS_URL)
+            append("simplex.domains")
           }
         }
       })

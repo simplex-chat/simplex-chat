@@ -802,7 +802,7 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
     }
 }
 
-private let simplexNameSaleStart = ISO8601DateFormatter().date(from: "2026-12-12T18:00:00Z")!
+private let simplexNameSaleStart = Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 2026, month: 12, day: 12, hour: 18))!
 
 struct SetSimplexDomainView: View {
     let title: LocalizedStringKey
@@ -978,10 +978,16 @@ struct SetSimplexDomainView: View {
     private func saleCountdown(_ remaining: TimeInterval) -> String {
         let total = max(0, Int(remaining))
         let days = total / 86400
-        let dayStr = days == 1
-            ? String.localizedStringWithFormat(NSLocalizedString("%d day", comment: "time interval"), days)
-            : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "time interval"), days)
-        return dayStr + " " + String(format: "%02d:%02d:%02d", total / 3600 % 24, total / 60 % 60, total % 60)
+        let dayStr = String.localizedStringWithFormat(
+            days == 1
+                ? NSLocalizedString("%d day", comment: "time interval")
+                : NSLocalizedString("%d days", comment: "time interval"),
+            days
+        )
+        return dayStr + " " + String.localizedStringWithFormat(
+            NSLocalizedString("%02d hrs %02d min %02d sec", comment: "countdown"),
+            total / 3600 % 24, total / 60 % 60, total % 60
+        )
     }
 
     private func addSimplexTLD(_ d: String) -> String {
