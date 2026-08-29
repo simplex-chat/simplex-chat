@@ -263,7 +263,7 @@ private fun BackButton(modifier: Modifier = Modifier, color: Color = MaterialThe
       painterResource(MR.images.ic_arrow_back_ios_new),
       contentDescription = stringResource(MR.strings.back),
       tint = color,
-      modifier = Modifier.height(24.dp)
+      modifier = Modifier.height(24.dp).mirrorIfRtl()
     )
     Text(stringResource(MR.strings.back), color = color)
   }
