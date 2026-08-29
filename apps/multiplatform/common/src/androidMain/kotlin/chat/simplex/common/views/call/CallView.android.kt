@@ -171,13 +171,15 @@ actual fun ActiveCallView() {
             chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
           }
           is WCallResponse.Connection ->
-            try {
+            // the call is restored and NOT sent to the core
+            // Makes sure the core DOES NOT record the duration wrong if a reconnect happens
+            if (r.state.connectionState == "reconnecting") {
+              updateActiveCall(call) { it.copy(callState = CallState.Reconnecting) }
+            } else try {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
-                // Makes sure it uses the connected value so if call reconnects it doesn't use the reconnecting value
+                // connectedAt is only set ONCE, this way call duration is NOT reset when the call is restored from reconnecting
                 updateActiveCall(call) { it.copy(callState = CallState.Connected, connectedAt = it.connectedAt ?: Clock.System.now()) }
-              } else if (callStatus == WebRTCCallStatus.Reconnecting) {
-                updateActiveCall(call) { it.copy(callState = CallState.Reconnecting) }
               }
               withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
             } catch (e: Throwable) {
