@@ -164,7 +164,7 @@ Horizontal scrolling tab bar below the navigation bar. Tabs:
 | Tab | Filter | Shows |
 |-----|--------|-------|
 | All | `nil` | All conversations |
-| Unread | `.unread` | Conversations with unread messages |
+| Unread | `.unread` | Conversations with unread messages, or support chats that need attention (as flagged on the row: unread messages or mentions, or, for moderators, members pending, with unread messages nobody has answered, or with unread mentions) unless muted to "mute all" |
 | Favorites | `.presetTag(.favorites)` | Favorited conversations |
 | Groups | `.presetTag(.groups)` | Group conversations |
 | Contacts | `.presetTag(.contacts)` | Direct conversations |
