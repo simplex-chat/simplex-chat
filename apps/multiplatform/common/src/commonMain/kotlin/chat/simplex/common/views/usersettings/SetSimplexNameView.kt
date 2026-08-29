@@ -15,7 +15,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
@@ -201,7 +201,7 @@ fun SetSimplexDomainView(
       }
       SectionView(stringResource(MR.strings.simplex_name_sales)) {
         SectionItemView {
-          Column {
+          Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(saleCountdown(msToSaleStart.value))
             Text(
               stringResource(if (msToSaleStart.value > 0) MR.strings.until_register_simplex_domain else MR.strings.update_app_register_simplex_domain),
