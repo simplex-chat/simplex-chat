@@ -103,7 +103,7 @@
     <string name="address_or_1_time_link">Adresa alebo jednorazový odkaz?</string>
     <string name="address_settings">Nastavenie adries</string>
     <string name="smp_servers_add">Pridať server</string>
-    <string name="v4_3_improved_server_configuration_desc">Pridať servery skenovaním QR kódu.</string>
+    <string name="v4_3_improved_server_configuration_desc">Pridať servery skenovaním QR kódov.</string>
     <string name="button_add_team_members">Pridať členov tímu</string>
     <string name="webpage_code_footer">Pridajte tento kód na vašu webovú stránku. Zobrazí ukážku vášho kanálu / skupiny.</string>
     <string name="smp_servers_add_to_another_device">Pridať do iného zariadenia</string>
@@ -1408,4 +1408,25 @@
     <string name="open_with_app">Otvoriť pomocou %s</string>
     <string name="or_scan_qr_code">Alebo naskenovať QR kód</string>
     <string name="or_paste_archive_link">Alebo vložiť odkaz archívu</string>
+    <string name="file_error">Chyba súboru</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ak sa nemôžte stretnúť osobne, môžete <b>naskenovať QR kód vo video hovore</b>, alebo váš kontakt môže zdieľať pozvánku.]]></string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ak sa nemôžte stretnúť osobne, <b>ukážte QR kód vo video hovore</b>, alebo zdieľajte odkaz.]]></string>
+    <string name="if_you_cant_meet_in_person">Ak sa nemôžte stretnúť osobne, ukážte QR kód vo video hovore, alebo zdieľajte odkaz.</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ak ste dostali SimpleX Chat pozvánku, môžete ju otvoriť v prehliadači:</string>
+    <string name="incorrect_code">Nesprávny bezpečnostný kód</string>
+    <string name="theme_colors_section_title">Farby rozhrania</string>
+    <string name="custom_time_unit_months">mesiacov</string>
+    <string name="icon_descr_more_button">Viac</string>
+    <string name="more_privacy">Viac súkromia</string>
+    <string name="relay_status_new">nové</string>
+    <string name="new_1_time_link">Nový jednorazový odkaz</string>
+    <string name="notification_new_contact_request">Nová žiadosť o kontakt</string>
+    <string name="chat_list_notes">Poznámky</string>
+    <string name="other_label"></string>
+    <string name="other_errors">iné chyby</string>
+    <string name="member_info_section_title_owner">Majiteľ</string>
+    <string name="call_connection_peer_to_peer">peer-to-peer</string>
+    <string name="onboarding_notifications_mode_periodic">Pravidelné</string>
+    <string name="periodic_notifications">Pravidelné notifikácie</string>
+    <string name="periodic_notifications_disabled">Pravidelné notifikácie sú vypnuté!</string>
 </resources>
