@@ -13,8 +13,12 @@ needs a wallet, ETH and a browser:
   service - metering is off chain.
 - See what you own with `/names` and `/name info`, and find names your keys
   already hold with `/name rescan`.
-- Recovery keys: `/name keys`, `keys export` (every key, not just the one in
-  use), `keys import` (adds, never replaces), `keys init`, `keys use <n>`.
+- Recovery keys: `/name keys` (names grouped by the account they sit under),
+  `keys export` (every key, not just the one in use), `keys import` (adds, never
+  replaces), `keys init`, `keys use <n> [<account> [<name>]]`.
+- Recovering on a new device: `/name rescan` restores the derivation marks from
+  the paths it finds, so a later purchase cannot be handed a recovered name's
+  key; the account a profile held is not in the phrase, so `keys use` takes it.
 - Wallet: one key per name at `m/44'/60'/<profile>'/0/<name>` - ordinary BIP-44,
   so importing the phrase into another wallet reaches the same addresses.
 - The badge service gains the registrar commands, a readable chain mock with real

@@ -39,7 +39,7 @@ one, so the CLI is not bound to a single service.
 
 /name link contact <svc> alice.simplex simplex:/contact#/xyz
                                 alice.simplex: contact updated (tx 0x…)
-                                9 of 10 relayed edits left
+                                9 relayed edits left
 ```
 
 A second name on the same profile takes the next index — `m/44'/60'/0'/0/1`, a
@@ -67,14 +67,16 @@ Seeing what you own:
                                 path    m/44'/60'/0'/0/0
                                 contact simplex:/contact#/xyz
                                 expires 2028-08-27
-                                9 of 10 relayed edits left
+                                9 relayed edits left
 ```
 
 Recovery keys:
 
 ```
-/name keys                      1: alice.simplex  (in use)
-                                2: lucy.simplex   (not written down)
+/name keys                      1:  (in use)
+                                     account 0   alice.simplex
+                                2:  (not written down)
+                                     other       lucy.simplex (m)
 
 /name keys export               every key's phrase, each labelled with the names
                                 it controls - never just the one in use
@@ -82,7 +84,12 @@ Recovery keys:
 /name keys import <phrase>      adds a key; never replaces one
 /name keys init                 optional - create one before buying
 /name keys use 2                which key the next purchase goes under
+/name keys use 2 0              ...and which account this profile is
+/name keys use 2 0 5            ...and where its next name sits
 ```
+
+Names are listed under the account they were derived at, because that grouping
+is the only surviving record of which profile owned what — see *Recovery*.
 
 A new device, with nothing but the phrase:
 
@@ -90,6 +97,7 @@ A new device, with nothing but the phrase:
 /name keys import <phrase>
 /name rescan <svc>              walks the known layouts and the bare root
                                 found alice.simplex
+                                and moves both marks past what it found
 
 /name link contact <svc> alice.simplex simplex:/contact#/new
                                 point it at this device's address
@@ -123,11 +131,11 @@ APINameInfo       {target, name}           -> CRNameInfo {name, owner, path, con
 APINameSetLink    {target, name, record, link}
                                            -> CRNameLinkSet {name, record, txHash}
 APINameRescan     {target, more}           -> CRNameRescan [{name, path}]
-APINameKeys       {}                       -> CRNameKeys [{n, names, current, backedUp}]
+APINameKeys       {}                       -> CRNameKeys [{n, byAccount, current, backedUp}]
 APINameKeysExport {}                       -> CRNameKeyPhrases [{n, phrase, names}]
 APINameKeysImport {phrase}                 -> CRNameKeys …
 APINameKeysInit   {}                       -> CRNameKeys …
-APINameKeysUse    {n}                      -> CRNameKeys …
+APINameKeysUse    {n, account?, name?}     -> CRNameKeys …
 APINameRegister   {target, name, link}     -> CRNameRegistered …
 ```
 
@@ -437,6 +445,31 @@ command reads stdin — the interactive prompts in the codebase all run before t
 controller starts — and a command that blocked on input could not be answered by
 a GUI client over the JSON API, nor driven by the line-oriented tests.
 
+Selecting a key moves the profile onto it: the next purchase is derived under
+that seed, at an account index taken there. The names the profile already owns
+are unaffected — `wallet_name_keys` stores the path literally, so they re-derive
+from the seed that owns them regardless of where the profile now sits.
+
+### Recovery: what the phrase does not carry
+
+A phrase carries entropy and nothing else. Two things the client needs are not in
+it, not on chain, and not derivable:
+
+* **Which profile held which account.** Recreate two profiles on a new device and
+  nothing says which was account 0. Only the user knows, so `/name keys` groups
+  names by the account in their stored path and `/name keys use <n> <account>`
+  pins a profile back to one.
+* **Which indices are already taken.** Both high-water marks — `next_account_index`
+  per seed, `wallet_next_name_index` per profile — start at 0 after an import,
+  while accounts and names already exist under the phrase. A scan is the only
+  thing that can restore them, so `/name rescan` moves both past every index it
+  finds, and `/name keys use <n> <account> <name>` sets the second by hand.
+
+A purchase re-checks the path against `wallet_name_keys` before spending
+anything, and steps over one already taken. Discovering the clash from the UNIQUE
+constraint instead would come too late: that insert runs after the registration
+has gone through and the redemption code has been spent.
+
 `/name keys export` prints **every** key's phrase, each labelled with the names it
 controls. Exporting only the key in use would be a trap: a user with two keys who
 writes down "the phrase" has not backed up the other, and finds out after losing
@@ -463,6 +496,10 @@ Each of these is a test, not a claim.
    a later session.
 6. **Commit/reveal still holds.** A reveal with no matching commitment is
    refused, and a live name cannot be re-registered.
+7. **Recovery does not reuse a key.** A name registered on one device and
+   recovered on another from the phrase alone does not have its key handed to
+   the next purchase: after import and rescan the new name lands on a different
+   account, not on the recovered name's path.
 
 ## Known gaps
 

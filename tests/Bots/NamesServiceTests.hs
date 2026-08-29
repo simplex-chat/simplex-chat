@@ -1,4 +1,6 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Bots.NamesServiceTests where
 
@@ -10,6 +12,7 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isHexDigit)
+import Control.Exception (ErrorCall, try)
 import Data.List (isPrefixOf)
 import Simplex.Chat.Names.Protocol
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -22,7 +25,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import Simplex.Messaging.Util (tshow)
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
-import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey)
+import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey, parseNameKeyPath, renderNameKeyPath)
 import qualified Test.Hspec as Hspec
 
 namesServiceTests :: SpecWith TestParams
@@ -31,6 +34,7 @@ namesServiceTests = do
   it "rejects a reveal with no matching commitment" testRevealWithoutCommit
   it "reads the wallet without creating one" testNameAddress
   it "gives each name its own key, still derivable after restart" testSeedPersists
+  it "recovers the derivation marks from an imported phrase" testRecoverMarks
   it "buys with a code, then re-points the link with a signature" testBuyAndLink
   it "refuses a spent code, a reserved name and a short name" testBuyRefusals
 
@@ -53,6 +57,21 @@ namesProtocolTests = do
     addrOf 0 1 `shouldBe` "0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
     -- Ledger Live account 2 for this phrase
     addrOf 1 0 `shouldBe` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
+  -- The account a name sits under is read back out of its stored path: that is
+  -- the only record of which profile owned it, and what the recovery scan reads
+  -- to know which indices are taken. A path we did not generate has no account
+  -- of ours and must say so rather than guess one.
+  it "reads back the indices of a path it generated, and only those" $ \_ -> do
+    parseNameKeyPath (renderNameKeyPath 0 0) `shouldBe` Just (0, 0)
+    parseNameKeyPath (renderNameKeyPath 2 7) `shouldBe` Just (2, 7)
+    -- a name bought in a dapp typically sits at the bare master key
+    parseNameKeyPath "m" `shouldBe` Nothing
+    -- neither of the two common wallet layouts the scan also probes is ours
+    parseNameKeyPath "m/44'/60'/0'/1" `shouldBe` Nothing
+    -- right shape, wrong coin
+    parseNameKeyPath "m/44'/0'/0'/0/0" `shouldBe` Nothing
+    -- the account level must be hardened, as BIP-44 requires
+    parseNameKeyPath "m/44'/60'/0/0/0" `shouldBe` Nothing
   Hspec.it "encodes commit and reveal requests" $ do
     -- on-chain byte values are 0x-prefixed hex, as Ethereum writes them
     encodes (NamesRequest 1 (NRCommit $ Commitment "0123456789abcdef")) $
@@ -134,7 +153,69 @@ testNameAddress ps =
     -- now it exists, and reports the address and path the name was registered to
     -- and now exactly one key exists, controlling the name just bought
     client ##> "/name keys"
-    client <## "1: carolname.simplex  (in use)  (not written down)"
+    client <## "1:  (in use)  (not written down)"
+    client <## "     account 0   carolname.simplex"
+
+-- | Recovery on a new device must not re-use a key a recovered name already
+-- owns. Neither high-water mark survives an import - the phrase records only
+-- the entropy - so a scan is the only thing that can restore them, and without
+-- that the next purchase derives the recovered name's key: the client would
+-- discover the clash from the UNIQUE constraint on wallet_name_keys, after the
+-- registration had already gone through.
+--
+-- Asserted through the paths: the second name must not land on the first's.
+testRecoverMarks :: HasCallStack => TestParams -> IO ()
+testRecoverMarks ps = do
+  let opts = mkBadgeServiceOpts ps
+  withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
+  runBadgeService testCfg opts (pure ())
+  bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
+    bs <## "subscribed 1 connections on server localhost"
+    bs ##> "/sa"
+    (sLink, _) <- getContactLinks bs False
+    bs <## "auto_accept off"
+    pure sLink
+  runBadgeService testCfg opts $ do
+    -- device one buys a name, then its phrase is written down
+    phrase <- withNewTestChatCfg ps testCfg "client" bobProfile $ \client -> do
+      client ##> ("/name register " <> bsLink <> " lostname.simplex simplex:/contact#/x")
+      _ <- ownerOf client "lostname.simplex"
+      client ##> "/name keys export"
+      client <## "write these down - anyone who knows them can take the names they control:"
+      client <## "1: lostname.simplex"
+      phraseLine client
+    -- device two is fresh: import, scan, then buy
+    withNewTestChatCfg ps testCfg "client2" cathProfile $ \client -> do
+      client ##> ("/name keys import " <> phrase)
+      client <## "1:  (in use)  (not written down)"
+      client <## "     no names yet"
+      client ##> ("/name rescan " <> bsLink)
+      awaitLine client "found:"
+      client <## "  lostname.simplex  m/44'/60'/0'/0/0"
+      client ##> ("/name register " <> bsLink <> " foundname.simplex simplex:/contact#/y")
+      _ <- ownerOf client "foundname.simplex"
+      -- the scan moved both marks past index 0, so the new name is elsewhere
+      client ##> "/name keys"
+      client <## "1:  (in use)  (not written down)"
+      client <## "     account 0   lostname.simplex"
+      client <## "     account 1   foundname.simplex"
+
+-- | A scan is one round trip per candidate path, taken sequentially, and
+-- outruns the harness's five second per-line read timeout. Retrying is not
+-- polling: each attempt blocks on the output queue, so this waits as long as
+-- the scan takes and no longer.
+awaitLine :: HasCallStack => TestCC -> String -> Expectation
+awaitLine cc expected = go (6 :: Int)
+  where
+    go 0 = expectationFailure $ "no line: " <> expected
+    go n =
+      try (getTermLine cc) >>= \case
+        Left (_ :: ErrorCall) -> go (n - 1)
+        Right l -> l `shouldBe` expected
+
+-- | The phrase line printed under a key by @\/name keys export@.
+phraseLine :: HasCallStack => TestCC -> IO String
+phraseLine client = dropWhile (== ' ') <$> getTermLine client
 
 -- | The front-running defence: a reveal only registers a name if that exact
 -- commitment was published first. Sent as a raw service request, because the
@@ -181,7 +262,8 @@ testSeedPersists ps = do
     -- and both are still derivable in a third session, each at its own path
     withTestChat ps "client" $ \client -> do
       client ##> "/name keys"
-      client <## "1: firstname.simplex, secondname.simplex  (in use)  (not written down)"
+      client <## "1:  (in use)  (not written down)"
+      client <## "     account 0   firstname.simplex, secondname.simplex"
 
 -- | Reads past startup and progress lines to the registration result, returning
 -- the owner address. Keeps reading until the final progress event has arrived
@@ -223,7 +305,7 @@ testBuyAndLink ps =
     client <## "  path    m/44'/60'/0'/0/0"
     client <## "  contact simplex:/contact#/first"
     client <##. "  expires "
-    client <## "  10 of 10 relayed edits left"
+    client <## "  10 relayed edits left"
     -- a signed edit: the service recovers the signer and refuses anyone else
     client ##> ("/name link " <> bsLink <> " contact purchased.simplex simplex:/contact#/second")
     client <##. "purchased.simplex: contact updated (tx 0x"
@@ -234,7 +316,7 @@ testBuyAndLink ps =
     client <## "  contact simplex:/contact#/second"
     client <##. "  expires "
     -- one edit spent, and only one
-    client <## "  9 of 10 relayed edits left"
+    client <## "  9 relayed edits left"
 
 -- | Every refusal has its own message. A user who types a reserved name must be
 -- told that, not "bad request".

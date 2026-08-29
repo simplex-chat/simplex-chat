@@ -69,6 +69,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Wallet (AccountIndex, NameIndex)
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
@@ -426,7 +427,7 @@ data ChatCommand
   | APINameKeysExport
   | APINameKeysImport {recoveryPhrase :: Text}
   | APINameKeysInit
-  | APINameKeysUse {keyNo :: Int}
+  | APINameKeysUse {keyNo :: Int, keyAccount :: Maybe AccountIndex, keyNameIndex :: Maybe NameIndex}
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -860,7 +861,7 @@ data ChatResponse
   | CRNameInfo {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, nameContact :: [Text], nameChannel :: [Text], regExpiry :: UTCTime, nameEditsLeft :: Word32}
   | CRNameLinkSet {user :: User, regName :: Text, nameRecord :: Text, regTxHash :: TxHash}
   | CRNameRescan {user :: User, namesFound :: [(Text, Text)]}
-  | CRNameKeys {user :: User, walletKeys :: [(Int, [Text], Bool, Bool)]}
+  | CRNameKeys {user :: User, walletKeys :: [(Int, [(Maybe AccountIndex, [(Text, Text)])], Bool, Bool)]}
   | CRNameKeyPhrases {user :: User, walletPhrases :: [(Int, Text, [Text])]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}

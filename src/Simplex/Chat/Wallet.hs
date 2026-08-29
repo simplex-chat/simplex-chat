@@ -43,6 +43,7 @@ module Simplex.Chat.Wallet
     deriveAtPath,
     nameKeyPath,
     renderNameKeyPath,
+    parseNameKeyPath,
     accountAddress,
     signIntent,
     ethSignatureBytes,
@@ -121,6 +122,16 @@ nameKeyPath acc nm = [B32.hardened 44, B32.hardened 60, B32.hardened acc, 0, nm]
 -- import a single name into a third-party wallet.
 renderNameKeyPath :: AccountIndex -> NameIndex -> Text
 renderNameKeyPath acc nm = decodeLatin1 . B32.renderPath $ nameKeyPath acc nm
+
+-- | The account and name indices of a path we generated, or Nothing for one we
+-- did not: an imported name sits at the root or under another wallet's layout,
+-- and its indices are not ours to reason about.
+parseNameKeyPath :: Text -> Maybe (AccountIndex, NameIndex)
+parseNameKeyPath path = case B32.parsePath (encodeUtf8 path) of
+  Right [p, c, acc, 0, k]
+    | p == B32.hardened 44 && c == B32.hardened 60 && B32.isHardened acc ->
+        Just (acc - B32.hardenedOffset, k)
+  _ -> Nothing
 
 -- | Derive the key that owns one name.
 deriveNameKey :: WalletSeed -> AccountIndex -> NameIndex -> Either String WalletAccount

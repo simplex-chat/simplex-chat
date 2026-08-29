@@ -6,14 +6,18 @@
 -- | Persistence for wallet seeds and per-profile accounts.
 --
 -- The schema holds several seeds and binds each chat profile to one of them
--- plus its own account index. Only the single-seed case is reachable from the
--- UI: 'getOrCreateAccountRef' reuses the database's first seed and allocates the
--- next free account index, while 'boundAccount' only reads. Those two are the
--- exports; the helpers below stay internal until they have a caller.
+-- plus its own account index. 'getOrCreateAccountRef' resolves that binding for
+-- a purchase, moving the profile when another seed has been selected;
+-- 'boundAccount' only reads.
 module Simplex.Chat.Store.Wallets
   ( getOrCreateAccountRef,
     boundAccount,
     takeNameIndex,
+    setNextNameIndex,
+    raiseNextNameIndex,
+    raiseNextAccountIndex,
+    bindSeedAccount,
+    nameKeyPathTaken,
     recordNameKey,
     getNameKeys,
     listSeeds,
@@ -27,7 +31,7 @@ where
 
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (isJust, listToMaybe)
 import Data.Text (Text)
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types (User (..))
@@ -87,33 +91,46 @@ boundAccount db user =
     Nothing -> pure Nothing
     Just r -> fmap (\s -> (s, r)) <$> getWalletSeed db (arSeedId r)
 
--- | Bind this profile to a seed, creating one from @mkSeed@ if the database has
--- none yet, and allocating the next free account index.
+-- | Bind this profile to @sel_@, or to the seed it is already on when nothing
+-- is selected, creating a seed from @mkSeed@ if the database has none yet.
 --
--- Single-seed by construction: it always picks the first existing seed. When
--- multiple seeds become selectable this is the one function that changes.
-getOrCreateAccountRef :: DB.Connection -> User -> IO ByteString -> IO (WalletSeed, AccountRef)
-getOrCreateAccountRef db user mkSeed = do
+-- A profile moves only when a seed is selected: picking the first row in the
+-- table instead would silently re-bind a profile whenever a second seed exists
+-- - which is exactly what importing a recovery key creates - moving it to a new
+-- account index nobody asked for. Moving on selection is safe by contrast:
+-- names re-derive from the literal path in wallet_name_keys, so the ones this
+-- profile already owns stay reachable under the seed that owns them.
+getOrCreateAccountRef :: DB.Connection -> User -> Maybe WalletSeed -> IO ByteString -> IO (WalletSeed, AccountRef)
+getOrCreateAccountRef db user sel_ mkSeed = do
   existing <- getAccountRef db user
-  -- Load the seed this profile is actually bound to. Picking the first row in
-  -- the table instead would silently re-bind a profile whenever a second seed
-  -- exists - which is exactly what importing a recovery key creates - throwing
-  -- away the imported key and moving the profile to a new account index, so
-  -- the names it already owned stop being derivable too.
   bound <- case existing of
     Just r -> fmap (\s -> (r, s)) <$> getWalletSeed db (arSeedId r)
     Nothing -> pure Nothing
   case bound of
-    Just (r, s) -> pure (s, r)
-    Nothing -> do
-      seeds <- getWalletSeeds db
-      s <- case listToMaybe seeds of
+    Just (r, s) | maybe True ((wsId s ==) . wsId) sel_ -> pure (s, r)
+    _ -> do
+      s <- case sel_ of
         Just s -> pure s
-        Nothing -> mkSeed >>= createWalletSeed db
+        Nothing -> do
+          seeds <- getWalletSeeds db
+          case listToMaybe seeds of
+            Just s -> pure s
+            Nothing -> mkSeed >>= createWalletSeed db
       ix <- takeAccountIndex db (wsId s)
       let r = AccountRef {arSeedId = wsId s, arIndex = ix}
       bindAccount db user r
       pure (s, r)
+
+-- | Pin this profile to an account index the user named, rather than taking the
+-- next free one. Which profile held which account is not on chain and not in
+-- the phrase, so after recovery on a new device only the user knows it.
+--
+-- The seed's mark moves past the pinned index too, or the next profile to bind
+-- would be handed the same account and derive the same name keys.
+bindSeedAccount :: DB.Connection -> User -> WalletSeed -> AccountIndex -> IO ()
+bindSeedAccount db user s ix = do
+  bindAccount db user AccountRef {arSeedId = wsId s, arIndex = ix}
+  raiseNextAccountIndex db (wsId s) (ix + 1)
 
 -- | Take the next account index and advance the seed's high-water mark.
 --
@@ -126,6 +143,19 @@ takeAccountIndex db sId@(SeedId sId') = do
   ix <- getNextAccountIndex db sId
   DB.execute db "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ?" (fromIntegral ix + 1 :: Int64, sId')
   pure ix
+
+-- | Move a mark forward, never back. Used by a recovery scan, which learns from
+-- the paths it found which indices are already spoken for: nothing else
+-- restores these after an import, and a mark left at 0 hands the next purchase
+-- a key a recovered name already owns.
+raiseNextAccountIndex :: DB.Connection -> SeedId -> AccountIndex -> IO ()
+raiseNextAccountIndex db (SeedId sId) ix =
+  DB.execute
+    db
+    "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ? AND next_account_index < ?"
+    (ix', sId, ix')
+  where
+    ix' = fromIntegral ix :: Int64
 
 getNextAccountIndex :: DB.Connection -> SeedId -> IO AccountIndex
 getNextAccountIndex db (SeedId sId) =
@@ -149,6 +179,35 @@ takeNameIndex db User {userId} = do
           )
   DB.execute db "UPDATE users SET wallet_next_name_index = ? WHERE user_id = ?" (fromIntegral ix + 1 :: Int64, userId)
   pure ix
+
+-- | See 'raiseNextAccountIndex'. Raised for the profile running the scan: which
+-- profile a recovered name belonged to is not recorded anywhere, so the only
+-- safe reading is that every index found is taken.
+raiseNextNameIndex :: DB.Connection -> User -> NameIndex -> IO ()
+raiseNextNameIndex db User {userId} ix =
+  DB.execute
+    db
+    "UPDATE users SET wallet_next_name_index = ? WHERE user_id = ? AND wallet_next_name_index < ?"
+    (ix', userId, ix')
+  where
+    ix' = fromIntegral ix :: Int64
+
+-- | Point the next purchase at an index the user named. Unlike
+-- 'raiseNextNameIndex' this moves the mark either way: the user is placing a
+-- name deliberately, and may be filling a gap left by a failed attempt.
+setNextNameIndex :: DB.Connection -> User -> NameIndex -> IO ()
+setNextNameIndex db User {userId} ix =
+  DB.execute db "UPDATE users SET wallet_next_name_index = ? WHERE user_id = ?" (fromIntegral ix :: Int64, userId)
+
+-- | Whether a key at this path already owns a name. Checked before a purchase,
+-- because 'recordNameKey' runs after the code has been spent: a clash caught by
+-- the UNIQUE constraint there costs the user the code.
+nameKeyPathTaken :: DB.Connection -> SeedId -> Text -> IO Bool
+nameKeyPathTaken db (SeedId sId) path = do
+  r <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT 1 FROM wallet_name_keys WHERE wallet_seed_id = ? AND derivation_path = ?" (sId, path)
+  pure $ isJust (r :: Maybe Int64)
 
 -- | Record which key owns a name, once it is registered. Without this the
 -- client cannot tell which of a profile's keys owns which name: the binding is

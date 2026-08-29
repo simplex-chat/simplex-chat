@@ -220,7 +220,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
         <> map (\c -> plain $ "  contact " <> c) contact
         <> map (\c -> plain $ "  channel " <> c) channel
         <> [ plain $ "  expires " <> tshow expiry,
-             plain $ "  " <> tshow edits <> " of 10 relayed edits left"
+             plain $ "  " <> tshow edits <> " relayed edits left"
            ]
   CRNameLinkSet u n record txHash ->
     ttyUser u [plain $ n <> ": " <> record <> " updated (tx " <> safeDecodeUtf8 (strEncode txHash) <> ")"]
@@ -228,18 +228,28 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     ttyUser u $ case found of
       [] -> ["no names found for the keys on this device"]
       _ -> "found:" : map (\(n, path) -> plain $ "  " <> n <> "  " <> path) found
+  -- Grouped by account: which profile a name belonged to is not recoverable from
+  -- the phrase, so after importing on a new device this listing is what tells
+  -- the user which account to pin a profile back to.
   CRNameKeys u rows ->
-    ttyUser u $ case rows of
-      [] -> ["no recovery keys yet - one is created when you buy a name"]
-      _ ->
-        map
-          ( \(i, ns, cur, backed) ->
-              plain $
-                tshow i <> ": " <> (if null ns then "no names yet" else T.intercalate ", " ns)
-                  <> (if cur then "  (in use)" else "")
-                  <> (if backed then "" else "  (not written down)")
-          )
-          rows
+    let name acct (n, path) = if isJust acct then n else n <> " (" <> path <> ")"
+        accountRow (acct, ns) =
+          plain $
+            "     "
+              <> maybe "other    " (\a -> "account " <> tshow a) acct
+              <> "   "
+              <> T.intercalate ", " (map (name acct) ns)
+        keyRow (i, groups, cur, backed) =
+          plain
+            ( tshow i
+                <> ":"
+                <> (if cur then "  (in use)" else "")
+                <> (if backed then "" else "  (not written down)")
+            )
+            : if null groups then ["     no names yet"] else map accountRow groups
+     in ttyUser u $ case rows of
+          [] -> ["no recovery keys yet - one is created when you buy a name"]
+          _ -> concatMap keyRow rows
   -- Every key, so that "I wrote down the phrase" cannot mean only one of them.
   CRNameKeyPhrases u rows ->
     ttyUser u $
