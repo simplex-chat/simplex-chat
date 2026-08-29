@@ -137,7 +137,7 @@ fun SetSimplexDomainView(
     val total = (msRemaining / 1000).coerceAtLeast(0)
     val days = total / 86400
     val dayStr = String.format(generalGetString(if (days == 1L) MR.strings.ttl_day else MR.strings.ttl_days), days)
-    return dayStr + " " + String.format("%02d:%02d:%02d", total / 3600 % 24, total / 60 % 60, total % 60)
+    return dayStr + " " + String.format(generalGetString(MR.strings.countdown_hrs_min_sec), total / 3600 % 24, total / 60 % 60, total % 60)
   }
 
   ModalView(close = { onClose(close) }, cardScreen = true) {
