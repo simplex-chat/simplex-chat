@@ -802,7 +802,7 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
     }
 }
 
-private let simplexNameSaleStart = ISO8601DateFormatter().date(from: "2026-12-01T00:00:00Z")!
+private let simplexNameSaleStart = ISO8601DateFormatter().date(from: "2026-12-12T18:00:00Z")!
 
 struct SetSimplexDomainView: View {
     let title: LocalizedStringKey
@@ -877,7 +877,7 @@ struct SetSimplexDomainView: View {
             Section {
                 if editing {
                     Button {
-                        openBrowserAlert(uri: "https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md")
+                        openBrowserAlert(uri: "https://simplex.domains/#testing")
                     } label: {
                         HStack {
                             Text("How to register a test name")
@@ -909,13 +909,14 @@ struct SetSimplexDomainView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(verbatim: saleCountdown(timeToSaleStart))
                     Text(timeToSaleStart > 0 ? "until you can register a SimpleX domain" : "Update the app to register a SimpleX domain")
+                        .font(.caption)
                         .foregroundColor(theme.colors.secondary)
                 }
             } header: {
-                Text("SimpleX name sales")
+                Text("SimpleX name sale starts in")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
-                Text("Crowdfunding investors and brand owners get priority registration. Learn more at [https://simplex.domains](https://simplex.domains)")
+                Text("Crowdfunding investors and trademark owners get priority. Learn more at [simplex.domains](https://simplex.domains/)")
                     .foregroundColor(theme.colors.secondary)
             }
         }
