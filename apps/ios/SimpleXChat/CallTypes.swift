@@ -110,7 +110,6 @@ public struct CallCapabilities: Codable, Equatable {
 public enum WebRTCCallStatus: String, Encodable {
     case connected = "connected"
     case connecting = "connecting"
-    case reconnecting = "reconnecting"
     case disconnected = "disconnected"
     case failed = "failed"
 }
