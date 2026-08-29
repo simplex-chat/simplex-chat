@@ -802,6 +802,8 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
     }
 }
 
+private let simplexNameSaleStart = ISO8601DateFormatter().date(from: "2026-12-01T00:00:00Z")!
+
 struct SetSimplexDomainView: View {
     let title: LocalizedStringKey
     let footer: LocalizedStringKey
@@ -815,6 +817,8 @@ struct SetSimplexDomainView: View {
     @State private var original = ""
     @State private var didSave = false
     @State private var editing = false
+    @State private var timeToSaleStart = simplexNameSaleStart.timeIntervalSinceNow
+    @State private var saleTimer: Timer? = nil
     @FocusState private var nameFocused: Bool
 
     init(title: LocalizedStringKey, footer: LocalizedStringKey, prompt: String, simplexName: String, broadcastWarning: String? = nil, save: @escaping (String?) async -> Bool) {
@@ -901,6 +905,19 @@ struct SetSimplexDomainView: View {
                     }
                 }
             }
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(verbatim: saleCountdown(timeToSaleStart))
+                    Text(timeToSaleStart > 0 ? "until you can register a SimpleX domain" : "Update the app to register a SimpleX domain")
+                        .foregroundColor(theme.colors.secondary)
+                }
+            } header: {
+                Text("SimpleX name sales")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                Text("Crowdfunding investors and brand owners get priority registration. Learn more at [https://simplex.domains](https://simplex.domains)")
+                    .foregroundColor(theme.colors.secondary)
+            }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
@@ -908,8 +925,16 @@ struct SetSimplexDomainView: View {
             if editing {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { nameFocused = true }
             }
+            if timeToSaleStart > 0 {
+                saleTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { t in
+                    timeToSaleStart = simplexNameSaleStart.timeIntervalSinceNow
+                    if timeToSaleStart <= 0 { t.invalidate() }
+                }
+            }
         }
         .onDisappear {
+            saleTimer?.invalidate()
+            saleTimer = nil
             if !didSave, !saving, changed, isValid {
                 let domain = normalized(simplexName)
                 let saveName = save
@@ -946,6 +971,15 @@ struct SetSimplexDomainView: View {
         return t.isEmpty
                 ? nil
                 : addSimplexTLD((t.hasPrefix("@") || t.hasPrefix("#") ? String(t.dropFirst()) : t).lowercased())
+    }
+
+    private func saleCountdown(_ remaining: TimeInterval) -> String {
+        let total = max(0, Int(remaining))
+        let days = total / 86400
+        let dayStr = days == 1
+            ? String.localizedStringWithFormat(NSLocalizedString("%d day", comment: "time interval"), days)
+            : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "time interval"), days)
+        return dayStr + " " + String(format: "%02d:%02d:%02d", total / 3600 % 24, total / 60 % 60, total % 60)
     }
 
     private func addSimplexTLD(_ d: String) -> String {
