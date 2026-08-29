@@ -1412,6 +1412,8 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         }
     }
 
+    var hasUnread: Bool { unreadTag || (chatInfo.chatSettings?.enableNtfs != MsgFilter.none && supportUnreadCount > 0) }
+
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }
 

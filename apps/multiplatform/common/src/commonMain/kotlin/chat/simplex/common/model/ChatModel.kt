@@ -1456,6 +1456,8 @@ data class Chat(
     else -> 0
   }
 
+  val hasUnread: Boolean get() = unreadTag || (chatInfo.chatSettings?.enableNtfs != None && supportUnreadCount > 0)
+
   fun groupFeatureEnabled(feature: GroupFeature): Boolean =
     if (chatInfo is ChatInfo.Group) {
       chatInfo.groupInfo.groupFeatureEnabled(feature)
