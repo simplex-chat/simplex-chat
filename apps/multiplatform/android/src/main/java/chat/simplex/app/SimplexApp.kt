@@ -97,6 +97,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
               kotlin.runCatching {
                 val currentUserId = chatModel.currentUser.value?.userId
                 val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
+                val users = kotlin.runCatching { chatController.listUsers(chatModel.remoteHostId()) }.getOrNull()
                 /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
                 if (chatModel.currentUser.value?.userId == currentUserId) {
                   val currentChatId = chatModel.chatId.value
@@ -105,6 +106,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
                     val indexOfCurrentChat = chats.indexOfFirst { it.id == currentChatId }
                     /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
                     if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
+                  }
+                  if (users != null) {
+                    chatModel.users.clear()
+                    chatModel.users.addAll(users)
                   }
                   chatModel.chatsContext.updateChats(chats)
                 }
