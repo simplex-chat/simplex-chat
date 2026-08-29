@@ -10,7 +10,7 @@ vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/wind
 rm -rf $vlc_dir
 mkdir -p $vlc_dir/vlc || exit 0
 
-vlc_tag='v3.0.21-1'
+vlc_tag='v3.0.23-2'
 vlc_url="https://github.com/simplex-chat/vlc/releases/download/${vlc_tag}/vlc-win-x86_64.zip"
 
 cd /tmp
