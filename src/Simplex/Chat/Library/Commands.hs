@@ -66,7 +66,7 @@ import Simplex.Chat.Names.Protocol
 import Simplex.Chat.Names.Snrc (Intent (..), SnrcDeployment (..), intent712, parseRecordKey)
 import Simplex.Messaging.Eth.Address (Address, mkAddress)
 import Simplex.Chat.Store.Wallets (bindSeedAccount, boundAccount, createSeed, currentSeed, getNameKeys, getOrCreateAccountRef, listSeeds, markBackedUp, nameKeyPathTaken, raiseNextAccountIndex, raiseNextNameIndex, recordNameKey, seedOfName, setCurrentSeed, setNextNameIndex, takeNameIndex)
-import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), SeedId, WalletAccount, WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, ethSignatureBytes, importRecoveryKey, newSeed, parseNameKeyPath, recoveryKeyPhrase, renderNameKeyPath, signIntent)
+import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), NameIndex, SeedId, WalletAccount, WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, ethSignatureBytes, importRecoveryKey, newSeed, parseNameKeyPath, recoveryKeyPhrase, renderNameKeyPath, signIntent)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -5246,13 +5246,18 @@ deriveNameOwner user = do
           taken <- withFastStore' $ \db -> nameKeyPathTaken db sId path
           if taken then freeNameIndex sId acctIx (tries + 1) else pure (nameIx, path)
 
--- | Names a seed owns, grouped by the account they were derived under. Names on
--- a layout that is not ours have no account of ours and group under Nothing.
-groupByAccount :: [(Text, Text)] -> [(Maybe AccountIndex, [(Text, Text)])]
+-- | Names a seed owns, grouped by the account they were derived under and
+-- carrying the name index within it — the two numbers @\/name keys use@ takes.
+-- Names on a layout that is not ours have neither, and group under Nothing.
+groupByAccount :: [(Text, Text)] -> [(Maybe AccountIndex, [(Maybe NameIndex, Text, Text)])]
 groupByAccount ns =
   -- stable, so the accounts keep their order and the ungrouped names sort last
-  sortOn (isNothing . fst) . M.toAscList . M.fromListWith (flip (<>)) $
-    map (\(n, path) -> (fst <$> parseNameKeyPath path, [(n, path)])) ns
+  map (fmap (sortOn (\(ix_, _, _) -> ix_))) . sortOn (isNothing . fst) . M.toAscList . M.fromListWith (flip (<>)) $
+    map entry ns
+  where
+    entry (n, path) = case parseNameKeyPath path of
+      Just (acctIx, nameIx) -> (Just acctIx, [(Just nameIx, n, path)])
+      Nothing -> (Nothing, [(Nothing, n, path)])
 
 -- | Names this device holds a key for, with the path each key sits at.
 ownedNames :: User -> CM [(Text, Text)]

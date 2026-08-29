@@ -13,7 +13,7 @@ needs a wallet, ETH and a browser:
   service - metering is off chain.
 - See what you own with `/names` and `/name info`, and find names your keys
   already hold with `/name rescan`.
-- Recovery keys: `/name keys` (names grouped by the account they sit under),
+- Recovery keys: `/name keys` (names grouped by account, each with its index),
   `keys export` (every key, not just the one in use), `keys import` (adds, never
   replaces), `keys init`, `keys use <n> [<account> [<name>]]`.
 - Recovering on a new device: `/name rescan` restores the derivation marks from

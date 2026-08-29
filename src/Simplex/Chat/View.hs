@@ -232,13 +232,18 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   -- the phrase, so after importing on a new device this listing is what tells
   -- the user which account to pin a profile back to.
   CRNameKeys u rows ->
-    let name acct (n, path) = if isJust acct then n else n <> " (" <> path <> ")"
-        accountRow (acct, ns) =
+    let pad w t = t <> T.replicate (max 1 (w - T.length t)) " "
+        -- the index is shown because it is the third argument of
+        -- /name keys use; a name on a foreign layout has none, so it shows the
+        -- path that replaces it
+        nameRow (ix_, n, path) =
           plain $
-            "     "
-              <> maybe "other    " (\a -> "account " <> tshow a) acct
-              <> "   "
-              <> T.intercalate ", " (map (name acct) ns)
+            "       "
+              <> pad 9 (maybe "" (\ix -> "name " <> tshow ix) ix_)
+              <> n
+              <> maybe ("   " <> path) (const "") ix_
+        accountRow (acct, ns) =
+          plain ("     " <> maybe "other" (\a -> "account " <> tshow a) acct) : map nameRow ns
         keyRow (i, groups, cur, backed) =
           plain
             ( tshow i
@@ -246,7 +251,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
                 <> (if cur then "  (in use)" else "")
                 <> (if backed then "" else "  (not written down)")
             )
-            : if null groups then ["     no names yet"] else map accountRow groups
+            : if null groups then ["     no names yet"] else concatMap accountRow groups
      in ttyUser u $ case rows of
           [] -> ["no recovery keys yet - one is created when you buy a name"]
           _ -> concatMap keyRow rows

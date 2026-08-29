@@ -154,7 +154,8 @@ testNameAddress ps =
     -- and now exactly one key exists, controlling the name just bought
     client ##> "/name keys"
     client <## "1:  (in use)  (not written down)"
-    client <## "     account 0   carolname.simplex"
+    client <## "     account 0"
+    client <## "       name 0   carolname.simplex"
 
 -- | Recovery on a new device must not re-use a key a recovered name already
 -- owns. Neither high-water mark survives an import - the phrase records only
@@ -197,8 +198,10 @@ testRecoverMarks ps = do
       -- the scan moved both marks past index 0, so the new name is elsewhere
       client ##> "/name keys"
       client <## "1:  (in use)  (not written down)"
-      client <## "     account 0   lostname.simplex"
-      client <## "     account 1   foundname.simplex"
+      client <## "     account 0"
+      client <## "       name 0   lostname.simplex"
+      client <## "     account 1"
+      client <## "       name 1   foundname.simplex"
 
 -- | A scan is one round trip per candidate path, taken sequentially, and
 -- outruns the harness's five second per-line read timeout. Retrying is not
@@ -263,7 +266,9 @@ testSeedPersists ps = do
     withTestChat ps "client" $ \client -> do
       client ##> "/name keys"
       client <## "1:  (in use)  (not written down)"
-      client <## "     account 0   firstname.simplex, secondname.simplex"
+      client <## "     account 0"
+      client <## "       name 0   firstname.simplex"
+      client <## "       name 1   secondname.simplex"
 
 -- | Reads past startup and progress lines to the registration result, returning
 -- the owner address. Keeps reading until the final progress event has arrived

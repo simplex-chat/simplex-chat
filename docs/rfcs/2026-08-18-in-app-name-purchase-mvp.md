@@ -74,9 +74,12 @@ Recovery keys:
 
 ```
 /name keys                      1:  (in use)
-                                     account 0   alice.simplex
+                                     account 0
+                                       name 0   alice.simplex
+                                       name 1   lizzy.simplex
                                 2:  (not written down)
-                                     other       lucy.simplex (m)
+                                     other
+                                                lucy.simplex   m
 
 /name keys export               every key's phrase, each labelled with the names
                                 it controls - never just the one in use
@@ -88,8 +91,9 @@ Recovery keys:
 /name keys use 2 0 5            ...and where its next name sits
 ```
 
-Names are listed under the account they were derived at, because that grouping
-is the only surviving record of which profile owned what — see *Recovery*.
+Names are listed under the account they were derived at, with their index in it
+— the two numbers `/name keys use` takes. That grouping is the only surviving
+record of which profile owned what; see *Recovery*.
 
 A new device, with nothing but the phrase:
 
@@ -457,8 +461,8 @@ it, not on chain, and not derivable:
 
 * **Which profile held which account.** Recreate two profiles on a new device and
   nothing says which was account 0. Only the user knows, so `/name keys` groups
-  names by the account in their stored path and `/name keys use <n> <account>`
-  pins a profile back to one.
+  names by the account and index in their stored path, and
+  `/name keys use <n> <account>` pins a profile back to one.
 * **Which indices are already taken.** Both high-water marks — `next_account_index`
   per seed, `wallet_next_name_index` per profile — start at 0 after an import,
   while accounts and names already exist under the phrase. A scan is the only

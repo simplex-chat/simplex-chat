@@ -861,7 +861,7 @@ data ChatResponse
   | CRNameInfo {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, nameContact :: [Text], nameChannel :: [Text], regExpiry :: UTCTime, nameEditsLeft :: Word32}
   | CRNameLinkSet {user :: User, regName :: Text, nameRecord :: Text, regTxHash :: TxHash}
   | CRNameRescan {user :: User, namesFound :: [(Text, Text)]}
-  | CRNameKeys {user :: User, walletKeys :: [(Int, [(Maybe AccountIndex, [(Text, Text)])], Bool, Bool)]}
+  | CRNameKeys {user :: User, walletKeys :: [(Int, [(Maybe AccountIndex, [(Maybe NameIndex, Text, Text)])], Bool, Bool)]}
   | CRNameKeyPhrases {user :: User, walletPhrases :: [(Int, Text, [Text])]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
