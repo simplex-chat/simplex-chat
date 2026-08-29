@@ -175,7 +175,6 @@ enum class RTCIceCandidateType(val value: String) {
 enum class WebRTCCallStatus(val value: String) {
   @SerialName("connected") Connected("connected"),
   @SerialName("connecting") Connecting("connecting"),
-  @SerialName("reconnecting") Reconnecting("reconnecting"),
   @SerialName("disconnected") Disconnected("disconnected"),
   @SerialName("failed") Failed("failed")
 }
