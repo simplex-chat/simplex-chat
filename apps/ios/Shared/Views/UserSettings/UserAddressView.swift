@@ -918,6 +918,7 @@ struct SetSimplexDomainView: View {
             } footer: {
                 Text("Crowdfunding investors and trademark owners get priority. Learn more at [simplex.domains](https://simplex.domains/)")
                     .foregroundColor(theme.colors.secondary)
+                    .padding(.bottom)
             }
         }
         .modifier(ThemedBackground(grouped: true))
