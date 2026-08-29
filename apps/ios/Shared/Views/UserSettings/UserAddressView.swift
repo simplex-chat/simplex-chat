@@ -916,7 +916,7 @@ struct SetSimplexDomainView: View {
                 Text("SimpleX name sale starts in")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
-                Text("Crowdfunding investors can reserve their name before sale starts: [simplex.domains](https://simplex.domains/)")
+                Text("Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)")
                     .foregroundColor(theme.colors.secondary)
                     .padding(.bottom)
             }
