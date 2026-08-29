@@ -2943,4 +2943,9 @@
     <string name="share_text_file_servers">Server di file: %s</string>
     <string name="group_invitations">Inviti in gruppi</string>
     <string name="forwarded_from">inoltrato da</string>
+    <string name="countdown_hrs_min_sec">%1$02d ore %2$02d min %3$02d sec</string>
+    <string name="simplex_name_sales_footer">Gli investitori della raccolta fondi possono prenotare i nomi prima che inizi la vendita:</string>
+    <string name="simplex_name_sales">La vendita di nomi SimpleX inizia in</string>
+    <string name="until_register_simplex_domain">fino a quando potrai registrare un dominio SimpleX</string>
+    <string name="update_app_register_simplex_domain">Aggiorna l\'app per registrare un dominio SimpleX</string>
 </resources>
