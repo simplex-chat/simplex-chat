@@ -2926,4 +2926,9 @@
     <string name="share_text_file_servers">文件服务器：%s</string>
     <string name="group_invitations">群邀请</string>
     <string name="forwarded_from">转发自</string>
+    <string name="countdown_hrs_min_sec">%1$02d 小时 %2$02d 分钟 %3$02d 秒</string>
+    <string name="simplex_name_sales_footer">众筹投资者可在销售开始前保留名称：</string>
+    <string name="simplex_name_sales">SimpleX 名称销售开始于</string>
+    <string name="until_register_simplex_domain">直到您可以注册 SimpleX 域名</string>
+    <string name="update_app_register_simplex_domain">更新应用来注册 SimpleX 域名</string>
 </resources>
