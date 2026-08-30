@@ -14,7 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.*
+import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
@@ -24,9 +25,13 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import kotlinx.datetime.*
 
 // Each dot-separated label is ASCII letters/digits with single internal hyphens (mirrors simplexmq SimplexName.hs nameLabelP).
 private val simplexNameLabelRegex = Regex("[A-Za-z0-9]+(-[A-Za-z0-9]+)*")
+
+private val simplexNameSaleStart = LocalDateTime(2026, 12, 12, 18, 0).toInstant(TimeZone.UTC)
+private const val SIMPLEX_DOMAINS_URL = "https://simplex.domains/"
 
 // Set the user's own (prefix "@") or a channel's (prefix "#") SimpleX name.
 // The field is prefilled with the full prefixed name; `save` receives the encoded name (or null to
@@ -128,6 +133,13 @@ fun SetSimplexDomainView(
     }
   }
 
+  fun saleCountdown(msRemaining: Long): String {
+    val total = (msRemaining / 1000).coerceAtLeast(0)
+    val days = total / 86400
+    val dayStr = String.format(generalGetString(if (days == 1L) MR.strings.ttl_day else MR.strings.ttl_days), days)
+    return dayStr + " " + String.format(generalGetString(MR.strings.countdown_hrs_min_sec), total / 3600 % 24, total / 60 % 60, total % 60)
+  }
+
   ModalView(close = { onClose(close) }, cardScreen = true) {
     ColumnWithScrollBar {
       AppBarTitle(title)
@@ -163,7 +175,7 @@ fun SetSimplexDomainView(
           SettingsActionItem(
             painterResource(MR.images.ic_open_in_new),
             stringResource(MR.strings.register_test_name),
-            { openBrowserAlert("https://github.com/simplex-chat/simplex-chat/blob/master/docs/guide/register-simplex-name.md", uriHandler) },
+            { openBrowserAlert("https://simplex.domains/#testing", uriHandler) },
             textColor = MaterialTheme.colors.primary,
             iconColor = MaterialTheme.colors.primary
           )
@@ -179,6 +191,35 @@ fun SetSimplexDomainView(
           }
         }
       }
+      SectionDividerSpaced()
+      val msToSaleStart = remember { mutableStateOf(simplexNameSaleStart.toEpochMilliseconds() - System.currentTimeMillis()) }
+      LaunchedEffect(Unit) {
+        while (msToSaleStart.value > 0) {
+          delay(1000)
+          msToSaleStart.value = simplexNameSaleStart.toEpochMilliseconds() - System.currentTimeMillis()
+        }
+      }
+      SectionView(stringResource(MR.strings.simplex_name_sales)) {
+        SectionItemView {
+          Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(saleCountdown(msToSaleStart.value))
+            Text(
+              stringResource(if (msToSaleStart.value > 0) MR.strings.until_register_simplex_domain else MR.strings.update_app_register_simplex_domain),
+              color = MaterialTheme.colors.secondary,
+              fontSize = 12.sp
+            )
+          }
+        }
+      }
+      SectionTextFooter(buildAnnotatedString {
+        append(generalGetString(MR.strings.simplex_name_sales_footer))
+        append(" ")
+        withLink(LinkAnnotation.Url(SIMPLEX_DOMAINS_URL) { uriHandler.openUriCatching(SIMPLEX_DOMAINS_URL) }) {
+          withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+            append("simplex.domains")
+          }
+        }
+      })
       SectionBottomSpacer()
     }
   }

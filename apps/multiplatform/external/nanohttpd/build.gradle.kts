@@ -26,16 +26,25 @@ java {
   targetCompatibility = jvmVersion
 }
 
-// Without this the jar records the build machine's timestamps, file order and file modes,
-// which makes the desktop packages unreproducible
-tasks.jar {
-  // Checked here and not during configuration, so that Android builds, which don't use nanohttpd,
-  // work without the submodule
+val upstreamSources = sourceSets.main.get().java.matching { include("org/nanohttpd/**") }
+
+// compileJava and jar silently succeed without the sources, so the check needs its own task.
+// It cannot run during configuration, Android builds must work without the submodule.
+val checkUpstreamSources by tasks.registering {
   doFirst {
-    if (!upstream.file("core/src/main/java").asFile.isDirectory) {
+    if (upstreamSources.isEmpty) {
       throw GradleException("nanohttpd sources are missing, run: git submodule update --init --recursive")
     }
   }
+}
+
+tasks.compileJava {
+  dependsOn(checkUpstreamSources)
+}
+
+// Without this the jar records the build machine's timestamps, file order and file modes,
+// which makes the desktop packages unreproducible
+tasks.jar {
   isPreserveFileTimestamps = false
   isReproducibleFileOrder = true
   filePermissions { unix("644") }
