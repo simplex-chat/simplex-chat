@@ -841,7 +841,7 @@
     <string name="in_reply_to">Válaszul erre</string>
     <string name="notification_preview_mode_message">Név és üzenet</string>
     <string name="notifications_will_be_hidden">Az értesítések csak az alkalmazás bezárásáig érkeznek!</string>
-    <string name="info_menu">Üzenet adatai</string>
+    <string name="info_menu">Adatok</string>
     <string name="settings_section_title_messages">Üzenetek és fájlok</string>
     <string name="group_member_role_member">tag</string>
     <string name="make_private_connection">Privát kapcsolat létrehozása</string>
@@ -2908,4 +2908,9 @@
     <string name="share_text_file_servers">Fájlkiszolgálók: %s</string>
     <string name="group_invitations">Meghívások csoportokba</string>
     <string name="forwarded_from">továbbítva innen</string>
+    <string name="countdown_hrs_min_sec">%1$02d óra %2$02d perc %3$02d mp</string>
+    <string name="simplex_name_sales_footer">A közösségi finanszírozásban részt vevő befektetők már az értékesítés megkezdése előtt lefoglalhatnak SimpleX-neveket:</string>
+    <string name="simplex_name_sales">SimpleX-nevek értékesítésének kezdete:</string>
+    <string name="until_register_simplex_domain">egy SimpleX-domainnév regisztrációjáig</string>
+    <string name="update_app_register_simplex_domain">Frissítse az alkalmazást egy SimpleX-domainnév regisztrálásához</string>
 </resources>
