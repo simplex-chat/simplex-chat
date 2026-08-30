@@ -1422,7 +1422,6 @@
     <string name="new_1_time_link">Nový jednorazový odkaz</string>
     <string name="notification_new_contact_request">Nová žiadosť o kontakt</string>
     <string name="chat_list_notes">Poznámky</string>
-    <string name="other_label"></string>
     <string name="other_errors">iné chyby</string>
     <string name="member_info_section_title_owner">Majiteľ</string>
     <string name="call_connection_peer_to_peer">peer-to-peer</string>
