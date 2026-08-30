@@ -5154,7 +5154,7 @@ További fejlesztések hamarosan!</target>
       </trans-unit>
       <trans-unit id="Info" xml:space="preserve" approved="no">
         <source>Info</source>
-        <target state="translated">Üzenet adatai</target>
+        <target state="translated">Adatok</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Initial role" xml:space="preserve">
