@@ -163,7 +163,7 @@ struct ChatItemInfoView: View {
                 infoRow("Disappears at", localTimestamp(deleteAt))
             }
             if let file = ci.file, let fileExpires = file.fileExpires {
-                infoRow(file.expired ? "File was available until" : "File can be received until", localTimestamp(fileExpires))
+                infoRow(file.expired ? "File was available until" : "File available until", localTimestamp(fileExpires))
             }
             if meta.msgVerified?.verified == true {
                 let signedText: LocalizedStringKey = ci.chatDir.sent ? "Signed" : "Signed & verified"
