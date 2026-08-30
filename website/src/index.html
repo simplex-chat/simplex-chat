@@ -66,6 +66,29 @@ active_home: true
     <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
     <link rel="stylesheet" href="/css/design3-nav.css">
+    <style>
+        .sd-sale-banner {
+            position: absolute;
+            top: 62px;
+            left: 0;
+            right: 0;
+            z-index: 12;
+            padding: 0 16px;
+            text-align: center;
+            font-family: "Manrope", sans-serif;
+            font-weight: 500;
+            font-size: calc(var(--sec-vwu) * 2.14);
+            line-height: 1.3;
+            text-decoration: none;
+        }
+        .sd-digits { font-variant-numeric: tabular-nums; }
+        .sd-icon { display: inline-block; width: 0.85em; height: 0.85em; vertical-align: -0.08em; margin-left: 0.35em; }
+        .sd-icon path, .sd-icon polygon { fill: #ffb55d; }
+        .dark .sd-icon path, .dark .sd-icon polygon { fill: #64fdff; }
+        @media screen and (max-width: 959px) {
+            .sd-sale-banner { font-size: calc(var(--sec-vwu) * 5.5); font-weight: 600; }
+        }
+    </style>
     <script src="/js/flag-anchor.js"></script>
     <script>
         function detectMobileBrowser() {
@@ -95,6 +118,29 @@ active_home: true
 
     <div class="screen">
         <section class="page-1 cover page">
+            <a class="sd-sale-banner gradient-text" href="https://simplex.domains/" target="_blank" rel="noopener"><span id="sd-line">SimpleX domains launch in <span class="sd-digits" id="sd-cd"></span></span>&#8288;<svg class="sd-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 100 100"><path d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a>
+            <script>
+                (function () {
+                    var target = Date.UTC(2026, 11, 12, 18, 0, 0);
+                    var line = document.getElementById("sd-line");
+                    var cd = document.getElementById("sd-cd");
+                    var timer;
+                    function pad(n) { return String(n).padStart(2, "0"); }
+                    function tick() {
+                        var ms = target - Date.now();
+                        if (ms <= 0) {
+                            clearInterval(timer);
+                            line.textContent = "Get SimpleX domain";
+                            return;
+                        }
+                        var s = Math.floor(ms / 1000);
+                        var d = Math.floor(s / 86400);
+                        cd.textContent = d + (d === 1 ? " day " : " days ") + pad(Math.floor((s % 86400) / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + ":" + pad(s % 60);
+                    }
+                    timer = setInterval(tick, 1000);
+                    tick();
+                })();
+            </script>
             <div class="area">
                 <div class="content">
                     <h1>{{ "index-hero-h1" | i18n({}, lang) | safe }}</h1>
