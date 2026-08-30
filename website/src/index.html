@@ -69,21 +69,22 @@ active_home: true
     <style>
         .sd-sale-banner {
             position: absolute;
-            top: 62px;
+            top: 60.4px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 12;
             white-space: nowrap;
             font-family: "Manrope", sans-serif;
-            font-weight: 500;
-            font-size: calc(var(--sec-vwu) * 2.14);
+            font-weight: 400;
+            font-size: clamp(18px, calc(var(--sec-vwu) * 2.14), 34.92px);
             line-height: 1.3;
             text-decoration: none;
+            background-image: linear-gradient(90deg, #001aa7 0%, #0095e7 100%);
         }
         .sd-digits { font-variant-numeric: tabular-nums; }
         .sd-icon { display: inline-block; width: 0.85em; height: 0.85em; vertical-align: -0.08em; margin-left: 0.35em; }
-        .sd-icon path, .sd-icon polygon { fill: #ffb55d; }
-        .dark .sd-icon path, .dark .sd-icon polygon { fill: #64fdff; }
+        .sd-icon path, .sd-icon polygon { fill: #0095e7; }
+        .dark .sd-icon path, .dark .sd-icon polygon { fill: #c8feff; }
         @media screen and (max-width: 959px) {
             .sd-sale-banner { top: 0; left: 0; right: 0; transform: none; z-index: 50001; pointer-events: none; }
             .sd-lead, .sd-tail {
@@ -92,9 +93,9 @@ active_home: true
                 transform: translateX(-50%);
                 white-space: nowrap;
                 pointer-events: auto;
-                font-size: calc(var(--sec-vwu) * 5.5);
-                font-weight: 600;
-                background-image: linear-gradient(100deg, #ffb55d 0%, #fff494 50%, #fbffdd 100%);
+                font-size: calc(var(--sec-vwu) * 4.675);
+                font-weight: 500;
+                background-image: linear-gradient(90deg, #001aa7 0%, #0095e7 100%);
                 -webkit-background-clip: text;
                 background-clip: text;
                 -webkit-text-fill-color: transparent;
