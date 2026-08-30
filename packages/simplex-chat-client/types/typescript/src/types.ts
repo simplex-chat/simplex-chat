@@ -1326,6 +1326,7 @@ export namespace ChatErrorType {
     type: "nameRegistrationFailed"
     nameRegCode: string
     nameRegMessage?: string
+    nameRegRetryAfter?: number // word32
   }
 
   export interface NotResolvedLocally extends Interface {

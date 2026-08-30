@@ -824,6 +824,7 @@ class ChatErrorType_nameRegistrationFailed(TypedDict):
     type: Literal["nameRegistrationFailed"]
     nameRegCode: str
     nameRegMessage: NotRequired[str]
+    nameRegRetryAfter: NotRequired[int]  # word32
 
 class ChatErrorType_notResolvedLocally(TypedDict):
     type: Literal["notResolvedLocally"]

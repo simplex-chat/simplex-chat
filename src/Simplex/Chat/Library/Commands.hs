@@ -63,10 +63,10 @@ import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Names.Protocol
-import Simplex.Chat.Names.Snrc (Intent (..), SnrcDeployment (..), intent712, parseRecordKey)
+import Simplex.Chat.Names.Snrc (Intent (..), SignedIntent (..), SnrcDeployment (..), parseRecordKey, signSnrcIntent)
 import Simplex.Messaging.Eth.Address (Address, mkAddress)
-import Simplex.Chat.Store.Wallets (bindSeedAccount, boundAccount, createSeed, currentSeed, getNameKeys, getOrCreateAccountRef, listSeeds, markBackedUp, nameKeyPathTaken, raiseNextAccountIndex, raiseNextNameIndex, recordNameKey, seedOfName, setCurrentSeed, setNextNameIndex, takeNameIndex)
-import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), NameIndex, SeedId, WalletAccount, WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, ethSignatureBytes, importRecoveryKey, newSeed, parseNameKeyPath, recoveryKeyPhrase, renderNameKeyPath, signIntent)
+import Simplex.Chat.Store.Wallets (bindSeedAccount, createSeed, currentSeed, getNameKeys, getOrCreateAccountRef, listSeeds, markBackedUp, nameKeyPathTaken, raiseNextAccountIndex, raiseNextNameIndex, recordNameKey, seedOfName, setCurrentSeed, setNextNameIndex, takeNameIndex)
+import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), NameIndex, SeedId, WalletAccount, WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, ethSignatureBytes, importRecoveryKey, newSeed, parseNameKeyPath, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1502,7 +1502,7 @@ processChatCommand cxt nm = \case
     pure $ CRNameRegistered user nm' (tshow owner) path expiry' txHash'
   APINameList sendTarget -> withUser $ \user -> do
     cReq <- resolveServiceTarget nm user sendTarget
-    named <- ownedNames user
+    named <- ownedNames
     rows <- forM named $ \(nm_, _) ->
       namesRPC user cReq (NRResolve nm_) >>= \case
         NRPRecord {nrName, nrContact, nrExpiry, nrEditsLeft} ->
@@ -1511,7 +1511,7 @@ processChatCommand cxt nm = \case
     pure $ CRNames user rows
   APINameInfo sendTarget nm' -> withUser $ \user -> do
     cReq <- resolveServiceTarget nm user sendTarget
-    (_, path, _) <- nameKeyOf user nm'
+    (_, path, _) <- nameKeyOf nm'
     namesRPC user cReq (NRResolve nm') >>= \case
       NRPRecord {nrName, nrOwner, nrContact, nrChannel, nrExpiry, nrEditsLeft} ->
         pure $ CRNameInfo user nrName (tshow nrOwner) path nrContact nrChannel nrExpiry nrEditsLeft
@@ -1519,7 +1519,7 @@ processChatCommand cxt nm = \case
   APINameSetLink sendTarget nm' record lnk -> withUser $ \user -> do
     cReq <- resolveServiceTarget nm user sendTarget
     rk <- either throwCmdError pure $ parseRecordKey record
-    (_, _, acc) <- nameKeyOf user nm'
+    (_, _, acc) <- nameKeyOf nm'
     nonce <-
       namesRPC user cReq (NRNonce (accountAddress acc)) >>= \case
         NRPNonce {nrNonce} -> pure nrNonce
@@ -1529,10 +1529,10 @@ processChatCommand cxt nm = \case
     -- changing hands and could then be replayed against the new owner's name.
     let deadline = floor (utcTimeToPOSIXSeconds now) + intentTtlSeconds
         it = SetTextRecord nm' rk lnk nonce deadline
-    sig <- either (throwCmdError . ("wallet: " <>)) pure $ signIntent acc (intent712 clientDeployment it)
+    SignedIntent {siSignature} <- either (throwCmdError . ("wallet: " <>)) pure $ signSnrcIntent acc clientDeployment it
     g <- asks random
     rid <- RequestId <$> atomically (C.randomBytes 16 g)
-    namesRPC user cReq (NRRelayIntent rid nm' record lnk nonce deadline (IntentSig $ ethSignatureBytes sig)) >>= \case
+    namesRPC user cReq (NRRelayIntent rid nm' record lnk nonce deadline (IntentSig $ ethSignatureBytes siSignature)) >>= \case
       NRPRelayed {nrTxHash} -> pure $ CRNameLinkSet user nm' record nrTxHash
       _ -> throwCmdError "unexpected relay response"
   APINameRescan sendTarget more -> withUser $ \user -> do
@@ -5260,21 +5260,28 @@ groupByAccount ns =
       Nothing -> (Nothing, [(Nothing, n, path)])
 
 -- | Names this device holds a key for, with the path each key sits at.
-ownedNames :: User -> CM [(Text, Text)]
-ownedNames _ = do
+--
+-- Device-wide on purpose, and not scoped to the calling profile: a seed belongs
+-- to the device rather than to a profile, wallet_name_keys records no profile,
+-- and a recovery scan has nothing to attribute what it finds to. Listing per
+-- profile would hide exactly the names a recovery had just restored. The same
+-- reasoning applies to 'nameKeyOf', which will sign for any name on the device.
+ownedNames :: CM [(Text, Text)]
+ownedNames = do
   seeds <- withFastStore' $ \db -> map fst <$> listSeeds db
   concat <$> mapM (\seed -> withFastStore' $ \db -> getNameKeys db (wsId seed)) seeds
 
 -- | The key that owns a name. Re-derived from the stored path, so a name found
 -- on a layout that is not ours still works.
-nameKeyOf :: User -> Text -> CM (SeedId, Text, WalletAccount)
-nameKeyOf user nm' = do
+nameKeyOf :: Text -> CM (SeedId, Text, WalletAccount)
+nameKeyOf nm' = do
   r <- withFastStore' $ \db -> seedOfName db nm'
   case r of
     Nothing -> throwCmdError $ "no key for " <> T.unpack nm' <> " on this device"
     Just (seed, path) -> do
-      acctIx <- maybe 0 (arIndex . snd) <$> withFastStore' (\db -> boundAccount db user)
-      acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveAtPath seed acctIx path
+      -- The path is literal, so the profile's current binding has no say in
+      -- which key comes back - reading it would only suggest otherwise.
+      acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveAtPath seed 0 path
       pure (wsId seed, path, acc)
 
 -- | Probe a seed for names it owns, across the layouts a name may have been

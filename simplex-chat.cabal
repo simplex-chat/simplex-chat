@@ -34,7 +34,6 @@ flag client_postgres
   manual: True
   default: False
 
-
 library
   exposed-modules:
       Simplex.Chat

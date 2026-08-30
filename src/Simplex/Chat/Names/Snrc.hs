@@ -17,11 +17,9 @@ module Simplex.Chat.Names.Snrc
     parseRecordKey,
     labelHash,
     nameHash,
-    tokenId,
     intent712,
     intentDigest,
     signSnrcIntent,
-    setTextTypeString,
   )
 where
 
@@ -31,9 +29,8 @@ import qualified Data.ByteString.Char8 as BC
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Wallet (Eip712Intent (..), EthSignature, WalletAccount, signIntent)
-import Simplex.Messaging.Eth.EIP712 (hashTypedData)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Value (..))
+import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Value (..), hashTypedData)
 import Simplex.Messaging.Eth.Keccak (keccak256)
 
 -- | Where a TLD is deployed. The verifying contract differs per intent kind, so
@@ -91,9 +88,6 @@ nameHash name
     step lbl node = keccak256 (node <> labelHash lbl)
 
 -- | @BaseRegistrar@ token id: @uint256(keccak256(label))@.
-tokenId :: ByteString -> Integer
-tokenId = B.foldl' (\acc w -> acc * 256 + fromIntegral w) 0 . labelHash
-
 -- | The typed-data an intent signs. Deliberately the only bridge to the wallet:
 -- 'signIntent' takes this, never a bare digest.
 intent712 :: SnrcDeployment -> Intent -> Eip712Intent

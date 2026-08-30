@@ -1148,6 +1148,7 @@ NameRegistrationFailed:
 - type: "nameRegistrationFailed"
 - nameRegCode: string
 - nameRegMessage: string?
+- nameRegRetryAfter: word32?
 
 NotResolvedLocally:
 - type: "notResolvedLocally"

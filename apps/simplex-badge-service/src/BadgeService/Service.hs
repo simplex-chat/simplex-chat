@@ -289,7 +289,7 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
                 nrYears
               }
         NRBuy {nrRequestId, nrName, nrOwner, nrCode, nrLink} ->
-          idempotent nrRequestId $ atomically $ do
+          idempotent nrRequestId $ do
             c <- readTVar chain
             let code = unRedemptionCode nrCode
                 label = T.takeWhile (/= '.') nrName
@@ -333,7 +333,7 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
           c <- readTVar chain
           pure $ NRPNonce (M.findWithDefault 0 nrAddress (chainNonces c))
         NRRelayIntent {nrRequestId, nrName, nrRecordKey, nrValue, nrNonce, nrDeadline, nrSig} ->
-          idempotent nrRequestId $ atomically $ do
+          idempotent nrRequestId $ do
             c <- readTVar chain
             case (parseRecordKey nrRecordKey, M.lookup nrName (chainNames c)) of
               (Left e, _) -> pure $ NRPError NECBadRequest (Just (T.pack e)) Nothing
@@ -366,13 +366,15 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
     -- A resent request must not execute twice: matching fields cannot tell a
     -- retry from a user doing the same thing again, which is why every mutating
     -- call carries an id.
-    idempotent rid act = do
-      prior <- atomically $ M.lookup (unRequestId rid) . chainRequests <$> readTVar chain
-      case prior of
+    -- One transaction, so two identical requests cannot both run the action.
+    -- A relayer that split this would pay twice for one request id.
+    idempotent rid act = atomically $ do
+      c <- readTVar chain
+      case M.lookup (unRequestId rid) (chainRequests c) of
         Just r -> pure r
         Nothing -> do
           r <- act
-          atomically $ modifyTVar' chain $ \c -> c {chainRequests = M.insert (unRequestId rid) r (chainRequests c)}
+          modifyTVar' chain $ \c' -> c' {chainRequests = M.insert (unRequestId rid) r (chainRequests c')}
           pure r
     checkGates nm =
       let label = T.takeWhile (/= '.') nm
@@ -386,7 +388,7 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
       Just e | neExpiry e >= now' -> pure $ NRPError NECNameTaken Nothing Nothing
       _ -> do
         modifyTVar' chain $ \c' ->
-          c' {chainNames = M.insert nm (NameEntry owner [link] [] expiry editsPerName) (chainNames c')}
+          c' {chainNames = M.insert nm (NameEntry owner (filter (not . T.null) [link]) [] expiry editsPerName) (chainNames c')}
         pure $ NRPRegistered nm expiry (mockTxHash "register" tag)
     -- A NamesResponse always encodes to a JSON object.
     respObj r = case J.toJSON r of J.Object o -> o; _ -> KM.empty
