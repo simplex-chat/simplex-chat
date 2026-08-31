@@ -31,7 +31,6 @@ import Crypto.Random (ChaChaDRG)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlphaNum, toUpper)
-import Data.List (foldl')
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -75,8 +74,8 @@ checkValue :: [Int] -> Int
 checkValue payload = (base - total `mod` base) `mod` base
   where
     -- doubling every second value from the right, as the check character sits to the right of the payload
-    total = fst $ foldl' step (0, 2) (reverse payload)
-    step (sum', factor) v =
+    total = fst $ foldr step (0, 2) payload
+    step v (sum', factor) =
       let addend = factor * v
        in (sum' + addend `div` base + addend `mod` base, if factor == 2 then 1 else 2)
 
