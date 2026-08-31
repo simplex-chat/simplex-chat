@@ -73,14 +73,10 @@ welcomeGetOpts = do
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
--- | The issuer key is what makes this a badge service; without it every redemption would fail
--- at the signing step, after the code had already been looked up.
 requireIssuerKey :: BadgeServiceOpts -> IO BadgeIssuerKey
 requireIssuerKey BadgeServiceOpts {issuerKey} = case issuerKey of
   Just k -> pure k
   Nothing -> do
-    -- passing one half leaves issuerKey empty too, so this states the requirement rather than
-    -- asserting what the operator passed
     putStrLn "Error: an issuer key is required - pass both --issuer-key-idx and --issuer-secret (see `simplex-chat badge keygen`)"
     exitFailure
 
@@ -93,8 +89,7 @@ badgeService opts cfg env = do
             postStartHook = Just $ badgePostStartHook opts env,
             preCmdHook = Just badgeCmdHook
           }
-  -- the reader only enqueues: handling a request signs a credential and writes, and outputQ
-  -- carries every chat event, so doing that work here would hold up everything behind it
+  -- the reader must not block: outputQ carries every chat event
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc ->
     raceAny_
       [ forever $
@@ -127,8 +122,7 @@ badgeServiceCLI opts = do
       processQueuedRequests key env
     ]
 
--- | Core parses `//...` into CustomChatCommand and leaves it to this hook, so minting lives here
--- rather than in core: the client every user runs has no business writing badge codes.
+-- | minting lives here rather than in core: every user's app would otherwise ship it
 badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook cc = \case
   CustomChatCommand cmd -> Left <$> runBadgeCmd cc cmd
@@ -142,14 +136,12 @@ runBadgeCmd cc cmd = case A.parseOnly mintCmdP cmd of
       Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "code " <> formatBadgeCode code}
       Left e -> pure $ chatCmdError $ "minting code: " <> e
 
--- | @mint <badge_type> [months] [paid|unpaid|free]@, defaulting to one month, operator-issued.
 mintCmdP :: A.Parser MintCodeOpts
 mintCmdP =
   "mint " *> do
     badgeType <- badgeTypeP
     months_ <- optional (A.space *> A.decimal)
-    -- checked outside `optional`, which would otherwise backtrack past a bad count and report
-    -- only that the command did not parse
+    -- outside `optional`, which would otherwise backtrack past a bad count
     months <- maybe (pure 1) checkMonths months_
     paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
     A.skipSpace
@@ -160,8 +152,7 @@ mintCmdP =
     checkMonths n
       | n >= 1 && n <= (255 :: Int) = pure n
       | otherwise = fail "months"
-    -- BadgeType decodes any text to BTUnknown, which is right for a type received from a newer
-    -- peer and wrong here: an operator typo would mint a code no app can show as a badge
+    -- BadgeType decodes anything to BTUnknown, so a typo would mint an unusable code
     badgeTypeP =
       textTokenP >>= \case
         BTUnknown _ -> fail "badge type"
@@ -216,8 +207,7 @@ handleServiceRequest key cc User {userId} reqId sigKey reqData = do
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
 
--- BadgeServiceResponse encodes as a tagged object, so the first branch always matches; the
--- fallback keeps the transport total rather than failing inside the reply path.
+-- the fallback is unreachable: a tagged object always encodes as J.Object
 responseObject :: BadgeServiceResponse -> J.Object
 responseObject r = case J.toJSON r of
   J.Object o -> o
@@ -227,10 +217,8 @@ errorResponse :: BadgeServiceErrorCode -> BadgeServiceResponse
 errorResponse code = BSPError {code, message = Nothing, retryAfter = Nothing}
 
 
--- | Parse the envelope, check the version and the claimed key, then route.
---
--- The agent has already verified the signature, so @sigKey@ is a key the sender holds. A
--- @purchaseKey@ that is not that key would let a client claim a purchase it cannot sign for.
+-- | The agent verified the signature, so sigKey is a key the sender holds - a purchaseKey that
+-- differs would let a client claim a purchase it cannot sign for.
 badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
 badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Error _ -> pure $ errorResponse BSEBadRequest
@@ -238,8 +226,7 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
     | otherwise -> case request of
-        -- redeemBadgeCode creates the purchase, so on a first redemption its key is one the
-        -- service has never seen; every other command requires a key it already holds.
+        -- redeemBadgeCode creates the purchase, so its key is unknown on a first redemption
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
@@ -251,11 +238,8 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
               Right False -> pure $ errorResponse BSEUnknownPurchaseKey
               Left _ -> pure $ errorResponse BSEInternal
 
--- | Redeem a code: read it, look it up, and only once the credential is signed write the
--- purchase, the issuance and the code's redemption together.
---
--- An unknown code and a malformed one both answer code_invalid, so trying codes tells a
--- guesser nothing beyond whether one was accepted.
+-- | Nothing is written until the credential is signed, so a signing failure leaves the code
+-- unspent rather than spent with nothing behind it.
 redeemCode :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> T.Text -> IO BadgeServiceResponse
 redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText = case parseBadgeCode codeText of
   Nothing -> pure $ errorResponse BSECodeInvalid
@@ -285,17 +269,14 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
                         periodEnd,
                         expiry = endOfSundayAfter periodEnd
                       }
-              -- re-read under the write transaction: a concurrent redemption of the same code
-              -- may have landed while this one was being signed
+              -- re-read: a concurrent redemption may have landed while this one was signing
               r <- withDB "writeCodeRedemption" cc $ \db ->
                 liftIO (getBadgeCode db $ badgeCodeHash code) >>= \case
                   Just MintedCode {redemption = current} | Just resp <- redeemedResponse current -> pure resp
                   _ -> liftIO $ credentialResponse credential <$ writeCodeRedemption db issuance now
               pure $ either (const $ errorResponse BSEInternal) id r
   where
-    -- The answer for a code a purchase already claims, or Nothing to go on and issue it.
-    -- One definition, used both before signing to avoid needless work and inside the write
-    -- transaction where it is what actually prevents a second issuance.
+    -- one definition, used before signing and again inside the write transaction
     redeemedResponse = \case
       CodeUnredeemed -> Nothing
       CodeRedeemedUnreadable -> Just $ errorResponse BSEInternal
@@ -303,8 +284,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
         | k == purchaseKey -> Just $ credentialResponse credential
         | otherwise -> Just $ errorResponse BSECodeUsed
 
--- The ledger is not written yet: a redemption issues one credential and no ledger rows, so the
--- statement it reports is empty.
+-- the ledger is not written yet, so the statement is empty
 credentialResponse :: BadgeCredential -> BadgeServiceResponse
 credentialResponse credential =
   BSPBadgeCredential {credential = Just credential, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}}
@@ -312,12 +292,8 @@ credentialResponse credential =
 addMonths :: Integer -> UTCTime -> UTCTime
 addMonths n (UTCTime d t) = UTCTime (addGregorianMonthsClip n d) t
 
--- Credentials expire at the end of the Sunday on or after the period they cover, so that every
--- badge issued in a week expires together and reveals nothing about when it was bought.
---
--- The result is the instant that Sunday ends, which is the following Monday at 00:00 - so this
--- returns a Monday, and 8 rather than 7 is right. For d itself a Sunday, the Sunday on or after
--- it is d, and the result is the next day.
+-- Every badge in a week expires together, revealing nothing about when it was bought.
+-- The end of a Sunday is the next Monday at 00:00, so this returns a Monday and 8 is right.
 endOfSundayAfter :: UTCTime -> UTCTime
 endOfSundayAfter (UTCTime d _) =
   let (_, _, dayOfWeek) = toWeekDate d -- 1 Monday .. 7 Sunday
