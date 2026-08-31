@@ -270,14 +270,7 @@ instance ToJSON BadgeServiceErrorCode where
 instance FromJSON BadgeServiceErrorCode where
   parseJSON = textParseJSON "BadgeServiceErrorCode"
 
--- Never sumTypeJSON: under the iOS swiftJSON flag it becomes single-field `_owsf` encoding, and
--- both sides of this protocol must read the same on every platform. Ordered bottom-up: a Template
--- Haskell splice only sees instances declared before it.
-
 $(pure [])
-
--- An unknown entry type is re-emitted verbatim, so a client holding a ledger replica neither
--- loses nor rewrites what a newer service wrote.
 
 instance FromJSON StatementCreditType where
   parseJSON v@(J.Object j) =
