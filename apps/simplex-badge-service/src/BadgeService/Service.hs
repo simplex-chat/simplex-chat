@@ -93,12 +93,17 @@ badgeService opts cfg env = do
             postStartHook = Just $ badgePostStartHook opts env,
             preCmdHook = Just badgeCmdHook
           }
+  -- the reader only enqueues: handling a request signs a credential and writes, and outputQ
+  -- carries every chat event, so doing that work here would hold up everything behind it
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc ->
-    forever $ do
-      (_, event) <- atomically . readTBQueue $ outputQ cc
-      case event of
-        Right (CEvtServiceRequest u reqId sigKey reqData) -> handleServiceRequest key cc u reqId sigKey reqData
-        _ -> pure ()
+    raceAny_
+      [ forever $
+          atomically (readTBQueue $ outputQ cc) >>= \case
+            (_, Right (CEvtServiceRequest u reqId sigKey reqData)) ->
+              atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
+            _ -> pure (),
+        processQueuedRequests key env
+      ]
 
 badgeServiceCLI :: BadgeServiceOpts -> IO ()
 badgeServiceCLI opts = do
