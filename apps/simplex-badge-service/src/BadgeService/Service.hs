@@ -48,6 +48,7 @@ import Simplex.Chat.Types (AgentInvId (..), User (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding, strEncode, textDecode)
+import Simplex.Messaging.Version (isCompatible)
 import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -237,7 +238,7 @@ badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe C.PublicKeyEd2
 badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Error _ -> pure $ errorResponse BSEBadRequest
   J.Success BadgeServiceRequest {version, purchaseKey, request}
-    | version /= currentBadgeServiceVersion -> pure $ errorResponse BSEUnsupportedVersion
+    | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
     | otherwise -> case request of
         -- redeemBadgeCode creates the purchase, so on a first redemption its key is one the

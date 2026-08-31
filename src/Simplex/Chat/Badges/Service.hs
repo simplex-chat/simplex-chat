@@ -10,8 +10,11 @@ module Simplex.Chat.Badges.Service
     BadgeServiceCommand (..),
     BadgeServiceVersion,
     VersionBadgeService,
+    VersionRangeBadgeService,
     pattern VersionBadgeService,
+    initialBadgeServiceVersion,
     currentBadgeServiceVersion,
+    supportedBadgeServiceVRange,
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
     BadgeServiceErrorCode (..),
@@ -41,7 +44,7 @@ import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Version (VersionScope)
+import Simplex.Messaging.Version (VersionRange, VersionScope, mkVersionRange)
 import Simplex.Messaging.Version.Internal (Version (..))
 
 data BadgeServiceVersion
@@ -53,8 +56,17 @@ type VersionBadgeService = Version BadgeServiceVersion
 pattern VersionBadgeService :: Word16 -> VersionBadgeService
 pattern VersionBadgeService v = Version v
 
+type VersionRangeBadgeService = VersionRange BadgeServiceVersion
+
+initialBadgeServiceVersion :: VersionBadgeService
+initialBadgeServiceVersion = VersionBadgeService 1
+
 currentBadgeServiceVersion :: VersionBadgeService
 currentBadgeServiceVersion = VersionBadgeService 1
+
+-- the service is deployed ahead of app releases, so it answers within the client's version
+supportedBadgeServiceVRange :: VersionRangeBadgeService
+supportedBadgeServiceVRange = mkVersionRange initialBadgeServiceVersion currentBadgeServiceVersion
 
 data BadgeServiceRequest = BadgeServiceRequest
   { version :: VersionBadgeService,
