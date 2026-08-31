@@ -1,7 +1,6 @@
 function showLocalTime() {
     const utc = document.querySelector('.event-utc');
-    const local = document.querySelector('.event-local');
-    if (!utc || !local) return;
+    if (!utc) return;
 
     const start = new Date(utc.dateTime);
     if (isNaN(start.getTime())) return;
@@ -15,8 +14,39 @@ function showLocalTime() {
         timeZoneName: 'short'
     });
 
-    local.textContent = 'Your time: ' + format.format(start);
-    local.removeAttribute('hidden');
+    utc.textContent = format.format(start);
+}
+
+function startCountdown() {
+    const utc = document.querySelector('.event-utc');
+    const join = document.querySelector('.event-join');
+    const count = join && join.querySelector('.join-count');
+    if (!utc || !count) return;
+
+    const start = new Date(utc.dateTime);
+    if (isNaN(start.getTime())) return;
+
+    const pad = (n) => String(n).padStart(2, '0');
+
+    function tick() {
+        const left = Math.floor((start.getTime() - Date.now()) / 1000);
+        if (left <= 0) {
+            count.textContent = 'now';
+            join.classList.remove('counting');
+        } else {
+            const days = Math.floor(left / 86400);
+            const dayPart = days ? days + (days === 1 ? ' day ' : ' days ') : '';
+            count.textContent = 'in ' + dayPart
+                + pad(Math.floor((left % 86400) / 3600)) + ' hrs '
+                + pad(Math.floor((left % 3600) / 60)) + ' min '
+                + pad(left % 60) + ' sec';
+            join.classList.add('counting');
+        }
+        count.removeAttribute('hidden');
+    }
+
+    tick();
+    setInterval(tick, 1000);
 }
 
 function setSignupSource() {
@@ -76,6 +106,7 @@ function trackNavColor() {
 }
 
 showLocalTime();
+startCountdown();
 setSignupSource();
 setupRegisterOverlay();
 trackNavColor();
