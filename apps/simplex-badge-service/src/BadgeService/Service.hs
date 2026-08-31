@@ -148,19 +148,18 @@ mintCmdP =
     A.endOfInput
     pure MintCodeOpts {badgeType, months, paymentStatus}
   where
-    -- these strings are unreachable: runBadgeCmd reports the usage line, not the parse error
     checkMonths n
       | n >= 1 && n <= (255 :: Int) = pure n
-      | otherwise = fail "months"
+      | otherwise = fail "months must be between 1 and 255"
     -- BadgeType decodes anything to BTUnknown, so a typo would mint an unusable code
     badgeTypeP =
       textTokenP >>= \case
-        BTUnknown _ -> fail "badge type"
+        BTUnknown t -> fail $ "unknown badge type " <> T.unpack t
         bt -> pure bt
     textTokenP :: TextEncoding a => A.Parser a
     textTokenP = do
       t <- A.takeWhile1 (not . isSpace)
-      maybe (fail "token") pure $ textDecode $ safeDecodeUtf8 t
+      maybe (fail "invalid value") pure $ textDecode $ safeDecodeUtf8 t
 
 data MintCodeOpts = MintCodeOpts
   { badgeType :: BadgeType,
@@ -207,7 +206,6 @@ handleServiceRequest key cc User {userId} reqId sigKey reqData = do
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
 
--- the fallback is unreachable: a tagged object always encodes as J.Object
 responseObject :: BadgeServiceResponse -> J.Object
 responseObject r = case J.toJSON r of
   J.Object o -> o
@@ -226,10 +224,11 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
     | otherwise -> case request of
-        -- redeemBadgeCode creates the purchase, so its key is unknown on a first redemption
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
+        -- every command but redeemBadgeCode needs a key the service already knows: that one
+        -- creates the purchase, so its key is unknown on a first redemption
         _ -> case purchaseKey of
           Nothing -> pure $ errorResponse BSEUnsupportedVersion
           Just k ->
