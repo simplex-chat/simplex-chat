@@ -32,8 +32,11 @@ module Simplex.Chat.Names.Protocol
     RequestId (..),
     RedemptionCode (..),
     IntentSig (..),
+    LabelHash (..),
     NameRegPhase (..),
     mkCommitment,
+    mkLabelHash,
+    validLabel,
   )
 where
 
@@ -53,6 +56,8 @@ import Data.Time.Clock (UTCTime)
 import Data.Word (Word16, Word32)
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
+import qualified Data.Text as T
+import Simplex.Chat.Names.Snrc (labelHash)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.Eth.Keccak (keccak256)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
@@ -79,7 +84,13 @@ newtype NameSecret = NameSecret {unSecret :: ByteString}
 newtype TxHash = TxHash {unTxHash :: ByteString}
   deriving (Eq, Show)
 
--- | All three are on-chain byte values, so they are encoded the way Ethereum
+-- | ENS labelhash of a single label: @keccak256("acme")@, not the namehash of
+-- the full name. Quoting a name sends only this, so the label a client is about
+-- to register is never revealed to the registrar before it is committed.
+newtype LabelHash = LabelHash {unLabelHash :: ByteString}
+  deriving (Eq, Show)
+
+-- | All of these are on-chain byte values, so they are encoded the way Ethereum
 -- writes them — @0x@-prefixed hex — not base64.
 hexEncode :: ByteString -> ByteString
 hexEncode = ("0x" <>) . BAE.convertToBase BAE.Base16
@@ -94,6 +105,10 @@ instance StrEncoding Commitment where
   strEncode = hexEncode . unCommitment
   strP = Commitment <$> hexP
 
+instance StrEncoding LabelHash where
+  strEncode = hexEncode . unLabelHash
+  strP = LabelHash <$> hexP
+
 instance StrEncoding NameSecret where
   strEncode = hexEncode . unSecret
   strP = NameSecret <$> hexP
@@ -105,6 +120,10 @@ instance StrEncoding TxHash where
 instance ToJSON Commitment where toJSON = strToJSON; toEncoding = strToJEncoding
 
 instance FromJSON Commitment where parseJSON = strParseJSON "Commitment"
+
+instance ToJSON LabelHash where toJSON = strToJSON; toEncoding = strToJEncoding
+
+instance FromJSON LabelHash where parseJSON = strParseJSON "LabelHash"
 
 instance ToJSON NameSecret where toJSON = strToJSON; toEncoding = strToJEncoding
 
@@ -119,6 +138,30 @@ instance FromJSON TxHash where parseJSON = strParseJSON "TxHash"
 mkCommitment :: Text -> Address -> NameSecret -> NameTtl -> Commitment
 mkCommitment name owner (NameSecret secret) ttl =
   Commitment . keccak256 $ B.concat [encodeUtf8 name, unAddress owner, secret, smpEncode ttl]
+
+mkLabelHash :: Text -> LabelHash
+mkLabelHash = LabelHash . labelHash . encodeUtf8
+
+validNameChar :: Char -> Bool
+validNameChar c = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'
+
+-- | What the contract accepts in a label. Shared rather than mirrored: a quote
+-- carries only 'LabelHash', so the registrar cannot see the charset and the
+-- client is the only side that can check it. Two copies that drifted would let
+-- a client call a name available that registration then refuses.
+--
+-- Letter-digit-hyphen, and the hyphen rules that come with it. The charset
+-- alone is not enough: it admits @xn--@, and a punycode label is ASCII that
+-- renders as something else entirely, which is the same confusable attack the
+-- lowercase rule closes. Positions 3 and 4 are refused wholesale rather than
+-- @xn--@ specifically, because that slot is reserved for exactly this purpose
+-- and the next prefix to be defined should not need a code change.
+validLabel :: Text -> Bool
+validLabel l =
+  T.all validNameChar l
+    && not ("-" `T.isPrefixOf` l)
+    && not ("-" `T.isSuffixOf` l)
+    && not ("--" `T.isPrefixOf` T.drop 2 l)
 
 -- | @{ version, request }@ — the outer envelope. Fields are @nr@-prefixed so
 -- they do not shadow local bindings where this module is imported unqualified.
@@ -176,7 +219,11 @@ data NamesCommand
       }
   | -- | Availability and price. @years@ is an input because a price without a
     -- term is meaningless; the CLI ignores the price, mobile IAP needs it.
-    NRQuote {nrLabel :: Text, nrYears :: Word32}
+    -- @nrLabelLen@ travels alongside because the length cannot be recovered
+    -- from the hash and the registry has a minimum. A client gains nothing by
+    -- lying: understating it is refused as too short, and overstating it only
+    -- defers the refusal to 'NRBuy', which sees the plaintext.
+    NRQuote {nrLabelHash :: LabelHash, nrLabelLen :: Word32, nrYears :: Word32}
   | -- | Register against a redemption code. The term is /not/ a field: it comes
     -- from the code's tier, so client and service cannot disagree about what was
     -- paid for. @requestId@ makes a resent request distinguishable from a
@@ -210,7 +257,7 @@ data NamesResponse
   = NRPCommitted {nrTxHash :: TxHash}
   | NRPRegistered {nrName :: Text, nrExpiry :: UTCTime, nrTxHash :: TxHash}
   | NRPQuote
-      { nrLabel :: Text,
+      { nrLabelHash :: LabelHash,
         nrAvailable :: Bool,
         nrTakenUntil :: Maybe UTCTime,
         nrReserved :: Bool,

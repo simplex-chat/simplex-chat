@@ -1469,11 +1469,15 @@ processChatCommand cxt nm = \case
     respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) (LB.toStrict $ J.encode request)
     resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
     pure $ CRServiceResponse user resp
+  -- Only the labelhash is sent, so the registrar never learns a name the user
+  -- has not committed to yet. The charset rules come with the client because
+  -- they are the one thing a hash cannot be checked against.
   APINameQuote sendTarget label years -> withUser $ \user -> do
+    unless (validLabel label) $ throwCmdError "name may only contain a-z, 0-9 and inner hyphens"
     cReq <- resolveServiceTarget nm user sendTarget
-    namesRPC user cReq (NRQuote label years) >>= \case
-      NRPQuote {nrLabel, nrAvailable, nrReserved, nrPriceUsdCents, nrYears} ->
-        pure $ CRNameQuote user nrLabel nrAvailable nrReserved nrPriceUsdCents nrYears
+    namesRPC user cReq (NRQuote (mkLabelHash label) (fromIntegral $ T.length label) years) >>= \case
+      NRPQuote {nrAvailable, nrReserved, nrPriceUsdCents, nrYears} ->
+        pure $ CRNameQuote user label nrAvailable nrReserved nrPriceUsdCents nrYears
       _ -> throwCmdError "unexpected quote response"
   -- Asks the registrar, which holds the table. Safe to expose because codes are
   -- unguessable random values, so this cannot be used to probe for one.

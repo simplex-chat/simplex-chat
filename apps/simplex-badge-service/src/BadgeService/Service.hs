@@ -34,6 +34,7 @@ import Simplex.Chat.Badges.Service (BadgeServiceErrorCode (..))
 import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
+import Data.Maybe (listToMaybe)
 import Simplex.Chat.Names.Protocol
 import Simplex.Chat.Names.Snrc (Intent (..), RecordKey (..), SnrcDeployment (..), devChainId, intentDigest, parseRecordKey)
 import Simplex.Chat.Wallet (parseEthSignature, recoverSigner)
@@ -131,22 +132,6 @@ maxNameLength = 63
 -- | The TLD this registry serves, as Text: 'sdTld' is the on-chain byte form.
 mockTld :: Text
 mockTld = safeDecodeUtf8 (sdTld mockDeployment)
-
-validNameChar :: Char -> Bool
-validNameChar c = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'
-
--- | Letter-digit-hyphen, and the hyphen rules that come with it. The charset
--- alone is not enough: it admits @xn--@, and a punycode label is ASCII that
--- renders as something else entirely, which is the same confusable attack the
--- lowercase rule closes. Positions 3 and 4 are refused wholesale rather than
--- @xn--@ specifically, because that slot is reserved for exactly this purpose
--- and the next prefix to be defined should not need a code change.
-validLabel :: Text -> Bool
-validLabel l =
-  T.all validNameChar l
-    && not ("-" `T.isPrefixOf` l)
-    && not ("-" `T.isSuffixOf` l)
-    && not ("--" `T.isPrefixOf` T.drop 2 l)
 
 reservedLabels :: Set Text
 reservedLabels = S.fromList ["simplex", "support", "admin", "acme"]
@@ -327,23 +312,26 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
                     pure $ NRPError NECBadRequest (Just "term is longer than this registry allows") Nothing
                 | Just e <- checkGates nrName -> pure e
                 | otherwise -> register c now nrName nrOwner nrLink (addUTCTime (fromIntegral nrTtl) now) commitment
-        NRQuote {nrLabel, nrYears} -> atomically $ do
+        -- A quote names no name: it carries the labelhash, so this answers
+        -- only what the chain knows. Charset is unanswerable from a hash and
+        -- stays with the client; length is asserted by the caller and re-checked
+        -- against the plaintext at registration.
+        NRQuote {nrLabelHash, nrLabelLen, nrYears} -> atomically $ do
           c <- readTVar chain
-          let full = nrLabel <> ".simplex"
-              live = M.lookup full (chainNames c)
+          let -- The mock holds the registry in a Map keyed by full name, so it
+              -- scans. A real registrar asks the resolver for this labelhash.
+              live = listToMaybe [e | (full, e) <- M.toList (chainNames c), mkLabelHash (T.takeWhile (/= '.') full) == nrLabelHash]
+              reserved = any ((nrLabelHash ==) . mkLabelHash) (S.toList reservedLabels)
           pure
             NRPQuote
-              { nrLabel,
+              { nrLabelHash,
                 nrAvailable =
                   maybe
-                    ( validLabel nrLabel
-                        && not (S.member nrLabel reservedLabels)
-                        && T.length nrLabel >= minNameLength
-                    )
+                    (not reserved && fromIntegral nrLabelLen >= minNameLength)
                     (const False)
                     live,
                 nrTakenUntil = neExpiry <$> live,
-                nrReserved = S.member nrLabel reservedLabels,
+                nrReserved = reserved,
                 -- $10/yr for 6+ characters, the only rung reachable while the
                 -- minimum length is 6
                 nrPriceUsdCents = 1000 * nrYears,

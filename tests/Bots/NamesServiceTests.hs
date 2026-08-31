@@ -41,11 +41,16 @@ namesServiceTests = do
   it "recovers the derivation marks from an imported phrase" testRecoverMarks
   it "buys with a code, then re-points the link with a signature" testBuyAndLink
   it "refuses a spent code, a reserved name and a short name" testBuyRefusals
+  it "quotes a name by labelhash, without sending the name" testNameQuote
 
 -- | Pins the wire format. The end-to-end test cannot catch a key renamed on
 -- both sides at once, so the encodings are asserted literally here.
 namesProtocolTests :: Spec
 namesProtocolTests = do
+  -- A quote sends only this, so "is it reserved" is answered by hash equality.
+  -- The whole label is hashed, so a reserved label cannot match as a prefix.
+  it "labelhash covers the whole label" $ \_ ->
+    mkLabelHash "acme" `shouldNotBe` mkLabelHash "acmecorp"
   -- Name keys are plain BIP-44, so they line up with wallets users already have.
   -- Pinned against the standard test mnemonic: profile 0's names are exactly
   -- MetaMask's account list (m/44'/60'/0'/0/k), and each profile's first name is
@@ -347,6 +352,31 @@ testBuyAndLink ps =
 
 -- | Every refusal has its own message. A user who types a reserved name must be
 -- told that, not "bad request".
+-- A quote carries only the labelhash and the label's length, so the registrar
+-- answers all of these without ever seeing the name. Charset is the one rule it
+-- cannot check against a hash, so the client refuses that one locally.
+testNameQuote :: HasCallStack => TestParams -> IO ()
+testNameQuote ps =
+  withBadgeService ps $ \client bsLink -> do
+    client ##> ("/name quote " <> bsLink <> " spender")
+    client <##. "spender.simplex - available"
+    client ##> ("/name quote " <> bsLink <> " acme")
+    client <##. "acme.simplex - reserved"
+    -- charset is unanswerable from a hash, so this never reaches the registrar
+    client ##> ("/name quote " <> bsLink <> " acme!!")
+    client <## "bad chat command: name may only contain a-z, 0-9 and inner hyphens"
+    -- the same name, now registered, is found again by its hash alone
+    client ##> ("/name buy " <> bsLink <> " spender " <> T.unpack (devCode 1) <> " simplex:/contact#/x")
+    client <## "name spender.simplex: revealing"
+    client <## "name spender.simplex: registered"
+    client <##. "name registered: spender.simplex -> 0x"
+    client <##. "  derivation path: m/44'/60'/0'/0/"
+    client ##> ("/name quote " <> bsLink <> " spender")
+    client <## "spender.simplex - taken"
+    -- the length travels with the hash, so the minimum is still enforced
+    client ##> ("/name quote " <> bsLink <> " abc")
+    client <## "abc.simplex - taken"
+
 testBuyRefusals :: HasCallStack => TestParams -> IO ()
 testBuyRefusals ps =
   withBadgeService ps $ \client bsLink -> do
