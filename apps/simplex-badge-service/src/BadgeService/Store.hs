@@ -39,30 +39,24 @@ import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
--- | A minted code as the service reads it back - never the code itself. The month count it was
--- minted for is absent because redemption writes no ledger yet, so nothing reads it.
 data MintedCode = MintedCode
   { badgeCodeId :: Int64,
     badgeType :: BadgeType,
     redemption :: CodeRedemption
   }
 
--- | Whether a purchase claims this code, and if so whether its credential can be replayed.
--- The unreadable case is kept distinct from the unclaimed one: a claimed code is spent whether
--- or not its issuance can be read, and collapsing the two would issue it a second time.
+-- spent-but-unreadable is not unclaimed - collapsing them would issue the code twice
 data CodeRedemption
   = CodeUnredeemed
   | CodeRedeemed RedeemedCode
   | CodeRedeemedUnreadable
 
--- | The purchase a spent code created.
 data RedeemedCode = RedeemedCode
   { purchaseKey :: C.PublicKeyEd25519,
     credential :: BadgeCredential
   }
 
--- | Everything one redemption writes, prepared before the transaction opens because the
--- credential is signed first.
+-- prepared before the transaction opens, because the credential is signed first
 data CodeIssuance = CodeIssuance
   { badgeCodeId :: Int64,
     issuanceId :: Text,
@@ -105,8 +99,7 @@ purchaseKeyExists db key =
   maybeFirstRow' False (\(Only (_ :: Int64)) -> True) $
     DB.query db "SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?" (Only key)
 
--- | The purchase, its issuance and the code's redemption, in one transaction: the caller has
--- already signed, so nothing here can leave a code spent without a credential behind it.
+-- one transaction: the caller has already signed, so no code is left spent without a credential
 writeCodeRedemption :: DB.Connection -> CodeIssuance -> UTCTime -> IO ()
 writeCodeRedemption db CodeIssuance {badgeCodeId, issuanceId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType, credential, periodStart, periodEnd, expiry} now = do
   DB.execute
