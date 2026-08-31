@@ -34,7 +34,7 @@ import Test.Hspec hiding (it)
 
 badgeServiceTests :: SpecWith TestParams
 badgeServiceTests = do
-  it "should answer unsupported_version to a command this milestone does not implement" testBadgeServiceUnsupported
+  it "should answer unsupported_version to unsupported command" testBadgeServiceUnsupported
   it "should redeem a minted code into a badge a contact sees" testRedeemBadgeCode
   it "should return the same badge when the same code is redeemed twice" testRedeemBadgeCodeTwice
   it "should answer code_invalid to an unknown code, indistinguishably from a malformed one" testRedeemUnknownCode
