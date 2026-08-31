@@ -3012,4 +3012,9 @@
     <string name="share_text_file_servers">Datei-Server: %s</string>
     <string name="group_invitations">Gruppeneinladungen</string>
     <string name="forwarded_from">weitergeleitet aus</string>
+    <string name="countdown_hrs_min_sec">%1$02d h %2$02d min %3$02d s</string>
+    <string name="simplex_name_sales_footer">Crowdfunding-Investoren können vor Verkaufsbeginn Namen reservieren:</string>
+    <string name="simplex_name_sales">Der Verkauf von SimpleX-Namen startet in</string>
+    <string name="until_register_simplex_domain">bis Sie eine SimpleX-Domain registrieren können</string>
+    <string name="update_app_register_simplex_domain">Aktualisieren Sie die App, um eine SimpleX-Domain registrieren zu können</string>
 </resources>
