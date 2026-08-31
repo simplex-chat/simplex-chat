@@ -5342,9 +5342,11 @@ nonSpaceTextP = safeDecodeUtf8 <$> A.takeTill (== ' ')
 defaultNameTtl :: NameTtl
 defaultNameTtl = 31536000
 
--- | Hardcoded commit→reveal wait in ms, standing in for the on-chain minimum commitment age.
+-- | Hardcoded commit→reveal wait in ms, standing in for the on-chain minimum
+-- commitment age. Deliberately longer than the age the service enforces: waiting
+-- exactly the minimum makes every registration a race against its own clock.
 commitWaitMs :: Word32
-commitWaitMs = 1000
+commitWaitMs = 1500
 
 firstNameLink :: ContactConnType -> [Text] -> Maybe (ConnShortLink 'CMContact)
 firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing

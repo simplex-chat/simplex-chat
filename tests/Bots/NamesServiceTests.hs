@@ -390,6 +390,15 @@ testBuyRefusals ps =
     client <## "name lowered.simplex: registered"
     client <##. "name registered: lowered.simplex -> 0x"
     client <##. "  derivation path: m/44'/60'/0'/0/"
+    -- The charset alone admits xn--, which is ASCII that renders as something
+    -- else. The reserved hyphen slot is refused wholesale, not just that prefix.
+    client ##> ("/name buy " <> bsLink <> " xn--80ak6aa92e " <> T.unpack (devCode 4) <> " simplex:/contact#/x")
+    client <## "name xn--80ak6aa92e.simplex: revealing"
+    client <##. "name registration failed: name_invalid"
+    -- and a hyphen cannot open or close a label either
+    client ##> ("/name buy " <> bsLink <> " -leading " <> T.unpack (devCode 4) <> " simplex:/contact#/x")
+    client <## "name -leading.simplex: revealing"
+    client <##. "name registration failed: name_invalid"
     -- Expiry is a property of the key, not of the code, so a build with one
     -- cohort key cannot mint an expired code. Expiry refusal is covered by the
     -- unit test over verifyCode instead.

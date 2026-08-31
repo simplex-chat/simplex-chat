@@ -72,8 +72,11 @@ data NamesChain = NamesChain
     -- values, so holding one is the entitlement — there is nothing to verify,
     -- only to look up.
     chainCodes :: Map Text CodeEntry,
-    -- | Answered requests, so a resent request is not executed twice.
-    chainRequests :: Map ByteString NamesResponse,
+    -- | Answered requests, so a resent request is not executed twice. Kept with
+    -- the time they were answered: a request id is chosen by the caller, so a
+    -- map that only grows is an unauthenticated party deciding how much memory
+    -- this service allocates.
+    chainRequests :: Map ByteString (UTCTime, NamesResponse),
     -- | Per-signer nonce, mirroring SimplexResolver: one counter per address,
     -- shared across every name it owns and consumed strictly in order.
     chainNonces :: Map Address Integer
@@ -92,6 +95,20 @@ data NameEntry = NameEntry
 editsPerName :: Word32
 editsPerName = 10
 
+-- | How long an answered request id is replayed, and how long a commitment
+-- stays revealable. Both were unbounded; R14 states a retention for the
+-- spent-code set and nothing stated one for these.
+requestRetention, commitmentRetention :: NominalDiffTime
+requestRetention = 3600
+commitmentRetention = 86400
+
+-- | The longest term the code-less reveal path will honour. Without it a raw
+-- request can ask for a Word32 of seconds - about 136 years - for nothing, on a
+-- path whose only constraint was a sentence in the RFC saying a real registrar
+-- would not expose it.
+maxNameTtl :: NameTtl
+maxNameTtl = 10 * 31536000
+
 -- | Production is 60s; the mock keeps it short enough to test but non-zero,
 -- because a zero minimum is what makes reveal front-runnable.
 minCommitmentAge :: NominalDiffTime
@@ -102,11 +119,34 @@ minCommitmentAge = 1
 minNameLength :: Int
 minNameLength = 6
 
+-- | The other end, which was missing: a gate that carefully refuses five
+-- characters accepted any number of them. 63 is the DNS label limit and what a
+-- registry contract would most likely settle on.
+maxNameLength :: Int
+maxNameLength = 63
+
 -- | What the contract accepts in a label. Mirrored here because the mock is
 -- what every test and every local run registers against: a mock that is more
 -- permissive than the chain makes the gates look enforced when they are not.
+-- | The TLD this registry serves, as Text: 'sdTld' is the on-chain byte form.
+mockTld :: Text
+mockTld = safeDecodeUtf8 (sdTld mockDeployment)
+
 validNameChar :: Char -> Bool
 validNameChar c = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'
+
+-- | Letter-digit-hyphen, and the hyphen rules that come with it. The charset
+-- alone is not enough: it admits @xn--@, and a punycode label is ASCII that
+-- renders as something else entirely, which is the same confusable attack the
+-- lowercase rule closes. Positions 3 and 4 are refused wholesale rather than
+-- @xn--@ specifically, because that slot is reserved for exactly this purpose
+-- and the next prefix to be defined should not need a code change.
+validLabel :: Text -> Bool
+validLabel l =
+  T.all validNameChar l
+    && not ("-" `T.isPrefixOf` l)
+    && not ("-" `T.isSuffixOf` l)
+    && not ("--" `T.isPrefixOf` T.drop 2 l)
 
 reservedLabels :: Set Text
 reservedLabels = S.fromList ["simplex", "support", "admin", "acme"]
@@ -265,7 +305,11 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
       respObj <$> case nrRequest of
         NRCommit {nrCommitment} -> do
           atomically $ modifyTVar' chain $ \c ->
-            c {chainCommitments = M.insertWith (\_ old' -> old') (unCommitment nrCommitment) now (chainCommitments c)}
+            c
+              { chainCommitments =
+                  M.insertWith (\_ old' -> old') (unCommitment nrCommitment) now $
+                    M.filter (\at -> diffUTCTime now at < commitmentRetention) (chainCommitments c)
+              }
           pure $ NRPCommitted (mockTxHash "commit" $ unCommitment nrCommitment)
         NRReveal {nrName, nrOwner, nrSecret, nrTtl, nrLink} ->
           atomically $ do
@@ -279,6 +323,8 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
               Just at
                 | diffUTCTime now at < minCommitmentAge ->
                     pure $ NRPError NECBadRequest (Just "commitment is too new") Nothing
+                | nrTtl > maxNameTtl ->
+                    pure $ NRPError NECBadRequest (Just "term is longer than this registry allows") Nothing
                 | Just e <- checkGates nrName -> pure e
                 | otherwise -> register c now nrName nrOwner nrLink (addUTCTime (fromIntegral nrTtl) now) commitment
         NRQuote {nrLabel, nrYears} -> atomically $ do
@@ -290,7 +336,7 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
               { nrLabel,
                 nrAvailable =
                   maybe
-                    ( T.all validNameChar nrLabel
+                    ( validLabel nrLabel
                         && not (S.member nrLabel reservedLabels)
                         && T.length nrLabel >= minNameLength
                     )
@@ -304,7 +350,7 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
                 nrYears
               }
         NRBuy {nrRequestId, nrName, nrOwner, nrCode, nrLink} ->
-          idempotent nrRequestId $ do
+          idempotent now nrRequestId $ do
             c <- readTVar chain
             let code = unRedemptionCode nrCode
                 label = T.takeWhile (/= '.') nrName
@@ -348,7 +394,7 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
           c <- readTVar chain
           pure $ NRPNonce (M.findWithDefault 0 nrAddress (chainNonces c))
         NRRelayIntent {nrRequestId, nrName, nrRecordKey, nrValue, nrNonce, nrDeadline, nrSig} ->
-          idempotent nrRequestId $ do
+          idempotent now nrRequestId $ do
             c <- readTVar chain
             case (parseRecordKey nrRecordKey, M.lookup nrName (chainNames c)) of
               (Left e, _) -> pure $ NRPError NECBadRequest (Just (T.pack e)) Nothing
@@ -364,8 +410,12 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
                       | signer /= neOwner entry -> pure $ NRPError NECNotOwner Nothing Nothing
                       | otherwise -> do
                           let entry' = case rk of
-                                RKContact -> entry {neContact = [nrValue], neEditsLeft = neEditsLeft entry - 1}
-                                RKChannel -> entry {neChannel = [nrValue], neEditsLeft = neEditsLeft entry - 1}
+                                RKContact -> entry {neContact = record, neEditsLeft = neEditsLeft entry - 1}
+                                RKChannel -> entry {neChannel = record, neEditsLeft = neEditsLeft entry - 1}
+                              -- an empty value clears the record rather than
+                              -- storing [""], which reads as a target that is
+                              -- set to nothing
+                              record = filter (not . T.null) [nrValue]
                           modifyTVar' chain $ \c' ->
                             c'
                               { chainNames = M.insert nrName entry' (chainNames c'),
@@ -383,28 +433,43 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
     -- call carries an id.
     -- One transaction, so two identical requests cannot both run the action.
     -- A relayer that split this would pay twice for one request id.
-    idempotent rid act = atomically $ do
+    idempotent now rid act = atomically $ do
       c <- readTVar chain
       case M.lookup (unRequestId rid) (chainRequests c) of
-        Just r -> pure r
+        Just (_, r) -> pure r
         Nothing -> do
           r <- act
           -- Only settled answers are replayed. Caching a failure would make a
           -- retry with the same id permanently unable to succeed, which is the
-          -- opposite of what an idempotency key is for.
+          -- opposite of what an idempotency key is for. Answers older than the
+          -- retry window are dropped as we go, so the map cannot be grown
+          -- without bound by a caller choosing request ids.
           case r of
             NRPError {} -> pure ()
-            _ -> modifyTVar' chain $ \c' -> c' {chainRequests = M.insert (unRequestId rid) r (chainRequests c')}
+            _ ->
+              modifyTVar' chain $ \c' ->
+                c'
+                  { chainRequests =
+                      M.insert (unRequestId rid) (now, r) $
+                        M.filter (\(at, _) -> diffUTCTime now at < requestRetention) (chainRequests c')
+                  }
           pure r
     checkGates nm =
       let label = T.takeWhile (/= '.') nm
        in if
+            -- The registry is per TLD, so a name outside it is not ours to
+            -- register. Only the label was checked before, which left the
+            -- suffix free for anything a raw request cared to send.
+            | nm /= label <> "." <> mockTld ->
+                Just $ NRPError NECNameInvalid (Just $ "names end in ." <> mockTld) Nothing
             -- The contract's charset. Without this the reserved set is bypassed
             -- by a capital letter - "Support" is not "support" to a Set, nor to
             -- a Map key - and two names that read alike can both exist.
-            | not (T.all validNameChar label) ->
-                Just $ NRPError NECNameInvalid (Just "names use lowercase letters, digits and hyphens") Nothing
+            | not (validLabel label) ->
+                Just $ NRPError NECNameInvalid (Just "names use lowercase letters, digits and hyphens, and cannot start or end with one") Nothing
             | T.length label < minNameLength -> Just $ NRPError NECNameTooShort Nothing Nothing
+            | T.length label > maxNameLength ->
+                Just $ NRPError NECNameInvalid (Just $ "names are at most " <> tshow maxNameLength <> " characters") Nothing
             | S.member label reservedLabels -> Just $ NRPError NECNameReserved Nothing Nothing
             | otherwise -> Nothing
     -- A live registration is taken, including by its own owner: re-registering
