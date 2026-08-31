@@ -5201,9 +5201,8 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
   verifyOwnBadge cred >>= \case
     Nothing -> throwCmdError "redeemed badge credential names an unknown badge key index"
     Just False -> throwCmdError "redeemed badge credential does not verify against configured key"
-    -- verifyCredential checks the signature against the credential's own master key, so a
-    -- credential over a different one verifies; the purchase would then store a master key its
-    -- credential does not carry.
+    -- verifyCredential checks the signature against the key inside the credential, not the one we
+    -- sent - so a credential over any other master key also verifies
     Just True | credMasterKey /= masterKey -> throwCmdError "redeemed badge credential is for a different master key"
     Just True -> do
       -- badge_issuances requires a period; a credential without an expiry has none to record
