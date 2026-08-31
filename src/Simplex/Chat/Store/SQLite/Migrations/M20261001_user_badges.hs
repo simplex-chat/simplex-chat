@@ -252,7 +252,7 @@ CREATE TABLE badge_code_redemptions(
   purchase_priv_key BLOB NOT NULL,
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
-  UNIQUE(code)
+  UNIQUE(user_id, code)
 ) STRICT;
 
 CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(user_id);

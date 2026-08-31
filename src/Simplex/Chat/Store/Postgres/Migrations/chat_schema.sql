@@ -1763,12 +1763,12 @@ ALTER TABLE test_chat_schema.xftp_file_descriptions ALTER COLUMN file_descr_id A
 
 
 ALTER TABLE ONLY test_chat_schema.badge_code_redemptions
-    ADD CONSTRAINT badge_code_redemptions_code_key UNIQUE (code);
+    ADD CONSTRAINT badge_code_redemptions_pkey PRIMARY KEY (badge_code_redemption_id);
 
 
 
 ALTER TABLE ONLY test_chat_schema.badge_code_redemptions
-    ADD CONSTRAINT badge_code_redemptions_pkey PRIMARY KEY (badge_code_redemption_id);
+    ADD CONSTRAINT badge_code_redemptions_user_id_code_key UNIQUE (user_id, code);
 
 
 

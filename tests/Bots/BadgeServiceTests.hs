@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -10,17 +12,36 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.STM (atomically, readTMVar)
 import Control.Exception (finally)
-import Simplex.Chat.Controller (ChatConfig)
+import qualified Data.ByteString.Char8 as B
+import Data.Char (toLower)
+import Data.Either (isLeft, isRight)
+import qualified Data.Map.Strict as M
+import qualified Data.Text as T
+import Simplex.Chat.Badges (BadgeType (..))
+import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController, ChatResponse (CRCustomChatResponse))
+import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
+import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
 badgeServiceTests :: SpecWith TestParams
 badgeServiceTests = do
-  it "should respond with unsupported_version to redeem" testBadgeServiceRedeemUnsupported
+  it "should answer unsupported_version to a command this milestone does not implement" testBadgeServiceUnsupported
+  it "should redeem a minted code into a badge a contact sees" testRedeemBadgeCode
+  it "should return the same badge when the same code is redeemed twice" testRedeemBadgeCodeTwice
+  it "should answer code_invalid to an unknown code, indistinguishably from a malformed one" testRedeemUnknownCode
+  it "should tell a second profile redeeming the same code that it is used" testRedeemSameCodeOtherProfile
+  it "should redeem a second code into a second purchase" testRedeemSecondCode
+  it "should refuse to mint an unknown badge type or a nonsense month count" testMintRejectsBadArguments
+  it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -28,8 +49,20 @@ badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDesc
 serviceDbPrefix :: FilePath
 serviceDbPrefix = "badge_service"
 
-mkBadgeServiceOpts :: TestParams -> BadgeServiceOpts
-mkBadgeServiceOpts TestParams {tmpPath = ps} =
+testIssuerKeyIdx :: Int
+testIssuerKeyIdx = 1
+
+-- | What a badge service test works with: a client config pointed at the running service and
+-- trusting its issuer key, the service's address for raw /_service_request lines, and a mint.
+data BadgeServiceTest = BadgeServiceTest
+  { clientCfg :: ChatConfig,
+    bsLink :: String,
+    serviceCtrl :: ChatController,
+    mint :: BadgeType -> Int -> IO BadgeCode
+  }
+
+mkBadgeServiceOpts :: TestParams -> BBSSecretKey -> BadgeServiceOpts
+mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
   BadgeServiceOpts
     { coreOptions =
         testCoreOpts
@@ -45,15 +78,19 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} =
       clientService = True,
       noAddress = False,
       runCLI = False,
+      issuerKey = Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey},
       testing = True
     }
 
-withBadgeService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()) -> IO ()
+-- | Start the badge service on a fresh issuer key and hand the test body everything that
+-- depends on it: the client config to build chats with, the address, and a mint.
+withBadgeService :: HasCallStack => TestParams -> (BadgeServiceTest -> IO ()) -> IO ()
 withBadgeService ps test = do
-  let opts = mkBadgeServiceOpts ps
+  Right (pk, sk) <- bbsKeyGen
+  let opts = mkBadgeServiceOpts ps sk
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
-  runBadgeService testCfg opts (pure ())
+  runBadgeService testCfg opts $ \_ -> pure ()
   -- Reopen the DB to read the link the service created.
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
@@ -61,21 +98,199 @@ withBadgeService ps test = do
     (sLink, _) <- getContactLinks bs False
     bs <## "auto_accept off"
     pure sLink
+  let clientCfg =
+        testCfg
+          { badgePublicKeys = M.singleton testIssuerKeyIdx pk,
+            badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)
+          }
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
-  runBadgeService testCfg opts $
-    withNewTestChatCfg ps testCfg "client" bobProfile $ \client ->
-      test client bsLink
+  runBadgeService testCfg opts $ \env -> do
+    cc <- atomically $ readTMVar $ serviceCC env
+    test BadgeServiceTest {clientCfg, bsLink, serviceCtrl = cc, mint = mintCodeWith cc}
+  where
+    -- through the operator command the service actually exposes, not the function behind it
+    mintCodeWith cc badgeType months =
+      sendChatCmdStr cc ("//mint " <> T.unpack (textEncode badgeType) <> " " <> show months) >>= \case
+        Right (CRCustomChatResponse _ response) -> case T.stripPrefix "code " response of
+          Just c | Just code <- parseBadgeCode c -> pure code
+          _ -> error $ "unexpected mint response: " <> T.unpack response
+        r -> error $ "mint failed: " <> show (() <$ r)
 
-runBadgeService :: ChatConfig -> BadgeServiceOpts -> IO () -> IO ()
+runBadgeService :: ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
 runBadgeService cfg opts action = do
-  t <- forkIO $ badgeService opts cfg
+  env <- newServiceState
+  t <- forkIO $ badgeService opts cfg env
   threadDelay 500000
-  action `finally` killThread t
+  action env `finally` killThread t
 
-testBadgeServiceRedeemUnsupported :: HasCallStack => TestParams -> IO ()
-testBadgeServiceRedeemUnsupported ps =
-  withBadgeService ps $ \client bsLink -> do
-    let redeemReq =
-          "{\"version\":1,\"request\":{\"type\":\"purchaseBadge\",\"payment\":{\"type\":\"code\",\"code\":\"TEST-CODE\"}}}"
-    client ##> ("/_service_request 1 " <> bsLink <> " " <> redeemReq)
-    client <## "service response: {\"code\":\"unsupported_version\",\"type\":\"error\"}"
+-- codes are pasted as they are printed, with separators
+codeArg :: BadgeCode -> String
+codeArg = T.unpack . formatBadgeCode
+
+testBadgeServiceUnsupported :: HasCallStack => TestParams -> IO ()
+testBadgeServiceUnsupported ps =
+  withBadgeService ps $ \BadgeServiceTest {clientCfg, bsLink} ->
+    withNewTestChatCfg ps clientCfg "client" bobProfile $ \client -> do
+      let req = "{\"version\":1,\"request\":{\"type\":\"pauseBadge\"}}"
+      client ##> ("/_service_request 1 " <> bsLink <> " " <> req)
+      client <## "service response: {\"code\":\"unsupported_version\",\"type\":\"error\"}"
+
+-- a minted code redeems into a badge on the profile, and the contact sees it
+testRedeemBadgeCode :: HasCallStack => TestParams -> IO ()
+testRedeemBadgeCode ps =
+  withBadgeService ps $ \BadgeServiceTest {clientCfg, mint} ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps clientCfg "bob" bobProfile $ \bob -> do
+        connectUsers alice bob
+        code <- mint BTSupporter 1
+        -- the service has never seen this purchase key: a first redemption must still succeed
+        alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+        alice <## "badge redeemed"
+        alice <## "supporter badge - active"
+        alice <##. "expires "
+        alice ##> "/p"
+        alice <## "user profile: alice (Alice, * supporter)"
+        alice <## "use /p <name> [<bio>] to change it"
+        alice #> "@bob hi"
+        bob <# "alice *> hi"
+        bob ##> "/i alice"
+        bob <## "contact ID: 2"
+        bob <## "supporter badge - active"
+        bob <##. "expires "
+        bob <## "receiving messages via: localhost"
+        bob <## "sending messages via: localhost"
+        bob <## "you've shared main profile with this contact"
+        bob <## "connection not verified, use /code command to see security code"
+        bob <## "quantum resistant end-to-end encryption"
+        bob <## currentChatVRangeInfo
+
+testRedeemBadgeCodeTwice :: HasCallStack => TestParams -> IO ()
+testRedeemBadgeCodeTwice ps =
+  withBadgeService ps $ \BadgeServiceTest {clientCfg, mint} ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      code <- mint BTSupporter 1
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      -- Retyped in another case and without separators, so it normalises to the same code and
+      -- finds the same stashed keys: a retry the service can recognise as the same signer.
+      alice ##> ("/_redeem_badge_code 1 " <> map toLower (T.unpack $ badgeCodeText code))
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice, * supporter)"
+      alice <## "use /p <name> [<bio>] to change it"
+
+-- The service answers an unknown code and a malformed one alike, so someone trying codes at it
+-- learns nothing from the difference. The client refuses a malformed code locally, before
+-- anything leaves the device, which is why the two reach the user differently.
+testRedeemUnknownCode :: HasCallStack => TestParams -> IO ()
+testRedeemUnknownCode ps =
+  withBadgeService ps $ \BadgeServiceTest {clientCfg, bsLink} ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      g <- C.newRandom
+      unknown <- randomBadgeCode g
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg unknown)
+      alice <## "bad chat command: badge service error: code_invalid"
+      -- a failed check character is refused before anything leaves the device
+      alice ##> "/_redeem_badge_code 1 SXB-00000-00000-00000-00001"
+      alice <## "bad chat command: invalid badge code"
+      -- sent straight to the service, past the client's own check, the two are one answer
+      (_, redeemPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+      redeemDirect alice bsLink redeemPriv (T.unpack $ badgeCodeText unknown)
+      alice <## "service response: {\"code\":\"code_invalid\",\"type\":\"error\"}"
+      redeemDirect alice bsLink redeemPriv "SXB-00000-00000-00000-00001"
+      alice <## "service response: {\"code\":\"code_invalid\",\"type\":\"error\"}"
+
+-- a signed redeemBadgeCode sent as a raw service request, bypassing the client's own checks
+redeemDirect :: HasCallStack => TestCC -> String -> C.PrivateKeyEd25519 -> String -> IO ()
+redeemDirect cc bsLink signPriv code = do
+  let purchaseKey = B.unpack $ strEncode $ C.publicKey signPriv
+      signKey = B.unpack $ strEncode (C.StoredPrivateKey signPriv)
+      req =
+        "{\"version\":1,\"purchaseKey\":\"" <> purchaseKey
+          <> "\",\"request\":{\"type\":\"redeemBadgeCode\",\"masterKey\":\"" <> testMasterKeyB64
+          <> "\",\"code\":\"" <> code <> "\"}}"
+  cc ##> ("/_service_request 1 " <> bsLink <> " sign_key=" <> signKey <> " " <> req)
+
+-- any 32 bytes: these requests never reach signing
+testMasterKeyB64 :: String
+testMasterKeyB64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+
+-- BadgeType decodes anything to BTUnknown, so without a check at this boundary an operator
+-- typo would mint a code no app can show as a badge.
+testMintRejectsBadArguments :: HasCallStack => TestParams -> IO ()
+testMintRejectsBadArguments ps =
+  withBadgeService ps $ \BadgeServiceTest {serviceCtrl} -> do
+    let refuses arg = mintRaw serviceCtrl arg >>= (`shouldSatisfy` isLeft)
+    refuses "suporter"
+    refuses "supporter 0"
+    refuses "supporter 256"
+    refuses "supporter 1 gratis"
+    refuses ""
+    mintRaw serviceCtrl "supporter 255 paid" >>= (`shouldSatisfy` isRight)
+
+mintRaw :: ChatController -> String -> IO (Either () ())
+mintRaw cc args =
+  sendChatCmdStr cc ("//mint " <> args) >>= \case
+    Right CRCustomChatResponse {} -> pure $ Right ()
+    _ -> pure $ Left ()
+
+-- Two codes redeemed by one profile: both purchases fund no payment, so both leave payment_id
+-- NULL under badge_purchases' UNIQUE(payment_id), and the profile shows the badge of the second.
+-- The first purchase is left as it is: retiring a superseded badge is not implemented, and needs
+-- a paid-vs-investor classification that does not exist yet.
+testRedeemSecondCode :: HasCallStack => TestParams -> IO ()
+testRedeemSecondCode ps =
+  withBadgeService ps $ \BadgeServiceTest {clientCfg, mint} ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      supporter <- mint BTSupporter 1
+      legend <- mint BTLegend 1
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg supporter)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg legend)
+      alice <## "badge redeemed"
+      alice <## "legend badge - active"
+      alice <##. "expires "
+      alice ##> "/p"
+      showActiveUser alice "alice (Alice, * legend)"
+
+-- Two profiles in one app redeeming one code: each stashes its own keys, so the second reaches
+-- the service as a different signer and is told the code is spent - rather than being handed the
+-- first profile's badge, or colliding in badge_code_redemptions.
+testRedeemSameCodeOtherProfile :: HasCallStack => TestParams -> IO ()
+testRedeemSameCodeOtherProfile ps =
+  withBadgeService ps $ \BadgeServiceTest {clientCfg, mint} ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      code <- mint BTSupporter 1
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> ("/_redeem_badge_code 2 " <> codeArg code)
+      alice <## "bad chat command: badge service error: code_used"
+      -- the second profile has no badge, and the first one's is untouched
+      alice ##> "/p"
+      showActiveUser alice "alisa"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice, * supporter)"
+
+-- a client may not claim a purchase key it cannot sign for
+testPurchaseKeyMismatch :: HasCallStack => TestParams -> IO ()
+testPurchaseKeyMismatch ps =
+  withBadgeService ps $ \BadgeServiceTest {clientCfg, bsLink} ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      g <- C.newRandom
+      (_, signPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+      (claimedPub, _) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+      let signKey = B.unpack $ strEncode (C.StoredPrivateKey signPriv)
+          claimed = B.unpack $ strEncode claimedPub
+          req = "{\"version\":1,\"purchaseKey\":\"" <> claimed <> "\",\"request\":{\"type\":\"pauseBadge\"}}"
+      alice ##> ("/_service_request 1 " <> bsLink <> " sign_key=" <> signKey <> " " <> req)
+      alice <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"

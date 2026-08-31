@@ -5,16 +5,20 @@
 
 module BadgeService.Options
   ( BadgeServiceOpts (..),
+    BadgeIssuerKey (..),
     getBadgeServiceOpts,
     badgeServiceOpts,
     mkChatOpts,
   )
 where
 
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
+import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
+import Simplex.Messaging.Encoding.String (strDecode)
 
 data BadgeServiceOpts = BadgeServiceOpts
   { coreOptions :: CoreChatOpts,
@@ -22,7 +26,15 @@ data BadgeServiceOpts = BadgeServiceOpts
     clientService :: Bool,
     noAddress :: Bool,
     runCLI :: Bool,
+    -- the service refuses to start without this: it cannot sign a credential
+    issuerKey :: Maybe BadgeIssuerKey,
     testing :: Bool
+  }
+
+-- | The issuer secret that signs credentials, and the index the apps find its public half under.
+data BadgeIssuerKey = BadgeIssuerKey
+  { keyIdx :: Int,
+    secretKey :: BBSSecretKey
   }
 
 badgeServiceOpts :: FilePath -> FilePath -> Parser BadgeServiceOpts
@@ -50,6 +62,22 @@ badgeServiceOpts appDir defaultDbName = do
       ( long "run-cli"
           <> help "Run badge service as CLI"
       )
+  issuerKeyIdx <-
+    optional $
+      option
+        auto
+        ( long "issuer-key-idx"
+            <> metavar "KEY_IDX"
+            <> help "Index of the issuer key in the app config (required with --issuer-secret)"
+        )
+  issuerSecret <-
+    optional $
+      option
+        (eitherReader $ strDecode . B.pack)
+        ( long "issuer-secret"
+            <> metavar "ISSUER_SECRET"
+            <> help "Issuer secret from `simplex-chat badge keygen` (base64url)"
+        )
   pure
     BadgeServiceOpts
       { coreOptions,
@@ -57,6 +85,7 @@ badgeServiceOpts appDir defaultDbName = do
         clientService,
         noAddress,
         runCLI,
+        issuerKey = BadgeIssuerKey <$> issuerKeyIdx <*> issuerSecret,
         testing = False
       }
 

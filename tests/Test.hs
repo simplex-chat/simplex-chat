@@ -89,7 +89,7 @@ main = do
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
-          xdescribe'' "SimpleX Badge service bot" badgeServiceTests
+          fdescribe "SimpleX Badge service bot" badgeServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans

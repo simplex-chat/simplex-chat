@@ -1,6 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Badges.Types
   ( BadgePriceId (..),
@@ -22,7 +26,9 @@ module Simplex.Chat.Badges.Types
     UserBadgeState (..),
   ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
@@ -30,15 +36,25 @@ import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId, StoredPayment)
 import Simplex.Messaging.Agent.Protocol (UserId)
+import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple.FromField (FromField (..))
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 -- confirmed
 newtype BadgePriceId = BadgePriceId Text
-  deriving newtype (Eq, Show)
+  deriving newtype (Eq, Show, ToJSON, FromJSON)
 
 -- confirmed
 newtype BadgeOfferId = BadgeOfferId Text
-  deriving newtype (Eq, Show)
+  deriving newtype (Eq, Show, ToJSON, FromJSON)
 
 -- unconfirmed draft
 data BadgePlan = BPOneTime | BPMonthly | BPAnnual
@@ -172,3 +188,44 @@ data UserBadgeState = UserBadgeState
     willRenew :: Bool,
     alert :: Maybe BadgeAlert
   }
+
+-- Storage encoding of the statuses written by both the client and the service, so that the
+-- two sides of badge_purchases cannot drift.
+
+instance TextEncoding BadgePurchaseStatus where
+  textEncode = \case
+    PSAcquiring -> "acquiring"
+    PSIssued -> "issued"
+    PSSuperseded -> "superseded"
+    PSFailed -> "failed"
+  textDecode = \case
+    "acquiring" -> Just PSAcquiring
+    "issued" -> Just PSIssued
+    "superseded" -> Just PSSuperseded
+    "failed" -> Just PSFailed
+    _ -> Nothing
+
+instance FromField BadgePurchaseStatus where fromField = fromTextField_ textDecode
+
+instance ToField BadgePurchaseStatus where toField = toField . textEncode
+
+instance TextEncoding BadgeCodePaymentStatus where
+  textEncode = \case
+    CPSPaid -> "paid"
+    CPSUnpaid -> "unpaid"
+    CPSFree -> "free"
+  textDecode = \case
+    "paid" -> Just CPSPaid
+    "unpaid" -> Just CPSUnpaid
+    "free" -> Just CPSFree
+    _ -> Nothing
+
+instance FromField BadgeCodePaymentStatus where fromField = fromTextField_ textDecode
+
+instance ToField BadgeCodePaymentStatus where toField = toField . textEncode
+
+-- JSON: the badge service RPC catalog types (docs/protocol/badges-rpc.schema.json).
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BIS") ''BadgeItemStatus)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "OD") ''OfferDiscount)
