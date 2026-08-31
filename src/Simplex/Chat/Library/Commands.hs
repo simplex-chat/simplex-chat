@@ -5138,8 +5138,6 @@ addUserBadge user cred@(BadgeCredential _ _ _ info) =
       user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
       presentUserBadgeToContacts user'
 
--- | Make the profile that now carries the badge current, and present it to every contact it is
--- not hidden from. Called after the badge has been stored, by both /badge add and code redemption.
 presentUserBadgeToContacts :: User -> CM ()
 presentUserBadgeToContacts user' = do
   asks currentUser >>= atomically . (`writeTVar` Just user')
@@ -5154,11 +5152,9 @@ presentUserBadgeToContacts user' = do
             void (sendDirectContactMessage user' ct' (XInfo p)) `catchAllErrors` eToView
       _ -> pure ()
 
--- | Redeem a badge code with the configured badge service.
---
--- The check character is verified before anything leaves the device, and the signing keys are
--- stashed before the request is sent, so a retry after a timeout reaches the service as the
--- same signer. A terminal answer drops the stash; a timeout keeps it.
+-- | The check character is verified before anything leaves the device, and the signing keys are
+-- stashed before the request is sent, so a retry reaches the service as the same signer.
+-- A terminal answer drops the stash; a timeout keeps it.
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user codeText = do
   code <- maybe (throwCmdError "invalid badge code") pure $ parseBadgeCode codeText
@@ -5187,11 +5183,8 @@ redeemBadgeCode nm user codeText = do
       BSECodeExpired -> True
       _ -> False
 
--- | The error code as it is reported to the user.
---
--- A code this version does not know is kept and reported, because the service is deployed ahead
--- of clients - but its text is the service's, so it is bounded and reduced to the shape error
--- codes have before it reaches a terminal that would act on control characters.
+-- | An unknown code is reported, since the service is deployed ahead of clients, but its text is
+-- the service's - so it is bounded and stripped before reaching a terminal that acts on controls.
 badgeServiceErrorText :: BadgeServiceErrorCode -> Text
 badgeServiceErrorText = \case
   BSEUnknown t -> case T.filter errorCodeChar (T.take 32 t) of
@@ -5201,9 +5194,8 @@ badgeServiceErrorText = \case
   where
     errorCodeChar c = isAsciiLower c || isDigit c || c == '_'
 
--- | Verify the credential before writing anything, then in one transaction record the purchase -
--- which is what completes the stashed code row, by referencing it - its issuance, and the
--- profile's badge. The badge is presented to contacts after that transaction commits.
+-- | Verify the credential before writing anything; the purchase, its issuance and the profile's
+-- badge go in one transaction, and contacts are told after it commits.
 storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> CM ChatResponse
 storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeExpiry}) =
   verifyOwnBadge cred >>= \case
@@ -5225,7 +5217,6 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
       presentUserBadgeToContacts user'
       pure $ CRBadgeRedeemed user' badge
 
--- | Resolve a service target, send the signed request and decode the reply.
 sendServiceRequestTo :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM J.Object
 sendServiceRequestTo nm user sendTarget requestTimeout signKey request = do
   cReq <- resolveServiceTarget sendTarget

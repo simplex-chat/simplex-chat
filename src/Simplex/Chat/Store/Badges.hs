@@ -39,9 +39,8 @@ import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
--- | The keys one redemption attempt is signed with, stashed before the request is sent so that
--- a retry after a timeout reaches the service as the same signer and is answered with the
--- credential it already issued, rather than as someone presenting a spent code.
+-- | The keys one redemption attempt is signed with, stashed before the request is sent so that a
+-- retry reaches the service as the same signer and is answered with the credential already issued.
 data BadgeCodeRedemption = BadgeCodeRedemption
   { redemptionId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,

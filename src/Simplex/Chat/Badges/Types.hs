@@ -189,9 +189,6 @@ data UserBadgeState = UserBadgeState
     alert :: Maybe BadgeAlert
   }
 
--- Storage encoding of the statuses written by both the client and the service, so that the
--- two sides of badge_purchases cannot drift.
-
 instance TextEncoding BadgePurchaseStatus where
   textEncode = \case
     PSAcquiring -> "acquiring"
@@ -223,8 +220,6 @@ instance TextEncoding BadgeCodePaymentStatus where
 instance FromField BadgeCodePaymentStatus where fromField = fromTextField_ textDecode
 
 instance ToField BadgeCodePaymentStatus where toField = toField . textEncode
-
--- JSON: the badge service RPC catalog types (docs/protocol/badges-rpc.schema.json).
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BIS") ''BadgeItemStatus)
 

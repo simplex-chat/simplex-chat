@@ -138,9 +138,6 @@ data PaymentTerm
 data PaymentStatus = PSPending | PSSettled | PSFailed {exception :: Text}
   deriving (Show)
 
--- JSON: the badge service RPC wire format (docs/protocol/badges-rpc.schema.json).
--- Tagged objects, never sumTypeJSON: the service answers every platform.
-
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CP") ''CardProvider)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CC") ''CryptoCurrency)

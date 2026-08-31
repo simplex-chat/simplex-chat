@@ -143,7 +143,7 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
     badgePublicKeys :: Map Int BBSPublicKey,
-    -- where badge codes are redeemed; Nothing until the service is deployed, and overridden by tests
+    -- Nothing until the badge service is deployed
     badgeServiceAddress :: Maybe (ConnectTarget 'CMContact),
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,

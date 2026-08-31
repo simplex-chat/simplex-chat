@@ -53,8 +53,6 @@ type VersionBadgeService = Version BadgeServiceVersion
 pattern VersionBadgeService :: Word16 -> VersionBadgeService
 pattern VersionBadgeService v = Version v
 
--- The one version this release speaks, on both sides: the client sends it and the service
--- answers unsupported_version to anything else.
 currentBadgeServiceVersion :: VersionBadgeService
 currentBadgeServiceVersion = VersionBadgeService 1
 
@@ -260,19 +258,14 @@ instance ToJSON BadgeServiceErrorCode where
 instance FromJSON BadgeServiceErrorCode where
   parseJSON = textParseJSON "BadgeServiceErrorCode"
 
--- JSON: the wire format of docs/protocol/badges-rpc.schema.json.
---
--- Tagged objects throughout, never sumTypeJSON: under the iOS swiftJSON flag that becomes
--- single-field `_owsf` encoding, and this is a protocol between a client and a service that
--- must read the same on every platform.
---
--- The derivations are ordered bottom-up: a Template Haskell splice only sees instances
--- declared before it in the module.
+-- Never sumTypeJSON: under the iOS swiftJSON flag it becomes single-field `_owsf` encoding, and
+-- both sides of this protocol must read the same on every platform. Ordered bottom-up: a Template
+-- Haskell splice only sees instances declared before it.
 
 $(pure [])
 
--- An entry type this version does not know is kept as received and re-emitted verbatim, so a
--- client that stores a replica of the ledger neither loses nor rewrites what a newer service wrote.
+-- An unknown entry type is re-emitted verbatim, so a client holding a ledger replica neither
+-- loses nor rewrites what a newer service wrote.
 
 instance FromJSON StatementCreditType where
   parseJSON v@(J.Object j) =

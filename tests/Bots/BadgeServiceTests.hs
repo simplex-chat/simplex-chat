@@ -52,8 +52,6 @@ serviceDbPrefix = "badge_service"
 testIssuerKeyIdx :: Int
 testIssuerKeyIdx = 1
 
--- | What a badge service test works with: a client config pointed at the running service and
--- trusting its issuer key, the service's address for raw /_service_request lines, and a mint.
 data BadgeServiceTest = BadgeServiceTest
   { clientCfg :: ChatConfig,
     bsLink :: String,
@@ -82,8 +80,7 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
       testing = True
     }
 
--- | Start the badge service on a fresh issuer key and hand the test body everything that
--- depends on it: the client config to build chats with, the address, and a mint.
+-- | Start the badge service on a fresh issuer key, and hand the test body what depends on it.
 withBadgeService :: HasCallStack => TestParams -> (BadgeServiceTest -> IO ()) -> IO ()
 withBadgeService ps test = do
   Right (pk, sk) <- bbsKeyGen
@@ -123,7 +120,6 @@ runBadgeService cfg opts action = do
   threadDelay 500000
   action env `finally` killThread t
 
--- codes are pasted as they are printed, with separators
 codeArg :: BadgeCode -> String
 codeArg = T.unpack . formatBadgeCode
 
@@ -135,7 +131,6 @@ testBadgeServiceUnsupported ps =
       client ##> ("/_service_request 1 " <> bsLink <> " " <> req)
       client <## "service response: {\"code\":\"unsupported_version\",\"type\":\"error\"}"
 
--- a minted code redeems into a badge on the profile, and the contact sees it
 testRedeemBadgeCode :: HasCallStack => TestParams -> IO ()
 testRedeemBadgeCode ps =
   withBadgeService ps $ \BadgeServiceTest {clientCfg, mint} ->
@@ -183,9 +178,8 @@ testRedeemBadgeCodeTwice ps =
       alice <## "user profile: alice (Alice, * supporter)"
       alice <## "use /p <name> [<bio>] to change it"
 
--- The service answers an unknown code and a malformed one alike, so someone trying codes at it
--- learns nothing from the difference. The client refuses a malformed code locally, before
--- anything leaves the device, which is why the two reach the user differently.
+-- The service answers unknown and malformed alike, so a guesser learns nothing; the client
+-- refuses malformed locally, which is why the two reach the user differently.
 testRedeemUnknownCode :: HasCallStack => TestParams -> IO ()
 testRedeemUnknownCode ps =
   withBadgeService ps $ \BadgeServiceTest {clientCfg, bsLink} ->
@@ -238,10 +232,8 @@ mintRaw cc args =
     Right CRCustomChatResponse {} -> pure $ Right ()
     _ -> pure $ Left ()
 
--- Two codes redeemed by one profile: both purchases fund no payment, so both leave payment_id
--- NULL under badge_purchases' UNIQUE(payment_id), and the profile shows the badge of the second.
--- The first purchase is left as it is: retiring a superseded badge is not implemented, and needs
--- a paid-vs-investor classification that does not exist yet.
+-- Both purchases fund no payment, so both leave payment_id NULL under UNIQUE(payment_id).
+-- The first purchase stays as it is: retiring a superseded badge is not implemented.
 testRedeemSecondCode :: HasCallStack => TestParams -> IO ()
 testRedeemSecondCode ps =
   withBadgeService ps $ \BadgeServiceTest {clientCfg, mint} ->
@@ -259,9 +251,8 @@ testRedeemSecondCode ps =
       alice ##> "/p"
       showActiveUser alice "alice (Alice, * legend)"
 
--- Two profiles in one app redeeming one code: each stashes its own keys, so the second reaches
--- the service as a different signer and is told the code is spent - rather than being handed the
--- first profile's badge, or colliding in badge_code_redemptions.
+-- Each profile stashes its own keys, so the second reaches the service as a different signer -
+-- rather than being handed the first profile's badge, or colliding in badge_code_redemptions.
 testRedeemSameCodeOtherProfile :: HasCallStack => TestParams -> IO ()
 testRedeemSameCodeOtherProfile ps =
   withBadgeService ps $ \BadgeServiceTest {clientCfg, mint} ->
@@ -275,13 +266,11 @@ testRedeemSameCodeOtherProfile ps =
       showActiveUser alice "alisa"
       alice ##> ("/_redeem_badge_code 2 " <> codeArg code)
       alice <## "bad chat command: badge service error: code_used"
-      -- the second profile has no badge, and the first one's is untouched
       alice ##> "/p"
       showActiveUser alice "alisa"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice, * supporter)"
 
--- a client may not claim a purchase key it cannot sign for
 testPurchaseKeyMismatch :: HasCallStack => TestParams -> IO ()
 testPurchaseKeyMismatch ps =
   withBadgeService ps $ \BadgeServiceTest {clientCfg, bsLink} ->

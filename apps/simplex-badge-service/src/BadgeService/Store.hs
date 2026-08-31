@@ -48,7 +48,6 @@ import Database.SQLite.Simple.QQ (sql)
 #endif
 
 -- The same shape as Directory.Util's helpers of these names; the two bots share no module.
--- Over a DBStore rather than a ChatController, so minting needs only a database.
 withDB' :: Text -> DBStore -> (DB.Connection -> IO a) -> IO (Either String a)
 withDB' cxt st a = withDB cxt st $ ExceptT . fmap Right . a
 
@@ -60,10 +59,8 @@ withDB cxt chatStore action = do
     Right _ -> pure ()
   pure r_
 
--- | A minted code as the service reads it back - never the code itself.
---
--- The month count the code was minted for is not here: redemption issues one credential and
--- writes no ledger, so nothing reads it yet.
+-- | A minted code as the service reads it back - never the code itself. The month count it was
+-- minted for is absent because redemption writes no ledger yet, so nothing reads it.
 data MintedCode = MintedCode
   { badgeCodeId :: Int64,
     badgeType :: BadgeType,

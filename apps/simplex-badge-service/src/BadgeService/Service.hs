@@ -127,9 +127,7 @@ badgeServiceCLI opts = do
       processQueuedRequests key env
     ]
 
--- | The operator's own commands, issued to the running service as `//...` in its CLI.
---
--- Core parses `//...` into CustomChatCommand and leaves it to this hook, so minting lives here
+-- | Core parses `//...` into CustomChatCommand and leaves it to this hook, so minting lives here
 -- rather than in core: the client every user runs has no business writing badge codes.
 badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook cc = \case
@@ -158,9 +156,7 @@ mintCmdP =
     A.endOfInput
     pure MintCodeOpts {badgeType, months, paymentStatus}
   where
-    -- the operator sees the usage line, not these; they only have to make the parser fail
-    -- a month count is what the ledger will credit, so a code worth nothing is refused here
-    -- rather than stored; a byte is the range, and 20 years is 240 months
+    -- these strings are unreachable: runBadgeCmd reports the usage line, not the parse error
     checkMonths n
       | n >= 1 && n <= (255 :: Int) = pure n
       | otherwise = fail "months"
@@ -181,8 +177,7 @@ data MintCodeOpts = MintCodeOpts
     paymentStatus :: BadgeCodePaymentStatus
   }
 
--- | Mint a code worth a badge type and a number of months. The caller sees the code once; the
--- service stores only its hash, so a lost code cannot be recovered.
+-- | The caller sees the code once; only its hash is stored, so a lost code cannot be recovered.
 mintBadgeCode :: TVar ChaChaDRG -> DBStore -> MintCodeOpts -> IO (Either String BadgeCode)
 mintBadgeCode g st MintCodeOpts {badgeType, months, paymentStatus} = do
   code <- randomBadgeCode g
