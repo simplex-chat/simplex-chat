@@ -4465,13 +4465,7 @@ alert button */
 "Open migration to another device" = "Ouvrir le transfert vers un autre appareil";
 
 /* new chat action */
-"Open new channel" = "Ouvrir un nouveau canal";
-
-/* new chat action */
 "Open new chat" = "Ouvrir une nouvelle conversation";
-
-/* new chat action */
-"Open new group" = "Ouvrir le nouveau groupe";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Ouvrir les Paramètres";
@@ -5343,10 +5337,10 @@ chat item action */
 "Saved" = "Enregistré";
 
 /* No comment provided by engineer. */
-"Saved from" = "Enregistré depuis";
+"saved from" = "enregistré à partir de";
 
 /* No comment provided by engineer. */
-"saved from" = "enregistré à partir de";
+"Saved from" = "Enregistré depuis";
 
 /* message info title */
 "Saved message" = "Message enregistré";
@@ -7013,6 +7007,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Vous avez déjà un profil de messagerie avec le même nom d’affichage. Veuillez choisir un autre nom.";
 
+/* new chat alert */
+"You are a contributor" = "Vous êtes contributeur";
+
+/* new chat alert */
+"You are a member" = "Vous êtes membre";
+
+/* new chat alert */
+"You are a moderator" = "Vous êtes modérateur";
+
+/* new chat alert */
+"You are a subscriber" = "Vous êtes abonné·e";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Vous êtes déjà connecté·e à %@ via ce lien.";
 
@@ -7037,6 +7043,15 @@ alert title */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Vous êtes déjà membre de ce groupe !\nRépéter la demande d'adhésion ?";
 
+/* new chat alert */
+"You are an admin" = "Vous êtes admin";
+
+/* new chat alert */
+"You are an observer" = "Vous êtes observateur";
+
+/* new chat alert */
+"You are an owner" = "Vous êtes propriétaire";
+
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Vous êtes connecté au serveur utilisé pour recevoir les messages de cette connexion.";
 
@@ -7051,27 +7066,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are observer" = "vous êtes observateur";
-
-/* new chat alert */
-"You are an observer" = "Vous êtes observateur";
-
-/* new chat alert */
-"You are a member" = "Vous êtes membre";
-
-/* new chat alert */
-"You are a moderator" = "Vous êtes modérateur";
-
-/* new chat alert */
-"You are an admin" = "Vous êtes admin";
-
-/* new chat alert */
-"You are an owner" = "Vous êtes propriétaire";
-
-/* new chat alert */
-"You are a subscriber" = "Vous êtes abonné·e";
-
-/* new chat alert */
-"You are a contributor" = "Vous êtes contributeur";
 
 /* No comment provided by engineer. */
 "you are subscriber" = "vous êtes abonné·e";
