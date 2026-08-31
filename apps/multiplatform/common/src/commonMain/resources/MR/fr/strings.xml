@@ -2931,4 +2931,9 @@
     <string name="badge_unverified_desc">Ce badge n’a pas pu être vérifié et peut ne pas être authentique.</string>
     <string name="badge_unknown_key_title">Le badge ne peut pas être vérifié</string>
     <string name="badge_unknown_key_desc">Le badge est signé avec une clé que cette version de l’application ne reconnaît pas. Mettez à jour l’application pour vérifier ce badge.</string>
+    <string name="simplex_name_sales">La vente du nom SimpleX commence dans</string>
+    <string name="until_register_simplex_domain">jusqu’à ce que vous puissiez enregistrer un domaine SimpleX</string>
+    <string name="update_app_register_simplex_domain">Mettez à jour l’application pour enregistrer un domaine SimpleX</string>
+    <string name="countdown_hrs_min_sec">%1$02d h %2$02d min %3$02d s</string>
+    <string name="simplex_name_sales_footer">Les investisseurs du financement participatif peuvent réserver des noms avant le début de la vente :</string>
 </resources>
