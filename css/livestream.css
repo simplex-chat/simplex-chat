@@ -60,7 +60,7 @@
 }
 
 .livestream .text-container .event-utc,
-.livestream .text-container .event-local {
+.livestream .text-container .event-join {
     font-family: "Manrope", sans-serif;
     font-weight: 300;
     font-size: calc(var(--sec-vwu) * 1.4);
@@ -69,16 +69,36 @@
     color: #000000;
 }
 
-.dark .livestream .text-container .event-utc {
+.dark .livestream .text-container .event-utc,
+.dark .livestream .text-container .event-join {
     color: #ffffff;
 }
 
-.livestream .text-container .event-local {
+.livestream .text-container .event-join {
     font-size: calc(var(--sec-vwu) * 1.3);
-    color: #009df7;
 }
 
-.dark .livestream .text-container .event-local {
+.livestream .text-container .event-join span {
+    font-weight: inherit;
+}
+
+.livestream .text-container .event-join .join-count {
+    margin-right: 0.3em;
+}
+
+.livestream .text-container .event-join.counting .join-where {
+    display: block;
+}
+
+.livestream .text-container .event-join a {
+    color: #009df7;
+    font-family: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    max-width: none;
+}
+
+.dark .livestream .text-container .event-join a {
     color: #64fdff;
 }
 
@@ -152,12 +172,12 @@
     }
 
     .livestream .text-container .event-utc,
-    .livestream .text-container .event-local {
+    .livestream .text-container .event-join {
         font-size: calc(var(--sec-vwu) * 3.9);
         max-width: calc(var(--sec-vwu) * 80);
     }
 
-    .livestream .text-container .event-local {
+    .livestream .text-container .event-join {
         font-size: calc(var(--sec-vwu) * 3.3);
     }
 
@@ -271,6 +291,34 @@
 .dark .register-card input[type="submit"] {
     background: #70f0f9;
     color: #000000;
+}
+
+.register-card .channel-link {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: #0053d0;
+    text-decoration: none;
+}
+
+.register-card .channel-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.dark .register-card .channel-link {
+    color: #70f0f9;
+}
+
+.register-card .channel-link svg {
+    width: 0.82em;
+    height: 0.82em;
+    margin-left: 0.4em;
+    fill: currentColor;
+    flex: none;
 }
 
 .register-card .close-register {
