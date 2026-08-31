@@ -79,10 +79,8 @@ checkValue payload = (base - total `mod` base) `mod` base
       let addend = factor * v
        in (sum' + addend `div` base + addend `mod` base, if factor == 2 then 1 else 2)
 
--- | Read a code as typed: any case, with or without the separators, and with the ambiguous
--- characters folded. 'Nothing' for anything that is not a well-formed code, including a failed
--- check character - the caller reports one error for all of them, so that trying codes teaches
--- nothing beyond whether one was accepted.
+-- | Read a code as typed: any case, separators optional, ambiguous characters folded.
+-- 'Nothing' for anything not well-formed, a failed check character included.
 parseBadgeCode :: Text -> Maybe BadgeCode
 parseBadgeCode t = do
   body <- T.stripPrefix codePrefix $ T.toUpper $ T.filter isAlphaNum t
