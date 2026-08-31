@@ -28,6 +28,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
+import Simplex.Chat.Badges (badgeServerCredential)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -282,7 +283,8 @@ newChatController
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
         let useServices = M.fromList $ map (\User {agentUserId = AgentUserId uId, clientService} -> (uId, isTrue clientService)) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, useServices, presetDomains, presetServers = L.toList allPresetServers}
+            entitlements = M.fromList $ mapMaybe (\User {agentUserId = AgentUserId uId, profile = LocalProfile {localBadge}} -> (uId,) <$> badgeServerCredential localBadge) users
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), entitlements, ntf, netCfg, useServices, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

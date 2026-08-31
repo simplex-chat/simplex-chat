@@ -649,6 +649,7 @@ xftpServerConfig =
       httpCredentials = Nothing,
       webStaticPath = Nothing,
       xftpServerVRange = supportedFileServerVRange,
+      information = Nothing,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",

@@ -56,7 +56,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -5142,8 +5142,10 @@ addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
   verified <- liftIO $ verifyCredential key cred
   unless verified $ throwCmdError "badge credential does not verify against configured key"
   now <- liftIO getCurrentTime
-  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+  let badge = Just (OwnBadge cred (mkBadgeStatus now (Just True) info))
+  user' <- withFastStore' $ \db -> setUserBadge db user badge
   asks currentUser >>= atomically . (`writeTVar` Just user')
+  lift $ withAgent' $ \a -> setUserEntitlement a (aUserId user') (badgeServerCredential badge)
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
   withChatLock "addUserBadge" $ forM_ contacts $ \ct ->
