@@ -47,9 +47,9 @@ import Directory.Options
 import Directory.Search
 import Directory.Store
 import Directory.Store.Migrate
-import Directory.Util
 import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
+import Simplex.Chat.Bot.Store
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Internal (setGroupLinkData)

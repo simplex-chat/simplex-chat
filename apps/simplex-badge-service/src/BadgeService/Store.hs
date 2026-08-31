@@ -5,15 +5,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- | The badge service's own tables. They live in the client's database under the
--- @sx_badge_service_@ prefix the migration gives them (BadgeService.Store.SQLite.Migrations).
 module BadgeService.Store
   ( MintedCode (..),
     CodeRedemption (..),
     RedeemedCode (..),
     CodeIssuance (..),
-    withDB,
-    withDB',
     getBadgeCode,
     purchaseKeyExists,
     writeCodeRedemption,
@@ -21,23 +17,19 @@ module BadgeService.Store
   )
 where
 
-import Control.Logger.Simple (logError)
-import Control.Monad.Except
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
-import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Util (catchAll, maybeFirstRow, maybeFirstRow')
+import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow')
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -46,18 +38,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
-
--- The same shape as Directory.Util's helpers of these names; the two bots share no module.
-withDB' :: Text -> DBStore -> (DB.Connection -> IO a) -> IO (Either String a)
-withDB' cxt st a = withDB cxt st $ ExceptT . fmap Right . a
-
-withDB :: Text -> DBStore -> (DB.Connection -> ExceptT String IO a) -> IO (Either String a)
-withDB cxt chatStore action = do
-  r_ <- withTransaction chatStore (runExceptT . action) `catchAll` (pure . Left . show)
-  case r_ of
-    Left e -> logError $ "Badge service database error: " <> cxt <> " " <> T.pack e
-    Right _ -> pure ()
-  pure r_
 
 -- | A minted code as the service reads it back - never the code itself. The month count it was
 -- minted for is absent because redemption writes no ledger yet, so nothing reads it.

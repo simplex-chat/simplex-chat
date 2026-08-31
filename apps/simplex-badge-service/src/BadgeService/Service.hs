@@ -22,7 +22,6 @@ import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
-import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -39,13 +38,13 @@ import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot (initializeBotAddress')
+import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
-import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (TextEncoding, strEncode, textDecode)
 import Simplex.Messaging.Version (isCompatible)
@@ -139,7 +138,7 @@ runBadgeCmd :: ChatController -> ByteString -> IO (Either ChatError ChatResponse
 runBadgeCmd cc cmd = case A.parseOnly mintCmdP cmd of
   Left _ -> pure $ chatCmdError "use: //mint supporter|legend|investor [months 1-255] [paid|unpaid|free]"
   Right mintOpts ->
-    mintBadgeCode (random cc) (serviceStore cc) mintOpts >>= \case
+    mintBadgeCode cc mintOpts >>= \case
       Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "code " <> formatBadgeCode code}
       Left e -> pure $ chatCmdError $ "minting code: " <> e
 
@@ -179,11 +178,11 @@ data MintCodeOpts = MintCodeOpts
   }
 
 -- | The caller sees the code once; only its hash is stored, so a lost code cannot be recovered.
-mintBadgeCode :: TVar ChaChaDRG -> DBStore -> MintCodeOpts -> IO (Either String BadgeCode)
-mintBadgeCode g st MintCodeOpts {badgeType, months, paymentStatus} = do
-  code <- randomBadgeCode g
+mintBadgeCode :: ChatController -> MintCodeOpts -> IO (Either String BadgeCode)
+mintBadgeCode cc MintCodeOpts {badgeType, months, paymentStatus} = do
+  code <- randomBadgeCode $ random cc
   now <- getCurrentTime
-  r <- withDB' "mintBadgeCode" st $ \db -> insertBadgeCode db (badgeCodeHash code) badgeType months paymentStatus now
+  r <- withDB' "mintBadgeCode" cc $ \db -> insertBadgeCode db (badgeCodeHash code) badgeType months paymentStatus now
   pure $ code <$ r
 
 processQueuedRequests :: BadgeIssuerKey -> ServiceState -> IO ()
@@ -227,8 +226,6 @@ responseObject r = case J.toJSON r of
 errorResponse :: BadgeServiceErrorCode -> BadgeServiceResponse
 errorResponse code = BSPError {code, message = Nothing, retryAfter = Nothing}
 
-serviceStore :: ChatController -> DBStore
-serviceStore ChatController {chatStore} = chatStore
 
 -- | Parse the envelope, check the version and the claimed key, then route.
 --
@@ -249,7 +246,7 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
         _ -> case purchaseKey of
           Nothing -> pure $ errorResponse BSEUnsupportedVersion
           Just k ->
-            withDB' "purchaseKeyExists" (serviceStore cc) (`purchaseKeyExists` k) >>= \case
+            withDB' "purchaseKeyExists" cc (`purchaseKeyExists` k) >>= \case
               Right True -> pure $ errorResponse BSEUnsupportedVersion
               Right False -> pure $ errorResponse BSEUnknownPurchaseKey
               Left _ -> pure $ errorResponse BSEInternal
@@ -263,7 +260,7 @@ redeemCode :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMas
 redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText = case parseBadgeCode codeText of
   Nothing -> pure $ errorResponse BSECodeInvalid
   Just code ->
-    withDB' "getBadgeCode" (serviceStore cc) (`getBadgeCode` badgeCodeHash code) >>= \case
+    withDB' "getBadgeCode" cc (`getBadgeCode` badgeCodeHash code) >>= \case
       Left _ -> pure $ errorResponse BSEInternal
       Right Nothing -> pure $ errorResponse BSECodeInvalid
       Right (Just MintedCode {badgeCodeId, badgeType, redemption}) -> case redeemedResponse redemption of
@@ -290,7 +287,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
                       }
               -- re-read under the write transaction: a concurrent redemption of the same code
               -- may have landed while this one was being signed
-              r <- withDB "writeCodeRedemption" (serviceStore cc) $ \db ->
+              r <- withDB "writeCodeRedemption" cc $ \db ->
                 liftIO (getBadgeCode db $ badgeCodeHash code) >>= \case
                   Just MintedCode {redemption = current} | Just resp <- redeemedResponse current -> pure resp
                   _ -> liftIO $ credentialResponse credential <$ writeCodeRedemption db issuance now
