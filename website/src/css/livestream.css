@@ -273,6 +273,34 @@
     color: #000000;
 }
 
+.register-card .channel-link {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: #0053d0;
+    text-decoration: none;
+}
+
+.register-card .channel-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.dark .register-card .channel-link {
+    color: #70f0f9;
+}
+
+.register-card .channel-link svg {
+    width: 0.82em;
+    height: 0.82em;
+    margin-left: 0.4em;
+    fill: currentColor;
+    flex: none;
+}
+
 .register-card .close-register {
     position: absolute;
     top: 16px;
