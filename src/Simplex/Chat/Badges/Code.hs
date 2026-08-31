@@ -31,6 +31,7 @@ import Crypto.Random (ChaChaDRG)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlphaNum, toUpper)
+import Data.List (elemIndex)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -64,7 +65,7 @@ charValue c = case toUpper c of
   'I' -> Just 1
   'L' -> Just 1
   'O' -> Just 0
-  u -> lookup u $ zip alphabet [0 ..]
+  u -> elemIndex u alphabet
 
 valueChar :: Int -> Char
 valueChar v = alphabet !! v
