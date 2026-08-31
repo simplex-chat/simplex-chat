@@ -2940,4 +2940,9 @@
     <string name="v7_0_simplex_names">Nombres públicos SimpleX (BETA)</string>
     <string name="forwarded_from">reenviado desde</string>
     <string name="group_invitations">Invitación de grupo</string>
+    <string name="simplex_name_sales">La venta de nombres SimpleX comienza en</string>
+    <string name="until_register_simplex_domain">hasta que puedas registrar un dominio SimpleX</string>
+    <string name="update_app_register_simplex_domain">Actualiza la app para poder registar un dominio SimpleX</string>
+    <string name="countdown_hrs_min_sec">%1$02d hrs %2$02d min %3$02d seg</string>
+    <string name="simplex_name_sales_footer">Los inversores de crowdfunding pueden reservar nombres antes del comienzo de la venta:</string>
 </resources>
