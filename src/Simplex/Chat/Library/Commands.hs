@@ -63,7 +63,7 @@ import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Names.Protocol
-import Simplex.Chat.Names.Snrc (Intent (..), SignedIntent (..), SnrcDeployment (..), parseRecordKey, signSnrcIntent)
+import Simplex.Chat.Names.Snrc (Intent (..), SignedIntent (..), SnrcDeployment (..), devChainId, parseRecordKey, signSnrcIntent)
 import Simplex.Messaging.Eth.Address (Address, mkAddress)
 import Simplex.Chat.Store.Wallets (bindSeedAccount, createSeed, currentSeed, getNameKeys, getOrCreateAccountRef, listSeeds, markBackedUp, nameKeyPathTaken, raiseNextAccountIndex, raiseNextNameIndex, recordNameKey, seedOfName, setCurrentSeed, setNextNameIndex, takeNameIndex)
 import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), NameIndex, SeedId, WalletAccount, WalletSeed (..), accountAddress, deriveAtPath, deriveNameKey, ethSignatureBytes, importRecoveryKey, newSeed, parseNameKeyPath, recoveryKeyPhrase, renderNameKeyPath)
@@ -1511,10 +1511,14 @@ processChatCommand cxt nm = \case
     pure $ CRNames user rows
   APINameInfo sendTarget nm' -> withUser $ \user -> do
     cReq <- resolveServiceTarget nm user sendTarget
-    (_, path, _) <- nameKeyOf nm'
+    (_, path, acc) <- nameKeyOf nm'
     namesRPC user cReq (NRResolve nm') >>= \case
-      NRPRecord {nrName, nrOwner, nrContact, nrChannel, nrExpiry, nrEditsLeft} ->
-        pure $ CRNameInfo user nrName (tshow nrOwner) path nrContact nrChannel nrExpiry nrEditsLeft
+      NRPRecord {nrName, nrOwner, nrContact, nrChannel, nrExpiry, nrEditsLeft} -> do
+        -- The service's word against our own key. A registrar that misreports
+        -- the owner cannot be caught anywhere else, and we are holding the
+        -- address it should have named.
+        let ours = accountAddress acc
+        pure $ CRNameInfo user nrName (tshow nrOwner) (nrOwner == ours) path nrContact nrChannel nrExpiry nrEditsLeft
       _ -> throwCmdError "unexpected resolve response"
   APINameSetLink sendTarget nm' record lnk -> withUser $ \user -> do
     cReq <- resolveServiceTarget nm user sendTarget
@@ -5208,7 +5212,9 @@ clientDeployment :: SnrcDeployment
 clientDeployment =
   SnrcDeployment
     { sdTld = "simplex",
-      sdChainId = 1,
+      -- Not 1: these are placeholder contracts, and a domain separator that
+      -- says "mainnet" is one that a real deployment could be made to accept.
+      sdChainId = devChainId,
       sdRegistrar = mockClientAddr 1,
       sdResolver = mockClientAddr 2
     }

@@ -211,10 +211,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     ttyUser u $ case rows of
       [] -> ["no names yet - buy one with /name buy <label> <code>"]
       _ -> map (\(n, points, expiry, edits) -> plain $ "  " <> n <> " -> " <> points <> "  expires " <> tshow expiry <> ", " <> tshow edits <> " edits left") rows
-  CRNameInfo u n owner path contact channel expiry edits ->
+  CRNameInfo u n owner ourKey path contact channel expiry edits ->
     ttyUser u $
       [ plain $ n,
-        plain $ "  owner   " <> owner,
+        plain $ "  owner   " <> owner <> (if ourKey then "  (matches your key)" else "  (NOT your key)"),
         plain $ "  path    " <> path
       ]
         <> map (\c -> plain $ "  contact " <> c) contact

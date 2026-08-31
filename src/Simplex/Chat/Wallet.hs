@@ -218,10 +218,20 @@ signIntent a Eip712Intent {eiDomain, eiTypeString, eiValues} = do
       }
 
 -- | Parse @r || s || v@ as it arrives from a client.
+-- | Half the secp256k1 group order. EIP-2 accepts only the lower half: for
+-- every signature there is a second one at @n - s@ that recovers the same
+-- signer, and accepting both means one authorisation has two identities.
+secp256k1HalfN :: Integer
+secp256k1HalfN = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+
 parseEthSignature :: ByteString -> Either String EthSignature
 parseEthSignature bs
   | B.length bs /= 65 = Left "signature: expected 65 bytes"
-  | otherwise = Right EthSignature {esR = B.take 32 bs, esS = B.take 32 (B.drop 32 bs), esV = B.last bs}
+  | beInteger s > secp256k1HalfN = Left "signature: s is not canonical (EIP-2)"
+  | otherwise = Right EthSignature {esR = B.take 32 bs, esS = s, esV = B.last bs}
+  where
+    s = B.take 32 (B.drop 32 bs)
+    beInteger = B.foldl' (\acc w -> acc * 256 + fromIntegral w) 0
 
 -- | Recover the address that produced a signature over a digest — what the
 -- relayer and the contracts do.

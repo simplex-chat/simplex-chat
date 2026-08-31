@@ -35,7 +35,7 @@ import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Names.Protocol
-import Simplex.Chat.Names.Snrc (Intent (..), RecordKey (..), SnrcDeployment (..), intentDigest, parseRecordKey)
+import Simplex.Chat.Names.Snrc (Intent (..), RecordKey (..), SnrcDeployment (..), devChainId, intentDigest, parseRecordKey)
 import Simplex.Chat.Wallet (parseEthSignature, recoverSigner)
 import Simplex.Chat.Options (printDbOpts)
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -101,6 +101,12 @@ minCommitmentAge = 1
 -- @minCharLength@. A code may require more; the stricter of the two wins.
 minNameLength :: Int
 minNameLength = 6
+
+-- | What the contract accepts in a label. Mirrored here because the mock is
+-- what every test and every local run registers against: a mock that is more
+-- permissive than the chain makes the gates look enforced when they are not.
+validNameChar :: Char -> Bool
+validNameChar c = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'
 
 reservedLabels :: Set Text
 reservedLabels = S.fromList ["simplex", "support", "admin", "acme"]
@@ -238,7 +244,9 @@ mockDeployment :: SnrcDeployment
 mockDeployment =
   SnrcDeployment
     { sdTld = "simplex",
-      sdChainId = 1,
+      -- Not 1: these are placeholder contracts, and a domain separator that
+      -- says "mainnet" is one that a real deployment could be made to accept.
+      sdChainId = devChainId,
       sdRegistrar = mockAddr 1,
       sdResolver = mockAddr 2
     }
@@ -280,7 +288,14 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
           pure
             NRPQuote
               { nrLabel,
-                nrAvailable = maybe (not (S.member nrLabel reservedLabels) && T.length nrLabel >= minNameLength) (const False) live,
+                nrAvailable =
+                  maybe
+                    ( T.all validNameChar nrLabel
+                        && not (S.member nrLabel reservedLabels)
+                        && T.length nrLabel >= minNameLength
+                    )
+                    (const False)
+                    live,
                 nrTakenUntil = neExpiry <$> live,
                 nrReserved = S.member nrLabel reservedLabels,
                 -- $10/yr for 6+ characters, the only rung reachable while the
@@ -374,11 +389,21 @@ handleNamesRequest chain NamesRequest {nrVersion, nrRequest}
         Just r -> pure r
         Nothing -> do
           r <- act
-          modifyTVar' chain $ \c' -> c' {chainRequests = M.insert (unRequestId rid) r (chainRequests c')}
+          -- Only settled answers are replayed. Caching a failure would make a
+          -- retry with the same id permanently unable to succeed, which is the
+          -- opposite of what an idempotency key is for.
+          case r of
+            NRPError {} -> pure ()
+            _ -> modifyTVar' chain $ \c' -> c' {chainRequests = M.insert (unRequestId rid) r (chainRequests c')}
           pure r
     checkGates nm =
       let label = T.takeWhile (/= '.') nm
        in if
+            -- The contract's charset. Without this the reserved set is bypassed
+            -- by a capital letter - "Support" is not "support" to a Set, nor to
+            -- a Map key - and two names that read alike can both exist.
+            | not (T.all validNameChar label) ->
+                Just $ NRPError NECNameInvalid (Just "names use lowercase letters, digits and hyphens") Nothing
             | T.length label < minNameLength -> Just $ NRPError NECNameTooShort Nothing Nothing
             | S.member label reservedLabels -> Just $ NRPError NECNameReserved Nothing Nothing
             | otherwise -> Nothing

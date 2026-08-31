@@ -308,6 +308,21 @@ Between commit and reveal the core waits `commitWaitMs` (1 s), and the service
 reveal whose commitment is too new is refused. Both are short in the mock;
 production is 60 s. Deposit hardening is still deferred.
 
+What this defends against is a third party watching the chain. It is not a
+defence against the relayer itself, and the difference is worth stating: a
+commitment discloses nothing, so the relayer is the first party to learn the
+name, and it is the party that decides when the reveal reaches the chain. A
+hostile relayer can stall a reveal, publish its own commitment for the same
+name, wait out the minimum age and register — returning `name_taken` to a user
+who has already spent a code that DEC6 will not replace.
+
+The answer is relay diversity rather than the commitment alone. Because the
+commitment already binds the owner, a reveal one relayer refuses to submit can
+be handed to another and the claim survives intact — no re-commit, no new
+secret, no lost priority. Acting on that needs the client to verify chain state
+for itself, so it can tell a stall from a slow block; until then the guarantee
+rests on the relayer being willing rather than on it being unable.
+
 ## Sequence
 
 ```mermaid
@@ -517,3 +532,33 @@ Each of these is a test, not a claim.
 - Redemption codes are a lookup table the issuer holds, so a code links the buyer
   to the name it bought. Unlinkable blind-signed codes are deferred to their own
   branch.
+- **A relayer can stall a reveal and take the name.** Described above. The
+  mitigation — hand the reveal to a different relayer — needs client-side chain
+  verification, which is not built. Until it is, the registrar is trusted for
+  liveness on the reveal, and the documents should not claim otherwise.
+- **A recovery scan discloses the whole derivation tree to one registrar.**
+  `scanSeed` asks one service about ~41 addresses per seed (81 for `rescan
+  more`) in a single burst, including every address that owns nothing — the
+  user's future name keys, disclosed before use. Fresh connections per request
+  do not help, because the burst correlates on timing and the addresses are
+  related by BIP-32 anyway. The intended shape is a delegated on-chain lookup:
+  resolve one address at a time through the SNRC resolver, spread over a diverse
+  set of SMP relays, so no relay sees more than a fragment. Not built.
+- **A refused purchase consumes name indices.** `deriveNameOwner` takes an index
+  before the service answers and steps over paths already recorded, so a run of
+  failures leaves gaps and the path a user is shown is not the one they would
+  predict. Indices are free; the surprise is the cost.
+- **The free-index check and the record are separate transactions.**
+  `nameKeyPathTaken` and `recordNameKey` are two stores, so two concurrent
+  purchases could pass the same check. Unreachable while commands are processed
+  serially, and worth revisiting before anything drives the API concurrently.
+- **Two profiles can be pinned to the same account.** `/name keys use <n>
+  <account>` accepts an index another profile already holds, and each profile's
+  name counter starts independently. What keeps their keys apart is the
+  device-wide path check in `deriveNameOwner`, not the binding — so that check
+  is load-bearing rather than defence in depth.
+- **Names are device-wide, not per profile.** `ownedNames` and `nameKeyOf` ignore
+  the calling profile: any profile lists, and can sign for, every name on the
+  device. Deliberate — a seed belongs to the device, `wallet_name_keys` records
+  no profile, and a recovery scan has nothing to attribute what it finds to, so
+  scoping would hide exactly the names a recovery had just restored.

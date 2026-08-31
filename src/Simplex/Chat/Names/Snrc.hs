@@ -20,6 +20,7 @@ module Simplex.Chat.Names.Snrc
     intent712,
     intentDigest,
     signSnrcIntent,
+    devChainId,
   )
 where
 
@@ -75,6 +76,12 @@ data SignedIntent = SignedIntent
 
 setTextTypeString :: ByteString
 setTextTypeString = "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
+
+-- | The chain the placeholder deployment claims. Deliberately not 1: signatures
+-- carry their chain id, and one that reads as mainnet is one that a contract
+-- deployed at the placeholder address could later be made to honour.
+devChainId :: Integer
+devChainId = 31337
 
 labelHash :: ByteString -> ByteString
 labelHash = keccak256

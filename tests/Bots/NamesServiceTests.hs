@@ -22,10 +22,14 @@ import Test.Hspec hiding (it)
 import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import Simplex.Messaging.Util (tshow)
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
-import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey, parseNameKeyPath, renderNameKeyPath)
+import Data.Either (isRight)
+import Data.List (isInfixOf)
+import Simplex.Chat.Names.Snrc (Intent (..), RecordKey (..), SnrcDeployment (..), devChainId, intent712)
+import Simplex.Messaging.Eth.Address (Address, mkAddress)
+import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey, ethSignatureBytes, parseEthSignature, parseNameKeyPath, renderNameKeyPath, signIntent)
 import qualified Test.Hspec as Hspec
 
 namesServiceTests :: SpecWith TestParams
@@ -57,6 +61,24 @@ namesProtocolTests = do
     addrOf 0 1 `shouldBe` "0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
     -- Ledger Live account 2 for this phrase
     addrOf 1 0 `shouldBe` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
+  -- EIP-2: for every signature there is a second one at n - s that recovers the
+  -- same signer. Accepting both would give one authorisation two identities.
+  it "refuses a signature whose s is not canonical" $ \_ -> do
+    let mn = either error id $ B39.parseMnemonic "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+        sd = WalletSeed {wsId = SeedId 1, wsEntropy = B39.mnemonicToEntropy mn}
+        acc = either error id $ deriveNameKey sd 0 0
+        intent = SetTextRecord "alice.simplex" RKContact "simplex:/contact#/x" 0 9999999999
+        sig = either error id $ signIntent acc (intent712 clientTestDeployment intent)
+        bs = ethSignatureBytes sig
+        s0 = beInt (B.take 32 (B.drop 32 bs))
+        flipped = B.take 32 bs <> beBytes (secpN - s0) <> B.singleton (if B.last bs == 27 then 28 else 27)
+    -- the signature the wallet produced is canonical
+    isRight (parseEthSignature bs) `shouldBe` True
+    -- its mirror image is refused rather than recovered
+    case parseEthSignature flipped of
+      Left e -> ("not canonical" `isInfixOf` e) `shouldBe` True
+      Right _ -> expectationFailure "non-canonical s was accepted"
+
   -- The account a name sits under is read back out of its stored path: that is
   -- the only record of which profile owned it, and what the recovery scan reads
   -- to know which indices are taken. A path we did not generate has no account
@@ -356,10 +378,39 @@ testBuyRefusals ps =
     client <## "name another.simplex: registered"
     client <##. "name registered: another.simplex -> 0x"
     client <##. "  derivation path: m/44'/60'/0'/0/"
+    -- A capital letter is not a different name, it is an invalid one. Without
+    -- this the reserved set is bypassed by case: "Support" would register while
+    -- "support" is held, and two names that read alike would both exist.
+    client ##> ("/name buy " <> bsLink <> " Support " <> T.unpack (devCode 3) <> " simplex:/contact#/x")
+    client <## "name Support.simplex: revealing"
+    client <##. "name registration failed: name_invalid"
+    -- and the code is not spent by a refusal, so it still works
+    client ##> ("/name buy " <> bsLink <> " lowered " <> T.unpack (devCode 3) <> " simplex:/contact#/x")
+    client <## "name lowered.simplex: revealing"
+    client <## "name lowered.simplex: registered"
+    client <##. "name registered: lowered.simplex -> 0x"
+    client <##. "  derivation path: m/44'/60'/0'/0/"
     -- Expiry is a property of the key, not of the code, so a build with one
     -- cohort key cannot mint an expired code. Expiry refusal is covered by the
     -- unit test over verifyCode instead.
 
+
+secpN :: Integer
+secpN = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+
+beInt :: B.ByteString -> Integer
+beInt = B.foldl' (\a w -> a * 256 + fromIntegral w) 0
+
+beBytes :: Integer -> B.ByteString
+beBytes n = B.pack [fromIntegral (n `div` (256 ^ i)) | i <- [31, 30 .. 0 :: Int]]
+
+testAddr :: Word8 -> Address
+testAddr n = either error id $ mkAddress (B.replicate 19 0 <> B.singleton n)
+
+-- | Mirrors the client's placeholder deployment, so the digest is the real one.
+clientTestDeployment :: SnrcDeployment
+clientTestDeployment =
+  SnrcDeployment {sdTld = "simplex", sdChainId = devChainId, sdRegistrar = testAddr 1, sdResolver = testAddr 2}
 
 -- | The service's pre-issued table, mirrored so tests can name a code.
 devCode :: Int -> Text

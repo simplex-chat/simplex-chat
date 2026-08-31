@@ -239,6 +239,7 @@ data NamesErrorCode
   | NECInternal
   | NECNameReserved
   | NECNameTooShort
+  | NECNameInvalid
   | NECPaymentRejected
   | NECCodeSpent
   | NECCodeExpired
@@ -259,6 +260,7 @@ instance TextEncoding NamesErrorCode where
     NECInternal -> "internal"
     NECNameReserved -> "name_reserved"
     NECNameTooShort -> "name_too_short"
+    NECNameInvalid -> "name_invalid"
     NECPaymentRejected -> "payment_rejected"
     NECCodeSpent -> "code_spent"
     NECCodeExpired -> "code_expired"
@@ -276,6 +278,7 @@ instance TextEncoding NamesErrorCode where
     "internal" -> NECInternal
     "name_reserved" -> NECNameReserved
     "name_too_short" -> NECNameTooShort
+    "name_invalid" -> NECNameInvalid
     "payment_rejected" -> NECPaymentRejected
     "code_spent" -> NECCodeSpent
     "code_expired" -> NECCodeExpired

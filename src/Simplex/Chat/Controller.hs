@@ -858,7 +858,7 @@ data ChatResponse
   | CRNameQuote {user :: User, nameLabel :: Text, nameAvailable :: Bool, nameReserved :: Bool, namePriceUsdCents :: Word32, nameYears :: Word32}
   | CRNameCode {user :: User, codeMinLength :: Int, nameYears :: Word32, codeExpires :: UTCTime}
   | CRNames {user :: User, namesOwned :: [(Text, Text, UTCTime, Word32)]}
-  | CRNameInfo {user :: User, regName :: Text, regOwner :: Text, regPath :: Text, nameContact :: [Text], nameChannel :: [Text], regExpiry :: UTCTime, nameEditsLeft :: Word32}
+  | CRNameInfo {user :: User, regName :: Text, regOwner :: Text, regOwnerIsOurs :: Bool, regPath :: Text, nameContact :: [Text], nameChannel :: [Text], regExpiry :: UTCTime, nameEditsLeft :: Word32}
   | CRNameLinkSet {user :: User, regName :: Text, nameRecord :: Text, regTxHash :: TxHash}
   | CRNameRescan {user :: User, namesFound :: [(Text, Text)]}
   | CRNameKeys {user :: User, walletKeys :: [(Int, [(Maybe AccountIndex, [(Maybe NameIndex, Text, Text)])], Bool, Bool)]}
