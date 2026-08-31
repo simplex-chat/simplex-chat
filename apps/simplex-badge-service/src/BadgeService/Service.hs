@@ -8,6 +8,12 @@ module BadgeService.Service
   ( welcomeGetOpts,
     badgeService,
     badgeServiceCLI,
+    -- Exposed so the names request handler can be tested as a function, with
+    -- no connection, no forked service and no waiting on terminal output.
+    handleNamesRequest,
+    NamesChain (..),
+    emptyNamesChain,
+    devCodeTable,
   )
 where
 

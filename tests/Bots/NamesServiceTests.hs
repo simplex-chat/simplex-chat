@@ -1,10 +1,14 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Bots.NamesServiceTests where
 
+import BadgeService.Service (NamesChain (..), devCodeTable, emptyNamesChain, handleNamesRequest)
 import Bots.BadgeServiceTests (badgeProfile, mkBadgeServiceOpts, runBadgeService, serviceDbPrefix, withBadgeService)
+import Control.Concurrent.STM (newTVarIO)
+import Data.Time.Clock (getCurrentTime)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -41,7 +45,7 @@ namesServiceTests = do
   it "recovers the derivation marks from an imported phrase" testRecoverMarks
   it "buys with a code, then re-points the link with a signature" testBuyAndLink
   it "refuses a spent code, a reserved name and a short name" testBuyRefusals
-  it "quotes a name by labelhash, without sending the name" testNameQuote
+  it "a quote reaches the registrar and renders" testNameQuote
 
 -- | Pins the wire format. The end-to-end test cannot catch a key renamed on
 -- both sides at once, so the encodings are asserted literally here.
@@ -112,6 +116,8 @@ namesProtocolTests = do
     roundtrips $ NamesRequest 1 (NRCommit $ Commitment "0123456789abcdef")
     roundtrips $ NamesRequest 1 (NRReveal "alicename.simplex" testOwner (NameSecret "s") 3600 "simplex:/contact#/x")
     roundtrips $ NRPCommitted (TxHash "tx")
+    roundtrips $ NamesRequest 1 (NRQuote (mkLabelHash "acme") 4 2)
+    roundtrips $ NRPQuote (mkLabelHash "acme") False Nothing True 2000 2
     roundtrips $ NRPError NECNameTaken Nothing Nothing
     roundtrips $ NRPError (NECUnknown "future_code") (Just "why") (Just 30)
   Hspec.it "renders a 32-byte hash as 0x + 64 hex digits" $ do
@@ -119,6 +125,32 @@ namesProtocolTests = do
     B.length h `shouldBe` 66
     B.take 2 h `shouldBe` "0x"
     B.all (\c -> isHexDigit (toEnum $ fromIntegral c)) (B.drop 2 h) `shouldBe` True
+  -- The quote semantics, tested as a function call: no SMP connection, no
+  -- forked service, no waiting on terminal output, so nothing here depends on
+  -- how fast the machine is.
+  Hspec.it "a reserved label is refused by its hash alone" $ do
+    r <- freshChain >>= (`quoteFor` "acme")
+    r `shouldSatisfy` isReserved
+    r `shouldSatisfy` not . isAvailable
+  Hspec.it "a longer label sharing a reserved prefix is not reserved" $ do
+    r <- freshChain >>= (`quoteFor` "acmecorp")
+    r `shouldSatisfy` not . isReserved
+    r `shouldSatisfy` isAvailable
+  -- the hash hides the length, so the caller reports it and the minimum still bites
+  Hspec.it "a label below the minimum length is refused" $ do
+    r <- freshChain >>= (`quoteFor` "abc")
+    r `shouldSatisfy` not . isAvailable
+    r `shouldSatisfy` not . isReserved
+  Hspec.it "a registered name is found by its hash" $ do
+    chain <- freshChain
+    before' <- quoteFor chain "spender"
+    before' `shouldSatisfy` isAvailable
+    -- the fully-qualified name, as the client sends it
+    bought <- decodeResp <$> (handleNamesRequest chain . NamesRequest currentNamesVersion $
+      NRBuy (RequestId "req-1") "spender.simplex" testOwner (RedemptionCode (devCode 1)) "simplex:/contact#/x")
+    bought `shouldSatisfy` \case NRPRegistered {} -> True; _ -> False
+    after' <- quoteFor chain "spender"
+    after' `shouldSatisfy` not . isAvailable
   Hspec.it "binds the commitment to every field" $ do
     let c = mkCommitment "alicename.simplex" testOwner (NameSecret "s") 3600
     -- the service recomputes it at reveal, so it must be deterministic
@@ -128,6 +160,20 @@ namesProtocolTests = do
     c `shouldNotBe` mkCommitment "alicename.simplex" testOwner (NameSecret "s") 7200
   where
     testOwner = either error id $ parseAddress "0x520110C7b1CE17f8C0a2778B41AB2F23D10B70B0"
+    freshChain = do
+      now <- getCurrentTime
+      newTVarIO emptyNamesChain {chainCodes = devCodeTable now}
+    -- what the client sends: the hash, and the length it cannot recover from it
+    quoteFor chain label =
+      decodeResp
+        <$> ( handleNamesRequest chain . NamesRequest currentNamesVersion $
+                NRQuote (mkLabelHash label) (fromIntegral $ T.length label) 2
+            )
+    decodeResp o = case J.fromJSON (J.Object o) of
+      J.Success (r :: NamesResponse) -> r
+      J.Error e -> error e
+    isAvailable = \case NRPQuote {nrAvailable} -> nrAvailable; _ -> False
+    isReserved = \case NRPQuote {nrReserved} -> nrReserved; _ -> False
     -- compares parsed values, so the assertion does not depend on key order
     encodes :: J.ToJSON a => a -> LB.ByteString -> Expectation
     encodes x s = Just (J.toJSON x) `shouldBe` J.decode s
@@ -352,30 +398,19 @@ testBuyAndLink ps =
 
 -- | Every refusal has its own message. A user who types a reserved name must be
 -- told that, not "bad request".
--- A quote carries only the labelhash and the label's length, so the registrar
--- answers all of these without ever seeing the name. Charset is the one rule it
--- cannot check against a hash, so the client refuses that one locally.
+-- Wiring only: that the CLI command reaches the registrar and renders what
+-- comes back. What a quote *means* is covered by the handler tests above,
+-- which need no connection and so cannot fail for being slow. Kept because
+-- neither those nor the encoding roundtrips can catch the two sides being
+-- wired to different fields.
 testNameQuote :: HasCallStack => TestParams -> IO ()
 testNameQuote ps =
   withBadgeService ps $ \client bsLink -> do
     client ##> ("/name quote " <> bsLink <> " spender")
     client <##. "spender.simplex - available"
-    client ##> ("/name quote " <> bsLink <> " acme")
-    client <##. "acme.simplex - reserved"
-    -- charset is unanswerable from a hash, so this never reaches the registrar
+    -- charset is unanswerable from a hash, so the client refuses without asking
     client ##> ("/name quote " <> bsLink <> " acme!!")
     client <## "bad chat command: name may only contain a-z, 0-9 and inner hyphens"
-    -- the same name, now registered, is found again by its hash alone
-    client ##> ("/name buy " <> bsLink <> " spender " <> T.unpack (devCode 1) <> " simplex:/contact#/x")
-    client <## "name spender.simplex: revealing"
-    client <## "name spender.simplex: registered"
-    client <##. "name registered: spender.simplex -> 0x"
-    client <##. "  derivation path: m/44'/60'/0'/0/"
-    client ##> ("/name quote " <> bsLink <> " spender")
-    client <## "spender.simplex - taken"
-    -- the length travels with the hash, so the minimum is still enforced
-    client ##> ("/name quote " <> bsLink <> " abc")
-    client <## "abc.simplex - taken"
 
 testBuyRefusals :: HasCallStack => TestParams -> IO ()
 testBuyRefusals ps =
