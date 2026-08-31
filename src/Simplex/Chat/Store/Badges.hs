@@ -78,8 +78,7 @@ createBadgeCodeRedemption db g User {userId} code now = do
   pure BadgeCodeRedemption {redemptionId, purchaseKey, purchasePrivKey, masterKey}
 
 -- | Drop a stashed attempt whose code the service refused for good, unless a purchase already
--- came from it - badge_purchases references this row, and a spent code can still be refused
--- later by a rebuilt service or a different one at the configured address.
+-- came from it - badge_purchases references this row.
 deleteBadgeCodeRedemption :: DB.Connection -> Int64 -> IO ()
 deleteBadgeCodeRedemption db redemptionId =
   DB.execute
