@@ -84,10 +84,10 @@ checkValue payload = (base - total `mod` base) `mod` base
 parseBadgeCode :: Text -> Maybe BadgeCode
 parseBadgeCode t = do
   body <- T.stripPrefix codePrefix $ T.toUpper $ T.filter isAlphaNum t
-  if T.length body == codeLength then pure () else Nothing
   vs <- mapM charValue $ T.unpack body
   let (payload, checkChar) = splitAt (codeLength - 1) vs
-  if checkChar == [checkValue payload]
+  if T.length body == codeLength && checkChar == [checkValue payload]
+    -- rebuilt from the values, not from body: that is what folds I/L/O into the canonical form
     then Just $ BadgeCode $ codePrefix <> T.pack (map valueChar vs)
     else Nothing
 
