@@ -1453,4 +1453,9 @@
     <string name="save_auto_accept_settings">Uložiť nastavenia SimpleX adresy</string>
     <string name="save_simplex_name_question">Uložiť SimpleX meno?</string>
     <string name="save_welcome_message_question">Uložiť uvítaciu správu?</string>
+    <string name="your_SMP_servers">Vaše SMP servery</string>
+    <string name="your_XFTP_servers">Vaše XFTP servery</string>
+    <string name="your_ICE_servers">Vaše ICE servery</string>
+    <string name="enter_one_ICE_server_per_line">ICE servery (jeden na riadok)</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistite sa, že adresy WebRTC ICE serverov sú v správnom formáte, oddelené na riadkoch a nie sú duplikované.</string>
 </resources>
