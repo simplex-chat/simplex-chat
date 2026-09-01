@@ -103,9 +103,10 @@ struct GroupChatInfoView: View {
                         }
                     }
 
-                    let showUserSupportChat = groupInfo.membership.memberActive
-                        && ((groupInfo.fullGroupPreferences.support.on && groupInfo.membership.memberRole < .moderator)
-                            || groupInfo.membership.supportChat != nil)
+                    let showUserSupportChat = groupInfo.membership.supportChat != nil
+                        || (groupInfo.membership.memberActive
+                            && groupInfo.fullGroupPreferences.support.on
+                            && groupInfo.membership.memberRole < .moderator)
 
                     if groupInfo.useRelays {
                         Section {
