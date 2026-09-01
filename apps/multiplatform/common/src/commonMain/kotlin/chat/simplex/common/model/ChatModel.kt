@@ -4252,8 +4252,11 @@ data class CIFile(
   val fileSize: Long,
   val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
-  val fileProtocol: FileProtocol
+  val fileProtocol: FileProtocol,
+  val fileExpires: Instant? = null
 ) {
+  val expired: Boolean = fileExpires != null && fileExpires < Clock.System.now()
+
   val loaded: Boolean = when (fileStatus) {
     is CIFileStatus.SndStored -> true
     is CIFileStatus.SndTransfer -> true
@@ -4303,7 +4306,7 @@ data class CIFile(
     is CIFileStatus.SndCancelled -> true
     is CIFileStatus.SndError -> true
     is CIFileStatus.SndWarning -> true
-    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvInvitation -> expired
     is CIFileStatus.RcvAccepted -> true
     is CIFileStatus.RcvTransfer -> true
     is CIFileStatus.RcvAborted -> true

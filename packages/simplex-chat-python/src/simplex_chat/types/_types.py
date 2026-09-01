@@ -481,6 +481,7 @@ class CIFile(TypedDict):
     fileSource: NotRequired["CryptoFile"]
     fileStatus: "CIFileStatus"
     fileProtocol: "FileProtocol"
+    fileExpires: NotRequired[str]  # ISO-8601 timestamp
 
 class CIFileStatus_sndStored(TypedDict):
     type: Literal["sndStored"]
