@@ -55,6 +55,7 @@ data Format
   | Snippet
   | Secret
   | Small
+  | Header {level :: Int}
   | Colored {color :: FormatColor}
   | Uri
   -- showText is Nothing for the usual Uri without text
@@ -203,8 +204,16 @@ hasObfuscatedSimplexLink t =
         <|> pure False
 
 markdownP :: Parser Markdown
-markdownP = mconcat <$> A.many' fragmentP
+markdownP = headerP <|> (mconcat <$> A.many' fragmentP)
   where
+    headerP :: Parser Markdown
+    headerP = do
+      hs <- A.takeWhile1 (== '#')
+      s <- A.takeText
+      let n = T.length hs
+      if n > 6 || T.null s || T.head s /= ' '
+        then fail "not header"
+        else pure $ markdown (Header n) s
     fragmentP :: Parser Markdown
     fragmentP =
       A.peekChar >>= \case
@@ -479,6 +488,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Snippet -> around '`'
     Secret -> around '#'
     Small -> "!- " <> t <> "!"
+    Header n -> T.replicate n "#" <> t
     Colored (FormatColor c) -> color c
     Uri -> t
     HyperLink {} -> t
