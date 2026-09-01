@@ -5,6 +5,10 @@
     -webkit-backface-visibility: hidden;
 }
 
+main .section-bg {
+    position: relative;
+}
+
 .livestream {
     --art-edge: 62.5;
     --split: 56;
