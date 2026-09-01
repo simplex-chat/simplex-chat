@@ -35,6 +35,10 @@ The service cannot sign credentials without an issuer key and refuses to start w
 - `--issuer-key-idx IDX` — the index the apps find the matching public key under (`badgePublicKeys` in `ChatConfig`).
 - `--issuer-secret SECRET` — the issuer secret from `simplex-chat badge keygen`.
 
+The service checks the secret against the configured public key at that index and refuses to start
+if they disagree: credentials signed with the wrong key cannot be verified by any client, and the
+codes redeemed against them would be spent for nothing.
+
 ## Issuing codes
 
 Issuing a code is an operator command sent to the running service in `--run-cli` mode, not a way

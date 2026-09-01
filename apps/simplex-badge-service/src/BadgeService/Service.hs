@@ -7,6 +7,7 @@ module BadgeService.Service
   ( ServiceState (..),
     newServiceState,
     welcomeGetOpts,
+    checkIssuerKey,
     badgeService,
     badgeServiceCLI,
     IssueCodeOpts (..),
@@ -29,6 +30,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
 import Data.Functor (($>))
 import Data.Maybe (fromMaybe)
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Data.Time.Calendar (addDays, addGregorianMonthsClip)
 import Data.Time.Calendar.WeekDate (toWeekDate)
@@ -46,6 +48,7 @@ import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (TextEncoding, strEncode, textDecode)
 import Simplex.Messaging.Version (isCompatible)
 import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
@@ -73,16 +76,25 @@ welcomeGetOpts = do
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
-requireIssuerKey :: BadgeServiceOpts -> IO BadgeIssuerKey
-requireIssuerKey BadgeServiceOpts {issuerKey} = case issuerKey of
-  Just k -> pure k
-  Nothing -> do
-    putStrLn "Error: an issuer key is required - pass both --issuer-key-idx and --issuer-secret (see `simplex-chat badge keygen`)"
-    exitFailure
+-- | Check the secret is the key trusted at its index: otherwise every code redeemed is burned.
+checkIssuerKey :: BadgeServiceOpts -> ChatConfig -> IO (Either String BadgeIssuerKey)
+checkIssuerKey BadgeServiceOpts {issuerKey} ChatConfig {badgePublicKeys} = case issuerKey of
+  Nothing -> pure $ Left "an issuer key is required - pass both --issuer-key-idx and --issuer-secret (see `simplex-chat badge keygen`)"
+  Just k@BadgeIssuerKey {keyIdx, secretKey} ->
+    bbsPublicKey secretKey >>= \case
+      Left e -> pure $ Left $ "issuer secret is not a valid key: " <> e
+      Right pk -> pure $ case M.lookup keyIdx badgePublicKeys of
+        Just pk' | pk' == pk -> Right k
+        Just _ -> Left $ "issuer secret does not match the configured key at index " <> show keyIdx <> ", its public key is " <> B.unpack (strEncode pk)
+        Nothing -> Left $ "no configured badge key at index " <> show keyIdx <> ", clients could not verify what this service signs"
+
+requireIssuerKey :: BadgeServiceOpts -> ChatConfig -> IO BadgeIssuerKey
+requireIssuerKey opts cfg =
+  checkIssuerKey opts cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
 
 badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
 badgeService opts cfg env = do
-  key <- requireIssuerKey opts
+  key <- requireIssuerKey opts cfg
   let chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
@@ -102,7 +114,7 @@ badgeService opts cfg env = do
 
 badgeServiceCLI :: BadgeServiceOpts -> IO ()
 badgeServiceCLI opts = do
-  key <- requireIssuerKey opts
+  key <- requireIssuerKey opts terminalChatConfig
   env <- newServiceState
   let eventHook _cc ev = do
         case ev of

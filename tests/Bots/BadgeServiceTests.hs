@@ -42,6 +42,7 @@ badgeServiceTests = do
   it "should redeem a second code into a second purchase" testRedeemSecondCode
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
+  it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -79,9 +80,11 @@ withBadgeService :: HasCallStack => TestParams -> (ChatConfig -> String -> ChatC
 withBadgeService ps test = do
   Right (pk, sk) <- bbsKeyGen
   let opts = mkBadgeServiceOpts ps sk
+      -- the service refuses to start unless its secret is the key trusted at its index
+      svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
-  runBadgeService testCfg opts $ \_ -> pure ()
+  runBadgeService svcCfg opts $ \_ -> pure ()
   -- Reopen the DB to read the link the service created.
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
@@ -90,12 +93,9 @@ withBadgeService ps test = do
     bs <## "auto_accept off"
     pure sLink
   let clientCfg =
-        testCfg
-          { badgePublicKeys = M.singleton testIssuerKeyIdx pk,
-            badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)
-          }
+        svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
-  runBadgeService testCfg opts $ \env -> do
+  runBadgeService svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
     test clientCfg bsLink cc
 
@@ -278,3 +278,16 @@ testPurchaseKeyMismatch ps =
           req = "{\"version\":1,\"purchaseKey\":\"" <> claimed <> "\",\"request\":{\"type\":\"pauseBadge\"}}"
       alice ##> ("/_service_request 1 " <> bsLink <> " sign_key=" <> signKey <> " " <> req)
       alice <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+
+-- A secret that is not the key clients trust at its index makes every credential unverifiable,
+-- and each code redeemed against it is spent for good - so the service must not start at all.
+testIssuerKeyMustMatchConfig :: HasCallStack => TestParams -> IO ()
+testIssuerKeyMustMatchConfig ps = do
+  Right (pk, sk) <- bbsKeyGen
+  Right (_, otherSk) <- bbsKeyGen
+  let optsFor sk' = mkBadgeServiceOpts ps sk'
+      cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
+  checkIssuerKey (optsFor sk) cfg >>= (`shouldSatisfy` isRight)
+  checkIssuerKey (optsFor otherSk) cfg >>= (`shouldSatisfy` isLeft)
+  -- an index no client trusts is equally fatal
+  checkIssuerKey (optsFor sk) testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
