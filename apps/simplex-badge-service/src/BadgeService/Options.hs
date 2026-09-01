@@ -37,6 +37,10 @@ data BadgeIssuerKey = BadgeIssuerKey
     secretKey :: BBSSecretKey
   }
 
+-- BBSSecretKey derives Show, so this is written out to keep the secret out of logs and errors
+instance Show BadgeIssuerKey where
+  show BadgeIssuerKey {keyIdx} = "issuer key " <> show keyIdx
+
 badgeServiceOpts :: FilePath -> FilePath -> Parser BadgeServiceOpts
 badgeServiceOpts appDir defaultDbName = do
   coreOptions <- coreChatOptsP appDir defaultDbName

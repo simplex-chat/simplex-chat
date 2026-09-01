@@ -85,7 +85,7 @@ checkIssuerKey BadgeServiceOpts {issuerKey} ChatConfig {badgePublicKeys} = case 
       Left e -> pure $ Left $ "issuer secret is not a valid key: " <> e
       Right pk -> pure $ case M.lookup keyIdx badgePublicKeys of
         Just pk' | pk' == pk -> Right k
-        Just _ -> Left $ "issuer secret does not match the configured key at index " <> show keyIdx <> ", its public key is " <> B.unpack (strEncode pk)
+        Just _ -> Left $ "issuer secret does not match the configured key at index " <> show keyIdx <> ", its public key is " <> T.unpack (safeDecodeUtf8 $ strEncode pk)
         Nothing -> Left $ "no configured badge key at index " <> show keyIdx <> ", clients could not verify what this service signs"
 
 requireIssuerKey :: BadgeServiceOpts -> ChatConfig -> IO BadgeIssuerKey
@@ -269,7 +269,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right credential -> do
               issuanceId <- safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 $ random cc)
-              let redemption =
+              let newRedemption =
                     NewBadgeCodeRedemption
                       { badgeCodeId,
                         issuanceId,
@@ -285,7 +285,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
               r <- withDB "writeCodeRedemption" cc $ \db ->
                 liftIO (getBadgeCode db $ badgeCodeHash code) >>= \case
                   Just IssuedCode {redemption = current} | Just resp <- redeemedResponse current -> pure resp
-                  _ -> liftIO $ credentialResponse credential <$ writeCodeRedemption db redemption now
+                  _ -> liftIO $ credentialResponse credential <$ writeCodeRedemption db newRedemption now
               pure $ either (const $ errorResponse BSEInternal) id r
   where
     -- one definition, used before signing and again inside the write transaction
