@@ -5210,6 +5210,7 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
       g <- asks random
       now <- liftIO getCurrentTime
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
+      -- TODO [badges] copy the statement's ledger entries, and retire a previously held badge
       user' <- withStore' $ \db -> do
         createCodeBadgePurchase db g user redemption cred expiry now
         setUserBadge db user (Just badge)

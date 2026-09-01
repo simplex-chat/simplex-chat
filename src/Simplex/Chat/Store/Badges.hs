@@ -113,8 +113,8 @@ createCodeBadgePurchase db g User {userId} redemption credential expiry now = do
         (userId, purchaseKey, purchasePrivKey, Binary mk, badgeType, badgeType, PSIssued, redemptionId, now, now)
       purchaseId <- insertedRowId db
       issuanceId <- safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 g)
-      -- the service reports no period while the ledger is stubbed, so the credential's expiry
-      -- stands in for the period end until the statement carries it
+      -- TODO [badges] the credential's expiry stands in for the period end, which is up to a
+      -- week later, until the statement carries the real period
       DB.execute
         db
         [sql|

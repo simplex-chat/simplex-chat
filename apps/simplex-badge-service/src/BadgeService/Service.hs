@@ -250,6 +250,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
         Just resp -> pure resp
         Nothing -> do
           now <- getCurrentTime
+          -- TODO [badges] the code's months are ignored until the ledger credits them
           let periodEnd = addMonths 1 now
               badgeInfo = BadgeInfo {badgeType, badgeExpiry = Just (endOfSundayAfter periodEnd), badgeExtra = ""}
           issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo}) >>= \case
@@ -283,7 +284,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
         | k == purchaseKey -> Just $ credentialResponse credential
         | otherwise -> Just $ errorResponse BSECodeUsed
 
--- the ledger is not written yet, so the statement is empty
+-- TODO [badges] the statement is empty until the ledger is written
 credentialResponse :: BadgeCredential -> BadgeServiceResponse
 credentialResponse credential =
   BSPBadgeCredential {credential = Just credential, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}}
