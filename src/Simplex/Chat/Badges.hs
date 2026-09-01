@@ -195,7 +195,7 @@ maxFileSizeLegend = gb 5
 badgeServerCredential :: Maybe LocalBadge -> Maybe EntitlementCredential
 badgeServerCredential = \case
   Just (OwnBadge (BadgeCredential idx (BadgeMasterKey mk) sig BadgeInfo {badgeType, badgeExpiry, badgeExtra}) _) ->
-    (\e -> EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement e (textEncode badgeType) badgeExtra) sig) <$> badgeExpiry
+    Just $ EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement badgeExpiry (textEncode badgeType) badgeExtra) sig
   _ -> Nothing
 
 maxXFTPFileSize :: Maybe LocalBadge -> Int64
