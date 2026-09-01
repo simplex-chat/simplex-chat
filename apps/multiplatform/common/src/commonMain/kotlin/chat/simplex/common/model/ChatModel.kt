@@ -363,6 +363,13 @@ object ChatModel {
     }
   }
 
+  suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    activeCtx.addChatItem(rhId, cInfo, cItem)
+    if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
+      chatsContext.addChatItem(rhId, cInfo, cItem)
+    }
+  }
+
   // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
@@ -533,7 +540,7 @@ object ChatModel {
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
       if (i >= 0) {
-        chat = chatsContext.chats[i]
+        chat = chats[i]
         // update preview (for chat from main scope to show new items for invitee in pending status)
         if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
           val newPreviewItem = when (cInfo) {
@@ -553,7 +560,7 @@ object ChatModel {
             else -> cItem
           }
           val wasUnread = chat.unreadTag
-          chatsContext.chats[i] = chat.copy(
+          chats[i] = chat.copy(
             chatItems = arrayListOf(newPreviewItem),
             chatStats =
             if (cItem.meta.itemStatus is CIStatus.RcvNew) {
@@ -562,11 +569,11 @@ object ChatModel {
             } else
               chat.chatStats
           )
-          updateChatTagReadInPrimaryContext(chatsContext.chats[i], wasUnread)
+          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
         }
         // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          reorderChat(chatsContext.chats[i], 0)
+          reorderChat(chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
@@ -1821,6 +1828,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val isChannel: Boolean
     get() = groupInfo_?.useRelays == true
+
+  val inMainChatList: Boolean
+    get() = groupChatScope() == null || groupInfo_?.membership?.memberPending == true
 }
 
 @Serializable
