@@ -333,9 +333,9 @@ channel relay bar</note>
         <target>%lld contact·s sélectionné·s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
+      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
         <source>%lld file(s) with total size of %@</source>
-        <target state="translated">%lld fichier(s) pour une taille totale de %@</target>
+        <target>%lld fichier(s) pour une taille totale de %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld group events" xml:space="preserve">
@@ -513,11 +513,11 @@ channel relay bar</note>
         <target>\*gras*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve" approved="no">
+      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
         <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
 - delivery receipts (up to 20 members).
 - faster and more stable.</source>
-        <target state="translated">- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BÊTA) !
+        <target>- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BÊTA) !
 - les accusés de réception (jusqu'à 20 membres).
 - plus rapide et plus stable.</target>
         <note>No comment provided by engineer.</note>
@@ -944,9 +944,9 @@ swipe action</note>
         <target>Toutes les données de l'application sont supprimées.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
-        <target state="translated">Toutes les conversations et tous les messages seront supprimés — cette action est irréversible !</target>
+        <target>Toutes les conversations et tous les messages seront supprimés — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
@@ -979,14 +979,14 @@ swipe action</note>
         <target>Tous les messages et fichiers sont envoyés **chiffrés de bout en bout**, avec une sécurité post-quantique dans les messages directs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone!</source>
-        <target state="translated">Tous les messages seront supprimés — cette action est irréversible !</target>
+        <target>Tous les messages seront supprimés — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target state="translated">Tous les messages seront supprimés — cette action est irréversible ! Les messages seront supprimés UNIQUEMENT pour vous.</target>
+        <target>Tous les messages seront supprimés — cette action est irréversible ! Les messages seront supprimés UNIQUEMENT pour vous.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
@@ -1646,9 +1646,9 @@ au sein de votre réseau</target>
         <target>Entreprises</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target state="translated">Par profil de messagerie (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÊTA).</target>
+        <target>Par profil de messagerie (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÊTA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1870,14 +1870,14 @@ alert subtitle</note>
         <target>Page Web du canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Channel will be deleted for all subscribers - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Channel will be deleted for all subscribers - this cannot be undone!" xml:space="preserve">
         <source>Channel will be deleted for all subscribers - this cannot be undone!</source>
-        <target state="translated">Le canal sera supprimé pour tous les abonnés — cette action est irréversible !</target>
+        <target>Le canal sera supprimé pour tous les abonnés — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Channel will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Channel will be deleted for you - this cannot be undone!" xml:space="preserve">
         <source>Channel will be deleted for you - this cannot be undone!</source>
-        <target state="translated">Le canal sera supprimé pour vous — cette action est irréversible !</target>
+        <target>Le canal sera supprimé pour vous — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Channel will start working with %d of %d relays. Continue?" xml:space="preserve">
@@ -2005,14 +2005,14 @@ alert subtitle</note>
         <target>Thème de la conversation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
-        <target state="translated">La conversation sera supprimée pour tous les membres — cette action est irréversible !</target>
+        <target>La conversation sera supprimée pour tous les membres — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
         <source>Chat will be deleted for you - this cannot be undone!</source>
-        <target state="translated">La conversation sera supprimée pour vous — cette action est irréversible !</target>
+        <target>La conversation sera supprimée pour vous — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat with admins" xml:space="preserve">
@@ -2538,9 +2538,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Demandes de contact des groupes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
         <source>Contact will be deleted - this cannot be undone!</source>
-        <target state="translated">Le contact sera supprimé — cette action est irréversible !</target>
+        <target>Le contact sera supprimé — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -2727,14 +2727,14 @@ Il s'agit de votre propre lien unique !</target>
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve" approved="no">
+      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
         <source>Crowdfunding on Wefunder</source>
-        <target state="translated">Financement participatif sur Wefunder</target>
+        <target>Financement participatif sur Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve" approved="no">
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
         <source>Crowdfunding on Wefunder.</source>
-        <target state="translated">Financement participatif sur Wefunder.</target>
+        <target>Financement participatif sur Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -3247,9 +3247,9 @@ alert button</note>
         <target>Détails</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer" xml:space="preserve" approved="no">
+      <trans-unit id="Developer" xml:space="preserve">
         <source>Developer</source>
-        <target state="translated">Outils développeur</target>
+        <target>Outils développeur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Developer options" xml:space="preserve">
@@ -3262,14 +3262,14 @@ alert button</note>
         <target>Appareil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve" approved="no">
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target state="translated">L'authentification de l'appareil est désactivée. Désactivation du Verrouillage SimpleX.</target>
+        <target>L'authentification de l'appareil est désactivée. Désactivation du Verrouillage SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve" approved="no">
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target state="translated">L'authentification de l'appareil n'est pas activée. Vous pouvez activer le Verrouillage SimpleX dans les Paramètres une fois l'authentification de l'appareil activée.</target>
+        <target>L'authentification de l'appareil n'est pas activée. Vous pouvez activer le Verrouillage SimpleX dans les Paramètres une fois l'authentification de l'appareil activée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -3307,9 +3307,9 @@ alert button</note>
         <target>Désactiver (conserver les remplacements)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
         <source>Disable SimpleX Lock</source>
-        <target state="translated">Désactiver le Verrouillage SimpleX</target>
+        <target>Désactiver le Verrouillage SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Disable automatic message deletion?" xml:space="preserve">
@@ -3568,14 +3568,14 @@ chat item action</note>
         <target>Activer (conserver les remplacements)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
-        <target state="translated">Activez Flux dans les paramètres Réseau et serveurs pour une meilleure confidentialité des métadonnées.</target>
+        <target>Activez Flux dans les paramètres Réseau et serveurs pour une meilleure confidentialité des métadonnées.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable SimpleX Lock" xml:space="preserve" approved="no">
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
         <source>Enable SimpleX Lock</source>
-        <target state="translated">Activer le Verrouillage SimpleX</target>
+        <target>Activer le Verrouillage SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
@@ -3583,9 +3583,9 @@ chat item action</note>
         <target>Activer le TCP keep-alive</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable at least one chat relay in Network &amp; Servers." xml:space="preserve" approved="no">
+      <trans-unit id="Enable at least one chat relay in Network &amp; Servers." xml:space="preserve">
         <source>Enable at least one chat relay in Network &amp; Servers.</source>
-        <target state="translated">Activez au moins un relais de messagerie dans Réseau et serveurs.</target>
+        <target>Activez au moins un relais de messagerie dans Réseau et serveurs.</target>
         <note>channel creation warning</note>
       </trans-unit>
       <trans-unit id="Enable automatic message deletion?" xml:space="preserve">
@@ -3613,9 +3613,9 @@ chat item action</note>
         <target>Activer pour tous</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve" approved="no">
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve">
         <source>Enable in direct chats (BETA)!</source>
-        <target state="translated">Activer dans les conversations directes (BÊTA) !</target>
+        <target>Activer dans les conversations directes (BÊTA) !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -4717,9 +4717,9 @@ Erreur : %2$@</target>
         <target>GIFs et stickers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve" approved="no">
+      <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve">
         <source>Get SimpleX name (BETA)</source>
-        <target state="translated">Obtenir un nom SimpleX (BÊTA)</target>
+        <target>Obtenir un nom SimpleX (BÊTA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get link" xml:space="preserve">
@@ -4792,9 +4792,9 @@ Erreur : %2$@</target>
         <target>L'invitation du groupe n'est plus valide, elle a été supprimé par l'expéditeur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitations" xml:space="preserve" approved="no">
+      <trans-unit id="Group invitations" xml:space="preserve">
         <source>Group invitations</source>
-        <target state="translated">Invitations de groupe</target>
+        <target>Invitations de groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -4847,14 +4847,14 @@ Erreur : %2$@</target>
         <target>Message d'accueil du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
         <source>Group will be deleted for all members - this cannot be undone!</source>
-        <target state="translated">Le groupe va être supprimé pour tout les membres — cette action est irréversible !</target>
+        <target>Le groupe va être supprimé pour tout les membres — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
         <source>Group will be deleted for you - this cannot be undone!</source>
-        <target state="translated">Le groupe va être supprimé pour vous — cette action est irréversible !</target>
+        <target>Le groupe va être supprimé pour vous — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Groups" xml:space="preserve">
@@ -5704,9 +5704,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Le membre est supprimé ; impossible d'accepter la demande</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>Member messages will be deleted - this cannot be undone!</source>
-        <target state="translated">Les messages des membres seront supprimés — cette action est irréversible !</target>
+        <target>Les messages des membres seront supprimés — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -5714,14 +5714,14 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Signalements des membres</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
-        <target state="translated">Le membre sera retiré de la conversation — cette action est irréversible !</target>
+        <target>Le membre sera retiré de la conversation — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target state="translated">Ce membre sera retiré du groupe — cette action est irréversible !</target>
+        <target>Ce membre sera retiré du groupe — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
@@ -6463,9 +6463,9 @@ Le chiffrement le plus sûr.</target>
         <target>Aucun serveur de résolution de noms SimpleX n'est configuré. Configurez des serveurs ou utilisez un lien de connexion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve" approved="no">
+      <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
         <source>Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign.</source>
-        <target state="translated">Ce n’est pas une meilleure serrure sur la porte de quelqu'un d'autre. Ni un propriétaire plus attentionné qui respecte votre vie privée, mais conserve toujours le registre de tous les visiteurs. Vous n'êtes pas un invité. Vous êtes chez vous. Aucun roi ne peut y entrer — vous êtes souverain.</target>
+        <target>Ce n’est pas une meilleure serrure sur la porte de quelqu'un d'autre. Ni un propriétaire plus attentionné qui respecte votre vie privée, mais conserve toujours le registre de tous les visiteurs. Vous n'êtes pas un invité. Vous êtes chez vous. Aucun roi ne peut y entrer — vous êtes souverain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not all relays connected" xml:space="preserve">
@@ -7126,9 +7126,9 @@ Erreur : %@</target>
         <target>Serveurs précédemment connectés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy for your customers." xml:space="preserve" approved="no">
+      <trans-unit id="Privacy for your customers." xml:space="preserve">
         <source>Privacy for your customers.</source>
-        <target state="translated">Confidentialité pour vos clients.</target>
+        <target>Confidentialité pour vos clients.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
@@ -7586,9 +7586,9 @@ swipe action</note>
         <target>Échec du test de relais !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay will be removed from channel - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Relay will be removed from channel - this cannot be undone!" xml:space="preserve">
         <source>Relay will be removed from channel - this cannot be undone!</source>
-        <target state="translated">Le relais sera supprimé du canal — cette action est irréversible !</target>
+        <target>Le relais sera supprimé du canal — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Relays added: %@." xml:space="preserve">
@@ -7866,9 +7866,9 @@ swipe action</note>
         <target>Contrôler les membres</target>
         <note>admission stage</note>
       </trans-unit>
-      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve" approved="no">
+      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve">
         <source>Review members before admitting ("knocking").</source>
-        <target state="translated">Examiner les membres avant leur admission (« frapper à la porte »).</target>
+        <target>Examiner les membres avant leur admission (« frapper à la porte »).</target>
         <note>admission stage description</note>
       </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
@@ -8543,9 +8543,9 @@ chat item action</note>
         <target>Infos serveurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve">
         <source>Servers statistics will be reset - this cannot be undone!</source>
-        <target state="translated">Les statistiques des serveurs seront réinitialisées — cette action est irréversible !</target>
+        <target>Les statistiques des serveurs seront réinitialisées — cette action est irréversible !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Session code" xml:space="preserve">
@@ -8860,24 +8860,24 @@ copied message info</note>
         <target>La sécurité de SimpleX Chat a été auditée par Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX Lock" xml:space="preserve">
         <source>SimpleX Lock</source>
-        <target state="translated">Verrouillage SimpleX</target>
+        <target>Verrouillage SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock mode" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX Lock mode" xml:space="preserve">
         <source>SimpleX Lock mode</source>
-        <target state="translated">Mode de Verrouillage SimpleX</target>
+        <target>Mode de Verrouillage SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve">
         <source>SimpleX Lock not enabled!</source>
-        <target state="translated">Le Verrouillage SimpleX n'est pas activé !</target>
+        <target>Le Verrouillage SimpleX n'est pas activé !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock turned on" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
         <source>SimpleX Lock turned on</source>
-        <target state="translated">Verrouillage SimpleX activé</target>
+        <target>Verrouillage SimpleX activé</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX address" xml:space="preserve">
@@ -8964,9 +8964,9 @@ copied message info</note>
         <target>Protocoles SimpleX audité par Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX public names (BETA)" xml:space="preserve">
         <source>SimpleX public names (BETA)</source>
-        <target state="translated">Noms publics SimpleX (BÊTA)</target>
+        <target>Noms publics SimpleX (BÊTA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX relay address" xml:space="preserve">
@@ -9167,9 +9167,9 @@ report reason</note>
         <target>Signalements d'abonnés</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Subscriber will be removed from channel - this cannot be undone!" xml:space="preserve" approved="no">
+      <trans-unit id="Subscriber will be removed from channel - this cannot be undone!" xml:space="preserve">
         <source>Subscriber will be removed from channel - this cannot be undone!</source>
-        <target state="translated">L'abonné sera supprimé du canal — cette action est irréversible !</target>
+        <target>L'abonné sera supprimé du canal — cette action est irréversible !</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Subscribers" xml:space="preserve">
@@ -9659,24 +9659,24 @@ vos contacts et vos groupes.</target>
         <target>Ce nom SimpleX n'est pas enregistré. Vérifiez-le.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target state="translated">Cette action est irréversible — tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</target>
+        <target>Cette action est irréversible — tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve" approved="no">
+      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
-        <target state="translated">Cette action est irréversible — les messages envoyés et reçus avant la date sélectionnée seront supprimés. Cela peut prendre plusieurs minutes.</target>
+        <target>Cette action est irréversible — les messages envoyés et reçus avant la date sélectionnée seront supprimés. Cela peut prendre plusieurs minutes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target state="translated">Cette action est irréversible — les messages envoyés et reçus dans cette conversation avant la date sélectionnée seront supprimés.</target>
+        <target>Cette action est irréversible — les messages envoyés et reçus dans cette conversation avant la date sélectionnée seront supprimés.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
+      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
-        <target state="translated">Cette action est irréversible — votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.</target>
+        <target>Cette action est irréversible — votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
@@ -9805,10 +9805,10 @@ alert subtitle</note>
         <target>Pour protéger votre adresse IP, le routage privé utilise vos serveurs SMP pour délivrer les messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target state="translated">Pour protéger vos informations, activez le Verrouillage SimpleX.
+        <target>Pour protéger vos informations, activez le Verrouillage SimpleX.
 Une authentification vous sera demandée avant que cette fonctionnalité ne soit activée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -10799,9 +10799,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez l'activer ultérieurement via Paramètres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can enable them later via app Your privacy settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can enable them later via app Your privacy settings." xml:space="preserve">
         <source>You can enable them later via app Your privacy settings.</source>
-        <target state="translated">Vous pouvez les activer plus tard dans les paramètres de confidentialité de l'application.</target>
+        <target>Vous pouvez les activer plus tard dans les paramètres de confidentialité de l'application.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can give another try." xml:space="preserve">
@@ -10824,14 +10824,14 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez maintenant envoyer des messages à %@</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve" approved="no">
+      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
         <source>You can now invest in SimpleX Chat</source>
-        <target state="translated">Vous pouvez désormais investir dans SimpleX Chat</target>
+        <target>Vous pouvez désormais investir dans SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve" approved="no">
+      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
         <source>You can now invest in SimpleX Chat! 🚀</source>
-        <target state="translated">Vous pouvez désormais investir dans SimpleX Chat ! 🚀</target>
+        <target>Vous pouvez désormais investir dans SimpleX Chat ! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
@@ -10879,9 +10879,9 @@ Répéter la demande d'adhésion ?</target>
         <target>Vous pouvez soutenir SimpleX à partir de la version 7 de l'application.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
         <source>You can turn on SimpleX Lock via Settings.</source>
-        <target state="translated">Vous pouvez activer le Verrouillage SimpleX dans les Paramètres.</target>
+        <target>Vous pouvez activer le Verrouillage SimpleX dans les Paramètres.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -11184,9 +11184,9 @@ Si vous annulez, le canal sera supprimé : vous pourrez le recréer.</target>
         <target>Vos préférences</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your privacy" xml:space="preserve" approved="no">
+      <trans-unit id="Your privacy" xml:space="preserve">
         <source>Your privacy</source>
-        <target state="translated">Votre confidentialité</target>
+        <target>Votre confidentialité</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile" xml:space="preserve">
@@ -12758,9 +12758,9 @@ dernier message reçu : %2$@</target>
         <target>Mauvaise phrase secrète pour la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can allow sharing in Your privacy / SimpleX Lock settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can allow sharing in Your privacy / SimpleX Lock settings." xml:space="preserve">
         <source>You can allow sharing in Your privacy / SimpleX Lock settings.</source>
-        <target state="translated">Vous pouvez autoriser le partage dans les paramètres Votre confidentialité / Verrouillage SimpleX.</target>
+        <target>Vous pouvez autoriser le partage dans les paramètres Votre confidentialité / Verrouillage SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>

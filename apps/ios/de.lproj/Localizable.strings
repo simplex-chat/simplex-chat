@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Kontakt-Präferenzen";
 
 /* No comment provided by engineer. */
-"Contact requests in groups" = "KONTAKTANFRAGEN VON GRUPPEN";
+"Contact requests in groups" = "Kontaktanfragen in Gruppen";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "Kontakt sollte annehmen…";
@@ -1813,6 +1813,12 @@ server test step */
 
 /* No comment provided by engineer. */
 "creator" = "Ersteller";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder" = "Crowdfunding auf Wefunder";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder." = "Crowdfunding auf Wefunder.";
 
 /* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:";
@@ -3152,6 +3158,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.";
+
+/* No comment provided by engineer. */
+"Group invitations" = "Gruppeneinladungen";
 
 /* No comment provided by engineer. */
 "group is deleted" = "Gruppe wurde gelöscht";
@@ -7104,6 +7113,12 @@ alert title */
 "You can now chat with %@" = "Sie können nun Nachrichten an %@ versenden";
 
 /* No comment provided by engineer. */
+"You can now invest in SimpleX Chat" = "Sie können nun in SimpleX-Chat investieren";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat! 🚀" = "Sie können nun in SimpleX-Chat investieren! 🚀";
+
+/* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Sie können aus den archivierten Kontakten heraus Nachrichten an %@ versenden.";
 
 /* No comment provided by engineer. */
@@ -7203,7 +7218,7 @@ alert title */
 "You rejected group invitation" = "Sie haben die Gruppeneinladung abgelehnt";
 
 /* snd group event chat item */
-"you removed %@" = "entfernt %@ aus der Gruppe";
+"you removed %@" = "%@ wurde aus der Gruppe entfernt";
 
 /* No comment provided by engineer. */
 "You sent group invitation" = "Sie haben eine Gruppeneinladung gesendet";
