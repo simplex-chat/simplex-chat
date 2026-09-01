@@ -12410,7 +12410,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
         <source>you removed %@</source>
-        <target>%@ wurde aus der Gruppe entfernt</target>
+        <target>Sie haben %@ aus der Gruppe entfernt</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">

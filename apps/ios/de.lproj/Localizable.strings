@@ -7218,7 +7218,7 @@ alert title */
 "You rejected group invitation" = "Sie haben die Gruppeneinladung abgelehnt";
 
 /* snd group event chat item */
-"you removed %@" = "%@ wurde aus der Gruppe entfernt";
+"you removed %@" = "Sie haben %@ aus der Gruppe entfernt";
 
 /* No comment provided by engineer. */
 "You sent group invitation" = "Sie haben eine Gruppeneinladung gesendet";

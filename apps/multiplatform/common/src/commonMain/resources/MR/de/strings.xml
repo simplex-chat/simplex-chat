@@ -704,7 +704,7 @@
     <string name="rcv_group_event_invited_via_your_group_link">wurde über Ihren Gruppen-Link eingeladen</string>
     <string name="snd_group_event_changed_member_role">Sie haben die Rolle von %s auf %s geändert</string>
     <string name="snd_group_event_changed_role_for_yourself">Sie haben Ihre eigene Rolle auf %s geändert</string>
-    <string name="snd_group_event_member_deleted">%1$s wurde aus der Gruppe entfernt.</string>
+    <string name="snd_group_event_member_deleted">Sie haben %1$s aus der Gruppe entfernt</string>
     <string name="snd_group_event_user_left">hat die Gruppe verlassen</string>
     <string name="snd_group_event_group_profile_updated">Gruppenprofil aktualisiert</string>
     <!-- Conn event chat items -->

@@ -2682,7 +2682,7 @@
     <string name="help_and_support">Aide et support</string>
     <string name="more_privacy">Plus de confidentialité</string>
     <string name="advanced_settings">Paramètres avancés</string>
-    <string name="restore_passphrase_can_not_be_read_desc">La phrase secrète dans le coffre-fort ne peut pas être lue. Cela peut être arrivé après une mise à jour du système incompatible avec l\'application. Si ce n\'est pas le cas, veuillez contacter les développeurs.</string>
+    <string name="restore_passphrase_can_not_be_read_desc">La phrase secrète dans le Keystore ne peut pas être lue. Cela peut être arrivé après une mise à jour du système incompatible avec l\'application. Si ce n\'est pas le cas, veuillez contacter les développeurs.</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">La phrase secrète dans le Keystore ne peut pas être lue ; veuillez la saisir manuellement. Cela peut être arrivé après une mise à jour du système incompatible avec l\'application. Si ce n\'est pas le cas, veuillez contacter les développeurs.</string>
     <string name="one_hand_ui_bottom_bar">Barre inférieure</string>
     <string name="one_hand_ui_top_bar">Barre supérieure</string>
@@ -2724,7 +2724,7 @@
     <string name="button_delete_member_messages">Supprimer les messages du membre</string>
     <string name="subscriber_will_be_removed_from_channel_cannot_be_undone">L\'abonné sera supprimé du canal — cette action est irréversible !</string>
     <string name="member_messages_will_be_deleted_cannot_be_undone">Les messages du membre seront supprimés — cette action est irréversible !</string>
-    <string name="unblock_members_for_all_question">Débloquer tous les membres ?</string>
+    <string name="unblock_members_for_all_question">Débloquer ces membres pour tous ?</string>
     <string name="member_role_will_be_changed_with_notification_channel">Le rôle sera modifié en %s. Tous les membres du canal en seront informés.</string>
     <string name="channel_full_name_field">Nom complet du canal :</string>
     <string name="group_descr_too_large">Description trop longue</string>
@@ -2850,7 +2850,7 @@
     <string name="relay_status_acknowledged_roster">liste reconnue</string>
     <string name="relay_status_inactive">inactif</string>
     <string name="relay_status_rejected">rejeté</string>
-    <string name="member_info_status">Status</string>
+    <string name="member_info_status">Statut</string>
     <string name="member_info_relay_status_rejected_by_operator">rejeté par l\'opérateur du relais</string>
     <string name="relay_bar_all_relays_removed">Tous les relais ont été supprimés</string>
     <string name="relay_bar_all_relays_failed">Tous les relais sont en échec</string>
