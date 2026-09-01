@@ -397,6 +397,11 @@
   <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
   <string name="channel_simplex_name">Channel SimpleX name</string>
   <string name="register_test_name">How to register a test name</string>
+  <string name="simplex_name_sales">SimpleX name sale starts in</string>
+  <string name="until_register_simplex_domain">until you can register a SimpleX domain</string>
+  <string name="update_app_register_simplex_domain">Update the app to register a SimpleX domain</string>
+  <string name="countdown_hrs_min_sec">%1$02d hrs %2$02d min %3$02d sec</string>
+  <string name="simplex_name_sales_footer">Crowdfunding investors can reserve names before the sale starts:</string>
   <string name="remove_name">Remove name</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>

@@ -6,6 +6,15 @@ This is a guide to contributing to the develop of the SimpleX android and deskto
 
 This is the **Kotlin Multiplatform (KMP)** mobile and desktop client for SimpleX Chat, sharing code between Android and Desktop (JVM) platforms using Compose Multiplatform for UI.
 
+## Setup
+
+The desktop app builds nanohttpd from a submodule, Android does not use it. Before building
+the desktop app on a fresh checkout:
+
+```bash
+git submodule update --init --recursive
+```
+
 ## Build Commands
 
 ```bash
