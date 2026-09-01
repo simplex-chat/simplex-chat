@@ -4465,13 +4465,7 @@ alert button */
 "Open migration to another device" = "Átköltöztetés indítása egy másik eszközre";
 
 /* new chat action */
-"Open new channel" = "Új csatorna megnyitása";
-
-/* new chat action */
 "Open new chat" = "Új csevegés megnyitása";
-
-/* new chat action */
-"Open new group" = "Új csoport megnyitása";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Beállítások megnyitása";
@@ -5343,10 +5337,10 @@ chat item action */
 "Saved" = "Mentett";
 
 /* No comment provided by engineer. */
-"Saved from" = "Mentve innen";
+"saved from" = "mentve innen:";
 
 /* No comment provided by engineer. */
-"saved from" = "mentve innen:";
+"Saved from" = "Mentve innen";
 
 /* message info title */
 "Saved message" = "Mentett üzenet";
@@ -7013,6 +7007,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Már van egy csevegési profil ugyanezzel a megjelenítendő névvel. Válasszon egy másik nevet.";
 
+/* new chat alert */
+"You are a contributor" = "Ön közreműködő";
+
+/* new chat alert */
+"You are a member" = "Ön tag";
+
+/* new chat alert */
+"You are a moderator" = "Ön moderátor";
+
+/* new chat alert */
+"You are a subscriber" = "Ön feliratkozó";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Ön már kapcsolódott a következőhöz: %@.";
 
@@ -7037,6 +7043,15 @@ alert title */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "A csatlakozás már folyamatban van a csoporthoz!\nMegismétli a csatlakozási kérést?";
 
+/* new chat alert */
+"You are an admin" = "Ön adminisztrátor";
+
+/* new chat alert */
+"You are an observer" = "Ön megfigyelő";
+
+/* new chat alert */
+"You are an owner" = "Ön tulajdonos";
+
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Ön kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.";
 
@@ -7051,27 +7066,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "you are observer" = "Ön megfigyelő";
-
-/* new chat alert */
-"You are an observer" = "Ön megfigyelő";
-
-/* new chat alert */
-"You are a member" = "Ön tag";
-
-/* new chat alert */
-"You are a moderator" = "Ön moderátor";
-
-/* new chat alert */
-"You are an admin" = "Ön adminisztrátor";
-
-/* new chat alert */
-"You are an owner" = "Ön tulajdonos";
-
-/* new chat alert */
-"You are a subscriber" = "Ön feliratkozó";
-
-/* new chat alert */
-"You are a contributor" = "Ön közreműködő";
 
 /* No comment provided by engineer. */
 "you are subscriber" = "Ön feliratkozó";
