@@ -2533,9 +2533,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Kontakt-Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact requests in groups" xml:space="preserve">
+      <trans-unit id="Contact requests in groups" xml:space="preserve" approved="no">
         <source>Contact requests in groups</source>
-        <target>KONTAKTANFRAGEN VON GRUPPEN</target>
+        <target state="translated">Kontaktanfragen in Gruppen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -2727,12 +2727,14 @@ Das ist Ihr eigener Einmal-Link!</target>
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder</source>
+        <target state="translated">Crowdfunding auf Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder.</source>
+        <target state="translated">Crowdfunding auf Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -4790,8 +4792,9 @@ Fehler: %2$@</target>
         <target>Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitations" xml:space="preserve">
+      <trans-unit id="Group invitations" xml:space="preserve" approved="no">
         <source>Group invitations</source>
+        <target state="translated">Gruppeneinladungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -10821,12 +10824,14 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie können nun Nachrichten an %@ versenden</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat</source>
+        <target state="translated">Sie können nun in SimpleX-Chat investieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat! 🚀</source>
+        <target state="translated">Sie können nun in SimpleX-Chat investieren! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
@@ -12403,9 +12408,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Sie haben verlassen</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you removed %@" xml:space="preserve">
+      <trans-unit id="you removed %@" xml:space="preserve" approved="no">
         <source>you removed %@</source>
-        <target>entfernt %@ aus der Gruppe</target>
+        <target state="translated">%@ wurde aus der Gruppe entfernt</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">

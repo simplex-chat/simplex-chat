@@ -1646,9 +1646,9 @@ a saját hálózatában</target>
         <target>Üzleti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target>A csevegési profillal (alapértelmezett), vagy a [kapcsolattal] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (béta).</target>
+        <target state="translated">A csevegési profillal (alapértelmezés), vagy a [kapcsolattal] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (béta).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -2727,12 +2727,14 @@ Ez a saját egyszer használható meghívója!</target>
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder</source>
+        <target state="translated">Közösségi finanszírozás a Wefunder oldalon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
+      <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve" approved="no">
         <source>Crowdfunding on Wefunder.</source>
+        <target state="translated">Közösségi finanszírozás a Wefunder oldalon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -3601,9 +3603,9 @@ chat item action</note>
         <target>Engedélyezi a csevegést az adminisztrátorokkal?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve" approved="no">
         <source>Enable disappearing messages by default.</source>
-        <target>Eltűnő üzenetek engedélyezése alapértelmezetten.</target>
+        <target state="translated">Eltűnő üzenetek engedélyezése alapértelmezésként.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -4790,8 +4792,9 @@ Hiba: %2$@</target>
         <target>A csoportmeghívó már nem érvényes, a küldője eltávolította.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitations" xml:space="preserve">
+      <trans-unit id="Group invitations" xml:space="preserve" approved="no">
         <source>Group invitations</source>
+        <target state="translated">Meghívások csoportokba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -5161,9 +5164,9 @@ További fejlesztések hamarosan!</target>
         <target>Helytelen biztonsági kód!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Info" xml:space="preserve">
+      <trans-unit id="Info" xml:space="preserve" approved="no">
         <source>Info</source>
-        <target>Információ</target>
+        <target state="translated">Adatok</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Initial role" xml:space="preserve">
@@ -5821,9 +5824,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Az üzenet később is kézbesíthető, ha a tag aktívvá válik.</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="Message queue info" xml:space="preserve">
+      <trans-unit id="Message queue info" xml:space="preserve" approved="no">
         <source>Message queue info</source>
-        <target>Üzenet várólista-információi</target>
+        <target state="translated">Üzenet várólistaadatai</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -6315,9 +6318,9 @@ A legbiztonságosabb titkosítás.</target>
         <target>Nincs hozzáadandó partner</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No delivery information" xml:space="preserve">
+      <trans-unit id="No delivery information" xml:space="preserve" approved="no">
         <source>No delivery information</source>
-        <target>Nincs kézbesítési információ</target>
+        <target state="translated">Nincsenek kézbesítési adatok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No device token!" xml:space="preserve">
@@ -6345,9 +6348,9 @@ A legbiztonságosabb titkosítás.</target>
         <target>Nincsenek előzmények</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No info, try to reload" xml:space="preserve">
+      <trans-unit id="No info, try to reload" xml:space="preserve" approved="no">
         <source>No info, try to reload</source>
-        <target>Nincs információ, próbálja meg újratölteni</target>
+        <target state="translated">Nincsenek adatok, próbálja meg újratölteni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No media &amp; file servers." xml:space="preserve">
@@ -7376,14 +7379,14 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Tudjon meg többet</target>
         <note>profile description teaser</note>
       </trans-unit>
-      <trans-unit id="Read more in User Guide." xml:space="preserve">
+      <trans-unit id="Read more in User Guide." xml:space="preserve" approved="no">
         <source>Read more in User Guide.</source>
-        <target>További információkat a használati útmutatóban talál.</target>
+        <target state="translated">További tudnivalókat a használati útmutatóban talál.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve" approved="no">
         <source>Read more in our GitHub repository.</source>
-        <target>További információkat a GitHub-tárolónkban talál.</target>
+        <target state="translated">További tudnivalókat a GitHub-tárolónkban talál.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
@@ -7793,9 +7796,9 @@ swipe action</note>
         <target>Alkalmazás témájának visszaállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset to defaults" xml:space="preserve">
+      <trans-unit id="Reset to defaults" xml:space="preserve" approved="no">
         <source>Reset to defaults</source>
-        <target>Visszaállítás alapértelmezettre</target>
+        <target state="translated">Visszaállítás alapértelmezésre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset to user theme" xml:space="preserve">
@@ -8535,9 +8538,9 @@ chat item action</note>
         <target>Kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Servers info" xml:space="preserve">
+      <trans-unit id="Servers info" xml:space="preserve" approved="no">
         <source>Servers info</source>
-        <target>Információk a kiszolgálókról</target>
+        <target state="translated">Kiszolgálóadatok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve">
@@ -10821,12 +10824,14 @@ Megismétli a csatlakozási kérést?</target>
         <target>Mostantól küldhet üzeneteket %@ számára</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat</source>
+        <target state="translated">Mostantól befektethet a SimpleX Chatbe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
+      <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve" approved="no">
         <source>You can now invest in SimpleX Chat! 🚀</source>
+        <target state="translated">Mostantól befektethet a SimpleX Chatbe! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
@@ -11597,20 +11602,20 @@ marked deleted chat item preview text</note>
         <target>visszafejtési hibák</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="default (%@)" xml:space="preserve">
+      <trans-unit id="default (%@)" xml:space="preserve" approved="no">
         <source>default (%@)</source>
-        <target>alapértelmezett (%@)</target>
+        <target state="translated">alapértelmezés (%@)</target>
         <note>delete after time
 pref value</note>
       </trans-unit>
-      <trans-unit id="default (no)" xml:space="preserve">
+      <trans-unit id="default (no)" xml:space="preserve" approved="no">
         <source>default (no)</source>
-        <target>alapértelmezett (nem)</target>
+        <target state="translated">alapértelmezés (nem)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="default (yes)" xml:space="preserve">
+      <trans-unit id="default (yes)" xml:space="preserve" approved="no">
         <source>default (yes)</source>
-        <target>alapértelmezett (igen)</target>
+        <target state="translated">alapértelmezés (igen)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
@@ -12195,11 +12200,11 @@ time to disappear</note>
         <target>biztonsági kódja módosult</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve" approved="no">
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
-        <target>kiszolgáló várólista-információi: %1$@
+        <target state="translated">kiszolgáló várólistaadatai: %1$@
 
 utoljára fogadott üzenet: %2$@</target>
         <note>queue info</note>
