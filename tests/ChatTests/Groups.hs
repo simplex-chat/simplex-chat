@@ -128,6 +128,7 @@ chatGroupTests = do
     it "accept member - only moderators review" testGLinkReviewMember
     it "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
+    it "pending approval member leaves the group" testGLinkPendingApprovalMemberLeaves
     it "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
@@ -3618,6 +3619,37 @@ testGLinkDeletePendingApprovalMember =
       alice <## "#team: you removed cath from the group"
       cath <## "#team: alice removed you from the group"
       cath <## "use /d #team to delete the group"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
+
+testGLinkPendingApprovalMemberLeaves :: HasCallStack => TestParams -> IO ()
+testGLinkPendingApprovalMemberLeaves =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath connected and pending approval, use /_accept member #1 3 <role> to accept member",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group, pending approval"
+        ]
+
+      cath ##> "/leave #team"
+      concurrentlyN_
+        [ do
+            cath <## "#team: you left the group"
+            cath <## "use /d #team to delete the group",
+          alice <## "#team: cath left the group"
+        ]
+
+      alice ##> "/member support chats #team"
+      alice <## "members require attention: 0"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
 
