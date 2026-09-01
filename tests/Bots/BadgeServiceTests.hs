@@ -35,12 +35,12 @@ import Test.Hspec hiding (it)
 badgeServiceTests :: SpecWith TestParams
 badgeServiceTests = do
   it "should answer unsupported_version to unsupported command" testBadgeServiceUnsupported
-  it "should redeem a minted code into a badge a contact sees" testRedeemBadgeCode
+  it "should redeem an issued code into a badge a contact sees" testRedeemBadgeCode
   it "should return the same badge when the same code is redeemed twice" testRedeemBadgeCodeTwice
   it "should answer code_invalid to an unknown code, indistinguishably from a malformed one" testRedeemUnknownCode
   it "should tell a second profile redeeming the same code that it is used" testRedeemSameCodeOtherProfile
   it "should redeem a second code into a second purchase" testRedeemSecondCode
-  it "should refuse to mint an unknown badge type or a nonsense month count" testMintRejectsBadArguments
+  it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
 
 badgeProfile :: Profile
@@ -100,13 +100,13 @@ withBadgeService ps test = do
     test clientCfg bsLink cc
 
 -- through the operator command the service actually exposes, not the function behind it
-mintCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
-mintCode cc badgeType months =
-  sendChatCmdStr cc ("//mint " <> T.unpack (textEncode badgeType) <> " " <> show months) >>= \case
+issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
+issueCode cc badgeType months =
+  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " " <> show months) >>= \case
     Right (CRCustomChatResponse _ response) -> case T.stripPrefix "code " response of
       Just c | Just code <- parseBadgeCode c -> pure code
-      _ -> error $ "unexpected mint response: " <> T.unpack response
-    r -> error $ "mint failed: " <> show (() <$ r)
+      _ -> error $ "unexpected issue response: " <> T.unpack response
+    r -> error $ "issue failed: " <> show (() <$ r)
 
 runBadgeService :: ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
 runBadgeService cfg opts action = do
@@ -132,7 +132,7 @@ testRedeemBadgeCode ps =
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice ->
       withNewTestChatCfg ps clientCfg "bob" bobProfile $ \bob -> do
         connectUsers alice bob
-        code <- mintCode cc BTSupporter 1
+        code <- issueCode cc BTSupporter 1
         -- the service has never seen this purchase key: a first redemption must still succeed
         alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
         alice <## "badge redeemed"
@@ -158,7 +158,7 @@ testRedeemBadgeCodeTwice :: HasCallStack => TestParams -> IO ()
 testRedeemBadgeCodeTwice ps =
   withBadgeService ps $ \clientCfg _ cc ->
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
-      code <- mintCode cc BTSupporter 1
+      code <- issueCode cc BTSupporter 1
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "badge redeemed"
       alice <## "supporter badge - active"
@@ -209,21 +209,21 @@ testMasterKeyB64 :: String
 testMasterKeyB64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 -- BadgeType decodes anything to BTUnknown, so without a check at this boundary an operator
--- typo would mint a code no app can show as a badge.
-testMintRejectsBadArguments :: HasCallStack => TestParams -> IO ()
-testMintRejectsBadArguments ps =
+-- typo would issue a code no app can show as a badge.
+testIssueRejectsBadArguments :: HasCallStack => TestParams -> IO ()
+testIssueRejectsBadArguments ps =
   withBadgeService ps $ \_ _ cc -> do
-    let refuses arg = mintRaw cc arg >>= (`shouldSatisfy` isLeft)
+    let refuses arg = issueRaw cc arg >>= (`shouldSatisfy` isLeft)
     refuses "suporter"
     refuses "supporter 0"
     refuses "supporter 256"
     refuses "supporter 1 gratis"
     refuses ""
-    mintRaw cc "supporter 255 paid" >>= (`shouldSatisfy` isRight)
+    issueRaw cc "supporter 255 paid" >>= (`shouldSatisfy` isRight)
 
-mintRaw :: ChatController -> String -> IO (Either () ())
-mintRaw cc args =
-  sendChatCmdStr cc ("//mint " <> args) >>= \case
+issueRaw :: ChatController -> String -> IO (Either () ())
+issueRaw cc args =
+  sendChatCmdStr cc ("//issue " <> args) >>= \case
     Right CRCustomChatResponse {} -> pure $ Right ()
     _ -> pure $ Left ()
 
@@ -233,8 +233,8 @@ testRedeemSecondCode :: HasCallStack => TestParams -> IO ()
 testRedeemSecondCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
-      supporter <- mintCode cc BTSupporter 1
-      legend <- mintCode cc BTLegend 1
+      supporter <- issueCode cc BTSupporter 1
+      legend <- issueCode cc BTLegend 1
       alice ##> ("/_redeem_badge_code 1 " <> codeArg supporter)
       alice <## "badge redeemed"
       alice <## "supporter badge - active"
@@ -252,7 +252,7 @@ testRedeemSameCodeOtherProfile :: HasCallStack => TestParams -> IO ()
 testRedeemSameCodeOtherProfile ps =
   withBadgeService ps $ \clientCfg _ cc ->
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
-      code <- mintCode cc BTSupporter 1
+      code <- issueCode cc BTSupporter 1
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "badge redeemed"
       alice <## "supporter badge - active"

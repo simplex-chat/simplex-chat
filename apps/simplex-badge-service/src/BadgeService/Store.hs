@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module BadgeService.Store
-  ( MintedCode (..),
+  ( IssuedCode (..),
     CodeRedemption (..),
     RedeemedCode (..),
     CodeIssuance (..),
@@ -39,7 +39,7 @@ import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-data MintedCode = MintedCode
+data IssuedCode = IssuedCode
   { badgeCodeId :: Int64,
     badgeType :: BadgeType,
     redemption :: CodeRedemption
@@ -69,7 +69,7 @@ data CodeIssuance = CodeIssuance
     expiry :: UTCTime
   }
 
-getBadgeCode :: DB.Connection -> ByteString -> IO (Maybe MintedCode)
+getBadgeCode :: DB.Connection -> ByteString -> IO (Maybe IssuedCode)
 getBadgeCode db codeHash =
   maybeFirstRow toCode $
     DB.query
@@ -86,7 +86,7 @@ getBadgeCode db codeHash =
       (Only (Binary codeHash))
   where
     toCode (badgeCodeId, badgeType, purchaseKey_, credential_) =
-      MintedCode {badgeCodeId, badgeType, redemption = codeRedemption purchaseKey_ credential_}
+      IssuedCode {badgeCodeId, badgeType, redemption = codeRedemption purchaseKey_ credential_}
     codeRedemption purchaseKey_ credential_ = case purchaseKey_ of
       Nothing -> CodeUnredeemed
       Just purchaseKey -> case decodeCredential =<< credential_ of

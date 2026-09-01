@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Badge redemption codes, shared by the client, the badge service and the mint.
+-- | Badge redemption codes, shared by the client, the badge service and the checkout site.
 --
 -- A code is @SXB-@ and 20 Crockford base32 characters in four groups of five:
 -- 19 payload characters and a final check character.

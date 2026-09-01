@@ -6,7 +6,7 @@ At this stage the service:
 
 - creates a double-ratchet contact address on first start (service RPC requires DR, see [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md)),
 - listens for service requests (`CEvtServiceRequest`) on that address, rejects a request whose `purchaseKey` is not the key the agent verified the signature against, and answers `redeemBadgeCode`,
-- mints redemption codes, storing only their `SHA-256` and printing each code once,
+- issues redemption codes, storing only their `SHA-256` and printing each code once,
 - does not accept contact requests — the address is for RPC only,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
@@ -35,14 +35,14 @@ The service cannot sign credentials without an issuer key and refuses to start w
 - `--issuer-key-idx IDX` — the index the apps find the matching public key under (`badgePublicKeys` in `ChatConfig`).
 - `--issuer-secret SECRET` — the issuer secret from `simplex-chat badge keygen`.
 
-## Minting codes
+## Issuing codes
 
-Minting is an operator command issued to the running service in `--run-cli` mode, not a way to
-start it — so codes are minted without a second process touching the service's database:
+Issuing a code is an operator command sent to the running service in `--run-cli` mode, not a way
+to start it — so codes are issued without a second process touching the service's database:
 
 ```
-//mint <badge_type> [months] [paid|unpaid|free]
-//mint supporter 12
+//issue <badge_type> [months] [paid|unpaid|free]
+//issue supporter 12
 ```
 
 `months` defaults to 1 and must be between 1 and 255; the status defaults to `free` and records
@@ -53,4 +53,4 @@ The code is printed once and only its `SHA-256` is stored, so a code that is not
 shown cannot be recovered.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
-why minting lives in the service rather than in core.
+why issuing codes lives in the service rather than in core.

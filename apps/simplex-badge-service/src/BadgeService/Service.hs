@@ -9,8 +9,8 @@ module BadgeService.Service
     welcomeGetOpts,
     badgeService,
     badgeServiceCLI,
-    MintCodeOpts (..),
-    mintBadgeCode,
+    IssueCodeOpts (..),
+    issueBadgeCode,
   )
 where
 
@@ -122,23 +122,23 @@ badgeServiceCLI opts = do
       processQueuedRequests key env
     ]
 
--- | minting lives here rather than in core: every user's app would otherwise ship it
+-- | issuing codes lives here rather than in core: every user's app would otherwise ship it
 badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook cc = \case
   CustomChatCommand cmd -> Left <$> runBadgeCmd cc cmd
   cmd -> pure $ Right cmd
 
 runBadgeCmd :: ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd cc cmd = case A.parseOnly mintCmdP cmd of
-  Left _ -> pure $ chatCmdError "use: //mint supporter|legend|investor [months 1-255] [paid|unpaid|free]"
-  Right mintOpts ->
-    mintBadgeCode cc mintOpts >>= \case
+runBadgeCmd cc cmd = case A.parseOnly issueCmdP cmd of
+  Left _ -> pure $ chatCmdError "use: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free]"
+  Right issueOpts ->
+    issueBadgeCode cc issueOpts >>= \case
       Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "code " <> formatBadgeCode code}
-      Left e -> pure $ chatCmdError $ "minting code: " <> e
+      Left e -> pure $ chatCmdError $ "issuing code: " <> e
 
-mintCmdP :: A.Parser MintCodeOpts
-mintCmdP =
-  "mint " *> do
+issueCmdP :: A.Parser IssueCodeOpts
+issueCmdP =
+  "issue " *> do
     badgeType <- badgeTypeP
     months_ <- optional (A.space *> A.decimal)
     -- outside `optional`, which would otherwise backtrack past a bad count
@@ -146,12 +146,12 @@ mintCmdP =
     paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
     A.skipSpace
     A.endOfInput
-    pure MintCodeOpts {badgeType, months, paymentStatus}
+    pure IssueCodeOpts {badgeType, months, paymentStatus}
   where
     checkMonths n
       | n >= 1 && n <= (255 :: Int) = pure n
       | otherwise = fail "months must be between 1 and 255"
-    -- BadgeType decodes anything to BTUnknown, so a typo would mint an unusable code
+    -- BadgeType decodes anything to BTUnknown, so a typo would issue an unusable code
     badgeTypeP =
       textTokenP >>= \case
         BTUnknown t -> fail $ "unknown badge type " <> T.unpack t
@@ -161,18 +161,18 @@ mintCmdP =
       t <- A.takeWhile1 (not . isSpace)
       maybe (fail "invalid value") pure $ textDecode $ safeDecodeUtf8 t
 
-data MintCodeOpts = MintCodeOpts
+data IssueCodeOpts = IssueCodeOpts
   { badgeType :: BadgeType,
     months :: Int,
     paymentStatus :: BadgeCodePaymentStatus
   }
 
 -- | The caller sees the code once; only its hash is stored, so a lost code cannot be recovered.
-mintBadgeCode :: ChatController -> MintCodeOpts -> IO (Either String BadgeCode)
-mintBadgeCode cc MintCodeOpts {badgeType, months, paymentStatus} = do
+issueBadgeCode :: ChatController -> IssueCodeOpts -> IO (Either String BadgeCode)
+issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} = do
   code <- randomBadgeCode $ random cc
   now <- getCurrentTime
-  r <- withDB' "mintBadgeCode" cc $ \db -> insertBadgeCode db (badgeCodeHash code) badgeType months paymentStatus now
+  r <- withDB' "issueBadgeCode" cc $ \db -> insertBadgeCode db (badgeCodeHash code) badgeType months paymentStatus now
   pure $ code <$ r
 
 processQueuedRequests :: BadgeIssuerKey -> ServiceState -> IO ()
@@ -246,7 +246,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
     withDB' "getBadgeCode" cc (`getBadgeCode` badgeCodeHash code) >>= \case
       Left _ -> pure $ errorResponse BSEInternal
       Right Nothing -> pure $ errorResponse BSECodeInvalid
-      Right (Just MintedCode {badgeCodeId, badgeType, redemption}) -> case redeemedResponse redemption of
+      Right (Just IssuedCode {badgeCodeId, badgeType, redemption}) -> case redeemedResponse redemption of
         Just resp -> pure resp
         Nothing -> do
           now <- getCurrentTime
@@ -271,7 +271,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
               -- re-read: a concurrent redemption may have landed while this one was signing
               r <- withDB "writeCodeRedemption" cc $ \db ->
                 liftIO (getBadgeCode db $ badgeCodeHash code) >>= \case
-                  Just MintedCode {redemption = current} | Just resp <- redeemedResponse current -> pure resp
+                  Just IssuedCode {redemption = current} | Just resp <- redeemedResponse current -> pure resp
                   _ -> liftIO $ credentialResponse credential <$ writeCodeRedemption db issuance now
               pure $ either (const $ errorResponse BSEInternal) id r
   where
