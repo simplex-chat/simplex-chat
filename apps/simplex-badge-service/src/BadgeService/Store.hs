@@ -9,7 +9,7 @@ module BadgeService.Store
   ( IssuedCode (..),
     CodeRedemption (..),
     RedeemedCode (..),
-    CodeIssuance (..),
+    NewBadgeCodeRedemption (..),
     getBadgeCode,
     purchaseKeyExists,
     writeCodeRedemption,
@@ -56,8 +56,9 @@ data RedeemedCode = RedeemedCode
     credential :: BadgeCredential
   }
 
--- prepared before the transaction opens, because the credential is signed first
-data CodeIssuance = CodeIssuance
+-- the values writeCodeRedemption writes, gathered before the transaction opens because the
+-- credential is signed first
+data NewBadgeCodeRedemption = NewBadgeCodeRedemption
   { badgeCodeId :: Int64,
     issuanceId :: Text,
     purchaseKey :: C.PublicKeyEd25519,
@@ -100,8 +101,8 @@ purchaseKeyExists db key =
     DB.query db "SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?" (Only key)
 
 -- one transaction: the caller has already signed, so no code is left spent without a credential
-writeCodeRedemption :: DB.Connection -> CodeIssuance -> UTCTime -> IO ()
-writeCodeRedemption db CodeIssuance {badgeCodeId, issuanceId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType, credential, periodStart, periodEnd, expiry} now = do
+writeCodeRedemption :: DB.Connection -> NewBadgeCodeRedemption -> UTCTime -> IO ()
+writeCodeRedemption db NewBadgeCodeRedemption {badgeCodeId, issuanceId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType, credential, periodStart, periodEnd, expiry} now = do
   DB.execute
     db
     [sql|

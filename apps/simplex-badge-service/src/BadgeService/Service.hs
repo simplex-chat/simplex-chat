@@ -256,8 +256,8 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right credential -> do
               issuanceId <- safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 $ random cc)
-              let issuance =
-                    CodeIssuance
+              let redemption =
+                    NewBadgeCodeRedemption
                       { badgeCodeId,
                         issuanceId,
                         purchaseKey,
@@ -272,7 +272,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
               r <- withDB "writeCodeRedemption" cc $ \db ->
                 liftIO (getBadgeCode db $ badgeCodeHash code) >>= \case
                   Just IssuedCode {redemption = current} | Just resp <- redeemedResponse current -> pure resp
-                  _ -> liftIO $ credentialResponse credential <$ writeCodeRedemption db issuance now
+                  _ -> liftIO $ credentialResponse credential <$ writeCodeRedemption db redemption now
               pure $ either (const $ errorResponse BSEInternal) id r
   where
     -- one definition, used before signing and again inside the write transaction

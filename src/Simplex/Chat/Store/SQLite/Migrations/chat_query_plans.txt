@@ -1204,6 +1204,19 @@ Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
 Query: 
+          INSERT INTO badge_issuances (issuance_id, badge_purchase_id, badge_type, period_start, period_end, expiry, credential, created_at)
+          VALUES (?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
+          INSERT INTO badge_purchases
+            (user_id, purchase_key, purchase_priv_key, master_key, initial_badge_type, current_badge_type, status, badge_code_redemption_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
           INSERT INTO chat_item_reactions
             (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
             VALUES (?,?,?,?,?,?)
@@ -3464,6 +3477,14 @@ Plan:
 SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=?)
 
 Query: 
+        SELECT badge_code_redemption_id, purchase_key, purchase_priv_key, master_key
+        FROM badge_code_redemptions
+        WHERE user_id = ? AND code = ?
+      
+Plan:
+SEARCH badge_code_redemptions USING INDEX sqlite_autoindex_badge_code_redemptions_1 (user_id=? AND code=?)
+
+Query: 
         SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -4298,6 +4319,17 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ug USING AUTOMATIC COVERING INDEX (group_id=?)
 
 Query: 
+      DELETE FROM badge_code_redemptions
+      WHERE badge_code_redemption_id = ?
+        AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_code_redemption_id = ?)
+    
+Plan:
+SEARCH badge_code_redemptions USING INTEGER PRIMARY KEY (rowid=?)
+SCALAR SUBQUERY 1
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
+
+Query: 
       DELETE FROM chat_items
       WHERE group_scope_group_member_id = ?
     
@@ -4781,6 +4813,12 @@ SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH groups USING COVERING INDEX idx_groups_group_profile_id (group_profile_id=?)
+
+Query: 
+      INSERT INTO badge_code_redemptions (user_id, code, purchase_key, purchase_priv_key, master_key, created_at)
+      VALUES (?,?,?,?,?,?)
+    
+Plan:
 
 Query: 
       INSERT INTO calls
@@ -6944,6 +6982,8 @@ SEARCH connections USING COVERING INDEX idx_connections_user_contact_link_id (us
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH badge_code_redemptions USING COVERING INDEX idx_badge_code_redemptions_user (user_id=?)
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_user (user_id=?)
 SEARCH chat_relays USING COVERING INDEX idx_chat_relays_user_id (user_id=?)
 SEARCH chat_tags USING COVERING INDEX idx_chat_tags_user_id (user_id=?)
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
@@ -7176,6 +7216,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT badge_purchase_id FROM badge_purchases WHERE badge_code_redemption_id = ?
+Plan:
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
 
 Query: SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?
 Plan:
@@ -7979,6 +8023,10 @@ Plan:
 SCAN users
 
 Query: UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE users SET shown_badge_id = ? WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
