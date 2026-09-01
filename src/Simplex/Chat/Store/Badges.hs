@@ -91,14 +91,17 @@ deleteBadgeCodeRedemption db redemptionId =
     (redemptionId, redemptionId)
 
 -- | The purchase a redeemed code created, its issuance, and the profile's pointer to it.
---
--- Idempotent in the redemption: the service answers a repeat with the credential it already
--- issued, which must leave one purchase rather than add a second. The expiry is passed in
--- because badge_issuances requires one and the caller has already resolved it.
-createCodeBadgePurchase :: DB.Connection -> TVar ChaChaDRG -> User -> BadgeCodeRedemption -> BadgeCredential -> UTCTime -> UTCTime -> IO ()
-createCodeBadgePurchase db g User {userId} redemption credential expiry now = do
-  purchaseId <- getCodeBadgePurchase db redemption >>= maybe insertPurchase pure
-  DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (purchaseId, userId)
+-- False when the code was already redeemed here: the service replays the credential it issued,
+-- and that must add no purchase and leave the shown badge alone. The expiry is passed in because
+-- badge_issuances requires one and the caller has already resolved it.
+createCodeBadgePurchase :: DB.Connection -> TVar ChaChaDRG -> User -> BadgeCodeRedemption -> BadgeCredential -> UTCTime -> UTCTime -> IO Bool
+createCodeBadgePurchase db g User {userId} redemption credential expiry now =
+  getCodeBadgePurchase db redemption >>= \case
+    Just _ -> pure False
+    Nothing -> do
+      purchaseId <- insertPurchase
+      DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (purchaseId, userId)
+      pure True
   where
     BadgeCodeRedemption {redemptionId, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk} = redemption
     BadgeCredential {badgeInfo = BadgeInfo {badgeType}} = credential

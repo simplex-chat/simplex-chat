@@ -845,7 +845,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
-  | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge}
+  | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}

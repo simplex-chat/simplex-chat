@@ -81,7 +81,7 @@ getBadgeCode db codeHash =
         LEFT JOIN sx_badge_service_badge_purchases p ON p.badge_code_id = c.badge_code_id
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE c.code_hash = ?
-        ORDER BY i.created_at
+        ORDER BY i.created_at DESC
         LIMIT 1
       |]
       (Only (Binary codeHash))

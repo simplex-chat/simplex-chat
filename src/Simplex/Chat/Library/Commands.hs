@@ -5211,11 +5211,13 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
       now <- liftIO getCurrentTime
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
       -- TODO [badges] copy the statement's ledger entries, and retire a previously held badge
-      user' <- withStore' $ \db -> do
-        createCodeBadgePurchase db g user redemption cred expiry now
-        setUserBadge db user (Just badge)
-      presentUserBadgeToContacts user'
-      pure $ CRBadgeRedeemed user' badge
+      (user', newBadge) <- withStore' $ \db -> do
+        newBadge <- createCodeBadgePurchase db g user redemption cred expiry now
+        -- a replay must not put a superseded badge back, or tell every contact again
+        user' <- if newBadge then setUserBadge db user (Just badge) else pure user
+        pure (user', newBadge)
+      when newBadge $ presentUserBadgeToContacts user'
+      pure $ CRBadgeRedeemed user' badge newBadge
 
 sendServiceRequestTo :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM J.Object
 sendServiceRequestTo nm user sendTarget requestTimeout signKey request = do

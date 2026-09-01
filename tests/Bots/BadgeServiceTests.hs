@@ -39,7 +39,7 @@ badgeServiceTests = do
   it "should return the same badge when the same code is redeemed twice" testRedeemBadgeCodeTwice
   it "should answer code_invalid to an unknown code, indistinguishably from a malformed one" testRedeemUnknownCode
   it "should tell a second profile redeeming the same code that it is used" testRedeemSameCodeOtherProfile
-  it "should redeem a second code into a second purchase" testRedeemSecondCode
+  it "should redeem a second code, and not restore the first badge on replay" testRedeemSecondCode
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
@@ -166,9 +166,7 @@ testRedeemBadgeCodeTwice ps =
       -- Retyped in another case and without separators, so it normalises to the same code and
       -- finds the same stashed keys: a retry the service can recognise as the same signer.
       alice ##> ("/_redeem_badge_code 1 " <> map toLower (T.unpack $ badgeCodeText code))
-      alice <## "badge redeemed"
-      alice <## "supporter badge - active"
-      alice <##. "expires "
+      alice <## "badge already redeemed"
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
       alice <## "use /p <name> [<bio>] to change it"
@@ -243,6 +241,11 @@ testRedeemSecondCode ps =
       alice <## "badge redeemed"
       alice <## "legend badge - active"
       alice <##. "expires "
+      alice ##> "/p"
+      showActiveUser alice "alice (Alice, * legend)"
+      -- replaying the first code must not put supporter back
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg supporter)
+      alice <## "badge already redeemed"
       alice ##> "/p"
       showActiveUser alice "alice (Alice, * legend)"
 
