@@ -68,7 +68,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Directory.Search
-import Directory.Util
+import Simplex.Chat.Bot.Store
 import Simplex.Chat.Controller
 import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))

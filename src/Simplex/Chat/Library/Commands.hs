@@ -56,7 +56,9 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
+import Simplex.Chat.Badges.Service (BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -77,6 +79,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
+import Simplex.Chat.Store.Badges
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
@@ -1464,26 +1467,8 @@ processChatCommand cxt nm = \case
             liftIO $ deleteContactRequest db user connReqId
             pure ct_
         pure $ CRContactRequestRejected user cReq ct_
-  APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user -> do
-    cReq <- resolveServiceTarget user sendTarget
-    respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout (C.unStored <$> signKey) (LB.toStrict $ J.encode request)
-    resp <- either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
-    pure $ CRServiceResponse user resp
-    where
-      resolveServiceTarget user = \case
-        CTFullContact cReq -> pure cReq
-        CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
-        CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
-          NTContact -> resolveDomain nameDomain
-          _ -> throwCmdError "service request target must be a contact"
-        CTDomain d -> resolveDomain d
-        where
-          resolveDomain d = do
-            nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
-            case firstNameLink CCTContact (nrSimplexContact nr) of
-              Just sLnk -> resolveShortLink sLnk
-              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
-          resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
+  APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user ->
+    CRServiceResponse user <$> sendServiceRequestTo nm user sendTarget requestTimeout (C.unStored <$> signKey) request
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
@@ -3552,6 +3537,7 @@ processChatCommand cxt nm = \case
           pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
+  APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
   SetBotCommands commands -> withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
@@ -5133,20 +5119,31 @@ createContactsSndFeatureItems user cts =
       CUPContact {preference} -> preference
       CUPUser {preference} -> preference
 
+-- | Verify an own credential against the configured issuer keys.
+-- Nothing means its key index is not among them, so this version cannot verify it at all.
+verifyOwnBadge :: BadgeCredential -> CM (Maybe Bool)
+verifyOwnBadge cred@(BadgeCredential keyIdx _ _ _) = do
+  keys <- asks $ badgePublicKeys . config
+  forM (M.lookup keyIdx keys) $ \key -> liftIO $ verifyCredential key cred
+
 -- attach an issued badge credential to the user's own profile and present it to all current contacts.
 -- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
 addUserBadge :: User -> BadgeCredential -> CM ()
-addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
-  keys <- asks $ badgePublicKeys . config
-  key <- maybe (throwCmdError "unknown badge key index") pure $ M.lookup keyIdx keys
-  verified <- liftIO $ verifyCredential key cred
-  unless verified $ throwCmdError "badge credential does not verify against configured key"
-  now <- liftIO getCurrentTime
-  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+addUserBadge user cred@(BadgeCredential _ _ _ info) =
+  verifyOwnBadge cred >>= \case
+    Nothing -> throwCmdError "unknown badge key index"
+    Just False -> throwCmdError "badge credential does not verify against configured key"
+    Just True -> do
+      now <- liftIO getCurrentTime
+      user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+      presentUserBadgeToContacts user'
+
+presentUserBadgeToContacts :: User -> CM ()
+presentUserBadgeToContacts user' = do
   asks currentUser >>= atomically . (`writeTVar` Just user')
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
-  withChatLock "addUserBadge" $ forM_ contacts $ \ct ->
+  withChatLock "presentUserBadge" $ forM_ contacts $ \ct ->
     case contactSendConn_ ct of
       Right conn
         | not (connIncognito conn) -> do
@@ -5154,6 +5151,95 @@ addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
             p <- presentUserBadge user' Nothing $ userProfileDirect user' Nothing (Just ct') False
             void (sendDirectContactMessage user' ct' (XInfo p)) `catchAllErrors` eToView
       _ -> pure ()
+
+-- | The check character is verified before anything leaves the device, and the signing keys are
+-- stashed before the request is sent, so a retry reaches the service as the same signer.
+-- A terminal answer drops the stash; a timeout keeps it.
+redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
+redeemBadgeCode nm user codeText = do
+  code <- maybe (throwCmdError "invalid badge code") pure $ parseBadgeCode codeText
+  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
+  g <- asks random
+  now <- liftIO getCurrentTime
+  let codeSent = badgeCodeText code
+  redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
+    withStore' $ \db ->
+      getBadgeCodeRedemption db user codeSent
+        >>= maybe (createBadgeCodeRedemption db g user codeSent now) pure
+  let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
+  respData <- sendServiceRequestTo nm user sendTarget Nothing (Just purchasePrivKey) req
+  case J.fromJSON (J.Object respData) of
+    J.Error e -> throwCmdError $ "invalid badge service response, " <> show e <> ": " <> respJSON respData
+    J.Success BSPError {code = errCode} -> do
+      when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
+      throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText errCode)
+    J.Success BSPBadgeCredential {credential = Just cred} -> storeRedeemedBadge user redemption cred
+    J.Success _ -> throwCmdError $ "unexpected badge service response: " <> respJSON respData
+  where
+    -- re-encoded, not shown as received: JSON escapes the control characters a terminal acts on
+    respJSON = LB.unpack . J.encode
+    -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
+    terminalCodeError = \case
+      BSECodeInvalid -> True
+      BSECodeUsed -> True
+      BSECodeExpired -> True
+      _ -> False
+
+-- | An unknown code is reported, since the service is deployed ahead of clients, but its text is
+-- the service's - so it is bounded and stripped before reaching a terminal that acts on controls.
+badgeServiceErrorText :: BadgeServiceErrorCode -> Text
+badgeServiceErrorText = \case
+  BSEUnknown t -> case T.filter errorCodeChar (T.take 32 t) of
+    "" -> "unknown"
+    t' -> t'
+  code -> textEncode code
+  where
+    errorCodeChar c = isAsciiLower c || isDigit c || c == '_'
+
+-- | Verify the credential before writing anything; the purchase, its issuance and the profile's
+-- badge go in one transaction, and contacts are told after it commits.
+storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> CM ChatResponse
+storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeExpiry}) =
+  verifyOwnBadge cred >>= \case
+    Nothing -> throwCmdError "redeemed badge credential names an unknown badge key index"
+    Just False -> throwCmdError "redeemed badge credential does not verify against configured key"
+    -- verifyCredential checks the signature against the key inside the credential, not the one we
+    -- sent - so a credential over any other master key also verifies
+    Just True | credMasterKey /= masterKey -> throwCmdError "redeemed badge credential is for a different master key"
+    Just True -> do
+      -- badge_issuances requires a period; a credential without an expiry has none to record
+      expiry <- maybe (throwCmdError "redeemed badge credential has no expiry") pure badgeExpiry
+      g <- asks random
+      now <- liftIO getCurrentTime
+      let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
+      -- TODO [badges] copy the statement's ledger entries, and retire a previously held badge
+      (user', newBadge) <- withStore' $ \db -> do
+        newBadge <- createCodeBadgePurchase db g user redemption cred expiry now
+        -- a replay must not put a superseded badge back, or tell every contact again
+        user' <- if newBadge then setUserBadge db user (Just badge) else pure user
+        pure (user', newBadge)
+      when newBadge $ presentUserBadgeToContacts user'
+      pure $ CRBadgeRedeemed user' badge newBadge
+
+sendServiceRequestTo :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM J.Object
+sendServiceRequestTo nm user sendTarget requestTimeout signKey request = do
+  cReq <- resolveServiceTarget sendTarget
+  respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
+  either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
+  where
+    resolveServiceTarget = \case
+      CTFullContact cReq -> pure cReq
+      CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
+      CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
+        NTContact -> resolveDomain nameDomain
+        _ -> throwCmdError "service request target must be a contact"
+      CTDomain d -> resolveDomain d
+    resolveDomain d = do
+      nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
+      case firstNameLink CCTContact (nrSimplexContact nr) of
+        Just sLnk -> resolveShortLink sLnk
+        Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
+    resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =
@@ -5539,6 +5625,7 @@ chatCommandP =
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
+      "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),

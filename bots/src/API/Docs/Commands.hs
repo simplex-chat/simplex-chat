@@ -398,6 +398,7 @@ undocumentedCommands =
     "APIPlanForwardChatItems",
     "APIPrepareContact",
     "APIPrepareGroup",
+    "APIRedeemBadgeCode",
     "APIRegisterToken",
     "APIRejectCall",
     "APIReorderChatTags",

@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.PaymentService
   ( ServiceInvoice (..),
@@ -6,9 +7,11 @@ module Simplex.Chat.PaymentService
     module Simplex.Chat.PaymentService.Types,
   ) where
 
+import qualified Data.Aeson.TH as JQ
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.PaymentService.Types
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 
 data ServiceInvoice = ServiceInvoice
   { invoiceId :: InvoiceId,
@@ -28,3 +31,7 @@ data ServicePayment
   | SPInvoice {invoiceId :: InvoiceId}
   | SPReceipt {receipt :: Text} -- transfer of unissued months
   deriving (Show)
+
+$(JQ.deriveJSON defaultJSON ''ServiceInvoice)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "SP") ''ServicePayment)

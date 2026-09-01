@@ -1,19 +1,27 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module BadgeTests (badgeTests) where
 
+import Control.Concurrent.STM (atomically)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.Aeson as J
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
+import Simplex.Chat.Badges.Code
+import Simplex.Chat.Badges.Service
 import Simplex.Messaging.Crypto.BBS
+import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
 
 badgeTests :: Spec
@@ -27,6 +35,16 @@ badgeTests = do
   it "should treat lifetime badges as always active" testLifetimeBadge
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
+  describe "redemption codes" $ do
+    it "a generated code reads back" testCodeRoundTrip
+    it "reads a code as typed - any case, separators, ambiguous characters" testCodeNormalisation
+    it "rejects a code whose check character does not match" testCodeCheckCharacter
+    it "hashes the canonical form, whatever was typed" testCodeHash
+  describe "service protocol JSON" $ do
+    it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
+    it "badgeCredential response matches the schema" testCredentialResponseJSON
+    it "error response matches the schema" testErrorResponseJSON
+    it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -140,3 +158,138 @@ issueBadgeProof bt expiry = do
   Right cred <- issueBadge testKeyIdx sk vreq
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "test-nonce")
   pure (pk, badge)
+
+-- Redemption codes
+
+testCodeRoundTrip :: IO ()
+testCodeRoundTrip = do
+  drg <- C.newRandom
+  code <- randomBadgeCode drg
+  let formatted = formatBadgeCode code
+  T.length formatted `shouldBe` 27 -- SXB-XXXXX-XXXXX-XXXXX-XXXXX
+  T.take 4 formatted `shouldBe` "SXB-"
+  T.length (badgeCodeText code) `shouldBe` 23 -- the canonical form drops the separators
+  parseBadgeCode formatted `shouldBe` Just code
+  parseBadgeCode (badgeCodeText code) `shouldBe` Just code
+
+testCodeNormalisation :: IO ()
+testCodeNormalisation = do
+  drg <- C.newRandom
+  code <- randomBadgeCode drg
+  parseBadgeCode (T.toLower $ badgeCodeText code) `shouldBe` Just code
+  parseBadgeCode (T.replace "-" " " $ formatBadgeCode code) `shouldBe` Just code
+  -- a fixed code, because a random one contains no 0 or 1 about a quarter of the time and the
+  -- folding would then be asserted against nothing
+  let folded = T.map ambiguous fixedCode
+  folded `shouldNotBe` fixedCode
+  parseBadgeCode folded `shouldBe` parseBadgeCode fixedCode
+  parseBadgeCode fixedCode `shouldNotBe` Nothing
+  where
+    fixedCode = "SXB-0C0QS-XAQW1-N1VSA-R00Y3"
+    ambiguous = \case
+      '1' -> 'I'
+      '0' -> 'O'
+      c -> c
+
+testCodeCheckCharacter :: IO ()
+testCodeCheckCharacter = do
+  drg <- C.newRandom
+  code <- randomBadgeCode drg
+  let canonical = badgeCodeText code
+      -- every other value for the last character fails the check
+      wrong = T.init canonical <> T.singleton (if T.last canonical == 'Z' then 'Y' else 'Z')
+  parseBadgeCode wrong `shouldBe` Nothing
+  parseBadgeCode "" `shouldBe` Nothing
+  parseBadgeCode "SXB-00000-00000-00000-0000" `shouldBe` Nothing
+  parseBadgeCode (T.drop 3 canonical) `shouldBe` Nothing
+
+testCodeHash :: IO ()
+testCodeHash = do
+  drg <- C.newRandom
+  code <- randomBadgeCode drg
+  Just typed <- pure $ parseBadgeCode $ T.toLower $ formatBadgeCode code
+  badgeCodeHash typed `shouldBe` badgeCodeHash code
+
+-- Service protocol JSON, against docs/protocol/badges-rpc.schema.json
+
+testRedeemRequestJSON :: IO ()
+testRedeemRequestJSON = do
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  code <- randomBadgeCode drg
+  let req = BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request = BSCRedeemBadgeCode {masterKey = mk, code = badgeCodeText code}}
+  J.toJSON req
+    `shouldBe` J.object
+      [ "version" J..= (1 :: Int),
+        "purchaseKey" J..= k,
+        "request" J..= J.object ["type" J..= ("redeemBadgeCode" :: T.Text), "masterKey" J..= mk, "code" J..= badgeCodeText code]
+      ]
+  -- purchaseKey is optional in the schema, and a nullary command is a bare tagged object
+  J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
+    `shouldBe` J.object ["version" J..= (1 :: Int), "request" J..= J.object ["type" J..= ("getBadgeCatalog" :: T.Text)]]
+  roundTrips req
+
+testCredentialResponseJSON :: IO ()
+testCredentialResponseJSON = do
+  Right (_, sk) <- bbsKeyGen
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just futureTime, badgeExtra = ""}
+  Right cred <- issueBadge testKeyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = info})
+  let resp = BSPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}}
+  J.toJSON resp
+    `shouldBe` J.object
+      [ "type" J..= ("badgeCredential" :: T.Text),
+        "credential" J..= cred,
+        "statement" J..= J.object ["entries" J..= ([] :: [J.Value])]
+      ]
+  roundTrips resp
+
+testErrorResponseJSON :: IO ()
+testErrorResponseJSON = do
+  let resp = BSPError {code = BSECodeInvalid, message = Nothing, retryAfter = Nothing}
+  J.toJSON resp `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("code_invalid" :: T.Text)]
+  J.toJSON BSPError {code = BSERateLimited, message = Just "slow down", retryAfter = Just 30}
+    `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("rate_limited" :: T.Text), "message" J..= ("slow down" :: T.Text), "retryAfter" J..= (30 :: Int)]
+
+testStatementJSON :: IO ()
+testStatementJSON = do
+  let entry =
+        StatementEntry
+          { entryId = "e1",
+            changeMonths = 3,
+            balanceMonths = 3,
+            balanceStartTs = futureTime,
+            balanceBadgeType = BTSupporter,
+            wasPausedSince = Nothing,
+            createdAt = futureTime,
+            entryType = SECredit {credit = SCPayment {invoiceId = Nothing}}
+          }
+  -- the whole entry: the required fields, and wasPausedSince omitted rather than sent as null
+  J.toJSON entry
+    `shouldBe` J.object
+      [ "entryId" J..= ("e1" :: T.Text),
+        "changeMonths" J..= (3 :: Int),
+        "balanceMonths" J..= (3 :: Int),
+        "balanceStartTs" J..= futureTime,
+        "balanceBadgeType" J..= ("supporter" :: T.Text),
+        "createdAt" J..= futureTime,
+        "entryType" J..= entryType entry
+      ]
+  J.toJSON entry {wasPausedSince = Just pastTime} `shouldNotBe` J.toJSON entry
+  J.toJSON (entryType entry) `shouldBe` J.object ["type" J..= ("credit" :: T.Text), "credit" J..= J.object ["type" J..= ("payment" :: T.Text)]]
+  J.toJSON SEDebit {debit = SDBadge} `shouldBe` J.object ["type" J..= ("debit" :: T.Text), "debit" J..= J.object ["type" J..= ("badge" :: T.Text)]]
+  -- an entry type from a newer service is stored and re-emitted unchanged
+  let futureCredit = J.object ["type" J..= ("grant" :: T.Text), "grantedBy" J..= ("operator" :: T.Text)]
+  case J.fromJSON futureCredit of
+    J.Success c@SCUnknown {tag} -> do
+      tag `shouldBe` "grant"
+      J.toJSON c `shouldBe` futureCredit
+    r -> expectationFailure $ "expected SCUnknown, got " <> show (fmap (const ()) r)
+
+-- decoding and re-encoding reproduces the encoding, without Eq on the protocol types
+roundTrips :: (HasCallStack, J.ToJSON a, J.FromJSON a) => a -> IO ()
+roundTrips x = case J.eitherDecode (J.encode x) of
+  Right x' -> J.toJSON (x' `asTypeOf` x) `shouldBe` J.toJSON x
+  Left e -> expectationFailure e

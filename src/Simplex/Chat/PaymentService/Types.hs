@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.PaymentService.Types
   ( CurrencyAmount (..),
@@ -19,18 +20,22 @@ module Simplex.Chat.PaymentService.Types
     PaymentStatus (..),
   ) where
 
+import Data.Aeson (FromJSON, ToJSON)
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString.Char8 (ByteString)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word32)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
 
 -- USD etc. are in minor units, following Stripe etc. convention
 newtype CurrencyAmount = CurrencyAmount Word32
   deriving (Eq, Show)
+  deriving newtype (ToJSON, FromJSON)
 
 -- confirmed
 newtype InvoiceId = InvoiceId Text
-  deriving newtype (Eq, Show)
+  deriving newtype (Eq, Show, ToJSON, FromJSON)
 
 -- confirmed
 newtype PaymentId = PaymentId Text
@@ -132,3 +137,11 @@ data PaymentTerm
 -- to review
 data PaymentStatus = PSPending | PSSettled | PSFailed {exception :: Text}
   deriving (Show)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CP") ''CardProvider)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CC") ''CryptoCurrency)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "SPM") ''ServicePaymentMethod)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "SPD") ''ServicePaymentDestination)

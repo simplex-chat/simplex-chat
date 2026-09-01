@@ -3,13 +3,18 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Badges.Service
   ( BadgeServiceRequest (..),
     BadgeServiceCommand (..),
     BadgeServiceVersion,
     VersionBadgeService,
+    VersionRangeBadgeService,
     pattern VersionBadgeService,
+    initialBadgeServiceVersion,
+    currentBadgeServiceVersion,
+    supportedBadgeServiceVRange,
     BadgeUpgrade (..),
     BadgeServiceResponse (..),
     BadgeServiceErrorCode (..),
@@ -24,9 +29,12 @@ module Simplex.Chat.Badges.Service
     StatementDebitType (..),
   ) where
 
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Control.Applicative ((<|>))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.:))
 import qualified Data.Aeson as J
-import Data.Int (Int64)
+import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.TH as JQ
+import qualified Data.Aeson.Types as JT
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8, Word16, Word32)
@@ -35,7 +43,8 @@ import Simplex.Chat.Badges.Types
 import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Version (VersionScope)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Version (VersionRange, VersionScope, mkVersionRange)
 import Simplex.Messaging.Version.Internal (Version (..))
 
 data BadgeServiceVersion
@@ -46,6 +55,18 @@ type VersionBadgeService = Version BadgeServiceVersion
 
 pattern VersionBadgeService :: Word16 -> VersionBadgeService
 pattern VersionBadgeService v = Version v
+
+type VersionRangeBadgeService = VersionRange BadgeServiceVersion
+
+initialBadgeServiceVersion :: VersionBadgeService
+initialBadgeServiceVersion = VersionBadgeService 1
+
+currentBadgeServiceVersion :: VersionBadgeService
+currentBadgeServiceVersion = VersionBadgeService 1
+
+-- the service is deployed ahead of app releases, so it answers within the client's version
+supportedBadgeServiceVRange :: VersionRangeBadgeService
+supportedBadgeServiceVRange = mkVersionRange initialBadgeServiceVersion currentBadgeServiceVersion
 
 data BadgeServiceRequest = BadgeServiceRequest
   { version :: VersionBadgeService,
@@ -164,7 +185,7 @@ data StatementEntryType = SECredit {credit :: StatementCreditType} | SEDebit {de
 
 data StatementCreditType
   = SCPayment {invoiceId :: Maybe InvoiceId} -- absent for store and code payments
-  | SCCharge {chargeId :: Int64}
+  | SCCharge {chargeId :: Text}
   | SCSupport
   | SCTransferIn {fromPurchaseKey :: C.PublicKeyEd25519}
   | SCOpening
@@ -248,3 +269,57 @@ instance ToJSON BadgeServiceErrorCode where
 
 instance FromJSON BadgeServiceErrorCode where
   parseJSON = textParseJSON "BadgeServiceErrorCode"
+
+$(pure [])
+
+instance FromJSON StatementCreditType where
+  parseJSON v@(J.Object j) =
+    $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "SC") ''StatementCreditType) v
+      <|> SCUnknown <$> j .: "type" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad StatementCreditType, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON StatementCreditType where
+  toJSON = \case
+    SCUnknown _ j -> J.Object j
+    v -> $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "SC") ''StatementCreditType) v
+  toEncoding = \case
+    SCUnknown _ j -> JE.value $ J.Object j
+    v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "SC") ''StatementCreditType) v
+
+instance FromJSON StatementDebitType where
+  parseJSON v@(J.Object j) =
+    $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "SD") ''StatementDebitType) v
+      <|> SDUnknown <$> j .: "type" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad StatementDebitType, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON StatementDebitType where
+  toJSON = \case
+    SDUnknown _ j -> J.Object j
+    v -> $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "SD") ''StatementDebitType) v
+  toEncoding = \case
+    SDUnknown _ j -> JE.value $ J.Object j
+    v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "SD") ''StatementDebitType) v
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "SE") ''StatementEntryType)
+
+$(JQ.deriveJSON defaultJSON ''StatementEntry)
+
+$(JQ.deriveJSON defaultJSON ''BadgeStatement)
+
+$(JQ.deriveJSON defaultJSON ''BadgeBalance)
+
+$(JQ.deriveJSON defaultJSON ''BadgeUpgrade)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BSC") ''BadgeServiceCommand)
+
+$(JQ.deriveJSON defaultJSON ''BadgeServiceRequest)
+
+$(JQ.deriveJSON defaultJSON ''BadgePrice)
+
+$(JQ.deriveJSON defaultJSON ''BadgeOffer)
+
+$(JQ.deriveJSON defaultJSON ''BadgeCatalog)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BSP") ''BadgeServiceResponse)

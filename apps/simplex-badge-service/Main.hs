@@ -11,4 +11,4 @@ main = do
   opts@BadgeServiceOpts {runCLI} <- welcomeGetOpts
   if runCLI
     then badgeServiceCLI opts
-    else badgeService opts terminalChatConfig
+    else newServiceState >>= badgeService opts terminalChatConfig
