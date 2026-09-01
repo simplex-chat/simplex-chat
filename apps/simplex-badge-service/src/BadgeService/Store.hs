@@ -45,7 +45,8 @@ data IssuedCode = IssuedCode
     redemption :: CodeRedemption
   }
 
--- spent-but-unreadable is not unclaimed - collapsing them would issue the code twice
+-- A code that has a purchase is spent, even if its credential cannot be read. Treating that as
+-- an unredeemed code would issue a second credential for it.
 data CodeRedemption
   = CodeUnredeemed
   | CodeRedeemed RedeemedCode
@@ -56,8 +57,9 @@ data RedeemedCode = RedeemedCode
     credential :: BadgeCredential
   }
 
--- the values writeCodeRedemption writes, gathered before the transaction opens because the
--- credential is signed first
+-- Everything writeCodeRedemption inserts, so that the purchase, its issuance and the spent code
+-- are written in one transaction. If the code were marked redeemed and one of the other writes
+-- failed, it would be spent with no credential behind it, and nothing can reissue it.
 data NewBadgeCodeRedemption = NewBadgeCodeRedemption
   { badgeCodeId :: Int64,
     issuanceId :: Text,

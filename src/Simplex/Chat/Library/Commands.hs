@@ -5169,13 +5169,15 @@ redeemBadgeCode nm user codeText = do
   let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
   respData <- sendServiceRequestTo nm user sendTarget Nothing (Just purchasePrivKey) req
   case J.fromJSON (J.Object respData) of
-    J.Error _ -> throwCmdError "invalid badge service response"
+    J.Error e -> throwCmdError $ "invalid badge service response, " <> show e <> ": " <> respJSON respData
     J.Success BSPError {code = errCode} -> do
       when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
       throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText errCode)
     J.Success BSPBadgeCredential {credential = Just cred} -> storeRedeemedBadge user redemption cred
-    J.Success _ -> throwCmdError "unexpected badge service response"
+    J.Success _ -> throwCmdError $ "unexpected badge service response: " <> respJSON respData
   where
+    -- re-encoded, not shown as received: JSON escapes the control characters a terminal acts on
+    respJSON = LB.unpack . J.encode
     -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
     terminalCodeError = \case
       BSECodeInvalid -> True
