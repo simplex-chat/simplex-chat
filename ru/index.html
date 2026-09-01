@@ -94,6 +94,47 @@
     <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
     <link rel="stylesheet" href="/css/design3-nav.css">
+    <style>
+        .sd-sale-banner {
+            position: absolute;
+            top: 60.4px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 12;
+            white-space: nowrap;
+            font-family: "Manrope", sans-serif;
+            font-weight: 400;
+            font-size: clamp(18px, calc(var(--sec-vwu) * 2.14), 34.92px);
+            line-height: 1.3;
+            text-decoration: none;
+            background-image: linear-gradient(90deg, #001aa7 0%, #0095e7 100%);
+        }
+        .sd-digits { font-variant-numeric: tabular-nums; }
+        .sd-icon { display: inline-block; width: 0.85em; height: 0.85em; vertical-align: -0.08em; margin-left: 0.35em; }
+        .sd-icon path, .sd-icon polygon { fill: #0095e7; }
+        .dark .sd-icon path, .dark .sd-icon polygon { fill: #c8feff; }
+        @media screen and (max-width: 959px) {
+            .sd-sale-banner { top: 0; left: 0; right: 0; transform: none; z-index: 50001; pointer-events: none; }
+            .sd-lead, .sd-tail {
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                white-space: nowrap;
+                pointer-events: auto;
+                font-size: calc(var(--sec-vwu) * 4.675);
+                font-weight: 500;
+                background-image: linear-gradient(90deg, #001aa7 0%, #0095e7 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .dark .sd-lead, .dark .sd-tail {
+                background-image: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            }
+            .sd-lead { top: 0; line-height: 54px; }
+            .sd-tail { top: min(56px, calc(27px + var(--sec-vwu) * 29 / 6.2)); }
+        }
+    </style>
     <script src="/js/flag-anchor.js"></script>
     <script>
         function detectMobileBrowser() {
@@ -636,6 +677,30 @@ window.addEventListener('click',(e)=>{
 
     <div class="screen">
         <section class="page-1 cover page">
+            <a class="sd-sale-banner gradient-text" href="https://simplex.domains/" target="_blank" rel="noopener"><span class="sd-lead" id="sd-lead">SimpleX domains launch </span><span class="sd-tail" id="sd-tail"><span class="sd-digits" id="sd-cd"></span>&#8288;<svg class="sd-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 100 100"><path d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></span></a>
+            <script>
+                (function () {
+                    var target = Date.UTC(2026, 11, 12, 18, 0, 0);
+                    var lead = document.getElementById("sd-lead");
+                    var cd = document.getElementById("sd-cd");
+                    var timer;
+                    function pad(n) { return String(n).padStart(2, "0"); }
+                    function tick() {
+                        var ms = target - Date.now();
+                        if (ms <= 0) {
+                            clearInterval(timer);
+                            lead.style.display = "none";
+                            cd.textContent = "Get SimpleX domain";
+                            return;
+                        }
+                        var s = Math.floor(ms / 1000);
+                        var d = Math.floor(s / 86400);
+                        cd.textContent = "in " + d + (d === 1 ? " day " : " days ") + pad(Math.floor((s % 86400) / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + ":" + pad(s % 60);
+                    }
+                    timer = setInterval(tick, 1000);
+                    tick();
+                })();
+            </script>
             <div class="area">
                 <div class="content">
                     <h1><div class="small">Будь<br>Свободен</div></h1>
