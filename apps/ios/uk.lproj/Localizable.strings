@@ -3919,9 +3919,6 @@ alert button */
 /* new chat action */
 "Open new chat" = "Відкрити новий чат";
 
-/* new chat action */
-"Open new group" = "Відкрити нову групу";
-
 /* No comment provided by engineer. */
 "Open Settings" = "Відкрийте Налаштування";
 
@@ -4647,10 +4644,10 @@ chat item action */
 "Saved" = "Збережено";
 
 /* No comment provided by engineer. */
-"Saved from" = "Збережено з";
+"saved from" = "збережено з";
 
 /* No comment provided by engineer. */
-"saved from" = "збережено з";
+"Saved from" = "Збережено з";
 
 /* message info title */
 "Saved message" = "Збережене повідомлення";
@@ -6024,6 +6021,12 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Ви вже маєте профіль у чаті з таким самим іменем. Будь ласка, виберіть інше ім'я.";
 
+/* new chat alert */
+"You are a member" = "Ви учасник";
+
+/* new chat alert */
+"You are a moderator" = "Ви модератор";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Ви вже підключені до %@.";
 
@@ -6047,6 +6050,15 @@ alert title */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Ви вже приєдналися до групи!\nПовторити запит на приєднання?";
+
+/* new chat alert */
+"You are an admin" = "Ви адмін";
+
+/* new chat alert */
+"You are an observer" = "Ви спостерігач";
+
+/* new chat alert */
+"You are an owner" = "Ви власник";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Запрошуємо вас до групи";

@@ -3045,8 +3045,20 @@ server test failure */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "คุณมีโปรไฟล์แชทที่ใช้ชื่อแสดงเดียวกันอยู่แล้ว กรุณาเลือกชื่ออื่น";
 
+/* new chat alert */
+"You are a member" = "คุณเป็นสมาชิก";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "คุณได้เชื่อมต่อกับ %@ แล้ว";
+
+/* new chat alert */
+"You are an admin" = "คุณเป็นผู้ดูแลระบบ";
+
+/* new chat alert */
+"You are an observer" = "คุณเป็นผู้สังเกตการณ์";
+
+/* new chat alert */
+"You are an owner" = "คุณเป็นเจ้าของ";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";

@@ -294,6 +294,7 @@ class AlertManager {
     nameCaption: String? = null,
     subtitle: String? = null,
     information: String? = null,
+    secondaryInformation: Boolean = false,
     confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm: (() -> Unit)? = null,
     connectOtherButton: String? = null,
@@ -378,6 +379,7 @@ class AlertManager {
                     information,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.body2,
+                    color = if (secondaryInformation) MaterialTheme.colors.secondary else Color.Unspecified,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                   )

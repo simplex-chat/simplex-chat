@@ -1127,6 +1127,13 @@
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
     <string name="rcv_group_event_2_members_connected">%s és %s kapcsolódott</string>
     <string name="you_are_observer">Ön megfigyelő</string>
+    <string name="connect_plan_you_are_observer">Ön megfigyelő</string>
+    <string name="connect_plan_you_are_member">Ön tag</string>
+    <string name="connect_plan_you_are_moderator">Ön moderátor</string>
+    <string name="connect_plan_you_are_admin">Ön adminisztrátor</string>
+    <string name="connect_plan_you_are_owner">Ön tulajdonos</string>
+    <string name="connect_plan_you_are_subscriber">Ön feliratkozó</string>
+    <string name="connect_plan_you_are_contributor">Ön közreműködő</string>
     <string name="port_verb">Port</string>
     <string name="set_passcode">Jelkód beállítása</string>
     <string name="whats_new">Újdonságok</string>

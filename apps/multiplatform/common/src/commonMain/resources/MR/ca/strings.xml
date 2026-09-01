@@ -1715,6 +1715,11 @@
     <string name="image_decoding_exception_desc">La imatge no es pot descodificar. Si us plau, proveu amb una imatge diferent o contacteu amb els desenvolupadors.</string>
     <string name="video_decoding_exception_desc">El vídeo no es pot descodificar. Si us plau, prova amb un vídeo diferent o contacta amb els desenvolupadors.</string>
     <string name="you_are_observer">ets observador</string>
+    <string name="connect_plan_you_are_observer">Ets observador</string>
+    <string name="connect_plan_you_are_member">Ets membre</string>
+    <string name="connect_plan_you_are_moderator">Ets moderador</string>
+    <string name="connect_plan_you_are_admin">Ets administrador</string>
+    <string name="connect_plan_you_are_owner">Ets propietari</string>
     <string name="observer_cant_send_message_title">ets observador(a)</string>
     <string name="observer_cant_send_message_desc">Poseu-vos en contacte amb l\'administrador del grup.</string>
     <string name="only_owners_can_enable_files_and_media">Només els propietaris del grup poden activar fitxers i mitjans.</string>

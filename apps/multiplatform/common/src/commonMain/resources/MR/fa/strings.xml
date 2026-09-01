@@ -437,6 +437,11 @@
     <string name="la_could_not_be_verified">تایید شما ممکن نیست؛ لطفا دوباره امتحان کنید.</string>
     <string name="choose_file">فایل</string>
     <string name="you_are_observer">شما ناظر هستید</string>
+    <string name="connect_plan_you_are_observer">شما ناظر هستید</string>
+    <string name="connect_plan_you_are_member">شما عضو هستید</string>
+    <string name="connect_plan_you_are_moderator">شما مدیر هستید</string>
+    <string name="connect_plan_you_are_admin">شما مدیر هستید</string>
+    <string name="connect_plan_you_are_owner">شما صاحب هستید</string>
     <string name="clear_chat_question">چت پاک شود؟</string>
     <string name="clear_note_folder_warning">تمام پیام‌ها حذف خواهند شد - این عمل قابل برگشت نیست!</string>
     <string name="delete_contact_menu_action">حذف</string>

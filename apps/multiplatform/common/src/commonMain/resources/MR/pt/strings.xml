@@ -88,6 +88,9 @@
     <string name="icon_descr_sent_msg_status_sent">enviada</string>
     <string name="group_preview_you_are_invited">você está convidado para o grupo</string>
     <string name="you_are_observer">você é observador</string>
+    <string name="connect_plan_you_are_observer">Você é observador</string>
+    <string name="connect_plan_you_are_member">Você é membro</string>
+    <string name="connect_plan_you_are_admin">Você é administrador</string>
     <string name="notifications">Notificações</string>
     <string name="icon_descr_server_status_disconnected">Desconectado</string>
     <string name="text_field_set_contact_placeholder">Definir nome do contato…</string>

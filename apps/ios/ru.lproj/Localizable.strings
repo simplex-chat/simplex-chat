@@ -4465,13 +4465,7 @@ alert button */
 "Open migration to another device" = "Открытие миграции на другое устройство";
 
 /* new chat action */
-"Open new channel" = "Открыть новый канал";
-
-/* new chat action */
 "Open new chat" = "Открыть новый чат";
-
-/* new chat action */
-"Open new group" = "Открыть новую группу";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Открыть Настройки";
@@ -5343,10 +5337,10 @@ chat item action */
 "Saved" = "Сохранено";
 
 /* No comment provided by engineer. */
-"Saved from" = "Сохранено из";
+"saved from" = "сохранено из";
 
 /* No comment provided by engineer. */
-"saved from" = "сохранено из";
+"Saved from" = "Сохранено из";
 
 /* message info title */
 "Saved message" = "Сохранённое сообщение";
@@ -7013,6 +7007,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "У Вас уже есть профиль с таким именем. Пожалуйста, выберите другое имя.";
 
+/* new chat alert */
+"You are a contributor" = "Вы соавтор";
+
+/* new chat alert */
+"You are a member" = "Вы член группы";
+
+/* new chat alert */
+"You are a moderator" = "Вы модератор";
+
+/* new chat alert */
+"You are a subscriber" = "Вы подписчик";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Вы уже соединены с контактом %@.";
 
@@ -7036,6 +7042,15 @@ alert title */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Вы уже вступаете в группу!\nПовторить запрос на вступление?";
+
+/* new chat alert */
+"You are an admin" = "Вы админ";
+
+/* new chat alert */
+"You are an observer" = "Вы читатель";
+
+/* new chat alert */
+"You are an owner" = "Вы владелец";
 
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Вы подключены к серверу, используемому для приёма сообщений от этого соединения.";

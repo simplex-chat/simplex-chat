@@ -4465,13 +4465,7 @@ alert button */
 "Open migration to another device" = "Migration auf ein anderes Gerät öffnen";
 
 /* new chat action */
-"Open new channel" = "Neuen Kanal öffnen";
-
-/* new chat action */
 "Open new chat" = "Neuen Chat öffnen";
-
-/* new chat action */
-"Open new group" = "Neue Gruppe öffnen";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Geräte-Einstellungen öffnen";
@@ -5343,10 +5337,10 @@ chat item action */
 "Saved" = "Abgespeichert";
 
 /* No comment provided by engineer. */
-"Saved from" = "Abgespeichert von";
+"saved from" = "abgespeichert von";
 
 /* No comment provided by engineer. */
-"saved from" = "abgespeichert von";
+"Saved from" = "Abgespeichert von";
 
 /* message info title */
 "Saved message" = "Gespeicherte Nachricht";
@@ -7013,6 +7007,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Sie haben schon ein Chat-Profil mit dem gleichen Anzeigenamen. Bitte wählen Sie einen anderen Namen aus.";
 
+/* new chat alert */
+"You are a contributor" = "Sie sind Mitwirkender";
+
+/* new chat alert */
+"You are a member" = "Sie sind Mitglied";
+
+/* new chat alert */
+"You are a moderator" = "Sie sind Moderator";
+
+/* new chat alert */
+"You are a subscriber" = "Sie sind Abonnent";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Sie sind bereits mit %@ verbunden.";
 
@@ -7036,6 +7042,15 @@ alert title */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Sie sind bereits Mitglied dieser Gruppe!\nVerbindungsanfrage wiederholen?";
+
+/* new chat alert */
+"You are an admin" = "Sie sind Admin";
+
+/* new chat alert */
+"You are an observer" = "Sie sind Beobachter";
+
+/* new chat alert */
+"You are an owner" = "Sie sind Eigentümer";
 
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.";

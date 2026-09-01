@@ -4465,13 +4465,7 @@ alert button */
 "Open migration to another device" = "Apri migrazione ad un altro dispositivo";
 
 /* new chat action */
-"Open new channel" = "Apri il nuovo canale";
-
-/* new chat action */
 "Open new chat" = "Apri la nuova chat";
-
-/* new chat action */
-"Open new group" = "Apri il nuovo gruppo";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Apri le impostazioni";
@@ -5343,10 +5337,10 @@ chat item action */
 "Saved" = "Salvato";
 
 /* No comment provided by engineer. */
-"Saved from" = "Salvato da";
+"saved from" = "salvato da";
 
 /* No comment provided by engineer. */
-"saved from" = "salvato da";
+"Saved from" = "Salvato da";
 
 /* message info title */
 "Saved message" = "Messaggio salvato";
@@ -7013,6 +7007,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Hai già un profilo chat con lo stesso nome da mostrare. Scegli un altro nome.";
 
+/* new chat alert */
+"You are a contributor" = "Sei un collaboratore";
+
+/* new chat alert */
+"You are a member" = "Sei un membro";
+
+/* new chat alert */
+"You are a moderator" = "Sei un moderatore";
+
+/* new chat alert */
+"You are a subscriber" = "Sei iscritto/a";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Sei già connesso/a a %@.";
 
@@ -7036,6 +7042,15 @@ alert title */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Stai già entrando nel gruppo!\nRipetere la richiesta di ingresso?";
+
+/* new chat alert */
+"You are an admin" = "Sei un amministratore";
+
+/* new chat alert */
+"You are an observer" = "Sei un osservatore";
+
+/* new chat alert */
+"You are an owner" = "Sei un proprietario";
 
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Sei connesso/a al server usato per ricevere messaggi da questa connessione.";

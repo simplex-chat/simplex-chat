@@ -929,6 +929,13 @@
     <string name="moderate_message_will_be_deleted_warning">Le message sera supprimé pour tous les membres.</string>
     <string name="moderate_message_will_be_marked_warning">Le message sera marqué comme modéré pour tous les membres.</string>
     <string name="you_are_observer">vous êtes observateur</string>
+    <string name="connect_plan_you_are_observer">Vous êtes observateur</string>
+    <string name="connect_plan_you_are_member">Vous êtes membre</string>
+    <string name="connect_plan_you_are_moderator">Vous êtes modérateur(trice)</string>
+    <string name="connect_plan_you_are_admin">Vous êtes admin</string>
+    <string name="connect_plan_you_are_owner">Vous êtes propriétaire</string>
+    <string name="connect_plan_you_are_subscriber">Vous êtes abonné</string>
+    <string name="connect_plan_you_are_contributor">Vous êtes contributeur</string>
     <string name="error_updating_link_for_group">Erreur lors de la mise à jour du lien de groupe</string>
     <string name="initial_member_role">Rôle initial</string>
     <string name="observer_cant_send_message_desc">Veuillez contacter l\'administrateur du groupe.</string>
