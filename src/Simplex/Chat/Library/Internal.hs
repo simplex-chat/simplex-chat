@@ -441,12 +441,12 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
       fInv = xftpFileInvitation fileName fileSize dummyFileDescr
   fsFilePath <- lift $ toFSFilePath filePath
   let srcFile = CryptoFile fsFilePath cfArgs
-  aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n)
+  aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n) Nothing
   -- TODO CRSndFileStart event for XFTP
   chSize <- asks $ fileChunkSize . config
   ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup_ file fInv (AgentSndFileId aFileId) Nothing chSize
   let fileSource = Just $ CryptoFile filePath cfArgs
-      ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
+      ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP, fileExpires = Nothing}
   pure (fInv, ciFile, ft)
 
 cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
@@ -1417,7 +1417,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
         resolveAuthor (Just gmId) = do
           cxt <- chatStoreCxt
           eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupMemberById db cxt user gmId)
-        getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText))
+        getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
         getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
           expired <- fileExpired
           if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
@@ -1425,7 +1425,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
             else do
               rfd <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
               pure $ invCompleteDescr ciFile rfd
-        getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe (FileInvitation, RcvFileDescrText))
+        getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
         getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
           expired <- fileExpired
           if fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled || expired
@@ -1440,21 +1440,21 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           ttl <- asks $ rcvFilesTTL . agentConfig . config
           cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
           pure $ chatItemTs cci < cutoffTs
-        invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText)
-        invCompleteDescr CIFile {fileName, fileSize} RcvFileDescr {fileDescrText, fileDescrComplete}
+        invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime)
+        invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete}
           | fileDescrComplete =
               let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
                   fInv = xftpFileInvitation fileName fileSize fInvDescr
-               in Just (fInv, fileDescrText)
+               in Just (fInv, fileDescrText, fileExpires)
           | otherwise = Nothing
-        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
         processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
               let CIMeta {itemTs, itemSharedMsgId, itemTimed, showGroupAsSender} = meta
                   quotedItemId_ = quoteItemId =<< quotedItem
-                  fInv_ = fst <$> fInvDescr_
+                  fInv_ = (\(fInv, _, _) -> fInv) <$> fInvDescr_
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   -- for channel messages default chat version range to membership range
@@ -1472,11 +1472,11 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   -- TODO [knocking] send history to other scopes too?
                   (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing showGroupAsSender mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
                   pure $ VMUnsigned ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
-              fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
-                (Just fileDescrText, Just msgId) -> do
+              fileDescrEvents <- case (fInvDescr_, itemSharedMsgId) of
+                (Just (_, fileDescrText, fileExpires), Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize fileDescrText
-                  pure . L.toList $ L.map (XMsgFileDescr msgId) parts
+                  pure . L.toList $ L.map (\fd -> XMsgFileDescr msgId fd fileExpires) parts
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)

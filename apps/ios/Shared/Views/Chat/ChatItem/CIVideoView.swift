@@ -368,7 +368,7 @@ struct CIVideoView: View {
                     .simultaneousGesture(TapGesture().onEnded {
                         showFileErrorAlert(sndFileError, temporary: true)
                     })
-            case .rcvInvitation: fileIcon("arrow.down", 10, 13)
+            case .rcvInvitation: fileIcon(file.expired && fileSizeValid(file, senderProfile) ? "xmark" : "arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case let .rcvTransfer(rcvProgress, rcvTotal):
                 if file.fileProtocol == .xftp && rcvProgress < rcvTotal {
@@ -382,7 +382,7 @@ struct CIVideoView: View {
             case let .rcvError(rcvFileError):
                 fileIcon("xmark", 10, 13)
                     .simultaneousGesture(TapGesture().onEnded {
-                        showFileErrorAlert(rcvFileError)
+                        showFileErrorAlert(rcvFileError, file)
                     })
             case let .rcvWarning(rcvFileError):
                 fileIcon("exclamationmark.triangle.fill", 10, 13)

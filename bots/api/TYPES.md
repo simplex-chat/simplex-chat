@@ -747,6 +747,7 @@ LocalRcv:
 - fileSource: [CryptoFile](#cryptofile)?
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
+- fileExpires: UTCTime?
 
 
 ---
