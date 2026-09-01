@@ -89,10 +89,10 @@ testExpiryCheck = do
   -- the badge stays active for a week after its expiry
   mkBadgeStatus now (Just True) (expiredAgo 1) `shouldBe` BSActive
   mkBadgeStatus now (Just True) (expiredAgo 6) `shouldBe` BSActive
-  -- then it is shown as expired for 30 days
+  -- then it is shown as expired for 31 days
   mkBadgeStatus now (Just True) (expiredAgo 8) `shouldBe` BSExpired
-  mkBadgeStatus now (Just True) (expiredAgo 36) `shouldBe` BSExpired
-  mkBadgeStatus now (Just True) (expiredAgo 38) `shouldBe` BSExpiredOld
+  mkBadgeStatus now (Just True) (expiredAgo 37) `shouldBe` BSExpired
+  mkBadgeStatus now (Just True) (expiredAgo 39) `shouldBe` BSExpiredOld
   mkBadgeStatus now (Just True) (info pastTime) `shouldBe` BSExpiredOld
   mkBadgeStatus now (Just False) futureInfo `shouldBe` BSFailed
   mkBadgeStatus now Nothing futureInfo `shouldBe` BSUnknownKey

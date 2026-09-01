@@ -127,7 +127,7 @@ badgeGraceInterval = 7 * nominalDay
 
 -- a badge expired longer than this ago is BSExpiredOld and is not shown in the UI
 badgeOldInterval :: NominalDiffTime
-badgeOldInterval = badgeGraceInterval + 30 * nominalDay
+badgeOldInterval = badgeGraceInterval + 31 * nominalDay
 
 -- the verification outcome of a received proof: Just True = verified, Just False = failed,
 -- Nothing = the proof's key index is not among this app version's configured keys (BSUnknownKey).
