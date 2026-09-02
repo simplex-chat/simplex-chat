@@ -162,8 +162,8 @@ func showBadgeInfoAlert(_ name: String, _ badge: LocalBadge) {
         } else {
             // supporter, legend and unknown types use the supporter wording
             let supports =
-                if badge.status == .expired, let expiry = badge.badge.badgeExpiry {
-                    String.localizedStringWithFormat(NSLocalizedString("%1$@ supported SimpleX Chat. The badge expired on %2$@.", comment: "badge alert"), name, expiry.formatted(date: .abbreviated, time: .omitted))
+                if badge.status == .expired {
+                    String.localizedStringWithFormat(NSLocalizedString("%1$@ supported SimpleX Chat. The badge expired on %2$@.", comment: "badge alert"), name, badge.badge.badgeExpiry.formatted(date: .abbreviated, time: .omitted))
                 } else {
                     String.localizedStringWithFormat(NSLocalizedString("%@ supports SimpleX Chat.", comment: "badge alert"), name)
                 }

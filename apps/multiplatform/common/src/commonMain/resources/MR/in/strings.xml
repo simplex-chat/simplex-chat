@@ -755,7 +755,7 @@
     <string name="moderated_description">dimoderasi</string>
     <string name="invalid_chat">obrolan tidak valid</string>
     <string name="forwarded_description">diteruskan</string>
-    <string name="saved_from_description">disimpan dari %s</string>
+    <string name="saved_from">disimpan dari</string>
     <string name="receiving_files_not_yet_supported">terima berkas belum didukung</string>
     <string name="sender_you_pronoun">anda</string>
     <string name="unknown_message_format">format pesan tak diketahui</string>
@@ -2010,6 +2010,13 @@
     <string name="file_error_auth">Kunci salah atau alamat potongan berkas tidak dikenal - kemungkinan berkas dihapus.</string>
     <string name="srv_error_version">Versi server tidak kompatibel dengan pengaturan jaringan.</string>
     <string name="you_are_observer">Anda adalah pengamat</string>
+    <string name="connect_plan_you_are_observer">Anda adalah pengamat</string>
+    <string name="connect_plan_you_are_member">Anda adalah anggota</string>
+    <string name="connect_plan_you_are_moderator">Anda adalah moderator</string>
+    <string name="connect_plan_you_are_admin">Anda adalah admin</string>
+    <string name="connect_plan_you_are_owner">Anda adalah pemilik</string>
+    <string name="connect_plan_you_are_subscriber">Anda adalah pelanggan</string>
+    <string name="connect_plan_you_are_contributor">Anda adalah kontributor</string>
     <string name="to_start_a_new_chat_help_header">Untuk memulai obrolan baru</string>
     <string name="gallery_video_button">Video</string>
     <string name="connection_you_accepted_will_be_cancelled">Koneksi yang Anda terima akan dibatalkan!</string>

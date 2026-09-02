@@ -20,6 +20,11 @@
   <string name="connect_plan_open_new_chat">Open new chat</string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_open_new_group">Open new group</string>
+  <string name="connect_plan_you_are_observer">You are an observer</string>
+  <string name="connect_plan_you_are_member">You are a member</string>
+  <string name="connect_plan_you_are_moderator">You are a moderator</string>
+  <string name="connect_plan_you_are_admin">You are an admin</string>
+  <string name="connect_plan_you_are_owner">You are an owner</string>
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
 
@@ -65,8 +70,9 @@
   <string name="live">LIVE</string>
   <string name="moderated_description">moderated</string>
   <string name="forwarded_description">forwarded</string>
+  <string name="forwarded_from">forwarded from</string>
   <string name="saved_description">saved</string>
-  <string name="saved_from_description">saved from %s</string>
+  <string name="saved_from">saved from</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
   <string name="error_showing_message">error showing message</string>
@@ -397,6 +403,11 @@
   <string name="get_simplex_name_beta">Get SimpleX name (BETA)</string>
   <string name="channel_simplex_name">Channel SimpleX name</string>
   <string name="register_test_name">How to register a test name</string>
+  <string name="simplex_name_sales">SimpleX name sale starts in</string>
+  <string name="until_register_simplex_domain">until you can register a SimpleX domain</string>
+  <string name="update_app_register_simplex_domain">Update the app to register a SimpleX domain</string>
+  <string name="countdown_hrs_min_sec">%1$02d hrs %2$02d min %3$02d sec</string>
+  <string name="simplex_name_sales_footer">Crowdfunding investors can reserve names before the sale starts:</string>
   <string name="remove_name">Remove name</string>
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
@@ -686,6 +697,8 @@
   <string name="loading_remote_file_title">Loading the file </string>
   <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
   <string name="file_error">File error</string>
+  <string name="file_expired">File expired</string>
+  <string name="file_error_expired">File was available until %1$s.</string>
   <string name="temporary_file_error">Temporary file error</string>
   <string name="open_with_app">Open with %s</string>
 
@@ -2033,6 +2046,8 @@
   <string name="info_row_deleted_at">Deleted at</string>
   <string name="info_row_moderated_at">Moderated at</string>
   <string name="info_row_disappears_at">Disappears at</string>
+  <string name="info_row_file_expires">File available until</string>
+  <string name="info_row_file_expired">File was available until</string>
   <string name="share_text_database_id">Database ID: %d</string>
   <string name="share_text_updated_at">Record updated at: %s</string>
   <string name="share_text_message_status">Message status: %s</string>
@@ -3170,6 +3185,8 @@
   <string name="relay_address_alert_message">This is a chat relay address, it cannot be used to connect.</string>
   <string name="connect_plan_open_channel">Open channel</string>
   <string name="connect_plan_open_new_channel">Open new channel</string>
+  <string name="connect_plan_you_are_subscriber">You are a subscriber</string>
+  <string name="connect_plan_you_are_contributor">You are a contributor</string>
   <string name="connect_plan_this_is_your_link_for_channel">Your channel</string>
   <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[This is your link for channel <b>%1$s</b>!]]></string>
   <string name="error_opening_channel">Error opening channel</string>

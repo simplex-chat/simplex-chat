@@ -101,7 +101,7 @@ fun CIFileView(
             FileProtocol.LOCAL -> {}
           }
         file.fileStatus is CIFileStatus.RcvError ->
-          showFileErrorAlert(file.fileStatus.rcvFileError)
+          showFileErrorAlert(file.fileStatus.rcvFileError, file)
         file.fileStatus is CIFileStatus.RcvWarning ->
           showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
         file.fileStatus is CIFileStatus.SndError ->
@@ -157,10 +157,12 @@ fun CIFileView(
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.RcvInvitation ->
-            if (fileSizeValid(file, senderProfile))
-              fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary, topPadding = 10.sp.toDp())
-            else
+            if (!fileSizeValid(file, senderProfile))
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
+            else if (file.expired)
+              fileIcon(innerIcon = painterResource(MR.images.ic_close))
+            else
+              fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary, topPadding = 10.sp.toDp())
           is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
           is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
@@ -241,7 +243,15 @@ fun CIFileView(
 fun fileSizeValid(file: CIFile, senderProfile: LocalProfile?): Boolean =
   file.fileSize <= getMaxFileSize(file.fileProtocol, senderProfile)
 
-fun showFileErrorAlert(err: FileError, temporary: Boolean = false) {
+fun showFileErrorAlert(err: FileError, file: CIFile? = null, temporary: Boolean = false) {
+  val fileExpires = file?.fileExpires
+  if (file != null && fileExpires != null && file.expired && (err is FileError.Auth || err is FileError.NoFile)) {
+    AlertManager.shared.showAlertMsg(
+      generalGetString(MR.strings.file_expired),
+      String.format(generalGetString(MR.strings.file_error_expired), localTimestamp(fileExpires))
+    )
+    return
+  }
   val title: String = generalGetString(if (temporary) MR.strings.temporary_file_error else MR.strings.file_error)
   val btn = err.moreInfoButton
   if (btn != null) {

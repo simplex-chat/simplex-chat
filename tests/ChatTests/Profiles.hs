@@ -276,8 +276,11 @@ testMemberDescriptionRedacted =
 testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
 testBadgeKeys = M.singleton 1
 
+futureDate :: UTCTime
+futureDate = posixSecondsToUTCTime 4102444800 -- 2100-01-01
+
 -- issue a supporter badge credential with the given expiry (test issuer)
-issueTestBadge :: BBSSecretKey -> Maybe UTCTime -> IO BadgeCredential
+issueTestBadge :: BBSSecretKey -> UTCTime -> IO BadgeCredential
 issueTestBadge sk badgeExpiry = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
@@ -299,7 +302,7 @@ testUserBadgeBroadcast ps = do
   where
     test sk alice bob = do
       connectUsers alice bob
-      addTestBadge alice =<< issueTestBadge sk Nothing
+      addTestBadge alice =<< issueTestBadge sk futureDate
       -- own badge is shown (add succeeded)
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
@@ -314,7 +317,7 @@ testUserBadgeOnConnect ps = do
   testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
     test sk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk Nothing
+      addTestBadge alice =<< issueTestBadge sk futureDate
       -- a contact connecting after the badge is attached receives it in the connection handshake
       alice ##> "/c"
       inv <- getInvitation alice
@@ -326,7 +329,7 @@ testUserBadgeOnConnect ps = do
       bob ##> "/i alice"
       bob <## "contact ID: 2"
       bob <## "supporter badge - active"
-      bob <## "no expiry"
+      bob <## "expires 2100-01-01"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
       bob <## "you've shared main profile with this contact"
@@ -340,7 +343,7 @@ testUserBadgeGroupLink ps = do
   testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
     test sk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk Nothing
+      addTestBadge alice =<< issueTestBadge sk futureDate
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -364,7 +367,7 @@ testUserBadgeGroupLink ps = do
       bob <## "group ID: 1"
       bob <##. "member ID: "
       bob <## "supporter badge - active"
-      bob <## "no expiry"
+      bob <## "expires 2100-01-01"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
       bob <## "connection not verified, use /code command to see security code"
@@ -376,7 +379,7 @@ testUserBadgeContactAddress ps = do
   testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
     test sk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk Nothing
+      addTestBadge alice =<< issueTestBadge sk futureDate
       alice ##> "/ad"
       (shortLink, cLink) <- getContactLinks alice True
       -- the address link data carries the badge proof; the connect plan returns it verified, without crypto
@@ -396,7 +399,7 @@ testUserBadgeContactAddress ps = do
       bob ##> "/i alice"
       bob <## "contact ID: 2"
       bob <## "supporter badge - active"
-      bob <## "no expiry"
+      bob <## "expires 2100-01-01"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
       bob <## "you've shared main profile with this contact"
@@ -407,12 +410,12 @@ testUserBadgeContactAddress ps = do
 testUserBadgeExpired :: HasCallStack => TestParams -> IO ()
 testUserBadgeExpired ps = do
   Right (pk, sk) <- bbsKeyGen
-  -- expired recently (within 31 days), so the badge is still presented and shown as expired
-  expiry <- addUTCTime (-2 * nominalDay) <$> getCurrentTime
+  -- expired past the grace period but within the old interval, so the badge is still presented and shown as expired
+  expiry <- addUTCTime (-10 * nominalDay) <$> getCurrentTime
   testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk expiry) ps
   where
     test sk expiry alice bob = do
-      addTestBadge alice =<< issueTestBadge sk (Just expiry)
+      addTestBadge alice =<< issueTestBadge sk expiry
       -- expired badge: no star
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
@@ -435,7 +438,7 @@ testUserBadgeExpiredOld ps = do
   testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
     test sk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk (Just pastDate)
+      addTestBadge alice =<< issueTestBadge sk pastDate
       -- a badge that expired over a month ago is not presented to contacts at all
       connectUsers alice bob
       bob ##> "/i alice"
@@ -454,7 +457,7 @@ testUserBadgeIncognito ps = do
   testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
     test sk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk Nothing
+      addTestBadge alice =<< issueTestBadge sk futureDate
       -- an incognito identity must not carry the badge
       bob ##> "/connect"
       inv <- getInvitation bob

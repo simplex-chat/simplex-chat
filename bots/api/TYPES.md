@@ -399,7 +399,7 @@ BadSignature:
 
 **Record type**:
 - badgeType: [BadgeType](#badgetype)
-- badgeExpiry: UTCTime?
+- badgeExpiry: UTCTime
 - badgeExtra: string
 
 
@@ -747,6 +747,7 @@ LocalRcv:
 - fileSource: [CryptoFile](#cryptofile)?
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
+- fileExpires: UTCTime?
 
 
 ---
@@ -832,6 +833,19 @@ Group:
 - msgDir: [MsgDirection](#msgdirection)
 - groupId: int64?
 - chatItemId: int64?
+- memberId: string?
+- sharedMsgId_: string?
+- groupType: [GroupType](#grouptype)?
+
+GroupLink:
+- type: "groupLink"
+- chatName: string
+- msgDir: [MsgDirection](#msgdirection)
+- groupLink: string
+- publicGroupId: string
+- memberId: string?
+- sharedMsgId: string
+- groupType: [GroupType](#grouptype)?
 
 
 ---

@@ -2,7 +2,7 @@ Query:
               SELECT
                 f.snd_file_id, f.snd_file_entity_id, f.user_id, f.num_recipients, f.prefix_path,
                 c.snd_file_chunk_id, c.chunk_no, c.chunk_offset, c.chunk_size, c.digest,
-                r.snd_file_chunk_replica_id, r.replica_id, r.replica_key, r.replica_status, r.delay, r.retries
+                r.snd_file_chunk_replica_id, r.replica_id, r.replica_key, r.replica_status, r.delay, r.retries, r.replica_expires_at
               FROM snd_file_chunk_replicas r
               JOIN xftp_servers s ON s.xftp_server_id = r.xftp_server_id
               JOIN snd_file_chunks c ON c.snd_file_chunk_id = r.snd_file_chunk_id
@@ -31,7 +31,7 @@ SEARCH sb USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
               SELECT
-                r.snd_file_chunk_replica_id, r.replica_id, r.replica_key, r.replica_status, r.delay, r.retries,
+                r.snd_file_chunk_replica_id, r.replica_id, r.replica_key, r.replica_status, r.delay, r.retries, r.replica_expires_at,
                 s.xftp_host, s.xftp_port, s.xftp_key_hash
               FROM snd_file_chunk_replicas r
               JOIN xftp_servers s ON s.xftp_server_id = r.xftp_server_id
@@ -96,7 +96,7 @@ Plan:
 SEARCH snd_file_chunks USING INDEX idx_snd_file_chunks_snd_file_id (snd_file_id=?)
 
 Query: 
-              SELECT snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, digest, prefix_path, key, nonce, status, deleted, redirect_size, redirect_digest
+              SELECT snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, digest, prefix_path, key, nonce, status, deleted, redirect_size, redirect_digest, storage_time
               FROM snd_files
               WHERE snd_file_id = ?
             
@@ -686,8 +686,8 @@ Plan:
 
 Query: 
       INSERT INTO snd_file_chunk_replicas
-        (snd_file_chunk_id, replica_number, xftp_server_id, replica_id, replica_key, replica_status)
-      VALUES (?,?,?,?,?,?)
+        (snd_file_chunk_id, replica_number, xftp_server_id, replica_id, replica_key, replica_status, replica_expires_at)
+      VALUES (?,?,?,?,?,?,?)
     
 Plan:
 
@@ -1182,7 +1182,7 @@ Plan:
 Query: INSERT INTO snd_file_chunks (snd_file_id, chunk_no, chunk_offset, chunk_size, digest) VALUES (?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO snd_files (snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, prefix_path, key, nonce, status, redirect_size, redirect_digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO snd_files (snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, prefix_path, key, nonce, status, redirect_size, redirect_digest, storage_time) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO snd_message_bodies (agent_msg) VALUES (?) RETURNING snd_message_body_id

@@ -446,7 +446,7 @@ signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
-  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
+  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime} -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
@@ -517,7 +517,7 @@ isForwardedGroupMsg ev = case ev of
   XMsgNew mc -> case mc of
     MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
     _ -> True
-  XMsgFileDescr _ _ -> True
+  XMsgFileDescr {} -> True
   XMsgUpdate {} -> True
   XMsgDel {} -> True
   XMsgReact {} -> True
@@ -688,7 +688,17 @@ data MsgContainer = MsgContainer
     asGroup :: Maybe Bool,
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
-    forward :: Maybe Bool
+    forward :: Maybe Bool,
+    forwardLink :: Maybe ForwardLink
+  }
+  deriving (Eq, Show)
+
+data ForwardLink = ForwardLink
+  { displayName :: Text,
+    groupLink :: ShortLinkContact,
+    publicGroupId :: B64UrlByteString,
+    memberId :: Maybe MemberId,
+    msgId :: SharedMsgId
   }
   deriving (Eq, Show)
 
@@ -704,7 +714,8 @@ mcSimple content =
       asGroup = Nothing,
       quote = Nothing,
       parent = Nothing,
-      forward = Nothing
+      forward = Nothing,
+      forwardLink = Nothing
     }
 
 mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
@@ -713,8 +724,8 @@ mcQuote q c = (mcSimple c) {quote = Just q}
 mcComment :: MsgRef -> MsgContent -> MsgContainer
 mcComment p c = (mcSimple c) {parent = Just p}
 
-mcForward :: MsgContent -> MsgContainer
-mcForward c = (mcSimple c) {forward = Just True}
+mcForward :: Maybe ForwardLink -> MsgContent -> MsgContainer
+mcForward fl c = (mcSimple c) {forward = Just True, forwardLink = fl}
 
 data MsgContent
   = MCText {text :: Text}
@@ -895,6 +906,8 @@ instance ToJSON MsgContent where
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
     MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
+
+$(JQ.deriveJSON defaultJSON ''ForwardLink)
 
 $(JQ.deriveJSON defaultJSON ''MsgContainer)
 
@@ -1226,7 +1239,7 @@ instance StrEncoding ACMEventTag where
 toCMEventTag :: ChatMsgEvent e -> CMEventTag e
 toCMEventTag msg = case msg of
   XMsgNew _ -> XMsgNew_
-  XMsgFileDescr _ _ -> XMsgFileDescr_
+  XMsgFileDescr {} -> XMsgFileDescr_
   XMsgUpdate {} -> XMsgUpdate_
   XMsgDel {} -> XMsgDel_
   XMsgDeleted -> XMsgDeleted_
@@ -1378,7 +1391,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
-      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
         content <- p "content"
@@ -1469,7 +1482,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XMsgNew mc -> case toJSON mc of
         J.Object obj -> obj
         _ -> JM.empty
-      XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
+      XMsgFileDescr msgId' fileDescr fileExpires -> o $ ("fileExpires" .=? fileExpires) ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty

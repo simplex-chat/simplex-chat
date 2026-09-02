@@ -3516,10 +3516,10 @@ chat item action */
 "Saved" = "Запазено";
 
 /* No comment provided by engineer. */
-"Saved from" = "Запазено от";
+"saved from" = "запазено от";
 
 /* No comment provided by engineer. */
-"saved from %@" = "запазено от %@";
+"Saved from" = "Запазено от";
 
 /* message info title */
 "Saved message" = "Запазено съобщение";
@@ -4393,6 +4393,9 @@ server test failure */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Вече имате чат профил със същото име. Моля, изберете друго име.";
 
+/* new chat alert */
+"You are a member" = "Вие сте член";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Вече сте вече свързани с %@.";
 
@@ -4413,6 +4416,15 @@ server test failure */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Вече се присъединихте към групата!\nИзпрати отново заявката за присъединяване?";
+
+/* new chat alert */
+"You are an admin" = "Вие сте админ";
+
+/* new chat alert */
+"You are an observer" = "Вие сте наблюдател";
+
+/* new chat alert */
+"You are an owner" = "Вие сте собственик";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Поканени сте в групата";

@@ -936,6 +936,11 @@
     <string name="group_member_role_observer">Waarnemer</string>
     <string name="observer_cant_send_message_title">jij bent waarnemer</string>
     <string name="you_are_observer">je bent waarnemer</string>
+    <string name="connect_plan_you_are_observer">Je bent waarnemer</string>
+    <string name="connect_plan_you_are_member">Je bent lid</string>
+    <string name="connect_plan_you_are_moderator">Je bent moderator</string>
+    <string name="connect_plan_you_are_admin">Je bent beheerder</string>
+    <string name="connect_plan_you_are_owner">Je bent eigenaar</string>
     <string name="language_system">Systeem</string>
     <string name="v4_6_audio_video_calls">Audio en video oproepen</string>
     <string name="confirm_password">Bevestig wachtwoord</string>
@@ -1722,7 +1727,7 @@
     <string name="allow_to_send_simplex_links">Sta het verzenden van SimpleX-links toe.</string>
     <string name="group_members_can_send_simplex_links">Leden kunnen SimpleX-links verzenden.</string>
     <string name="saved_description">opgeslagen</string>
-    <string name="saved_from_description">opgeslagen van %s</string>
+    <string name="saved_from">opgeslagen van</string>
     <string name="forward_chat_item">Doorsturen</string>
     <string name="forwarded_chat_item_info_tab">Doorgestuurd</string>
     <string name="recipients_can_not_see_who_message_from">Ontvanger(s) kunnen niet zien van wie dit bericht afkomstig is.</string>

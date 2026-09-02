@@ -1724,7 +1724,7 @@
     <string name="feature_roles_all_members">todos los miembros</string>
     <string name="allow_to_send_simplex_links">Se permite enviar enlaces SimpleX.</string>
     <string name="saved_description">guardado</string>
-    <string name="saved_from_description">guardado desde %s</string>
+    <string name="saved_from">guardado desde</string>
     <string name="saved_chat_item_info_tab">Guardado</string>
     <string name="saved_from_chat_item_info_title">Guardado desde</string>
     <string name="forwarded_from_chat_item_info_title">Reenviado por</string>
@@ -2665,6 +2665,13 @@
     <string name="relay_test_step_wait_response">Espera respuesta</string>
     <string name="channel_member_you">tú</string>
     <string name="you_are_subscriber">eres suscriptor</string>
+    <string name="connect_plan_you_are_observer">Eres observador</string>
+    <string name="connect_plan_you_are_member">Eres miembro</string>
+    <string name="connect_plan_you_are_moderator">Eres moderador</string>
+    <string name="connect_plan_you_are_admin">Eres administrador</string>
+    <string name="connect_plan_you_are_owner">Eres propietario</string>
+    <string name="connect_plan_you_are_subscriber">Eres suscriptor</string>
+    <string name="connect_plan_you_are_contributor">Eres colaborador</string>
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Puedes compartir el enlace o código QR. Cualquiera podrá unirse al canal.</string>
     <string name="relay_section_footer_subscriber">Te conectaste al canal mediante este enlace de servidor.</string>
     <string name="chat_banner_your_channel">Tu canal</string>
@@ -2931,4 +2938,11 @@
     <string name="v7_0_channels_relays">Gestiona tus servidores.</string>
     <string name="v7_0_simplex_names_descr">Nombres públicos para tu canal o negocio.</string>
     <string name="v7_0_simplex_names">Nombres públicos SimpleX (BETA)</string>
+    <string name="forwarded_from">reenviado desde</string>
+    <string name="group_invitations">Invitación de grupo</string>
+    <string name="simplex_name_sales">La venta de nombres SimpleX comienza en</string>
+    <string name="until_register_simplex_domain">hasta que puedas registrar un dominio SimpleX</string>
+    <string name="update_app_register_simplex_domain">Actualiza la app para poder registrar un dominio SimpleX</string>
+    <string name="countdown_hrs_min_sec">%1$02d hrs %2$02d min %3$02d seg</string>
+    <string name="simplex_name_sales_footer">Los inversores de crowdfunding pueden reservar nombres antes del comienzo de la venta:</string>
 </resources>

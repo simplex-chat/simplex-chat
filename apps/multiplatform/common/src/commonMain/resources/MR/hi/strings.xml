@@ -283,6 +283,9 @@
     <string name="member_will_be_removed_from_group_cannot_be_undone">सदस्य को समूह से निकाल दिया जाएगा - इसे पूर्ववत नहीं किया जा सकता!</string>
     <string name="member_info_section_title_member">सदस्य</string>
     <string name="group_member_role_member">सदस्य</string>
+    <string name="connect_plan_you_are_member">आप सदस्य हैं</string>
+    <string name="connect_plan_you_are_admin">आप व्यवस्थापक हैं</string>
+    <string name="connect_plan_you_are_owner">आप स्वामी हैं</string>
     <string name="search_verb">खोजें</string>
     <string name="la_mode_off">बंद है</string>
     <string name="connect_via_contact_link">संपर्क पते के माध्यम से कनेक्ट करें?</string>

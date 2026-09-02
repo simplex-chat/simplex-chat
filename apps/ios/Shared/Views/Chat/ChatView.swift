@@ -1719,6 +1719,7 @@ struct ChatView: View {
         @State private var showArchivingReports = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
+        @State private var chatItemInfoItem: ChatItem?
         @State private var msgWidth: CGFloat = 0
         @State private var touchInProgress: Bool = false
 
@@ -2230,8 +2231,9 @@ struct ChatView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
+                    chatItemInfoItem = nil
                 }) {
-                    ChatItemInfoView(ci: ci, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(ci: chatItemInfoItem ?? ci, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, chatItemInfo: $chatItemInfo)
                 }
         }
 
@@ -2574,8 +2576,9 @@ struct ChatView: View {
                 Task {
                     do {
                         let cInfo = chat.chatInfo
-                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
+                        let (aci, ciInfo) = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
                         await MainActor.run {
+                            chatItemInfoItem = aci.chatItem
                             chatItemInfo = ciInfo
                         }
                         if case let .group(gInfo, _) = chat.chatInfo {

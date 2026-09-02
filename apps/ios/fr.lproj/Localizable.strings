@@ -5,7 +5,7 @@
 "_italic_" = "\\_italique_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA) !\n- les accusés de réception (jusqu'à 20 membres).\n- plus rapide et plus stable.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BÊTA) !\n- les accusés de réception (jusqu'à 20 membres).\n- plus rapide et plus stable.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- une diffusion plus stable des messages.\n- des groupes un peu plus performants.\n- et bien d'autres choses encore !";
@@ -265,7 +265,7 @@ channel relay bar */
 "%lld contact(s) selected" = "%lld contact·s sélectionné·s";
 
 /* No comment provided by engineer. */
-"%lld file(s) with total size of %@" = "%lld fichier·s pour une taille totale de %@";
+"%lld file(s) with total size of %@" = "%lld fichier(s) pour une taille totale de %@";
 
 /* No comment provided by engineer. */
 "%lld group events" = "%lld événements de groupe";
@@ -602,7 +602,7 @@ swipe action */
 "All app data is deleted." = "Toutes les données de l'application sont supprimées.";
 
 /* No comment provided by engineer. */
-"All chats and messages will be deleted - this cannot be undone!" = "Toutes les conversations et tous les messages seront supprimés - il est impossible de revenir en arrière !";
+"All chats and messages will be deleted - this cannot be undone!" = "Toutes les conversations et tous les messages seront supprimés — cette action est irréversible !";
 
 /* alert message */
 "All chats will be removed from the list %@, and the list deleted." = "Toutes les conversations seront supprimées de la liste %@ et la liste sera supprimée.";
@@ -626,10 +626,10 @@ swipe action */
 "All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Tous les messages et fichiers sont envoyés **chiffrés de bout en bout**, avec une sécurité post-quantique dans les messages directs.";
 
 /* No comment provided by engineer. */
-"All messages will be deleted - this cannot be undone!" = "Tous les messages seront supprimés - il n'est pas possible de revenir en arrière !";
+"All messages will be deleted - this cannot be undone!" = "Tous les messages seront supprimés — cette action est irréversible !";
 
 /* No comment provided by engineer. */
-"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Tous les messages seront supprimés - impossible de revenir en arrière ! Les messages seront supprimés UNIQUEMENT pour vous.";
+"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Tous les messages seront supprimés — cette action est irréversible ! Les messages seront supprimés UNIQUEMENT pour vous.";
 
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Tous les nouveaux messages de %@ seront cachés !";
@@ -1062,7 +1062,7 @@ marked deleted chat item preview text */
 "Businesses" = "Entreprises";
 
 /* No comment provided by engineer. */
-"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Par profil de messagerie (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Par profil de messagerie (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÊTA).";
 
 /* No comment provided by engineer. */
 "call" = "appeler";
@@ -1240,10 +1240,10 @@ alert subtitle */
 "Channel webpage" = "Page Web du canal";
 
 /* No comment provided by engineer. */
-"Channel will be deleted for all subscribers - this cannot be undone!" = "Le canal sera supprimé pour tous les abonné·es ; ceci ne peut pas être annulé !";
+"Channel will be deleted for all subscribers - this cannot be undone!" = "Le canal sera supprimé pour tous les abonnés — cette action est irréversible !";
 
 /* No comment provided by engineer. */
-"Channel will be deleted for you - this cannot be undone!" = "Le canal sera supprimé pour vous ; ceci ne peut pas être annulé !";
+"Channel will be deleted for you - this cannot be undone!" = "Le canal sera supprimé pour vous — cette action est irréversible !";
 
 /* alert message */
 "Channel will start working with %d of %d relays. Continue?" = "Le canal commencera à fonctionner avec %1$d relais sur %2$d. Continuer ?";
@@ -1321,10 +1321,10 @@ alert subtitle */
 "Chat theme" = "Thème de la conversation";
 
 /* No comment provided by engineer. */
-"Chat will be deleted for all members - this cannot be undone!" = "La conversation sera supprimée pour tous les membres - cela ne peut pas être annulé !";
+"Chat will be deleted for all members - this cannot be undone!" = "La conversation sera supprimée pour tous les membres — cette action est irréversible !";
 
 /* No comment provided by engineer. */
-"Chat will be deleted for you - this cannot be undone!" = "La conversation sera supprimée pour vous - il n'est pas possible de revenir en arrière !";
+"Chat will be deleted for you - this cannot be undone!" = "La conversation sera supprimée pour vous — cette action est irréversible !";
 
 /* chat feature
 chat toolbar */
@@ -1698,7 +1698,7 @@ server test step */
 "contact should accept…" = "Le contact devrait accepter…";
 
 /* No comment provided by engineer. */
-"Contact will be deleted - this cannot be undone!" = "Le contact sera supprimé - il n'est pas possible de revenir en arrière !";
+"Contact will be deleted - this cannot be undone!" = "Le contact sera supprimé — cette action est irréversible !";
 
 /* No comment provided by engineer. */
 "Contacts" = "Contacts";
@@ -1813,6 +1813,12 @@ server test step */
 
 /* No comment provided by engineer. */
 "creator" = "créateur";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder" = "Financement participatif sur Wefunder";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder." = "Financement participatif sur Wefunder.";
 
 /* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "Le texte sur les conditions actuelles n'a pas pu être chargé. Vous pouvez consulter les conditions en cliquant sur ce lien :";
@@ -2151,7 +2157,7 @@ alert button */
 "Details" = "Détails";
 
 /* No comment provided by engineer. */
-"Developer" = "Outils du développeur";
+"Developer" = "Outils développeur";
 
 /* No comment provided by engineer. */
 "Developer options" = "Options pour les développeurs";
@@ -2160,10 +2166,10 @@ alert button */
 "Device" = "Appareil";
 
 /* No comment provided by engineer. */
-"Device authentication is disabled. Turning off SimpleX Lock." = "L'authentification de l'appareil est désactivée. Désactivation de SimpleX Lock.";
+"Device authentication is disabled. Turning off SimpleX Lock." = "L'authentification de l'appareil est désactivée. Désactivation du Verrouillage SimpleX.";
 
 /* No comment provided by engineer. */
-"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "L'authentification de l'appareil n'est pas activée. Vous pouvez activer SimpleX Lock via Paramètres, une fois que vous avez activé l'authentification de l'appareil.";
+"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "L'authentification de l'appareil n'est pas activée. Vous pouvez activer le Verrouillage SimpleX dans les Paramètres une fois l'authentification de l'appareil activée.";
 
 /* No comment provided by engineer. */
 "different migration in the app/database: %@ / %@" = "migration différente dans l'app/la base de données : %@ / %@";
@@ -2202,7 +2208,7 @@ alert button */
 "Disable for all" = "Désactiver pour tous";
 
 /* authentication reason */
-"Disable SimpleX Lock" = "Désactiver SimpleX Lock";
+"Disable SimpleX Lock" = "Désactiver le Verrouillage SimpleX";
 
 /* No comment provided by engineer. */
 "disabled" = "désactivé";
@@ -2362,7 +2368,7 @@ chat item action */
 "Enable (keep overrides)" = "Activer (conserver les remplacements)";
 
 /* channel creation warning */
-"Enable at least one chat relay in Network & Servers." = "Activez au moins un relais de messagerie dans Réseaux et serveurs.";
+"Enable at least one chat relay in Network & Servers." = "Activez au moins un relais de messagerie dans Réseau et serveurs.";
 
 /* alert title */
 "Enable automatic message deletion?" = "Activer la suppression automatique des messages ?";
@@ -2377,13 +2383,13 @@ chat item action */
 "Enable disappearing messages by default." = "Activer les messages éphémères par défaut.";
 
 /* No comment provided by engineer. */
-"Enable Flux in Network & servers settings for better metadata privacy." = "Activez Flux dans les paramètres du réseau et des serveurs pour une meilleure confidentialité des métadonnées.";
+"Enable Flux in Network & servers settings for better metadata privacy." = "Activez Flux dans les paramètres Réseau et serveurs pour une meilleure confidentialité des métadonnées.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Activer pour tous";
 
 /* No comment provided by engineer. */
-"Enable in direct chats (BETA)!" = "Activer dans les conversations directes (BETA) !";
+"Enable in direct chats (BETA)!" = "Activer dans les conversations directes (BÊTA) !";
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Activer les notifications instantanées ?";
@@ -2404,7 +2410,7 @@ chat item action */
 "Enable self-destruct passcode" = "Activer le code d'autodestruction";
 
 /* authentication reason */
-"Enable SimpleX Lock" = "Activer SimpleX Lock";
+"Enable SimpleX Lock" = "Activer le Verrouillage SimpleX";
 
 /* No comment provided by engineer. */
 "Enable TCP keep-alive" = "Activer le TCP keep-alive";
@@ -3106,7 +3112,7 @@ servers warning */
 "Get notified when mentioned." = "Soyez averti·e quand vous êtes mentionné·e.";
 
 /* No comment provided by engineer. */
-"Get SimpleX name (BETA)" = "Obtenir un nom SimpleX (BETA)";
+"Get SimpleX name (BETA)" = "Obtenir un nom SimpleX (BÊTA)";
 
 /* No comment provided by engineer. */
 "Get started" = "Commençons";
@@ -3154,6 +3160,9 @@ servers warning */
 "Group invitation is no longer valid, it was removed by sender." = "L'invitation du groupe n'est plus valide, elle a été supprimé par l'expéditeur.";
 
 /* No comment provided by engineer. */
+"Group invitations" = "Invitations de groupe";
+
+/* No comment provided by engineer. */
 "group is deleted" = "le groupe est supprimé";
 
 /* chat link info line */
@@ -3190,10 +3199,10 @@ servers warning */
 "Group welcome message" = "Message d'accueil du groupe";
 
 /* No comment provided by engineer. */
-"Group will be deleted for all members - this cannot be undone!" = "Le groupe va être supprimé pour tout les membres - impossible de revenir en arrière !";
+"Group will be deleted for all members - this cannot be undone!" = "Le groupe va être supprimé pour tout les membres — cette action est irréversible !";
 
 /* No comment provided by engineer. */
-"Group will be deleted for you - this cannot be undone!" = "Le groupe va être supprimé pour vous - impossible de revenir en arrière !";
+"Group will be deleted for you - this cannot be undone!" = "Le groupe va être supprimé pour vous — cette action est irréversible !";
 
 /* No comment provided by engineer. */
 "Groups" = "Groupes";
@@ -3775,16 +3784,16 @@ servers warning */
 "Member is deleted - can't accept request" = "Le membre est supprimé ; impossible d'accepter la demande";
 
 /* alert message */
-"Member messages will be deleted - this cannot be undone!" = "Les messages des membres seront supprimés ; ceci ne peut pas être annulé !";
+"Member messages will be deleted - this cannot be undone!" = "Les messages des membres seront supprimés — cette action est irréversible !";
 
 /* chat feature */
 "Member reports" = "Signalements des membres";
 
 /* alert message */
-"Member will be removed from chat - this cannot be undone!" = "Le membre sera retiré de la conversation - cette action est irréversible !";
+"Member will be removed from chat - this cannot be undone!" = "Le membre sera retiré de la conversation — cette action est irréversible !";
 
 /* alert message */
-"Member will be removed from group - this cannot be undone!" = "Ce membre sera retiré du groupe - impossible de revenir en arrière !";
+"Member will be removed from group - this cannot be undone!" = "Ce membre sera retiré du groupe — cette action est irréversible !";
 
 /* alert message */
 "Member will join the group, accept member?" = "Le membre rejoindra le groupe ; accepter le membre ?";
@@ -4273,7 +4282,7 @@ servers warning */
 "None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." = "Aucun serveur de résolution de noms SimpleX n'est configuré. Configurez des serveurs ou utilisez un lien de connexion.";
 
 /* No comment provided by engineer. */
-"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Ce n’est pas une meilleure serrure sur la porte de quelqu’un d’autre. Ce n’est pas un propriétaire plus aimable qui respecte votre vie privée, mais qui tient tout de même un registre de tous les visiteurs. Vous n’êtes pas un·e invité·e, vous êtes chez vous. Aucun roi ne peut y entrer : c’est vous le souverain.";
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Ce n’est pas une meilleure serrure sur la porte de quelqu'un d'autre. Ni un propriétaire plus attentionné qui respecte votre vie privée, mais conserve toujours le registre de tous les visiteurs. Vous n'êtes pas un invité. Vous êtes chez vous. Aucun roi ne peut y entrer — vous êtes souverain.";
 
 /* alert title */
 "Not all relays connected" = "Les relais ne sont pas tous connectés";
@@ -4465,13 +4474,7 @@ alert button */
 "Open migration to another device" = "Ouvrir le transfert vers un autre appareil";
 
 /* new chat action */
-"Open new channel" = "Ouvrir un nouveau canal";
-
-/* new chat action */
 "Open new chat" = "Ouvrir une nouvelle conversation";
-
-/* new chat action */
-"Open new group" = "Ouvrir le nouveau groupe";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Ouvrir les Paramètres";
@@ -4711,7 +4714,7 @@ alert button */
 "Previously connected servers" = "Serveurs précédemment connectés";
 
 /* No comment provided by engineer. */
-"Privacy for your customers." = "Respect de la vie privée de vos clients.";
+"Privacy for your customers." = "Confidentialité pour vos clients.";
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Politique de confidentialité et conditions d'utilisation.";
@@ -5005,7 +5008,7 @@ swipe action */
 "Relay test failed!" = "Échec du test de relais !";
 
 /* alert message */
-"Relay will be removed from channel - this cannot be undone!" = "Le relais sera supprimé du canal ; cette action est irréversible !";
+"Relay will be removed from channel - this cannot be undone!" = "Le relais sera supprimé du canal — cette action est irréversible !";
 
 /* alert message */
 "Relays added: %@." = "Relais ajoutés : %@.";
@@ -5215,7 +5218,7 @@ swipe action */
 "Review members" = "Contrôler les membres";
 
 /* admission stage description */
-"Review members before admitting (\"knocking\")." = "Contrôler les membres avant de les admettre (« toquer »).";
+"Review members before admitting (\"knocking\")." = "Examiner les membres avant leur admission (« frapper à la porte »).";
 
 /* No comment provided by engineer. */
 "reviewed by admins" = "révisé par les admins";
@@ -5343,10 +5346,10 @@ chat item action */
 "Saved" = "Enregistré";
 
 /* No comment provided by engineer. */
-"Saved from" = "Enregistré depuis";
+"saved from" = "enregistré à partir de";
 
 /* No comment provided by engineer. */
-"saved from %@" = "enregistré à partir de %@";
+"Saved from" = "Enregistré depuis";
 
 /* message info title */
 "Saved message" = "Message enregistré";
@@ -5643,7 +5646,7 @@ chat item action */
 "Servers info" = "Infos serveurs";
 
 /* No comment provided by engineer. */
-"Servers statistics will be reset - this cannot be undone!" = "Les statistiques des serveurs seront réinitialisées - il n'est pas possible de revenir en arrière !";
+"Servers statistics will be reset - this cannot be undone!" = "Les statistiques des serveurs seront réinitialisées — cette action est irréversible !";
 
 /* No comment provided by engineer. */
 "Session code" = "Code de session";
@@ -5873,16 +5876,16 @@ copied message info */
 "SimpleX links not allowed" = "Les liens SimpleX ne sont pas autorisés";
 
 /* No comment provided by engineer. */
-"SimpleX Lock" = "SimpleX Lock";
+"SimpleX Lock" = "Verrouillage SimpleX";
 
 /* No comment provided by engineer. */
-"SimpleX Lock mode" = "Mode de SimpleX Lock";
+"SimpleX Lock mode" = "Mode de Verrouillage SimpleX";
 
 /* No comment provided by engineer. */
-"SimpleX Lock not enabled!" = "SimpleX Lock n'est pas activé !";
+"SimpleX Lock not enabled!" = "Le Verrouillage SimpleX n'est pas activé !";
 
 /* No comment provided by engineer. */
-"SimpleX Lock turned on" = "SimpleX Lock activé";
+"SimpleX Lock turned on" = "Verrouillage SimpleX activé";
 
 /* No comment provided by engineer. */
 "SimpleX name" = "Nom SimpleX";
@@ -5900,7 +5903,7 @@ copied message info */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocoles SimpleX audité par Trail of Bits.";
 
 /* No comment provided by engineer. */
-"SimpleX public names (BETA)" = "Noms publics SimpleX (BETA)";
+"SimpleX public names (BETA)" = "Noms publics SimpleX (BÊTA)";
 
 /* simplex link type */
 "SimpleX relay address" = "Adresse relais SimpleX";
@@ -6039,7 +6042,7 @@ report reason */
 "Subscriber reports" = "Signalements d'abonnés";
 
 /* alert message */
-"Subscriber will be removed from channel - this cannot be undone!" = "L'abonné sera supprimé du canal ; cette action est irréversible !";
+"Subscriber will be removed from channel - this cannot be undone!" = "L'abonné sera supprimé du canal — cette action est irréversible !";
 
 /* No comment provided by engineer. */
 "Subscribers" = "Abonnés";
@@ -6328,16 +6331,16 @@ server test failure */
 "They can be overridden in contact and group settings." = "Ils peuvent être modifiés dans les paramètres des contacts et des groupes.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Cette action ne peut être annulée - tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.";
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Cette action est irréversible — tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Cette action ne peut être annulée - les messages envoyés et reçus avant la date sélectionnée seront supprimés. Cela peut prendre plusieurs minutes.";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Cette action est irréversible — les messages envoyés et reçus avant la date sélectionnée seront supprimés. Cela peut prendre plusieurs minutes.";
 
 /* alert message */
-"This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." = "Cette action est irréversible : les messages envoyés et reçus dans cette conversation avant la date sélectionnée seront supprimés.";
+"This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." = "Cette action est irréversible — les messages envoyés et reçus dans cette conversation avant la date sélectionnée seront supprimés.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Cette action ne peut être annulée - votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.";
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Cette action est irréversible — votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.";
 
 /* badge alert */
 "This badge could not be verified and may not be genuine." = "Ce badge n'a pas pu être vérifié et pourrait ne pas être authentique.";
@@ -6419,7 +6422,7 @@ alert subtitle */
 "To protect timezone, image/voice files use UTC." = "Pour préserver le fuseau horaire, les fichiers image/voix utilisent le système UTC.";
 
 /* No comment provided by engineer. */
-"To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Pour protéger vos informations, activez la fonction SimpleX Lock.\nVous serez invité à confirmer l'authentification avant que cette fonction ne soit activée.";
+"To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Pour protéger vos informations, activez le Verrouillage SimpleX.\nUne authentification vous sera demandée avant que cette fonctionnalité ne soit activée.";
 
 /* No comment provided by engineer. */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Pour protéger votre adresse IP, le routage privé utilise vos serveurs SMP pour délivrer les messages.";
@@ -7013,6 +7016,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Vous avez déjà un profil de messagerie avec le même nom d’affichage. Veuillez choisir un autre nom.";
 
+/* new chat alert */
+"You are a contributor" = "Vous êtes contributeur";
+
+/* new chat alert */
+"You are a member" = "Vous êtes membre";
+
+/* new chat alert */
+"You are a moderator" = "Vous êtes modérateur";
+
+/* new chat alert */
+"You are a subscriber" = "Vous êtes abonné·e";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Vous êtes déjà connecté·e à %@ via ce lien.";
 
@@ -7036,6 +7051,15 @@ alert title */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Vous êtes déjà membre de ce groupe !\nRépéter la demande d'adhésion ?";
+
+/* new chat alert */
+"You are an admin" = "Vous êtes admin";
+
+/* new chat alert */
+"You are an observer" = "Vous êtes observateur";
+
+/* new chat alert */
+"You are an owner" = "Vous êtes propriétaire";
 
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Vous êtes connecté au serveur utilisé pour recevoir les messages de cette connexion.";
@@ -7074,7 +7098,7 @@ alert title */
 "You can enable later via Settings" = "Vous pouvez l'activer ultérieurement via Paramètres";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Vous pourrez les activer plus tard dans les paramètres « Votre vie privée ».";
+"You can enable them later via app Your privacy settings." = "Vous pouvez les activer plus tard dans les paramètres de confidentialité de l'application.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Vous pouvez faire un nouvel essai.";
@@ -7087,6 +7111,12 @@ alert title */
 
 /* notification body */
 "You can now chat with %@" = "Vous pouvez maintenant envoyer des messages à %@";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat" = "Vous pouvez désormais investir dans SimpleX Chat";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat! 🚀" = "Vous pouvez désormais investir dans SimpleX Chat ! 🚀";
 
 /* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Vous pouvez envoyer des messages à %@ à partir des contacts archivés.";
@@ -7116,7 +7146,7 @@ alert title */
 "You can support SimpleX starting from v7 of the app." = "Vous pouvez soutenir SimpleX à partir de la version 7 de l'application.";
 
 /* No comment provided by engineer. */
-"You can turn on SimpleX Lock via Settings." = "Vous pouvez activer SimpleX Lock dans les Paramètres.";
+"You can turn on SimpleX Lock via Settings." = "Vous pouvez activer le Verrouillage SimpleX dans les Paramètres.";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Vous pouvez utiliser le format markdown pour mettre en forme les messages :";
@@ -7317,7 +7347,7 @@ alert title */
 "Your preferences" = "Vos préférences";
 
 /* No comment provided by engineer. */
-"Your privacy" = "Votre vie privée";
+"Your privacy" = "Votre confidentialité";
 
 /* No comment provided by engineer. */
 "Your profile" = "Votre profil";
