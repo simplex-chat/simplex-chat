@@ -19,19 +19,22 @@ struct ScanProtocolServer: View {
     @State private var scanAlert: SomeAlert?
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Scan server QR code")
-                .font(.largeTitle)
-                .bold()
-                .padding(.vertical)
+        NavigationView {
             CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processQRCode)
                 .aspectRatio(1, contentMode: .fit)
                 .cornerRadius(12)
-                .padding(.top)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .navigationTitle("Scan server QR code")
+                .navigationBarTitleDisplayMode(.large)
+                .modifier(ThemedBackground(grouped: true))
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
+                }
+                .alert(item: $scanAlert) { $0.alert }
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .alert(item: $scanAlert) { $0.alert }
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
@@ -44,7 +47,6 @@ struct ScanProtocolServer: View {
                 server.server = trimmed
                 addServer(server, $userServers, $serverErrors, $serverWarnings, dismiss)
             case nil:
-                // unrecognised: scanner-local alert (deliberate iOS change from the pre-PR dismiss-then-global flow)
                 scanAlert = SomeAlert(
                     alert: mkAlert(title: "Invalid server address!", message: "Check server address and try again."),
                     id: "invalidServerAddress"
@@ -66,5 +68,6 @@ struct ScanProtocolServer_Previews: PreviewProvider {
             serverErrors: Binding.constant([]),
             serverWarnings: Binding.constant([])
         )
+        .environmentObject(CurrentColors.toAppTheme())
     }
 }

@@ -1327,7 +1327,7 @@ func planAndConnect(
         if linkType == .relay {
             showAlert(
                 NSLocalizedString("Relay address", comment: "alert title"),
-                message: NSLocalizedString("This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, and paste the address there.", comment: "alert message")
+                message: NSLocalizedString("This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, paste the address, then Test relay.", comment: "alert message")
             )
             cleanup?()
             return

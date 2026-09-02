@@ -111,7 +111,7 @@ Calls `apiNewPublicGroup(incognito:relayIds:groupProfile:)` which returns `publi
 
 ### Relay Link Blocking
 
-When `planAndConnect` encounters a `.simplexLink(_, .relay, _, _)`, it shows a "Relay address" alert: "This is a chat relay address, it cannot be used to connect." Connection is blocked.
+When `planAndConnect` encounters a `.simplexLink(_, .relay, _, _)`, it shows a "Relay address" alert: "This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, paste the address, then Test relay." Connection is blocked.
 
 ### Channel Prepare/Join Alerts
 

@@ -211,7 +211,6 @@ struct MigrateToDevice: View {
                             case nil:
                                 alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
                             case let type?:
-                                // shared with the paste button, so the title is neutral ("Wrong link")
                                 alert = .error(title: "Wrong link", error: wrongQRCodeMessage(type))
                             }
                         case let .failure(e):
@@ -237,13 +236,19 @@ struct MigrateToDevice: View {
         Button {
             if let str = UIPasteboard.general.string {
                 let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
-                switch checkLink(trimmed) {
-                case .some(.fileDescription):
-                    migrationState = .linkDownloading(link: trimmed)
-                case nil:
-                    alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
-                case let type?:
-                    alert = .error(title: "Wrong link", error: wrongQRCodeMessage(type))
+                Task {
+                    let linkType = await checkLinkAsync(trimmed)
+                    // the sheet can be dismissed while classifying; applying the result then
+                    // resurrects it (SimpleXInfo) or skips the paste screen (CreateProfile)
+                    guard case .some(.pasteOrScanLink) = migrationState else { return }
+                    switch linkType {
+                    case .some(.fileDescription):
+                        migrationState = .linkDownloading(link: trimmed)
+                    case nil:
+                        alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
+                    case let type?:
+                        alert = .error(title: "Wrong link", error: wrongQRCodeMessage(type))
+                    }
                 }
             }
         } label: {
