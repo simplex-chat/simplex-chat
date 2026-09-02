@@ -399,7 +399,7 @@ BadSignature:
 
 **Record type**:
 - badgeType: [BadgeType](#badgetype)
-- badgeExpiry: UTCTime?
+- badgeExpiry: UTCTime
 - badgeExtra: string
 
 
@@ -747,6 +747,7 @@ LocalRcv:
 - fileSource: [CryptoFile](#cryptofile)?
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
+- fileExpires: UTCTime?
 
 
 ---

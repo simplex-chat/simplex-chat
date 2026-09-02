@@ -28,8 +28,8 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
+import Simplex.Chat.Badges (badgeServerCredential)
 import Simplex.Chat.Controller
-import Simplex.Chat.Badges (BBSPublicKeyStr (..))
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Operators.Presets
@@ -52,6 +52,7 @@ import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Entitlement (entitlementIssuerKeys)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
@@ -66,17 +67,7 @@ defaultChatConfig =
             tbqSize = 1024
           },
       chatVRange = supportedChatVRange,
-      badgePublicKeys =
-        M.fromList
-          [ (1, toBBSPublicKey "mW_5Zp1wHnXDF56wOZwFcRjGrf0GLLsfyymIQDqYoWfjfvS7oQWSfi7hH65N8JhuE9x8wbKXHidnQLO4GnOSMP_bRKUMH1qIzv5SQKFHNM8G4PaWcTcri8iZLc-3xhSI"),
-            (2, toBBSPublicKey "odGCB7uVDXTURsHgSvSciByV4Q3-3ZvEB8myDsDJqm-PwOYc5-At36uc7n_pyUDxEQEHr9i4RJgFih2FSArPW-EQBXNPNf4wTtA0znn74qLEGc4fh9pVYPEIm_ZGbnsJ"),
-            (3, toBBSPublicKey "txkT2003WMjc43KvYvPKEcR970NLmw5UZY51eUqgk91sgp53idt1HTlKYvnrEttJDFMlctYf1-bpri0e9DhBQ-xk1J4WoLN2uif_1OcA1pGCobpk9lwtsq1Idek4biy0"),
-            (4, toBBSPublicKey "q_YzegihaLYrEm9z3cAghsfDGNZfXuEpQGMJERJQS4M0Szl4gvSC_fV_muKc3NIMA_8iYuBN8qyvb5U55RctCRn3kleFQ4sqf-WBgoydX6UVo7BsYcUbXWWEFZXlOGIH"),
-            (5, toBBSPublicKey "oqymHASH_okefShrnz4HnTooUNlE1WoDRnSrgd0bTCpOacgJWBsMpwZpdmYlX-vQAKAC_zmI4VdKoOznnhW-sdUXZw6bthCi5JYjGxCR1Co27i1tix5UXCTbR5Jp901-"),
-            (6, toBBSPublicKey "kDqaB6zKSRp_97QPFj5JPDlo0vzfSTLSp9goFx1qajv4q4H6dR6BbkmWZ4xx_9Q2AxmcpqcV0ethz1OH-Jk_Sz2J1mIz1PUVM9LkdLhi_PNtqhezzO5dbVs-HJ1fNqe6"),
-            (7, toBBSPublicKey "rl36D5mg2N3NmmEybxE_RBeU9YZ_zeXNPfp7ZMLtUEuf2Mo4OQM_Up1v5rX_IqICD-AIJcuyptEBsELx_PJQzpmiNuG5I4cWO6HkRKtc6fVFvgZMrDJjaascPd1CIyxX"),
-            (8, toBBSPublicKey "joM3Bnt7JPt5JiwQwERHGjro2iVZ0mPD_clUh4hzkhxvbjuFrWuTmfSNA8PWBqGKEGNl13aRi1pMf6yY14E27c5C71JxWm7T-rZaBrGPEUWifhD-qidWuf3PU7KJCCWd")
-          ],
+      badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
       badgeServiceAddress = Nothing,
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
@@ -293,7 +284,8 @@ newChatController
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
         let useServices = M.fromList $ map (\User {agentUserId = AgentUserId uId, clientService} -> (uId, isTrue clientService)) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, useServices, presetDomains, presetServers = L.toList allPresetServers}
+            entitlements = M.fromList $ mapMaybe (\User {agentUserId = AgentUserId uId, profile = LocalProfile {localBadge}} -> (uId,) <$> badgeServerCredential localBadge) users
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), entitlements, ntf, netCfg, useServices, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

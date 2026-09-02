@@ -40,6 +40,10 @@
         <target>%1$@ ha apoyado a SimpleX Chat. La insignia caducó el %2$@.</target>
         <note>badge alert</note>
       </trans-unit>
+      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve">
+        <source>%1$02d hrs %2$02d min %3$02d sec</source>
+        <note>countdown</note>
+      </trans-unit>
       <trans-unit id="%@" xml:space="preserve">
         <source>%@</source>
         <target>%@</target>
@@ -154,6 +158,10 @@
         <source>%@:</source>
         <target>%@:</target>
         <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="%d day" xml:space="preserve">
+        <source>%d day</source>
+        <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
         <source>%d days</source>
@@ -2715,12 +2723,18 @@ This is your own one-time link!</source>
         <target>Creando enlace…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
+        <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
         <source>Crowdfunding on Wefunder</source>
+        <target>Crowdfunding en Wefunder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
         <source>Crowdfunding on Wefunder.</source>
+        <target>Crowdfunding en Wefunder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -4780,6 +4794,7 @@ Error: %2$@</target>
       </trans-unit>
       <trans-unit id="Group invitations" xml:space="preserve">
         <source>Group invitations</source>
+        <target>Invitaciones en grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -6744,19 +6759,9 @@ alert button</note>
         <target>Abrir menú migración a otro dispositivo</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open new channel" xml:space="preserve">
-        <source>Open new channel</source>
-        <target>Abrir canal nuevo</target>
-        <note>new chat action</note>
-      </trans-unit>
       <trans-unit id="Open new chat" xml:space="preserve">
         <source>Open new chat</source>
         <target>Abrir chat nuevo</target>
-        <note>new chat action</note>
-      </trans-unit>
-      <trans-unit id="Open new group" xml:space="preserve">
-        <source>Open new group</source>
-        <target>Abrir grupo nuevo</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open to accept" xml:space="preserve">
@@ -8945,6 +8950,10 @@ copied message info</note>
         <target>Nombre SimpleX no verificado</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="SimpleX name sale starts in" xml:space="preserve">
+        <source>SimpleX name sale starts in</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
         <source>SimpleX one-time invitation</source>
         <target>Invitación SimpleX de un uso</target>
@@ -10098,6 +10107,10 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>¿Actualizar configuración?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
+        <source>Update the app to register a SimpleX domain</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
         <target>Condiciones actualizadas</target>
@@ -10664,6 +10677,26 @@ alert title</note>
         <target>Ya tienes un perfil con este nombre mostrado. Por favor, elige otro nombre.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You are a contributor" xml:space="preserve">
+        <source>You are a contributor</source>
+        <target>Eres colaborador</target>
+        <note>new chat alert</note>
+      </trans-unit>
+      <trans-unit id="You are a member" xml:space="preserve">
+        <source>You are a member</source>
+        <target>Eres miembro</target>
+        <note>new chat alert</note>
+      </trans-unit>
+      <trans-unit id="You are a moderator" xml:space="preserve">
+        <source>You are a moderator</source>
+        <target>Eres moderador</target>
+        <note>new chat alert</note>
+      </trans-unit>
+      <trans-unit id="You are a subscriber" xml:space="preserve">
+        <source>You are a subscriber</source>
+        <target>Eres suscriptor</target>
+        <note>new chat alert</note>
+      </trans-unit>
       <trans-unit id="You are already connected to %@." xml:space="preserve">
         <source>You are already connected to %@.</source>
         <target>Ya estás conectado con %@.</target>
@@ -10705,6 +10738,21 @@ Repeat join request?</source>
         <target>¡En proceso de unirte al grupo!
 ¿Repetir solicitud de admisión?</target>
         <note>new chat sheet title</note>
+      </trans-unit>
+      <trans-unit id="You are an admin" xml:space="preserve">
+        <source>You are an admin</source>
+        <target>Eres administrador</target>
+        <note>new chat alert</note>
+      </trans-unit>
+      <trans-unit id="You are an observer" xml:space="preserve">
+        <source>You are an observer</source>
+        <target>Eres observador</target>
+        <note>new chat alert</note>
+      </trans-unit>
+      <trans-unit id="You are an owner" xml:space="preserve">
+        <source>You are an owner</source>
+        <target>Eres propietario</target>
+        <note>new chat alert</note>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this connection.</source>
@@ -10778,10 +10826,12 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
         <source>You can now invest in SimpleX Chat</source>
+        <target>Ahora puedes invertir en SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
         <source>You can now invest in SimpleX Chat! 🚀</source>
+        <target>Ahora puedes invertir en SimpleX Chat! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
@@ -11708,6 +11758,10 @@ pref value</note>
         <target>reenviado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="forwarded from" xml:space="preserve">
+        <source>forwarded from</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="group" xml:space="preserve">
         <source>group</source>
         <target>grupo</target>
@@ -12116,9 +12170,9 @@ time to disappear</note>
         <target>guardado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="saved from %@" xml:space="preserve">
-        <source>saved from %@</source>
-        <target>Guardado desde %@</target>
+      <trans-unit id="saved from" xml:space="preserve">
+        <source>saved from</source>
+        <target>Guardado desde</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="search" xml:space="preserve">
@@ -12213,6 +12267,10 @@ last received msg: %2$@</source>
       <trans-unit id="unprotected" xml:space="preserve">
         <source>unprotected</source>
         <target>desprotegida</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="until you can register a SimpleX domain" xml:space="preserve">
+        <source>until you can register a SimpleX domain</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated channel profile" xml:space="preserve">

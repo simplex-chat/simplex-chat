@@ -83,7 +83,7 @@ struct CIImageView: View {
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
                             case let .rcvError(rcvFileError):
-                                showFileErrorAlert(rcvFileError)
+                                showFileErrorAlert(rcvFileError, file)
                             case let .rcvWarning(rcvFileError):
                                 showFileErrorAlert(rcvFileError, temporary: true)
                             case let .sndError(sndFileError):
@@ -152,7 +152,7 @@ struct CIImageView: View {
             case .sndCancelled: fileIcon("xmark", 10, 13)
             case .sndError: fileIcon("xmark", 10, 13)
             case .sndWarning: fileIcon("exclamationmark.triangle.fill", 10, 13)
-            case .rcvInvitation: fileIcon("arrow.down", 10, 13)
+            case .rcvInvitation: fileIcon(file.expired && fileSizeValid(file, senderProfile) ? "xmark" : "arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case .rcvTransfer: progressView()
             case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 14, 11)

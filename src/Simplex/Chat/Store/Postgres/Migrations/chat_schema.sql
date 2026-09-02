@@ -923,7 +923,8 @@ CREATE TABLE test_chat_schema.files (
     shared_msg_id bytea,
     file_type text DEFAULT 'normal'::text NOT NULL,
     roster_transfer_id bigint,
-    file_digest bytea
+    file_digest bytea,
+    file_expires_at timestamp with time zone
 );
 
 

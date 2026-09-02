@@ -135,10 +135,10 @@ fun CIVideoView(
     }
     // Do not show download icon when the view is blurred
     if (!smallView && (!showDownloadButton(file?.fileStatus) || !blurred.value)) {
-      fileStatusIcon(file, false)
+      fileStatusIcon(file, false, senderProfile)
     } else if (smallView && file?.showStatusIconInSmallView == true) {
       Box(Modifier.align(Alignment.Center)) {
-        fileStatusIcon(file, true)
+        fileStatusIcon(file, true, senderProfile)
       }
     }
   }
@@ -486,7 +486,7 @@ private fun progressCircle(progress: Long, total: Long) {
 }
 
 @Composable
-private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
+private fun fileStatusIcon(file: CIFile?, smallView: Boolean, senderProfile: LocalProfile?) {
   if (file != null) {
     Box(
       Modifier
@@ -525,7 +525,11 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
               showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
             }
           )
-        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvInvitation ->
+          if (file.expired && fileSizeValid(file, senderProfile))
+            fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          else
+            fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
         is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
           if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
@@ -541,7 +545,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
             painterResource(MR.images.ic_close),
             MR.strings.icon_descr_file,
             onClick = {
-              showFileErrorAlert(file.fileStatus.rcvFileError)
+              showFileErrorAlert(file.fileStatus.rcvFileError, file)
             }
           )
         is CIFileStatus.RcvWarning ->

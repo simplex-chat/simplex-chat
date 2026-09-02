@@ -1164,9 +1164,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetChatItemInfo(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long): ChatItemInfo? {
+  suspend fun apiGetChatItemInfo(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long): Pair<ChatItem, ChatItemInfo>? {
     val r = sendCmd(rh, CC.ApiGetChatItemInfo(type, id, scope, itemId))
-    if (r is API.Result && r.res is CR.ApiChatItemInfo) return r.res.chatItemInfo
+    if (r is API.Result && r.res is CR.ApiChatItemInfo) return r.res.chatItem.chatItem to r.res.chatItemInfo
     apiErrorAlert("apiGetChatItemInfo", generalGetString(MR.strings.error_loading_details), r)
     return null
   }

@@ -302,7 +302,7 @@ public enum BadgeStatus: String, Codable {
 
 public struct BadgeInfo: Codable, Hashable {
     public var badgeType: BadgeType
-    public var badgeExpiry: Date?
+    public var badgeExpiry: Date
     public var badgeExtra: String
 
     public init(badgeType: BadgeType, badgeExpiry: Date? = nil, badgeExtra: String = "") {
@@ -4696,6 +4696,7 @@ public struct CIFile: Decodable, Hashable {
     public var fileSource: CryptoFile?
     public var fileStatus: CIFileStatus
     public var fileProtocol: FileProtocol
+    public var fileExpires: Date? = nil
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
         let f: CryptoFile?
@@ -4727,6 +4728,10 @@ public struct CIFile: Decodable, Hashable {
             case .invalid: return false
             }
         }
+    }
+
+    public var expired: Bool {
+        if let fileExpires { fileExpires < Date.now } else { false }
     }
 
     public var cancelAction: CancelAction? {
@@ -4765,7 +4770,7 @@ public struct CIFile: Decodable, Hashable {
             case .sndCancelled: true
             case .sndError: true
             case .sndWarning: true
-            case .rcvInvitation: false
+            case .rcvInvitation: expired
             case .rcvAccepted: true
             case .rcvTransfer: true
             case .rcvAborted: true
