@@ -162,6 +162,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
           Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
+          Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
           Simplex.Chat.Store.Postgres.Migrations.M20261001_user_badges
   else
       exposed-modules:
@@ -335,6 +336,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260723_contact_request_rejection
           Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.SQLite.Migrations.M20260822_forward_link
+          Simplex.Chat.Store.SQLite.Migrations.M20260828_file_expiry
           Simplex.Chat.Store.SQLite.Migrations.M20261001_user_badges
   other-modules:
       Paths_simplex_chat

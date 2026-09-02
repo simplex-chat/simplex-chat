@@ -264,7 +264,7 @@ redeemCode BadgeIssuerKey {keyIdx, secretKey} cc purchaseKey masterKey codeText 
           now <- getCurrentTime
           -- TODO [badges] the code's months are ignored until the ledger credits them
           let periodEnd = addMonths 1 now
-              badgeInfo = BadgeInfo {badgeType, badgeExpiry = Just (endOfSundayAfter periodEnd), badgeExtra = ""}
+              badgeInfo = BadgeInfo {badgeType, badgeExpiry = endOfSundayAfter periodEnd, badgeExtra = ""}
           issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo}) >>= \case
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right credential -> do

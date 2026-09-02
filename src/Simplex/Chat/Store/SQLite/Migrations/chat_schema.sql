@@ -302,7 +302,8 @@ CREATE TABLE files(
   shared_msg_id BLOB,
   file_type TEXT NOT NULL DEFAULT 'normal',
   roster_transfer_id INTEGER,
-  file_digest BLOB
+  file_digest BLOB,
+  file_expires_at TEXT
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,

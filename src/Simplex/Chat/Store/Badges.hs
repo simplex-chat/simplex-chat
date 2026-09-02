@@ -92,8 +92,7 @@ deleteBadgeCodeRedemption db redemptionId =
 
 -- | The purchase a redeemed code created, its issuance, and the profile's pointer to it.
 -- False when the code was already redeemed here: the service replays the credential it issued,
--- and that must add no purchase and leave the shown badge alone. The expiry is passed in because
--- badge_issuances requires one and the caller has already resolved it.
+-- and that must add no purchase and leave the shown badge alone.
 createCodeBadgePurchase :: DB.Connection -> TVar ChaChaDRG -> User -> BadgeCodeRedemption -> BadgeCredential -> UTCTime -> UTCTime -> IO Bool
 createCodeBadgePurchase db g User {userId} redemption credential expiry now =
   getCodeBadgePurchase db redemption >>= \case

@@ -56,7 +56,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
@@ -4986,7 +4986,7 @@ processChatCommand cxt nm = \case
               chunkSize <- asks $ fileChunkSize . config
               withFastStore' $ \db -> do
                 fileId <- createLocalFile CIFSSndStored db user nf createdAt cf fileSize chunkSize
-                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
+                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal, fileExpires = Nothing}
         prepareLocalItemsData ::
           NonEmpty ComposedMessageReq ->
           NonEmpty (Maybe (CIFile 'MDSnd)) ->
@@ -5139,8 +5139,9 @@ addUserBadge user cred@(BadgeCredential _ _ _ info) =
       presentUserBadgeToContacts user'
 
 presentUserBadgeToContacts :: User -> CM ()
-presentUserBadgeToContacts user' = do
+presentUserBadgeToContacts user'@User {profile = LocalProfile {localBadge}} = do
   asks currentUser >>= atomically . (`writeTVar` Just user')
+  lift $ withAgent' $ \a -> setUserEntitlement a (aUserId user') (badgeServerCredential localBadge)
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
   withChatLock "presentUserBadge" $ forM_ contacts $ \ct ->
@@ -5207,14 +5208,12 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
     -- sent - so a credential over any other master key also verifies
     Just True | credMasterKey /= masterKey -> throwCmdError "redeemed badge credential is for a different master key"
     Just True -> do
-      -- badge_issuances requires a period; a credential without an expiry has none to record
-      expiry <- maybe (throwCmdError "redeemed badge credential has no expiry") pure badgeExpiry
       g <- asks random
       now <- liftIO getCurrentTime
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
       -- TODO [badges] copy the statement's ledger entries, and retire a previously held badge
       (user', newBadge) <- withStore' $ \db -> do
-        newBadge <- createCodeBadgePurchase db g user redemption cred expiry now
+        newBadge <- createCodeBadgePurchase db g user redemption cred badgeExpiry now
         -- a replay must not put a superseded badge back, or tell every contact again
         user' <- if newBadge then setUserBadge db user (Just badge) else pure user
         pure (user', newBadge)

@@ -2779,4 +2779,6 @@
     <string name="settings_section_title_about">O aplikaci</string>
     <string name="relay_status_rejected">odmítnuto</string>
     <string name="member_info_relay_status_rejected_by_operator">odmítnuto operátorem relé</string>
+    <string name="advanced_options">Pokročilé možnosti</string>
+    <string name="advanced_settings">Pokročilé nastavení</string>
 </resources>

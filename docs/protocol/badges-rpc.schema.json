@@ -18,9 +18,7 @@
     "badgeInfo": {
       "properties": {
         "badgeType": {"type": "string"},
-        "badgeExtra": {"type": "string"}
-      },
-      "optionalProperties": {
+        "badgeExtra": {"type": "string"},
         "badgeExpiry": {"type": "timestamp"}
       }
     },

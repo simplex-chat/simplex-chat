@@ -48,6 +48,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
 import Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
 import Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
 import Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
+import Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
 import Simplex.Chat.Store.Postgres.Migrations.M20261001_user_badges
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
@@ -97,6 +98,7 @@ schemaMigrations =
     ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection),
     ("20260813_auto_accept_group_invitations", m20260813_auto_accept_group_invitations, Just down_m20260813_auto_accept_group_invitations),
     ("20260822_forward_link", m20260822_forward_link, Just down_m20260822_forward_link),
+    ("20260828_file_expiry", m20260828_file_expiry, Just down_m20260828_file_expiry),
     ("20261001_user_badges", m20261001_user_badges, Just down_m20261001_user_badges)
   ]
 
