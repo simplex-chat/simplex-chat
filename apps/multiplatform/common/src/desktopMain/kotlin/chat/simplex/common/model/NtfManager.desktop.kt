@@ -94,19 +94,19 @@ object NtfManager {
     }
   }
 
-  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
+  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>, canReply: Boolean = false) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val previewMode = appPreferences.notificationPreviewMode.get()
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(MR.strings.notification_preview_somebody) else displayName
     val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(MR.strings.notification_preview_new_message) else msgText
     val largeIcon = when {
-      actions.isEmpty() -> null
+      actions.isEmpty() && !canReply -> null
       image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> MR.images.icon_foreground_common.image.toComposeImageBitmap()
       else -> base64ToBitmap(image)
     }
 
-    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
+    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }, canReply) {
       ntfManager.openChatAction(user.userId, chatId)
     }
   }
@@ -118,6 +118,7 @@ object NtfManager {
     text: String,
     iconPath: String?,
     actions: List<Pair<String, () -> Unit>>,
+    canReply: Boolean = false,
     defaultAction: (() -> Unit)?
   ) {
     val builder = Toast.builder()
@@ -131,6 +132,17 @@ object NtfManager {
     }
     actions.forEach {
       builder.action(it.first, it.second)
+    }
+    if (canReply) {
+      val replyLabel = generalGetString(MR.strings.notification_reply_action)
+      if (ToasterFactory.getFactory().toaster().capabilities().contains(Capability.INPUT)) {
+        builder.input("reply", replyLabel, generalGetString(MR.strings.notification_reply_hint)) { replyText ->
+          withBGApi { sendNtfReply(rhId = null, userId = userId, chatId = chatId, text = replyText) }
+        }
+      } else {
+        // no inline input on this backend: fall back to opening the chat to reply
+        builder.action("reply", replyLabel) { ntfManager.openChatAction(userId, chatId) }
+      }
     }
     try {
       withBGApi {
