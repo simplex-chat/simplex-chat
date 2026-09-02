@@ -1,6 +1,6 @@
 {
   "name": "simplex-chat",
-  "version": "7.0.0",
+  "version": "7.0.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

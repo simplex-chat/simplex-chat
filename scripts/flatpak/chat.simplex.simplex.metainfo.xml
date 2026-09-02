@@ -38,6 +38,23 @@
   </description>
 
   <releases>
+    <release version="7.0.2" date="2026-09-02">
+      <url type="details">https://simplex.chat/blog/20260722-simplex-public-names.html</url>
+      <description>
+        <p>New in v7.0-v7.0.2.</p>
+        <p>SimpleX public names for channels and businesses (BETA).</p>
+        <p>Better channels:</p>
+        <ul>
+          <li>Promote subscribers to contributors.</li>
+          <li>Publish your channel on your website.</li>
+          <li>Verify security code with contributors.</li>
+          <li>Wider messages, easier to read.</li>
+          <li>Host your own chat relays.</li>
+        </ul>
+        <p>Add a longer description to your profile.</p>
+        <p>Simplified app settings.</p>
+      </description>
+    </release>
     <release version="7.0.0" date="2026-07-28">
       <url type="details">https://simplex.chat/blog/20260722-simplex-public-names.html</url>
       <description>
