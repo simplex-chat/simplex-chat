@@ -1155,6 +1155,12 @@
     <string name="images_limit_title">Забагато зображень!</string>
     <string name="videos_limit_title">Забагато відео!</string>
     <string name="you_are_observer">ви спостерігач</string>
+    <string name="connect_plan_you_are_observer">Ви спостерігач</string>
+    <string name="connect_plan_you_are_member">Ви учасник</string>
+    <string name="connect_plan_you_are_moderator">Ви модератор</string>
+    <string name="connect_plan_you_are_admin">Ви адміністратор</string>
+    <string name="connect_plan_you_are_owner">Ви власник</string>
+    <string name="connect_plan_you_are_contributor">Ви автор</string>
     <string name="colored_text">кольоровий</string>
     <string name="callstatus_ended">дзвінок завершено %1$s</string>
     <string name="callstatus_error">помилка дзвінка</string>
@@ -1807,7 +1813,7 @@
     <string name="v5_7_shape_profile_images_descr">Квадрат, коло або щось середнє між ними.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Буде ввімкнено в прямих чатах!</string>
     <string name="saved_description">збережено</string>
-    <string name="saved_from_description">збережено з %s</string>
+    <string name="saved_from">збережено з</string>
     <string name="network_type_ethernet">Дротова мережа Ethernet</string>
     <string name="file_not_approved_title">Невідомі сервери!</string>
     <string name="file_not_approved_descr">Без Tor або VPN ваша IP-адреса буде видимою для цих XFTP-ретрансляторів:

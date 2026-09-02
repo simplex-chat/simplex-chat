@@ -201,7 +201,7 @@
     <string name="moderated_description">modereret</string>
     <string name="forwarded_description">videresendt</string>
     <string name="saved_description">gemt</string>
-    <string name="saved_from_description">gemt fra %s</string>
+    <string name="saved_from">gemt fra</string>
     <string name="invalid_chat">ugyldig chat</string>
     <string name="invalid_data">ugyldige data</string>
     <string name="error_showing_message">fejl ved visning af besked</string>
@@ -635,6 +635,8 @@
     <string name="cant_send_message_you_left">du forlod</string>
     <string name="cant_send_message_generic">kan ikke sende beskeder</string>
     <string name="you_are_observer">du er observatør</string>
+    <string name="connect_plan_you_are_observer">Du er observatør</string>
+    <string name="connect_plan_you_are_admin">Du er administrator</string>
     <string name="reviewed_by_admins">gennemgået af administratorer</string>
     <string name="cant_send_message_member_has_old_version">medlemmet har en gammel version</string>
     <string name="image_descr">Billede</string>

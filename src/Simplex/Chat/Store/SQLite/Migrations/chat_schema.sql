@@ -301,7 +301,8 @@ CREATE TABLE files(
   shared_msg_id BLOB,
   file_type TEXT NOT NULL DEFAULT 'normal',
   roster_transfer_id INTEGER,
-  file_digest BLOB
+  file_digest BLOB,
+  file_expires_at TEXT
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -514,7 +515,12 @@ CREATE TABLE chat_items(
   item_msg_body BLOB,
   item_chat_binding TEXT,
   item_signatures BLOB,
-  item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  fwd_from_group_type TEXT,
+  fwd_from_group_link BLOB,
+  fwd_from_public_group_id BLOB,
+  fwd_from_member_id BLOB,
+  fwd_from_shared_msg_id BLOB
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(

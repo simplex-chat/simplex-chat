@@ -83,7 +83,11 @@ fun CIImageView(
           is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndWarning -> fileIcon(painterResource(MR.images.ic_warning_filled), MR.strings.icon_descr_file)
-          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
+          is CIFileStatus.RcvInvitation ->
+            if (file.expired && fileSizeValid(file, senderProfile))
+              fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+            else
+              fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
           is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
           is CIFileStatus.RcvComplete -> {}
@@ -210,7 +214,7 @@ fun CIImageView(
     val loaded = res.value
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
     } else {
       imageView(previewBitmap, onClick = {
         if (file != null) {
@@ -239,7 +243,7 @@ fun CIImageView(
                 FileProtocol.LOCAL -> {}
               }
             file.fileStatus is CIFileStatus.RcvError ->
-              showFileErrorAlert(file.fileStatus.rcvFileError)
+              showFileErrorAlert(file.fileStatus.rcvFileError, file)
             file.fileStatus is CIFileStatus.RcvWarning ->
               showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
             file.fileStatus is CIFileStatus.SndError ->
@@ -281,5 +285,6 @@ expect fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  blurred: State<Boolean>,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 )

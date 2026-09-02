@@ -3900,9 +3900,6 @@ alert button */
 /* new chat action */
 "Open new chat" = "Otwórz nowy czat";
 
-/* new chat action */
-"Open new group" = "Otwórz nową grupę";
-
 /* No comment provided by engineer. */
 "Open Settings" = "Otwórz Ustawienia";
 
@@ -4643,10 +4640,10 @@ chat item action */
 "Saved" = "Zapisane";
 
 /* No comment provided by engineer. */
-"Saved from" = "Zapisane od";
+"saved from" = "zapisane od";
 
 /* No comment provided by engineer. */
-"saved from %@" = "zapisane od %@";
+"Saved from" = "Zapisane od";
 
 /* message info title */
 "Saved message" = "Zachowano wiadomość";
@@ -6056,6 +6053,12 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Masz już profil czatu o tej samej nazwie wyświetlanej. Proszę wybrać inną nazwę.";
 
+/* new chat alert */
+"You are a member" = "Jesteś członkiem";
+
+/* new chat alert */
+"You are a moderator" = "Jesteś moderatorem";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Jesteś już połączony z %@.";
 
@@ -6079,6 +6082,15 @@ alert title */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Już dołączasz do grupy!\nPowtórzyć prośbę dołączenia?";
+
+/* new chat alert */
+"You are an admin" = "Jesteś administratorem";
+
+/* new chat alert */
+"You are an observer" = "Jesteś obserwatorem";
+
+/* new chat alert */
+"You are an owner" = "Jesteś właścicielem";
 
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Jesteś połączony z serwerem służącym do odbierania wiadomości z tego połączenia.";

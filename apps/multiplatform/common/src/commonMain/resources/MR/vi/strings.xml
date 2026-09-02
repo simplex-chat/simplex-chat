@@ -1594,7 +1594,7 @@
     <string name="cannot_share_message_alert_text">Các tùy chọn của cuộc trò chuyện được chọn không cho phép tin nhắn này.</string>
     <string name="scan_QR_code">Quét mã QR</string>
     <string name="saved_description">đã lưu</string>
-    <string name="saved_from_description">đã lưu từ %s</string>
+    <string name="saved_from">đã lưu từ</string>
     <string name="saved_from_chat_item_info_title">Đã lưu từ</string>
     <string name="scan_qr_code_from_desktop">Quét mã QR từ máy tính</string>
     <string name="secured">Đã được bảo mật</string>
@@ -2213,6 +2213,12 @@
     <string name="onboarding_network_operators_configure_via_settings">Bạn có thể tùy chỉnh các máy chủ thông qua cài đặt.</string>
     <string name="you_can_set_connection_name_to_remember">Bạn có thể đặt tên kết nối, để nhớ xem đường dẫn đã được chia sẻ với ai.</string>
     <string name="you_are_observer">bạn là quan sát viên</string>
+    <string name="connect_plan_you_are_observer">Bạn là quan sát viên</string>
+    <string name="connect_plan_you_are_member">Bạn là thành viên</string>
+    <string name="connect_plan_you_are_moderator">Bạn là kiểm duyệt viên</string>
+    <string name="connect_plan_you_are_admin">Bạn là quản trị viên</string>
+    <string name="connect_plan_you_are_owner">Bạn là chủ sở hữu</string>
+    <string name="connect_plan_you_are_subscriber">Bạn là người theo dõi</string>
     <string name="maximum_message_size_reached_forwarding">Bạn có thể sao chép và giảm kích thước tin nhắn để gửi nó đi.</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Bạn có thể bật chúng vào lúc sau thông qua cài đặt Quyền riêng tư &amp; Bảo mật của ứng dụng.</string>
     <string name="you_can_hide_or_mute_user_profile">Bạn có thể ẩn hoặc tắt thông báo một hồ sơ người dùng - giữ nó trong phần menu.</string>

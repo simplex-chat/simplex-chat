@@ -63,6 +63,7 @@ module Simplex.Chat.Store.Groups
     getGroupMemberByMemberId,
     getCreateUnknownGMByMemberId,
     getGroupMemberIdViaMemberId,
+    getGroupMemberViaMemberId_,
     getScopeMemberIdViaMemberId,
     getGroupMembers,
     getGroupMembersByIndexes,
@@ -130,6 +131,8 @@ module Simplex.Chat.Store.Groups
     getRelayServedGroups,
     getRelayPublishableGroups,
     getRelayInactiveGroups,
+    getGroupViaPublicGroupId,
+    getGroupProfileById,
     createJoiningMember,
     getMemberJoinRequest,
     createJoiningMemberConnection,
@@ -1219,11 +1222,16 @@ getScopeMemberIdViaMemberId db user g@GroupInfo {membership} sender scopeMemberI
   | otherwise = getGroupMemberIdViaMemberId db user g scopeMemberId
 
 getGroupMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> MemberId -> ExceptT StoreError IO GroupMemberId
-getGroupMemberIdViaMemberId db User {userId} GroupInfo {groupId} memberId =
-  ExceptT . firstRow fromOnly (SEGroupMemberNotFoundByMemberId memberId) $
+getGroupMemberIdViaMemberId db user GroupInfo {groupId} memberId = do
+  m_ <- liftIO $ getGroupMemberViaMemberId_ db user groupId memberId
+  maybe (throwError $ SEGroupMemberNotFoundByMemberId memberId) (pure . fst) m_
+
+getGroupMemberViaMemberId_ :: DB.Connection -> User -> GroupId -> MemberId -> IO (Maybe (GroupMemberId, GroupMemberCategory))
+getGroupMemberViaMemberId_ db User {userId} groupId memberId =
+  maybeFirstRow id $
     DB.query
       db
-      "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?"
+      "SELECT group_member_id, member_category FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?"
       (userId, groupId, memberId)
 
 getGroupMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
@@ -2036,6 +2044,20 @@ getRelayPublishableGroups db User {userId, userContactId} =
   where
     toRow ((gId, pgId) :. accessRow) = (gId, pgId, toPublicGroupAccess accessRow)
 
+getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, Maybe ShortLinkContact))
+getGroupViaPublicGroupId db User {userId} publicGroupId =
+  maybeFirstRow id $
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, gp.group_link
+        FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        WHERE g.user_id = ? AND gp.public_group_id = ?
+        LIMIT 1
+      |]
+      (userId, publicGroupId)
+
 getRelayInactiveGroups :: DB.Connection -> StoreCxt -> User -> NominalDiffTime -> IO [GroupInfo]
 getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do
   currentTs <- getCurrentTime
@@ -2777,26 +2799,28 @@ updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} 
 
 updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
 updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} = do
-  p <- getGroupProfile -- to avoid any race conditions with UI
+  p_ <- liftIO $ getGroupProfileById db groupId -- to avoid any race conditions with UI
+  p <- maybe (throwError $ SEGroupNotFound groupId) pure p_
   let g' = g {groupProfile = p} :: GroupInfo
       p' = p {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} :: GroupProfile
   updateGroupProfile db user g' p'
+
+getGroupProfileById :: DB.Connection -> GroupId -> IO (Maybe GroupProfile)
+getGroupProfileById db groupId =
+  maybeFirstRow toGroupProfile $
+    DB.query
+      db
+      [sql|
+        SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
+               gp.group_type, gp.group_link, gp.public_group_id,
+               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+               gp.preferences, gp.member_admission
+        FROM group_profiles gp
+        JOIN groups g ON gp.group_profile_id = g.group_profile_id
+        WHERE g.group_id = ?
+      |]
+      (Only groupId)
   where
-    getGroupProfile =
-      ExceptT $
-        firstRow toGroupProfile (SEGroupNotFound groupId) $
-          DB.query
-            db
-            [sql|
-            SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
-                   gp.group_type, gp.group_link, gp.public_group_id,
-                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-                   gp.preferences, gp.member_admission
-            FROM group_profiles gp
-            JOIN groups g ON gp.group_profile_id = g.group_profile_id
-            WHERE g.group_id = ?
-          |]
-            (Only groupId)
     toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
       let publicGroupAccess = toPublicGroupAccess accessRow
        in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, groupPreferences, memberAdmission}

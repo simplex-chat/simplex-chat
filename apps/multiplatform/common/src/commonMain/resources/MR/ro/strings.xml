@@ -195,7 +195,7 @@
     <string name="connect_plan_repeat_join_request">Repetă cererea de alăturare?</string>
     <string name="restart_chat_button">Reporniți conversația</string>
     <string name="saved_description">salvat</string>
-    <string name="saved_from_description">salvat de la %s</string>
+    <string name="saved_from">salvat de la</string>
     <string name="save_verb">Salvează</string>
     <string name="saved_chat_item_info_tab">Salvat</string>
     <string name="saved_from_chat_item_info_title">Salvat din</string>
@@ -2195,6 +2195,11 @@
     <string name="migrate_from_device_stopping_chat">Se opresc conversațiile</string>
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="you_are_observer">ești observator</string>
+    <string name="connect_plan_you_are_observer">Ești observator</string>
+    <string name="connect_plan_you_are_member">Ești membru</string>
+    <string name="connect_plan_you_are_moderator">Ești moderator</string>
+    <string name="connect_plan_you_are_admin">Ești administrator</string>
+    <string name="connect_plan_you_are_owner">Ești proprietar</string>
     <string name="video_decoding_exception_desc">Videoclipul nu poate fi decodificat. Vă rugăm să încercați un alt videoclip sau să contactați dezvoltatorii.</string>
     <string name="maximum_message_size_reached_forwarding">Puteți copia și micșora dimensiunea mesajului pentru a-l trimite.</string>
     <string name="callstate_waiting_for_answer">aștept răspunsul…</string>

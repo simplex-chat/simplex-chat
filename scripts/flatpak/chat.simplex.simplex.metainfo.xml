@@ -38,10 +38,10 @@
   </description>
 
   <releases>
-    <release version="7.0.1" date="2026-08-18">
+    <release version="7.0.2" date="2026-09-02">
       <url type="details">https://simplex.chat/blog/20260722-simplex-public-names.html</url>
       <description>
-        <p>New in v7.0-v7.0.1.</p>
+        <p>New in v7.0-v7.0.2.</p>
         <p>SimpleX public names for channels and businesses (BETA).</p>
         <p>Better channels:</p>
         <ul>

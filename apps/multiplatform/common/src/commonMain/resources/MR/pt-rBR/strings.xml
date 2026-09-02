@@ -119,7 +119,7 @@
     <string name="callstatus_accepted">chamada aceita</string>
     <string name="status_contact_has_e2e_encryption">o contato tem criptografia de ponta a ponta</string>
     <string name="status_contact_has_no_e2e_encryption">o contato não tem criptografia de ponta a ponta</string>
-    <string name="contact_preferences">Preferências de contato</string>
+    <string name="contact_preferences">Preferências do contato</string>
     <string name="allow_to_delete_messages">Permitir apagar permanentemente as mensagens enviadas em até 24h.</string>
     <string name="chat_preferences_always">sempre</string>
     <string name="v4_3_improved_server_configuration_desc">Adicione servidores escaneando o QR Code.</string>
@@ -161,7 +161,7 @@
     <string name="server_connecting">conectando</string>
     <string name="deleted_description">apagado</string>
     <string name="smp_server_test_connect">Conectar</string>
-    <string name="delete_group_menu_action">Apagar</string>
+    <string name="delete_group_menu_action">Excluir</string>
     <string name="connect_button">Conectar</string>
     <string name="callstatus_connecting">conectando chamada…</string>
     <string name="delete_chat_profile_question">Excluir perfil de chat?</string>
@@ -461,7 +461,7 @@
     <string name="you_invited_a_contact">Você convidou seu contato</string>
     <string name="invalid_QR_code">QR Code inválido</string>
     <string name="icon_descr_more_button">Mais</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">Você será conectado ao grupo quando o dispositivo que hospeda o grupo estiver online. Por favor, aguarde ou verifique mais tarde.</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Você será conectado ao grupo quando o dispositivo que hospeda o grupo estiver online. Aguarde ou verifique mais tarde.</string>
     <string name="this_string_is_not_a_connection_link">Essa string não é um link de conexão!</string>
     <string name="network_use_onion_hosts_prefer">Quando disponível</string>
     <string name="app_version_code">Compilação do aplicativo: %s</string>
@@ -502,7 +502,7 @@
     <string name="restart_the_app_to_use_imported_chat_database">Reinicie o aplicativo para usar o banco de dados importado.</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Reinicie o aplicativo para criar um novo perfil de chat.</string>
     <string name="delete_files_and_media_desc">Essa ação não pode ser desfeita - todos os arquivos e mídias recebidos e enviados serão excluídos. Imagens de baixa resolução permanecerão.</string>
-    <string name="you_must_use_the_most_recent_version_of_database">Você deve usar a versão mais recente do banco de dados do chat em APENAS um dispositivo, caso contrário poderá parar de receber as mensagens de alguns contatos.</string>
+    <string name="you_must_use_the_most_recent_version_of_database">Você deve usar a versão mais recente do banco de dados do chat em APENAS um dispositivo. Caso contrário, poderá parar de receber mensagens de alguns contatos.</string>
     <string name="no_received_app_files">Sem arquivos enviados ou recebidos</string>
     <string name="messages_section_title">Mensagens</string>
     <string name="messages_section_description">Esta configuração se aplica às mensagens do seu perfil atual</string>
@@ -630,7 +630,7 @@
     <string name="invalid_contact_link">Link inválido!</string>
     <string name="this_QR_code_is_not_a_link">Esse QR Code não é um link!</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Seu perfil de chat será enviado\nao seu contato</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Você será conectado quando o dispositivo do seu contato estiver online, aguarde ou verifique mais tarde!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Você será conectado quando o dispositivo do seu contato estiver online. Aguarde ou verifique mais tarde.</string>
     <string name="how_to">Como</string>
     <string name="smp_servers_test_failed">Teste do servidor falhou!</string>
     <string name="network_use_onion_hosts_no_desc">Os hosts .onion não serão usados.</string>
@@ -813,7 +813,7 @@
     <string name="app_name">SimpleX</string>
     <string name="only_group_owners_can_enable_voice">Somente os proprietários do grupo podem ativar mensagens de voz.</string>
     <string name="description_you_shared_one_time_link">você compartilhou um link de uso único</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Você será conectado quando sua solicitação de conexão for aceita, aguarde ou verifique mais tarde!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Você será conectado quando sua solicitação de conexão for aceita. Aguarde ou verifique mais tarde.</string>
     <string name="settings_section_title_settings">Configurações</string>
     <string name="v4_6_group_welcome_message_descr">Defina a mensagem mostrada aos novos membros!</string>
     <string name="icon_descr_settings">Configurações</string>
@@ -874,6 +874,13 @@
     <string name="switch_verb">Trocar</string>
     <string name="group_is_decentralized">Totalmente descentralizado — visível apenas para os membros.</string>
     <string name="you_are_observer">você é um observador</string>
+    <string name="connect_plan_you_are_observer">Você é um observador</string>
+    <string name="connect_plan_you_are_member">Você é um membro</string>
+    <string name="connect_plan_you_are_moderator">Você é um moderador</string>
+    <string name="connect_plan_you_are_admin">Você é um administrador</string>
+    <string name="connect_plan_you_are_owner">Você é um proprietário</string>
+    <string name="connect_plan_you_are_subscriber">Você é um inscrito</string>
+    <string name="connect_plan_you_are_contributor">Você é um colaborador</string>
     <string name="voice_message_with_duration">Mensagem de voz (%1$s)</string>
     <string name="share_link">Compartilhar link</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger sua privacidade, o SimpleX usa IDs separados para cada um dos seus contatos.</string>
@@ -1439,7 +1446,7 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[Para fazer ligações no plano de fundo, escolha <b>Uso de bateria do aplicativo</b> / <b>Irrestrito</b> nas configurações do aplicativo.]]></string>
     <string name="send_receipts_disabled_alert_msg">Este grupo tem mais de %1$d membros; as confirmações de entrega não são enviadas.</string>
     <string name="loading_remote_file_title">Carregando o arquivo</string>
-    <string name="rcv_direct_event_contact_deleted">contato deletado</string>
+    <string name="rcv_direct_event_contact_deleted">contato apagado</string>
     <string name="error">Erro</string>
     <string name="this_device">Este dispositivo</string>
     <string name="discover_on_network">Descobrir via rede local</string>
@@ -1706,7 +1713,7 @@
     <string name="v5_8_persian_ui">IU Persa</string>
     <string name="message_delivery_warning_title">Aviso de entrega de mensagem</string>
     <string name="ci_status_other_error">Erro: %1$s</string>
-    <string name="snd_error_auth">Chave incorreta ou conexão desconhecida - provavelmente esta conexão foi excluída.</string>
+    <string name="snd_error_auth">Chave incorreta ou conexão desconhecida - provavelmente essa conexão foi excluída.</string>
     <string name="e2ee_info_no_pq_short">Esta conversa é protegida por criptografia de ponta a ponta.</string>
     <string name="migrate_from_device_repeat_upload">Repetir envio</string>
     <string name="smp_proxy_error_connecting">Erro de conexão ao servidor de encaminhamento %1$s. Por favor, tente mais tarde.</string>
@@ -1809,7 +1816,7 @@
     <string name="migrate_from_device_error_exporting_archive">Erro ao exportar banco de dados</string>
     <string name="migrate_from_device_error_verifying_passphrase">Erro ao verificar a senha:</string>
     <string name="saved_description">salvo</string>
-    <string name="saved_from_description">salvo de %s</string>
+    <string name="saved_from">salvo de</string>
     <string name="forwarded_from_chat_item_info_title">Encaminhado de</string>
     <string name="voice_messages_not_allowed">Mensagens de voz não permitidas</string>
     <string name="new_message">Nova mensagem</string>
@@ -2518,7 +2525,7 @@
     <string name="chat_link_contact_address">Endereço do contato</string>
     <string name="cant_send_message_contact_disabled">contato desativado</string>
     <string name="cant_send_message_contact_not_ready">o contato não está pronto</string>
-    <string name="settings_section_title_contact_requests_from_groups">Solicitações de contato de grupos</string>
+    <string name="settings_section_title_contact_requests_from_groups">Solicitações de contato em grupos</string>
     <string name="contact_should_accept">o contato deve aceitar…</string>
     <string name="group_member_role_member_channel">colaborador</string>
     <string name="copy_code">Copiar código</string>
@@ -2914,4 +2921,5 @@
     <string name="badge_unverified_title">Selo não verificado</string>
     <string name="badge_unverified_desc">Não foi possível verificar este selo, que pode não ser legítimo.</string>
     <string name="badge_unknown_key_desc">O selo é assinado com uma chave que esta versão do aplicativo não reconhece. Atualize o aplicativo para verificar este selo.</string>
+    <string name="group_invitations">Convites em grupo</string>
 </resources>

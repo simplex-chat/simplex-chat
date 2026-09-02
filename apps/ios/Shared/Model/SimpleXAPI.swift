@@ -495,9 +495,9 @@ func loadChat(chatId: ChatId, im: ItemsModel, contentTag: MsgContentTag? = nil, 
     )
 }
 
-func apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64) async throws -> ChatItemInfo {
+func apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64) async throws -> (AChatItem, ChatItemInfo) {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetChatItemInfo(type: type, id: id, scope: scope, itemId: itemId))
-    if case let .chatItemInfo(_, _, chatItemInfo) = r { return chatItemInfo }
+    if case let .chatItemInfo(_, aci, chatItemInfo) = r { return (aci, chatItemInfo) }
     throw r.unexpected
 }
 
