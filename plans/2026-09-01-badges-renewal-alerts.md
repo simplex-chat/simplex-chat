@@ -115,7 +115,7 @@ Out of scope but worth knowing: `badge_ledger.payment_id` references a **payment
 
 ## 8. Order of work
 
-**A — ledger on the service.** Read `months`, the three transitions, redemption grants and issues, `issueBadge` handler, statement in both responses. Done when a three-month code redeems and a second `issueBadge` a month later returns a second credential, asserted against the service's own rows.
+**A — ledger on the service.** The injectable clock (§9), reading `months`, the three transitions, redemption grants and issues, the `issueBadge` handler, the statement in both responses. Done when a three-month code redeems and a second `issueBadge` a month later returns a second credential, asserted against the service's own rows.
 
 **B — client replica.** Store the statement verbatim, read the balance from the last row, resolve §7's types. Done when the client's rows equal the service's row for row after a redemption.
 
@@ -123,11 +123,23 @@ Out of scope but worth knowing: `badge_ledger.payment_id` references a **payment
 
 **D — alerts and surface.** The ended alert, ack and snooze, the four commands and events. Done when the terminal shows it at `paidThrough` and acknowledging silences it.
 
-Tests land with each step, extending `tests/Bots/BadgeServiceTests.hs`. Time is the hard part: the transitions take the current time as an argument, so a test can issue twelve months of one badge without waiting — keep every date decision in a function that takes `now` rather than reading the clock.
+## 9. Testing time
 
----
+Nothing about the badge service is mocked: the harness already runs the real one in-process, so a fake would be less faithful and no faster. What is mocked is the clock.
 
-## 9. Done means
+**An injectable `now`** — `IO UTCTime` in config, defaulting to `getCurrentTime`. No badge code calls the clock directly: the transitions already take `now` as a parameter, and so do their two callers, the service handler and the worker pass. In tests both sides read one source — real time plus a test-controlled offset — so a test can redeem a twelve-month code, jump the offset a month, signal the worker, and assert, twelve times over, in milliseconds and against the real service, real signing and real rows.
+
+The offset tracks real time rather than freezing it, which is what keeps the sleeper honest: `rescheduleWork` computes `actionTs - now` in shifted time and still sleeps the right real duration.
+
+This is preferred over making the issuance period configurable. The period is baked into the credential's signed expiry and interacts with the Sunday rounding, so shortening it to seconds means disabling the rounding too — two knobs, and production arithmetic that no test exercises. A clock offset leaves every production computation exactly as shipped and only lies about the date.
+
+It also reaches what waiting cannot: eight months offline, a boundary on the 31st, a leap day. Those hold the bugs.
+
+Real elapsed time is then needed for one thing only — that the sleeper wakes the worker at all. With the offset set a second short of a boundary that is a one-second test.
+
+Tests land with each step, extending `tests/Bots/BadgeServiceTests.hs`.
+
+## 10. Done means
 
 - a twelve-month code yields twelve monthly credentials, one per month, and a thirteenth request yields none
 - a second request inside an issued month returns the credential already stored, unchanged
