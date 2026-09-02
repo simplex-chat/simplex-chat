@@ -1815,6 +1815,12 @@ server test step */
 "creator" = "creatore";
 
 /* No comment provided by engineer. */
+"Crowdfunding on Wefunder" = "Raccolta fondi su Wefunder";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder." = "Raccolta fondi su Wefunder.";
+
+/* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "Il testo delle condizioni attuali testo non è stato caricato, puoi consultare le condizioni tramite questo link:";
 
 /* No comment provided by engineer. */
@@ -3152,6 +3158,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "L'invito al gruppo non è più valido, è stato rimosso dal mittente.";
+
+/* No comment provided by engineer. */
+"Group invitations" = "Inviti in gruppi";
 
 /* No comment provided by engineer. */
 "group is deleted" = "il gruppo è eliminato";
@@ -7102,6 +7111,12 @@ alert title */
 
 /* notification body */
 "You can now chat with %@" = "Ora puoi inviare messaggi a %@";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat" = "Ora puoi investire in SimpleX Chat";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat! 🚀" = "Ora puoi investire in SimpleX Chat! 🚀";
 
 /* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Puoi inviare messaggi a %@ dai contatti archiviati.";
