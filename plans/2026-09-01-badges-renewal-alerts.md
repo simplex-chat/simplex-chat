@@ -47,6 +47,7 @@ The columns this slice never writes stay NULL: `payment_id`, `charge_id`, `from_
 - `getBadgeCode` selects `months` again; redemption grants that many.
 - Redemption becomes: `advance` → grant → issue, and the response's `statement` carries the rows it wrote instead of being empty.
 - `issueBadge` (`BSCIssueBadge`, already in the protocol) gets its handler: `advance`, then issue if a month is due, then reply. The `balance` the client asserts names its last held entry; the service returns the entries after it, or the whole ledger with an `opening` restatement when it names nothing the service holds.
+- A repeat within an issued period replies with the **stored** credential and writes nothing. Not a re-sign: the same period signed twice yields a different signature and churns the client's credential for nothing.
 - An exhausted balance is not an error: the reply carries no `credential` and a statement that shows why.
 - Signing stays before every write, as in redemption. A signing failure writes nothing and the month is still due.
 
@@ -60,13 +61,17 @@ The worker holds no queue. A trigger only signals it; each pass reads stored sta
 
 **Pass**, per badge: is a month due, or has one lapsed, or is an alert derivable? If a request is needed, take the user's badge lock, send it signed with the purchase key, apply the response, then release. Applying a response means: copy the statement's entries verbatim, verify the credential, store the issuance, update the purchase, and re-present the badge to contacts.
 
-**Triggers.** Chat start, chat activate, the timer, and immediately after a redemption. Network restore and profile switch belong here too and cost nothing to add, but no caller sends them in this slice.
+**Triggers.** Chat start and chat activate. Network restore and profile switch belong here too and cost nothing to add, but no caller sends them in this slice. Redemption is *not* a trigger: it is one round trip that returns the credential and the statement, and the redeem command already stores the rows, sets the badge and broadcasts — there is no follow-up work.
 
-**Timer.** One thread. Each pass records its user's next boundary; the thread sleeps to the earliest and signals whoever is due. Boundaries: the next month due, `paidThrough − 3d`, `paidThrough`, and any snooze expiry.
+**Scheduling.** No timer thread and no boundary map. Each pass ends by scheduling its own next wake-up, in the shape of `rescheduleWork` (`simplexmq` `NtfSubSupervisor.hs:478`): clear `doWork`, fork a sleeper that signals it at the next boundary, then block as usual. Two boundaries only, both day-granularity — the next month falling due, and `paidThrough`.
+
+Unlike its original, this sleeper is **tracked per user and replaced**, following `deleteTimedItem` (`Internal.hs:1687`): cancel the previous before forking, cancel with the worker at chat stop, and re-check `waitChatStartedAndActivated` on waking. Badge horizons are a month where NtfSubSupervisor's are minutes, so untracked sleepers would accumulate — one per activate — instead of retiring.
 
 **Expiry.** When the balance is exhausted and the last period ends, the shown badge is cleared and the profile update broadcast — the removal update of UX 2.11. This is the visible half of "the badge expired".
 
 **Locking.** Add a `ChatLockEntity` constructor for the badge user and use `withEntityLock`, rather than the separate `badgeLocks` map §6 sketches. Same discipline, one lock map, and the `chatLock` ordering comes for free.
+
+Nothing here is load-bearing for correctness: a pass derives its work from stored state, so chat start alone gives correct behaviour. It is what lets a client left running renew without a restart, and with `badgeGraceInterval` at 7 days a renewal hours late is invisible to contacts.
 
 Timeouts are retried as the identical signed envelope at the next signal, never on a poll timer.
 
@@ -74,12 +79,9 @@ Timeouts are retried as the identical signed envelope at the next signal, never 
 
 ## 5. Alerts
 
-Without subscriptions only two of the five `BadgeAlertKind` constructors are reachable. Implement these; leave the others unemitted.
+One alert: `BASupportEnded`, at `paidThrough` with the balance exhausted, once.
 
-| alert | when |
-|---|---|
-| `BAPrepaidEnding` | 3 days before `paidThrough`, balance 0, once |
-| `BASupportEnded` | at `paidThrough`, balance 0, once |
+`BAPrepaidEnding` — the 3-days-out warning — is **not** implemented, because a user cannot act on it. Topping up before the current period ends needs the service to credit a balance without issuing a credential, which is a change to the redemption path that beta does not carry; today a prepaid badge can only be continued after it has elapsed. Record that with a `TODO [badges]` in the alert derivation, where the missing branch is. The other three `BadgeAlertKind` constructors need subscriptions and stay unemitted.
 
 Derived from state at the end of each pass, not stored as pending: compare the derived alert with `alert_acked_kind` / `alert_acked_episode` on the purchase, emit if they differ. The episode is the value that makes this occurrence distinct — `paidThrough`. Acknowledging writes the pair; snoozing sets `alert_snooze_until`, after which the alert is emitted once more. All three columns already exist.
 
@@ -98,17 +100,18 @@ Each needs its `chatCommandP` parser, `View.hs` rendering, and registration in `
 
 ---
 
-## 7. Resolve before writing the worker
+## 7. Types to correct first
 
-Types declared during design that no code has exercised, and which this slice is the first to need. Each is a small decision, and all of them are cheaper to settle up front than to discover mid-implementation.
+Declared during design, never exercised — `Badges.Types`' `BadgePurchase`, `BadgeIssuance`, `CTPayment` and `CTCharge` have no users, so none of this costs a migration or a call site. (`Simplex.Chat.Badges` has a different `BadgePurchase`, the payment-proof sum, which `Badges.Types` hides; that one is in use and unaffected.)
 
-- `LedgerCreditType.CTPayment {invoiceId :: Int64}` cannot represent a code grant, which has no invoice — the wire type says `Maybe InvoiceId`. It is also `Int64` where `payments.payment_id` is `TEXT`.
-- `CTCharge {chargeId :: Int64}` has the same `Int64`-vs-`TEXT` mismatch its wire twin `SCCharge` already had; that one was corrected to `Text` in milestone A and this one was left, deliberately, for whoever needed it first.
-- `BadgePurchase.paymentId :: Int64` is neither optional nor `TEXT`; a code purchase has no payment.
-- `BadgeIssuance` has `Maybe` period and expiry fields for lifetime badges, while the table is `NOT NULL` and lifetime is going away.
-- `UserBadgeState` carries subscription fields (`renewsAt`, `willRenew`) that nothing in this slice can populate.
+- **Add a `code` credit type, on the wire and in storage.** The wire currently models a code grant as `payment` with `invoiceId` absent. Storing it as anything else would mean the client rewriting a row it is meant to replicate verbatim, so both sides gain the constructor together. It also makes the absence structural: a code's own invoice belongs to the buyer and lives in `badge_code_invoices` on the service, and the redeemer's ledger must never reference it. Cheap now, expensive once stream 2 ships.
+- `CTPayment.invoiceId` becomes `InvoiceId`, not `Int64` — `invoices.invoice_id` is `TEXT`.
+- `CTCharge.chargeId` becomes `Text`, matching `subscription_charges.charge_id` and its wire twin `SCCharge`, corrected in milestone A. Unused in this slice; changed so the twins stop disagreeing.
+- `BadgePurchase` gains a funding sum — payment or code — rather than a mandatory `Int64` `paymentId`. Exactly one is set and the schema cannot say so, so the type should.
+- `BadgeIssuance` loses its `Maybe` period, expiry and entry id. Lifetime is gone, the columns are `NOT NULL`, and every issuance is written beside exactly one `consume` row.
+- `UserBadgeState`'s subscription fields stay: `renewsAt` is `Nothing` and `willRenew` is `False` until subscriptions exist.
 
----
+Out of scope but worth knowing: `badge_ledger.payment_id` references a **payment** while the wire's `payment` credit names an **invoice**. Both are NULL for a code grant, so this slice never has to resolve it.
 
 ## 8. Order of work
 
@@ -116,9 +119,9 @@ Types declared during design that no code has exercised, and which this slice is
 
 **B — client replica.** Store the statement verbatim, read the balance from the last row, resolve §7's types. Done when the client's rows equal the service's row for row after a redemption.
 
-**C — worker and renewal.** Worker, lock, timer, the pass, re-presentation. Done when a badge whose month has elapsed renews with no command, and one whose balance is exhausted loses its shown badge and broadcasts the removal.
+**C — worker and renewal.** Worker, lock, self-scheduling, the pass, re-presentation. Done when a badge whose month has elapsed renews with no command, and one whose balance is exhausted loses its shown badge and broadcasts the removal.
 
-**D — alerts and surface.** The two alerts, ack and snooze, the four commands and events. Done when the terminal shows the ending alert three days out, the ended alert at `paidThrough`, and acknowledging silences each once.
+**D — alerts and surface.** The ended alert, ack and snooze, the four commands and events. Done when the terminal shows it at `paidThrough` and acknowledging silences it.
 
 Tests land with each step, extending `tests/Bots/BadgeServiceTests.hs`. Time is the hard part: the transitions take the current time as an argument, so a test can issue twelve months of one badge without waiting — keep every date decision in a function that takes `now` rather than reading the clock.
 
@@ -127,9 +130,10 @@ Tests land with each step, extending `tests/Bots/BadgeServiceTests.hs`. Time is 
 ## 9. Done means
 
 - a twelve-month code yields twelve monthly credentials, one per month, and a thirteenth request yields none
-- re-issue happens without a command, from the timer alone
+- a second request inside an issued month returns the credential already stored, unchanged
+- re-issue happens without a command, from the worker's own wake-up alone
 - an app offline across several months lapses exactly the elapsed ones and issues the current one
 - redeeming the same code twice still yields one badge and one set of ledger rows
 - client and service ledgers match row for row, and the client authored none of them
-- the ending and ended alerts each fire once, survive a restart, and stay silent once acknowledged
+- the ended alert fires once, survives a restart, and stays silent once acknowledged
 - an expired badge disappears from contacts' view without the user acting
