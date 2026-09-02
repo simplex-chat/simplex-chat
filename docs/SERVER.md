@@ -5,7 +5,7 @@ revision: 12.10.2024
 
 # Hosting your own SMP Server
 
-| Updated 12.10.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
+| Updated 12.10.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md), [JA](/docs/lang/ja/SERVER.md) |
 
 ## Table of Contents
 
