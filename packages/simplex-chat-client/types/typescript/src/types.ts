@@ -230,7 +230,7 @@ export interface AutoAccept {
 
 export interface BadgeInfo {
   badgeType: BadgeType
-  badgeExpiry?: string // ISO-8601 timestamp
+  badgeExpiry: string // ISO-8601 timestamp
   badgeExtra: string
 }
 

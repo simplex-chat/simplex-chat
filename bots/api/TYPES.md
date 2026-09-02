@@ -399,7 +399,7 @@ BadSignature:
 
 **Record type**:
 - badgeType: [BadgeType](#badgetype)
-- badgeExpiry: UTCTime?
+- badgeExpiry: UTCTime
 - badgeExtra: string
 
 

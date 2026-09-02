@@ -118,26 +118,29 @@ data BadgeStatus = BSActive | BSExpired | BSExpiredOld | BSFailed | BSUnknownKey
 
 data BadgeInfo = BadgeInfo
   { badgeType :: BadgeType,
-    badgeExpiry :: Maybe UTCTime,
+    badgeExpiry :: UTCTime,
     badgeExtra :: Text
   }
   deriving (Eq, Show)
 
+-- a badge stays active for this long after its expiry, to allow for a delayed renewal
+badgeGraceInterval :: NominalDiffTime
+badgeGraceInterval = 7 * nominalDay
+
 -- a badge expired longer than this ago is BSExpiredOld and is not shown in the UI
 badgeOldInterval :: NominalDiffTime
-badgeOldInterval = 31 * nominalDay
+badgeOldInterval = badgeGraceInterval + 31 * nominalDay
 
 -- the verification outcome of a received proof: Just True = verified, Just False = failed,
 -- Nothing = the proof's key index is not among this app version's configured keys (BSUnknownKey).
 mkBadgeStatus :: UTCTime -> Maybe Bool -> BadgeInfo -> BadgeStatus
-mkBadgeStatus now verified BadgeInfo {badgeExpiry} = case verified of
+mkBadgeStatus now verified BadgeInfo {badgeExpiry = e} = case verified of
   Nothing -> BSUnknownKey
   Just False -> BSFailed
-  Just True -> case badgeExpiry of
-    Just e
-      | addUTCTime badgeOldInterval e < now -> BSExpiredOld
-      | e < now -> BSExpired
-    _ -> BSActive
+  Just True
+    | addUTCTime badgeOldInterval e < now -> BSExpiredOld
+    | addUTCTime badgeGraceInterval e < now -> BSExpired
+    | otherwise -> BSActive
 
 -- A badge credential (own, secret) and a proof (a presentation) are independent records.
 -- badgeKeyIdx is the issuer key index: it tells verifiers which configured key to use.
@@ -192,7 +195,7 @@ maxFileSizeLegend = gb 5
 badgeServerCredential :: Maybe LocalBadge -> Maybe EntitlementCredential
 badgeServerCredential = \case
   Just (OwnBadge (BadgeCredential idx (BadgeMasterKey mk) sig BadgeInfo {badgeType, badgeExpiry, badgeExtra}) _) ->
-    (\e -> EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement e (textEncode badgeType) badgeExtra) sig) <$> badgeExpiry
+    Just $ EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement badgeExpiry (textEncode badgeType) badgeExtra) sig
   _ -> Nothing
 
 maxXFTPFileSize :: Maybe LocalBadge -> Int64
@@ -287,15 +290,12 @@ bbsBadgeDisclosedIndexes = [1, 2, 3]
 
 -- Message encoding
 
-encodeExpiry :: Maybe UTCTime -> ByteString
-encodeExpiry = maybe "lifetime" strEncode
-
 badgeMessages :: BadgeMasterKey -> BadgeInfo -> [ByteString]
 badgeMessages (BadgeMasterKey ms) info = ms : badgeInfoMessages info
 
 badgeInfoMessages :: BadgeInfo -> [ByteString]
 badgeInfoMessages BadgeInfo {badgeType, badgeExpiry, badgeExtra} =
-  [encodeExpiry badgeExpiry, encodeUtf8 (textEncode badgeType), encodeUtf8 badgeExtra]
+  [strEncode badgeExpiry, encodeUtf8 (textEncode badgeType), encodeUtf8 badgeExtra]
 
 -- Payment verification (stub - always passes)
 
@@ -364,11 +364,11 @@ badgeToRow badge verified = localBadgeToRow $ (`PeerBadge` st) <$> badge
 localBadgeToRow :: Maybe LocalBadge -> BadgeRow
 localBadgeToRow (Just lb) = case lb of
   OwnBadge (BadgeCredential idx (BadgeMasterKey mk) (BBSSignature sg) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) st ->
-    (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), verifiedField st, Just badgeExtra, Just (Binary mk), Just (Binary sg), Just idx)
+    (Nothing, Nothing, Just badgeExpiry, Just (textEncode badgeType), verifiedField st, Just badgeExtra, Just (Binary mk), Just (Binary sg), Just idx)
   PeerBadge (BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) st ->
-    (Just (Binary p), Just (Binary ph), badgeExpiry, Just (textEncode badgeType), verifiedField st, Just badgeExtra, Nothing, Nothing, Just idx)
+    (Just (Binary p), Just (Binary ph), Just badgeExpiry, Just (textEncode badgeType), verifiedField st, Just badgeExtra, Nothing, Nothing, Just idx)
   ShownBadge BadgeInfo {badgeType, badgeExpiry, badgeExtra} st ->
-    (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), verifiedField st, Just badgeExtra, Nothing, Nothing, Nothing)
+    (Nothing, Nothing, Just badgeExpiry, Just (textEncode badgeType), verifiedField st, Just badgeExtra, Nothing, Nothing, Nothing)
   where
     verifiedField st = case st of
       BSFailed -> Just (BI False)
@@ -377,9 +377,10 @@ localBadgeToRow (Just lb) = case lb of
 localBadgeToRow Nothing = (Nothing, Nothing, Nothing, Nothing, Just (BI False), Nothing, Nothing, Nothing, Nothing)
 
 rowToBadge :: UTCTime -> BadgeRow -> Maybe LocalBadge
-rowToBadge now (p_, ph_, badgeExpiry, type_, verified_, extra_, mk_, sg_, idx_) = do
+rowToBadge now (p_, ph_, expiry_, type_, verified_, extra_, mk_, sg_, idx_) = do
   btText <- type_
   bt <- textDecode btText
+  badgeExpiry <- expiry_
   let info = BadgeInfo {badgeType = bt, badgeExpiry, badgeExtra = maybe "" id extra_}
       -- NULL badge_verified means the key index was unknown when stored (Nothing)
       st = mkBadgeStatus now (unBI <$> verified_) info

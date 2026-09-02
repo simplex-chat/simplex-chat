@@ -170,7 +170,7 @@ class AutoAccept(TypedDict):
 
 class BadgeInfo(TypedDict):
     badgeType: "BadgeType"
-    badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
+    badgeExpiry: str  # ISO-8601 timestamp
     badgeExtra: str
 
 class BadgeProof(TypedDict):

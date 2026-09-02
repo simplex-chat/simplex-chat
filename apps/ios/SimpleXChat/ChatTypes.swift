@@ -302,7 +302,7 @@ public enum BadgeStatus: String, Codable {
 
 public struct BadgeInfo: Codable, Hashable {
     public var badgeType: BadgeType
-    public var badgeExpiry: Date?
+    public var badgeExpiry: Date
     public var badgeExtra: String
 }
 
