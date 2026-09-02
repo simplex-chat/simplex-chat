@@ -3,7 +3,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Directory.Util where
+module Simplex.Chat.Bot.Store
+  ( storeCxt,
+    withDB,
+    withDB',
+  )
+where
 
 import Control.Logger.Simple
 import Control.Monad.Except

@@ -179,6 +179,14 @@
 		64A77A022DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A77A012DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift */; };
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
+		64C03BF9302F423300072BDE /* BadgesPayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF1302F423300072BDE /* BadgesPayView.swift */; };
+		64C03BFA302F423300072BDE /* BadgesRedeemCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF2302F423300072BDE /* BadgesRedeemCodeView.swift */; };
+		64C03BFB302F423300072BDE /* BadgesHowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF0302F423300072BDE /* BadgesHowItWorksView.swift */; };
+		64C03BFC302F423300072BDE /* BadgeUserPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF6302F423300072BDE /* BadgeUserPreview.swift */; };
+		64C03BFD302F423300072BDE /* BadgeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF4302F423300072BDE /* BadgeStore.swift */; };
+		64C03BFE302F423300072BDE /* SupportSimpleXBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF7302F423300072BDE /* SupportSimpleXBanner.swift */; };
+		64C03BFF302F423300072BDE /* BadgesYourLevelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF5302F423300072BDE /* BadgesYourLevelView.swift */; };
+		64C03C00302F423300072BDE /* BadgesSupportSimplexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C03BF3302F423300072BDE /* BadgesSupportSimplexView.swift */; };
 		64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */; };
 		64C3B0212A0D359700E19930 /* CustomTimePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C3B0202A0D359700E19930 /* CustomTimePicker.swift */; };
 		64C8299D2D54AEEE006B9E89 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C829982D54AEED006B9E89 /* libgmp.a */; };
@@ -526,6 +534,7 @@
 		6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIInvalidJSONView.swift; sourceTree = "<group>"; };
 		6419EC572AB97507004A607A /* CIMemberCreatedContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMemberCreatedContactView.swift; sourceTree = "<group>"; };
 		642BA82C2CE50495005E9412 /* NewServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewServerView.swift; sourceTree = "<group>"; };
+		642E412B3033084000F04EE1 /* BadgeTestProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = BadgeTestProducts.storekit; sourceTree = "<group>"; };
 		6432857B2925443C00FBE5C8 /* GroupPreferencesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GroupPreferencesView.swift; sourceTree = "<group>"; };
 		643B3B4D2CCFD6400083A2CF /* OperatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperatorView.swift; sourceTree = "<group>"; };
 		6440C9FF288857A10062C672 /* CIEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIEventView.swift; sourceTree = "<group>"; };
@@ -559,6 +568,14 @@
 		64A77A012DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextPendingMemberActionsView.swift; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
+		64C03BF0302F423300072BDE /* BadgesHowItWorksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesHowItWorksView.swift; sourceTree = "<group>"; };
+		64C03BF1302F423300072BDE /* BadgesPayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesPayView.swift; sourceTree = "<group>"; };
+		64C03BF2302F423300072BDE /* BadgesRedeemCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesRedeemCodeView.swift; sourceTree = "<group>"; };
+		64C03BF3302F423300072BDE /* BadgesSupportSimplexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesSupportSimplexView.swift; sourceTree = "<group>"; };
+		64C03BF4302F423300072BDE /* BadgeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeStore.swift; sourceTree = "<group>"; };
+		64C03BF5302F423300072BDE /* BadgesYourLevelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgesYourLevelView.swift; sourceTree = "<group>"; };
+		64C03BF6302F423300072BDE /* BadgeUserPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeUserPreview.swift; sourceTree = "<group>"; };
+		64C03BF7302F423300072BDE /* SupportSimpleXBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportSimpleXBanner.swift; sourceTree = "<group>"; };
 		64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemInfoView.swift; sourceTree = "<group>"; };
 		64C3B0202A0D359700E19930 /* CustomTimePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTimePicker.swift; sourceTree = "<group>"; };
 		64C829982D54AEED006B9E89 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
@@ -772,6 +789,7 @@
 		5C2E260D27A30E2400F70299 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				64C03BF8302F423300072BDE /* Badges */,
 				B76E6C2F2C5C41C300EC11AA /* Contacts */,
 				5CB0BA8C282711BC00B3292C /* Onboarding */,
 				3C714775281C080100CB4D4B /* Call */,
@@ -892,6 +910,7 @@
 		5CA059BD279559F40002BEB4 = {
 			isa = PBXGroup;
 			children = (
+				642E412B3033084000F04EE1 /* BadgeTestProducts.storekit */,
 				E5C0BBFD2F82BBC000EA7527 /* Debug.xcconfig */,
 				E5C0BBFE2F82BBC900EA7527 /* Release.xcconfig */,
 				5C55A92D283D0FDE00C4E99E /* sounds */,
@@ -1184,6 +1203,21 @@
 				6495D7072F48D0000060512B /* AddGroupRelayView.swift */,
 			);
 			path = Group;
+			sourceTree = "<group>";
+		};
+		64C03BF8302F423300072BDE /* Badges */ = {
+			isa = PBXGroup;
+			children = (
+				64C03BF0302F423300072BDE /* BadgesHowItWorksView.swift */,
+				64C03BF1302F423300072BDE /* BadgesPayView.swift */,
+				64C03BF2302F423300072BDE /* BadgesRedeemCodeView.swift */,
+				64C03BF3302F423300072BDE /* BadgesSupportSimplexView.swift */,
+				64C03BF4302F423300072BDE /* BadgeStore.swift */,
+				64C03BF5302F423300072BDE /* BadgesYourLevelView.swift */,
+				64C03BF6302F423300072BDE /* BadgeUserPreview.swift */,
+				64C03BF7302F423300072BDE /* SupportSimpleXBanner.swift */,
+			);
+			path = Badges;
 			sourceTree = "<group>";
 		};
 		8C74C3E92C1B909200039E77 /* Theme */ = {
@@ -1602,6 +1636,14 @@
 				640417CD2B29B8C200CCB412 /* NewChatMenuButton.swift in Sources */,
 				5CFE0921282EEAF60002594B /* ZoomableScrollView.swift in Sources */,
 				5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */,
+				64C03BF9302F423300072BDE /* BadgesPayView.swift in Sources */,
+				64C03BFA302F423300072BDE /* BadgesRedeemCodeView.swift in Sources */,
+				64C03BFB302F423300072BDE /* BadgesHowItWorksView.swift in Sources */,
+				64C03BFC302F423300072BDE /* BadgeUserPreview.swift in Sources */,
+				64C03BFD302F423300072BDE /* BadgeStore.swift in Sources */,
+				64C03BFE302F423300072BDE /* SupportSimpleXBanner.swift in Sources */,
+				64C03BFF302F423300072BDE /* BadgesYourLevelView.swift in Sources */,
+				64C03C00302F423300072BDE /* BadgesSupportSimplexView.swift in Sources */,
 				5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
 				5C58BCD6292BEBE600AF9E4F /* CIChatFeatureView.swift in Sources */,
 				5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */,

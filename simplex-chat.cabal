@@ -40,6 +40,9 @@ library
       Simplex.Chat.AppSettings
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
+      Simplex.Chat.Badges.Code
+      Simplex.Chat.Badges.Service
+      Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Call
       Simplex.Chat.Controller
@@ -63,6 +66,8 @@ library
       Simplex.Chat.Operators.Presets
       Simplex.Chat.Options
       Simplex.Chat.Options.DB
+      Simplex.Chat.PaymentService
+      Simplex.Chat.PaymentService.Types
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
@@ -75,6 +80,7 @@ library
       Simplex.Chat.Stats
       Simplex.Chat.Store
       Simplex.Chat.Store.AppSettings
+      Simplex.Chat.Store.Badges
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.ContactRequest
       Simplex.Chat.Store.Delivery
@@ -99,6 +105,7 @@ library
       exposed-modules:
           Simplex.Chat.Bot
           Simplex.Chat.Bot.KnownContacts
+          Simplex.Chat.Bot.Store
           Simplex.Chat.Core
           Simplex.Chat.Help
           Simplex.Chat.Terminal
@@ -156,6 +163,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
           Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
+          Simplex.Chat.Store.Postgres.Migrations.M20261001_user_badges
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -329,6 +337,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.SQLite.Migrations.M20260822_forward_link
           Simplex.Chat.Store.SQLite.Migrations.M20260828_file_expiry
+          Simplex.Chat.Store.SQLite.Migrations.M20261001_user_badges
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -400,6 +409,57 @@ library
         bytestring ==0.10.*
       , process >=1.6 && <1.6.18
       , template-haskell ==2.16.*
+      , text >=1.2.4.0 && <1.3
+
+executable simplex-badge-service
+  if flag(client_library)
+      buildable: False
+  main-is: Main.hs
+  hs-source-dirs:
+      apps/simplex-badge-service
+      apps/simplex-badge-service/src
+  default-extensions:
+      StrictData
+  other-modules:
+      BadgeService.Options
+      BadgeService.Service
+      BadgeService.Store
+      BadgeService.Store.Migrate
+      Paths_simplex_chat
+  ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts
+  build-depends:
+      aeson ==2.2.*
+    , attoparsec ==0.14.*
+    , base >=4.7 && <5
+    , crypton ==0.34.*
+    , directory ==1.3.*
+    , mtl >=2.3.1 && <3.0
+    , optparse-applicative >=0.15 && <0.17
+    , simple-logger ==0.1.*
+    , simplex-chat
+    , simplexmq >=6.3
+    , stm ==2.5.*
+    , time ==1.12.*
+  default-language: Haskell2010
+  if flag(client_postgres)
+    other-modules:
+        BadgeService.Store.Postgres.Migrations
+    build-depends:
+        postgresql-simple ==0.7.*
+        , raw-strings-qq ==1.1.*
+    cpp-options: -DdbPostgres
+  else
+    other-modules:
+        BadgeService.Store.SQLite.Migrations
+    build-depends:
+        sqlcipher-simple ==0.4.*
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
       , text >=1.2.4.0 && <1.3
 
 executable simplex-bot
@@ -533,7 +593,6 @@ executable simplex-directory-service
       Directory.Service
       Directory.Store
       Directory.Store.Migrate
-      Directory.Util
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts
   build-depends:
@@ -627,6 +686,11 @@ test-suite simplex-chat-test
       API.Docs.Syntax.Types
       API.Docs.Types
       API.TypeInfo
+      BadgeService.Options
+      BadgeService.Service
+      BadgeService.Store
+      BadgeService.Store.Migrate
+      Bots.BadgeServiceTests
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
@@ -638,7 +702,6 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Directory.Store.Migrate
-      Directory.Util
       Paths_simplex_chat
   if flag(client_postgres)
       other-modules:
@@ -653,6 +716,7 @@ test-suite simplex-chat-test
   hs-source-dirs:
       bots/src
       tests
+      apps/simplex-badge-service/src
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src
   default-extensions:
@@ -695,6 +759,7 @@ test-suite simplex-chat-test
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:
+        BadgeService.Store.Postgres.Migrations
         Directory.Store.Postgres.Migrations
     build-depends:
         postgresql-simple ==0.7.*
@@ -702,6 +767,7 @@ test-suite simplex-chat-test
     cpp-options: -DdbPostgres
   else
     other-modules:
+        BadgeService.Store.SQLite.Migrations
         Directory.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*

@@ -969,7 +969,53 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       ),
     )
   ),
+  // TODO [badges] finalise copy + Read more link before v7.1 ships.
+  VersionDescription(
+    version = "v7.1",
+    post = null,
+    features = listOf(
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v7_1_supporter_badge_title,
+        view = { SupporterBadgeWhatsNew() }
+      )
+    )
+  ),
 )
+
+@Composable
+private fun SupporterBadgeWhatsNew() {
+  Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_title),
+        style = MaterialTheme.typography.h3,
+        fontWeight = FontWeight.Bold
+      )
+      Text(
+        stringResource(MR.strings.v7_1_supporter_badge_body),
+        style = MaterialTheme.typography.body1,
+        maxLines = 10
+      )
+    }
+    val isDark = isInDarkTheme()
+    if (BuildConfigCommon.SIMPLEX_ASSETS) {
+      Image(
+        painterResource(if (isDark) MR.images.phone_supporter_light else MR.images.phone_supporter),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(110.dp)
+      )
+    } else {
+      Image(
+        painterResource(MR.images.badge_supporter),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(72.dp)
+      )
+    }
+  }
+}
 
 private val lastVersion = versionDescriptions.last().version
 

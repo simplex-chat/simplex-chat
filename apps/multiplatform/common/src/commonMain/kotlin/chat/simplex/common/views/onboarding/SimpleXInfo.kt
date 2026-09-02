@@ -190,12 +190,14 @@ expect fun OnboardingActionButton(user: User?, onboardingStage: SharedPreference
 fun OnboardingActionButton(
   modifier: Modifier = Modifier,
   labelId: StringResource,
+  labelArg: String? = null,
   onboarding: OnboardingStage?,
   enabled: Boolean = true,
   icon: Painter? = null,
   iconColor: Color = Color.White,
   onclick: (() -> Unit)?
 ) {
+  val label = if (labelArg != null) stringResource(labelId).format(labelArg) else stringResource(labelId)
   Button(
     onClick = {
       onclick?.invoke()
@@ -211,9 +213,9 @@ fun OnboardingActionButton(
     colors = ButtonDefaults.buttonColors(MaterialTheme.colors.primary, disabledBackgroundColor = MaterialTheme.colors.secondary)
   ) {
     if (icon != null) {
-      Icon(icon, stringResource(labelId), Modifier.padding(end = DEFAULT_PADDING_HALF), tint = iconColor)
+      Icon(icon, label, Modifier.padding(end = DEFAULT_PADDING_HALF), tint = iconColor)
     }
-    Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+    Text(label, style = MaterialTheme.typography.h2, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
   }
 }
 

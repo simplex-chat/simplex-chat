@@ -304,11 +304,22 @@ public struct BadgeInfo: Codable, Hashable {
     public var badgeType: BadgeType
     public var badgeExpiry: Date
     public var badgeExtra: String
+
+    public init(badgeType: BadgeType, badgeExpiry: Date? = nil, badgeExtra: String = "") {
+        self.badgeType = badgeType
+        self.badgeExpiry = badgeExpiry
+        self.badgeExtra = badgeExtra
+    }
 }
 
 public struct LocalBadge: Codable, Hashable {
     public var badge: BadgeInfo
     public var status: BadgeStatus
+
+    public init(badge: BadgeInfo, status: BadgeStatus) {
+        self.badge = badge
+        self.status = status
+    }
 }
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)

@@ -47,9 +47,9 @@ import Directory.Options
 import Directory.Search
 import Directory.Store
 import Directory.Store.Migrate
-import Directory.Util
 import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
+import Simplex.Chat.Bot.Store
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Internal (setGroupLinkData)
@@ -216,7 +216,7 @@ directoryPostStartHook opts@DirectoryOpts {noAddress, testing} env cc =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId, profile = p@LocalProfile {preferences}} -> do
-      unless noAddress $ initializeBotAddress' (not testing) cc
+      unless noAddress $ initializeBotAddress' (not testing) Nothing True cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
       listingsUpdated env
       let cmds = fromMaybe [] $ preferences >>= commands_

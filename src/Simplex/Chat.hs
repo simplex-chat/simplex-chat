@@ -68,6 +68,7 @@ defaultChatConfig =
           },
       chatVRange = supportedChatVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
+      badgeServiceAddress = Nothing,
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options
