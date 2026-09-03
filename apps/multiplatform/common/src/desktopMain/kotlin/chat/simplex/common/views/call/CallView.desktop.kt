@@ -60,10 +60,16 @@ actual fun ActiveCallView() {
           // the call is restored and NOT sent to the core
           // Makes sure the core DOES NOT record the duration wrong if a reconnect happens
           if (r.state.connectionState == "reconnecting") {
+            if (call.callState != CallState.Reconnecting) {
+              CallSoundsPlayer.startConnectingCallSound(scope)
+            }
             chatModel.activeCall.value = call.copy(callState = CallState.Reconnecting)
           } else try {
             val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
             if (callStatus == WebRTCCallStatus.Connected) {
+              if (call.callState == CallState.Reconnecting) {
+                CallSoundsPlayer.stop()
+              }
               // connectedAt is only set ONCE, this way call duration is NOT reset when the call is restored from reconnecting
               chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = call.connectedAt ?: Clock.System.now())
             }
